@@ -1,0 +1,156 @@
+---
+import type { AuthorSocial } from '../../data/authors';
+import SocialIcon from './SocialIcon.astro';
+
+interface Props {
+  items: AuthorSocial[];
+  class?: string;
+  variant?: 'light' | 'dark';
+}
+
+const { items, class: className = '', variant = 'light' } = Astro.props;
+
+const socialColors: Record<string, string> = {
+  youtube: '#FF0000',
+  facebook: '#1877F2',
+  instagram: '#E4405F',
+  tiktok: '#010101',
+  medium: '#000000',
+};
+---
+
+<ul class={`social-tooltip social-tooltip--${variant} flex items-center gap-3 ${className}`}>
+  {
+    items.map((item) => (
+      <li class="social-tooltip__item">
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={item.platform}
+          class="social-tooltip__link"
+          style={`--social-color: ${socialColors[item.icon] ?? '#DB2777'}`}
+        >
+          <span class="social-tooltip__fill" aria-hidden="true" />
+          <span class="social-tooltip__icon-stack" aria-hidden="true">
+            <SocialIcon platform={item.icon} class="social-tooltip__icon social-tooltip__icon--brand" />
+            <SocialIcon platform={item.icon} class="social-tooltip__icon social-tooltip__icon--hover" />
+          </span>
+        </a>
+        <span class="social-tooltip__label">{item.platform}</span>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .social-tooltip__item {
+    position: relative;
+  }
+
+  .social-tooltip__link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid rgb(226 226 226 / 80%);
+    overflow: hidden;
+    text-decoration: none;
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+  }
+
+  .social-tooltip__fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    background: var(--social-color);
+    transition: height 0.28s ease-in-out;
+    z-index: 0;
+  }
+
+  .social-tooltip__icon-stack {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+  }
+
+  .social-tooltip__icon {
+    width: 24px;
+    height: 24px;
+    transition: opacity 0.2s ease;
+  }
+
+  .social-tooltip__icon--brand {
+    color: var(--social-color);
+    opacity: 1;
+  }
+
+  .social-tooltip__icon--hover {
+    position: absolute;
+    inset: 0;
+    color: #fff;
+    opacity: 0;
+  }
+
+  .social-tooltip__item:hover .social-tooltip__fill {
+    height: 100%;
+  }
+
+  .social-tooltip__item:hover .social-tooltip__icon--brand {
+    opacity: 0;
+  }
+
+  .social-tooltip__item:hover .social-tooltip__icon--hover {
+    opacity: 1;
+  }
+
+  .social-tooltip__item:hover .social-tooltip__link {
+    box-shadow: 0 4px 14px rgb(0 0 0 / 15%);
+    transform: translateY(-2px);
+  }
+
+  .social-tooltip__label {
+    position: absolute;
+    left: 50%;
+    bottom: -36px;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--social-color);
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, bottom 0.2s ease, visibility 0.2s;
+    z-index: 2;
+  }
+
+  .social-tooltip__item:hover .social-tooltip__label {
+    opacity: 1;
+    visibility: visible;
+    bottom: -44px;
+  }
+
+  /* Dark footer — white logos at rest, white on brand fill on hover */
+  .social-tooltip--dark .social-tooltip__link {
+    background: rgb(255 255 255 / 10%);
+    border-color: rgb(255 255 255 / 14%);
+  }
+
+  .social-tooltip--dark .social-tooltip__icon--brand {
+    color: #fff;
+  }
+</style>

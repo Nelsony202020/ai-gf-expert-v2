@@ -1,0 +1,127 @@
+---
+import type { RatingChangelogEntry } from '../../../data/products';
+
+interface Props {
+  entries: RatingChangelogEntry[];
+}
+
+const { entries } = Astro.props;
+
+const typeIcons: Record<RatingChangelogEntry['type'], string> = {
+  score: 'leaderboard',
+  methodology: 'science',
+  data: 'database',
+};
+---
+
+<section class="ratings-changelog border-t border-surface-variant/60 bg-surface-container-low/30 py-12 md:py-14">
+  <div class="section-container px-4 md:px-8">
+    <div class="max-w-2xl">
+      <h2 class="text-2xl md:text-3xl font-black text-on-surface mb-2">Rating updates</h2>
+      <p class="text-sm text-on-surface-variant mb-8">
+        A brief log of when we changed scores and why — so you always know what shifted.
+      </p>
+    </div>
+
+    <ol class="ratings-changelog__list max-w-3xl">
+      {
+        entries.map((entry, i) => (
+          <li class="ratings-changelog__item">
+            <div class="ratings-changelog__rail">
+              <span class="ratings-changelog__node">
+                <span class="material-symbols-outlined ratings-changelog__icon">{typeIcons[entry.type]}</span>
+              </span>
+              {i < entries.length - 1 && <span class="ratings-changelog__line" aria-hidden="true" />}
+            </div>
+            <div class="ratings-changelog__card">
+              <time class="ratings-changelog__date" datetime={entry.date}>{entry.date}</time>
+              <h3 class="ratings-changelog__title">{entry.title}</h3>
+              <p class="ratings-changelog__summary">{entry.summary}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .ratings-changelog__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .ratings-changelog__item {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+
+  .ratings-changelog__rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100%;
+  }
+
+  .ratings-changelog__node {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: #fff;
+    border: 2px solid rgb(219 39 119 / 35%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgb(219 39 119 / 10%);
+  }
+
+  .ratings-changelog__icon {
+    font-size: 16px;
+    color: #db2777;
+    font-variation-settings: 'FILL' 0;
+  }
+
+  .ratings-changelog__line {
+    width: 2px;
+    flex: 1;
+    min-height: 24px;
+    margin: 4px 0;
+    background: linear-gradient(180deg, rgb(219 39 119 / 35%), rgb(218 246 108 / 50%));
+    border-radius: 999px;
+  }
+
+  .ratings-changelog__card {
+    padding: 4px 0 20px;
+  }
+
+  .ratings-changelog__date {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+    margin-bottom: 4px;
+  }
+
+  .ratings-changelog__title {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .ratings-changelog__summary {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--color-on-surface-variant);
+  }
+</style>

@@ -1,5 +1,4 @@
 ---
-// NOTE: Placeholder header replicated from the mockups. Content/nav not final.
 const navLinks = [
   { label: 'Reviews', href: '#' },
   { label: 'Roundups', href: '#' },
@@ -7,45 +6,61 @@ const navLinks = [
 ];
 ---
 
-<header class="border-b border-surface-variant sticky top-0 bg-white z-50">
-  <div class="section-container h-16 flex items-center justify-between px-4 md:px-8">
-    <div class="flex items-center gap-8">
-      <a href="/" class="text-on-surface font-black text-2xl flex items-center shrink-0">
-        <span class="text-primary font-extrabold text-3xl italic mr-1">LR</span>
-        <span class="leading-none">
-          <span class="block text-[10px] font-bold uppercase tracking-widest text-primary">Lovelace</span>
-          <span class="block text-lg font-display">Reviews</span>
-        </span>
+<header class="site-header sticky top-0 z-50">
+  <div class="section-container h-16 flex items-center justify-between px-4 md:px-8 gap-4">
+    <div class="flex items-center gap-6 md:gap-8 min-w-0">
+      <a href="/" class="shrink-0 flex items-center">
+        <img src="/brand/ai-gf-logo-green.svg" alt="AI Girlfriend Expert" class="h-14 md:h-[4.5rem] w-auto object-contain" width="220" height="72" loading="lazy" />
       </a>
 
-      <nav class="hidden lg:flex items-center gap-6 text-sm font-semibold text-on-surface">
+      <nav class="hidden lg:flex items-center gap-6 text-sm font-semibold">
         {
           navLinks.map((link) => (
-            <a class="hover:text-primary-container transition-colors" href={link.href}>
+            <a class="site-header__link hover:text-brand-lime transition-colors" href={link.href}>
               {link.label}
             </a>
           ))
         }
       </nav>
 
-      <div class="hidden md:flex items-center">
+      <div class="hidden md:flex items-center min-w-0">
         <div class="relative">
           <input
-            class="pl-4 pr-10 py-1.5 border border-outline-variant rounded-full text-sm w-64 xl:w-80 focus:ring-1 focus:ring-primary-container focus:border-primary-container outline-none"
-            placeholder="Search Reviews & More..."
-            type="text"
+            class="site-header__search pl-4 pr-10 py-1.5 border rounded-full text-sm w-48 lg:w-64 xl:w-72 focus:ring-1 focus:ring-accent focus:border-accent outline-none"
+            placeholder="Search reviews…"
+            type="search"
           />
-          <span class="material-symbols-outlined absolute right-3 top-1.5 text-[18px] text-tertiary">search</span>
+          <span class="material-symbols-outlined absolute right-3 top-1.5 text-[18px] pointer-events-none opacity-60">search</span>
         </div>
       </div>
     </div>
 
-    <div class="flex items-center gap-4 md:gap-6 text-sm font-semibold">
-      <a class="hover:text-primary-container transition-colors" href="#">Sign In</a>
-      <a
-        class="bg-primary-container text-white px-5 py-2 rounded-full hover:opacity-90 transition shadow-sm"
-        href="#">Join Now</a
-      >
+    <div class="flex items-center gap-3 md:gap-5 text-sm font-semibold shrink-0">
+      <a class="hidden sm:inline site-header__link hover:text-brand-lime transition-colors" href="#">Sign In</a>
+      <a class="bg-brand-cta px-4 md:px-5 py-2 rounded-full font-bold hover:opacity-90 transition shadow-sm text-sm">
+        Join Now
+      </a>
     </div>
   </div>
 </header>
+
+<style>
+  .site-header {
+    background-color: var(--color-footer);
+    border-bottom: 1px solid rgb(255 255 255 / 8%);
+  }
+
+  .site-header__link {
+    color: rgb(255 255 255 / 88%);
+  }
+
+  .site-header__search {
+    background: rgb(255 255 255 / 8%);
+    border-color: rgb(255 255 255 / 12%);
+    color: #fff;
+  }
+
+  .site-header__search::placeholder {
+    color: rgb(255 255 255 / 45%);
+  }
+</style>

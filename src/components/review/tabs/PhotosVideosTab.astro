@@ -1,0 +1,239 @@
+---
+import type { Product } from '../../../data/products';
+import type { FeaturedReviewVideo, MediaItem } from '../../../data/aura-ai-media';
+import { auraAiFeaturedVideo, auraAiMediaGallery } from '../../../data/aura-ai-media';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+
+const featuredVideo: FeaturedReviewVideo = auraAiFeaturedVideo;
+const mediaItems: MediaItem[] = [
+  ...auraAiMediaGallery,
+  ...product.gallery.map((g, i) => ({
+    id: `product-gallery-${i}`,
+    type: 'image' as const,
+    src: g.full,
+    thumb: g.thumb,
+    alt: g.alt,
+    caption: g.alt,
+    filter: 'gallery' as const,
+  })),
+];
+
+const filters = [
+  { id: 'all', label: 'All media' },
+  { id: 'proof', label: 'Proof' },
+  { id: 'characters', label: 'Characters' },
+  { id: 'image-generator', label: 'Image generator' },
+  { id: 'gallery', label: 'Gallery' },
+];
+---
+
+<section class="bg-white py-12 md:py-14" data-media-gallery-root>
+  <div class="section-container px-4 md:px-8">
+    <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-3">Photos &amp; Videos</h2>
+    <p class="text-on-surface-variant text-base md:text-lg max-w-2xl mb-10">
+      Screenshots, test proof, and video from our {product.name} review — including media we captured during ratings tests.
+    </p>
+
+    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-8 xl:gap-10 mb-10">
+      <!-- Featured YouTube review -->
+      <div class="media-featured">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="material-symbols-outlined text-primary-container">smart_display</span>
+          <h3 class="text-lg font-black text-on-surface">Featured video review</h3>
+        </div>
+        <div class="media-featured__player rounded-xl overflow-hidden border border-surface-variant shadow-sm bg-black aspect-video">
+          <iframe
+            src={`https://www.youtube.com/embed/${featuredVideo.youtubeId}`}
+            title={featuredVideo.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            loading="lazy"
+            class="w-full h-full border-0"
+          ></iframe>
+        </div>
+        <p class="font-bold text-on-surface mt-3">{featuredVideo.title}</p>
+        <p class="text-sm text-on-surface-variant mt-1">{featuredVideo.description}</p>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex flex-col justify-end">
+        <p class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3">Filter gallery</p>
+        <div class="flex flex-wrap gap-2 mb-4" data-media-filters role="tablist" aria-label="Media filters">
+          {
+            filters.map((f, i) => (
+              <button
+                type="button"
+                role="tab"
+                data-media-filter={f.id}
+                aria-selected={i === 0 ? 'true' : 'false'}
+                class="media-filter-btn px-3 py-1.5 rounded-full text-xs font-bold border border-surface-variant transition-colors"
+              >
+                {f.label}
+              </button>
+            ))
+          }
+        </div>
+        <label class="inline-flex items-center gap-2 cursor-pointer select-none w-fit">
+          <input type="checkbox" data-nsfw-toggle class="rounded border-surface-variant text-primary-container focus:ring-primary-container" checked />
+          <span class="text-sm font-semibold text-on-surface">Show NSFW (18+)</span>
+        </label>
+        <p class="text-xs text-tertiary mt-2">NSFW items stay blurred until you confirm you are 18+.</p>
+      </div>
+    </div>
+
+    <!-- Gallery grid -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4" data-media-grid>
+      {
+        mediaItems.map((item) => (
+          <figure
+            class="media-card group relative rounded-xl overflow-hidden border border-surface-variant bg-surface-container-low aspect-[4/5]"
+            data-media-item
+            data-filter={item.filter}
+            data-nsfw={item.nsfw ? 'true' : 'false'}
+          >
+            <img src={item.thumb} alt={item.alt} loading="lazy" class="media-card__img w-full h-full object-cover" />
+            {
+              item.type === 'video' && (
+                <span class="absolute top-2 left-2 material-symbols-outlined text-white drop-shadow-md text-xl">play_circle</span>
+              )
+            }
+            {
+              item.nsfw && (
+                <div class="media-card__nsfw absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/45 backdrop-blur-md text-white p-3 text-center">
+                  <span class="text-[10px] font-black uppercase tracking-widest bg-red-600 px-2 py-0.5 rounded">18+</span>
+                  <span class="text-xs font-bold media-card__nsfw-hint">Hover to reveal</span>
+                  <button type="button" class="media-card__nsfw-btn hidden text-[11px] font-black uppercase tracking-wide bg-white text-on-surface px-3 py-1.5 rounded-full">
+                    Show mature content
+                  </button>
+                </div>
+              )
+            }
+            <figcaption class="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/75 to-transparent">
+              <p class="text-[11px] font-bold text-white leading-tight">{item.caption}</p>
+            </figcaption>
+          </figure>
+        ))
+      }
+    </div>
+
+    <p data-media-empty class="hidden text-center text-sm text-tertiary py-12">No media matches these filters.</p>
+  </div>
+</section>
+
+<style>
+  .media-filter-btn[aria-selected='true'] {
+    background: var(--color-brand-lime, #daf66c);
+    border-color: var(--color-brand-lime-dark, #b8d44f);
+    color: var(--color-on-brand-lime, #1b1b1b);
+  }
+
+  .media-filter-btn[aria-selected='false'] {
+    background: #fff;
+    color: var(--color-on-surface-variant, #5a4136);
+  }
+
+  .media-filter-btn[aria-selected='false']:hover {
+    background: var(--color-surface-container-low, #f3f3f3);
+  }
+
+  .media-card[data-nsfw='true']:not(.media-card--revealed) .media-card__img {
+    filter: blur(18px) brightness(0.65);
+    transform: scale(1.05);
+  }
+
+  .media-card--reveal-locked .media-card__nsfw-btn {
+    display: none !important;
+  }
+
+  .media-card--reveal-locked .media-card__nsfw-hint {
+    display: block !important;
+    font-size: 10px;
+    opacity: 0.85;
+  }
+
+  .media-card[data-nsfw='true']:not(.media-card--revealed):hover .media-card__nsfw-hint {
+    display: none;
+  }
+
+  .media-card[data-nsfw='true']:not(.media-card--revealed):hover .media-card__nsfw-btn {
+    display: inline-flex;
+  }
+
+  .media-card--revealed .media-card__nsfw {
+    display: none;
+  }
+
+  .media-card--hidden {
+    display: none;
+  }
+</style>
+
+<script>
+  function initMediaGallery() {
+    const root = document.querySelector('[data-media-gallery-root]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const items = Array.from(root.querySelectorAll<HTMLElement>('[data-media-item]'));
+    const filterBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-media-filter]'));
+    const nsfwToggle = root.querySelector<HTMLInputElement>('[data-nsfw-toggle]');
+    const emptyEl = root.querySelector<HTMLElement>('[data-media-empty]');
+
+    let activeFilter = 'all';
+
+    function applyFilters() {
+      const allowReveal = nsfwToggle?.checked ?? false;
+      let visible = 0;
+
+      items.forEach((item) => {
+        const filter = item.dataset.filter ?? '';
+        const isNsfw = item.dataset.nsfw === 'true';
+        const matchFilter = activeFilter === 'all' || filter === activeFilter;
+
+        const show = matchFilter;
+        item.classList.toggle('media-card--hidden', !show);
+        if (show) visible += 1;
+
+        if (isNsfw) {
+          item.classList.toggle('media-card--reveal-locked', !allowReveal);
+          if (!allowReveal) item.classList.remove('media-card--revealed');
+        }
+      });
+
+      if (emptyEl) emptyEl.classList.toggle('hidden', visible > 0);
+    }
+
+    filterBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activeFilter = btn.dataset.mediaFilter ?? 'all';
+        filterBtns.forEach((b) => b.setAttribute('aria-selected', b === btn ? 'true' : 'false'));
+        applyFilters();
+      });
+    });
+
+    nsfwToggle?.addEventListener('change', applyFilters);
+
+    items.forEach((item) => {
+      if (item.dataset.nsfw !== 'true') return;
+      const btn = item.querySelector<HTMLButtonElement>('.media-card__nsfw-btn');
+      btn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (nsfwToggle && !nsfwToggle.checked) {
+          nsfwToggle.checked = true;
+          applyFilters();
+        }
+        item.classList.add('media-card--revealed');
+      });
+    });
+
+    applyFilters();
+  }
+
+  initMediaGallery();
+  document.addEventListener('astro:page-load', initMediaGallery);
+</script>

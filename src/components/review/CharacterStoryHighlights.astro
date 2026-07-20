@@ -1,0 +1,550 @@
+---
+import type { OverviewCharacter } from '../../../data/products';
+import VerifiedCheck from '../ui/VerifiedCheck.astro';
+
+interface Props {
+  characters: OverviewCharacter[];
+  productName: string;
+}
+
+const { characters, productName } = Astro.props;
+const displayChars = characters.slice(0, 4);
+const dataId = `char-stories-${productName.replace(/\s+/g, '-').toLowerCase()}`;
+
+function segmentPath(index: number, total: number, radius = 46): string {
+  const gapDegrees = total > 1 ? 12 : 0;
+  const segmentDegrees = (360 - gapDegrees * total) / total;
+  const startAngle = -90 + index * (segmentDegrees + gapDegrees);
+  const endAngle = startAngle + segmentDegrees;
+  const startRad = (startAngle * Math.PI) / 180;
+  const endRad = (endAngle * Math.PI) / 180;
+  const x1 = 50 + radius * Math.cos(startRad);
+  const y1 = 50 + radius * Math.sin(startRad);
+  const x2 = 50 + radius * Math.cos(endRad);
+  const y2 = 50 + radius * Math.sin(endRad);
+  const largeArc = segmentDegrees > 180 ? 1 : 0;
+  return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`;
+}
+---
+
+<section class="char-stories" data-char-stories={dataId}>
+  <h3 class="char-stories__heading">
+    <img src="/brand/herman-in-love-icon.svg" alt="" class="char-stories__heading-icon" width="44" height="44" />
+    Meet some of {productName}'s characters
+  </h3>
+
+  <div class="char-stories__carousel" data-char-carousel tabindex="0">
+    <div class="char-stories__track" data-char-track>
+      {
+        [...displayChars, ...displayChars].map((char, i) => {
+          const origIndex = i % displayChars.length;
+          const slideCount = char.storySlides.length;
+          const thumb = char.storySlides[char.storySlides.length - 1] ?? char.avatar;
+          return (
+            <button
+              type="button"
+              class="char-stories__item"
+              data-story-open={origIndex}
+              aria-label={`View ${char.name}'s story`}
+            >
+              <div class="char-stories__ring-wrap">
+                <svg class="char-stories__ring" viewBox="0 0 100 100" aria-hidden="true">
+                  {
+                    Array.from({ length: slideCount }).map((_, seg) => (
+                      <path
+                        d={segmentPath(seg, slideCount)}
+                        fill="none"
+                        stroke-width="5"
+                        stroke-linecap="round"
+                        class="char-stories__segment"
+                        data-segment={seg}
+                      />
+                    ))
+                  }
+                </svg>
+                <div class="char-stories__avatar-wrap">
+                  <img src={thumb} alt={char.name} class="char-stories__avatar" loading="lazy" width="64" height="64" />
+                </div>
+              </div>
+              <span class="char-stories__name-row">
+                <span class="char-stories__name">{char.name}</span>
+                <VerifiedCheck class="char-stories__verified" />
+              </span>
+            </button>
+          );
+        })
+      }
+    </div>
+  </div>
+
+  <script type="application/json" id={`${dataId}-data`} set:html={JSON.stringify(displayChars)} />
+
+  <div class="char-stories__viewer hidden" data-story-viewer aria-hidden="true">
+    <div class="char-stories__backdrop" data-story-close />
+    <div class="char-stories__modal" role="dialog" aria-modal="true" aria-label="Character story">
+      <div class="char-stories__progress" data-story-progress />
+      <button type="button" class="char-stories__close" data-story-close aria-label="Close">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="char-stories__modal-header">
+        <img src="" alt="" width="32" height="32" data-story-header-avatar />
+        <div>
+          <a href="#" class="char-stories__header-name" data-story-header-link />
+          <p data-story-header-type />
+        </div>
+      </div>
+      <div class="char-stories__slide-stage">
+        <img src="" alt="" class="char-stories__slide" data-story-slide />
+      </div>
+      <div class="char-stories__top-fade" aria-hidden="true" />
+      <div class="char-stories__bottom-fade" aria-hidden="true" />
+      <button type="button" class="char-stories__tap char-stories__tap--prev" data-story-prev aria-label="Previous" />
+      <button type="button" class="char-stories__tap char-stories__tap--next" data-story-next aria-label="Next" />
+      <div class="char-stories__footer">
+        <input
+          type="text"
+          class="char-stories__input"
+          placeholder="Send message..."
+          data-story-input
+          autocomplete="off"
+        />
+        <button type="button" class="char-stories__like" data-story-like aria-label="Like">
+          <span class="material-symbols-outlined char-stories__like-icon">favorite</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script define:vars={{ dataId }}>
+  function initCharStories() {
+    const root = document.querySelector(`[data-char-stories="${dataId}"]`);
+    if (!root || root.dataset.init) return;
+    root.dataset.init = 'true';
+
+    const dataEl = document.getElementById(`${dataId}-data`);
+    if (!dataEl) return;
+    let characters = [];
+    try { characters = JSON.parse(dataEl.textContent || '[]'); } catch { return; }
+
+    const carousel = root.querySelector('[data-char-carousel]');
+    const track = root.querySelector('[data-char-track]');
+    const viewer = root.querySelector('[data-story-viewer]');
+    const progress = root.querySelector('[data-story-progress]');
+    const slideEl = root.querySelector('[data-story-slide]');
+    const nameLinkEl = root.querySelector('[data-story-header-link]');
+    const typeEl = root.querySelector('[data-story-header-type]');
+    const avatarEl = root.querySelector('[data-story-header-avatar]');
+    const likeBtn = root.querySelector('[data-story-like]');
+    const chatInput = root.querySelector('[data-story-input]');
+    const modal = root.querySelector('.char-stories__modal');
+    if (!carousel || !track || !viewer || !slideEl || !modal) return;
+
+    let offset = 0;
+    let velocity = 0;
+    let paused = false;
+    let dragging = false;
+    let dragX = 0;
+    let dragStart = 0;
+    let lastDragX = 0;
+    let lastDragTime = 0;
+    let raf = null;
+    let charIndex = 0;
+    let slideIndex = 0;
+    let timer = null;
+    let didDrag = false;
+
+    const AUTO_SPEED = 0.05;
+    const FRICTION = 0.982;
+    const MIN_VELOCITY = 0.04;
+    const half = () => track.scrollWidth / 2;
+
+    function wrapOffset() {
+      const h = half();
+      if (h <= 0) return;
+      offset = ((offset % h) + h) % h;
+    }
+
+    function applyTransform() {
+      wrapOffset();
+      track.style.transform = `translateX(-${offset}px)`;
+    }
+
+    function tick() {
+      if (!dragging) {
+        if (!paused && Math.abs(velocity) < MIN_VELOCITY) {
+          offset += AUTO_SPEED;
+        } else if (Math.abs(velocity) >= MIN_VELOCITY) {
+          offset += velocity;
+          velocity *= FRICTION;
+          if (Math.abs(velocity) < MIN_VELOCITY) velocity = 0;
+        }
+        applyTransform();
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+
+    carousel.addEventListener('mouseenter', () => {
+      paused = true;
+      carousel.classList.add('is-paused');
+    });
+    carousel.addEventListener('mouseleave', () => {
+      if (viewer.classList.contains('hidden')) {
+        paused = false;
+        dragging = false;
+        carousel.classList.remove('is-paused', 'is-dragging');
+      }
+    });
+
+    function endDrag() {
+      if (!dragging) return;
+      dragging = false;
+      carousel.classList.remove('is-dragging');
+      paused = false;
+    }
+
+    carousel.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      dragging = true;
+      didDrag = false;
+      paused = true;
+      velocity = 0;
+      dragX = e.clientX;
+      lastDragX = e.clientX;
+      lastDragTime = Date.now();
+      dragStart = offset;
+      carousel.classList.add('is-dragging');
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const now = Date.now();
+      const dx = dragX - e.clientX;
+      if (Math.abs(dx) > 4) didDrag = true;
+      offset = dragStart + dx;
+      applyTransform();
+      const dt = Math.max(now - lastDragTime, 1);
+      velocity = ((lastDragX - e.clientX) / dt) * 9;
+      lastDragX = e.clientX;
+      lastDragTime = now;
+    });
+
+    window.addEventListener('mouseup', endDrag);
+
+    carousel.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      dragging = true;
+      didDrag = false;
+      paused = true;
+      velocity = 0;
+      dragX = e.touches[0].clientX;
+      lastDragX = e.touches[0].clientX;
+      lastDragTime = Date.now();
+      dragStart = offset;
+      carousel.classList.add('is-dragging');
+    }, { passive: true });
+
+    carousel.addEventListener('touchmove', (e) => {
+      if (!dragging || e.touches.length !== 1) return;
+      const now = Date.now();
+      const clientX = e.touches[0].clientX;
+      const dx = dragX - clientX;
+      if (Math.abs(dx) > 4) didDrag = true;
+      offset = dragStart + dx;
+      applyTransform();
+      const dt = Math.max(now - lastDragTime, 1);
+      velocity = ((lastDragX - clientX) / dt) * 9;
+      lastDragX = clientX;
+      lastDragTime = now;
+    }, { passive: true });
+
+    carousel.addEventListener('touchend', endDrag);
+    carousel.addEventListener('touchcancel', endDrag);
+
+    function clearTimer() { if (timer) { clearTimeout(timer); timer = null; } }
+
+    function renderBars(count, active) {
+      if (!progress) return;
+      progress.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const b = document.createElement('span');
+        b.className = 'char-stories__bar' + (i < active ? ' is-done' : i === active ? ' is-active' : '');
+        progress.appendChild(b);
+      }
+    }
+
+    function updateHeader(char) {
+      if (nameLinkEl) {
+        nameLinkEl.textContent = char.name;
+        nameLinkEl.href = char.profileUrl || '#';
+      }
+      if (typeEl) typeEl.textContent = char.archetype;
+      if (avatarEl) { avatarEl.src = char.avatar; avatarEl.alt = char.name; }
+    }
+
+    function goToNextCharacter() {
+      if (modal.classList.contains('is-char-switching') || modal.classList.contains('is-char-entering')) return;
+
+      clearTimer();
+      modal.classList.add('is-char-switching');
+
+      setTimeout(() => {
+        charIndex = (charIndex + 1) % characters.length;
+        slideIndex = 0;
+        if (likeBtn) likeBtn.classList.remove('is-liked');
+
+        const char = characters[charIndex];
+        if (!char?.storySlides?.length) {
+          modal.classList.remove('is-char-switching');
+          return;
+        }
+
+        slideEl.src = char.storySlides[0];
+        updateHeader(char);
+        renderBars(char.storySlides.length, 0);
+
+        modal.classList.remove('is-char-switching');
+        modal.classList.add('is-char-entering');
+
+        setTimeout(() => {
+          modal.classList.remove('is-char-entering');
+          timer = setTimeout(advanceSlide, 4500);
+        }, 320);
+      }, 260);
+    }
+
+    function advanceSlide() {
+      const char = characters[charIndex];
+      if (!char?.storySlides?.length) return;
+      slideIndex++;
+      if (slideIndex >= char.storySlides.length) {
+        goToNextCharacter();
+        return;
+      }
+      showSlide();
+    }
+
+    function showSlide() {
+      const char = characters[charIndex];
+      if (!char?.storySlides?.length) return;
+      if (slideIndex >= char.storySlides.length) slideIndex = 0;
+      if (slideIndex < 0) slideIndex = char.storySlides.length - 1;
+      modal.classList.remove('is-char-switching', 'is-char-entering');
+      slideEl.src = char.storySlides[slideIndex];
+      updateHeader(char);
+      renderBars(char.storySlides.length, slideIndex);
+      clearTimer();
+      timer = setTimeout(advanceSlide, 4500);
+    }
+
+    function openViewer(i) {
+      if (didDrag) { didDrag = false; return; }
+      charIndex = i; slideIndex = 0; paused = true;
+      if (likeBtn) likeBtn.classList.remove('is-liked');
+      if (chatInput) chatInput.value = '';
+      viewer.classList.remove('hidden');
+      viewer.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      showSlide();
+    }
+
+    function closeViewer() {
+      clearTimer();
+      viewer.classList.add('hidden');
+      viewer.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      paused = false;
+    }
+
+    root.querySelectorAll('[data-story-open]').forEach((btn) => {
+      btn.addEventListener('click', () => openViewer(Number(btn.getAttribute('data-story-open'))));
+    });
+    root.querySelectorAll('[data-story-close]').forEach((el) => el.addEventListener('click', closeViewer));
+    root.querySelector('[data-story-next]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      advanceSlide();
+    });
+    root.querySelector('[data-story-prev]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      slideIndex--;
+      showSlide();
+    });
+
+    likeBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      likeBtn.classList.toggle('is-liked');
+      likeBtn.classList.remove('is-animating');
+      void likeBtn.offsetWidth;
+      likeBtn.classList.add('is-animating');
+      setTimeout(() => likeBtn.classList.remove('is-animating'), 600);
+    });
+
+    chatInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        chatInput.value = '';
+      }
+    });
+
+    chatInput?.addEventListener('click', (e) => e.stopPropagation());
+    nameLinkEl?.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('keydown', (e) => {
+      if (viewer.classList.contains('hidden')) return;
+      if (e.key === 'Escape') closeViewer();
+    });
+  }
+
+  initCharStories();
+  document.addEventListener('astro:page-load', initCharStories);
+</script>
+
+<style is:global>
+  .char-stories { width: 100%; max-width: 100%; overflow: hidden; }
+  .char-stories__heading {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 14px; font-size: 1.125rem; font-weight: 800; color: var(--color-on-surface);
+  }
+  .char-stories__heading-icon { flex-shrink: 0; width: 44px; height: 44px; object-fit: contain; }
+  .char-stories__carousel {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+  }
+  .char-stories__carousel.is-paused { cursor: pointer; }
+  .char-stories__carousel.is-dragging { cursor: grabbing; }
+  .char-stories__track {
+    display: flex; flex-direction: row; flex-wrap: nowrap;
+    align-items: flex-start; gap: 14px; width: max-content;
+  }
+  .char-stories__item {
+    flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
+    gap: 6px; width: 72px; padding: 0; border: none; background: none; cursor: inherit;
+  }
+  .char-stories__ring-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+  .char-stories__ring { position: absolute; inset: 0; width: 64px; height: 64px; }
+  .char-stories__segment { stroke: #db2777; }
+  .char-stories__avatar-wrap {
+    position: absolute; inset: 5px; border-radius: 999px; background: #fff; padding: 2px;
+  }
+  .char-stories__avatar { width: 100%; height: 100%; border-radius: 999px; object-fit: cover; display: block; }
+  .char-stories__name-row {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    max-width: 72px;
+  }
+  .char-stories__name {
+    font-size: 10px; font-weight: 800; text-align: center; color: var(--color-on-surface);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+  }
+  .char-stories__verified { width: 10px; height: 10px; flex-shrink: 0; }
+  .char-stories__viewer { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .char-stories__viewer.hidden { display: none; }
+  .char-stories__backdrop { position: absolute; inset: 0; background: rgb(0 0 0 / 72%); }
+  .char-stories__modal { position: relative; width: min(380px,100%); aspect-ratio: 9/16; max-height: 88vh; border-radius: 16px; overflow: hidden; background: #111; z-index: 1; }
+  .char-stories__top-fade {
+    position: absolute; top: 0; left: 0; right: 0; height: 140px;
+    background: linear-gradient(to bottom, rgb(0 0 0 / 55%), rgb(0 0 0 / 18%) 55%, transparent);
+    pointer-events: none; z-index: 2;
+  }
+  .char-stories__bottom-fade {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 120px;
+    background: linear-gradient(to top, rgb(0 0 0 / 50%), rgb(0 0 0 / 15%) 60%, transparent);
+    pointer-events: none; z-index: 2;
+  }
+  .char-stories__progress { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; gap: 4px; z-index: 4; }
+  .char-stories__bar { flex: 1; height: 3px; border-radius: 999px; background: rgb(255 255 255 / 35%); }
+  .char-stories__bar.is-done { background: #fff; }
+  .char-stories__bar.is-active { background: rgb(255 255 255 / 50%); animation: barFill 4.5s linear forwards; }
+  @keyframes barFill { from { box-shadow: inset 0 0 0 0 #fff; } to { box-shadow: inset 100px 0 0 0 #fff; } }
+  .char-stories__close { position: absolute; top: 28px; right: 10px; z-index: 5; width: 32px; height: 32px; border: none; border-radius: 999px; background: rgb(0 0 0 / 35%); color: #fff; cursor: pointer; }
+  .char-stories__modal-header { position: absolute; top: 28px; left: 10px; z-index: 5; display: flex; align-items: center; gap: 8px; color: #fff; font-size: 13px; font-weight: 800; }
+  .char-stories__header-name {
+    display: block; color: #fff; text-decoration: none; font-size: 13px; font-weight: 800;
+  }
+  .char-stories__header-name:hover { text-decoration: underline; }
+  .char-stories__modal-header img { border-radius: 999px; border: 2px solid #db2777; }
+  .char-stories__modal-header p:last-child { margin: 0; font-size: 10px; font-weight: 400; opacity: 0.8; }
+  .char-stories__modal.is-char-switching .char-stories__slide,
+  .char-stories__modal.is-char-entering .char-stories__slide {
+    animation-fill-mode: forwards;
+  }
+  .char-stories__modal.is-char-switching .char-stories__slide {
+    animation: charSwitchOut 0.26s ease-in forwards;
+  }
+  .char-stories__modal.is-char-entering .char-stories__slide {
+    animation: charSwitchIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .char-stories__modal.is-char-switching .char-stories__modal-header {
+    animation: charHeaderOut 0.26s ease-in forwards;
+  }
+  .char-stories__modal.is-char-entering .char-stories__modal-header {
+    animation: charHeaderIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .char-stories__modal.is-char-switching .char-stories__progress,
+  .char-stories__modal.is-char-entering .char-stories__progress {
+    animation: charProgressPulse 0.3s ease;
+  }
+  @keyframes charSwitchOut {
+    to { transform: translateX(-18%) scale(0.96); opacity: 0; filter: brightness(0.7); }
+  }
+  @keyframes charSwitchIn {
+    from { transform: translateX(18%) scale(0.96); opacity: 0; filter: brightness(0.7); }
+    to { transform: translateX(0) scale(1); opacity: 1; filter: brightness(1); }
+  }
+  @keyframes charHeaderOut {
+    to { transform: translateX(-12px); opacity: 0; }
+  }
+  @keyframes charHeaderIn {
+    from { transform: translateX(12px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes charProgressPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  .char-stories__slide-stage {
+    position: absolute; inset: 0; overflow: hidden; z-index: 1;
+  }
+  .char-stories__slide {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    will-change: transform, opacity;
+  }
+  .char-stories__tap { position: absolute; top: 0; bottom: 56px; width: 35%; border: none; background: transparent; cursor: pointer; z-index: 3; }
+  .char-stories__tap--prev { left: 0; }
+  .char-stories__tap--next { right: 0; }
+  .char-stories__footer {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 5;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px 14px;
+  }
+  .char-stories__input {
+    flex: 1; min-width: 0; height: 36px; padding: 0 14px;
+    border: 1px solid rgb(255 255 255 / 35%); border-radius: 999px;
+    background: rgb(0 0 0 / 25%); color: #fff; font-size: 13px;
+    outline: none;
+  }
+  .char-stories__input::placeholder { color: rgb(255 255 255 / 55%); }
+  .char-stories__input:focus { border-color: rgb(255 255 255 / 55%); background: rgb(0 0 0 / 35%); }
+  .char-stories__like {
+    flex-shrink: 0; width: 36px; height: 36px; border: none; border-radius: 999px;
+    background: transparent; color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s ease;
+  }
+  .char-stories__like-icon { font-size: 26px; transition: color 0.15s ease, transform 0.2s ease; }
+  .char-stories__like.is-liked .char-stories__like-icon {
+    color: #db2777;
+    font-variation-settings: 'FILL' 1;
+  }
+  .char-stories__like.is-animating .char-stories__like-icon {
+    animation: charLikePop 0.55s ease;
+  }
+  @keyframes charLikePop {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+</style>

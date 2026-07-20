@@ -1,0 +1,99 @@
+---
+import type { Product } from '../../../data/products';
+import { products } from '../../../data/products';
+import { getScoreChipClass, fmtScore } from '../../../lib/scores';
+import { buildAllScoreBins } from '../../../lib/score-distribution';
+import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
+import ScoreDistributionChart from './ScoreDistributionChart.astro';
+import InfoIcon from '../../ui/InfoIcon.astro';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const tooltipId = `overall-${product.slug}`;
+
+const currentScore = product.overallScore;
+const currentChip = getScoreChipClass(currentScore);
+
+const scorePoints = products
+  .map((p) => ({ slug: p.slug, name: p.name, score: p.overallScore }))
+  .filter((x) => Number.isFinite(x.score));
+
+const avgScore = scorePoints.length
+  ? scorePoints.reduce((s, x) => s + x.score, 0) / scorePoints.length
+  : currentScore;
+
+const bins = buildAllScoreBins(scorePoints);
+---
+
+<span
+  role="button"
+  tabindex="0"
+  class="rt-tooltip-trigger inline-flex cursor-help shrink-0"
+  data-ratings-tooltip-trigger={tooltipId}
+  aria-label="About overall performance score"
+>
+  <slot>
+    <InfoIcon size="xs" />
+  </slot>
+</span>
+
+<template id={`tooltip-${tooltipId}`}>
+  <div class="ratings-tooltip-panel">
+    <div class="ratings-tooltip-panel__header">
+      <div class="ratings-tooltip-panel__header-grid">
+        <div class="min-w-0">
+          <p class="ratings-tooltip-panel__section-title">What it is</p>
+          <p class="ratings-tooltip-panel__desc">{product.overallSummary}</p>
+        </div>
+        <div class="ratings-tooltip-panel__score-block">
+          <div class="ratings-tooltip-panel__score-row">
+            <span class={`rt-score-chip ${currentChip}`}>{fmtScore(currentScore)}</span>
+            <span class="ratings-tooltip-panel__score-label">{product.name} score</span>
+          </div>
+          <p class="ratings-tooltip-panel__avg">
+            Avg: <span class="tabular-nums">{fmtScore(avgScore)}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="ratings-tooltip-panel__body">
+      <div>
+        <p class="ratings-tooltip-panel__section-title">Where this sits</p>
+        <RatingHierarchyPipeline highlight="overall" brandName={product.name} showTitle={false} />
+      </div>
+
+      <div>
+        <p class="ratings-tooltip-panel__section-title">Category scores</p>
+        <div class="rt-comp-list">
+          {
+            product.categories.map((category) => {
+              const chip = getScoreChipClass(category.score);
+              return (
+                <a
+                  href={`/reviews/${product.slug}#ratings`}
+                  class="rt-comp-row rt-comp-row--link"
+                  data-goto-category={category.key}
+                >
+                  <span class="rt-comp-pct">{category.weight}%</span>
+                  <div class="rt-comp-name">
+                    <span class={`rt-score-chip rt-score-chip--outline ${chip}`}>{fmtScore(category.score)}</span>
+                    <span>{category.name}</span>
+                  </div>
+                </a>
+              );
+            })
+          }
+        </div>
+      </div>
+
+      <div>
+        <p class="ratings-tooltip-panel__section-title">Score distribution</p>
+        <ScoreDistributionChart bins={bins} />
+      </div>
+    </div>
+  </div>
+</template>

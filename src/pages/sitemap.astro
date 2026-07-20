@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { products } from '../data/products';
+---
+
+<BaseLayout title="HTML Sitemap — Lovelace Reviews" description="Complete site map for Lovelace Reviews.">
+  <Header />
+  <main class="section-container px-4 md:px-8 py-14 md:py-16 max-w-3xl">
+    <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-8">HTML Sitemap</h1>
+
+    <section class="mb-10">
+      <h2 class="text-lg font-extrabold text-accent mb-4">Reviews</h2>
+      <ul class="space-y-2 text-sm">
+        {
+          products.map((p) => (
+            <li>
+              <a href={`/reviews/${p.slug}`} class="link-accent font-semibold hover:underline">
+                {p.name} Review
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="text-lg font-extrabold text-accent mb-4">Authors</h2>
+      <ul class="space-y-2 text-sm">
+        <li>
+          <a href="/author/herman-carter" class="link-accent font-semibold hover:underline">Herman Carter</a>
+        </li>
+      </ul>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="text-lg font-extrabold text-accent mb-4">Legal &amp; Info</h2>
+      <ul class="space-y-2 text-sm">
+        <li><a href="/legal/privacy" class="link-accent hover:underline">Privacy Policy</a></li>
+        <li><a href="/legal/terms" class="link-accent hover:underline">Terms of Service</a></li>
+        <li><a href="/legal/copyright" class="link-accent hover:underline">Copyright Policy</a></li>
+        <li><a href="/legal/disclaimer" class="link-accent hover:underline">Disclaimer</a></li>
+        <li><a href="/faq" class="link-accent hover:underline">FAQ</a></li>
+        <li><a href="/contact" class="link-accent hover:underline">Contact</a></li>
+      </ul>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

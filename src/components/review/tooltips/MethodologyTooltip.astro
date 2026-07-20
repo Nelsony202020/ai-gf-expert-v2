@@ -1,0 +1,87 @@
+---
+interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+---
+
+<span
+  role="button"
+  tabindex="0"
+  class="rt-tooltip-trigger inline-flex cursor-help shrink-0"
+  data-ratings-tooltip-trigger={id}
+  aria-label="About our rating methodology"
+>
+  <slot />
+</span>
+
+<template id={`tooltip-${id}`}>
+  <div class="ratings-tooltip-panel ratings-tooltip-panel--methodology">
+    <div class="ratings-tooltip-panel__header">
+      <p class="ratings-tooltip-panel__section-title">How we score apps</p>
+      <p class="ratings-tooltip-panel__desc">
+        We run real tests, turn the results into numbers, and roll those up — step by step — until we get one overall score.
+      </p>
+    </div>
+    <div class="ratings-tooltip-panel__body">
+      <div class="rt-method-flow">
+        <div class="rt-method-step">
+          <span class="rt-method-step__num">1</span>
+          <div class="rt-method-step__text">
+            <strong>Measure</strong>
+            <span>Counts, times, quality checks — the raw evidence.</span>
+          </div>
+        </div>
+        <div class="rt-method-step__arrow" aria-hidden="true">↓</div>
+        <div class="rt-method-step">
+          <span class="rt-method-step__num">2</span>
+          <div class="rt-method-step__text">
+            <strong>Subscores</strong>
+            <span>Evidence grouped into focused areas (e.g. Variety, Quality).</span>
+          </div>
+        </div>
+        <div class="rt-method-step__arrow" aria-hidden="true">↓</div>
+        <div class="rt-method-step">
+          <span class="rt-method-step__num">3</span>
+          <div class="rt-method-step__text">
+            <strong>Categories</strong>
+            <span>Subscores combined into big buckets (Chat, Characters…).</span>
+          </div>
+        </div>
+        <div class="rt-method-step__arrow" aria-hidden="true">↓</div>
+        <div class="rt-method-step rt-method-step--final">
+          <span class="rt-method-step__num">★</span>
+          <div class="rt-method-step__text">
+            <strong>Overall score</strong>
+            <span>Weighted mix of all categories. Good starts at <strong>7.6</strong>.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rt-method-timeline">
+        <div class="rt-method-version">
+          <span class="rt-method-version__badge">v1</span>
+          <div>
+            <p class="rt-method-version__title">User survey</p>
+            <p class="rt-method-version__text">Asked real users what mattered most — conversation, privacy, NSFW, customization — to set our priorities.</p>
+          </div>
+        </div>
+        <div class="rt-method-version">
+          <span class="rt-method-version__badge">v2</span>
+          <div>
+            <p class="rt-method-version__title">Hands-on testing</p>
+            <p class="rt-method-version__text">Structured checklists and expert scores (3.0–5.0) rolled into review ratings.</p>
+          </div>
+        </div>
+        <div class="rt-method-version rt-method-version--current">
+          <span class="rt-method-version__badge rt-method-version__badge--current">v3</span>
+          <div>
+            <p class="rt-method-version__title">Quantitative (now)</p>
+            <p class="rt-method-version__text">Measured evidence, transparent weights, reproducible tests — you see the score and exactly what we measured.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

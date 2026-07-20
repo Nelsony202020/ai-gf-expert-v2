@@ -1,0 +1,210 @@
+---
+export interface ComparisonMetric {
+  id: string;
+  label: string;
+  productScore: number;
+  categoryAverage: number;
+  unit?: string;
+  /** When true, lower productScore is better (e.g. price) */
+  lowerIsBetter?: boolean;
+}
+
+interface Props {
+  productName: string;
+  metrics: ComparisonMetric[];
+}
+
+const { productName, metrics } = Astro.props;
+
+function barHeight(
+  productScore: number,
+  categoryAverage: number,
+  lowerIsBetter?: boolean,
+): { product: number; average: number } {
+  if (lowerIsBetter) {
+    const productNorm = Math.max(0, Math.min(100, 100 - productScore));
+    const avgNorm = Math.max(0, Math.min(100, 100 - categoryAverage));
+    const max = Math.max(productNorm, avgNorm, 1);
+    return { product: (productNorm / max) * 100, average: (avgNorm / max) * 100 };
+  }
+  const max = Math.max(productScore, categoryAverage, 1);
+  return { product: (productScore / max) * 100, average: (categoryAverage / max) * 100 };
+}
+---
+
+<section class="comparison-chart" aria-label={`How ${productName} compares to category average`}>
+  <div class="flex items-center justify-between gap-3 mb-6">
+    <h3 class="text-xl font-extrabold text-on-surface">How {productName} compares</h3>
+    <div class="flex items-center gap-4 text-[11px] font-bold uppercase tracking-wide text-tertiary">
+      <span class="flex items-center gap-1.5">
+        <span class="comparison-chart__legend comparison-chart__legend--product" />
+        {productName}
+      </span>
+      <span class="flex items-center gap-1.5">
+        <span class="comparison-chart__legend comparison-chart__legend--avg" />
+        Category avg.
+      </span>
+    </div>
+  </div>
+
+  <div class="comparison-chart__grid">
+    {
+      metrics.map((metric, i) => {
+        const heights = barHeight(metric.productScore, metric.categoryAverage, metric.lowerIsBetter);
+        const displayProduct = metric.lowerIsBetter
+          ? `$${metric.productScore.toFixed(2)}`
+          : metric.productScore.toFixed(1);
+        const displayAvg = metric.lowerIsBetter
+          ? `$${metric.categoryAverage.toFixed(2)}`
+          : metric.categoryAverage.toFixed(1);
+
+        return (
+          <div class="comparison-chart__metric" style={`--delay: ${i * 0.15}s`}>
+            <p class="comparison-chart__label">{metric.label}</p>
+            <div class="comparison-chart__bars">
+              <div class="comparison-chart__bar-group">
+                <span class="comparison-chart__value comparison-chart__value--product">{displayProduct}</span>
+                <div class="comparison-chart__bar-track">
+                  <div
+                    class="comparison-chart__bar comparison-chart__bar--product"
+                    style={`--h: ${heights.product}%`}
+                  />
+                </div>
+                <span class="comparison-chart__bar-caption">{productName}</span>
+              </div>
+              <div class="comparison-chart__bar-group">
+                <span class="comparison-chart__value comparison-chart__value--avg">{displayAvg}</span>
+                <div class="comparison-chart__bar-track">
+                  <div
+                    class="comparison-chart__bar comparison-chart__bar--avg"
+                    style={`--h: ${heights.average}%`}
+                  />
+                </div>
+                <span class="comparison-chart__bar-caption">Avg.</span>
+              </div>
+            </div>
+          </div>
+        );
+      })
+    }
+  </div>
+</section>
+
+<style>
+  .comparison-chart__legend {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  .comparison-chart__legend--product {
+    background: #db2777;
+  }
+
+  .comparison-chart__legend--avg {
+    background: rgb(95 94 94 / 45%);
+  }
+
+  .comparison-chart__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .comparison-chart__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .comparison-chart__metric {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .comparison-chart__label {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--color-on-surface);
+    text-align: center;
+  }
+
+  .comparison-chart__bars {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    justify-content: center;
+    height: 180px;
+  }
+
+  .comparison-chart__bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+  }
+
+  .comparison-chart__value {
+    font-size: 12px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .comparison-chart__value--product {
+    color: #db2777;
+  }
+
+  .comparison-chart__value--avg {
+    color: var(--color-tertiary);
+  }
+
+  .comparison-chart__bar-track {
+    flex: 1;
+    width: 100%;
+    max-width: 72px;
+    position: relative;
+    border-radius: 20px;
+    background: repeating-linear-gradient(
+      135deg,
+      rgb(243 243 243 / 80%) 0,
+      rgb(243 243 243 / 80%) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgb(243 243 243 / 80%) 50%,
+      rgb(243 243 243 / 80%) 75%,
+      transparent 75%
+    );
+    background-size: 10px 10px;
+    border: 1px solid rgb(226 226 226 / 70%);
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .comparison-chart__bar {
+    width: 100%;
+    height: var(--h);
+    border-radius: 20px;
+  }
+
+  .comparison-chart__bar--product {
+    background: linear-gradient(180deg, #db2777, rgb(219 39 119 / 75%));
+  }
+
+  .comparison-chart__bar--avg {
+    background: linear-gradient(180deg, rgb(95 94 94 / 55%), rgb(95 94 94 / 35%));
+  }
+
+  .comparison-chart__bar-caption {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-tertiary);
+    text-align: center;
+  }
+</style>

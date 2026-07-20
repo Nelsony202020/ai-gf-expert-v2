@@ -26,7 +26,7 @@ const options = [
               checked={opt.id === 'all-in'}
               class="peer sr-only"
             />
-            <span class="block px-3 py-1.5 text-xs font-bold rounded-md transition-colors peer-checked:bg-white peer-checked:text-primary-container peer-checked:shadow-sm text-on-surface-variant hover:text-on-surface">
+            <span class="block px-3 py-1.5 text-xs font-bold rounded-md transition-colors peer-checked:bg-brand-lime peer-checked:text-on-brand-lime peer-checked:shadow-sm text-on-surface-variant hover:text-on-surface">
               {opt.label}
             </span>
           </label>
@@ -48,6 +48,33 @@ const options = [
 
   [data-ratings-root][data-detail-level='medium'] [data-subscore-grid] {
     grid-template-columns: 1fr !important;
+  }
+
+  [data-ratings-root][data-detail-level='medium'] [data-subscore-list] {
+    max-width: 420px;
+  }
+
+  [data-ratings-root][data-detail-level='medium'] .subscore-card {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 8px;
+  }
+
+  [data-ratings-root][data-detail-level='medium'] .subscore-card:hover {
+    background: rgb(243 243 243 / 55%) !important;
+  }
+
+  [data-ratings-root][data-detail-level='medium'] .subscore-card--active {
+    background: rgb(243 243 243 / 75%) !important;
+  }
+
+  [data-ratings-root][data-detail-level='all-in'] .subscore-card--active {
+    background: rgb(243 243 243 / 40%);
+  }
+
+  [data-ratings-root][data-detail-level='all-in'] .subscore-card:hover {
+    background: rgb(243 243 243 / 55%);
   }
 </style>
 
@@ -83,6 +110,8 @@ const options = [
       document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
         input.checked = input.value === level;
       });
+
+      document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level } }));
     }
 
     control.addEventListener('change', (event) => {

@@ -1,0 +1,96 @@
+---
+interface Props {
+  productSlug: string;
+}
+
+const { productSlug } = Astro.props;
+---
+
+<script define:vars={{ productSlug }}>
+  const STORAGE_KEY = 'lr-review-scroll';
+
+  function readState() {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveReviewScroll(extra = {}) {
+    const ratingsRoot = document.querySelector('[data-ratings-root]');
+    const openCategory = document.querySelector('[data-accordion-content]:not(.hidden)')?.closest('[data-category]');
+    const activeSub = openCategory?.querySelector('[data-subscore-select][aria-selected="true"]');
+
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        slug: productSlug,
+        y: window.scrollY,
+        tab: window.location.hash.replace('#', '') || 'ratings',
+        categoryKey: openCategory?.dataset.category ?? null,
+        subscoreIndex: activeSub?.dataset.subscoreIndex ?? null,
+        detailLevel: ratingsRoot?.dataset.detailLevel ?? 'all-in',
+        ...extra,
+      }),
+    );
+  }
+
+  function restoreReviewScroll() {
+    const state = readState();
+    if (!state || state.slug !== productSlug) return;
+    sessionStorage.removeItem(STORAGE_KEY);
+
+    const apply = () => {
+      const tab = state.tab || 'ratings';
+      document.querySelectorAll('[data-tab-panel]').forEach((panel) => {
+        panel.classList.toggle('hidden', panel.dataset.tabPanel !== tab);
+      });
+      document.querySelectorAll('[data-tabbar] [data-tab]').forEach((btn) => {
+        btn.setAttribute('aria-current', btn.dataset.tab === tab ? 'true' : 'false');
+      });
+
+      if (state.detailLevel) {
+        const root = document.querySelector('[data-ratings-root]');
+        if (root) {
+          root.dataset.detailLevel = state.detailLevel;
+          document.querySelectorAll('input[name="detail-level"]').forEach((input) => {
+            input.checked = input.value === state.detailLevel;
+          });
+        }
+      }
+
+      if (state.categoryKey) {
+        const cat = document.querySelector(`[data-category="${state.categoryKey}"]`);
+        const content = cat?.querySelector('[data-accordion-content]');
+        const toggles = cat?.querySelectorAll('[data-accordion-toggle]');
+        if (content) content.classList.remove('hidden');
+        toggles?.forEach((t) => t.setAttribute('aria-expanded', 'true'));
+
+        if (state.subscoreIndex != null) {
+          const card = cat?.querySelector(`[data-subscore-select][data-subscore-index="${state.subscoreIndex}"]`);
+          card?.click();
+        }
+      }
+
+      if (typeof state.y === 'number') {
+        window.scrollTo({ top: state.y, behavior: 'instant' in window ? 'instant' : 'auto' });
+      }
+    };
+
+    requestAnimationFrame(() => requestAnimationFrame(apply));
+  }
+
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a[href^="/tests/"]');
+    if (!link || link.target === '_blank') return;
+    saveReviewScroll();
+  }, true);
+
+  document.addEventListener('DOMContentLoaded', restoreReviewScroll);
+  document.addEventListener('astro:page-load', restoreReviewScroll);
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) restoreReviewScroll();
+  });
+</script>

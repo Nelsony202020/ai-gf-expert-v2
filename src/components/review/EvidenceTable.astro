@@ -1,0 +1,154 @@
+---
+import { fmtScore, getScoreChipClass } from '../../lib/scores';
+import { testContributorUrl } from '../../lib/slugs';
+import InfoIcon from '../ui/InfoIcon.astro';
+import InlineHelpTooltip from './tooltips/InlineHelpTooltip.astro';
+import HierarchyTooltip from './tooltips/HierarchyTooltip.astro';
+
+interface Props {
+  tableId: string;
+  subscoreName: string;
+  subscoreScore: number;
+  categoryKey: string;
+  categoryName?: string;
+  items: {
+    label: string;
+    value: string;
+    icon?: string;
+    internal: number;
+    weight: number;
+    contribution: number;
+  }[];
+  rawSubTotal: number;
+}
+
+const { tableId, subscoreName, subscoreScore, categoryKey, categoryName, items, rawSubTotal } = Astro.props;
+
+const parts = items.map((i) => i.contribution.toFixed(2)).join(' + ');
+const subChip = getScoreChipClass(subscoreScore);
+---
+
+<div class="evidence-table-wrap">
+  <p class="evidence-table__label">
+    Evidence
+    <HierarchyTooltip
+      id={`${tableId}-evidence-hier`}
+      highlight="evidence"
+      categoryName={categoryName}
+      subscoreName={subscoreName}
+      label="Where evidence sits in the rating hierarchy"
+    >
+      <span class="inline-flex text-tertiary hover:text-primary-container align-middle">
+        <InfoIcon size="xs" />
+      </span>
+    </HierarchyTooltip>
+    <span class="evidence-table__label-sub">(measured results)</span>
+  </p>
+
+  <div class="evidence-table">
+    <div class="evidence-table__head">
+      <span>Metric</span>
+      <span>Measured result</span>
+      <span class="evidence-table__head-tip evidence-table__head-tip--stacked">
+        <span class="evidence-table__head-stack">
+          <span>Score</span>
+          <span class="evidence-table__head-sub">0–10</span>
+        </span>
+        <InlineHelpTooltip
+          id={`${tableId}-score-col`}
+          title="Internal score"
+          label="About internal score"
+          text="Each test result gets a score from 0 to 10. Higher means better performance on that metric."
+        >
+          <InfoIcon size="xs" />
+        </InlineHelpTooltip>
+      </span>
+      <span class="evidence-table__head-tip">
+        Weight
+        <InlineHelpTooltip
+          id={`${tableId}-weight-col`}
+          title="Weight"
+          label="About weight"
+          text={`How much this metric counts toward the ${subscoreName} subscore. All weights in a subscore add up to 100%.`}
+        >
+          <InfoIcon size="xs" />
+        </InlineHelpTooltip>
+      </span>
+      <span class="evidence-table__head-tip">
+        Contribution
+        <InlineHelpTooltip
+          id={`${tableId}-contrib-col`}
+          title="Contribution"
+          label="About contribution"
+          text="Score × Weight. Add up all contributions to get the raw subscore total."
+        >
+          <InfoIcon size="xs" />
+        </InlineHelpTooltip>
+      </span>
+    </div>
+
+    {
+      items.map((item) => {
+        const chip = getScoreChipClass(item.internal);
+        return (
+          <a href={testContributorUrl(categoryKey, subscoreName, item.label)} class="evidence-table__row">
+            <span class="evidence-table__metric">
+              {
+                item.icon ? (
+                  <span class="material-symbols-outlined evidence-table__metric-icon">{item.icon}</span>
+                ) : (
+                  <span class="material-symbols-outlined evidence-table__metric-icon">analytics</span>
+                )
+              }
+              <span class="evidence-table__metric-link">{item.label}</span>
+              <span class="material-symbols-outlined evidence-table__link-hint">open_in_new</span>
+            </span>
+            <span class="evidence-table__measured">{item.value}</span>
+            <span class="evidence-table__cell">
+              <span class={`rt-score-chip ${chip}`}>{fmtScore(item.internal)}</span>
+            </span>
+            <span class="evidence-table__cell">
+              <span class="evidence-table__weight-pill">{item.weight}%</span>
+            </span>
+            <span class="evidence-table__contrib">{item.contribution.toFixed(2)}</span>
+          </a>
+        );
+      })
+    }
+  </div>
+
+  <div class="evidence-table__total">
+    <div class="evidence-table__total-left">
+      <span class="material-symbols-outlined evidence-table__calc-icon">calculate</span>
+      <div>
+        <p class="evidence-table__total-title">Total contribution</p>
+        <p class="evidence-table__total-sub">Sum of (Score × Weight)</p>
+      </div>
+    </div>
+    <div class="evidence-table__total-formula">
+      <span class="evidence-table__formula-parts">{parts} =</span>
+      <span class="evidence-table__formula-sum">{rawSubTotal.toFixed(2)}</span>
+    </div>
+    <div class="evidence-table__total-divider" aria-hidden="true"></div>
+    <div class="evidence-table__total-right">
+      <div class="evidence-table__rounded-head">
+        <p class="evidence-table__rounded-label">Rounded {subscoreName} score</p>
+        <InlineHelpTooltip
+          id={`${tableId}-rounded`}
+          title="Rounded score"
+          label="About rounded score"
+          text={`The raw total is rounded to one decimal place. That becomes the final ${subscoreName} subscore shown in our ratings.`}
+        >
+          <InfoIcon size="xs" />
+        </InlineHelpTooltip>
+      </div>
+      <p class="evidence-table__rounded-sub">(Final subscore)</p>
+      <span class={`rt-score-chip ${subChip} evidence-table__final-chip`}>{fmtScore(subscoreScore)}</span>
+    </div>
+  </div>
+
+  <p class="evidence-table__footnote">
+    <InfoIcon size="xs" class="mt-0.5 shrink-0" />
+    Each evidence point is scored internally (0–10), then combined into the {subscoreName} subscore.
+  </p>
+</div>

@@ -1,0 +1,115 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import Header from '../../../../components/Header.astro';
+import Footer from '../../../../components/Footer.astro';
+import { products } from '../../../../data/products';
+import { toSlug, testContributorUrl, reviewRatingsUrl } from '../../../../lib/slugs';
+
+export function getStaticPaths() {
+  const paths: { params: { category: string; subscore: string } }[] = [];
+
+  for (const product of products) {
+    for (const category of product.categories) {
+      for (const sub of category.subscores) {
+        paths.push({
+          params: {
+            category: category.key,
+            subscore: toSlug(sub.name),
+          },
+        });
+      }
+    }
+  }
+
+  return paths;
+}
+
+const { category, subscore } = Astro.params;
+
+let matched: {
+  productSlug: string;
+  categoryName: string;
+  sub: (typeof products)[0]['categories'][0]['subscores'][0];
+} | undefined;
+
+for (const product of products) {
+  const cat = product.categories.find((c) => c.key === category);
+  const subMatch = cat?.subscores.find((s) => toSlug(s.name) === subscore);
+  if (cat && subMatch) {
+    matched = {
+      productSlug: product.slug,
+      categoryName: cat.name,
+      sub: subMatch,
+    };
+    break;
+  }
+}
+
+const displaySubscore = matched?.sub.name ?? subscore?.replace(/-/g, ' ') ?? '';
+const displayCategory = matched?.categoryName ?? category?.replace(/-/g, ' ') ?? '';
+const productSlug = matched?.productSlug ?? 'aura-ai';
+const backHref = reviewRatingsUrl(productSlug);
+---
+
+<BaseLayout title={`${displaySubscore} — ${displayCategory} — Lovelace Reviews`} description="How we score this subscore across all apps we review.">
+  <Header />
+  <main class="section-container px-4 md:px-8 py-16 md:py-24 max-w-3xl">
+    <nav class="text-[12px] font-medium text-tertiary mb-6">
+      <a class="hover:text-primary-container" href="/">Home</a> /
+      <a class="hover:text-primary-container" href={backHref}>Ratings</a> /
+      <span class="text-on-surface">{displayCategory}</span> /
+      <span class="text-on-surface">{displaySubscore}</span>
+    </nav>
+
+    <span class="text-[11px] font-black uppercase tracking-widest text-primary-container">Subscore methodology</span>
+    <h1 class="text-3xl md:text-5xl font-black text-on-surface tracking-tight mt-3">{displaySubscore}</h1>
+    <p class="text-on-surface-variant text-lg leading-relaxed mt-2">{displayCategory}</p>
+    <p class="text-sm text-tertiary mt-3 leading-relaxed">
+      This explains what the {displaySubscore} subscore measures and which evidence points feed into it — the same way for every app we review.
+    </p>
+
+    {
+      matched ? (
+        <>
+          <p class="text-on-surface leading-relaxed mt-8">{matched.sub.description}</p>
+
+          <section class="mt-10 border border-surface-variant rounded-xl p-6 bg-white shadow-sm">
+            <h2 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-4">Evidence we measure</h2>
+            <ul class="space-y-3">
+              {
+                matched.sub.contributors.map((c) => (
+                  <li>
+                    <a
+                      href={testContributorUrl(category!, matched.sub.name, c.label)}
+                      class="flex items-center justify-between gap-4 p-3 rounded-lg border border-surface-variant/70 hover:bg-surface-container-low transition-colors group"
+                    >
+                      <span class="font-semibold text-on-surface group-hover:text-primary-container">{c.label}</span>
+                      <span class="text-sm text-tertiary shrink-0">See test method →</span>
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </section>
+
+          <p class="text-sm text-on-surface-variant mt-6 leading-relaxed">
+            Each link above opens the full test protocol for that metric — what we measure, how we run the test, and how the result becomes a score.
+          </p>
+        </>
+      ) : (
+        <p class="text-on-surface-variant text-lg leading-relaxed mt-10">
+          Documentation for this subscore is being added.
+        </p>
+      )
+    }
+
+    <a
+      href={backHref}
+      class="inline-flex items-center gap-2 mt-10 text-sm font-bold text-primary-container hover:underline"
+    >
+      <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+      Back to review
+    </a>
+  </main>
+  <Footer />
+</BaseLayout>

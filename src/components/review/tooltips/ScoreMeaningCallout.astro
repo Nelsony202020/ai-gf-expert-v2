@@ -1,0 +1,17 @@
+---
+import { getScoreVisual, getScoreMeaningLine } from '../../../lib/scores';
+
+interface Props {
+  score: number;
+  avg: number;
+}
+
+const { score, avg } = Astro.props;
+const visual = getScoreVisual(score);
+const line = getScoreMeaningLine(score, avg);
+---
+
+<div class={`rt-score-meaning rt-score-meaning--${visual.band}`}>
+  <span class="rt-score-meaning__band">{visual.label}</span>
+  <span class="rt-score-meaning__line">{line}</span>
+</div>

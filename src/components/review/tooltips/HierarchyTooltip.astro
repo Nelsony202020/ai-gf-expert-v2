@@ -1,0 +1,39 @@
+---
+import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
+
+export type HierarchyLevel = 'overall' | 'category' | 'subscore' | 'evidence';
+
+interface Props {
+  id: string;
+  highlight: HierarchyLevel;
+  brandName?: string;
+  categoryName?: string;
+  subscoreName?: string;
+  label?: string;
+}
+
+const { id, highlight, brandName, categoryName, subscoreName, label = 'How ratings are built' } = Astro.props;
+---
+
+<span
+  role="button"
+  tabindex="0"
+  class="rt-tooltip-trigger inline-flex cursor-help shrink-0"
+  data-ratings-tooltip-trigger={id}
+  aria-label={label}
+>
+  <slot />
+</span>
+
+<template id={`tooltip-${id}`}>
+  <div class="ratings-tooltip-panel ratings-tooltip-panel--compact ratings-tooltip-panel--body-only ratings-tooltip-panel--pipeline">
+    <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
+      <RatingHierarchyPipeline
+        highlight={highlight}
+        brandName={brandName}
+        categoryName={categoryName}
+        subscoreName={subscoreName}
+      />
+    </div>
+  </div>
+</template>

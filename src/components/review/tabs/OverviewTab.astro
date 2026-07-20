@@ -1,75 +1,77 @@
 ---
 import type { Product } from '../../../data/products';
+import CharacterStoryHighlights from '../CharacterStoryHighlights.astro';
+import ComparisonBarChart from '../ComparisonBarChart.astro';
+import SearchTrendsCard from '../SearchTrendsCard.astro';
 
 interface Props {
   product: Product;
 }
 
 const { product } = Astro.props;
+const { overview } = product;
 ---
 
-<!-- Our Take + Safety Audit -->
-<section class="bg-surface-container-low py-14 md:py-16">
+<section class="py-12 md:py-14 bg-white">
   <div class="section-container px-4 md:px-8">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12">
-      <div class="space-y-6">
-        <h2 class="text-3xl font-extrabold text-on-surface">Our Take</h2>
-        <p class="text-on-surface-variant text-lg leading-relaxed">{product.ourTake}</p>
-      </div>
-
-      <div class="space-y-6">
-        <h2 class="text-3xl font-extrabold text-on-surface">Safety &amp; Privacy Audit</h2>
-        <div class="space-y-4">
-          {
-            product.safetyAudit.map((item) => (
-              <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-surface-variant/30">
-                <div class="flex items-center gap-3">
-                  <span class="material-symbols-outlined text-primary">{item.icon}</span>
-                  <span class="font-semibold text-on-surface">{item.label}</span>
-                </div>
-                <span class="text-xs font-bold uppercase tracking-widest text-green-700 bg-green-600/10 px-2 py-1 rounded">
-                  {item.status}
-                </span>
-              </div>
-            ))
-          }
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-10 lg:gap-12">
+      <div class="space-y-8 min-w-0">
+        <div>
+          <h2 class="text-2xl md:text-3xl font-extrabold text-on-surface flex items-center gap-2.5 mb-5">
+            <img src="/brand/herman-main-icon.svg" alt="" class="w-10 h-10 md:w-11 md:h-11 shrink-0 object-contain" width="44" height="44" loading="lazy" />
+            Our Take
+          </h2>
+          <p class="text-on-surface-variant text-base md:text-lg leading-relaxed">{product.ourTake}</p>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- Features & Specs -->
-<section class="py-16 md:py-20 section-container px-4 md:px-8">
-  <div class="flex flex-col items-center">
-    <h2 class="text-3xl md:text-4xl font-extrabold text-on-surface mb-8 md:mb-10">Features &amp; Specs</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-      {
-        product.featureSpecs.map((feature) => (
-          <div class="flex items-center gap-4 p-6 bg-white rounded-xl border border-surface-variant/40 shadow-sm">
-            <div class="w-16 h-16 flex-none bg-surface-container-low rounded-lg flex items-center justify-center">
-              <span class={`material-symbols-outlined text-3xl ${feature.available ? 'text-primary' : 'text-tertiary'}`}>
-                {feature.icon}
-              </span>
-            </div>
-            <div>
-              <p class="font-bold text-on-surface text-lg">{feature.name}</p>
-              <p class={`font-semibold ${feature.available ? 'text-primary-container' : 'text-tertiary'}`}>
-                {feature.value}
-              </p>
-            </div>
-          </div>
-        ))
-      }
-    </div>
-    <div class="mt-10 md:mt-12">
-      <button
-        type="button"
-        data-tab="ratings"
-        class="px-8 py-3 border-2 border-on-surface rounded-full font-bold hover:bg-on-surface hover:text-white transition-colors"
-      >
-        See All Ratings &amp; Specs
-      </button>
+        <SearchTrendsCard data={overview.searchTrends} />
+
+        <button
+          type="button"
+          data-tab="review"
+          class="inline-flex items-center gap-1 text-sm font-bold text-accent hover:underline"
+        >
+          Read our complete verdict
+          <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+        </button>
+
+        <ComparisonBarChart productName={product.name} metrics={overview.comparisonMetrics} />
+      </div>
+
+      <div class="space-y-6">
+        <div class="overview-sidebar-box p-5 rounded-xl border border-amber-200/80 bg-amber-50/60">
+          <h3 class="text-sm font-extrabold text-on-surface mb-3 flex items-center gap-2">
+            <span class="material-symbols-outlined text-accent text-[18px]">thumb_up</span>
+            Best for
+          </h3>
+          <ul class="space-y-2 mb-5">
+            {
+              overview.bestForList.map((item) => (
+                <li class="flex items-start gap-2 text-sm text-on-surface-variant">
+                  <span class="material-symbols-outlined text-accent text-[16px] mt-0.5 shrink-0">check_circle</span>
+                  {item}
+                </li>
+              ))
+            }
+          </ul>
+          <h3 class="text-sm font-extrabold text-on-surface mb-3 flex items-center gap-2">
+            <span class="material-symbols-outlined text-tertiary text-[18px]">remove_circle</span>
+            Not ideal if you
+          </h3>
+          <ul class="space-y-2">
+            {
+              overview.notIdealList.map((item) => (
+                <li class="flex items-start gap-2 text-sm text-on-surface-variant">
+                  <span class="material-symbols-outlined text-tertiary text-[16px] mt-0.5 shrink-0">horizontal_rule</span>
+                  {item}
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <CharacterStoryHighlights characters={overview.characters} productName={product.name} />
+      </div>
     </div>
   </div>
 </section>

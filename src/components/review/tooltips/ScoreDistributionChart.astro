@@ -1,0 +1,103 @@
+---
+import type { ScoreBin } from '../../../lib/score-distribution';
+import { fmtScore, getScoreVisual } from '../../../lib/scores';
+
+interface Props {
+  bins: ScoreBin[];
+  /** -1 = nothing selected by default */
+  activeBinIndex?: number;
+}
+
+const { bins, activeBinIndex = -1 } = Astro.props;
+const maxCount = Math.max(1, ...bins.map((b) => b.apps.length));
+const barMaxHeight = 48;
+const hasSelection = activeBinIndex >= 0;
+const activeBin = hasSelection ? bins[activeBinIndex] : null;
+---
+
+<div
+  class="rt-dist-chart"
+  data-dist-chart
+  data-dist-bins={JSON.stringify(bins)}
+  data-dist-active={activeBinIndex}
+>
+  <div class="rt-dist-chart__plot">
+    <div class="rt-dist-chart__axis">
+      <span class="tabular-nums">{bins[0]?.start.toFixed(1)}</span>
+      <span class="tabular-nums">{bins[bins.length - 1]?.end.toFixed(1)}</span>
+    </div>
+
+    <div class="rt-dist-chart__bars" role="list">
+      {
+        bins.map((b, i) => {
+          const count = b.apps.length;
+          const h = count > 0 ? Math.max(6, Math.round((count / maxCount) * barMaxHeight)) : 3;
+          const v = getScoreVisual((b.start + b.end) / 2);
+          const isActive = hasSelection && i === activeBinIndex;
+          return (
+            <button
+              type="button"
+              class="rt-dist-chart__bar"
+              data-dist-bin={i}
+              aria-label={`${b.start.toFixed(1)}–${b.end.toFixed(1)} (${count})`}
+              aria-pressed={isActive ? 'true' : 'false'}
+            >
+              <span
+                class={`rt-dist-chart__bar-fill ${v.bg} ${isActive ? 'rt-dist-chart__bar-fill--active' : ''}`}
+                style={`height:${h}px;`}
+              />
+            </button>
+          );
+        })
+      }
+    </div>
+
+    <div class="rt-dist-chart__gradient" aria-hidden="true"></div>
+  </div>
+
+  <div class="rt-dist-chart__footer">
+    {
+      hasSelection && activeBin ? (
+        <>
+          <p class="rt-dist-chart__range-label">
+            Selected range:{' '}
+            <span data-dist-range-label class="tabular-nums">
+              {activeBin.start.toFixed(1)}–{activeBin.end.toFixed(1)}
+            </span>
+          </p>
+          <div class="rt-dist-chart__apps" data-dist-apps>
+            {
+              activeBin.apps.length ? (
+                activeBin.apps.map((app) => {
+                  const chip = getScoreVisual(app.score);
+                  const chipClass =
+                    chip.band === 'good'
+                      ? 'rt-score-chip--good'
+                      : chip.band === 'fair'
+                        ? 'rt-score-chip--fair'
+                        : 'rt-score-chip--poor';
+                  return (
+                    <a href={`/reviews/${app.slug}#ratings`} class="rt-dist-chart__app">
+                      <span>{app.name}</span>
+                      <span class={`rt-score-chip ${chipClass}`}>{fmtScore(app.score)}</span>
+                    </a>
+                  );
+                })
+              ) : (
+                <p class="rt-dist-chart__empty">No apps in this range.</p>
+              )
+            }
+          </div>
+        </>
+      ) : (
+        <>
+          <p class="rt-dist-chart__hint" data-dist-hint>Click a bar to see apps in that score range.</p>
+          <p class="rt-dist-chart__range-label" data-dist-range-row hidden>
+            Selected range: <span data-dist-range-label class="tabular-nums"></span>
+          </p>
+          <div class="rt-dist-chart__apps" data-dist-apps hidden></div>
+        </>
+      )
+    }
+  </div>
+</div>

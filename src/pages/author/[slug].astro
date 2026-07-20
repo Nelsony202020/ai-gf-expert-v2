@@ -4,6 +4,7 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import SocialIcon from '../../components/ui/SocialIcon.astro';
 import { authors, getAuthor } from '../../data/authors';
+import VerifiedCheck from '../../components/ui/VerifiedCheck.astro';
 
 export function getStaticPaths() {
   return Object.keys(authors).map((slug) => ({ params: { slug } }));
@@ -29,17 +30,12 @@ const title = `${author.name} — Lovelace Reviews`;
 
     <div class="max-w-3xl">
       <div class="flex items-start gap-5 mb-8">
-        <div class="relative shrink-0">
-          <img src={author.avatar} alt={author.name} class="w-24 h-24 rounded-full object-cover border-2 border-surface-variant shadow-sm" />
-          <span
-            class="material-symbols-outlined absolute -bottom-0.5 -right-0.5 text-[20px] text-blue-500 drop-shadow-sm"
-            style="font-variation-settings: 'FILL' 1;"
-          >
-            verified
-          </span>
-        </div>
+        <img src={author.avatar} alt={author.name} class="w-24 h-24 rounded-full object-cover border-2 border-surface-variant shadow-sm shrink-0" />
         <div>
-          <h1 class="text-3xl md:text-4xl font-black text-on-surface">{author.name}</h1>
+          <div class="flex items-center gap-2">
+            <h1 class="text-3xl md:text-4xl font-black text-on-surface">{author.name}</h1>
+            <VerifiedCheck class="w-6 h-6" />
+          </div>
           <p class="text-sm text-tertiary mt-1">{author.title}</p>
           <a href={`mailto:${author.email}`} class="text-sm text-primary-container font-semibold mt-2 inline-block hover:underline">
             {author.email}

@@ -12,9 +12,9 @@ const { score, size = 'md', variant = 'solid', class: className = '' } = Astro.p
 const visual = getScoreVisual(score);
 
 const sizes: Record<NonNullable<Props['size']>, string> = {
-  sm: 'px-2 py-0.5 text-sm rounded',
-  md: 'px-3 py-1 text-base rounded-lg',
-  lg: 'px-3 py-1 text-4xl rounded-lg',
+  sm: 'min-w-[2.75rem] px-2.5 py-1 text-sm rounded-md tabular-nums',
+  md: 'min-w-[3rem] px-3 py-1 text-base rounded-lg tabular-nums',
+  lg: 'min-w-[3.5rem] px-3 py-1.5 text-2xl rounded-lg tabular-nums',
 };
 
 const base = 'inline-flex items-center justify-center font-black leading-none';

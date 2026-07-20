@@ -1,59 +1,78 @@
 ---
-// NOTE: Placeholder footer replicated from the mockups. Content/nav not final.
+// NOTE: Site footer — dark brand background, social links, dark mode toggle.
+import { authors } from '../data/authors';
+import SocialTooltip from './ui/SocialTooltip.astro';
+
+const herman = authors['herman-carter'];
+const year = new Date().getFullYear();
+
 const columns = [
   {
     title: 'Reviews & Advice',
-    links: ['AI Girlfriends', 'AI Companions', 'NSFW Apps', 'Character Chatbots'],
+    links: [
+      { label: 'AI Girlfriends', href: '#' },
+      { label: 'AI Companions', href: '#' },
+      { label: 'NSFW Apps', href: '#' },
+      { label: 'Character Chatbots', href: '#' },
+    ],
   },
   {
     title: 'Resources',
-    links: ['Best-Of Roundups', 'Buying Guides', 'Our Methodology', 'Compare Tools'],
+    links: [
+      { label: 'Best-Of Roundups', href: '#' },
+      { label: 'Buying Guides', href: '#' },
+      { label: 'Our Methodology', href: '#' },
+      { label: 'FAQ', href: '/faq' },
+    ],
   },
   {
     title: 'Company',
-    links: ['About Us', 'Careers', 'Ethics Statement', 'Contact'],
+    links: [
+      { label: 'About Us', href: '#' },
+      { label: 'Contact', href: '/contact' },
+      { label: 'HTML Sitemap', href: '/sitemap' },
+    ],
   },
 ];
-const year = new Date().getFullYear();
 ---
 
-<footer class="bg-on-surface py-16 md:py-20 text-surface-container-lowest">
-  <div class="section-container px-4 md:px-8">
-    <div class="grid md:grid-cols-4 gap-10 md:gap-12">
-      <div class="col-span-1">
-        <div class="text-white font-black text-2xl flex items-center mb-8">
-          <span class="text-primary-container font-extrabold text-3xl italic mr-1">LR</span>
-          <span class="leading-none">
-            <span class="block text-[10px] font-bold uppercase tracking-widest text-primary-fixed-dim">Lovelace</span>
-            <span class="block text-lg font-display">Reviews</span>
-          </span>
-        </div>
-        <p class="text-sm text-surface-dim leading-relaxed mb-8">
-          Lovelace Reviews is an independent publication that works side by side with users for truth, transparency, and
-          fairness in the AI companion marketplace.
+<footer class="site-footer">
+  <div class="site-footer__accent" aria-hidden="true" />
+
+  <div class="section-container px-4 md:px-8 relative z-[1]">
+    <div class="site-footer__main">
+      <div class="site-footer__brand">
+        <a href="/" class="inline-block mb-5">
+          <img
+            src="/brand/ai-gf-logo-white.svg"
+            alt="AI Girlfriend Expert"
+            class="h-16 md:h-[4.75rem] w-auto object-contain"
+            width="240"
+            height="76"
+            loading="lazy"
+          />
+        </a>
+        <p class="site-footer__tagline">
+          Independent AI companion reviews — tested honestly, scored transparently, updated regularly.
         </p>
-        <div class="space-y-3">
-          <button
-            class="w-full bg-primary-container text-white py-3 rounded-full font-bold text-sm hover:opacity-90 transition shadow-lg"
-            >Become a Member</button
-          >
-          <button
-            class="w-full border border-primary-container text-primary-container py-3 rounded-full font-bold text-sm hover:bg-primary-container/10 transition"
-            >Give a Membership</button
-          >
-        </div>
+        {
+          herman && (
+            <div class="mt-6">
+              <p class="site-footer__label">Follow us</p>
+              <SocialTooltip items={herman.socials} variant="dark" />
+            </div>
+          )
+        }
       </div>
 
       {
         columns.map((col) => (
-          <div>
-            <h4 class="font-bold text-sm mb-6 uppercase tracking-widest text-primary-fixed-dim">{col.title}</h4>
-            <ul class="text-xs space-y-3 text-surface-dim font-medium">
+          <div class="site-footer__col">
+            <h4 class="site-footer__label">{col.title}</h4>
+            <ul class="site-footer__links">
               {col.links.map((link) => (
                 <li>
-                  <a class="hover:text-white hover:underline transition-all" href="#">
-                    {link}
-                  </a>
+                  <a href={link.href}>{link.label}</a>
                 </li>
               ))}
             </ul>
@@ -62,15 +81,191 @@ const year = new Date().getFullYear();
       }
     </div>
 
-    <div
-      class="mt-14 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-surface-dim"
-    >
-      <p>&copy; {year} Lovelace Reviews. All rights reserved.</p>
-      <div class="flex items-center gap-6 font-medium">
-        <a class="hover:text-white transition-colors" href="#">Privacy</a>
-        <a class="hover:text-white transition-colors" href="#">Terms</a>
-        <a class="hover:text-white transition-colors" href="#">Affiliate Disclosure</a>
+    <div class="site-footer__bottom">
+      <p>&copy; {year} Nelson Digital FZ LLC. All rights reserved.</p>
+      <div class="site-footer__legal">
+        <button type="button" class="site-footer__theme" data-theme-toggle aria-label="Toggle dark mode">
+          <span class="material-symbols-outlined text-[15px] theme-toggle__icon">dark_mode</span>
+          <span class="theme-toggle__label">Dark mode</span>
+        </button>
+        <a href="/legal/privacy">Privacy</a>
+        <a href="/legal/terms">Terms</a>
+        <a href="/legal/copyright">Copyright</a>
+        <a href="/legal/disclaimer">Disclaimer</a>
+        <a href="/faq">FAQ</a>
+        <a href="/contact">Contact</a>
+        <a href="/sitemap">Sitemap</a>
       </div>
     </div>
   </div>
 </footer>
+
+<style>
+  .site-footer {
+    position: relative;
+    background: #1a2418;
+    color: #ececec;
+    padding: 3.5rem 0 2rem;
+    overflow: hidden;
+  }
+
+  .site-footer__accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #daf66c, #db2777, #daf66c);
+  }
+
+  [data-theme='dark'] .site-footer__accent {
+    background: linear-gradient(90deg, #daf66c, #db2777, #daf66c, #daf66c);
+    background-size: 200% 100%;
+    animation: footer-accent-slide 10s linear infinite;
+  }
+
+  @keyframes footer-accent-slide {
+    0% { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .site-footer__main {
+    display: grid;
+    grid-template-columns: 1.4fr repeat(3, 1fr);
+    gap: 2.5rem 2rem;
+  }
+
+  @media (max-width: 900px) {
+    .site-footer__main {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .site-footer__brand {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .site-footer__main {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .site-footer__tagline {
+    margin: 0;
+    max-width: 280px;
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: #9cab96;
+  }
+
+  .site-footer__label {
+    margin: 0 0 1rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #daf66c;
+  }
+
+  .site-footer__links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .site-footer__links a {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #9cab96;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .site-footer__links a:hover {
+    color: #fff;
+  }
+
+  .site-footer__bottom {
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgb(255 255 255 / 10%);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.6875rem;
+    color: #9cab96;
+  }
+
+  .site-footer__legal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+  }
+
+  .site-footer__legal a,
+  .site-footer__theme {
+    color: #9cab96;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.15s ease;
+  }
+
+  .site-footer__legal a:hover,
+  .site-footer__theme:hover {
+    color: #fff;
+  }
+
+  .site-footer__theme {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: inherit;
+    font-family: inherit;
+  }
+</style>
+
+<script>
+  function initThemeToggle() {
+    const btn = document.querySelector('[data-theme-toggle]');
+    if (!btn || btn.dataset.bound) return;
+    btn.dataset.bound = 'true';
+
+    const root = document.documentElement;
+
+    function syncLabel() {
+      const dark = root.getAttribute('data-theme') === 'dark';
+      const icon = btn.querySelector('.theme-toggle__icon');
+      const label = btn.querySelector('.theme-toggle__label');
+      if (icon) icon.textContent = dark ? 'light_mode' : 'dark_mode';
+      if (label) label.textContent = dark ? 'Light mode' : 'Dark mode';
+    }
+
+    btn.addEventListener('click', () => {
+      const dark = root.getAttribute('data-theme') === 'dark';
+      if (dark) {
+        root.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+      } else {
+        root.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      }
+      syncLabel();
+    });
+
+    syncLabel();
+  }
+
+  initThemeToggle();
+  document.addEventListener('astro:page-load', initThemeToggle);
+</script>

@@ -1,0 +1,130 @@
+---
+import type { RatingChangelogEntry } from '../../../data/products';
+
+interface Props {
+  entries: RatingChangelogEntry[];
+}
+
+const { entries } = Astro.props;
+const latest = entries[0];
+const rest = entries.slice(1);
+---
+
+{
+  latest && (
+    <div class="changelog-footnote" data-changelog-compact>
+      <button type="button" class="changelog-footnote__toggle" data-changelog-toggle aria-expanded="false">
+        <span class="changelog-footnote__dot" aria-hidden="true" />
+        <span class="changelog-footnote__text">
+          <time datetime={latest.date}>{latest.date}</time>
+          — {latest.title}
+        </span>
+        {rest.length > 0 && (
+          <span class="material-symbols-outlined changelog-footnote__chevron text-[14px]">expand_more</span>
+        )}
+      </button>
+      {
+        rest.length > 0 && (
+          <div class="changelog-footnote__more hidden" data-changelog-more>
+            {
+              rest.map((entry) => (
+                <p class="changelog-footnote__entry">
+                  <time datetime={entry.date}>{entry.date}</time> — {entry.title}
+                </p>
+              ))
+            }
+          </div>
+        )
+      }
+    </div>
+  )
+}
+
+<script>
+  function initChangelogCompact() {
+    document.querySelectorAll('[data-changelog-compact]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const toggle = root.querySelector('[data-changelog-toggle]');
+      const more = root.querySelector('[data-changelog-more]');
+      const chevron = root.querySelector('.changelog-footnote__chevron');
+      if (!toggle || !more) return;
+      toggle.addEventListener('click', () => {
+        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        more.classList.toggle('hidden', expanded);
+        chevron?.classList.toggle('changelog-footnote__chevron--open', !expanded);
+      });
+    });
+  }
+  initChangelogCompact();
+  document.addEventListener('astro:page-load', initChangelogCompact);
+</script>
+
+<style>
+  .changelog-footnote {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgb(226 226 226 / 60%);
+  }
+
+  .changelog-footnote__toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--color-tertiary);
+  }
+
+  .changelog-footnote__toggle:hover {
+    color: var(--color-on-surface-variant);
+  }
+
+  .changelog-footnote__dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: #db2777;
+    flex-shrink: 0;
+  }
+
+  .changelog-footnote__text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .changelog-footnote__text time {
+    font-weight: 700;
+  }
+
+  .changelog-footnote__chevron {
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+
+  .changelog-footnote__chevron--open {
+    transform: rotate(180deg);
+  }
+
+  .changelog-footnote__more {
+    margin-top: 6px;
+    padding-left: 13px;
+  }
+
+  .changelog-footnote__entry {
+    margin: 0 0 4px;
+    font-size: 10px;
+    color: var(--color-tertiary);
+    line-height: 1.4;
+  }
+</style>

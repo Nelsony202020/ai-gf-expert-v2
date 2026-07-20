@@ -1,0 +1,23 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = '' } = Astro.props;
+---
+
+<BaseLayout title={`${title} — Lovelace Reviews`} description={description || title}>
+  <Header />
+  <main class="section-container px-4 md:px-8 py-14 md:py-16 max-w-3xl">
+    <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-6">{title}</h1>
+    <div class="prose prose-neutral max-w-none text-on-surface-variant leading-relaxed space-y-4">
+      <slot />
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

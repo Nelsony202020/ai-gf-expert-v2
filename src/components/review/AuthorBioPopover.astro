@@ -1,6 +1,7 @@
 ---
 import type { AuthorProfile } from '../../data/authors';
-import SocialIcon from '../ui/SocialIcon.astro';
+import VerifiedCheck from '../ui/VerifiedCheck.astro';
+import SocialTooltip from '../ui/SocialTooltip.astro';
 
 interface Props {
   author: AuthorProfile;
@@ -15,42 +16,27 @@ const { author } = Astro.props;
   role="tooltip"
 >
   <div class="flex items-start gap-3 mb-4">
-    <div class="relative shrink-0">
-      <img src={author.avatar} alt={author.name} class="w-14 h-14 rounded-full object-cover border-2 border-surface-variant shadow-sm" />
-      <span
-        class="material-symbols-outlined absolute -bottom-0.5 -right-0.5 text-[18px] text-blue-500 drop-shadow-sm"
-        style="font-variation-settings: 'FILL' 1;"
-      >
-        verified
-      </span>
-    </div>
+    <img
+      src={author.avatar}
+      alt={author.name}
+      class="w-14 h-14 rounded-full object-contain border-2 border-surface-variant shadow-sm shrink-0 bg-white p-0.5"
+    />
     <div class="min-w-0">
-      <p class="font-bold text-on-surface">{author.name}</p>
+      <div class="flex items-center gap-1">
+        <p class="font-bold text-on-surface">{author.name}</p>
+        <VerifiedCheck class="w-4 h-4" />
+      </div>
       <p class="text-[11px] text-tertiary leading-snug mt-0.5">{author.title}</p>
     </div>
   </div>
 
   <p class="text-sm text-on-surface-variant leading-relaxed mb-4">{author.bio}</p>
 
-  <div class="flex flex-wrap gap-2 mb-5">
-    {
-      author.socials.map((s) => (
-        <a
-          href={s.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={s.platform}
-          class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-surface-variant text-on-surface-variant hover:border-primary-container hover:text-primary-container transition-colors"
-        >
-          <SocialIcon platform={s.icon} class="w-4 h-4" />
-        </a>
-      ))
-    }
-  </div>
+  <SocialTooltip items={author.socials} variant="light" class="mb-5" />
 
   <a
     href={author.profileUrl}
-    class="inline-flex items-center gap-1.5 text-sm font-bold text-primary-container hover:underline"
+    class="inline-flex items-center gap-1.5 text-sm font-bold text-accent hover:underline"
   >
     View full profile
     <span class="material-symbols-outlined text-[16px]">arrow_forward</span>

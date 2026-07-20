@@ -1,0 +1,77 @@
+---
+export type HierarchyLevel = 'overall' | 'category' | 'subscore' | 'evidence';
+
+interface Props {
+  highlight: HierarchyLevel;
+  brandName?: string;
+  categoryName?: string;
+  subscoreName?: string;
+  showTitle?: boolean;
+}
+
+const { highlight, brandName, categoryName, subscoreName, showTitle = true } = Astro.props;
+
+const tiers = [
+  {
+    level: 'overall' as const,
+    icon: 'crown',
+    label: brandName ? `${brandName} score` : 'Overall score',
+    sub: 'Whole-app score',
+  },
+  {
+    level: 'category' as const,
+    icon: 'apps',
+    label: 'Category scores',
+    sub: categoryName ?? 'Chat, Characters, Images',
+  },
+  {
+    level: 'subscore' as const,
+    icon: 'bar_chart',
+    label: 'Subscores',
+    sub: subscoreName ?? 'Variety, Discovery, Quality',
+  },
+  {
+    level: 'evidence' as const,
+    icon: 'description',
+    label: 'Evidence',
+    sub: 'Individual test results',
+  },
+];
+
+const activeIndex = tiers.findIndex((t) => t.level === highlight);
+---
+
+<div class="rt-pipeline" role="img" aria-label="Rating hierarchy from overall score down to evidence">
+  {showTitle && <p class="rt-pipeline__title">Where this sits</p>}
+
+  <div class="rt-pipeline__track">
+    {
+      tiers.map((tier, i) => {
+        const isHere = highlight === tier.level;
+        const isPast = i < activeIndex;
+        return (
+          <div
+            class={`rt-pipeline__step ${isHere ? 'rt-pipeline__step--here' : ''} ${isPast ? 'rt-pipeline__step--past' : ''}`}
+            aria-current={isHere ? 'true' : undefined}
+          >
+            <div class="rt-pipeline__rail">
+              <div class="rt-pipeline__node">
+                <span class="material-symbols-outlined rt-pipeline__node-icon">{tier.icon}</span>
+              </div>
+              {i < tiers.length - 1 && (
+                <div class={`rt-pipeline__connector ${isPast || isHere ? 'rt-pipeline__connector--filled' : ''}`}>
+                  <span class="rt-pipeline__connector-fill" />
+                </div>
+              )}
+            </div>
+            <div class="rt-pipeline__card">
+              <span class="rt-pipeline__label">{tier.label}</span>
+              {isHere && <span class="rt-pipeline__sub">{tier.sub}</span>}
+              {isHere && <span class="sr-only">You are here</span>}
+            </div>
+          </div>
+        );
+      })
+    }
+  </div>
+</div>

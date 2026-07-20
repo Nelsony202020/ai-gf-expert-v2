@@ -1,0 +1,31 @@
+---
+interface Props {
+  id: string;
+  title: string;
+  label: string;
+  text: string;
+}
+
+const { id, title, label, text } = Astro.props;
+---
+
+<span
+  role="button"
+  tabindex="0"
+  class="rt-tooltip-trigger inline-flex cursor-help shrink-0 align-middle"
+  data-ratings-tooltip-trigger={id}
+  aria-label={label}
+>
+  <slot />
+</span>
+
+<template id={`tooltip-${id}`}>
+  <div class="ratings-tooltip-panel ratings-tooltip-panel--help">
+    <div class="ratings-tooltip-panel__header">
+      <p class="ratings-tooltip-panel__section-title">{title}</p>
+    </div>
+    <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
+      <p class="ratings-tooltip-panel__desc">{text}</p>
+    </div>
+  </div>
+</template>

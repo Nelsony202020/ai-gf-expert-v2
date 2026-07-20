@@ -22,7 +22,7 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
               type="button"
               data-tab={tab.id}
               aria-current={tab.id === active ? 'true' : 'false'}
-              class="tab-btn transition-colors cursor-pointer pb-2 -mb-3 border-b-2 border-transparent hover:text-primary-container"
+              class="tab-btn transition-colors cursor-pointer pb-2 -mb-3 border-b-2 border-transparent hover:text-accent"
             >
               {tab.label}
             </button>
@@ -35,7 +35,7 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
 
 <style>
   .tab-btn[aria-current='true'] {
-    color: var(--color-primary-container);
-    border-bottom-color: var(--color-primary-container);
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
   }
 </style>

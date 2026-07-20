@@ -4,7 +4,7 @@ import Header from '../../../../components/Header.astro';
 import Footer from '../../../../components/Footer.astro';
 import { products } from '../../../../data/products';
 import { getMethodology } from '../../../../data/methodology';
-import { toSlug } from '../../../../lib/slugs';
+import { toSlug, reviewRatingsUrl } from '../../../../lib/slugs';
 
 export function getStaticPaths() {
   const paths: {
@@ -40,40 +40,46 @@ const displayContributor = contributor?.replace(/-/g, ' ') ?? '';
 const displaySubscore = subscore?.replace(/-/g, ' ') ?? '';
 const displayCategory = category?.replace(/-/g, ' ') ?? '';
 
+const productSlug = products[0]?.slug ?? 'aura-ai';
+const backHref = reviewRatingsUrl(productSlug);
+
 const title = methodology
   ? `${methodology.contributor} — ${methodology.subscore}`
   : `${displayContributor} test`;
 ---
 
-<BaseLayout title={`${title} — Lovelace Reviews`} description="How we measure this rating component.">
+<BaseLayout title={`${title} — Lovelace Reviews`} description="How we measure this rating metric across all apps we review.">
   <Header />
   <main class="section-container px-4 md:px-8 py-16 md:py-24 max-w-3xl">
     <nav class="text-[12px] font-medium text-tertiary mb-6">
       <a class="hover:text-primary-container" href="/">Home</a> /
-      <a class="hover:text-primary-container" href="/reviews/aura-ai#ratings">Ratings</a> /
+      <a class="hover:text-primary-container" href={backHref}>Ratings</a> /
       <span class="text-on-surface capitalize">{displayCategory}</span> /
       <span class="text-on-surface capitalize">{displaySubscore}</span> /
       <span class="text-on-surface capitalize">{displayContributor}</span>
     </nav>
 
-    <span class="text-[11px] font-black uppercase tracking-widest text-primary-container">How We Measure</span>
+    <span class="text-[11px] font-black uppercase tracking-widest text-primary-container">Testing methodology</span>
     <h1 class="text-3xl md:text-5xl font-black text-on-surface tracking-tight mt-3 capitalize">
       {methodology?.contributor ?? displayContributor}
     </h1>
     <p class="text-on-surface-variant text-lg leading-relaxed mt-2 capitalize">
       {displayCategory} · {displaySubscore}
     </p>
+    <p class="text-sm text-tertiary mt-3 leading-relaxed">
+      This page explains how we measure this metric for every app — not just one review. The same test and scoring rules apply site-wide.
+    </p>
 
     {
       methodology ? (
         <div class="mt-10 space-y-8">
           <section class="border border-surface-variant rounded-xl p-6 bg-white shadow-sm">
-            <h2 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3">What is being measured</h2>
+            <h2 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3">What we measure</h2>
             <p class="text-on-surface leading-relaxed">{methodology.measured}</p>
           </section>
 
           <section class="border border-surface-variant rounded-xl p-6 bg-white shadow-sm">
-            <h2 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3">How the test is completed</h2>
+            <h2 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3">How we run the test</h2>
             <p class="text-on-surface leading-relaxed">{methodology.howToTest}</p>
             {methodology.testSize && (
               <p class="mt-4 text-sm text-tertiary">
@@ -83,11 +89,10 @@ const title = methodology
           </section>
 
           <section class="border border-surface-variant rounded-xl p-6 bg-white shadow-sm">
-            <h2 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3">What result is displayed</h2>
+            <h2 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3">What we show on review pages</h2>
             <p class="text-on-surface leading-relaxed">{methodology.resultFormat}</p>
             <p class="mt-4 text-sm text-on-surface-variant">
-              The review page shows the real measured result — such as seconds, percentages, counts, or Yes/No —
-              not the internal score used in calculations.
+              Reviews display the raw measured result — seconds, percentages, counts, or yes/no — alongside an internal 0–10 score used in calculations.
             </p>
           </section>
 
@@ -99,22 +104,22 @@ const title = methodology
           )}
 
           <section class="border border-surface-variant rounded-xl p-6 bg-surface-container-low shadow-sm">
-            <h2 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3">How this converts to a score</h2>
+            <h2 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3">How this becomes a score</h2>
             <p class="text-on-surface leading-relaxed">
               {methodology.scoreConversion ??
-                'The measured result is converted into an internal 0–10 score using a fixed scoring guide. Subscores combine these internal scores; the review page displays the raw measurement.'}
+                'We convert the measured result into an internal 0–10 score using a fixed guide. That score is combined with other evidence points to build subscores and category scores.'}
             </p>
           </section>
         </div>
       ) : (
         <p class="text-on-surface-variant text-lg leading-relaxed mt-10">
-          Methodology documentation for this component is being added.
+          Methodology documentation for this metric is being added.
         </p>
       )
     }
 
     <a
-      href="/reviews/aura-ai#ratings"
+      href={backHref}
       class="inline-flex items-center gap-2 mt-10 text-sm font-bold text-primary-container hover:underline"
     >
       <span class="material-symbols-outlined text-[18px]">arrow_back</span>

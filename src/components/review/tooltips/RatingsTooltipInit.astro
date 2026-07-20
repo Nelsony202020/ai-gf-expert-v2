@@ -1,0 +1,279 @@
+<div id="ratings-tooltip-portal" class="ratings-tooltip-portal" aria-live="polite"></div>
+
+<script>
+  interface DistApp {
+    slug: string;
+    name: string;
+    score: number;
+  }
+
+  interface DistBin {
+    start: number;
+    end: number;
+    apps: DistApp[];
+  }
+
+  let activePanel: HTMLElement | null = null;
+  let activeTrigger: HTMLElement | null = null;
+  let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function scoreChipClass(score: number): string {
+    if (score >= 7.6) return 'rt-score-chip--good';
+    if (score >= 5.1) return 'rt-score-chip--fair';
+    return 'rt-score-chip--poor';
+  }
+
+  function cancelHide() {
+    if (hideTimer) {
+      clearTimeout(hideTimer);
+      hideTimer = null;
+    }
+  }
+
+  function hidePanel() {
+    cancelHide();
+    if (activePanel) {
+      activePanel.remove();
+      activePanel = null;
+    }
+    activeTrigger = null;
+  }
+
+  function scheduleHide() {
+    cancelHide();
+    hideTimer = setTimeout(hidePanel, 140);
+  }
+
+  function positionPanel(trigger: HTMLElement, panel: HTMLElement) {
+    const rect = trigger.getBoundingClientRect();
+    const margin = 12;
+    const gap = 8;
+    const maxWidth = panel.classList.contains('ratings-tooltip-panel--wide')
+      ? 380
+      : panel.classList.contains('ratings-tooltip-panel--compact')
+        ? panel.classList.contains('ratings-tooltip-panel--pipeline')
+          ? 280
+          : 260
+      : panel.classList.contains('ratings-tooltip-panel--methodology')
+        ? 340
+        : panel.classList.contains('ratings-tooltip-panel--help')
+          ? 300
+          : 360;
+
+    panel.style.position = 'fixed';
+    panel.style.zIndex = '9999';
+    panel.style.width = `${Math.min(maxWidth, window.innerWidth - margin * 2)}px`;
+    panel.style.display = 'block';
+    panel.style.visibility = 'hidden';
+
+    const panelWidth = panel.offsetWidth || maxWidth;
+    const panelHeight = panel.offsetHeight;
+    panel.style.visibility = '';
+
+    const triggerCenterX = rect.left + rect.width / 2;
+    const viewportW = window.innerWidth;
+
+    let left = triggerCenterX - panelWidth / 2;
+
+    if (rect.left < viewportW * 0.28) {
+      left = Math.max(margin, rect.left - 4);
+    } else if (rect.right > viewportW * 0.72) {
+      left = Math.min(rect.right - panelWidth + 4, viewportW - panelWidth - margin);
+    }
+
+    if (left + panelWidth > viewportW - margin) {
+      left = viewportW - panelWidth - margin;
+    }
+    if (left < margin) left = margin;
+
+    let placement: 'below' | 'above' = 'below';
+    let top = rect.bottom + gap;
+
+    const spaceBelow = window.innerHeight - rect.bottom - margin;
+    const spaceAbove = rect.top - margin;
+
+    if (top + panelHeight > window.innerHeight - margin) {
+      const aboveTop = rect.top - panelHeight - gap;
+      if (aboveTop >= margin || spaceAbove >= spaceBelow) {
+        top = Math.max(margin, aboveTop);
+        placement = 'above';
+      } else {
+        top = Math.min(rect.bottom + gap, window.innerHeight - panelHeight - margin);
+        placement = 'below';
+      }
+    }
+
+    if (top < margin) top = margin;
+
+    panel.classList.remove('ratings-tooltip-panel--below', 'ratings-tooltip-panel--above');
+    panel.classList.add(placement === 'below' ? 'ratings-tooltip-panel--below' : 'ratings-tooltip-panel--above');
+
+    const arrowX = Math.max(16, Math.min(panelWidth - 16, triggerCenterX - left));
+    panel.style.setProperty('--tooltip-arrow-x', `${arrowX}px`);
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+  }
+
+  function bindDistribution(panel: HTMLElement) {
+    const chart = panel.querySelector<HTMLElement>('[data-dist-chart]');
+    if (!chart) return;
+
+    let bins: DistBin[] = [];
+    try {
+      bins = JSON.parse(chart.dataset.distBins || '[]');
+    } catch {
+      return;
+    }
+
+    let idx = Number(chart.dataset.distActive ?? '-1');
+    const buttons = Array.from(chart.querySelectorAll<HTMLButtonElement>('[data-dist-bin]'));
+    const appsEl = chart.querySelector<HTMLElement>('[data-dist-apps]');
+    const rangeLabel = chart.querySelector<HTMLElement>('[data-dist-range-label]');
+    const rangeRow = chart.querySelector<HTMLElement>('[data-dist-range-row]');
+    const hint = chart.querySelector<HTMLElement>('[data-dist-hint]');
+    if (!appsEl) return;
+
+    function clearSelection() {
+      idx = -1;
+      chart.dataset.distActive = '-1';
+      buttons.forEach((btn) => {
+        btn.setAttribute('aria-pressed', 'false');
+        btn.querySelector('.rt-dist-chart__bar-fill')?.classList.remove('rt-dist-chart__bar-fill--active');
+      });
+      if (rangeRow) rangeRow.hidden = true;
+      appsEl!.hidden = true;
+      appsEl!.innerHTML = '';
+      if (hint) hint.hidden = false;
+    }
+
+    function renderApps(selected: DistBin) {
+      if (rangeLabel) {
+        rangeLabel.textContent = `${selected.start.toFixed(1)}–${selected.end.toFixed(1)}`;
+      }
+      if (rangeRow) rangeRow.hidden = false;
+      if (hint) hint.hidden = true;
+      appsEl!.hidden = false;
+      appsEl!.innerHTML = '';
+
+      if (!selected.apps.length) {
+        appsEl!.innerHTML = '<p class="rt-dist-chart__empty">No apps in this range.</p>';
+        return;
+      }
+
+      selected.apps.forEach((app) => {
+        const a = document.createElement('a');
+        a.href = `/reviews/${app.slug}#ratings`;
+        a.className = 'rt-dist-chart__app';
+        a.innerHTML = `<span>${app.name}</span><span class="rt-score-chip ${scoreChipClass(app.score)}">${app.score.toFixed(1)}</span>`;
+        appsEl!.appendChild(a);
+      });
+    }
+
+    function setActive(nextIdx: number) {
+      if (idx === nextIdx) {
+        clearSelection();
+        return;
+      }
+
+      idx = nextIdx;
+      chart.dataset.distActive = String(idx);
+      buttons.forEach((btn) => {
+        const i = Number(btn.dataset.distBin ?? '0');
+        const fill = btn.querySelector('.rt-dist-chart__bar-fill');
+        const isActive = i === idx;
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        fill?.classList.toggle('rt-dist-chart__bar-fill--active', isActive);
+      });
+      const selected = bins[idx];
+      if (selected) renderApps(selected);
+    }
+
+    if (idx < 0) clearSelection();
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setActive(Number(btn.dataset.distBin ?? '0'));
+      });
+    });
+  }
+
+  function showPanel(trigger: HTMLElement) {
+    const id = trigger.dataset.ratingsTooltipTrigger;
+    if (!id) return;
+
+    if (activeTrigger === trigger && activePanel) {
+      cancelHide();
+      return;
+    }
+
+    hidePanel();
+
+    const template = document.getElementById(`tooltip-${id}`) as HTMLTemplateElement | null;
+    if (!template?.content.firstElementChild) return;
+
+    const panel = template.content.firstElementChild.cloneNode(true) as HTMLElement;
+    panel.classList.add('ratings-tooltip-panel--open');
+
+    const portal = document.getElementById('ratings-tooltip-portal');
+    if (!portal) return;
+
+    portal.appendChild(panel);
+    activePanel = panel;
+    activeTrigger = trigger;
+
+    positionPanel(trigger, panel);
+    bindDistribution(panel);
+
+    panel.addEventListener('mouseenter', cancelHide);
+    panel.addEventListener('mouseleave', scheduleHide);
+  }
+
+  function initRatingsTooltips() {
+    document.querySelectorAll<HTMLElement>('[data-ratings-tooltip-trigger]').forEach((trigger) => {
+      if (trigger.dataset.tooltipBound === 'true') return;
+      trigger.dataset.tooltipBound = 'true';
+
+      trigger.addEventListener('mouseenter', () => showPanel(trigger));
+      trigger.addEventListener('mouseleave', scheduleHide);
+      trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showPanel(trigger);
+      });
+      trigger.addEventListener('focus', () => showPanel(trigger));
+      trigger.addEventListener('blur', scheduleHide);
+    });
+
+    if (document.body.dataset.ratingsTooltipGlobalBound !== 'true') {
+      document.body.dataset.ratingsTooltipGlobalBound = 'true';
+      window.addEventListener(
+        'scroll',
+        () => {
+          if (activePanel && activeTrigger) positionPanel(activeTrigger, activePanel);
+        },
+        true
+      );
+      window.addEventListener('resize', () => {
+        if (activePanel && activeTrigger) positionPanel(activeTrigger, activePanel);
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') hidePanel();
+      });
+    }
+  }
+
+  initRatingsTooltips();
+  document.addEventListener('astro:page-load', initRatingsTooltips);
+</script>
+
+<style is:global>
+  .ratings-tooltip-portal {
+    pointer-events: none;
+  }
+
+  .ratings-tooltip-portal .ratings-tooltip-panel--open {
+    pointer-events: auto;
+  }
+</style>

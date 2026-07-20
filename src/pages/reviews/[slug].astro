@@ -9,6 +9,9 @@ import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
 import RatingsSpecsTab from '../../components/review/tabs/RatingsSpecsTab.astro';
 import ReviewTab from '../../components/review/tabs/ReviewTab.astro';
 import PlaceholderTab from '../../components/review/tabs/PlaceholderTab.astro';
+import PhotosVideosTab from '../../components/review/tabs/PhotosVideosTab.astro';
+import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
+import ReviewScrollRestore from '../../components/review/ReviewScrollRestore.astro';
 import { products, getProduct } from '../../data/products';
 
 export function getStaticPaths() {
@@ -51,11 +54,7 @@ const description = product.tagline;
         <ReviewTab product={product} />
       </div>
       <div data-tab-panel="photos" class="hidden">
-        <PlaceholderTab
-          title="Photos & Videos"
-          icon="photo_library"
-          description="A full gallery of screenshots, generated media, and video walkthroughs from our testing sessions will live here."
-        />
+        <PhotosVideosTab product={product} />
       </div>
       <div data-tab-panel="pricing" class="hidden">
         <PlaceholderTab
@@ -67,6 +66,8 @@ const description = product.tagline;
     </div>
   </main>
   <Footer />
+  <RatingsTooltipInit />
+  <ReviewScrollRestore productSlug={product.slug} />
 </BaseLayout>
 
 <script>
@@ -127,26 +128,39 @@ const description = product.tagline;
       }
 
       content.classList.toggle('hidden', !willOpen);
-      toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      wrapper?.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((el) => {
+        el.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
     }
 
     document.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((toggle) => {
-      toggle.addEventListener('click', () => toggleAccordion(toggle));
-    });
-
-    // Sidebar category jumps -> ratings tab + expand + scroll
-    document.querySelectorAll<HTMLElement>('[data-goto-category]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.gotoCategory;
-        setActiveTab('ratings', false);
-        const target = document.querySelector<HTMLElement>(`[data-category="${key}"]`);
-        const toggle = target?.querySelector<HTMLElement>('[data-accordion-toggle]');
-        if (toggle) toggleAccordion(toggle, true);
-        if (target) {
-          const y = target.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
-          window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
+      toggle.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.rt-tooltip-trigger')) return;
+        toggleAccordion(toggle);
+      });
+      toggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleAccordion(toggle);
         }
       });
+    });
+
+    // Sidebar / tooltip category jumps -> ratings tab + expand + scroll
+    document.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-goto-category]');
+      if (!btn) return;
+      e.preventDefault();
+      const key = btn.dataset.gotoCategory;
+      if (!key) return;
+      setActiveTab('ratings', false);
+      const target = document.querySelector<HTMLElement>(`[data-category="${key}"]`);
+      const toggle = target?.querySelector<HTMLElement>('[data-accordion-toggle]');
+      if (toggle) toggleAccordion(toggle, true);
+      if (target) {
+        const y = target.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+        window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
+      }
     });
 
     // Deep-link support

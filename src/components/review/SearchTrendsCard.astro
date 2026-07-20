@@ -1,0 +1,433 @@
+---
+export interface SearchTrendData {
+  productName: string;
+  currentInterest: number;
+  peakInterest: number;
+  changePercent: number;
+  changeDirection: 'up' | 'down';
+  popularityRank: number;
+  totalReviewed: number;
+}
+
+interface Props {
+  data: SearchTrendData;
+}
+
+const { data } = Astro.props;
+const modalId = `trends-${data.productName.replace(/\s+/g, '-').toLowerCase()}`;
+const peakPct = Math.round((data.currentInterest / data.peakInterest) * 100);
+
+const linePath = 'M0,38 C20,36 30,28 45,30 S70,18 90,22 S120,8 140,14 S170,20 190,12 S220,6 240,8';
+const areaPath = `${linePath} L240,48 L0,48 Z`;
+---
+
+<section class="st-card" data-st-card={modalId}>
+  <div class="st-card__head">
+    <div>
+      <p class="st-card__eyebrow">Popularity &amp; Momentum</p>
+      <h3 class="st-card__title">
+        How much attention {data.productName} is getting in Google Search
+      </h3>
+    </div>
+    <button type="button" class="st-card__expand" data-st-modal-open aria-label="View search interest details">
+      <span class="material-symbols-outlined">arrow_outward</span>
+    </button>
+  </div>
+
+  <div class="st-card__body">
+    <div>
+      <p class="st-card__score">{data.currentInterest}<span>/ 100</span></p>
+      <p class="st-card__label">Current search interest</p>
+      <p class={`st-card__delta st-card__delta--${data.changeDirection}`}>
+        {data.changeDirection === 'up' ? '↑' : '↓'} {Math.abs(data.changePercent)}% vs. 12 months ago
+      </p>
+
+      <div class="st-card__chart-wrap">
+        <svg viewBox="0 0 240 48" class="st-card__chart" aria-hidden="true">
+          <defs>
+            <linearGradient id={`${modalId}-g`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#db2777" stop-opacity="0.15" />
+              <stop offset="100%" stop-color="#db2777" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={areaPath} fill={`url(#${modalId}-g)`} />
+          <path d={linePath} fill="none" stroke="#db2777" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </div>
+    </div>
+
+    <div class="st-card__right">
+      <div class="st-card__rank">
+        <span class="st-card__rank-num">#{data.popularityRank}</span>
+        <span class="st-card__rank-label">Popularity rank</span>
+        <span class="st-card__rank-sub">Out of {data.totalReviewed} reviewed apps</span>
+      </div>
+
+      <div class="st-card__peak-block">
+        <div class="st-card__peak-row">
+          <span>Current interest</span>
+          <span>12-month peak</span>
+        </div>
+        <div class="st-card__peak-bar">
+          <div class="st-card__peak-fill" style={`width:${peakPct}%`} />
+          <span class="st-card__peak-marker" style={`left:${peakPct}%`} />
+        </div>
+        <div class="st-card__peak-values">
+          <span>{data.currentInterest} / 100</span>
+          <span>{data.peakInterest} / 100</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="st-card__source">
+    Google Trends · Worldwide · Past 12 months · Updated weekly
+    <span class="st-card__info" title="Google Trends shows relative search interest, not total traffic or total users.">ⓘ</span>
+  </p>
+
+  <div class="st-modal hidden" data-st-modal aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="st-modal__backdrop" data-st-modal-close />
+    <div class="st-modal__panel">
+      <div class="st-modal__head">
+        <h4>Search interest — {data.productName}</h4>
+        <button type="button" data-st-modal-close aria-label="Close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <p class="st-modal__intro">12-month Google search interest compared with two direct competitors (placeholder data).</p>
+      <svg viewBox="0 0 400 120" class="st-modal__chart" aria-hidden="true">
+        <path d="M0,90 C40,88 60,70 100,75 S160,40 200,50 S280,30 320,35 S360,20 400,25" fill="none" stroke="#db2777" stroke-width="2.5" />
+        <path d="M0,95 C40,92 80,85 120,88 S200,75 240,80 S320,70 360,72 400,68" fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="4 4" />
+        <path d="M0,100 C50,98 100,92 150,94 S250,85 300,88 400,82" fill="none" stroke="#b8d44f" stroke-width="2" stroke-dasharray="4 4" />
+      </svg>
+      <ul class="st-modal__legend">
+        <li><span class="st-modal__swatch st-modal__swatch--pink" /> {data.productName}</li>
+        <li><span class="st-modal__swatch st-modal__swatch--gray" /> Kindroid</li>
+        <li><span class="st-modal__swatch st-modal__swatch--lime" /> Candy AI</li>
+      </ul>
+      <p class="st-modal__method">Google Trends · Worldwide · Past 12 months. Normalized to a 0–100 scale where the peak month equals 100.</p>
+    </div>
+  </div>
+</section>
+
+<script define:vars={{ modalId }}>
+  function initSearchTrends() {
+    const root = document.querySelector(`[data-st-card="${modalId}"]`);
+    if (!root || root.dataset.bound) return;
+    root.dataset.bound = 'true';
+
+    const modal = root.querySelector('[data-st-modal]');
+    const expandBtn = root.querySelector('[data-st-modal-open]');
+
+    const openModal = () => {
+      modal?.classList.remove('hidden');
+      modal?.setAttribute('aria-hidden', 'false');
+      expandBtn?.classList.add('is-active');
+      document.body.style.overflow = 'hidden';
+    };
+
+    const closeModal = () => {
+      modal?.classList.add('hidden');
+      modal?.setAttribute('aria-hidden', 'true');
+      expandBtn?.classList.remove('is-active');
+      document.body.style.overflow = '';
+    };
+
+    expandBtn?.addEventListener('click', openModal);
+    root.querySelectorAll('[data-st-modal-close]').forEach((el) => el.addEventListener('click', closeModal));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal?.classList.contains('hidden')) closeModal();
+    });
+  }
+
+  initSearchTrends();
+  document.addEventListener('astro:page-load', initSearchTrends);
+</script>
+
+<style>
+  .st-card {
+    border: 1px solid rgb(226 226 226 / 70%);
+    border-radius: 14px;
+    padding: 18px 20px;
+    background: #fff;
+  }
+
+  .st-card__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .st-card__eyebrow {
+    margin: 0 0 2px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #db2777;
+  }
+
+  .st-card__title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .st-card__expand {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 999px;
+    background: rgb(219 39 119 / 10%);
+    color: #db2777;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+
+  .st-card__expand:hover {
+    background: rgb(219 39 119 / 16%);
+  }
+
+  .st-card__expand:active,
+  .st-card__expand.is-active {
+    transform: scale(0.92);
+    background: rgb(219 39 119 / 22%);
+  }
+
+  .st-card__body {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 640px) {
+    .st-card__body {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .st-card__score {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .st-card__score span {
+    font-size: 14px;
+    color: var(--color-tertiary);
+    font-weight: 700;
+  }
+
+  .st-card__label {
+    margin: 4px 0 0;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .st-card__delta {
+    margin: 4px 0 12px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .st-card__delta--up { color: #15803d; }
+  .st-card__delta--down { color: #dc2626; }
+
+  .st-card__chart-wrap {
+    height: 48px;
+  }
+
+  .st-card__chart {
+    width: 100%;
+    height: 100%;
+  }
+
+  .st-card__right {
+    text-align: right;
+  }
+
+  .st-card__rank-num {
+    display: block;
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1;
+    color: #db2777;
+  }
+
+  .st-card__rank-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+
+  .st-card__rank-sub {
+    display: block;
+    font-size: 10px;
+    color: var(--color-tertiary);
+    margin-top: 2px;
+  }
+
+  .st-card__peak-block {
+    margin-top: 14px;
+    min-width: 170px;
+  }
+
+  .st-card__peak-row,
+  .st-card__peak-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--color-tertiary);
+  }
+
+  .st-card__peak-row { margin-bottom: 6px; }
+  .st-card__peak-values { margin-top: 6px; }
+
+  .st-card__peak-bar {
+    position: relative;
+    height: 6px;
+    border-radius: 999px;
+    background: rgb(226 226 226 / 80%);
+  }
+
+  .st-card__peak-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: #db2777;
+  }
+
+  .st-card__peak-marker {
+    position: absolute;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #db2777;
+    border: 2px solid #fff;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 1px 3px rgb(219 39 119 / 30%);
+  }
+
+  .st-card__source {
+    margin: 12px 0 0;
+    font-size: 9px;
+    color: var(--color-tertiary);
+  }
+
+  .st-card__info {
+    margin-left: 4px;
+    cursor: help;
+    opacity: 0.7;
+  }
+
+  .st-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 180;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .st-modal.hidden { display: none; }
+
+  .st-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 50%);
+  }
+
+  .st-modal__panel {
+    position: relative;
+    z-index: 1;
+    width: min(520px, 100%);
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+
+  .st-modal__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .st-modal__head h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .st-modal__head button {
+    border: none;
+    background: rgb(219 39 119 / 10%);
+    border-radius: 999px;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #db2777;
+    transition: background 0.15s ease;
+  }
+
+  .st-modal__head button:hover {
+    background: rgb(219 39 119 / 18%);
+  }
+
+  .st-modal__intro,
+  .st-modal__method {
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--color-on-surface-variant);
+    margin: 0 0 12px;
+  }
+
+  .st-modal__chart {
+    width: 100%;
+    height: auto;
+    margin-bottom: 12px;
+  }
+
+  .st-modal__legend {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-tertiary);
+  }
+
+  .st-modal__swatch {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  .st-modal__swatch--pink { background: #db2777; }
+  .st-modal__swatch--gray { background: #9ca3af; }
+  .st-modal__swatch--lime { background: #b8d44f; }
+</style>

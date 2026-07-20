@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './ratings-tooltips.css';
 
 /* ===========================================================================
    Design tokens ported from the mockups' DESIGN.md ("Vibrant Editorial")
@@ -9,6 +10,7 @@
   /* Fonts */
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', ui-serif, Georgia, 'Times New Roman', serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-label: 'JetBrains Mono', ui-monospace, monospace;
 
@@ -71,6 +73,19 @@
 
   --color-outline: #8e7164;
   --color-outline-variant: #e2bfb0;
+
+  /* Maia / Lovelace rebrand */
+  --color-accent: #db2777;
+  --color-accent-soft: #fce7f3;
+  --color-brand-lime: #daf66c;
+  --color-brand-lime-dark: #b8d44f;
+  --color-on-brand-lime: #1b1b1b;
+  --color-footer: #1a2418;
+  --color-footer-muted: #9cab96;
+
+  /* Map primary CTA to lime */
+  --color-primary-container: #daf66c;
+  --color-on-primary-container: #1b1b1b;
 }
 
 /* ---------------------------------------------------------------------------
@@ -109,6 +124,174 @@
     margin-left: auto;
     margin-right: auto;
   }
+
+  .text-accent {
+    color: var(--color-accent);
+  }
+
+  .bg-brand-cta {
+    background-color: var(--color-brand-lime);
+    color: var(--color-on-brand-lime);
+  }
+
+  .bg-brand-cta:hover {
+    background-color: var(--color-brand-lime-dark);
+  }
+
+  .link-accent {
+    color: var(--color-accent);
+  }
+
+  .link-accent:hover {
+    text-decoration: underline;
+  }
+
+  /* On white/light backgrounds, never use lime green for text links */
+  .bg-white a:not(.bg-brand-cta):not([class*='bg-green']):not([class*='bg-brand']),
+  section.bg-white a:not(.bg-brand-cta) {
+    --link-color: var(--color-accent);
+  }
+
+  .prose-light-links a,
+  .prose-light-links .hover\:text-primary-container:hover {
+    color: var(--color-accent) !important;
+  }
+
+  /* Lime backgrounds always use dark text — never white or lime-colored text */
+  .bg-brand-cta,
+  .bg-primary-container,
+  [class*='bg-brand-lime'] {
+    color: var(--color-on-brand-lime);
+  }
+
+  .text-primary-container {
+    color: var(--color-on-brand-lime);
+  }
+
+  a.text-primary-container,
+  .hover\:text-primary-container:hover {
+    color: var(--color-accent);
+  }
+}
+
+/* Dark mode */
+[data-theme='dark'] {
+  --color-background: #121612;
+  --color-on-background: #ececec;
+  --color-surface: #121612;
+  --color-surface-variant: #2a3328;
+  --color-surface-container-low: #1a2418;
+  --color-surface-container: #1f2a1d;
+  --color-on-surface: #ececec;
+  --color-on-surface-variant: #b8c4b2;
+  --color-tertiary: #9cab96;
+}
+
+[data-theme='dark'] body {
+  background-color: #121612;
+  color: var(--color-on-surface);
+}
+
+[data-theme='dark'] .bg-white {
+  background-color: #1a1f18 !important;
+}
+
+/* Footer always stays brand dark */
+.site-footer {
+  background: #1a2418 !important;
+}
+
+/* ---- Dark mode component overrides ---- */
+[data-theme='dark'] .ratings-tooltip-panel,
+[data-theme='dark'] .ratings-tooltip-panel__header,
+[data-theme='dark'] .ratings-tooltip-panel__body {
+  background: #1f2a1d !important;
+  border-color: #2a3328 !important;
+  color: #ececec !important;
+}
+
+[data-theme='dark'] .ratings-tooltip-panel--open::before {
+  background: #1f2a1d !important;
+  border-color: #2a3328 !important;
+}
+
+[data-theme='dark'] .st-card,
+[data-theme='dark'] .st-modal__panel {
+  background: #1f2a1d !important;
+  border-color: #2a3328 !important;
+  color: #ececec;
+}
+
+[data-theme='dark'] .overview-sidebar-box {
+  background: rgb(26 36 24 / 80%) !important;
+  border-color: rgb(219 39 119 / 25%) !important;
+}
+
+[data-theme='dark'] .author-bio-popover {
+  background: #1f2a1d !important;
+  border-color: #2a3328 !important;
+  color: #ececec;
+}
+
+[data-theme='dark'] .evidence-table__row:hover {
+  background: rgb(219 39 119 / 10%) !important;
+}
+
+[data-theme='dark'] .evidence-table__head {
+  background: #1a2418 !important;
+  border-color: #2a3328 !important;
+}
+
+[data-theme='dark'] .evidence-table-wrap {
+  border-color: #2a3328 !important;
+}
+
+[data-theme='dark'] .rt-dist-chart {
+  background: rgb(26 36 24 / 60%) !important;
+  border-color: #2a3328 !important;
+}
+
+[data-theme='dark'] .rt-comp-row--link:hover {
+  background: rgb(219 39 119 / 12%) !important;
+}
+
+[data-theme='dark'] [data-category] [data-accordion-content] {
+  background: #1a1f18 !important;
+}
+
+[data-theme='dark'] [data-category] .subscore-card:hover,
+[data-theme='dark'] [data-ratings-root][data-detail-level='medium'] .subscore-card:hover {
+  background: rgb(219 39 119 / 8%) !important;
+}
+
+[data-theme='dark'] [data-ratings-root][data-detail-level='medium'] .subscore-card--active,
+[data-theme='dark'] [data-ratings-root][data-detail-level='all-in'] .subscore-card--active {
+  background: rgb(219 39 119 / 12%) !important;
+}
+
+[data-theme='dark'] [data-ratings-root][data-detail-level='all-in'] .subscore-card:hover {
+  background: rgb(219 39 119 / 8%) !important;
+}
+
+[data-theme='dark'] [data-category] .bg-white {
+  background: #1a1f18 !important;
+}
+
+[data-theme='dark'] .st-card__title,
+[data-theme='dark'] .st-card__score,
+[data-theme='dark'] .st-card__rank-num {
+  color: #ececec;
+}
+
+[data-theme='dark'] .st-card__label,
+[data-theme='dark'] .st-card__rank-label,
+[data-theme='dark'] .st-card__rank-sub,
+[data-theme='dark'] .st-card__source {
+  color: #9cab96;
+}
+
+[data-theme='dark'] .overview-sidebar-box .text-on-surface-variant {
+  color: #b8c4b2;
 }
 
 @utility no-scrollbar {

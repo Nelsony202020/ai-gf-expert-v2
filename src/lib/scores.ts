@@ -69,9 +69,28 @@ export function getScoreVisual(score: number): ScoreVisual {
   return VISUALS[getScoreBand(score)];
 }
 
+/** CSS class for tooltip score chips (number-only colored box). */
+export function getScoreChipClass(score: number): string {
+  const band = getScoreBand(score);
+  if (band === 'good') return 'rt-score-chip--good';
+  if (band === 'fair') return 'rt-score-chip--fair';
+  return 'rt-score-chip--poor';
+}
+
 /** Format a score to one decimal place (e.g. 9 -> "9.0"). */
 export function fmtScore(score: number): string {
   return score.toFixed(1);
+}
+
+/** One short line comparing a score to the site average (for tooltips). */
+export function getScoreMeaningLine(score: number, avg: number): string {
+  const a = fmtScore(avg);
+  const diff = score - avg;
+  if (Math.abs(diff) < 0.15) return `Matches the ${a} site avg.`;
+  if (diff >= 0.5) return `Well above the ${a} site avg.`;
+  if (diff > 0) return `Above the ${a} site avg.`;
+  if (diff <= -0.5) return `Well below the ${a} site avg.`;
+  return `Below the ${a} site avg.`;
 }
 
 /** Weighted contribution of a subscore to its category (score * weight%). */

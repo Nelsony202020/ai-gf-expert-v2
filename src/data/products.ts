@@ -75,6 +75,65 @@ export interface FeatureSpec {
   available: boolean;
 }
 
+export interface OverviewCharacter {
+  name: string;
+  archetype: string;
+  avatar: string;
+  storySlides: string[];
+  /** Placeholder profile URL — edit when character pages exist */
+  profileUrl?: string;
+}
+
+export interface OverviewFeatureCard {
+  id: string;
+  title: string;
+  icon: string;
+  description: string;
+  stats: { label: string; value: string }[];
+  tabLink?: string;
+}
+
+export interface ComparisonMetric {
+  id: string;
+  label: string;
+  productScore: number;
+  categoryAverage: number;
+  unit?: string;
+  lowerIsBetter?: boolean;
+}
+
+export interface SearchTrendData {
+  productName: string;
+  currentInterest: number;
+  peakInterest: number;
+  changePercent: number;
+  changeDirection: 'up' | 'down';
+  popularityRank: number;
+  totalReviewed: number;
+}
+
+export interface ProductOverview {
+  highlights: {
+    bestFor: string;
+    standout: string;
+    drawback: string;
+    startingPrice: string;
+  };
+  characters: OverviewCharacter[];
+  featureCards: OverviewFeatureCard[];
+  comparisonMetrics: ComparisonMetric[];
+  searchTrends: SearchTrendData;
+  bestForList: string[];
+  notIdealList: string[];
+}
+
+export interface RatingChangelogEntry {
+  date: string;
+  title: string;
+  summary: string;
+  type: 'score' | 'methodology' | 'data';
+}
+
 export interface VerdictItem {
   id: string;
   label: string;
@@ -102,6 +161,8 @@ export interface Product {
   ourTake: string;
   safetyAudit: SafetyItem[];
   featureSpecs: FeatureSpec[];
+  overview: ProductOverview;
+  ratingChangelog: RatingChangelogEntry[];
   categories: RatingCategory[];
   verdicts: VerdictItem[];
   expertOpinion: string;
@@ -122,7 +183,13 @@ const auraAi: Product = {
   modifiedDate: 'Oct 25, 2024',
   methodology: 'Methodology v3.0',
   authors: [
-    { name: 'Herman Carter', role: 'AI Girlfriend Expert', avatar: '/authors/herman-carter.png', verified: true, slug: 'herman-carter' },
+    {
+      name: 'Herman Carter',
+      role: 'Lead Reviewer',
+      avatar: '/brand/herman-main-icon.svg',
+      verified: true,
+      slug: 'herman-carter',
+    },
     { name: 'Sarah Jenkins', role: 'Fact-Checker', avatar: avatar(45), verified: true },
   ],
   websiteUrl: 'https://example.com/aura-ai',
@@ -153,6 +220,147 @@ const auraAi: Product = {
     { name: 'AI Phone Calls', value: 'Yes', icon: 'call', available: true },
     { name: 'Role Play Mode', value: 'Yes', icon: 'theater_comedy', available: true },
     { name: 'Voice Messages', value: 'Yes', icon: 'graphic_eq', available: true },
+  ],
+  overview: {
+    highlights: {
+      bestFor: 'Deep roleplay & character variety',
+      standout: 'Industry-leading chat realism',
+      drawback: 'Slower image generation (~15s)',
+      startingPrice: '$12.99 / mo',
+    },
+    characters: [
+      {
+        name: 'Finn',
+        archetype: 'Adventurous storyteller',
+        avatar: img('aura-char-finn', 200, 200),
+        profileUrl: '#character/finn',
+        storySlides: [img('aura-finn-1', 720, 1280), img('aura-finn-2', 720, 1280), img('aura-finn-3', 720, 1280)],
+      },
+      {
+        name: 'Luna',
+        archetype: 'Romantic dreamer',
+        avatar: img('aura-char-luna', 200, 200),
+        profileUrl: '#character/luna',
+        storySlides: [img('aura-luna-1', 720, 1280), img('aura-luna-2', 720, 1280), img('aura-luna-3', 720, 1280)],
+      },
+      {
+        name: 'Aiko',
+        archetype: 'Playful anime fan',
+        avatar: img('aura-char-aiko', 200, 200),
+        profileUrl: '#character/aiko',
+        storySlides: [img('aura-aiko-1', 720, 1280), img('aura-aiko-2', 720, 1280)],
+      },
+      {
+        name: 'Sophie',
+        archetype: 'Confident professional',
+        avatar: img('aura-char-sophie', 200, 200),
+        profileUrl: '#character/sophie',
+        storySlides: [img('aura-sophie-1', 720, 1280), img('aura-sophie-2', 720, 1280), img('aura-sophie-3', 720, 1280)],
+      },
+      {
+        name: 'Violet',
+        archetype: 'Mysterious artist',
+        avatar: img('aura-char-violet', 200, 200),
+        profileUrl: '#character/violet',
+        storySlides: [img('aura-violet-1', 720, 1280), img('aura-violet-2', 720, 1280)],
+      },
+      {
+        name: 'Aria',
+        archetype: 'Warm companion',
+        avatar: img('aura-char-aria', 200, 200),
+        profileUrl: '#character/aria',
+        storySlides: [img('aura-aria-1', 720, 1280), img('aura-aria-2', 720, 1280)],
+      },
+      {
+        name: 'Ethan',
+        archetype: 'Chill best friend',
+        avatar: img('aura-char-ethan', 200, 200),
+        profileUrl: '#character/ethan',
+        storySlides: [img('aura-ethan-1', 720, 1280), img('aura-ethan-2', 720, 1280)],
+      },
+    ],
+    comparisonMetrics: [
+      { id: 'chat', label: 'Chat realism', productScore: 9.2, categoryAverage: 7.4 },
+      { id: 'images', label: 'Image quality', productScore: 8.4, categoryAverage: 7.1 },
+      { id: 'price', label: 'Monthly price', productScore: 12.99, categoryAverage: 18.5, lowerIsBetter: true },
+    ],
+    searchTrends: {
+      productName: 'Aura AI',
+      currentInterest: 72,
+      peakInterest: 100,
+      changePercent: 18,
+      changeDirection: 'up',
+      popularityRank: 3,
+      totalReviewed: 24,
+    },
+    featureCards: [
+      {
+        id: 'chat',
+        title: 'Chat Experience',
+        icon: 'chat',
+        description: 'Memory, realism, and reply speed tested across 50+ scenarios.',
+        stats: [
+          { label: 'Chat score', value: '9.2' },
+          { label: 'Avg. response', value: '1.8s' },
+          { label: 'Memory retention', value: '88%' },
+        ],
+        tabLink: 'ratings',
+      },
+      {
+        id: 'images',
+        title: 'Images & Media',
+        icon: 'photo_library',
+        description: 'Image quality, consistency, and video generation benchmarks.',
+        stats: [
+          { label: 'Image score', value: '8.4' },
+          { label: 'Gen. speed', value: '~15s' },
+          { label: 'Video support', value: 'Yes' },
+        ],
+        tabLink: 'ratings',
+      },
+      {
+        id: 'characters',
+        title: 'Characters',
+        icon: 'groups',
+        description: 'Library size, discovery tools, and profile quality on our sample.',
+        stats: [
+          { label: 'Library size', value: '2,450+' },
+          { label: 'Character score', value: '9.1' },
+          { label: 'Filter options', value: '12' },
+        ],
+        tabLink: 'ratings',
+      },
+    ],
+    bestForList: [
+      'Users who want deep, realistic conversations',
+      'Character variety across styles and archetypes',
+      'Privacy-conscious users who want discreet billing',
+    ],
+    notIdealList: [
+      'Users who need instant image generation',
+      'Heavy free-tier usage without credits',
+      'Long-form video beyond 5-second clips',
+    ],
+  },
+  ratingChangelog: [
+    {
+      date: 'Jul 22, 2026',
+      title: 'Overview & ratings UI refresh',
+      summary: 'Updated comparison charts, search trend tracking, and refreshed character story highlights. No score changes in this release.',
+      type: 'data',
+    },
+    {
+      date: 'Oct 25, 2024',
+      title: 'Characters score updated to 9.1',
+      summary: 'Re-tested discovery filters after a platform update. Browsing success improved from 86% to 90%.',
+      type: 'score',
+    },
+    {
+      date: 'Oct 20, 2024',
+      title: 'Methodology v3.0 applied',
+      summary: 'Moved from expert factor scores to measured evidence with transparent weights across all categories.',
+      type: 'methodology',
+    },
   ],
   categories,
   verdicts: auraAiVerdicts,
