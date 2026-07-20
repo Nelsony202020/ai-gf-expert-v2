@@ -1,8 +1,10 @@
 ---
 import type { RatingCategory } from '../../../data/products';
-import { getScoreVisual, fmtScore, weightedValue } from '../../../lib/scores';
+import { getScoreVisual, fmtScore, weightedValue, equalWeights } from '../../../lib/scores';
 import ScorePill from '../ScorePill.astro';
 import InfoIcon from '../../ui/InfoIcon.astro';
+import ProofCarousel from '../ProofCarousel.astro';
+import { testContributorUrl } from '../../../lib/slugs';
 
 interface Props {
   category: RatingCategory;
@@ -11,6 +13,30 @@ interface Props {
 
 const { category, open = false } = Astro.props;
 const visual = getScoreVisual(category.score);
+
+const subscoreContributions = category.subscores.map((sub) => ({
+  ...sub,
+  contribution: weightedValue(sub.score, sub.weight),
+}));
+
+const evidenceBySubscore = category.subscores.map((sub) => {
+  const weights = equalWeights(sub.contributors.length);
+  const items = sub.contributors.map((c, i) => {
+    const internal = c.internalScore ?? sub.score;
+    const weight = weights[i] ?? 0;
+    return {
+      ...c,
+      internal,
+      weight,
+      contribution: weightedValue(internal, weight),
+    };
+  });
+  const rawSubTotal = items.reduce((sum, item) => sum + item.contribution, 0);
+  return { sub, items, rawSubTotal };
+});
+
+const categoryRawTotal = subscoreContributions.reduce((sum, c) => sum + c.contribution, 0);
+const subscoreSumParts = subscoreContributions.map((c) => c.contribution.toFixed(2)).join(' + ');
 ---
 
 <div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm" data-category={category.key}>
@@ -19,7 +45,7 @@ const visual = getScoreVisual(category.score);
     type="button"
     data-accordion-toggle
     aria-expanded={open ? 'true' : 'false'}
-    class="w-full flex items-center justify-between p-5 md:p-6 bg-surface-container-low cursor-pointer text-left"
+    class="w-full flex items-center justify-between p-4 md:p-5 bg-surface-container-low cursor-pointer text-left"
   >
     <div class="flex items-center gap-4 md:gap-6">
       <div class="flex flex-col items-start">
@@ -40,11 +66,11 @@ const visual = getScoreVisual(category.score);
 
   <!-- Detail -->
   <div data-accordion-content class={open ? '' : 'hidden'}>
-    <div class="p-5 md:p-8 border-t border-surface-variant bg-white">
-      <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr_360px] gap-8">
+    <div class="p-4 md:p-5 border-t border-surface-variant bg-white">
+      <div class="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-4 lg:gap-6" data-subscore-grid>
         <!-- Col 1: Subscores -->
-        <div class="space-y-4" data-subscore-list>
-          <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-1">
+        <div class="space-y-3" data-subscore-list>
+          <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3 flex items-center gap-1">
             Subscores <InfoIcon size="xs" />
           </h4>
           {
@@ -56,17 +82,18 @@ const visual = getScoreVisual(category.score);
                   type="button"
                   data-subscore-select
                   data-subscore-index={i}
+                  data-active-border={sv.border}
                   aria-selected={isActive ? 'true' : 'false'}
-                  class={`subscore-card w-full flex items-center justify-between p-4 rounded-xl border bg-white shadow-sm transition-all group text-left ${isActive ? 'border-green-600' : 'border-surface-variant'}`}
+                  class={`subscore-card w-full flex items-center justify-between p-3 rounded-xl border bg-white shadow-sm transition-all group text-left ${isActive ? sv.border : 'border-surface-variant'}`}
                 >
-                  <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-3 min-w-0 flex-1 pr-2">
                     <div
                       data-subscore-badge
-                      class={`w-12 h-10 flex items-center justify-center border-2 rounded-lg text-lg font-black transition-colors ${isActive ? sv.border + ' text-on-surface' : 'border-surface-variant text-on-surface/40'}`}
+                      class={`shrink-0 w-12 min-w-12 h-10 flex items-center justify-center border-2 rounded-lg text-lg font-black transition-colors box-border ${isActive ? `${sv.border} text-on-surface` : 'border-surface-variant text-on-surface/40'}`}
                     >
                       {fmtScore(sub.score)}
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col min-w-0 flex-1">
                       <span data-subscore-label class={`text-sm font-bold transition-colors flex items-center gap-1 ${isActive ? 'text-on-surface' : 'text-on-surface/50 group-hover:text-on-surface'}`}>
                         {sub.name}
                         <InfoIcon size="xs" title={sub.description} />
@@ -76,7 +103,7 @@ const visual = getScoreVisual(category.score);
                   </div>
                   <span
                     data-subscore-chevron
-                    class={`material-symbols-outlined shrink-0 transition-colors ${isActive ? 'text-green-600' : 'text-tertiary/40 group-hover:text-green-600'}`}
+                    class={`material-symbols-outlined shrink-0 transition-colors ${isActive ? sv.text : 'text-tertiary/40 group-hover:text-on-surface'}`}
                   >
                     chevron_right
                   </span>
@@ -86,9 +113,9 @@ const visual = getScoreVisual(category.score);
           }
         </div>
 
-        <!-- Col 2: Subscore Breakdown -->
-        <div class="space-y-6" data-subscore-breakdown>
-          <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-4">
+        <!-- Col 2: Subscore Breakdown (expanded) -->
+        <div class="space-y-4 min-w-0" data-subscore-breakdown data-detail-tier="deep">
+          <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3">
             Subscore Breakdown
           </h4>
           {
@@ -96,51 +123,56 @@ const visual = getScoreVisual(category.score);
               const sv = getScoreVisual(sub.score);
               const isActive = i === 0;
               return (
-                <div
-                  data-subscore-panel
-                  data-subscore-index={i}
-                  class={isActive ? '' : 'hidden'}
-                >
+                <div data-subscore-panel data-subscore-index={i} class={isActive ? '' : 'hidden'}>
                   <div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm">
-                    <div class="p-5 flex items-center justify-between border-b border-surface-variant bg-white">
-                      <div class="flex items-center gap-2">
-                        <span class={`material-symbols-outlined ${sv.text}`} style="font-variation-settings: 'FILL' 1;">
+                    <div class="p-4 flex items-center justify-between border-b border-surface-variant bg-white">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <span class={`material-symbols-outlined shrink-0 ${sv.text}`} style="font-variation-settings: 'FILL' 1;">
                           check_circle
                         </span>
-                        <span class="font-bold text-on-surface text-lg">{sub.name}</span>
+                        <span class="font-bold text-on-surface text-lg truncate">{sub.name}</span>
                       </div>
-                      <span class={`text-xl font-black ${sv.text}`}>{fmtScore(sub.score)}</span>
+                      <span class={`text-xl font-black shrink-0 ${sv.text}`}>{fmtScore(sub.score)}</span>
                     </div>
-                    <div class="p-6 space-y-6">
+                    <div class="p-4 space-y-4">
                       <div>
-                        <p class="text-[11px] font-bold text-tertiary mb-3 uppercase tracking-tighter">
-                          Contributors
-                          <span class="font-normal normal-case text-tertiary/60">(what determines this score)</span>
+                        <p class="text-[11px] font-bold text-tertiary mb-2 uppercase tracking-tighter">
+                          Evidence
+                          <span class="font-normal normal-case text-tertiary/60">(measured results)</span>
                         </p>
-                        <div class="flex flex-wrap gap-2">
+                        <div class="flex flex-wrap gap-2 mb-4">
                           {
                             sub.contributors.map((c) => (
-                              <span class="px-3 py-1.5 rounded-full border border-surface-variant text-[11px] font-bold flex items-center gap-1.5 bg-white">
+                              <a
+                                href={testContributorUrl(category.key, sub.name, c.label)}
+                                class="px-3 py-1.5 rounded-full border border-surface-variant text-[11px] font-bold flex items-center gap-1.5 bg-white hover:border-primary-container hover:text-primary-container transition-colors"
+                              >
                                 {c.icon && <span class="material-symbols-outlined text-[16px]">{c.icon}</span>}
                                 {c.label}
-                              </span>
+                              </a>
+                            ))
+                          }
+                        </div>
+                        <div class="rounded-xl border border-surface-variant overflow-hidden">
+                          {
+                            sub.contributors.map((c, ci) => (
+                              <a
+                                href={testContributorUrl(category.key, sub.name, c.label)}
+                                class={`flex justify-between items-center gap-4 text-[13px] px-4 py-3 hover:bg-surface-container-low transition-colors group ${ci < sub.contributors.length - 1 ? 'border-b border-surface-variant/60' : ''}`}
+                              >
+                                <span class="text-on-surface-variant group-hover:text-primary-container flex items-center gap-1.5 underline-offset-2 group-hover:underline">
+                                  {c.icon && <span class="material-symbols-outlined text-[16px] opacity-60">{c.icon}</span>}
+                                  {c.label}
+                                </span>
+                                <span class="font-bold text-on-surface tabular-nums shrink-0">{c.value}</span>
+                              </a>
                             ))
                           }
                         </div>
                       </div>
-                      <div class="space-y-3">
-                        {
-                          sub.contributors.map((c) => (
-                            <div class="flex justify-between items-center text-[13px] border-b border-surface-variant pb-2 last:border-0">
-                              <span class="text-tertiary">{c.label}</span>
-                              <span class="font-bold">{c.value}</span>
-                            </div>
-                          ))
-                        }
-                      </div>
-                      <p class="text-[10px] text-tertiary flex items-center gap-1.5 italic">
-                        <InfoIcon size="xs" />
-                        These factors are combined to calculate the {sub.name} subscore.
+                      <p class="text-[11px] text-tertiary flex items-start gap-1.5">
+                        <InfoIcon size="xs" class="mt-0.5 shrink-0" />
+                        Each evidence point is scored internally (0–10), then combined into the {sub.name} subscore.
                       </p>
                     </div>
                   </div>
@@ -149,127 +181,163 @@ const visual = getScoreVisual(category.score);
             })
           }
         </div>
-
-        <!-- Col 3: Evidence + Proof -->
-        <div class="space-y-8">
-          <div>
-            <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-4">Evidence</h4>
-            <div class="bg-surface-container-low p-5 rounded-xl border border-surface-variant/50 space-y-3 shadow-sm">
-              {
-                category.evidence.map((row) => (
-                  <div class="flex justify-between items-center text-[12px] border-b border-surface-variant/40 pb-2 last:border-0 last:pb-0">
-                    <div class="flex items-center gap-2 text-on-surface">
-                      {row.icon && <span class="material-symbols-outlined text-[16px] text-tertiary/70">{row.icon}</span>}
-                      {row.label}
-                    </div>
-                    <span class="font-bold">{row.value}</span>
-                  </div>
-                ))
-              }
-            </div>
-          </div>
-
-          {
-            category.proof.length > 0 && (
-              <div>
-                <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-1 flex items-center gap-1">
-                  Proof
-                </h4>
-                <div class="grid grid-cols-3 gap-2 py-4">
-                  {category.proof.map((p) => (
-                    <div class="cursor-pointer group">
-                      <div class="relative aspect-[3/4] rounded-lg overflow-hidden border border-surface-variant shadow-sm mb-2">
-                        <img
-                          class="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition"
-                          src={p.src}
-                          alt={p.caption}
-                        />
-                        <div class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/0 transition-colors">
-                          <span
-                            class="material-symbols-outlined text-white text-4xl"
-                            style="font-variation-settings: 'FILL' 1;"
-                          >
-                            play_circle
-                          </span>
-                        </div>
-                      </div>
-                      <p class="text-[10px] font-bold text-center leading-tight">
-                        {p.caption}
-                        {p.sub && <span class="font-normal text-tertiary block">{p.sub}</span>}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <p class="text-[10px] text-tertiary flex items-center justify-center gap-1">
-                  <span class="material-symbols-outlined text-[14px]">slow_motion_video</span>
-                  Hover over any clip to preview
-                </p>
-              </div>
-            )
-          }
-        </div>
       </div>
 
-      <!-- How this score is calculated -->
-      <div class="mt-12 pt-10 border-t border-surface-variant/40">
-        <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-1">
-          How this score is calculated <InfoIcon size="xs" />
-        </h4>
-        <div class="flex flex-col gap-6 mb-4">
-          <div class="text-[12px] text-tertiary leading-relaxed">
-            <p>
-              The {category.name} score is a weighted average of its {category.subscores.length} subscores.
-            </p>
-            <button
-              class="mt-4 px-4 py-2 border border-surface-variant rounded-lg font-bold text-[11px] flex items-center gap-2 bg-surface-container-low hover:bg-surface-variant transition shadow-sm"
-            >
-              Learn more about our rating system
-              <span class="material-symbols-outlined text-[14px]">open_in_new</span>
-            </button>
+      <!-- Proof gallery — full width row below grid -->
+      {
+        category.proof.length > 0 && (
+          <div data-detail-tier="deep" class="mt-5 pt-5 border-t border-surface-variant/40">
+            <ProofCarousel items={category.proof} />
           </div>
-          <div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm">
-            <table class="w-full text-[11px]">
-              <thead>
-                <tr class="bg-surface-container-low border-b border-surface-variant text-tertiary uppercase tracking-tighter">
-                  <th class="py-3 px-4 md:px-6 text-left font-bold">Subscore</th>
-                  <th class="py-3 px-4 md:px-6 text-center font-bold">Score</th>
-                  <th class="py-3 px-4 md:px-6 text-center font-bold">Weight</th>
-                  <th class="py-3 px-4 md:px-6 text-right font-bold">Weighted</th>
-                </tr>
-              </thead>
-              <tbody>
-                {
-                  category.subscores.map((sub) => (
-                    <tr class="border-b border-surface-variant/40">
-                      <td class="py-3 px-4 md:px-6 font-bold">{sub.name}</td>
-                      <td class="py-3 px-4 md:px-6 text-center">{fmtScore(sub.score)}</td>
-                      <td class="py-3 px-4 md:px-6 text-center">{sub.weight}%</td>
-                      <td class="py-3 px-4 md:px-6 text-right font-bold text-on-surface">
-                        <span class="inline-flex items-center justify-end gap-1.5">
-                          {weightedValue(sub.score, sub.weight).toFixed(2)}
-                          <span class={`w-2 h-2 rounded-full ${getScoreVisual(sub.score).dot}`} />
+        )
+      }
+
+      <!-- How this score is calculated -->
+      <div class="mt-8 pt-6 border-t border-surface-variant/40" data-detail-tier="calc">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+          <div>
+            <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-1.5 flex items-center gap-1">
+              How this score is calculated <InfoIcon size="xs" />
+            </h4>
+            <p class="text-sm text-on-surface-variant max-w-2xl">
+              Evidence builds each subscore. Subscores then combine into the final {category.name} score.
+            </p>
+          </div>
+          <a
+            href="#"
+            class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-tertiary hover:text-primary-container transition shrink-0"
+          >
+            Learn more about our rating system
+            <span class="material-symbols-outlined text-[13px]">open_in_new</span>
+          </a>
+        </div>
+
+        <!-- Step 1: Evidence → Subscores -->
+        <div class="mb-8">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="flex items-center justify-center w-6 h-6 rounded-full bg-primary-container text-white text-[11px] font-black">1</span>
+            <h5 class="text-sm font-bold text-on-surface">Evidence → Subscores</h5>
+          </div>
+
+          <div class="space-y-4">
+            {
+              evidenceBySubscore.map(({ sub, items, rawSubTotal }) => {
+                const sv = getScoreVisual(sub.score);
+                const parts = items.map((item) => item.contribution.toFixed(2)).join(' + ');
+                return (
+                  <div class="border border-surface-variant rounded-xl overflow-hidden bg-white">
+                    <div class="px-4 py-3 bg-surface-container-low/70 border-b border-surface-variant flex items-center justify-between gap-3">
+                      <span class="font-bold text-sm text-on-surface">{sub.name}</span>
+                      <span class={`text-sm font-black tabular-nums ${sv.text}`}>{fmtScore(sub.score)}</span>
+                    </div>
+                    <div class="divide-y divide-surface-variant/50">
+                      {
+                        items.map((item) => {
+                          const itemVisual = getScoreVisual(item.internal);
+                          return (
+                            <a
+                              href={testContributorUrl(category.key, sub.name, item.label)}
+                              class="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-[12px] hover:bg-surface-container-low transition-colors group"
+                            >
+                              <span class="text-on-surface-variant group-hover:text-primary-container underline-offset-2 group-hover:underline">{item.label}</span>
+                              <span class="tabular-nums text-on-surface-variant sm:text-right">
+                                <span class={`font-bold ${itemVisual.text}`}>{fmtScore(item.internal)}</span>
+                                <span class="text-tertiary mx-1.5">×</span>
+                                <span>{item.weight}%</span>
+                                <span class="text-tertiary mx-1.5">=</span>
+                                <span class={`font-bold ${itemVisual.text}`}>{item.contribution.toFixed(2)}</span>
+                              </span>
+                            </a>
+                          );
+                        })
+                      }
+                    </div>
+                    <div class={`px-4 py-2.5 text-[12px] tabular-nums ${sv.softBg} border-t ${sv.softBorder} grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center gap-1 sm:gap-4`}>
+                      <span class="text-on-surface-variant">
+                        {parts} = <span class={`font-bold ${sv.text}`}>{rawSubTotal.toFixed(2)}</span>
+                      </span>
+                      <span class="font-bold text-on-surface sm:text-right whitespace-nowrap">
+                        Rounded to {fmtScore(sub.score)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            }
+          </div>
+        </div>
+
+        <!-- Step 2: Subscores → Category -->
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <span class="flex items-center justify-center w-6 h-6 rounded-full bg-primary-container text-white text-[11px] font-black">2</span>
+            <h5 class="text-sm font-bold text-on-surface">Subscores → {category.name} score</h5>
+          </div>
+
+          <div class="border border-surface-variant rounded-xl overflow-hidden bg-white">
+            <div class="hidden md:grid md:grid-cols-[minmax(120px,1fr)_4.5rem_4.5rem_minmax(0,1.25fr)] md:gap-x-6 px-5 py-2 border-b border-surface-variant bg-surface-container-low/70 text-[10px] font-bold uppercase tracking-widest text-tertiary">
+              <span>Subscore</span>
+              <span class="text-center">Score</span>
+              <span class="text-center">Weight</span>
+              <span>Contribution</span>
+            </div>
+
+            {
+              subscoreContributions.map((sub, i) => {
+                const sv = getScoreVisual(sub.score);
+                const contrib = sub.contribution.toFixed(2);
+                return (
+                  <div class={`px-4 md:px-5 py-3 md:py-3.5 ${i < subscoreContributions.length - 1 ? 'border-b border-surface-variant/50' : ''}`}>
+                    <div class="hidden md:grid md:grid-cols-[minmax(120px,1fr)_4.5rem_4.5rem_minmax(0,1.25fr)] md:gap-x-6 md:items-center">
+                      <p class="font-semibold text-sm text-on-surface">{sub.name}</p>
+                      <div class="flex justify-center">
+                        <span class={`inline-flex items-center justify-center w-10 h-7 rounded-md border font-bold text-xs tabular-nums ${sv.border} ${sv.text} bg-white`}>
+                          {fmtScore(sub.score)}
                         </span>
-                      </td>
-                    </tr>
-                  ))
-                }
-                <tr class="bg-surface-container-low">
-                  <td class="py-4 px-4 md:px-6 font-black text-sm" colspan="2">
-                    {category.name} Score <span class="font-normal text-tertiary">(weighted average)</span>
-                  </td>
-                  <td class="py-4 px-4 md:px-6"></td>
-                  <td class={`py-4 px-4 md:px-6 text-right text-2xl font-black ${visual.text}`}>
-                    {fmtScore(category.score)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                      </div>
+                      <p class="text-center text-sm font-semibold text-on-surface tabular-nums">{sub.weight}%</p>
+                      <p class="text-[13px] text-on-surface-variant tabular-nums">
+                        {fmtScore(sub.score)} × {sub.weight}% ={' '}
+                        <span class={`font-bold ${sv.text}`}>{contrib}</span>
+                      </p>
+                    </div>
+                    <div class="md:hidden space-y-1.5">
+                      <p class="font-semibold text-sm text-on-surface">{sub.name}</p>
+                      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-on-surface-variant tabular-nums">
+                        <span>{fmtScore(sub.score)} × {sub.weight}% = <span class={`font-bold ${sv.text}`}>{contrib}</span></span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            }
+
+            <div class={`border-t ${visual.softBorder} ${visual.softBg}`}>
+              <div class="hidden md:grid md:grid-cols-[minmax(120px,1fr)_4.5rem_4.5rem_minmax(0,1.25fr)] md:gap-x-6 md:items-center px-5 py-4">
+                <p class="font-semibold text-sm text-on-surface">Final {category.name} Score</p>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <p class="text-[13px] text-on-surface-variant tabular-nums">
+                  {subscoreSumParts} = <span class={`font-bold ${visual.text}`}>{categoryRawTotal.toFixed(2)}</span>
+                  <span class="text-tertiary mx-2">→</span>
+                  <span class={`font-bold text-lg ${visual.text}`}>{fmtScore(category.score)}</span>
+                </p>
+              </div>
+              <div class="md:hidden px-4 py-4 space-y-2">
+                <p class="font-semibold text-sm text-on-surface">Final {category.name} Score</p>
+                <p class="text-[13px] text-on-surface-variant tabular-nums">
+                  {subscoreSumParts} = <span class={`font-bold ${visual.text}`}>{categoryRawTotal.toFixed(2)}</span>
+                  <span class="text-tertiary mx-2">→</span>
+                  <span class={`font-bold text-lg ${visual.text}`}>{fmtScore(category.score)}</span>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- What this means -->
-      <div class={`mt-8 ${visual.softBg} border ${visual.softBorder} rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4`}>
+      <div class={`mt-6 ${visual.softBg} border ${visual.softBorder} rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4`} data-detail-tier="calc">
         <div class="flex items-center gap-4">
           <span class={`material-symbols-outlined text-3xl ${visual.text}`} style="font-variation-settings: 'FILL' 1;">
             check_circle
@@ -300,21 +368,16 @@ const visual = getScoreVisual(category.score);
     cursor: pointer;
   }
   .subscore-card:hover {
-    border-color: var(--color-green-600, #16a34a);
     background-color: var(--color-surface-container-low, #f3f3f3);
-  }
-  .subscore-card[aria-selected='true'] {
-    border-color: var(--color-green-600, #16a34a);
-  }
-  .subscore-card[aria-selected='false']:hover [data-subscore-badge] {
-    border-color: var(--color-green-600, #16a34a);
-    color: var(--color-on-surface, #1b1b1b);
   }
 </style>
 
 <script>
   function initSubscoreSelect() {
     document.querySelectorAll<HTMLElement>('[data-category]').forEach((categoryEl) => {
+      if (categoryEl.dataset.subscoreBound === 'true') return;
+      categoryEl.dataset.subscoreBound = 'true';
+
       const cards = Array.from(categoryEl.querySelectorAll<HTMLButtonElement>('[data-subscore-select]'));
       const panels = Array.from(categoryEl.querySelectorAll<HTMLElement>('[data-subscore-panel]'));
       if (!cards.length || !panels.length) return;
@@ -322,27 +385,28 @@ const visual = getScoreVisual(category.score);
       function selectSubscore(index: string) {
         cards.forEach((card) => {
           const isActive = card.dataset.subscoreIndex === index;
+          const activeBorder = card.dataset.activeBorder || 'border-green-600';
+
           card.setAttribute('aria-selected', isActive ? 'true' : 'false');
-          card.classList.toggle('border-green-600', isActive);
-          card.classList.toggle('border-surface-variant', !isActive);
+          card.classList.remove('border-surface-variant', 'border-green-600', 'border-orange-500', 'border-red-600');
+          card.classList.add(isActive ? activeBorder : 'border-surface-variant');
 
           const badge = card.querySelector<HTMLElement>('[data-subscore-badge]');
           const label = card.querySelector<HTMLElement>('[data-subscore-label]');
           const chevron = card.querySelector<HTMLElement>('[data-subscore-chevron]');
 
           if (badge) {
-            badge.classList.toggle('border-green-600', isActive);
-            badge.classList.toggle('text-on-surface', isActive);
-            badge.classList.toggle('border-surface-variant', !isActive);
-            badge.classList.toggle('text-on-surface/40', !isActive);
+            badge.classList.remove('border-surface-variant', 'border-green-600', 'border-orange-500', 'border-red-600', 'text-on-surface', 'text-on-surface/40');
+            badge.classList.add(isActive ? activeBorder : 'border-surface-variant');
+            badge.classList.add(isActive ? 'text-on-surface' : 'text-on-surface/40');
           }
           if (label) {
             label.classList.toggle('text-on-surface', isActive);
             label.classList.toggle('text-on-surface/50', !isActive);
           }
           if (chevron) {
-            chevron.classList.toggle('text-green-600', isActive);
-            chevron.classList.toggle('text-tertiary/40', !isActive);
+            chevron.classList.remove('text-green-600', 'text-orange-500', 'text-red-600', 'text-tertiary/40');
+            chevron.classList.add(isActive ? activeBorder.replace('border-', 'text-') : 'text-tertiary/40');
           }
         });
 

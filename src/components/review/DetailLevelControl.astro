@@ -1,0 +1,99 @@
+---
+const options = [
+  { id: 'skim', label: 'Skim' },
+  { id: 'medium', label: 'Medium' },
+  { id: 'all-in', label: 'All In' },
+];
+---
+
+<div class="flex justify-end mb-6" data-detail-level-control>
+  <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+    <span class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant sm:text-right">
+      Detail level
+    </span>
+    <div
+      class="inline-flex p-1 rounded-lg border border-surface-variant bg-surface-container-low"
+      role="radiogroup"
+      aria-label="Detail level"
+    >
+      {
+        options.map((opt) => (
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="detail-level"
+              value={opt.id}
+              checked={opt.id === 'all-in'}
+              class="peer sr-only"
+            />
+            <span class="block px-3 py-1.5 text-xs font-bold rounded-md transition-colors peer-checked:bg-white peer-checked:text-primary-container peer-checked:shadow-sm text-on-surface-variant hover:text-on-surface">
+              {opt.label}
+            </span>
+          </label>
+        ))
+      }
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  [data-ratings-root][data-detail-level='skim'] [data-accordion-content] {
+    display: none !important;
+  }
+
+  [data-ratings-root][data-detail-level='medium'] [data-detail-tier='deep'],
+  [data-ratings-root][data-detail-level='medium'] [data-detail-tier='calc'] {
+    display: none !important;
+  }
+
+  [data-ratings-root][data-detail-level='medium'] [data-subscore-grid] {
+    grid-template-columns: 1fr !important;
+  }
+</style>
+
+<script>
+  function initDetailLevel() {
+    const root = document.querySelector<HTMLElement>('[data-ratings-root]');
+    const control = document.querySelector<HTMLElement>('[data-detail-level-control]');
+    if (!root || !control || control.dataset.bound === 'true') return;
+    control.dataset.bound = 'true';
+
+    function syncAccordionVisibility() {
+      root!.querySelectorAll<HTMLElement>('[data-category]').forEach((cat) => {
+        const toggle = cat.querySelector<HTMLElement>('[data-accordion-toggle]');
+        const content = cat.querySelector<HTMLElement>('[data-accordion-content]');
+        if (!toggle || !content) return;
+        const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+        content.classList.toggle('hidden', !isOpen);
+      });
+    }
+
+    function setLevel(level: string) {
+      root!.dataset.detailLevel = level;
+
+      if (level === 'skim') {
+        root!.querySelectorAll<HTMLElement>('[data-accordion-content]').forEach((el) => el.classList.add('hidden'));
+        root!.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((toggle) => {
+          toggle.setAttribute('aria-expanded', 'false');
+        });
+      } else {
+        syncAccordionVisibility();
+      }
+
+      document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
+        input.checked = input.value === level;
+      });
+    }
+
+    control.addEventListener('change', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || target.name !== 'detail-level' || !target.checked) return;
+      setLevel(target.value);
+    });
+
+    setLevel(root.dataset.detailLevel || 'all-in');
+  }
+
+  initDetailLevel();
+  document.addEventListener('astro:page-load', initDetailLevel);
+</script>

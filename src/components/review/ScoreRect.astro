@@ -1,0 +1,22 @@
+---
+import { getScoreVisual, fmtScore } from '../../lib/scores';
+
+interface Props {
+  score: number;
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+}
+
+const { score, size = 'md', class: className = '' } = Astro.props;
+const visual = getScoreVisual(score);
+
+const sizes = {
+  sm: 'w-9 h-7 text-sm rounded',
+  md: 'w-12 h-10 text-lg rounded-lg',
+  lg: 'px-3 py-1 text-4xl rounded-lg min-w-[4.5rem]',
+};
+---
+
+<span class={`inline-flex items-center justify-center font-black leading-none tabular-nums ${visual.bg} ${sizes[size]} ${className}`}>
+  {fmtScore(score)}
+</span>

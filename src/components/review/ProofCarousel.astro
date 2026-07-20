@@ -1,0 +1,204 @@
+---
+import type { ProofItem } from '../../data/products';
+
+interface Props {
+  items: ProofItem[];
+}
+
+const { items } = Astro.props;
+---
+
+{
+  items.length > 0 && (
+    <div class="proof-carousel w-full" data-proof-carousel>
+      <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-3">
+        Proof
+      </h4>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          data-proof-prev
+          class="proof-arrow shrink-0 flex items-center justify-center w-9 h-9 rounded-lg border border-surface-variant text-tertiary hover:text-on-surface hover:border-on-surface-variant transition disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Previous proof"
+        >
+          <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+        </button>
+
+        <div class="relative flex-1 min-w-0 overflow-hidden">
+          <div
+            class="flex gap-3 overflow-x-auto scroll-smooth pb-1 select-none cursor-grab active:cursor-grabbing snap-x snap-mandatory no-scrollbar"
+            data-proof-track
+            tabindex="0"
+            role="region"
+            aria-label="Proof gallery"
+          >
+            {
+              items.map((p) => {
+                const isVideo = p.type === 'video';
+                return (
+                  <button
+                    type="button"
+                    class="proof-slide shrink-0 snap-start text-left group"
+                    data-proof-slide
+                    data-lightbox-open={p.src}
+                    data-lightbox-alt={p.caption}
+                    data-lightbox-caption={`${p.caption}${p.sub ? ` ${p.sub}` : ''}`}
+                  >
+                    <div class="relative aspect-[3/4] rounded-lg overflow-hidden border border-surface-variant shadow-sm mb-1.5 bg-surface-container-low">
+                      <img
+                        class="w-full h-full object-cover grayscale-[0.1] group-hover:grayscale-0 transition pointer-events-none"
+                        src={p.src}
+                        alt={p.caption}
+                        loading="lazy"
+                        draggable="false"
+                      />
+                      {
+                        isVideo ? (
+                          <div class="absolute inset-0 flex items-center justify-center bg-black/15 group-hover:bg-black/5 transition-colors pointer-events-none">
+                            <span
+                              class="material-symbols-outlined text-white text-3xl drop-shadow-md"
+                              style="font-variation-settings: 'FILL' 1;"
+                            >
+                              play_circle
+                            </span>
+                          </div>
+                        ) : (
+                          <div class="absolute top-2 right-2 pointer-events-none">
+                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-black/50 text-white text-[9px] font-bold uppercase">
+                              <span class="material-symbols-outlined text-[12px]">image</span>
+                              Photo
+                            </span>
+                          </div>
+                        )
+                      }
+                    </div>
+                    <p class="text-[11px] font-bold leading-tight pointer-events-none">
+                      {p.caption}
+                      {p.sub && <span class="font-normal text-tertiary block text-[10px]">{p.sub}</span>}
+                    </p>
+                  </button>
+                );
+              })
+            }
+          </div>
+        </div>
+
+        <button
+          type="button"
+          data-proof-next
+          class="proof-arrow shrink-0 flex items-center justify-center w-9 h-9 rounded-lg border border-surface-variant text-tertiary hover:text-on-surface hover:border-on-surface-variant transition disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Next proof"
+        >
+          <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+<style>
+  .proof-slide {
+    flex: 0 0 calc(20% - 0.6rem);
+    min-width: 120px;
+  }
+
+  @media (max-width: 768px) {
+    .proof-slide {
+      flex: 0 0 calc(33.333% - 0.5rem);
+      min-width: 100px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .proof-slide {
+      flex: 0 0 calc(50% - 0.375rem);
+    }
+  }
+</style>
+
+<script>
+  function initProofCarousels() {
+    document.querySelectorAll<HTMLElement>('[data-proof-carousel]').forEach((carousel) => {
+      if (carousel.dataset.bound === 'true') return;
+      carousel.dataset.bound = 'true';
+
+      const track = carousel.querySelector<HTMLElement>('[data-proof-track]');
+      const prevBtn = carousel.querySelector<HTMLButtonElement>('[data-proof-prev]');
+      const nextBtn = carousel.querySelector<HTMLButtonElement>('[data-proof-next]');
+      const slides = Array.from(carousel.querySelectorAll<HTMLElement>('[data-proof-slide]'));
+      if (!track || !slides.length) return;
+
+      let isDown = false;
+      let startX = 0;
+      let scrollLeft = 0;
+      let moved = false;
+
+      function slideStep() {
+        const slide = slides[0];
+        if (!slide) return track.clientWidth * 0.8;
+        return slide.offsetWidth + 12;
+      }
+
+      function updateArrows() {
+        const max = track.scrollWidth - track.clientWidth - 2;
+        if (prevBtn) prevBtn.disabled = track.scrollLeft <= 2;
+        if (nextBtn) nextBtn.disabled = track.scrollLeft >= max;
+      }
+
+      prevBtn?.addEventListener('click', () => {
+        track.scrollBy({ left: -slideStep(), behavior: 'smooth' });
+      });
+
+      nextBtn?.addEventListener('click', () => {
+        track.scrollBy({ left: slideStep(), behavior: 'smooth' });
+      });
+
+      track.addEventListener('scroll', updateArrows, { passive: true });
+
+      track.addEventListener('mousedown', (e) => {
+        isDown = true;
+        moved = false;
+        startX = e.pageX;
+        scrollLeft = track.scrollLeft;
+        track.classList.add('cursor-grabbing');
+        track.classList.remove('cursor-grab');
+      });
+
+      track.addEventListener('mouseleave', () => {
+        isDown = false;
+        track.classList.remove('cursor-grabbing');
+        track.classList.add('cursor-grab');
+      });
+
+      track.addEventListener('mouseup', () => {
+        isDown = false;
+        track.classList.remove('cursor-grabbing');
+        track.classList.add('cursor-grab');
+      });
+
+      track.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const dx = e.pageX - startX;
+        if (Math.abs(dx) > 4) moved = true;
+        track.scrollLeft = scrollLeft - dx;
+      });
+
+      slides.forEach((slide) => {
+        slide.addEventListener('click', (e) => {
+          if (moved) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        });
+      });
+
+      window.addEventListener('resize', updateArrows);
+      updateArrows();
+    });
+  }
+
+  initProofCarousels();
+  document.addEventListener('astro:page-load', initProofCarousels);
+</script>

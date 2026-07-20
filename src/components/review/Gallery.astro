@@ -9,18 +9,28 @@ const { images } = Astro.props;
 const first = images[0];
 ---
 
-<div class="space-y-4" data-gallery>
-  <div class="relative rounded-xl overflow-hidden aspect-video shadow-lg border border-surface-variant/40 bg-surface-container">
+<div class="space-y-3" data-gallery>
+  <button
+    type="button"
+    class="relative rounded-xl overflow-hidden aspect-video shadow-lg border border-surface-variant/40 bg-surface-container w-full block group cursor-zoom-in"
+    data-lightbox-open={first?.full}
+    data-lightbox-alt={first?.alt}
+    data-gallery-main-trigger
+  >
     <img
       data-gallery-main
       alt={first?.alt ?? ''}
-      class="w-full h-full object-cover"
+      class="w-full h-full object-cover transition group-hover:scale-[1.01]"
       src={first?.full}
     />
-  </div>
+    <span class="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/50 text-white text-[11px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+      <span class="material-symbols-outlined text-[14px]">zoom_in</span>
+      Enlarge
+    </span>
+  </button>
 
   <div class="relative group">
-    <div class="flex overflow-x-auto gap-3 pb-2 no-scrollbar" data-thumb-track>
+    <div class="flex overflow-x-auto gap-2 pb-1 no-scrollbar" data-thumb-track>
       {
         images.map((image, i) => (
           <button
@@ -30,7 +40,7 @@ const first = images[0];
             data-alt={image.alt}
             aria-current={i === 0 ? 'true' : 'false'}
             aria-label={`Show image ${i + 1}`}
-            class="thumb flex-none w-28 h-18 sm:w-32 sm:h-20 rounded-lg overflow-hidden"
+            class="thumb flex-none w-24 h-16 sm:w-28 sm:h-18 rounded-lg overflow-hidden"
           >
             <img alt={image.alt} class="w-full h-full object-cover" src={image.thumb} />
           </button>
@@ -40,7 +50,7 @@ const first = images[0];
     <button
       type="button"
       data-thumb-next
-      class="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow border border-surface-variant opacity-0 group-hover:opacity-100 transition-opacity"
+      class="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 p-1.5 rounded-full shadow border border-surface-variant opacity-0 group-hover:opacity-100 transition-opacity"
       aria-label="Scroll thumbnails"
     >
       <span class="material-symbols-outlined text-sm">chevron_right</span>
@@ -60,24 +70,38 @@ const first = images[0];
 
 <script>
   document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((root) => {
+    if (root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
     const main = root.querySelector<HTMLImageElement>('[data-gallery-main]');
+    const mainTrigger = root.querySelector<HTMLElement>('[data-gallery-main-trigger]');
     const thumbs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-thumb]'));
     const track = root.querySelector<HTMLElement>('[data-thumb-track]');
     const next = root.querySelector<HTMLButtonElement>('[data-thumb-next]');
 
+    function setMain(full: string, alt: string) {
+      if (main) {
+        main.src = full;
+        main.alt = alt;
+      }
+      if (mainTrigger) {
+        mainTrigger.dataset.lightboxOpen = full;
+        mainTrigger.dataset.lightboxAlt = alt;
+      }
+    }
+
     thumbs.forEach((thumb) => {
       thumb.addEventListener('click', () => {
-        if (main) {
-          main.src = thumb.dataset.full ?? main.src;
-          main.alt = thumb.dataset.alt ?? '';
-        }
+        const full = thumb.dataset.full ?? '';
+        const alt = thumb.dataset.alt ?? '';
+        setMain(full, alt);
         thumbs.forEach((t) => t.setAttribute('aria-current', 'false'));
         thumb.setAttribute('aria-current', 'true');
       });
     });
 
     next?.addEventListener('click', () => {
-      track?.scrollBy({ left: 160, behavior: 'smooth' });
+      track?.scrollBy({ left: 140, behavior: 'smooth' });
     });
   });
 </script>

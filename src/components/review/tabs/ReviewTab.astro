@@ -1,0 +1,266 @@
+---
+import type { Product, VerdictItem } from '../../../data/products';
+import { getAuthor } from '../../../data/authors';
+import { getScoreVisual, fmtScore } from '../../../lib/scores';
+import ScoreRect from '../ScoreRect.astro';
+import InfoIcon from '../../ui/InfoIcon.astro';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+
+function resolveScore(verdict: VerdictItem): number {
+  if (verdict.score != null) return verdict.score;
+  if (verdict.id === 'overall') return product.overallScore;
+  return product.categories.find((c) => c.key === verdict.id)?.score ?? product.overallScore;
+}
+
+const verdictEntries = product.verdicts.map((v) => ({
+  ...v,
+  score: resolveScore(v),
+}));
+
+const defaultVerdict = verdictEntries.find((v) => v.id === 'overall') ?? verdictEntries[0];
+const defaultVisual = getScoreVisual(defaultVerdict.score);
+
+const herman = getAuthor('herman-carter');
+---
+
+<section class="bg-white py-12 md:py-14" data-verdict-root>
+  <div class="section-container px-4 md:px-8">
+    <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-6 md:mb-8">Our Verdict</h2>
+
+    <div class="flex flex-col lg:flex-row border border-surface-variant shadow-sm overflow-hidden bg-white rounded-xl">
+      <!-- Main content -->
+      <div class="flex-1 p-6 md:p-8 min-w-0">
+        {
+          verdictEntries.map((verdict) => {
+            const sv = getScoreVisual(verdict.score);
+            const isDefault = verdict.id === defaultVerdict.id;
+            return (
+              <div
+                data-verdict-panel={verdict.id}
+                class={isDefault ? '' : 'hidden'}
+              >
+                <div class="flex items-start gap-4 mb-2">
+                  <ScoreRect score={verdict.score} size="md" />
+                  <div class="min-w-0 pt-0.5">
+                    <div class="flex items-center gap-1.5">
+                      <h3 class="text-xl md:text-2xl font-bold text-on-surface">{verdict.label}</h3>
+                      <InfoIcon size="sm" class="text-tertiary shrink-0" title={verdict.label} />
+                    </div>
+                    {
+                      verdict.tagline && (
+                        <p class="text-sm font-semibold text-tertiary mt-1">{verdict.tagline}</p>
+                      )
+                    }
+                  </div>
+                </div>
+
+                <p class="text-base text-on-surface leading-relaxed mb-8 max-w-2xl mt-4">{verdict.summary}</p>
+
+                <div class="grid md:grid-cols-2 gap-x-10 gap-y-6">
+                  <div>
+                    <h4 class="font-black text-lg mb-4 text-on-surface">Pros</h4>
+                    <ul class="space-y-3">
+                      {
+                        verdict.pros.map((pro) => (
+                          <li class="flex items-start gap-3">
+                            <span class={`material-symbols-outlined shrink-0 mt-0.5 ${sv.text}`} style="font-variation-settings: 'FILL' 1;">
+                              add_circle
+                            </span>
+                            <span class="text-sm font-medium text-on-surface-variant leading-snug">{pro}</span>
+                          </li>
+                        ))
+                      }
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 class="font-black text-lg mb-4 text-on-surface">Cons</h4>
+                    <ul class="space-y-3">
+                      {
+                        verdict.cons.map((con) => (
+                          <li class="flex items-start gap-3">
+                            <span class="material-symbols-outlined shrink-0 mt-0.5 text-red-600" style="font-variation-settings: 'FILL' 1;">
+                              remove_circle
+                            </span>
+                            <span class="text-sm font-medium text-on-surface-variant leading-snug">{con}</span>
+                          </li>
+                        ))
+                      }
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        }
+
+        <!-- Expert opinion -->
+        {
+          herman && (
+            <div class="mt-10 pt-8 border-t border-surface-variant">
+              <div class="rounded-xl bg-surface-container-low border border-surface-variant p-5 md:p-6">
+                <p class="text-[11px] font-black uppercase tracking-widest text-primary-container mb-4">
+                  Our Experts' Opinion
+                </p>
+                <div class="flex items-start gap-4">
+                  <div class="relative shrink-0">
+                    <img
+                      src={herman.avatar}
+                      alt={herman.name}
+                      class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                    />
+                    <span
+                      class="material-symbols-outlined absolute -bottom-0.5 -right-0.5 text-[16px] text-blue-500 drop-shadow-sm"
+                      style="font-variation-settings: 'FILL' 1;"
+                    >
+                      verified
+                    </span>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm font-bold text-on-surface mb-2">{herman.name}</p>
+                    <p class="text-sm md:text-base text-on-surface leading-relaxed">{product.expertOpinion}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        }
+
+        <!-- Subtle CTA -->
+        <div class="mt-8 flex flex-col sm:flex-row items-center gap-4 pt-6 border-t border-surface-variant">
+          <p class="text-on-surface font-semibold text-base md:text-lg text-center sm:text-left">
+            Try <span class="font-black text-primary-container">{product.pricingDisplay.storeLabel}</span> yourself
+          </p>
+          <a
+            href={product.affiliateUrl}
+            target="_blank"
+            rel="nofollow sponsored noopener"
+            class="sm:ml-auto w-full sm:w-auto text-center bg-primary-container text-white px-8 py-3 rounded-xl font-bold hover:opacity-90 transition shadow-md"
+          >
+            Visit {product.pricingDisplay.storeLabel}
+          </a>
+        </div>
+      </div>
+
+      <!-- Performance ratings sidebar -->
+      <aside class="lg:w-[300px] xl:w-[320px] bg-surface-container-low border-t lg:border-t-0 lg:border-l border-surface-variant flex flex-col shrink-0">
+        <div
+          data-verdict-sidebar-header
+          class={`${defaultVisual.bg} p-4 flex items-center gap-2 font-bold text-base md:text-lg relative pointed-arrow transition-colors text-white`}
+        >
+          <span class="material-symbols-outlined text-xl opacity-80">keyboard_arrow_left</span>
+          <span data-verdict-header-score class="font-black tabular-nums">{fmtScore(defaultVerdict.score)}</span>
+          <span data-verdict-header-label class="truncate">{defaultVerdict.label}</span>
+        </div>
+
+        <div class="p-4 md:p-5 space-y-1 flex-1" data-verdict-sidebar-list>
+          {
+            verdictEntries.map((verdict) => {
+              const sv = getScoreVisual(verdict.score);
+              const isDefault = verdict.id === defaultVerdict.id;
+              return (
+                <button
+                  type="button"
+                  data-verdict-item={verdict.id}
+                  aria-selected={isDefault ? 'true' : 'false'}
+                  class={`verdict-rating-item w-full flex items-center gap-3 p-2.5 rounded-lg cursor-pointer text-left transition-all ${isDefault ? `${sv.bg} shadow-sm` : ''}`}
+                >
+                  <span
+                    data-verdict-score
+                    class={`inline-flex items-center justify-center w-12 h-8 rounded-lg font-black text-sm tabular-nums shrink-0 text-white ${sv.bg}`}
+                  >
+                    {fmtScore(verdict.score)}
+                  </span>
+                  <span data-verdict-label class={`font-bold text-sm truncate ${isDefault ? 'text-white' : 'text-on-surface'}`}>
+                    {verdict.label}
+                  </span>
+                </button>
+              );
+            })
+          }
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<style>
+  .pointed-arrow::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 10px solid white;
+    z-index: 10;
+  }
+</style>
+
+<script define:vars={{ verdictMeta: verdictEntries.map((v) => ({ id: v.id, score: v.score, label: v.label, bg: getScoreVisual(v.score).bg, border: getScoreVisual(v.score).border, text: getScoreVisual(v.score).text })) }}>
+  function initVerdictSwitcher() {
+    const root = document.querySelector('[data-verdict-root]');
+    if (!root || root.dataset.verdictBound === 'true') return;
+    root.dataset.verdictBound = 'true';
+
+    const panels = Array.from(root.querySelectorAll('[data-verdict-panel]'));
+    const items = Array.from(root.querySelectorAll('[data-verdict-item]'));
+    const header = root.querySelector('[data-verdict-sidebar-header]');
+    const headerScore = root.querySelector('[data-verdict-header-score]');
+    const headerLabel = root.querySelector('[data-verdict-header-label]');
+    const meta = Object.fromEntries(verdictMeta.map((v) => [v.id, v]));
+
+    let activeId = 'overall';
+
+    function show(id) {
+      activeId = id;
+      const m = meta[id];
+      if (!m) return;
+
+      panels.forEach((panel) => {
+        panel.classList.toggle('hidden', panel.dataset.verdictPanel !== id);
+      });
+
+      items.forEach((item) => {
+        const active = item.dataset.verdictItem === id;
+        item.setAttribute('aria-selected', active ? 'true' : 'false');
+        const itemMeta = meta[item.dataset.verdictItem];
+        if (!itemMeta) return;
+
+        item.className = 'verdict-rating-item w-full flex items-center gap-3 p-2.5 rounded-lg cursor-pointer text-left transition-all';
+        if (active) item.classList.add(...itemMeta.bg.split(' '), 'shadow-sm');
+
+        const scoreEl = item.querySelector('[data-verdict-score]');
+        const labelEl = item.querySelector('[data-verdict-label]');
+        if (scoreEl) {
+          scoreEl.className = `inline-flex items-center justify-center w-12 h-8 rounded-lg font-black text-sm tabular-nums shrink-0 text-white ${itemMeta.bg}`;
+        }
+        if (labelEl) {
+          labelEl.className = `font-bold text-sm truncate ${active ? 'text-white' : 'text-on-surface'}`;
+        }
+      });
+
+      if (header) {
+        header.className = `${m.bg} p-4 flex items-center gap-2 font-bold text-base md:text-lg relative pointed-arrow transition-colors text-white`;
+      }
+      if (headerScore) headerScore.textContent = m.score.toFixed(1);
+      if (headerLabel) headerLabel.textContent = m.label;
+    }
+
+    items.forEach((item) => {
+      const id = item.dataset.verdictItem;
+      if (!id) return;
+      item.addEventListener('mouseenter', () => show(id));
+    });
+
+    show('overall');
+  }
+
+  initVerdictSwitcher();
+  document.addEventListener('astro:page-load', initVerdictSwitcher);
+</script>

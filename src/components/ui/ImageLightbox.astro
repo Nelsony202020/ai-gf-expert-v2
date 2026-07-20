@@ -1,0 +1,66 @@
+<div
+  data-image-lightbox
+  class="hidden fixed inset-0 z-[200] bg-black/92 items-center justify-center p-4 md:p-8"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Image preview"
+>
+  <button
+    type="button"
+    data-lightbox-close
+    class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+    aria-label="Close"
+  >
+    <span class="material-symbols-outlined">close</span>
+  </button>
+  <img data-lightbox-img class="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" alt="" />
+  <p data-lightbox-caption class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium text-center max-w-lg"></p>
+</div>
+
+<script>
+  function initImageLightbox() {
+    const lightbox = document.querySelector<HTMLElement>('[data-image-lightbox]');
+    const img = document.querySelector<HTMLImageElement>('[data-lightbox-img]');
+    const caption = document.querySelector<HTMLElement>('[data-lightbox-caption]');
+    const closeBtn = document.querySelector<HTMLButtonElement>('[data-lightbox-close]');
+    if (!lightbox || !img || lightbox.dataset.bound === 'true') return;
+    lightbox.dataset.bound = 'true';
+
+    function open(src: string, alt = '', cap = '') {
+      img!.src = src;
+      img!.alt = alt;
+      if (caption) caption.textContent = cap;
+      lightbox!.classList.remove('hidden');
+      lightbox!.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+      lightbox!.classList.add('hidden');
+      lightbox!.classList.remove('flex');
+      img!.src = '';
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('click', (e) => {
+      const trigger = (e.target as HTMLElement).closest<HTMLElement>('[data-lightbox-open]');
+      if (trigger) {
+        e.preventDefault();
+        open(trigger.dataset.lightboxOpen ?? '', trigger.dataset.lightboxAlt, trigger.dataset.lightboxCaption);
+      }
+    });
+
+    closeBtn?.addEventListener('click', close);
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) close();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !lightbox.classList.contains('hidden')) close();
+    });
+
+    (window as unknown as { openImageLightbox?: typeof open }).openImageLightbox = open;
+  }
+
+  initImageLightbox();
+  document.addEventListener('astro:page-load', initImageLightbox);
+</script>

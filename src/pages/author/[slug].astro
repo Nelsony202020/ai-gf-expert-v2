@@ -1,0 +1,70 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import SocialIcon from '../../components/ui/SocialIcon.astro';
+import { authors, getAuthor } from '../../data/authors';
+
+export function getStaticPaths() {
+  return Object.keys(authors).map((slug) => ({ params: { slug } }));
+}
+
+const { slug } = Astro.params;
+const author = getAuthor(slug!);
+
+if (!author) {
+  return Astro.redirect('/404');
+}
+
+const title = `${author.name} — Lovelace Reviews`;
+---
+
+<BaseLayout title={title} description={author.bio}>
+  <Header />
+  <main class="section-container px-4 md:px-8 py-10 md:py-14">
+    <nav class="text-[12px] font-medium text-tertiary mb-8">
+      <a class="hover:text-primary-container" href="/">Home</a> /
+      <span class="text-on-surface">{author.name}</span>
+    </nav>
+
+    <div class="max-w-3xl">
+      <div class="flex items-start gap-5 mb-8">
+        <div class="relative shrink-0">
+          <img src={author.avatar} alt={author.name} class="w-24 h-24 rounded-full object-cover border-2 border-surface-variant shadow-sm" />
+          <span
+            class="material-symbols-outlined absolute -bottom-0.5 -right-0.5 text-[20px] text-blue-500 drop-shadow-sm"
+            style="font-variation-settings: 'FILL' 1;"
+          >
+            verified
+          </span>
+        </div>
+        <div>
+          <h1 class="text-3xl md:text-4xl font-black text-on-surface">{author.name}</h1>
+          <p class="text-sm text-tertiary mt-1">{author.title}</p>
+          <a href={`mailto:${author.email}`} class="text-sm text-primary-container font-semibold mt-2 inline-block hover:underline">
+            {author.email}
+          </a>
+        </div>
+      </div>
+
+      <p class="text-base text-on-surface-variant leading-relaxed mb-8">{author.bio}</p>
+
+      <div class="flex flex-wrap gap-2">
+        {
+          author.socials.map((s) => (
+            <a
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-surface-variant text-sm font-semibold text-on-surface-variant hover:border-primary-container hover:text-primary-container transition-colors"
+            >
+              <SocialIcon platform={s.icon} class="w-4 h-4" />
+              {s.platform}
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

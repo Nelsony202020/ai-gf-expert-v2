@@ -7,6 +7,7 @@ import TabBar from '../../components/review/TabBar.astro';
 import type { Tab } from '../../components/review/TabBar.astro';
 import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
 import RatingsSpecsTab from '../../components/review/tabs/RatingsSpecsTab.astro';
+import ReviewTab from '../../components/review/tabs/ReviewTab.astro';
 import PlaceholderTab from '../../components/review/tabs/PlaceholderTab.astro';
 import { products, getProduct } from '../../data/products';
 
@@ -47,11 +48,7 @@ const description = product.tagline;
         <RatingsSpecsTab product={product} />
       </div>
       <div data-tab-panel="review" class="hidden">
-        <PlaceholderTab
-          title="Full Written Review"
-          icon="edit_note"
-          description="Our long-form, hands-on review of Aura AI is being written. It will cover real-world testing notes, standout moments, and where it falls short."
-        />
+        <ReviewTab product={product} />
       </div>
       <div data-tab-panel="photos" class="hidden">
         <PlaceholderTab
@@ -77,10 +74,12 @@ const description = product.tagline;
 
   function initReview() {
     const panelsWrap = document.querySelector<HTMLElement>('[data-panels]');
+    if (!panelsWrap || panelsWrap.dataset.reviewInit === 'true') return;
+    panelsWrap.dataset.reviewInit = 'true';
+
     const tabButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tabbar] [data-tab]'));
     const tabTriggers = Array.from(document.querySelectorAll<HTMLElement>('[data-tab]'));
     const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-tab-panel]'));
-    if (!panelsWrap) return;
 
     function setActiveTab(id: string, scroll = true) {
       let matched = false;
@@ -105,12 +104,28 @@ const description = product.tagline;
       });
     });
 
-    // Accordions
+    // Accordions — only one category open at a time
     function toggleAccordion(toggle: HTMLElement, force?: boolean) {
       const wrapper = toggle.closest('[data-category]');
       const content = wrapper?.querySelector<HTMLElement>('[data-accordion-content]');
       if (!content) return;
+
+      const ratingsRoot = document.querySelector<HTMLElement>('[data-ratings-root]');
+      const detailLevel = ratingsRoot?.dataset.detailLevel ?? 'all-in';
+      if (detailLevel === 'skim') return;
+
       const willOpen = force ?? content.classList.contains('hidden');
+
+      if (willOpen) {
+        document.querySelectorAll<HTMLElement>('[data-accordion-group] [data-category]').forEach((cat) => {
+          if (cat === wrapper) return;
+          const otherContent = cat.querySelector<HTMLElement>('[data-accordion-content]');
+          const otherToggle = cat.querySelector<HTMLElement>('[data-accordion-toggle]');
+          if (otherContent) otherContent.classList.add('hidden');
+          if (otherToggle) otherToggle.setAttribute('aria-expanded', 'false');
+        });
+      }
+
       content.classList.toggle('hidden', !willOpen);
       toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
     }

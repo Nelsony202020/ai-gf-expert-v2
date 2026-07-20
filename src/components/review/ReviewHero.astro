@@ -1,8 +1,10 @@
 ---
 import type { Product } from '../../data/products';
+import { getAuthor } from '../../data/authors';
 import Gallery from './Gallery.astro';
 import RatingSidebar from './RatingSidebar.astro';
 import InfoIcon from '../ui/InfoIcon.astro';
+import AuthorBioPopover from './AuthorBioPopover.astro';
 
 interface Props {
   product: Product;
@@ -40,30 +42,54 @@ const { product } = Astro.props;
   <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-surface-variant pb-6 mb-8">
     <div class="flex flex-wrap items-center gap-x-6 gap-y-4">
       {
-        product.authors.map((author, i) => (
-          <>
-            {i > 0 && <div class="w-px h-10 bg-surface-variant hidden md:block" />}
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0">
-                <img alt={author.name} class="w-full h-full object-cover" src={author.avatar} />
-              </div>
-              <div class="flex flex-col">
-                <div class="flex items-center gap-1">
-                  <span class="text-sm font-bold hover:underline cursor-pointer">{author.name}</span>
-                  {author.verified && (
-                    <span
-                      class="material-symbols-outlined text-[16px] text-blue-500"
-                      style="font-variation-settings: 'FILL' 1;"
-                    >
-                      verified
-                    </span>
-                  )}
+        product.authors.map((author, i) => {
+          const profile = author.slug ? getAuthor(author.slug) : undefined;
+          return (
+            <>
+              {i > 0 && <div class="w-px h-10 bg-surface-variant hidden md:block" />}
+              <div class={`flex items-center gap-3 ${profile ? 'relative' : ''}`}>
+                <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0">
+                  <img alt={author.name} class="w-full h-full object-cover" src={author.avatar} />
                 </div>
-                <span class="text-[11px] text-tertiary font-medium">{author.role}</span>
+                <div class="flex flex-col">
+                  {
+                    profile ? (
+                      <button
+                        type="button"
+                        class="flex items-center gap-1 text-left group"
+                        data-author-trigger={author.slug}
+                      >
+                        <span class="text-sm font-bold group-hover:underline cursor-pointer">{author.name}</span>
+                        {author.verified && (
+                          <span
+                            class="material-symbols-outlined text-[16px] text-blue-500"
+                            style="font-variation-settings: 'FILL' 1;"
+                          >
+                            verified
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      <div class="flex items-center gap-1">
+                        <span class="text-sm font-bold">{author.name}</span>
+                        {author.verified && (
+                          <span
+                            class="material-symbols-outlined text-[16px] text-blue-500"
+                            style="font-variation-settings: 'FILL' 1;"
+                          >
+                            verified
+                          </span>
+                        )}
+                      </div>
+                    )
+                  }
+                  <span class="text-[11px] text-tertiary font-medium">{author.role}</span>
+                </div>
+                {profile && <AuthorBioPopover author={profile} />}
               </div>
-            </div>
-          </>
-        ))
+            </>
+          );
+        })
       }
     </div>
   </div>

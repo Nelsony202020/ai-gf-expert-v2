@@ -1,7 +1,7 @@
 // Single source of truth for turning a numeric score (0-10) into a band,
 // label, range, and the Tailwind classes used everywhere it is rendered.
 
-export type ScoreBand = 'excellent' | 'great' | 'good' | 'fair' | 'poor';
+export type ScoreBand = 'good' | 'fair' | 'poor';
 
 export interface ScoreVisual {
   band: ScoreBand;
@@ -21,73 +21,47 @@ export interface ScoreVisual {
 }
 
 export function getScoreBand(score: number): ScoreBand {
-  if (score >= 9) return 'excellent';
-  if (score >= 8) return 'great';
-  if (score >= 7) return 'good';
-  if (score >= 6) return 'fair';
+  if (score >= 7.6) return 'good';
+  if (score >= 5.1) return 'fair';
   return 'poor';
 }
 
 const VISUALS: Record<ScoreBand, ScoreVisual> = {
-  excellent: {
-    band: 'excellent',
-    label: 'Excellent',
-    range: '9.0 – 10.0',
-    bg: 'bg-green-600 text-white',
-    text: 'text-green-600',
-    border: 'border-green-600',
-    softBg: 'bg-green-50',
-    softBorder: 'border-green-200',
-    softText: 'text-green-800',
-    dot: 'bg-green-500',
-  },
-  great: {
-    band: 'great',
-    label: 'Great',
-    range: '8.0 – 8.9',
-    bg: 'bg-green-600 text-white',
-    text: 'text-green-600',
-    border: 'border-green-600',
-    softBg: 'bg-green-50',
-    softBorder: 'border-green-200',
-    softText: 'text-green-800',
-    dot: 'bg-green-500',
-  },
   good: {
     band: 'good',
     label: 'Good',
-    range: '7.0 – 7.9',
-    bg: 'bg-primary-container text-white',
-    text: 'text-primary-container',
-    border: 'border-primary-container',
-    softBg: 'bg-orange-50',
-    softBorder: 'border-orange-200',
-    softText: 'text-on-primary-container',
-    dot: 'bg-primary-container',
+    range: '7.6 – 10.0',
+    bg: 'bg-green-600 text-white',
+    text: 'text-green-600',
+    border: 'border-green-600',
+    softBg: 'bg-green-50',
+    softBorder: 'border-green-200',
+    softText: 'text-green-800',
+    dot: 'bg-green-500',
   },
   fair: {
     band: 'fair',
     label: 'Fair',
-    range: '6.0 – 6.9',
-    bg: 'bg-amber-500 text-white',
-    text: 'text-amber-600',
-    border: 'border-amber-500',
-    softBg: 'bg-amber-50',
-    softBorder: 'border-amber-200',
-    softText: 'text-amber-800',
-    dot: 'bg-amber-500',
+    range: '5.1 – 7.5',
+    bg: 'bg-orange-500 text-white',
+    text: 'text-orange-500',
+    border: 'border-orange-500',
+    softBg: 'bg-orange-50',
+    softBorder: 'border-orange-200',
+    softText: 'text-orange-900',
+    dot: 'bg-orange-500',
   },
   poor: {
     band: 'poor',
     label: 'Poor',
-    range: '0 – 5.9',
-    bg: 'bg-error text-white',
-    text: 'text-error',
-    border: 'border-error',
+    range: '0 – 5.0',
+    bg: 'bg-red-600 text-white',
+    text: 'text-red-600',
+    border: 'border-red-600',
     softBg: 'bg-red-50',
     softBorder: 'border-red-200',
-    softText: 'text-on-error-container',
-    dot: 'bg-error',
+    softText: 'text-red-800',
+    dot: 'bg-red-500',
   },
 };
 
@@ -103,4 +77,24 @@ export function fmtScore(score: number): string {
 /** Weighted contribution of a subscore to its category (score * weight%). */
 export function weightedValue(score: number, weightPct: number): number {
   return (score * weightPct) / 100;
+}
+
+/** Distribute 100% weight evenly across n items. */
+export function equalWeights(count: number): number[] {
+  if (count <= 0) return [];
+  const base = Math.floor(100 / count);
+  const extra = 100 - base * count;
+  return Array.from({ length: count }, (_, i) => base + (i < extra ? 1 : 0));
+}
+
+/** Compute a category score from its subscores (weighted average). */
+export function computeCategoryScore(subscores: { score: number; weight: number }[]): number {
+  const raw = subscores.reduce((sum, sub) => sum + weightedValue(sub.score, sub.weight), 0);
+  return Math.round(raw * 10) / 10;
+}
+
+/** Compute overall product score from category scores and weights. */
+export function computeOverallScore(categories: { score: number; weight: number }[]): number {
+  const raw = categories.reduce((sum, cat) => sum + weightedValue(cat.score, cat.weight), 0);
+  return Math.round(raw * 10) / 10;
 }
