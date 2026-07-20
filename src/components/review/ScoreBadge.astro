@@ -1,0 +1,28 @@
+---
+import { getScoreVisual, fmtScore } from '../../lib/scores';
+import InfoIcon from '../ui/InfoIcon.astro';
+
+interface Props {
+  score: number;
+  label: string;
+  /** small caption under / beside the label */
+  caption?: string;
+  href?: string;
+  class?: string;
+}
+
+const { score, label, caption, href, class: className = '' } = Astro.props;
+const visual = getScoreVisual(score);
+const Tag = href ? 'a' : 'div';
+---
+
+<Tag
+  {...href ? { href } : {}}
+  class={`${visual.bg} p-4 flex items-center justify-between ${href ? 'cursor-pointer hover:brightness-95' : ''} transition ${className}`}
+>
+  <div class="flex items-center gap-3">
+    <span class="text-2xl font-black">{fmtScore(score)}</span>
+    <span class="text-lg font-bold">{label}</span>
+    {caption && <InfoIcon size="xs" class="text-white/70 hover:text-white" />}
+  </div>
+</Tag>

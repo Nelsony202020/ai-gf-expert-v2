@@ -1,0 +1,132 @@
+@import 'tailwindcss';
+
+/* ===========================================================================
+   Design tokens ported from the mockups' DESIGN.md ("Vibrant Editorial")
+   Tailwind v4 @theme -> generates utilities like bg-primary-container,
+   text-on-surface, border-surface-variant, font-display, etc.
+   =========================================================================== */
+@theme {
+  /* Fonts */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-label: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Radius (matches the primary Overview mockup: default 8, lg 12, xl 16) */
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* Color system */
+  --color-background: #f9f9f9;
+  --color-on-background: #1b1b1b;
+
+  --color-surface: #f9f9f9;
+  --color-surface-dim: #dadada;
+  --color-surface-bright: #f9f9f9;
+  --color-surface-variant: #e2e2e2;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f3f3f3;
+  --color-surface-container: #eeeeee;
+  --color-surface-container-high: #e8e8e8;
+  --color-surface-container-highest: #e2e2e2;
+  --color-surface-tint: #a04100;
+
+  --color-on-surface: #1b1b1b;
+  --color-on-surface-variant: #5a4136;
+  --color-inverse-surface: #303030;
+  --color-inverse-on-surface: #f1f1f1;
+
+  --color-primary: #a04100;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #ff6b00;
+  --color-on-primary-container: #572000;
+  --color-inverse-primary: #ffb693;
+  --color-primary-fixed: #ffdbcc;
+  --color-primary-fixed-dim: #ffb693;
+  --color-on-primary-fixed: #351000;
+  --color-on-primary-fixed-variant: #7a3000;
+
+  --color-secondary: #7c5800;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #feb700;
+  --color-on-secondary-container: #6b4b00;
+  --color-secondary-fixed: #ffdea8;
+  --color-secondary-fixed-dim: #ffba20;
+  --color-on-secondary-fixed: #271900;
+  --color-on-secondary-fixed-variant: #5e4200;
+
+  --color-tertiary: #5f5e5e;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #9a9898;
+  --color-on-tertiary-container: #313131;
+  --color-tertiary-fixed: #e5e2e1;
+  --color-tertiary-fixed-dim: #c8c6c5;
+  --color-on-tertiary-fixed: #1c1b1b;
+  --color-on-tertiary-fixed-variant: #474746;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --color-outline: #8e7164;
+  --color-outline-variant: #e2bfb0;
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------------- */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #ffffff;
+    color: var(--color-on-surface);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Utilities / helpers used across the mockups
+   --------------------------------------------------------------------------- */
+@layer components {
+  .section-container {
+    width: 100%;
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Material Symbols base sizing (the Google font stylesheet defines the class,
+   this just keeps inline icons aligned with text) */
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  vertical-align: middle;
+  user-select: none;
+}

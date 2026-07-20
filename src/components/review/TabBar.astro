@@ -1,0 +1,41 @@
+---
+export interface Tab {
+  id: string;
+  label: string;
+}
+
+interface Props {
+  tabs: Tab[];
+  active?: string;
+}
+
+const { tabs, active = tabs[0]?.id } = Astro.props;
+---
+
+<nav class="border-surface-variant sticky top-16 bg-white z-40 border-b" data-tabbar>
+  <div class="section-container px-4 md:px-8">
+    <ul class="flex overflow-x-auto whitespace-nowrap gap-6 md:gap-8 text-sm font-bold text-tertiary justify-start md:justify-center py-3 no-scrollbar">
+      {
+        tabs.map((tab) => (
+          <li>
+            <button
+              type="button"
+              data-tab={tab.id}
+              aria-current={tab.id === active ? 'true' : 'false'}
+              class="tab-btn transition-colors cursor-pointer pb-2 -mb-3 border-b-2 border-transparent hover:text-primary-container"
+            >
+              {tab.label}
+            </button>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</nav>
+
+<style>
+  .tab-btn[aria-current='true'] {
+    color: var(--color-primary-container);
+    border-bottom-color: var(--color-primary-container);
+  }
+</style>

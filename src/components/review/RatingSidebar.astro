@@ -1,0 +1,63 @@
+---
+import type { Product } from '../../data/products';
+import { getScoreVisual, fmtScore } from '../../lib/scores';
+import ScorePill from './ScorePill.astro';
+import InfoIcon from '../ui/InfoIcon.astro';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const overall = getScoreVisual(product.overallScore);
+---
+
+<div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm sticky top-24">
+  <!-- Overall score header -->
+  <div class={`${overall.bg} p-4 flex items-center gap-3`}>
+    <span class="text-2xl font-black">{fmtScore(product.overallScore)}</span>
+    <span class="text-lg font-bold">Overall Performance</span>
+    <InfoIcon size="xs" class="ml-auto text-white/70 hover:text-white" />
+  </div>
+  <div class="bg-surface-container-low px-4 py-2 text-[11px] font-medium border-b border-surface-variant text-on-surface-variant">
+    {product.overallSummary}
+  </div>
+
+  <!-- Category scores -->
+  <div class="p-4 space-y-3.5">
+    {
+      product.categories.map((category) => (
+        <button
+          type="button"
+          class="w-full flex items-center gap-3 group cursor-pointer text-left"
+          data-goto-category={category.key}
+        >
+          <ScorePill score={category.score} size="sm" />
+          <span class="font-bold text-on-surface group-hover:text-primary-container transition-colors">
+            {category.name}
+          </span>
+          <InfoIcon size="xs" class="ml-auto" />
+        </button>
+      ))
+    }
+
+    <div class="pt-4 border-t border-surface-variant"></div>
+
+    <div class="pt-2">
+      <a
+        href={product.affiliateUrl}
+        target="_blank"
+        rel="nofollow sponsored noopener"
+        class="block w-full bg-primary-container text-white text-center py-4 rounded-xl font-black text-xl hover:opacity-90 transition shadow-lg mb-2"
+      >
+        Visit {product.name}
+      </a>
+      <p class="text-center text-[10px] text-tertiary uppercase font-bold">
+        <span class="flex items-center justify-center gap-1">
+          <span class="material-symbols-outlined text-[12px] text-tertiary">verified_user</span>
+          Affiliate Link • Secure Site
+        </span>
+      </p>
+    </div>
+  </div>
+</div>

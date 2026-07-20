@@ -1,0 +1,146 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import ReviewHero from '../../components/review/ReviewHero.astro';
+import TabBar from '../../components/review/TabBar.astro';
+import type { Tab } from '../../components/review/TabBar.astro';
+import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
+import RatingsSpecsTab from '../../components/review/tabs/RatingsSpecsTab.astro';
+import PlaceholderTab from '../../components/review/tabs/PlaceholderTab.astro';
+import { products, getProduct } from '../../data/products';
+
+export function getStaticPaths() {
+  return products.map((product) => ({ params: { slug: product.slug } }));
+}
+
+const { slug } = Astro.params;
+const product = getProduct(slug!);
+
+if (!product) {
+  return Astro.redirect('/404');
+}
+
+const tabs: Tab[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'ratings', label: 'Ratings & Specs' },
+  { id: 'review', label: 'Review' },
+  { id: 'photos', label: 'Photos & Videos' },
+  { id: 'pricing', label: 'Pricing' },
+];
+
+const title = `${product.name} Review (${product.reviewedDate}) — Lovelace Reviews`;
+const description = product.tagline;
+---
+
+<BaseLayout title={title} description={description} image={product.gallery[0]?.full}>
+  <Header />
+  <main>
+    <ReviewHero product={product} />
+    <TabBar tabs={tabs} active="overview" />
+
+    <div data-panels>
+      <div data-tab-panel="overview">
+        <OverviewTab product={product} />
+      </div>
+      <div data-tab-panel="ratings" class="hidden">
+        <RatingsSpecsTab product={product} />
+      </div>
+      <div data-tab-panel="review" class="hidden">
+        <PlaceholderTab
+          title="Full Written Review"
+          icon="edit_note"
+          description="Our long-form, hands-on review of Aura AI is being written. It will cover real-world testing notes, standout moments, and where it falls short."
+        />
+      </div>
+      <div data-tab-panel="photos" class="hidden">
+        <PlaceholderTab
+          title="Photos & Videos"
+          icon="photo_library"
+          description="A full gallery of screenshots, generated media, and video walkthroughs from our testing sessions will live here."
+        />
+      </div>
+      <div data-tab-panel="pricing" class="hidden">
+        <PlaceholderTab
+          title="Pricing & Plans"
+          icon="sell"
+          description="A detailed breakdown of every plan, what each tier unlocks, and how the value compares to competitors is coming soon."
+        />
+      </div>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>
+
+<script>
+  const HEADER_OFFSET = 116; // sticky header (64) + tab bar (~52)
+
+  function initReview() {
+    const panelsWrap = document.querySelector<HTMLElement>('[data-panels]');
+    const tabButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tabbar] [data-tab]'));
+    const tabTriggers = Array.from(document.querySelectorAll<HTMLElement>('[data-tab]'));
+    const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-tab-panel]'));
+    if (!panelsWrap) return;
+
+    function setActiveTab(id: string, scroll = true) {
+      let matched = false;
+      panels.forEach((panel) => {
+        const isMatch = panel.dataset.tabPanel === id;
+        panel.classList.toggle('hidden', !isMatch);
+        if (isMatch) matched = true;
+      });
+      if (!matched) return;
+      tabButtons.forEach((btn) => btn.setAttribute('aria-current', btn.dataset.tab === id ? 'true' : 'false'));
+      if (history.replaceState) history.replaceState(null, '', `#${id}`);
+      if (scroll) {
+        const y = panelsWrap.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+        window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
+      }
+    }
+
+    tabTriggers.forEach((trigger) => {
+      trigger.addEventListener('click', () => {
+        const id = trigger.dataset.tab;
+        if (id) setActiveTab(id);
+      });
+    });
+
+    // Accordions
+    function toggleAccordion(toggle: HTMLElement, force?: boolean) {
+      const wrapper = toggle.closest('[data-category]');
+      const content = wrapper?.querySelector<HTMLElement>('[data-accordion-content]');
+      if (!content) return;
+      const willOpen = force ?? content.classList.contains('hidden');
+      content.classList.toggle('hidden', !willOpen);
+      toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    }
+
+    document.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((toggle) => {
+      toggle.addEventListener('click', () => toggleAccordion(toggle));
+    });
+
+    // Sidebar category jumps -> ratings tab + expand + scroll
+    document.querySelectorAll<HTMLElement>('[data-goto-category]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.gotoCategory;
+        setActiveTab('ratings', false);
+        const target = document.querySelector<HTMLElement>(`[data-category="${key}"]`);
+        const toggle = target?.querySelector<HTMLElement>('[data-accordion-toggle]');
+        if (toggle) toggleAccordion(toggle, true);
+        if (target) {
+          const y = target.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+          window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
+        }
+      });
+    });
+
+    // Deep-link support
+    const hash = window.location.hash.replace('#', '');
+    if (hash && panels.some((p) => p.dataset.tabPanel === hash)) {
+      setActiveTab(hash, false);
+    }
+  }
+
+  initReview();
+  document.addEventListener('astro:page-load', initReview);
+</script>

@@ -1,0 +1,76 @@
+---
+// NOTE: Placeholder footer replicated from the mockups. Content/nav not final.
+const columns = [
+  {
+    title: 'Reviews & Advice',
+    links: ['AI Girlfriends', 'AI Companions', 'NSFW Apps', 'Character Chatbots'],
+  },
+  {
+    title: 'Resources',
+    links: ['Best-Of Roundups', 'Buying Guides', 'Our Methodology', 'Compare Tools'],
+  },
+  {
+    title: 'Company',
+    links: ['About Us', 'Careers', 'Ethics Statement', 'Contact'],
+  },
+];
+const year = new Date().getFullYear();
+---
+
+<footer class="bg-on-surface py-16 md:py-20 text-surface-container-lowest">
+  <div class="section-container px-4 md:px-8">
+    <div class="grid md:grid-cols-4 gap-10 md:gap-12">
+      <div class="col-span-1">
+        <div class="text-white font-black text-2xl flex items-center mb-8">
+          <span class="text-primary-container font-extrabold text-3xl italic mr-1">LR</span>
+          <span class="leading-none">
+            <span class="block text-[10px] font-bold uppercase tracking-widest text-primary-fixed-dim">Lovelace</span>
+            <span class="block text-lg font-display">Reviews</span>
+          </span>
+        </div>
+        <p class="text-sm text-surface-dim leading-relaxed mb-8">
+          Lovelace Reviews is an independent publication that works side by side with users for truth, transparency, and
+          fairness in the AI companion marketplace.
+        </p>
+        <div class="space-y-3">
+          <button
+            class="w-full bg-primary-container text-white py-3 rounded-full font-bold text-sm hover:opacity-90 transition shadow-lg"
+            >Become a Member</button
+          >
+          <button
+            class="w-full border border-primary-container text-primary-container py-3 rounded-full font-bold text-sm hover:bg-primary-container/10 transition"
+            >Give a Membership</button
+          >
+        </div>
+      </div>
+
+      {
+        columns.map((col) => (
+          <div>
+            <h4 class="font-bold text-sm mb-6 uppercase tracking-widest text-primary-fixed-dim">{col.title}</h4>
+            <ul class="text-xs space-y-3 text-surface-dim font-medium">
+              {col.links.map((link) => (
+                <li>
+                  <a class="hover:text-white hover:underline transition-all" href="#">
+                    {link}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+
+    <div
+      class="mt-14 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-surface-dim"
+    >
+      <p>&copy; {year} Lovelace Reviews. All rights reserved.</p>
+      <div class="flex items-center gap-6 font-medium">
+        <a class="hover:text-white transition-colors" href="#">Privacy</a>
+        <a class="hover:text-white transition-colors" href="#">Terms</a>
+        <a class="hover:text-white transition-colors" href="#">Affiliate Disclosure</a>
+      </div>
+    </div>
+  </div>
+</footer>

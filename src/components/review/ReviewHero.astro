@@ -1,0 +1,80 @@
+---
+import type { Product } from '../../data/products';
+import Gallery from './Gallery.astro';
+import RatingSidebar from './RatingSidebar.astro';
+import InfoIcon from '../ui/InfoIcon.astro';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+---
+
+<section class="section-container pt-8 md:pt-12 pb-10 px-4 md:px-8">
+  <!-- Title block -->
+  <div class="flex flex-col gap-4 mb-8">
+    <nav class="text-[12px] font-medium text-tertiary">
+      <a class="hover:text-primary-container" href="/">Home</a> /
+      <a class="hover:text-primary-container" href="#">Reviews</a> /
+      <span class="text-on-surface">{product.name}</span>
+    </nav>
+
+    <h1 class="text-4xl md:text-6xl font-black text-on-surface tracking-tight">
+      {product.name} <span class="font-normal text-on-surface-variant">Review</span>
+    </h1>
+
+    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-tertiary font-medium">
+      <p>Reviewed {product.reviewedDate}</p>
+      <div class="w-px h-3 bg-surface-variant hidden md:block"></div>
+      <p>Writing modified {product.modifiedDate}</p>
+      <div class="w-px h-3 bg-surface-variant hidden md:block"></div>
+      <p class="flex items-center gap-1">
+        Tested using {product.methodology}
+        <InfoIcon size="xs" />
+      </p>
+    </div>
+  </div>
+
+  <!-- Authors -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-surface-variant pb-6 mb-8">
+    <div class="flex flex-wrap items-center gap-x-6 gap-y-4">
+      {
+        product.authors.map((author, i) => (
+          <>
+            {i > 0 && <div class="w-px h-10 bg-surface-variant hidden md:block" />}
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0">
+                <img alt={author.name} class="w-full h-full object-cover" src={author.avatar} />
+              </div>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-1">
+                  <span class="text-sm font-bold hover:underline cursor-pointer">{author.name}</span>
+                  {author.verified && (
+                    <span
+                      class="material-symbols-outlined text-[16px] text-blue-500"
+                      style="font-variation-settings: 'FILL' 1;"
+                    >
+                      verified
+                    </span>
+                  )}
+                </div>
+                <span class="text-[11px] text-tertiary font-medium">{author.role}</span>
+              </div>
+            </div>
+          </>
+        ))
+      }
+    </div>
+  </div>
+
+  <!-- Gallery + sticky ratings -->
+  <div class="flex flex-col lg:flex-row gap-8">
+    <div class="lg:w-[68%]">
+      <Gallery images={product.gallery} />
+    </div>
+    <div class="lg:w-[32%]">
+      <RatingSidebar product={product} />
+    </div>
+  </div>
+</section>

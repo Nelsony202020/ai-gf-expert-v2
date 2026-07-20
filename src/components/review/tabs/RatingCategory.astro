@@ -1,0 +1,365 @@
+---
+import type { RatingCategory } from '../../../data/products';
+import { getScoreVisual, fmtScore, weightedValue } from '../../../lib/scores';
+import ScorePill from '../ScorePill.astro';
+import InfoIcon from '../../ui/InfoIcon.astro';
+
+interface Props {
+  category: RatingCategory;
+  open?: boolean;
+}
+
+const { category, open = false } = Astro.props;
+const visual = getScoreVisual(category.score);
+---
+
+<div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm" data-category={category.key}>
+  <!-- Header -->
+  <button
+    type="button"
+    data-accordion-toggle
+    aria-expanded={open ? 'true' : 'false'}
+    class="w-full flex items-center justify-between p-5 md:p-6 bg-surface-container-low cursor-pointer text-left"
+  >
+    <div class="flex items-center gap-4 md:gap-6">
+      <div class="flex flex-col items-start">
+        <ScorePill score={category.score} size="lg" />
+        <span class="text-[10px] font-bold uppercase tracking-tighter text-tertiary mt-1">Category Score</span>
+      </div>
+      <div class="h-10 w-px bg-surface-variant"></div>
+      <div>
+        <h3 class="text-lg md:text-xl font-bold text-on-surface flex items-center gap-1">
+          {category.name}
+          <InfoIcon size="md" />
+        </h3>
+        <p class="text-xs text-tertiary font-medium">Weighting: {category.weight}%</p>
+      </div>
+    </div>
+    <span class="material-symbols-outlined accordion-icon shrink-0">expand_more</span>
+  </button>
+
+  <!-- Detail -->
+  <div data-accordion-content class={open ? '' : 'hidden'}>
+    <div class="p-5 md:p-8 border-t border-surface-variant bg-white">
+      <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr_360px] gap-8">
+        <!-- Col 1: Subscores -->
+        <div class="space-y-4" data-subscore-list>
+          <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-1">
+            Subscores <InfoIcon size="xs" />
+          </h4>
+          {
+            category.subscores.map((sub, i) => {
+              const sv = getScoreVisual(sub.score);
+              const isActive = i === 0;
+              return (
+                <button
+                  type="button"
+                  data-subscore-select
+                  data-subscore-index={i}
+                  aria-selected={isActive ? 'true' : 'false'}
+                  class={`subscore-card w-full flex items-center justify-between p-4 rounded-xl border bg-white shadow-sm transition-all group text-left ${isActive ? 'border-green-600' : 'border-surface-variant'}`}
+                >
+                  <div class="flex items-center gap-3">
+                    <div
+                      data-subscore-badge
+                      class={`w-12 h-10 flex items-center justify-center border-2 rounded-lg text-lg font-black transition-colors ${isActive ? sv.border + ' text-on-surface' : 'border-surface-variant text-on-surface/40'}`}
+                    >
+                      {fmtScore(sub.score)}
+                    </div>
+                    <div class="flex flex-col">
+                      <span data-subscore-label class={`text-sm font-bold transition-colors flex items-center gap-1 ${isActive ? 'text-on-surface' : 'text-on-surface/50 group-hover:text-on-surface'}`}>
+                        {sub.name}
+                        <InfoIcon size="xs" title={sub.description} />
+                      </span>
+                      <span class="text-[10px] text-tertiary leading-tight">{sub.description}</span>
+                    </div>
+                  </div>
+                  <span
+                    data-subscore-chevron
+                    class={`material-symbols-outlined shrink-0 transition-colors ${isActive ? 'text-green-600' : 'text-tertiary/40 group-hover:text-green-600'}`}
+                  >
+                    chevron_right
+                  </span>
+                </button>
+              );
+            })
+          }
+        </div>
+
+        <!-- Col 2: Subscore Breakdown -->
+        <div class="space-y-6" data-subscore-breakdown>
+          <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-4">
+            Subscore Breakdown
+          </h4>
+          {
+            category.subscores.map((sub, i) => {
+              const sv = getScoreVisual(sub.score);
+              const isActive = i === 0;
+              return (
+                <div
+                  data-subscore-panel
+                  data-subscore-index={i}
+                  class={isActive ? '' : 'hidden'}
+                >
+                  <div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm">
+                    <div class="p-5 flex items-center justify-between border-b border-surface-variant bg-white">
+                      <div class="flex items-center gap-2">
+                        <span class={`material-symbols-outlined ${sv.text}`} style="font-variation-settings: 'FILL' 1;">
+                          check_circle
+                        </span>
+                        <span class="font-bold text-on-surface text-lg">{sub.name}</span>
+                      </div>
+                      <span class={`text-xl font-black ${sv.text}`}>{fmtScore(sub.score)}</span>
+                    </div>
+                    <div class="p-6 space-y-6">
+                      <div>
+                        <p class="text-[11px] font-bold text-tertiary mb-3 uppercase tracking-tighter">
+                          Contributors
+                          <span class="font-normal normal-case text-tertiary/60">(what determines this score)</span>
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                          {
+                            sub.contributors.map((c) => (
+                              <span class="px-3 py-1.5 rounded-full border border-surface-variant text-[11px] font-bold flex items-center gap-1.5 bg-white">
+                                {c.icon && <span class="material-symbols-outlined text-[16px]">{c.icon}</span>}
+                                {c.label}
+                              </span>
+                            ))
+                          }
+                        </div>
+                      </div>
+                      <div class="space-y-3">
+                        {
+                          sub.contributors.map((c) => (
+                            <div class="flex justify-between items-center text-[13px] border-b border-surface-variant pb-2 last:border-0">
+                              <span class="text-tertiary">{c.label}</span>
+                              <span class="font-bold">{c.value}</span>
+                            </div>
+                          ))
+                        }
+                      </div>
+                      <p class="text-[10px] text-tertiary flex items-center gap-1.5 italic">
+                        <InfoIcon size="xs" />
+                        These factors are combined to calculate the {sub.name} subscore.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          }
+        </div>
+
+        <!-- Col 3: Evidence + Proof -->
+        <div class="space-y-8">
+          <div>
+            <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-4">Evidence</h4>
+            <div class="bg-surface-container-low p-5 rounded-xl border border-surface-variant/50 space-y-3 shadow-sm">
+              {
+                category.evidence.map((row) => (
+                  <div class="flex justify-between items-center text-[12px] border-b border-surface-variant/40 pb-2 last:border-0 last:pb-0">
+                    <div class="flex items-center gap-2 text-on-surface">
+                      {row.icon && <span class="material-symbols-outlined text-[16px] text-tertiary/70">{row.icon}</span>}
+                      {row.label}
+                    </div>
+                    <span class="font-bold">{row.value}</span>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+
+          {
+            category.proof.length > 0 && (
+              <div>
+                <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-1 flex items-center gap-1">
+                  Proof
+                </h4>
+                <div class="grid grid-cols-3 gap-2 py-4">
+                  {category.proof.map((p) => (
+                    <div class="cursor-pointer group">
+                      <div class="relative aspect-[3/4] rounded-lg overflow-hidden border border-surface-variant shadow-sm mb-2">
+                        <img
+                          class="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition"
+                          src={p.src}
+                          alt={p.caption}
+                        />
+                        <div class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/0 transition-colors">
+                          <span
+                            class="material-symbols-outlined text-white text-4xl"
+                            style="font-variation-settings: 'FILL' 1;"
+                          >
+                            play_circle
+                          </span>
+                        </div>
+                      </div>
+                      <p class="text-[10px] font-bold text-center leading-tight">
+                        {p.caption}
+                        {p.sub && <span class="font-normal text-tertiary block">{p.sub}</span>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <p class="text-[10px] text-tertiary flex items-center justify-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">slow_motion_video</span>
+                  Hover over any clip to preview
+                </p>
+              </div>
+            )
+          }
+        </div>
+      </div>
+
+      <!-- How this score is calculated -->
+      <div class="mt-12 pt-10 border-t border-surface-variant/40">
+        <h4 class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-1">
+          How this score is calculated <InfoIcon size="xs" />
+        </h4>
+        <div class="flex flex-col gap-6 mb-4">
+          <div class="text-[12px] text-tertiary leading-relaxed">
+            <p>
+              The {category.name} score is a weighted average of its {category.subscores.length} subscores.
+            </p>
+            <button
+              class="mt-4 px-4 py-2 border border-surface-variant rounded-lg font-bold text-[11px] flex items-center gap-2 bg-surface-container-low hover:bg-surface-variant transition shadow-sm"
+            >
+              Learn more about our rating system
+              <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+            </button>
+          </div>
+          <div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm">
+            <table class="w-full text-[11px]">
+              <thead>
+                <tr class="bg-surface-container-low border-b border-surface-variant text-tertiary uppercase tracking-tighter">
+                  <th class="py-3 px-4 md:px-6 text-left font-bold">Subscore</th>
+                  <th class="py-3 px-4 md:px-6 text-center font-bold">Score</th>
+                  <th class="py-3 px-4 md:px-6 text-center font-bold">Weight</th>
+                  <th class="py-3 px-4 md:px-6 text-right font-bold">Weighted</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  category.subscores.map((sub) => (
+                    <tr class="border-b border-surface-variant/40">
+                      <td class="py-3 px-4 md:px-6 font-bold">{sub.name}</td>
+                      <td class="py-3 px-4 md:px-6 text-center">{fmtScore(sub.score)}</td>
+                      <td class="py-3 px-4 md:px-6 text-center">{sub.weight}%</td>
+                      <td class="py-3 px-4 md:px-6 text-right font-bold text-on-surface">
+                        <span class="inline-flex items-center justify-end gap-1.5">
+                          {weightedValue(sub.score, sub.weight).toFixed(2)}
+                          <span class={`w-2 h-2 rounded-full ${getScoreVisual(sub.score).dot}`} />
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                }
+                <tr class="bg-surface-container-low">
+                  <td class="py-4 px-4 md:px-6 font-black text-sm" colspan="2">
+                    {category.name} Score <span class="font-normal text-tertiary">(weighted average)</span>
+                  </td>
+                  <td class="py-4 px-4 md:px-6"></td>
+                  <td class={`py-4 px-4 md:px-6 text-right text-2xl font-black ${visual.text}`}>
+                    {fmtScore(category.score)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- What this means -->
+      <div class={`mt-8 ${visual.softBg} border ${visual.softBorder} rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4`}>
+        <div class="flex items-center gap-4">
+          <span class={`material-symbols-outlined text-3xl ${visual.text}`} style="font-variation-settings: 'FILL' 1;">
+            check_circle
+          </span>
+          <div class="flex flex-col">
+            <span class="font-bold text-on-surface">What this means</span>
+            <p class={`text-[13px] ${visual.softText}`}>{category.whatThisMeans}</p>
+          </div>
+        </div>
+        <div class={`flex flex-col items-center border-t sm:border-t-0 sm:border-l ${visual.softBorder} pt-3 sm:pt-0 sm:pl-8`}>
+          <span class={`${visual.bg} text-[11px] font-black px-3 py-1 rounded uppercase mb-1`}>{visual.label}</span>
+          <span class={`text-[11px] font-bold ${visual.text}`}>{visual.range}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  [data-accordion-toggle][aria-expanded='true'] .accordion-icon {
+    transform: rotate(180deg);
+  }
+  .accordion-icon {
+    transition: transform 0.2s ease;
+  }
+
+  .subscore-card {
+    cursor: pointer;
+  }
+  .subscore-card:hover {
+    border-color: var(--color-green-600, #16a34a);
+    background-color: var(--color-surface-container-low, #f3f3f3);
+  }
+  .subscore-card[aria-selected='true'] {
+    border-color: var(--color-green-600, #16a34a);
+  }
+  .subscore-card[aria-selected='false']:hover [data-subscore-badge] {
+    border-color: var(--color-green-600, #16a34a);
+    color: var(--color-on-surface, #1b1b1b);
+  }
+</style>
+
+<script>
+  function initSubscoreSelect() {
+    document.querySelectorAll<HTMLElement>('[data-category]').forEach((categoryEl) => {
+      const cards = Array.from(categoryEl.querySelectorAll<HTMLButtonElement>('[data-subscore-select]'));
+      const panels = Array.from(categoryEl.querySelectorAll<HTMLElement>('[data-subscore-panel]'));
+      if (!cards.length || !panels.length) return;
+
+      function selectSubscore(index: string) {
+        cards.forEach((card) => {
+          const isActive = card.dataset.subscoreIndex === index;
+          card.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          card.classList.toggle('border-green-600', isActive);
+          card.classList.toggle('border-surface-variant', !isActive);
+
+          const badge = card.querySelector<HTMLElement>('[data-subscore-badge]');
+          const label = card.querySelector<HTMLElement>('[data-subscore-label]');
+          const chevron = card.querySelector<HTMLElement>('[data-subscore-chevron]');
+
+          if (badge) {
+            badge.classList.toggle('border-green-600', isActive);
+            badge.classList.toggle('text-on-surface', isActive);
+            badge.classList.toggle('border-surface-variant', !isActive);
+            badge.classList.toggle('text-on-surface/40', !isActive);
+          }
+          if (label) {
+            label.classList.toggle('text-on-surface', isActive);
+            label.classList.toggle('text-on-surface/50', !isActive);
+          }
+          if (chevron) {
+            chevron.classList.toggle('text-green-600', isActive);
+            chevron.classList.toggle('text-tertiary/40', !isActive);
+          }
+        });
+
+        panels.forEach((panel) => {
+          panel.classList.toggle('hidden', panel.dataset.subscoreIndex !== index);
+        });
+      }
+
+      cards.forEach((card) => {
+        card.addEventListener('click', () => {
+          const index = card.dataset.subscoreIndex;
+          if (index !== undefined) selectSubscore(index);
+        });
+      });
+    });
+  }
+
+  initSubscoreSelect();
+  document.addEventListener('astro:page-load', initSubscoreSelect);
+</script>

@@ -1,0 +1,75 @@
+---
+import type { Product } from '../../../data/products';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+---
+
+<!-- Our Take + Safety Audit -->
+<section class="bg-surface-container-low py-14 md:py-16">
+  <div class="section-container px-4 md:px-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12">
+      <div class="space-y-6">
+        <h2 class="text-3xl font-extrabold text-on-surface">Our Take</h2>
+        <p class="text-on-surface-variant text-lg leading-relaxed">{product.ourTake}</p>
+      </div>
+
+      <div class="space-y-6">
+        <h2 class="text-3xl font-extrabold text-on-surface">Safety &amp; Privacy Audit</h2>
+        <div class="space-y-4">
+          {
+            product.safetyAudit.map((item) => (
+              <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-surface-variant/30">
+                <div class="flex items-center gap-3">
+                  <span class="material-symbols-outlined text-primary">{item.icon}</span>
+                  <span class="font-semibold text-on-surface">{item.label}</span>
+                </div>
+                <span class="text-xs font-bold uppercase tracking-widest text-green-700 bg-green-600/10 px-2 py-1 rounded">
+                  {item.status}
+                </span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features & Specs -->
+<section class="py-16 md:py-20 section-container px-4 md:px-8">
+  <div class="flex flex-col items-center">
+    <h2 class="text-3xl md:text-4xl font-extrabold text-on-surface mb-8 md:mb-10">Features &amp; Specs</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+      {
+        product.featureSpecs.map((feature) => (
+          <div class="flex items-center gap-4 p-6 bg-white rounded-xl border border-surface-variant/40 shadow-sm">
+            <div class="w-16 h-16 flex-none bg-surface-container-low rounded-lg flex items-center justify-center">
+              <span class={`material-symbols-outlined text-3xl ${feature.available ? 'text-primary' : 'text-tertiary'}`}>
+                {feature.icon}
+              </span>
+            </div>
+            <div>
+              <p class="font-bold text-on-surface text-lg">{feature.name}</p>
+              <p class={`font-semibold ${feature.available ? 'text-primary-container' : 'text-tertiary'}`}>
+                {feature.value}
+              </p>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+    <div class="mt-10 md:mt-12">
+      <button
+        type="button"
+        data-tab="ratings"
+        class="px-8 py-3 border-2 border-on-surface rounded-full font-bold hover:bg-on-surface hover:text-white transition-colors"
+      >
+        See All Ratings &amp; Specs
+      </button>
+    </div>
+  </div>
+</section>

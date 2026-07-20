@@ -1,0 +1,83 @@
+---
+import type { GalleryImage } from '../../data/products';
+
+interface Props {
+  images: GalleryImage[];
+}
+
+const { images } = Astro.props;
+const first = images[0];
+---
+
+<div class="space-y-4" data-gallery>
+  <div class="relative rounded-xl overflow-hidden aspect-video shadow-lg border border-surface-variant/40 bg-surface-container">
+    <img
+      data-gallery-main
+      alt={first?.alt ?? ''}
+      class="w-full h-full object-cover"
+      src={first?.full}
+    />
+  </div>
+
+  <div class="relative group">
+    <div class="flex overflow-x-auto gap-3 pb-2 no-scrollbar" data-thumb-track>
+      {
+        images.map((image, i) => (
+          <button
+            type="button"
+            data-thumb
+            data-full={image.full}
+            data-alt={image.alt}
+            aria-current={i === 0 ? 'true' : 'false'}
+            aria-label={`Show image ${i + 1}`}
+            class="thumb flex-none w-28 h-18 sm:w-32 sm:h-20 rounded-lg overflow-hidden"
+          >
+            <img alt={image.alt} class="w-full h-full object-cover" src={image.thumb} />
+          </button>
+        ))
+      }
+    </div>
+    <button
+      type="button"
+      data-thumb-next
+      class="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow border border-surface-variant opacity-0 group-hover:opacity-100 transition-opacity"
+      aria-label="Scroll thumbnails"
+    >
+      <span class="material-symbols-outlined text-sm">chevron_right</span>
+    </button>
+  </div>
+</div>
+
+<style>
+  .thumb {
+    border: 1px solid var(--color-surface-variant);
+    transition: border-color 0.15s ease;
+  }
+  .thumb[aria-current='true'] {
+    border: 2px solid var(--color-primary-container);
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((root) => {
+    const main = root.querySelector<HTMLImageElement>('[data-gallery-main]');
+    const thumbs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-thumb]'));
+    const track = root.querySelector<HTMLElement>('[data-thumb-track]');
+    const next = root.querySelector<HTMLButtonElement>('[data-thumb-next]');
+
+    thumbs.forEach((thumb) => {
+      thumb.addEventListener('click', () => {
+        if (main) {
+          main.src = thumb.dataset.full ?? main.src;
+          main.alt = thumb.dataset.alt ?? '';
+        }
+        thumbs.forEach((t) => t.setAttribute('aria-current', 'false'));
+        thumb.setAttribute('aria-current', 'true');
+      });
+    });
+
+    next?.addEventListener('click', () => {
+      track?.scrollBy({ left: 160, behavior: 'smooth' });
+    });
+  });
+</script>

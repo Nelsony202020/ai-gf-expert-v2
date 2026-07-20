@@ -1,0 +1,27 @@
+---
+import { getScoreVisual, fmtScore } from '../../lib/scores';
+
+interface Props {
+  score: number;
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'solid' | 'outline';
+  class?: string;
+}
+
+const { score, size = 'md', variant = 'solid', class: className = '' } = Astro.props;
+const visual = getScoreVisual(score);
+
+const sizes: Record<NonNullable<Props['size']>, string> = {
+  sm: 'px-2 py-0.5 text-sm rounded',
+  md: 'px-3 py-1 text-base rounded-lg',
+  lg: 'px-3 py-1 text-4xl rounded-lg',
+};
+
+const base = 'inline-flex items-center justify-center font-black leading-none';
+const styles =
+  variant === 'solid'
+    ? `${visual.bg}`
+    : `border-2 ${visual.border} ${visual.text} bg-transparent`;
+---
+
+<span class={`${base} ${sizes[size]} ${styles} ${className}`}>{fmtScore(score)}</span>

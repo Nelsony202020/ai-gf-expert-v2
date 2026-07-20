@@ -1,0 +1,28 @@
+---
+interface Props {
+  size?: 'xs' | 'sm' | 'md';
+  title?: string;
+  class?: string;
+}
+
+const { size = 'sm', title, class: className = '' } = Astro.props;
+
+const sizeClass = {
+  xs: 'w-3 h-3',
+  sm: 'w-3.5 h-3.5',
+  md: 'w-4 h-4',
+}[size];
+---
+
+<span
+  class={`inline-flex items-center justify-center shrink-0 text-tertiary/45 hover:text-tertiary/70 transition-colors ${className}`}
+  title={title}
+  aria-label={title}
+  role={title ? 'img' : undefined}
+>
+  <svg class={sizeClass} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.1"></circle>
+    <path d="M8 7.1V11" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"></path>
+    <circle cx="8" cy="5.1" r="0.55" fill="currentColor"></circle>
+  </svg>
+</span>
