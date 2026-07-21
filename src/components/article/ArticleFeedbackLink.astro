@@ -1,0 +1,40 @@
+---
+interface Props {
+  pageTitle?: string;
+  pageUrl?: string;
+}
+
+const { pageTitle, pageUrl } = Astro.props;
+---
+
+<p class="article-feedback-link">
+  <button
+    type="button"
+    class="article-feedback-link__btn"
+    data-article-feedback-link
+    data-page-title={pageTitle}
+    data-page-url={pageUrl ?? ''}
+  >
+    Spot a mistake? Let us know.
+  </button>
+</p>
+
+<script>
+  function initArticleFeedbackLink() {
+    document.querySelectorAll<HTMLButtonElement>('[data-article-feedback-link]').forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+
+      btn.addEventListener('click', () => {
+        const title = btn.dataset.pageTitle || document.title;
+        const url = btn.dataset.pageUrl || window.location.href;
+        window.dispatchEvent(
+          new CustomEvent('article-feedback:open', { detail: { title, url } }),
+        );
+      });
+    });
+  }
+
+  initArticleFeedbackLink();
+  document.addEventListener('astro:page-load', initArticleFeedbackLink);
+</script>

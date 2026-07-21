@@ -1,0 +1,288 @@
+---
+import type { HomeExplorerApp } from '../../data/homepage';
+import { explorerFilterGroups } from '../../data/homepage';
+import { buildRoundupSortOptions } from '../../lib/roundup-controls';
+import ScorePill from '../review/ScorePill.astro';
+import { fmtScore } from '../../lib/scores';
+
+interface Props {
+  apps: HomeExplorerApp[];
+}
+
+const { apps } = Astro.props;
+const sortOptions = buildRoundupSortOptions(apps);
+const mobileFilters = explorerFilterGroups.flatMap((group) => group.options.slice(0, 2));
+---
+
+<section id="explore-apps" class="home-section home-section--muted scroll-mt-24" aria-labelledby="home-explorer-title">
+  <div class="section-container px-4 md:px-8">
+    <div class="home-section__head">
+      <h2 id="home-explorer-title" class="home-section__title">Explore AI girlfriend apps</h2>
+    </div>
+
+    <div class="home-explorer" data-home-explorer>
+      <aside class="home-explorer__filters" aria-label="Filter apps">
+        {
+          explorerFilterGroups.map((group) => (
+            <div class="home-filter-group">
+              <h3 class="home-filter-group__title">{group.title}</h3>
+              {group.options.map((option) => (
+                <label class="home-filter-option">
+                  <input type="checkbox" value={option.id} data-home-filter />
+                  <span>{option.label}</span>
+                </label>
+              ))}
+            </div>
+          ))
+        }
+      </aside>
+
+      <div>
+        <div class="home-explorer__mobile-filters" aria-label="Quick filters">
+          {
+            mobileFilters.map((option) => (
+              <button type="button" class="home-explorer__chip" data-home-filter-chip={option.id} aria-pressed="false">
+                {option.label}
+              </button>
+            ))
+          }
+        </div>
+
+        <div class="home-explorer__toolbar">
+          <p class="home-explorer__count">
+            <span data-home-count>{apps.length}</span> apps <span>in our tested directory</span>
+          </p>
+          <div class="home-explorer__sort">
+            <label class="home-explorer__sort-label" for="home-sort">Sort by</label>
+            <select id="home-sort" class="home-explorer__sort-select" data-home-sort>
+              {sortOptions.map((opt) => <option value={opt.value}>{opt.label}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div class="home-explorer__grid" data-home-grid>
+          {
+            apps.map((app) => (
+              <article
+                class="home-app-card"
+                data-home-app={app.id}
+                data-overall-score={app.overallScore}
+                data-price={app.priceMonthly}
+                data-filters={app.filters.join(',')}
+                data-category-scores={JSON.stringify(
+                  Object.fromEntries(app.categoryScores.map((c) => [c.key, c.score])),
+                )}
+              >
+                <div class="home-app-card__media">
+                  <img
+                    class="home-app-card__image"
+                    src={app.gallery[0]?.full ?? app.logo}
+                    alt={app.gallery[0]?.alt ?? `${app.name} screenshot`}
+                    width="640"
+                    height="400"
+                    loading="lazy"
+                  />
+                  <div class="home-app-card__score">
+                    <ScorePill score={app.overallScore} size="sm" />
+                  </div>
+                </div>
+                <div class="home-app-card__body">
+                  <h3 class="home-app-card__name">{app.name}</h3>
+                  <div class="home-app-card__scores">
+                    {
+                      app.highlightScores.map((row) => (
+                        <div class="home-app-card__score-row">
+                          <span class="home-app-card__score-label">{row.label}</span>
+                          <span class="home-app-card__score-value">{fmtScore(row.score)}</span>
+                        </div>
+                      ))
+                    }
+                  </div>
+                  <p class="home-app-card__price">{app.priceLabel}</p>
+                  <div class="home-app-card__actions">
+                    <a
+                      class="home-app-card__cta"
+                      href={app.reviewUrl ?? `/best/ai-girlfriend#pick-${app.id}`}
+                    >
+                      {app.hasReview ? 'Read review' : 'See in roundup'}
+                    </a>
+                    <label class="home-app-card__compare">
+                      <input type="checkbox" value={app.id} data-home-compare={app.id} data-home-compare-name={app.name} data-home-compare-score={app.overallScore} />
+                      Compare
+                    </label>
+                  </div>
+                </div>
+              </article>
+            ))
+          }
+          <p class="home-explorer__empty" hidden data-home-empty>No apps match those filters. Try clearing a filter or two.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="home-compare-tray" data-home-compare-tray data-visible="false" hidden>
+  <div class="home-compare-tray__inner section-container px-4 md:px-8">
+    <p class="home-compare-tray__meta"><span data-home-compare-count>0</span> apps selected</p>
+    <div class="home-compare-tray__pills" data-home-compare-pills></div>
+    <div class="home-compare-tray__actions">
+      <button type="button" class="home-compare-tray__clear" data-home-compare-clear>Clear</button>
+      <button type="button" class="home-compare-tray__go" data-home-compare-go>Compare now</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function getSortScore(card, sortKey) {
+    if (sortKey === 'price-asc' || sortKey === 'price-desc') {
+      return Number(card.dataset.price ?? 0);
+    }
+    if (sortKey === 'overall') {
+      return Number(card.dataset.overallScore ?? 0);
+    }
+    try {
+      const scores = JSON.parse(card.dataset.categoryScores ?? '{}');
+      if (sortKey === 'voice') return scores['chat-features'] ?? 0;
+      if (sortKey === 'free') return scores.pricing ?? 0;
+      if (sortKey === 'value') return scores.pricing ?? 0;
+      return scores[sortKey] ?? Number(card.dataset.overallScore ?? 0);
+    } catch {
+      return Number(card.dataset.overallScore ?? 0);
+    }
+  }
+
+  function initHomeExplorer() {
+    const root = document.querySelector('[data-home-explorer]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const grid = root.querySelector('[data-home-grid]');
+    const sortSelect = root.querySelector('[data-home-sort]');
+    const countEl = root.querySelector('[data-home-count]');
+    const emptyEl = root.querySelector('[data-home-empty]');
+    const filterInputs = [...root.querySelectorAll('[data-home-filter]')];
+    const chipButtons = [...root.querySelectorAll('[data-home-filter-chip]')];
+    const cards = [...root.querySelectorAll('[data-home-app]')];
+
+    const tray = document.querySelector('[data-home-compare-tray]');
+    const compareCount = tray?.querySelector('[data-home-compare-count]');
+    const comparePills = tray?.querySelector('[data-home-compare-pills]');
+    const compareClear = tray?.querySelector('[data-home-compare-clear]');
+    const compareGo = tray?.querySelector('[data-home-compare-go]');
+    const compareInputs = [...document.querySelectorAll('[data-home-compare]')];
+
+    const selected = new Map();
+
+    function activeFilters() {
+      const desktop = filterInputs.filter((input) => input.checked).map((input) => input.value);
+      const chips = chipButtons.filter((btn) => btn.getAttribute('aria-pressed') === 'true').map((btn) => btn.dataset.homeFilterChip);
+      return [...new Set([...desktop, ...chips])];
+    }
+
+    function applyFiltersAndSort() {
+      const filters = activeFilters();
+      const sortKey = sortSelect?.value ?? 'overall';
+      const visible = [];
+
+      cards.forEach((card) => {
+        const cardFilters = (card.dataset.filters ?? '').split(',').filter(Boolean);
+        const matches = filters.length === 0 || filters.every((f) => cardFilters.includes(f));
+        card.hidden = !matches;
+        if (matches) visible.push(card);
+      });
+
+      visible.sort((a, b) => {
+        const aScore = getSortScore(a, sortKey);
+        const bScore = getSortScore(b, sortKey);
+        if (sortKey === 'price-asc') return aScore - bScore;
+        if (sortKey === 'price-desc') return bScore - aScore;
+        return bScore - aScore;
+      });
+
+      visible.forEach((card) => grid?.appendChild(card));
+      if (countEl) countEl.textContent = String(visible.length);
+      if (emptyEl) emptyEl.hidden = visible.length > 0;
+    }
+
+    function renderCompareTray() {
+      if (!tray || !comparePills || !compareCount) return;
+      comparePills.innerHTML = '';
+      compareCount.textContent = String(selected.size);
+      tray.dataset.visible = selected.size > 0 ? 'true' : 'false';
+      tray.hidden = selected.size === 0;
+
+      selected.forEach((item, id) => {
+        const pill = document.createElement('span');
+        pill.className = 'home-compare-tray__pill';
+        pill.innerHTML = `${item.name} <button type="button" class="home-compare-tray__pill-remove material-symbols-outlined text-[14px]" data-remove-compare="${id}" aria-label="Remove ${item.name}">close</button>`;
+        comparePills.appendChild(pill);
+      });
+    }
+
+    filterInputs.forEach((input) => input.addEventListener('change', applyFiltersAndSort));
+
+    chipButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const pressed = btn.getAttribute('aria-pressed') === 'true';
+        btn.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+        applyFiltersAndSort();
+      });
+    });
+
+    sortSelect?.addEventListener('change', applyFiltersAndSort);
+
+    compareInputs.forEach((input) => {
+      input.addEventListener('change', () => {
+        const id = input.value;
+        const name = input.dataset.homeCompareName ?? id;
+        const score = input.dataset.homeCompareScore ?? '';
+
+        if (input.checked) {
+          if (selected.size >= 3) {
+            input.checked = false;
+            return;
+          }
+          selected.set(id, { name, score });
+        } else {
+          selected.delete(id);
+        }
+        renderCompareTray();
+      });
+    });
+
+    comparePills?.addEventListener('click', (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const removeId = target.dataset.removeCompare;
+      if (!removeId) return;
+      selected.delete(removeId);
+      const input = document.querySelector(`[data-home-compare="${removeId}"]`);
+      if (input instanceof HTMLInputElement) input.checked = false;
+      renderCompareTray();
+    });
+
+    compareClear?.addEventListener('click', () => {
+      selected.clear();
+      compareInputs.forEach((input) => {
+        input.checked = false;
+      });
+      renderCompareTray();
+    });
+
+    compareGo?.addEventListener('click', () => {
+      const ids = [...selected.keys()];
+      if (!ids.length) return;
+      const hash = ids.map((id) => `pick-${id}`).join(',');
+      window.location.href = `/best/ai-girlfriend#roundup-compare`;
+      try {
+        sessionStorage.setItem('home-compare-ids', JSON.stringify(ids));
+      } catch {}
+    });
+
+    applyFiltersAndSort();
+  }
+
+  initHomeExplorer();
+  document.addEventListener('astro:page-load', initHomeExplorer);
+</script>

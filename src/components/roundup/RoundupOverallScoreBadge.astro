@@ -1,0 +1,65 @@
+---
+import { getProduct } from '../../data/products';
+import { getScoreChipClass, fmtScore } from '../../lib/scores';
+import ScorePill from '../review/ScorePill.astro';
+import OverallScoreTooltip from '../review/tooltips/OverallScoreTooltip.astro';
+import InfoIcon from '../ui/InfoIcon.astro';
+
+interface Props {
+  pickSlug: string;
+  pickName: string;
+  overallScore: number;
+  overallSummary: string;
+  compact?: boolean;
+}
+
+const { pickSlug, pickName, overallScore, overallSummary, compact = false } = Astro.props;
+const fullProduct = getProduct(pickSlug);
+const currentChip = getScoreChipClass(overallScore);
+---
+
+<div class:list={['roundup-overall-score', compact && 'roundup-overall-score--compact']}>
+  <ScorePill score={overallScore} size="sm" />
+  {
+    fullProduct ? (
+      <OverallScoreTooltip product={fullProduct} methodologyOnly>
+        <span class="roundup-overall-score__info">
+          <InfoIcon size="xs" class={compact ? 'text-white/90 hover:text-white' : 'text-tertiary/70 hover:text-accent'} />
+        </span>
+      </OverallScoreTooltip>
+    ) : (
+      <span
+        role="button"
+        tabindex="0"
+        class="rt-tooltip-trigger roundup-overall-score__info"
+        data-ratings-tooltip-trigger={`overall-roundup-${pickSlug}`}
+        aria-label={`About ${pickName} overall score`}
+      >
+        <InfoIcon size="xs" class={compact ? 'text-white/90 hover:text-white' : 'text-tertiary/70 hover:text-accent'} />
+      </span>
+    )
+  }
+</div>
+
+{
+  !fullProduct && (
+    <template id={`tooltip-overall-roundup-${pickSlug}`}>
+      <div class="ratings-tooltip-panel ratings-tooltip-panel--compact">
+        <div class="ratings-tooltip-panel__header">
+          <div class="ratings-tooltip-panel__header-grid">
+            <div class="min-w-0">
+              <p class="ratings-tooltip-panel__section-title">What it is</p>
+              <p class="ratings-tooltip-panel__desc">{overallSummary}</p>
+            </div>
+            <div class="ratings-tooltip-panel__score-block">
+              <div class="ratings-tooltip-panel__score-row">
+                <span class={`rt-score-chip ${currentChip}`}>{fmtScore(overallScore)}</span>
+                <span class="ratings-tooltip-panel__score-label">{pickName}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  )
+}

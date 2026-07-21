@@ -1,0 +1,39 @@
+---
+import { aiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
+
+const { testing } = aiGirlfriendRoundup;
+---
+
+<section class="home-section section-container px-4 md:px-8" aria-labelledby="home-testing-title">
+  <div class="home-testing">
+    <div class="home-testing__panel">
+      <h2 id="home-testing-title" class="home-testing__title">
+        <span class="material-symbols-outlined" aria-hidden="true">science</span>
+        {testing.title}
+      </h2>
+      <p class="home-testing__desc">{testing.description}</p>
+      <a href={testing.processHref} class="home-testing__link">
+        {testing.processLabel}
+        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
+      </a>
+      <div class="home-testing__stats mt-5">
+        {
+          testing.stats.map((stat) => (
+            <div class="home-testing__stat">
+              <span class="home-testing__stat-title">{stat.title}</span>
+              {stat.subtitle && <span class="home-testing__stat-sub">{stat.subtitle}</span>}
+              {
+                stat.lines?.map((line) => (
+                  <span class="home-testing__stat-sub">{line}</span>
+                ))
+              }
+            </div>
+          ))
+        }
+      </div>
+    </div>
+    <div class="home-testing__video">
+      <img src={testing.videoPoster} alt="Our AI companion testing setup" width="960" height="600" loading="lazy" />
+    </div>
+  </div>
+</section>

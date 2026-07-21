@@ -1,0 +1,119 @@
+---
+import type { RoundupSpec } from '../../data/roundups/ai-girlfriend';
+
+interface Props {
+  pickId: string;
+  specs: RoundupSpec[];
+}
+
+const { pickId, specs } = Astro.props;
+---
+
+<div class="roundup-specs-carousel" data-specs-carousel={pickId}>
+  <button type="button" class="roundup-specs-carousel__arrow" data-specs-prev aria-label="Previous specs">
+    <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+  </button>
+
+  <div class="roundup-specs-carousel__viewport">
+    <div class="roundup-specs-carousel__track" data-specs-track tabindex="0" role="region" aria-label="Product specs">
+      {
+        specs.map((spec) => (
+          <div class="roundup-specs-carousel__item">
+            <p class="roundup-specs-carousel__label">{spec.label}</p>
+            <p class="roundup-specs-carousel__value">{spec.value}</p>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+
+  <button type="button" class="roundup-specs-carousel__arrow" data-specs-next aria-label="Next specs">
+    <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+  </button>
+</div>
+
+<script>
+  function initSpecsCarousels() {
+    document.querySelectorAll<HTMLElement>('[data-specs-carousel]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const track = root.querySelector<HTMLElement>('[data-specs-track]');
+      const prev = root.querySelector<HTMLButtonElement>('[data-specs-prev]');
+      const next = root.querySelector<HTMLButtonElement>('[data-specs-next]');
+      if (!track) return;
+
+      let isDown = false;
+      let startX = 0;
+      let scrollLeft = 0;
+      let moved = false;
+
+      function step() {
+        const item = track.querySelector<HTMLElement>('.roundup-specs-carousel__item');
+        if (!item) return track.clientWidth * 0.5;
+        return item.offsetWidth;
+      }
+
+      function updateArrows() {
+        const max = track.scrollWidth - track.clientWidth - 1;
+        if (prev) prev.disabled = track.scrollLeft <= 1;
+        if (next) next.disabled = track.scrollLeft >= max;
+      }
+
+      prev?.addEventListener('click', () => {
+        track.scrollBy({ left: -step(), behavior: 'smooth' });
+      });
+
+      next?.addEventListener('click', () => {
+        track.scrollBy({ left: step(), behavior: 'smooth' });
+      });
+
+      track.addEventListener('scroll', updateArrows, { passive: true });
+
+      track.addEventListener('pointerdown', (e) => {
+        isDown = true;
+        moved = false;
+        startX = e.clientX;
+        scrollLeft = track.scrollLeft;
+        track.classList.add('is-dragging');
+        track.setPointerCapture(e.pointerId);
+      });
+
+      track.addEventListener('pointermove', (e) => {
+        if (!isDown) return;
+        const dx = e.clientX - startX;
+        if (Math.abs(dx) > 3) moved = true;
+        track.scrollLeft = scrollLeft - dx;
+      });
+
+      const stop = (e: PointerEvent) => {
+        if (!isDown) return;
+        isDown = false;
+        track.classList.remove('is-dragging');
+        try {
+          track.releasePointerCapture(e.pointerId);
+        } catch {}
+      };
+
+      track.addEventListener('pointerup', stop);
+      track.addEventListener('pointercancel', stop);
+
+      track.addEventListener(
+        'click',
+        (e) => {
+          if (moved) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        },
+        true,
+      );
+
+      window.addEventListener('resize', updateArrows);
+      updateArrows();
+    });
+  }
+
+  initSpecsCarousels();
+  document.addEventListener('astro:page-load', initSpecsCarousels);
+</script>

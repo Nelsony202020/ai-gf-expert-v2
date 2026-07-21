@@ -3,6 +3,9 @@
 @import './ratings-tooltips.css';
 @import './market-data.css';
 @import './video-review-modal.css';
+@import './roundup.css';
+@import './article-utilities.css';
+@import './homepage.css';
 
 /* ===========================================================================
    Design tokens ported from the mockups' DESIGN.md ("Vibrant Editorial")
@@ -183,11 +186,15 @@
   --color-on-background: #ececec;
   --color-surface: #121612;
   --color-surface-variant: #2a3328;
+  --color-surface-container-lowest: #1a1f18;
   --color-surface-container-low: #1a2418;
   --color-surface-container: #1f2a1d;
+  --color-surface-container-high: #2a3328;
+  --color-surface-container-highest: #323d30;
   --color-on-surface: #ececec;
   --color-on-surface-variant: #b8c4b2;
   --color-tertiary: #9cab96;
+  --color-accent-soft: rgb(219 39 119 / 14%);
 }
 
 [data-theme='dark'] body {

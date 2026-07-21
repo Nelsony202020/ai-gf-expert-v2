@@ -1,0 +1,201 @@
+---
+import BrandIcon from '../ui/BrandIcon.astro';
+import { brandIcons } from '../../lib/brand-icons';
+---
+
+<div class="article-feedback" data-article-feedback hidden aria-hidden="true">
+  <div class="article-feedback__backdrop" data-feedback-close tabindex="-1"></div>
+
+  <div
+    class="article-feedback__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="article-feedback-title"
+    data-feedback-panel
+  >
+    <header class="article-feedback__header">
+      <h2 id="article-feedback-title" class="article-feedback__title">Help us improve this article</h2>
+      <button type="button" class="article-feedback__close" data-feedback-close aria-label="Close feedback">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <div class="article-feedback__body" data-feedback-form-view>
+      <p class="article-feedback__desc">
+        Spot something wrong, outdated, or missing? Send us a note and we'll review it.
+      </p>
+
+      <div class="article-feedback__categories" role="group" aria-label="Feedback type">
+        <button type="button" class="article-feedback__cat" data-feedback-category="outdated">
+          <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
+          <span>Outdated information</span>
+        </button>
+        <button type="button" class="article-feedback__cat" data-feedback-category="missing-app">
+          <span class="material-symbols-outlined" aria-hidden="true">search</span>
+          <span>Missing app</span>
+        </button>
+        <button type="button" class="article-feedback__cat" data-feedback-category="wrong">
+          <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+          <span>Something is wrong</span>
+        </button>
+        <button type="button" class="article-feedback__cat" data-feedback-category="general">
+          <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
+          <span>General feedback</span>
+        </button>
+      </div>
+
+      <form class="article-feedback__form" data-feedback-form>
+        <input type="hidden" name="category" value="" data-feedback-category-input />
+        <input type="hidden" name="pageUrl" value="" data-feedback-url-input />
+        <input type="hidden" name="pageTitle" value="" data-feedback-title-input />
+
+        <label class="article-feedback__field">
+          <span class="sr-only">Your feedback</span>
+          <textarea
+            data-feedback-message
+            name="message"
+            rows="4"
+            maxlength="500"
+            placeholder="Type your feedback…"
+            required
+          ></textarea>
+          <span class="article-feedback__counter" data-feedback-counter>0/500</span>
+        </label>
+
+        <button type="submit" class="article-feedback__submit bg-brand-cta">
+          Send feedback
+        </button>
+      </form>
+
+      <footer class="article-feedback__footer">
+        <BrandIcon
+          src={brandIcons.scientist.dark}
+          srcLight={brandIcons.scientist.light}
+          width={32}
+          height={32}
+          class="article-feedback__footer-icon"
+        />
+        <span>Herman reads every note ❤️</span>
+      </footer>
+    </div>
+
+    <div class="article-feedback__success hidden" data-feedback-success-view>
+      <BrandIcon
+        src={brandIcons.scientist.dark}
+        srcLight={brandIcons.scientist.light}
+        width={64}
+        height={64}
+        class="article-feedback__success-icon"
+      />
+      <p class="article-feedback__success-text">Thanks—Herman will review it.</p>
+      <button type="button" class="article-feedback__success-close" data-feedback-close>Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initArticleFeedback() {
+    const root = document.querySelector<HTMLElement>('[data-article-feedback]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const panel = root.querySelector<HTMLElement>('[data-feedback-panel]');
+    const formView = root.querySelector<HTMLElement>('[data-feedback-form-view]');
+    const successView = root.querySelector<HTMLElement>('[data-feedback-success-view]');
+    const form = root.querySelector<HTMLFormElement>('[data-feedback-form]');
+    const message = root.querySelector<HTMLTextAreaElement>('[data-feedback-message]');
+    const counter = root.querySelector<HTMLElement>('[data-feedback-counter]');
+    const categoryInput = root.querySelector<HTMLInputElement>('[data-feedback-category-input]');
+    const urlInput = root.querySelector<HTMLInputElement>('[data-feedback-url-input]');
+    const titleInput = root.querySelector<HTMLInputElement>('[data-feedback-title-input]');
+    const categoryBtns = root.querySelectorAll<HTMLButtonElement>('[data-feedback-category]');
+
+    let pageTitle = document.title;
+    let pageUrl = window.location.href;
+
+    function setPageContext(title: string, url: string) {
+      pageTitle = title;
+      pageUrl = url;
+      if (urlInput) urlInput.value = url;
+      if (titleInput) titleInput.value = title;
+    }
+
+    function resetForm() {
+      form?.reset();
+      categoryBtns.forEach((b) => b.classList.remove('is-selected'));
+      if (categoryInput) categoryInput.value = '';
+      if (counter) counter.textContent = '0/500';
+      formView?.classList.remove('hidden');
+      successView?.classList.add('hidden');
+    }
+
+    function openFeedback(title?: string, url?: string) {
+      resetForm();
+      setPageContext(title ?? document.title, url ?? window.location.href);
+      root.hidden = false;
+      root.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('article-feedback-open');
+      window.setTimeout(() => message?.focus(), 80);
+    }
+
+    function closeFeedback() {
+      root.hidden = true;
+      root.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('article-feedback-open');
+    }
+
+    window.addEventListener('article-feedback:open', ((e: CustomEvent<{ title?: string; url?: string }>) => {
+      openFeedback(e.detail?.title, e.detail?.url);
+    }) as EventListener);
+
+    root.querySelectorAll('[data-feedback-close]').forEach((el) => {
+      el.addEventListener('click', closeFeedback);
+    });
+
+    categoryBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        categoryBtns.forEach((b) => b.classList.remove('is-selected'));
+        btn.classList.add('is-selected');
+        if (categoryInput) categoryInput.value = btn.dataset.feedbackCategory ?? '';
+      });
+    });
+
+    message?.addEventListener('input', () => {
+      if (counter && message) counter.textContent = `${message.value.length}/500`;
+    });
+
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!categoryInput?.value) {
+        categoryBtns[0]?.focus();
+        return;
+      }
+
+      const payload = {
+        category: categoryInput.value,
+        message: message?.value ?? '',
+        pageUrl,
+        pageTitle,
+        submittedAt: new Date().toISOString(),
+      };
+
+      try {
+        const existing = JSON.parse(localStorage.getItem('article-feedback-queue') ?? '[]');
+        existing.push(payload);
+        localStorage.setItem('article-feedback-queue', JSON.stringify(existing.slice(-50)));
+      } catch {
+        /* ignore storage errors */
+      }
+
+      formView?.classList.add('hidden');
+      successView?.classList.remove('hidden');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !root.hidden) closeFeedback();
+    });
+  }
+
+  initArticleFeedback();
+  document.addEventListener('astro:page-load', initArticleFeedback);
+</script>

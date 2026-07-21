@@ -1,0 +1,375 @@
+---
+import type { Roundup, RoundupPick } from '../../data/roundups/ai-girlfriend';
+import {
+  ROUNDUP_READING_OPTIONS,
+  buildRoundupSortOptions,
+} from '../../lib/roundup-controls';
+
+interface Props {
+  roundup: Roundup;
+  picks: RoundupPick[];
+}
+
+const { roundup, picks } = Astro.props;
+
+const sortOptions = buildRoundupSortOptions(picks);
+const mainSections = roundup.tocSections.filter((s) => s.level !== 3);
+const pickSections = roundup.tocSections.filter((s) => s.level === 3);
+---
+
+<aside class="roundup-sidebar" aria-label="Roundup navigation">
+  <nav class="roundup-toc" aria-label="Table of contents">
+    <p class="roundup-toc__title">Contents</p>
+    <ul class="roundup-toc__list">
+      <li>
+        <a class="roundup-toc__link roundup-toc__link--top" href="#roundup-top">
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+          Top
+        </a>
+      </li>
+      {
+        mainSections.map((section) => (
+          <li>
+            <a class="roundup-toc__link" href={`#${section.id}`} data-toc-link={section.id}>
+              {section.label}
+            </a>
+            {
+              section.id === 'roundup-detailed-picks' && (
+                <ul class="roundup-toc__sublist">
+                  {
+                    pickSections.map((pick) => (
+                      <li>
+                        <a class="roundup-toc__link roundup-toc__link--h3" href={`#${pick.id}`} data-toc-link={pick.id}>
+                          {pick.label}
+                        </a>
+                      </li>
+                    ))
+                  }
+                </ul>
+              )
+            }
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+
+  <div class="roundup-panel">
+    <button type="button" class="roundup-panel__header" data-panel-toggle="sort" aria-expanded="false">
+      <span class="roundup-panel__icon" aria-hidden="true">
+        <span class="material-symbols-outlined">tune</span>
+      </span>
+      <span class="roundup-panel__title">Sort</span>
+      <span class="roundup-panel__toggle" data-panel-icon="sort">+</span>
+    </button>
+    <div class="roundup-panel__body" data-panel-body="sort" hidden>
+      {
+        sortOptions.map((opt, i) => (
+          <label class="roundup-radio">
+            <input type="radio" name="roundup-sort" value={opt.value} checked={i === 0} />
+            <span>{opt.label}</span>
+          </label>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="roundup-panel">
+    <button type="button" class="roundup-panel__header" data-panel-toggle="reading" aria-expanded="false">
+      <span class="roundup-panel__icon" aria-hidden="true">
+        <span class="material-symbols-outlined">article</span>
+      </span>
+      <span class="roundup-panel__title">Reading</span>
+      <span class="roundup-panel__toggle" data-panel-icon="reading">+</span>
+    </button>
+    <div class="roundup-panel__body" data-panel-body="reading" hidden>
+      {
+        ROUNDUP_READING_OPTIONS.map((opt, i) => (
+          <label class="roundup-radio">
+            <input type="radio" name="roundup-reading" value={opt.value} checked={i === 0} />
+            <span>{opt.label}</span>
+          </label>
+        ))
+      }
+    </div>
+  </div>
+</aside>
+
+<script>
+  import { ROUNDUP_SORT_LABELS } from '../../lib/roundup-controls';
+
+  function initRoundupSidebar() {
+    const root = document.querySelector<HTMLElement>('[data-roundup-root]');
+    const picksContainer = document.querySelector<HTMLElement>('[data-roundup-picks]');
+    if (!root || !picksContainer) return;
+
+    const categoryMap: Record<string, string> = {
+      voice: 'chat-features',
+      roleplay: 'chat-features',
+      video: 'video',
+      images: 'images',
+      privacy: 'privacy',
+      value: 'pricing',
+      free: 'pricing',
+    };
+
+    function getSortScore(pick: HTMLElement, sortKey: string): number {
+      const overall = Number(pick.dataset.overallScore ?? 0);
+      const price = Number(pick.dataset.price ?? 0);
+      if (sortKey === 'overall') return overall;
+      if (sortKey === 'price-asc') return -price;
+      if (sortKey === 'price-desc') return price;
+
+      let scores: Record<string, number> = {};
+      try {
+        scores = JSON.parse(pick.dataset.categoryScores ?? '{}');
+      } catch {
+        scores = {};
+      }
+
+      const catKey = categoryMap[sortKey] ?? sortKey;
+      return scores[catKey] ?? overall;
+    }
+
+    function updatePickRanks() {
+      const picks = Array.from(picksContainer!.querySelectorAll<HTMLElement>('[data-roundup-pick]'));
+      picks.forEach((pick, index) => {
+        const rankEl = pick.querySelector<HTMLElement>('[data-pick-rank]');
+        if (rankEl) rankEl.textContent = String(index + 1);
+      });
+    }
+
+    function updateSortLabel(sortKey: string) {
+      const labelEl = document.querySelector<HTMLElement>('[data-roundup-sort-label]');
+      const text = ROUNDUP_SORT_LABELS[sortKey] ?? ROUNDUP_SORT_LABELS.overall;
+      if (labelEl) labelEl.textContent = text;
+
+      document.querySelectorAll<HTMLElement>('[data-mobile-sort-value]').forEach((el) => {
+        const sheetInput = document.querySelector<HTMLInputElement>(
+          `[data-sort-sheet] input[name="roundup-sort"][value="${sortKey}"]`,
+        );
+        const short =
+          sheetInput
+            ?.closest('.roundup-sheet__option')
+            ?.querySelector<HTMLElement>('[data-sort-short]')
+            ?.getAttribute('data-sort-short') ?? 'Overall';
+        el.textContent = short;
+      });
+    }
+
+    function reorderTocPicks(picks: HTMLElement[]) {
+      const tocSublist = document.querySelector<HTMLElement>('.roundup-toc__sublist');
+      if (!tocSublist) return;
+
+      const items = Array.from(tocSublist.querySelectorAll<HTMLLIElement>('li'));
+      const order = picks.map((p) => p.id);
+      items
+        .sort((a, b) => {
+          const aId = a.querySelector('a')?.dataset.tocLink ?? '';
+          const bId = b.querySelector('a')?.dataset.tocLink ?? '';
+          return order.indexOf(aId) - order.indexOf(bId);
+        })
+        .forEach((item) => tocSublist.appendChild(item));
+    }
+
+    function sortPicks(sortKey: string) {
+      const picks = Array.from(picksContainer!.querySelectorAll<HTMLElement>('[data-roundup-pick]'));
+      picks
+        .sort((a, b) => getSortScore(b, sortKey) - getSortScore(a, sortKey))
+        .forEach((pick) => picksContainer!.appendChild(pick));
+
+      updatePickRanks();
+      updateSortLabel(sortKey);
+      reorderTocPicks(picks);
+
+      const quickTrack = document.querySelector<HTMLElement>('[data-roundup-quick-track]');
+      if (quickTrack) {
+        const cards = Array.from(quickTrack.querySelectorAll<HTMLElement>('[data-quick-card]'));
+        const order = picks.map((p) => p.dataset.pickId);
+        cards
+          .sort((a, b) => order.indexOf(a.dataset.quickCard!) - order.indexOf(b.dataset.quickCard!))
+          .forEach((card) => quickTrack.appendChild(card));
+      }
+    }
+
+    function updateReadingLabel(value: string) {
+      const labels: Record<string, string> = { skim: 'Skim', medium: 'Medium', 'all-in': 'All in' };
+      document.querySelectorAll<HTMLElement>('[data-mobile-reading-value]').forEach((el) => {
+        el.textContent = labels[value] ?? 'Skim';
+      });
+    }
+
+    function applyReadingLength(value: string) {
+      root!.dataset.readingLength = value;
+      updateReadingLabel(value);
+
+      document.querySelectorAll<HTMLElement>('[data-roundup-pick]').forEach((pick) => {
+        if (value === 'medium') {
+          pick.dataset.pickExpanded = 'medium';
+        } else if (value === 'all-in') {
+          pick.dataset.pickExpanded = 'deep';
+        } else {
+          delete pick.dataset.pickExpanded;
+        }
+      });
+
+      document.querySelectorAll<HTMLElement>('[data-pick-expand-wrap]').forEach((wrap) => {
+        wrap.hidden = value !== 'skim';
+      });
+
+      if (value === 'all-in') {
+        document.querySelectorAll<HTMLElement>('[data-our-take-body]').forEach((body) => {
+          body.hidden = false;
+        });
+        document.querySelectorAll<HTMLButtonElement>('[data-our-take-toggle]').forEach((btn) => {
+          btn.setAttribute('aria-expanded', 'true');
+          btn.querySelector('.roundup-pick__our-take-chevron')?.classList.add('is-open');
+        });
+      } else {
+        document.querySelectorAll<HTMLElement>('[data-our-take-body]').forEach((body) => {
+          body.hidden = true;
+        });
+        document.querySelectorAll<HTMLButtonElement>('[data-our-take-toggle]').forEach((btn) => {
+          btn.setAttribute('aria-expanded', 'false');
+          btn.querySelector('.roundup-pick__our-take-chevron')?.classList.remove('is-open');
+        });
+      }
+    }
+
+    function syncRadios(name: string, value: string) {
+      document.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`).forEach((el) => {
+        el.checked = el.value === value;
+      });
+    }
+
+    document.querySelectorAll<HTMLInputElement>('input[name="roundup-sort"]').forEach((input) => {
+      input.addEventListener('change', () => {
+        if (input.checked) {
+          syncRadios('roundup-sort', input.value);
+          sortPicks(input.value);
+        }
+      });
+    });
+
+    const defaultSort = document.querySelector<HTMLInputElement>('input[name="roundup-sort"]:checked');
+    if (defaultSort) updateSortLabel(defaultSort.value);
+
+    document.querySelectorAll<HTMLInputElement>('input[name="roundup-reading"]').forEach((input) => {
+      input.addEventListener('change', () => {
+        if (input.checked) {
+          syncRadios('roundup-reading', input.value);
+          applyReadingLength(input.value);
+        }
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-panel-toggle]').forEach((btn) => {
+      if (btn.dataset.panelBound === 'true') return;
+      btn.dataset.panelBound = 'true';
+
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.panelToggle!;
+        const body = document.querySelector<HTMLElement>(`[data-panel-body="${key}"]`);
+        const icon = document.querySelector<HTMLElement>(`[data-panel-icon="${key}"]`);
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!expanded));
+        if (body) body.hidden = expanded;
+        if (icon) icon.textContent = expanded ? '+' : '−';
+      });
+    });
+
+    function closeSheet(sheet: HTMLElement | null) {
+      if (!sheet) return;
+      sheet.hidden = true;
+      sheet.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('roundup-sheet-open');
+    }
+
+    function openSheet(sheet: HTMLElement | null) {
+      if (!sheet) return;
+      sheet.hidden = false;
+      sheet.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('roundup-sheet-open');
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('[data-reading-sheet-open]').forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+      btn.addEventListener('click', () => {
+        openSheet(document.querySelector<HTMLElement>('[data-reading-sheet]'));
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-sort-sheet-open]').forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+      btn.addEventListener('click', () => {
+        openSheet(document.querySelector<HTMLElement>('[data-sort-sheet]'));
+      });
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-reading-sheet], [data-sort-sheet]').forEach((sheet) => {
+      if (sheet.dataset.bound === 'true') return;
+      sheet.dataset.bound = 'true';
+
+      sheet.querySelector('[data-sheet-close]')?.addEventListener('click', () => closeSheet(sheet));
+      sheet.querySelector('[data-sheet-backdrop]')?.addEventListener('click', () => closeSheet(sheet));
+
+      sheet.querySelectorAll<HTMLInputElement>('input[type="radio"]').forEach((input) => {
+        input.addEventListener('change', () => {
+          if (!input.checked) return;
+          const name = input.name;
+          syncRadios(name, input.value);
+          if (name === 'roundup-reading') applyReadingLength(input.value);
+          if (name === 'roundup-sort') sortPicks(input.value);
+          closeSheet(sheet);
+        });
+      });
+    });
+
+    const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]'));
+    const sections = tocLinks
+      .map((link) => {
+        const id = link.dataset.tocLink!;
+        const el = document.getElementById(id);
+        return el ? { link, el } : null;
+      })
+      .filter((x): x is { link: HTMLAnchorElement; el: HTMLElement } => !!x);
+
+    function updateTocActive() {
+      const offset = 100;
+      let current: string | null = null;
+      for (const { link, el } of sections) {
+        if (el.getBoundingClientRect().top - offset <= 0) {
+          current = link.dataset.tocLink!;
+        }
+      }
+      tocLinks.forEach((link) => {
+        link.classList.toggle('is-active', link.dataset.tocLink === current);
+      });
+    }
+
+    window.addEventListener('scroll', updateTocActive, { passive: true });
+    updateTocActive();
+
+    document.querySelectorAll<HTMLAnchorElement>('[data-pick-anchor]').forEach((link) => {
+      link.addEventListener('click', () => {
+        const pickId = link.dataset.pickAnchor;
+        const pick = document.querySelector<HTMLElement>(`[data-pick-id="${pickId}"]`);
+        if (pick && !pick.dataset.pickExpanded) {
+          pick.dataset.pickExpanded = 'medium';
+        }
+        const reading = document.querySelector<HTMLInputElement>('input[name="roundup-reading"][value="medium"]');
+        if (reading && !reading.checked) {
+          reading.checked = true;
+          applyReadingLength('medium');
+        }
+      });
+    });
+
+    applyReadingLength('skim');
+  }
+
+  initRoundupSidebar();
+  document.addEventListener('astro:page-load', initRoundupSidebar);
+</script>

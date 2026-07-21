@@ -1,0 +1,170 @@
+---
+import SocialIcon from './SocialIcon.astro';
+
+interface Props {
+  /** Page title for share text */
+  shareTitle: string;
+  /** Canonical share URL — defaults to current page on the client */
+  shareUrl?: string;
+  /** inline = metadata row (desktop); fab = floating button; title-mobile = icon beside title on mobile */
+  variant?: 'inline' | 'fab' | 'title-mobile';
+}
+
+const { shareTitle, shareUrl, variant = 'inline' } = Astro.props;
+const isFab = variant === 'fab';
+const isTitleMobile = variant === 'title-mobile';
+---
+
+<div
+  class={`share-menu share-menu--${variant}`}
+  data-share-menu
+  data-share-variant={variant}
+  data-share-title={shareTitle}
+  data-share-url={shareUrl ?? ''}
+>
+  <button
+    type="button"
+    class="share-menu__trigger"
+    data-share-trigger
+    aria-expanded="false"
+    aria-haspopup="menu"
+    aria-label="Share this article"
+  >
+    <span class="material-symbols-outlined share-menu__trigger-icon" aria-hidden="true">share</span>
+    {!isFab && !isTitleMobile && <span>Share</span>}
+  </button>
+
+  <div class="share-menu__dropdown hidden" data-share-dropdown role="menu">
+    <button type="button" class="share-menu__item" data-share-action="copy" role="menuitem">
+      <span class="material-symbols-outlined" aria-hidden="true">link</span>
+      <span data-share-copy-label>Copy link</span>
+    </button>
+    <button type="button" class="share-menu__item" data-share-action="x" role="menuitem">
+      <SocialIcon platform="x" class="share-menu__social-icon share-menu__social-icon--x" />
+      <span>X</span>
+    </button>
+    <button type="button" class="share-menu__item" data-share-action="facebook" role="menuitem">
+      <SocialIcon platform="facebook" class="share-menu__social-icon share-menu__social-icon--facebook" />
+      <span>Facebook</span>
+    </button>
+    <button type="button" class="share-menu__item" data-share-action="reddit" role="menuitem">
+      <SocialIcon platform="reddit" class="share-menu__social-icon share-menu__social-icon--reddit" />
+      <span>Reddit</span>
+    </button>
+    <button type="button" class="share-menu__item" data-share-action="email" role="menuitem">
+      <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+      <span>Email</span>
+    </button>
+  </div>
+</div>
+
+<script>
+  function initShareMenus() {
+    document.querySelectorAll<HTMLElement>('[data-share-menu]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const trigger = root.querySelector<HTMLButtonElement>('[data-share-trigger]');
+      const dropdown = root.querySelector<HTMLElement>('[data-share-dropdown]');
+      const copyLabel = root.querySelector<HTMLElement>('[data-share-copy-label]');
+      const variant = root.dataset.shareVariant ?? 'inline';
+      const title = root.dataset.shareTitle ?? document.title;
+      const configuredUrl = root.dataset.shareUrl?.trim();
+
+      function getUrl() {
+        return configuredUrl || window.location.href;
+      }
+
+      function close() {
+        dropdown?.classList.add('hidden');
+        trigger?.setAttribute('aria-expanded', 'false');
+      }
+
+      function open() {
+        dropdown?.classList.remove('hidden');
+        trigger?.setAttribute('aria-expanded', 'true');
+      }
+
+      function shareLinks(url: string) {
+        const encoded = encodeURIComponent(url);
+        const encodedTitle = encodeURIComponent(title);
+        return {
+          x: `https://twitter.com/intent/tweet?url=${encoded}&text=${encodedTitle}`,
+          facebook: `https://facebook.com/sharer/sharer.php?u=${encoded}`,
+          reddit: `https://www.reddit.com/submit?url=${encoded}&title=${encodedTitle}`,
+          email: `mailto:?subject=${encodedTitle}&body=${encoded}%0A%0A${encoded}`,
+        };
+      }
+
+      async function copyLink() {
+        const url = getUrl();
+        try {
+          await navigator.clipboard.writeText(url);
+        } catch {
+          const input = document.createElement('input');
+          input.value = url;
+          document.body.appendChild(input);
+          input.select();
+          document.execCommand('copy');
+          input.remove();
+        }
+        if (copyLabel) {
+          const prev = copyLabel.textContent;
+          copyLabel.textContent = 'Link copied ✓';
+          window.setTimeout(() => {
+            if (copyLabel) copyLabel.textContent = prev;
+          }, 2000);
+        }
+      }
+
+      trigger?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+
+        const useNative =
+          variant === 'fab' ||
+          (variant === 'inline' && window.matchMedia('(max-width: 767px)').matches);
+
+        if (useNative && typeof navigator.share === 'function') {
+          try {
+            await navigator.share({ title, url: getUrl() });
+            return;
+          } catch (err) {
+            if ((err as Error).name === 'AbortError') return;
+          }
+        }
+
+        if (dropdown?.classList.contains('hidden')) open();
+        else close();
+      });
+
+      root.querySelectorAll<HTMLButtonElement>('[data-share-action]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const action = btn.dataset.shareAction;
+          const url = getUrl();
+          const links = shareLinks(url);
+
+          if (action === 'copy') {
+            await copyLink();
+            return;
+          }
+          if (action === 'x') window.open(links.x, '_blank', 'noopener,noreferrer,width=600,height=520');
+          else if (action === 'facebook') window.open(links.facebook, '_blank', 'noopener,noreferrer,width=600,height=520');
+          else if (action === 'reddit') window.open(links.reddit, '_blank', 'noopener,noreferrer,width=600,height=520');
+          else if (action === 'email') window.location.href = links.email;
+          close();
+        });
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!root.contains(e.target as Node)) close();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') close();
+      });
+    });
+  }
+
+  initShareMenus();
+  document.addEventListener('astro:page-load', initShareMenus);
+</script>

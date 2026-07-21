@@ -2,48 +2,46 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import ScorePill from '../components/review/ScorePill.astro';
-import { products } from '../data/products';
+import HomeHero from '../components/home/HomeHero.astro';
+import HomeTrustStrip from '../components/home/HomeTrustStrip.astro';
+import HomeTopPicks from '../components/home/HomeTopPicks.astro';
+import HomeAppExplorer from '../components/home/HomeAppExplorer.astro';
+import HomeFindMatch from '../components/home/HomeFindMatch.astro';
+import HomeRecentUpdates from '../components/home/HomeRecentUpdates.astro';
+import HomeHowWeTest from '../components/home/HomeHowWeTest.astro';
+import HomeBrowseGoals from '../components/home/HomeBrowseGoals.astro';
+import HomeGuides from '../components/home/HomeGuides.astro';
+import HomeFinalCta from '../components/home/HomeFinalCta.astro';
+import {
+  buildExplorerApps,
+  featuredGuides,
+  homeMeta,
+  recentUpdates,
+  topPicks,
+} from '../data/homepage';
+
+const apps = buildExplorerApps();
 ---
 
-<BaseLayout title="Lovelace Reviews — In-depth AI Companion Reviews">
+<BaseLayout title={homeMeta.title} description={homeMeta.description} image={homeMeta.heroImage}>
   <Header />
-  <main class="section-container px-4 md:px-8 py-16 md:py-24">
-    <div class="max-w-2xl">
-      <span class="text-[11px] font-black uppercase tracking-widest text-primary-container">Temporary Home</span>
-      <h1 class="text-4xl md:text-6xl font-black text-on-surface tracking-tight mt-3">
-        In-depth <span class="text-primary-container">AI Companion</span> reviews
-      </h1>
-      <p class="text-on-surface-variant text-lg leading-relaxed mt-4">
-        The directory homepage comes later. For now, here is the fully-built review page.
-      </p>
-    </div>
+  <main>
+    <HomeHero />
+    <HomeTrustStrip />
+    <HomeTopPicks picks={topPicks} />
+    <HomeAppExplorer apps={apps} />
 
-    <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {
-        products.map((product) => (
-          <a
-            href={`/reviews/${product.slug}`}
-            class="group border border-surface-variant rounded-xl overflow-hidden bg-white shadow-sm hover:border-primary-container transition-colors"
-          >
-            <div class="aspect-video overflow-hidden bg-surface-container">
-              <img
-                src={product.gallery[0]?.full}
-                alt={product.name}
-                class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform"
-              />
-            </div>
-            <div class="p-5 flex items-center justify-between gap-3">
-              <div>
-                <h2 class="text-lg font-bold text-on-surface">{product.name}</h2>
-                <p class="text-xs text-tertiary line-clamp-1">{product.tagline}</p>
-              </div>
-              <ScorePill score={product.overallScore} size="md" />
-            </div>
-          </a>
-        ))
-      }
-    </div>
+    <section class="home-section section-container px-4 md:px-8">
+      <div class="home-split">
+        <HomeFindMatch />
+        <HomeRecentUpdates updates={recentUpdates} />
+      </div>
+    </section>
+
+    <HomeHowWeTest />
+    <HomeBrowseGoals />
+    <HomeGuides guides={featuredGuides} />
+    <HomeFinalCta />
   </main>
   <Footer />
 </BaseLayout>

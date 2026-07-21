@@ -1,0 +1,23 @@
+---
+import { trustStripStats } from '../../data/homepage';
+---
+
+<section class="home-trust" aria-label="Testing credentials">
+  <div class="section-container px-4 md:px-8">
+    <ul class="home-trust__list">
+      {
+        trustStripStats.map((stat) => (
+          <li class="home-trust__item">
+            <span class="material-symbols-outlined home-trust__icon" aria-hidden="true">
+              {stat.icon}
+            </span>
+            <div>
+              <span class="home-trust__value">{stat.value}</span>
+              <span class="home-trust__label">{stat.label}</span>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

@@ -1,0 +1,178 @@
+---
+import { heroPopularSearches, homeMeta, getHomeSearchIndex } from '../../data/homepage';
+
+const searchIndex = getHomeSearchIndex();
+---
+
+<section class="home-hero" aria-labelledby="home-hero-title">
+  <div class="section-container px-4 md:px-8 home-hero__inner">
+    <div>
+      <p class="home-hero__eyebrow">
+        <span class="material-symbols-outlined text-[14px]" aria-hidden="true">verified</span>
+        Independent · Unbiased · User-first
+      </p>
+      <h1 id="home-hero-title" class="home-hero__title">
+        Find the best AI girlfriend app for <em>you</em>
+      </h1>
+      <p class="home-hero__lead">
+        We purchase, test, score, and compare AI companion apps so you can choose with confidence — not marketing hype.
+      </p>
+
+      <div class="home-hero__search" data-home-search>
+        <form class="home-hero__search-form" role="search" data-home-search-form>
+          <input
+            type="search"
+            name="q"
+            class="home-hero__search-input"
+            placeholder="Search reviews, roundups, and guides…"
+            autocomplete="off"
+            aria-label="Search the site"
+            aria-expanded="false"
+            aria-controls="home-search-results"
+            data-home-search-input
+          />
+          <button type="submit" class="home-hero__search-btn">
+            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">search</span>
+            <span class="hidden sm:inline">Search</span>
+          </button>
+        </form>
+        <div id="home-search-results" class="home-hero__search-panel" hidden data-home-search-panel></div>
+
+        <div class="home-hero__tags">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-tertiary mr-1">Popular:</span>
+          {
+            heroPopularSearches.map((term) => (
+              <a href={`/#explore-apps`} class="home-hero__tag" data-home-popular-search={term}>
+                {term}
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="home-hero__visual">
+      <div class="home-hero__image-wrap">
+        <img
+          src={homeMeta.heroImage}
+          alt={homeMeta.heroImageAlt}
+          class="home-hero__image"
+          width="800"
+          height="640"
+          loading="eager"
+          decoding="async"
+        />
+      </div>
+      <div class="home-hero__trust-card">
+        <span class="home-hero__trust-icon material-symbols-outlined text-[18px]" aria-hidden="true">shield</span>
+        <p class="home-hero__trust-text">100% paid accounts. No sponsors. Real hands-on testing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script define:vars={{ searchIndex }}>
+  function initHomeSearch() {
+    const root = document.querySelector('[data-home-search]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const form = root.querySelector('[data-home-search-form]');
+    const input = root.querySelector('[data-home-search-input]');
+    const panel = root.querySelector('[data-home-search-panel]');
+    if (!form || !input || !panel) return;
+
+    let activeIndex = -1;
+
+    function filter(q) {
+      const query = q.trim().toLowerCase();
+      if (!query) return [];
+      return searchIndex
+        .filter((item) => `${item.label} ${item.meta ?? ''}`.toLowerCase().includes(query))
+        .slice(0, 8);
+    }
+
+    function renderResults(results) {
+      panel.innerHTML = '';
+      if (!results.length) {
+        panel.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
+        return;
+      }
+
+      results.forEach((item, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'home-hero__search-result';
+        btn.dataset.href = item.href;
+        btn.setAttribute('role', 'option');
+        btn.innerHTML = `<span class="home-hero__search-result-label">${item.label}</span><span class="home-hero__search-result-meta">${item.meta ?? item.type}</span>`;
+        btn.addEventListener('click', () => {
+          window.location.href = item.href;
+        });
+        if (i === activeIndex) btn.setAttribute('aria-selected', 'true');
+        panel.appendChild(btn);
+      });
+
+      panel.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+    }
+
+    function navigateToFirst() {
+      const first = panel.querySelector('[data-href]');
+      if (first instanceof HTMLButtonElement && first.dataset.href) {
+        window.location.href = first.dataset.href;
+      }
+    }
+
+    input.addEventListener('input', () => {
+      activeIndex = -1;
+      renderResults(filter(input.value));
+    });
+
+    input.addEventListener('keydown', (e) => {
+      const options = [...panel.querySelectorAll('[data-href]')];
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, options.length - 1);
+        renderResults(filter(input.value));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, 0);
+        renderResults(filter(input.value));
+      } else if (e.key === 'Enter' && activeIndex >= 0 && options[activeIndex] instanceof HTMLButtonElement) {
+        e.preventDefault();
+        window.location.href = options[activeIndex].dataset.href ?? '/';
+      } else if (e.key === 'Escape') {
+        panel.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      navigateToFirst();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!root.contains(e.target)) {
+        panel.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    root.querySelectorAll('[data-home-popular-search]').forEach((tag) => {
+      tag.addEventListener('click', (e) => {
+        e.preventDefault();
+        input.value = tag.textContent?.trim() ?? '';
+        input.focus();
+        renderResults(filter(input.value));
+        const explore = document.getElementById('explore-apps');
+        if (explore) explore.scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+  }
+
+  initHomeSearch();
+  document.addEventListener('astro:page-load', initHomeSearch);
+</script>

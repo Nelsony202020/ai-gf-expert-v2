@@ -1,0 +1,43 @@
+---
+import type { HomeGuide } from '../../data/homepage';
+
+interface Props {
+  guides: HomeGuide[];
+}
+
+const { guides } = Astro.props;
+
+const typeLabels: Record<HomeGuide['type'], string> = {
+  guide: 'Guide',
+  roundup: 'Roundup',
+  comparison: 'Comparison',
+};
+---
+
+<section class="home-section section-container px-4 md:px-8" aria-labelledby="home-guides-title">
+  <div class="home-section__head">
+    <h2 id="home-guides-title" class="home-section__title">Latest guides & comparisons</h2>
+    <a href="/sitemap" class="home-section__link">
+      View all articles
+      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
+    </a>
+  </div>
+
+  <div class="home-guides__grid">
+    {
+      guides.map((guide) => (
+        <a href={guide.href} class="home-guide-card">
+          <div class="home-guide-card__media">
+            <img class="home-guide-card__image" src={guide.image} alt={guide.imageAlt} width="640" height="400" loading="lazy" />
+          </div>
+          <div class="home-guide-card__body">
+            <span class="home-guide-card__type">{typeLabels[guide.type]}</span>
+            <h3 class="home-guide-card__title">{guide.title}</h3>
+            <p class="home-guide-card__excerpt">{guide.excerpt}</p>
+            <span class="home-guide-card__date">{guide.date}</span>
+          </div>
+        </a>
+      ))
+    }
+  </div>
+</section>

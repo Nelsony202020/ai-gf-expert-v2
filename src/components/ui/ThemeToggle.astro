@@ -1,0 +1,17 @@
+---
+interface Props {
+  variant?: 'header' | 'footer';
+}
+
+const { variant = 'header' } = Astro.props;
+---
+
+<button
+  type="button"
+  class={`theme-toggle theme-toggle--${variant}`}
+  data-theme-toggle
+  aria-label="Toggle dark mode"
+>
+  <span class="material-symbols-outlined theme-toggle__icon" aria-hidden="true">dark_mode</span>
+  <span class="theme-toggle__label">Dark mode</span>
+</button>

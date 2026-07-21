@@ -1,0 +1,43 @@
+---
+import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
+import ScorePill from '../review/ScorePill.astro';
+
+interface Props {
+  picks: RoundupPick[];
+}
+
+const { picks } = Astro.props;
+---
+
+<section class="home-section section-container px-4 md:px-8" aria-labelledby="home-top-picks-title">
+  <div class="home-section__head">
+    <h2 id="home-top-picks-title" class="home-section__title">Our top picks</h2>
+    <a href="/best/ai-girlfriend" class="home-section__link">
+      View full rankings
+      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
+    </a>
+  </div>
+
+  <div class="home-picks__track-wrap">
+    <div class="home-picks__track" tabindex="0" role="region" aria-label="Editorial top picks">
+      {
+        picks.map((pick) => (
+          <a
+            href={pick.reviewUrl ?? `/best/ai-girlfriend#pick-${pick.id}`}
+            class="home-pick-card"
+          >
+            <span class="home-pick-card__ribbon">{pick.ribbon}</span>
+            <div class="home-pick-card__row">
+              <img class="home-pick-card__logo" src={pick.logo} alt="" width="48" height="48" loading="lazy" />
+              <div>
+                <h3 class="home-pick-card__name">{pick.name}</h3>
+                <ScorePill score={pick.overallScore} size="sm" />
+              </div>
+            </div>
+            <p class="home-pick-card__summary">{pick.overallSummary}</p>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>

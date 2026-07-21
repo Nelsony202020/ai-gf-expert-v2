@@ -1,0 +1,46 @@
+---
+import type { HomeRecentUpdate } from '../../data/homepage';
+import ScorePill from '../review/ScorePill.astro';
+
+interface Props {
+  updates: HomeRecentUpdate[];
+}
+
+const { updates } = Astro.props;
+---
+
+<div>
+  <div class="home-section__head">
+    <h2 class="home-section__title">Recently updated reviews</h2>
+    <a href="/best/ai-girlfriend" class="home-section__link">
+      View all updates
+      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
+    </a>
+  </div>
+
+  <div class="home-updates__grid">
+    {
+      updates.map((item) => (
+        <a href={item.href} class="home-update-card">
+          <img class="home-update-card__thumb" src={item.image} alt={item.imageAlt} width="88" height="88" loading="lazy" />
+          <div>
+            {item.badge && <span class="home-update-card__badge">{item.badge}</span>}
+            <h3 class="home-update-card__title">{item.title}</h3>
+            <p class="home-update-card__meta">Updated {item.date}</p>
+            <p class="home-update-card__summary">{item.summary}</p>
+            {
+              item.score !== undefined && (
+                <div class="home-update-card__score-row">
+                  <ScorePill score={item.score} size="sm" />
+                  {item.scoreDelta !== undefined && (
+                    <span class="home-update-card__delta">↑ {item.scoreDelta.toFixed(1)}</span>
+                  )}
+                </div>
+              )
+            }
+          </div>
+        </a>
+      ))
+    }
+  </div>
+</div>

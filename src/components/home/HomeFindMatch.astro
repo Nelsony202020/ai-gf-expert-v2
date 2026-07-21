@@ -1,0 +1,23 @@
+---
+import { findMatchGoals } from '../../data/homepage';
+---
+
+<div class="home-match">
+  <div>
+    <h2 class="home-match__title">Find your perfect match</h2>
+    <p class="home-match__lead">
+      Not sure where to start? Tell us what matters most — chat quality, images, voice, memory, or privacy — and we will point you to the right app.
+    </p>
+    <ul class="home-match__list">
+      {
+        findMatchGoals.map((goal) => (
+          <li class="home-match__list-item">
+            <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+            {goal}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+  <a href="#" class="home-match__cta">Take the quiz</a>
+</div>

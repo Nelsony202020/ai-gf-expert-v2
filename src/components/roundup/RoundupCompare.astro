@@ -1,0 +1,353 @@
+---
+import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
+import { ROUNDUP_CATEGORY_KEYS, toRatingCategory } from '../../data/roundups/ai-girlfriend';
+import { getProduct } from '../../data/products';
+import { fmtScore } from '../../lib/scores';
+import { getSegmentFill, getSegmentFillClass } from '../../lib/roundup-scores';
+import RoundupOverallScoreBadge from './RoundupOverallScoreBadge.astro';
+import CategoryScoreTooltip from '../review/tooltips/CategoryScoreTooltip.astro';
+import InfoIcon from '../ui/InfoIcon.astro';
+
+interface Props {
+  picks: RoundupPick[];
+  defaultIds: [string, string, string];
+}
+
+const { picks, defaultIds } = Astro.props;
+
+const specLabels = [...new Set(picks.flatMap((p) => p.specs.map((s) => s.label)))];
+const categoryKeys = ROUNDUP_CATEGORY_KEYS;
+const tooltipProductSlug = picks.find((p) => getProduct(p.slug))?.slug;
+
+const comparePayload = picks.map((p) => ({
+  id: p.id,
+  slug: p.slug,
+  name: p.name,
+  logo: p.logo,
+  intro: p.intro,
+  overallSummary: p.overallSummary,
+  tooltipTriggerId: getProduct(p.slug) ? `overall-${p.slug}` : `overall-roundup-${p.slug}`,
+  image: p.gallery[0]?.full ?? p.logo,
+  imageAlt: p.gallery[0]?.alt ?? `${p.name} screenshot`,
+  overallScore: p.overallScore,
+  priceLabel: p.priceMonthly <= 0 ? 'Free' : `$${p.priceMonthly.toFixed(2)} / mo`,
+  affiliateUrl: p.affiliateUrl,
+  specs: Object.fromEntries(p.specs.map((s) => [s.label, s.value])),
+  categories: Object.fromEntries(p.categoryScores.map((c) => [c.key, { name: c.name, score: c.score }])),
+}));
+
+function barHtml(score: number) {
+  const fillClass = getSegmentFillClass(score);
+  const ratio = Math.min(Math.max(score / 10, 0), 1);
+  const track = Array.from({ length: 5 }, () => `<span class="roundup-compare-bar__seg"></span>`).join('');
+  const fill = Array.from({ length: 5 }, (_, i) => {
+    const seg = getSegmentFill(score, i);
+    if (seg.state === 'full') return `<span class="roundup-compare-bar__seg ${fillClass}"></span>`;
+    if (seg.state === 'partial') {
+      return `<span class="roundup-compare-bar__seg"><span class="roundup-compare-bar__fill ${fillClass}" style="width:${seg.partialPct}%"></span></span>`;
+    }
+    return `<span class="roundup-compare-bar__seg"></span>`;
+  }).join('');
+  return `<div class="roundup-compare-bar" data-roundup-score-bar style="--score-fill-ratio:${ratio}" aria-hidden="true"><div class="roundup-score-bar__track">${track}</div><div class="roundup-score-bar__meter-fill">${fill}</div></div>`;
+}
+---
+
+<section id="roundup-compare" class="roundup-compare scroll-mt-24" data-roundup-compare>
+  <h2 class="roundup-compare__heading">Compare the best AI girlfriend apps</h2>
+
+  <div class="roundup-compare__pickers" data-compare-pickers>
+    {
+      defaultIds.map((id, slot) => {
+        const pick = picks.find((p) => p.id === id)!;
+        return (
+          <div class="roundup-compare-picker" data-compare-picker={slot}>
+            <button type="button" class="roundup-compare-picker__btn" data-compare-picker-btn aria-expanded="false" aria-haspopup="listbox">
+              <span class="roundup-compare-picker__label" data-compare-picker-label>
+                <img
+                  class="roundup-compare-picker__logo"
+                  data-compare-picker-logo
+                  src={pick.logo}
+                  alt=""
+                  width="20"
+                  height="20"
+                  loading="lazy"
+                />
+                <span data-compare-picker-name>{pick.name}</span>
+              </span>
+              <span class="material-symbols-outlined roundup-compare-picker__chevron" aria-hidden="true">expand_more</span>
+            </button>
+            <ul class="roundup-compare-picker__menu" data-compare-picker-menu hidden role="listbox">
+              {
+                picks.map((opt) => (
+                  <li role="option">
+                    <button
+                      type="button"
+                      class="roundup-compare-picker__option"
+                      data-compare-option={opt.id}
+                      data-compare-slot={slot}
+                    >
+                      <img class="roundup-compare-picker__logo" src={opt.logo} alt="" width="20" height="20" loading="lazy" />
+                      <span>{opt.name}</span>
+                    </button>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+        );
+      })
+    }
+  </div>
+
+  <div class="roundup-compare__grid" data-compare-grid>
+    {
+      defaultIds.map((id) => {
+        const pick = picks.find((p) => p.id === id)!;
+        return (
+          <div class="roundup-compare__col" data-compare-col={pick.id}>
+            <div class="roundup-compare__card">
+              <div class="roundup-compare__media">
+                <img src={pick.gallery[0]?.full ?? pick.logo} alt={pick.gallery[0]?.alt ?? pick.name} width="640" height="400" loading="lazy" />
+                <div class="roundup-compare__score">
+                  <RoundupOverallScoreBadge
+                    pickSlug={pick.slug}
+                    pickName={pick.name}
+                    overallScore={pick.overallScore}
+                    overallSummary={pick.overallSummary}
+                    compact
+                  />
+                </div>
+              </div>
+              <h3 class="roundup-compare__name">
+                {pick.name}
+                <span class="roundup-compare__price">({pick.priceMonthly <= 0 ? 'Free' : `$${pick.priceMonthly.toFixed(2)} / mo`})</span>
+              </h3>
+              <p class="roundup-compare__intro">{pick.intro}</p>
+              <a class="roundup-compare__cta bg-brand-cta" href={pick.affiliateUrl} target="_blank" rel="nofollow sponsored noopener">
+                Visit {pick.name}
+              </a>
+            </div>
+          </div>
+        );
+      })
+    }
+  </div>
+
+  <div class="roundup-compare__table-wrap">
+    <h3 class="roundup-compare__table-title">Key specs</h3>
+    <div class="roundup-compare__table" data-compare-specs-table>
+      {
+        specLabels.map((label) => (
+          <div class="roundup-compare__row roundup-compare__row--spec" data-spec-row={label}>
+            <div class="roundup-compare__row-label">{label}</div>
+            {
+              defaultIds.map((id) => {
+                const pick = picks.find((p) => p.id === id)!;
+                const val = pick.specs.find((s) => s.label === label)?.value ?? '—';
+                return <div class="roundup-compare__row-val" data-compare-spec-val={id}>{val}</div>;
+              })
+            }
+          </div>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="roundup-compare__table-wrap">
+    <h3 class="roundup-compare__table-title">Category scores</h3>
+    <div class="roundup-compare__table" data-compare-perf-table>
+      {
+        categoryKeys.map((key) => {
+          const catItem = picks[0].categoryScores.find((c) => c.key === key)!;
+          const category = toRatingCategory(catItem, tooltipProductSlug);
+          return (
+            <div class="roundup-compare__row roundup-compare__row--perf" data-perf-row={key}>
+              <div class="roundup-compare__row-label">
+                <span>{catItem.name}</span>
+                <CategoryScoreTooltip category={category} compact methodologyOnly>
+                  <InfoIcon size="xs" class="text-tertiary/50 hover:text-tertiary/80" />
+                </CategoryScoreTooltip>
+              </div>
+              {
+                defaultIds.map((id) => {
+                  const pick = picks.find((p) => p.id === id)!;
+                  const cat = pick.categoryScores.find((c) => c.key === key);
+                  const score = cat?.score ?? 0;
+                  return (
+                    <div class="roundup-compare__row-val roundup-compare__row-val--perf" data-compare-perf-val={id} data-perf-key={key}>
+                      <span class="roundup-compare__perf-score">{fmtScore(score)}/10</span>
+                      <div set:html={barHtml(score)} />
+                    </div>
+                  );
+                })
+              }
+            </div>
+          );
+        })
+      }
+    </div>
+  </div>
+</section>
+
+<script define:vars={{ comparePayload, defaultIds, specLabels, categoryKeys }}>
+  function fmtScoreClient(n) {
+    return Number(n).toFixed(1);
+  }
+
+  function getBand(score) {
+    if (score >= 7.6) return 'good';
+    if (score >= 5.1) return 'fair';
+    return 'poor';
+  }
+
+  function fillClass(score) {
+    const band = getBand(score);
+    if (band === 'good') return 'is-filled-good';
+    if (band === 'fair') return 'is-filled-fair';
+    return 'is-filled-poor';
+  }
+
+  function segmentFill(score, index) {
+    const segStart = index * 2;
+    const segEnd = (index + 1) * 2;
+    if (score >= segEnd) return { state: 'full', partialPct: 100 };
+    if (score <= segStart) return { state: 'empty', partialPct: 0 };
+    return { state: 'partial', partialPct: ((score - segStart) / 2) * 100 };
+  }
+
+  function barHtmlClient(score) {
+    const fc = fillClass(score);
+    const ratio = Math.min(Math.max(score / 10, 0), 1);
+    const track = Array.from({ length: 5 }, () => `<span class="roundup-compare-bar__seg"></span>`).join('');
+    const fill = Array.from({ length: 5 }, (_, i) => {
+      const seg = segmentFill(score, i);
+      if (seg.state === 'full') return `<span class="roundup-compare-bar__seg ${fc}"></span>`;
+      if (seg.state === 'partial') {
+        return `<span class="roundup-compare-bar__seg"><span class="roundup-compare-bar__fill ${fc}" style="width:${seg.partialPct}%"></span></span>`;
+      }
+      return `<span class="roundup-compare-bar__seg"></span>`;
+    }).join('');
+    return `<div class="roundup-compare-bar" data-roundup-score-bar style="--score-fill-ratio:${ratio}" aria-hidden="true"><div class="roundup-score-bar__track">${track}</div><div class="roundup-score-bar__meter-fill">${fill}</div></div>`;
+  }
+
+  const infoIconSvg =
+    '<span class="inline-flex items-center justify-center shrink-0 transition-colors text-inherit text-white/90 hover:text-white"><svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.1"></circle><path d="M8 7.1V11" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"></path><circle cx="8" cy="5.1" r="0.55" fill="currentColor"></circle></svg></span>';
+
+  function scoreBadgeHtml(pick) {
+    const band = getBand(pick.overallScore);
+    const pillClass =
+      band === 'good' ? 'bg-green-600 text-white' : band === 'fair' ? 'bg-orange-500 text-white' : 'bg-red-600 text-white';
+    const label = String(pick.name).replace(/"/g, '&quot;');
+    return `<div class="roundup-overall-score roundup-overall-score--compact"><span class="inline-flex items-center justify-center font-black leading-none min-w-[2.75rem] px-2.5 py-1 text-sm rounded-md tabular-nums ${pillClass}">${fmtScoreClient(pick.overallScore)}</span><span role="button" tabindex="0" class="rt-tooltip-trigger roundup-overall-score__info" data-ratings-tooltip-trigger="${pick.tooltipTriggerId}" aria-label="About ${label} overall score">${infoIconSvg}</span></div>`;
+  }
+
+  function initRoundupCompare() {
+    const root = document.querySelector('[data-roundup-compare]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    let selected = [...defaultIds];
+    const byId = Object.fromEntries(comparePayload.map((p) => [p.id, p]));
+
+    function syncPickerDisabled() {
+      root.querySelectorAll('[data-compare-option]').forEach((btn) => {
+        const id = btn.dataset.compareOption;
+        const slot = btn.dataset.compareSlot;
+        const selectedElsewhere = selected.some((sid, i) => sid === id && String(i) !== slot);
+        btn.disabled = selectedElsewhere;
+        btn.classList.toggle('is-disabled', selectedElsewhere);
+        btn.classList.toggle('is-active', selected[slot] === id);
+      });
+    }
+
+    function renderColumn(slot, pickId) {
+      const pick = byId[pickId];
+      if (!pick) return;
+
+      const cols = root.querySelectorAll('[data-compare-col]');
+      const col = cols[slot];
+      if (!col) return;
+
+      col.dataset.compareCol = pickId;
+      col.innerHTML = `
+        <div class="roundup-compare__card">
+          <div class="roundup-compare__media">
+            <img src="${pick.image}" alt="${pick.imageAlt}" width="640" height="400" loading="lazy" />
+            <div class="roundup-compare__score">${scoreBadgeHtml(pick)}</div>
+          </div>
+          <h3 class="roundup-compare__name">${pick.name} <span class="roundup-compare__price">(${pick.priceLabel})</span></h3>
+          <p class="roundup-compare__intro">${pick.intro}</p>
+          <a class="roundup-compare__cta bg-brand-cta" href="${pick.affiliateUrl}" target="_blank" rel="nofollow sponsored noopener">Visit ${pick.name}</a>
+        </div>`;
+
+      specLabels.forEach((label) => {
+        const row = root.querySelector(`[data-spec-row="${CSS.escape(label)}"]`);
+        const cell = row?.querySelectorAll('[data-compare-spec-val]')[slot];
+        if (cell) cell.textContent = pick.specs[label] ?? '—';
+      });
+
+      categoryKeys.forEach((key) => {
+        const cat = pick.categories[key];
+        const score = cat?.score ?? 0;
+        const row = root.querySelector(`[data-perf-row="${key}"]`);
+        const cell = row?.querySelectorAll('[data-compare-perf-val]')[slot];
+        if (cell) {
+          cell.innerHTML = `<span class="roundup-compare__perf-score">${fmtScoreClient(score)}/10</span>${barHtmlClient(score)}`;
+          document.dispatchEvent(new CustomEvent('roundup:score-bars-added', { detail: { root: cell } }));
+        }
+      });
+
+      const labelWrap = root.querySelector(`[data-compare-picker="${slot}"] [data-compare-picker-label]`);
+      const logoEl = labelWrap?.querySelector('[data-compare-picker-logo]');
+      const nameEl = labelWrap?.querySelector('[data-compare-picker-name]');
+      if (logoEl) logoEl.src = pick.logo;
+      if (nameEl) nameEl.textContent = pick.name;
+
+      document.dispatchEvent(new CustomEvent('ratings-tooltips:reinit'));
+    }
+
+    function closeAllMenus() {
+      root.querySelectorAll('[data-compare-picker-menu]').forEach((m) => {
+        m.hidden = true;
+      });
+      root.querySelectorAll('[data-compare-picker-btn]').forEach((b) => {
+        b.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    root.querySelectorAll('[data-compare-picker-btn]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const picker = btn.closest('[data-compare-picker]');
+        const menu = picker?.querySelector('[data-compare-picker-menu]');
+        if (!menu) return;
+        const open = !menu.hidden;
+        closeAllMenus();
+        if (!open) {
+          menu.hidden = false;
+          btn.setAttribute('aria-expanded', 'true');
+          syncPickerDisabled();
+        }
+      });
+    });
+
+    root.querySelectorAll('[data-compare-option]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        const slot = Number(btn.dataset.compareSlot);
+        const id = btn.dataset.compareOption;
+        selected[slot] = id;
+        renderColumn(slot, id);
+        closeAllMenus();
+        syncPickerDisabled();
+      });
+    });
+
+    document.addEventListener('click', closeAllMenus);
+
+    syncPickerDisabled();
+  }
+
+  initRoundupCompare();
+  document.addEventListener('astro:page-load', initRoundupCompare);
+</script>

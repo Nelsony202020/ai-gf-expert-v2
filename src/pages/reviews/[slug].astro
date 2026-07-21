@@ -13,6 +13,7 @@ import PlaceholderTab from '../../components/review/tabs/PlaceholderTab.astro';
 import PhotosVideosTab from '../../components/review/tabs/PhotosVideosTab.astro';
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
 import ReviewScrollRestore from '../../components/review/ReviewScrollRestore.astro';
+import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import { products, getProduct } from '../../data/products';
 
 export function getStaticPaths() {
@@ -37,12 +38,13 @@ const tabs: Tab[] = [
 
 const title = `${product.name} Review (${product.reviewedDate}) — Lovelace Reviews`;
 const description = product.tagline;
+const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.origin).toString();
 ---
 
 <BaseLayout title={title} description={description} image={product.gallery[0]?.full}>
   <Header />
   <main>
-    <ReviewHero product={product} />
+    <ReviewHero product={product} shareUrl={canonical} />
     <TabBar tabs={tabs} active="overview" />
 
     <div data-panels>
@@ -71,6 +73,7 @@ const description = product.tagline;
     </div>
   </main>
   <Footer />
+  <ArticleUtilityRail pageTitle={title} pageUrl={canonical} />
   <RatingsTooltipInit />
   <ReviewScrollRestore productSlug={product.slug} />
 </BaseLayout>

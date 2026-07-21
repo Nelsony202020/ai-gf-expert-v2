@@ -1,0 +1,130 @@
+---
+import type { GalleryImage } from '../../data/products';
+import RoundupOverallScoreBadge from './RoundupOverallScoreBadge.astro';
+
+interface Props {
+  pickId: string;
+  pickSlug: string;
+  pickName: string;
+  images: GalleryImage[];
+  overallScore: number;
+  overallSummary: string;
+}
+
+const { pickId, pickSlug, pickName, images, overallScore, overallSummary } = Astro.props;
+---
+
+<div class="roundup-media-carousel" data-media-carousel={pickId}>
+  <div class="roundup-media-carousel__frame">
+    {
+      images.map((image, index) => (
+        <img
+          class="roundup-media-carousel__img"
+          data-media-slide
+          data-slide-index={index}
+          src={image.full}
+          alt={image.alt}
+          width="640"
+          height="400"
+          loading={index === 0 ? 'eager' : 'lazy'}
+          draggable="false"
+          hidden={index !== 0}
+        />
+      ))
+    }
+    <div class="roundup-media-carousel__score">
+      <RoundupOverallScoreBadge
+        pickSlug={pickSlug}
+        pickName={pickName}
+        overallScore={overallScore}
+        overallSummary={overallSummary}
+        compact
+      />
+    </div>
+  </div>
+
+  {
+    images.length > 1 && (
+      <div class="roundup-media-carousel__controls">
+        <button type="button" class="roundup-media-carousel__arrow" data-media-prev aria-label="Previous image">
+          <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+        </button>
+        <div class="roundup-media-carousel__dots" data-media-dots>
+          {images.map((_, index) => (
+            <button
+              type="button"
+              class={`roundup-media-carousel__dot ${index === 0 ? 'is-active' : ''}`}
+              data-media-dot={index}
+              aria-label={`Go to image ${index + 1}`}
+            />
+          ))}
+        </div>
+        <button type="button" class="roundup-media-carousel__arrow" data-media-next aria-label="Next image">
+          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        </button>
+      </div>
+    )
+  }
+</div>
+
+<script>
+  function initMediaCarousels() {
+    document.querySelectorAll<HTMLElement>('[data-media-carousel]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const slides = Array.from(root.querySelectorAll<HTMLImageElement>('[data-media-slide]'));
+      const prev = root.querySelector<HTMLButtonElement>('[data-media-prev]');
+      const next = root.querySelector<HTMLButtonElement>('[data-media-next]');
+      const dots = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-media-dot]'));
+      if (!slides.length) return;
+
+      let index = 0;
+      let touchStartX = 0;
+
+      function show(i: number) {
+        index = (i + slides.length) % slides.length;
+        slides.forEach((slide, idx) => {
+          slide.hidden = idx !== index;
+        });
+        dots.forEach((dot, idx) => {
+          dot.classList.toggle('is-active', idx === index);
+        });
+        if (prev) prev.disabled = slides.length <= 1;
+        if (next) next.disabled = slides.length <= 1;
+      }
+
+      prev?.addEventListener('click', () => show(index - 1));
+      next?.addEventListener('click', () => show(index + 1));
+      dots.forEach((dot) => {
+        dot.addEventListener('click', () => {
+          const target = Number(dot.dataset.mediaDot);
+          if (!Number.isNaN(target)) show(target);
+        });
+      });
+
+      root.addEventListener(
+        'touchstart',
+        (e) => {
+          touchStartX = e.changedTouches[0]?.clientX ?? 0;
+        },
+        { passive: true },
+      );
+
+      root.addEventListener(
+        'touchend',
+        (e) => {
+          const dx = (e.changedTouches[0]?.clientX ?? 0) - touchStartX;
+          if (Math.abs(dx) < 40) return;
+          show(dx > 0 ? index - 1 : index + 1);
+        },
+        { passive: true },
+      );
+
+      show(0);
+    });
+  }
+
+  initMediaCarousels();
+  document.addEventListener('astro:page-load', initMediaCarousels);
+</script>

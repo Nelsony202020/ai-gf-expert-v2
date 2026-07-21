@@ -1,0 +1,55 @@
+<script>
+  const METER_DELAY_MS = 500;
+  const animatedBars = new WeakSet<HTMLElement>();
+
+  function animateScoreBar(bar: HTMLElement) {
+    if (animatedBars.has(bar) || bar.classList.contains('is-score-bar-animated')) return;
+    animatedBars.add(bar);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        bar.classList.add('is-score-bar-animated');
+      });
+    });
+  }
+
+  function observeScoreBars(scope: ParentNode = document) {
+    const bars = scope.querySelectorAll<HTMLElement>('[data-roundup-score-bar]:not(.is-score-bar-animated)');
+    if (!bars.length) return;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      bars.forEach((bar) => animateScoreBar(bar));
+      return;
+    }
+
+    if (!('IntersectionObserver' in window)) {
+      bars.forEach((bar) => window.setTimeout(() => animateScoreBar(bar), METER_DELAY_MS));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const bar = entry.target as HTMLElement;
+          observer.unobserve(bar);
+          window.setTimeout(() => animateScoreBar(bar), METER_DELAY_MS);
+        });
+      },
+      { threshold: 0.35, rootMargin: '0px 0px -5% 0px' },
+    );
+
+    bars.forEach((bar) => observer.observe(bar));
+  }
+
+  function initRoundupScoreBars() {
+    observeScoreBars();
+  }
+
+  initRoundupScoreBars();
+  document.addEventListener('astro:page-load', initRoundupScoreBars);
+  document.addEventListener('roundup:score-bars-added', (event) => {
+    const root = (event as CustomEvent<{ root?: ParentNode }>).detail?.root ?? document;
+    observeScoreBars(root);
+  });
+</script>

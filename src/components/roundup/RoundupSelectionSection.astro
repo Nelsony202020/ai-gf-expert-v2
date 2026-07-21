@@ -1,0 +1,36 @@
+---
+import type { RoundupSelection } from '../../data/roundups/ai-girlfriend';
+
+interface Props {
+  selection: RoundupSelection;
+}
+
+const { selection } = Astro.props;
+---
+
+<section id="roundup-selection" class="roundup-selection scroll-mt-24">
+  <p class="roundup-selection__eyebrow">{selection.eyebrow}</p>
+  <h2 class="roundup-selection__heading">{selection.title}</h2>
+  <p class="roundup-selection__lead">{selection.description}</p>
+
+  <ul class="roundup-selection__pillars">
+    {
+      selection.pillars.map((pillar) => (
+        <li class="roundup-selection__pillar">
+          <span class="roundup-selection__pillar-icon" aria-hidden="true">
+            <span class="material-symbols-outlined">{pillar.icon}</span>
+          </span>
+          <div class="roundup-selection__pillar-copy">
+            <h3 class="roundup-selection__pillar-title">{pillar.title}</h3>
+            <p class="roundup-selection__pillar-desc">{pillar.description}</p>
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+
+  <a href={selection.processHref} class="roundup-selection__link">
+    {selection.processLabel}
+    <span class="material-symbols-outlined roundup-selection__link-arrow" aria-hidden="true">arrow_forward</span>
+  </a>
+</section>

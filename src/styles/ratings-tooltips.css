@@ -160,6 +160,10 @@
   margin-top: 10px;
 }
 
+.ratings-tooltip-panel__header > .rt-tooltip-actions {
+  margin-top: 6px;
+}
+
 .ratings-tooltip-panel__section-title {
   margin: 0 0 8px;
   font-size: 11px;
@@ -314,6 +318,12 @@
   flex: 1;
   min-width: 0;
   grid-template-columns: none;
+}
+
+.rt-comp-row--inline .rt-comp-row__main .rt-tooltip-actions--compact {
+  margin-left: 0;
+  padding-left: 0;
+  flex-shrink: 0;
 }
 
 .rt-comp-row--inline .rt-comp-pct {
@@ -763,6 +773,49 @@
 
 .ratings-tooltip-panel--methodology {
   width: min(340px, calc(100vw - 24px));
+}
+
+@media (max-width: 767px) {
+  .ratings-tooltip-panel--methodology.ratings-tooltip-panel--mobile-sheet {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 24px);
+    overflow: hidden;
+  }
+
+  .ratings-tooltip-panel--methodology.ratings-tooltip-panel--mobile-sheet::before {
+    display: none;
+  }
+
+  .ratings-tooltip-panel--methodology .ratings-tooltip-panel__header {
+    padding: 12px 14px;
+  }
+
+  .ratings-tooltip-panel--methodology .ratings-tooltip-panel__body {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    padding: 10px 14px 14px;
+    gap: 10px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ratings-tooltip-panel--methodology .rt-method-flow {
+    padding: 8px 10px;
+  }
+
+  .ratings-tooltip-panel--methodology .rt-method-step__text span {
+    font-size: 11px;
+  }
+
+  .ratings-tooltip-panel--methodology .rt-method-version {
+    padding: 8px 10px;
+  }
+
+  .ratings-tooltip-panel--methodology .rt-method-version__text {
+    font-size: 11px;
+  }
 }
 
 .ratings-tooltip-panel--help {

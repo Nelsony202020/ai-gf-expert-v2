@@ -1,0 +1,181 @@
+---
+import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
+import ScorePill from '../review/ScorePill.astro';
+
+interface Props {
+  heading: string;
+  picks: RoundupPick[];
+}
+
+const { heading, picks } = Astro.props;
+---
+
+<section id="roundup-quick-picks" class="roundup-quick scroll-mt-24">
+  <div class="roundup-quick__head">
+    <h2 class="roundup-quick__heading">{heading}</h2>
+    <button
+      type="button"
+      class="roundup-sort-trigger lg:hidden"
+      data-sort-sheet-open
+      aria-haspopup="dialog"
+      aria-label="Change ranking sort"
+    >
+      <span data-mobile-sort-value>Overall</span>
+      <span class="material-symbols-outlined roundup-sort-trigger__chevron" aria-hidden="true">expand_more</span>
+    </button>
+  </div>
+
+  <div class="roundup-quick__carousel" data-roundup-quick-carousel>
+    <button type="button" class="roundup-quick__arrow roundup-quick__arrow--prev" data-quick-prev aria-label="Scroll picks left">
+      <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+    </button>
+
+    <div class="roundup-quick__track-wrap">
+      <div
+        class="roundup-quick__track"
+        data-roundup-quick-track
+        tabindex="0"
+        role="region"
+        aria-label="Top AI girlfriend app picks"
+      >
+        {
+          picks.map((pick) => (
+            <article class="roundup-quick-card" data-quick-card={pick.id}>
+              <div class="roundup-quick-card__score" aria-label={`${pick.overallScore} out of 10`}>
+                <ScorePill score={pick.overallScore} size="sm" />
+              </div>
+              <a
+                class="roundup-quick-card__brand"
+                href={pick.affiliateUrl}
+                target="_blank"
+                rel="nofollow sponsored noopener"
+                draggable="false"
+                aria-label={`Visit ${pick.name} (opens in new tab)`}
+              >
+                <img class="roundup-quick-card__logo" src={pick.logo} alt="" width="56" height="56" loading="lazy" draggable="false" />
+                <h3 class="roundup-quick-card__name">{pick.name}</h3>
+              </a>
+              <span class="roundup-quick-card__ribbon">{pick.ribbon}</span>
+              <a class="roundup-quick-card__details" href={`#pick-${pick.id}`} draggable="false">
+                See details ↓
+              </a>
+              <a
+                class="roundup-quick-card__cta"
+                href={pick.affiliateUrl}
+                target="_blank"
+                rel="nofollow sponsored noopener"
+                draggable="false"
+              >
+                Visit site
+              </a>
+            </article>
+          ))
+        }
+      </div>
+      <div class="roundup-quick__scroll-hint" aria-hidden="true">
+        <div class="roundup-quick__scroll-bar" data-quick-scroll-bar></div>
+      </div>
+    </div>
+
+    <button type="button" class="roundup-quick__arrow roundup-quick__arrow--next" data-quick-next aria-label="Scroll picks right">
+      <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+    </button>
+  </div>
+</section>
+
+<script>
+  function initQuickCarousel() {
+    document.querySelectorAll<HTMLElement>('[data-roundup-quick-carousel]').forEach((carousel) => {
+      const track = carousel.querySelector<HTMLElement>('[data-roundup-quick-track]');
+      const prev = carousel.querySelector<HTMLButtonElement>('[data-quick-prev]');
+      const next = carousel.querySelector<HTMLButtonElement>('[data-quick-next]');
+      const bar = carousel.querySelector<HTMLElement>('[data-quick-scroll-bar]');
+      if (!track || track.dataset.bound === 'true') return;
+      track.dataset.bound = 'true';
+
+      let isDown = false;
+      let startX = 0;
+      let scrollLeft = 0;
+      let moved = false;
+
+      function cardStep() {
+        const card = track!.querySelector<HTMLElement>('.roundup-quick-card');
+        if (!card) return track!.clientWidth * 0.7;
+        return card.offsetWidth + 12;
+      }
+
+      function updateScrollBar() {
+        if (!bar) return;
+        const max = track!.scrollWidth - track!.clientWidth;
+        if (max <= 0) {
+          bar.style.width = '100%';
+          bar.style.transform = 'translateX(0)';
+          if (prev) prev.disabled = true;
+          if (next) next.disabled = true;
+          return;
+        }
+        const ratio = track!.clientWidth / track!.scrollWidth;
+        bar.style.width = `${Math.max(ratio * 100, 20)}%`;
+        bar.style.transform = `translateX(${(track!.scrollLeft / max) * ((1 / ratio - 1) * 100)}%)`;
+        if (prev) prev.disabled = track!.scrollLeft <= 2;
+        if (next) next.disabled = track!.scrollLeft >= max - 2;
+      }
+
+      prev?.addEventListener('click', () => {
+        track!.scrollBy({ left: -cardStep(), behavior: 'smooth' });
+      });
+
+      next?.addEventListener('click', () => {
+        track!.scrollBy({ left: cardStep(), behavior: 'smooth' });
+      });
+
+      track.addEventListener('scroll', updateScrollBar, { passive: true });
+
+      track.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        isDown = true;
+        moved = false;
+        startX = e.clientX;
+        scrollLeft = track.scrollLeft;
+        track.classList.add('is-dragging');
+        track.setPointerCapture(e.pointerId);
+      });
+
+      track.addEventListener('pointermove', (e) => {
+        if (!isDown) return;
+        const dx = e.clientX - startX;
+        if (Math.abs(dx) > 4) moved = true;
+        track.scrollLeft = scrollLeft - dx;
+      });
+
+      const stop = (e: PointerEvent) => {
+        if (!isDown) return;
+        isDown = false;
+        track.classList.remove('is-dragging');
+        try {
+          track.releasePointerCapture(e.pointerId);
+        } catch {}
+      };
+
+      track.addEventListener('pointerup', stop);
+      track.addEventListener('pointercancel', stop);
+
+      track.addEventListener(
+        'click',
+        (e) => {
+          if (moved) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        },
+        true,
+      );
+
+      window.addEventListener('resize', updateScrollBar);
+      updateScrollBar();
+    });
+  }
+
+  initQuickCarousel();
+  document.addEventListener('astro:page-load', initQuickCarousel);
+</script>

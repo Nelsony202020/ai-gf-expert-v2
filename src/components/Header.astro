@@ -1,6 +1,7 @@
 ---
 import { megaMenuColumns, trustBadges } from '../data/nav-mega-menu';
 import { buildSearchIndex } from '../data/site-search';
+import ThemeToggle from './ui/ThemeToggle.astro';
 
 const searchIndex = buildSearchIndex();
 ---
@@ -74,10 +75,13 @@ const searchIndex = buildSearchIndex();
         <div class="site-header__search-dropdown hidden" data-search-results role="listbox" />
       </div>
 
+      <ThemeToggle variant="header" />
+
       <a href="#" class="hidden sm:inline site-header__link">Sign In</a>
       <a href="#" class="site-header__join">
-        Join Now
-        <span class="material-symbols-outlined">arrow_forward</span>
+        <span class="site-header__join-text site-header__join-text--full">Join Now</span>
+        <span class="site-header__join-text site-header__join-text--short">Join</span>
+        <span class="material-symbols-outlined site-header__join-arrow">arrow_forward</span>
       </a>
     </div>
   </div>
@@ -294,6 +298,35 @@ const searchIndex = buildSearchIndex();
         closeSearch();
       }
     });
+
+    let lastScrollY = window.scrollY;
+    let scrollTicking = false;
+
+    function updateHeaderVisibility() {
+      const y = window.scrollY;
+      const delta = y - lastScrollY;
+
+      if (y <= 64) {
+        header.classList.remove('site-header--hidden');
+      } else if (delta > 6) {
+        header.classList.add('site-header--hidden');
+      } else if (delta < -6) {
+        header.classList.remove('site-header--hidden');
+      }
+
+      lastScrollY = y;
+      scrollTicking = false;
+    }
+
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (scrollTicking) return;
+        scrollTicking = true;
+        requestAnimationFrame(updateHeaderVisibility);
+      },
+      { passive: true },
+    );
   }
 
   initSiteHeader();

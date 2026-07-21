@@ -58,13 +58,13 @@ export const megaMenuColumns: MegaMenuColumn[] = [
     icon: 'emoji_events',
     description: 'Curated lists to help you find the best AI girlfriend apps.',
     links: [
-      { label: 'Best AI Girlfriend Apps', href: '#' },
+      { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend' },
       { label: 'Best Free AI Girlfriends', href: '#' },
       { label: 'Most Realistic AI Girlfriends', href: '#' },
       { label: 'Best AI Roleplay Apps', href: '#' },
       { label: 'Best AI Sexting Apps', href: '#' },
     ],
-    viewAll: { label: 'View all best picks', href: '#' },
+    viewAll: { label: 'View all best picks', href: '/best/ai-girlfriend' },
   },
   {
     id: 'guides',

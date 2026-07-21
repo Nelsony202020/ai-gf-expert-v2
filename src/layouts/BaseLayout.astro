@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import ImageLightbox from '../components/ui/ImageLightbox.astro';
+import ThemeToggleInit from '../components/ui/ThemeToggleInit.astro';
 
 interface Props {
   title?: string;
@@ -51,11 +52,34 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).to
   </head>
   <body class="bg-white">
     <script is:inline>
-      try {
-        if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-      } catch {}
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          if (stored === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            return;
+          }
+          if (stored === 'light') return;
+
+          fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(2500) })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              var tz = data.timezone;
+              if (!tz) return;
+              var hour = parseInt(
+                new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: tz }).format(new Date()),
+                10
+              );
+              if (hour >= 20 || hour < 6) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+              }
+            })
+            .catch(function () {});
+        } catch (e) {}
+      })();
     </script>
     <slot />
     <ImageLightbox />
+    <ThemeToggleInit />
   </body>
 </html>

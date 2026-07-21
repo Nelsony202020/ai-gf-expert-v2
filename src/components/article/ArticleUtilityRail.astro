@@ -1,0 +1,171 @@
+---
+import ArticleFeedbackPanel from './ArticleFeedbackPanel.astro';
+import ShareMenu from '../ui/ShareMenu.astro';
+import BrandIcon from '../ui/BrandIcon.astro';
+import { brandIcons } from '../../lib/brand-icons';
+
+interface Props {
+  pageTitle: string;
+  pageUrl?: string;
+  /** Mobile: back-to-top only; share/feedback elsewhere on page */
+  mobileMinimal?: boolean;
+}
+
+const { pageTitle, pageUrl, mobileMinimal = false } = Astro.props;
+---
+
+<aside
+  class:list={['article-util-rail', mobileMinimal && 'article-util-rail--mobile-minimal']}
+  data-article-util-rail
+  data-mobile-minimal={mobileMinimal ? 'true' : undefined}
+  aria-label="Page utilities"
+>
+  <div class="article-util-rail__hint hidden" data-util-hint role="status">
+    Spot something?
+  </div>
+
+  <div class="article-util-rail__stack">
+    <button
+      type="button"
+      class="article-util-rail__btn article-util-rail__btn--top hidden"
+      data-util-top
+      aria-label="Back to top"
+      hidden
+    >
+      <svg class="article-util-rail__progress" viewBox="0 0 48 48" aria-hidden="true">
+        <circle class="article-util-rail__progress-track" cx="24" cy="24" r="22" />
+        <circle class="article-util-rail__progress-fill" cx="24" cy="24" r="22" data-util-progress-fill />
+      </svg>
+      <span class="material-symbols-outlined article-util-rail__top-icon" aria-hidden="true">arrow_upward</span>
+    </button>
+
+    <ShareMenu shareTitle={pageTitle} shareUrl={pageUrl} variant="fab" />
+
+    <button
+      type="button"
+      class="article-util-rail__btn article-util-rail__btn--feedback"
+      data-util-feedback
+      aria-label="Send feedback on this article"
+      data-page-title={pageTitle}
+      data-page-url={pageUrl ?? ''}
+    >
+      <BrandIcon
+        src={brandIcons.scientist.dark}
+        srcLight={brandIcons.scientist.light}
+        width={36}
+        height={36}
+        class="article-util-rail__herman"
+        data-util-herman
+      />
+      <span class="material-symbols-outlined article-util-rail__feedback-icon" aria-hidden="true">rate_review</span>
+      <span class="article-util-rail__feedback-label">Send feedback</span>
+    </button>
+  </div>
+</aside>
+
+<ArticleFeedbackPanel />
+
+<script define:vars={{ pageTitle, pageUrl }}>
+  function initArticleUtilityRail() {
+    const rail = document.querySelector('[data-article-util-rail]');
+    if (!rail || rail.dataset.bound === 'true') return;
+    rail.dataset.bound = 'true';
+
+    const feedbackBtn = rail.querySelector('[data-util-feedback]');
+    const topBtn = rail.querySelector('[data-util-top]');
+    const hint = rail.querySelector('[data-util-hint]');
+    const herman = rail.querySelector('[data-util-herman]');
+    const progressFill = rail.querySelector('[data-util-progress-fill]');
+
+    const SCROLL_TOP_THRESHOLD = rail.dataset.mobileMinimal === 'true'
+      ? window.innerHeight
+      : 800;
+    const INTRO_SCROLL_RATIO = 0.45;
+    const INTRO_KEY = 'article-feedback-intro-shown';
+    const PROGRESS_RADIUS = 22;
+    const PROGRESS_CIRC = 2 * Math.PI * PROGRESS_RADIUS;
+
+    const title = feedbackBtn?.dataset.pageTitle || pageTitle || document.title;
+    const url = feedbackBtn?.dataset.pageUrl || pageUrl || window.location.href;
+
+    if (progressFill) {
+      progressFill.style.strokeDasharray = `${PROGRESS_CIRC}`;
+      progressFill.style.strokeDashoffset = `${PROGRESS_CIRC}`;
+    }
+
+    function updateScrollState() {
+      const y = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const ratio = docHeight > 0 ? Math.min(Math.max(y / docHeight, 0), 1) : 0;
+
+      if (progressFill) {
+        progressFill.style.strokeDashoffset = `${PROGRESS_CIRC * (1 - ratio)}`;
+      }
+
+      if (y >= SCROLL_TOP_THRESHOLD) {
+        topBtn?.classList.remove('hidden');
+        topBtn?.removeAttribute('hidden');
+        rail.classList.add('article-util-rail--scrolled');
+      } else {
+        topBtn?.classList.add('hidden');
+        topBtn?.setAttribute('hidden', '');
+        rail.classList.remove('article-util-rail--scrolled');
+      }
+
+      if (docHeight <= 0) return;
+
+      if (
+        rail.dataset.mobileMinimal !== 'true' &&
+        ratio >= INTRO_SCROLL_RATIO &&
+        sessionStorage.getItem(INTRO_KEY) !== '1' &&
+        !hint?.classList.contains('is-visible')
+      ) {
+        sessionStorage.setItem(INTRO_KEY, '1');
+        hint?.classList.remove('hidden');
+        hint?.classList.add('is-visible');
+        herman?.classList.add('is-waving');
+        feedbackBtn?.classList.add('is-waving');
+        window.setTimeout(() => {
+          hint?.classList.remove('is-visible');
+          herman?.classList.remove('is-waving');
+          feedbackBtn?.classList.remove('is-waving');
+          window.setTimeout(() => hint?.classList.add('hidden'), 300);
+        }, 2800);
+      }
+    }
+
+    feedbackBtn?.addEventListener('click', () => {
+      window.dispatchEvent(
+        new CustomEvent('article-feedback:open', { detail: { title, url } }),
+      );
+    });
+
+    topBtn?.addEventListener('click', () => {
+      const topTarget = document.querySelector('#roundup-top') ?? document.querySelector('main');
+      if (topTarget) {
+        topTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    let ticking = false;
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          updateScrollState();
+          ticking = false;
+        });
+      },
+      { passive: true },
+    );
+
+    updateScrollState();
+  }
+
+  initArticleUtilityRail();
+  document.addEventListener('astro:page-load', initArticleUtilityRail);
+</script>

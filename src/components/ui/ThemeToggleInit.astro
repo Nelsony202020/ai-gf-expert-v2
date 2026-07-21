@@ -1,0 +1,41 @@
+<script>
+  function initThemeToggles() {
+    const buttons = document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]');
+    if (!buttons.length) return;
+
+    const root = document.documentElement;
+
+    function syncAll() {
+      const dark = root.getAttribute('data-theme') === 'dark';
+      buttons.forEach((btn) => {
+        const icon = btn.querySelector('.theme-toggle__icon');
+        const label = btn.querySelector('.theme-toggle__label');
+        if (icon) icon.textContent = dark ? 'light_mode' : 'dark_mode';
+        if (label) label.textContent = dark ? 'Light mode' : 'Dark mode';
+        btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+      });
+    }
+
+    buttons.forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+
+      btn.addEventListener('click', () => {
+        const dark = root.getAttribute('data-theme') === 'dark';
+        if (dark) {
+          root.removeAttribute('data-theme');
+          localStorage.setItem('theme', 'light');
+        } else {
+          root.setAttribute('data-theme', 'dark');
+          localStorage.setItem('theme', 'dark');
+        }
+        syncAll();
+      });
+    });
+
+    syncAll();
+  }
+
+  initThemeToggles();
+  document.addEventListener('astro:page-load', initThemeToggles);
+</script>

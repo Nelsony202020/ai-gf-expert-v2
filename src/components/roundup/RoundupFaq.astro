@@ -1,0 +1,127 @@
+---
+import type { RoundupFaqItem } from '../../data/roundups/ai-girlfriend';
+
+interface Props {
+  items: RoundupFaqItem[];
+}
+
+const { items } = Astro.props;
+
+const hermanAvatar = '/brand/herman-main-icon.svg';
+
+const stickers: ({ emoji: string; position: 'tl' | 'tr' } | null)[] = [
+  { emoji: '❤️', position: 'tr' },
+  null,
+  null,
+  { emoji: '⭐', position: 'tl' },
+  null,
+];
+---
+
+<section id="roundup-faq" class="roundup-faq scroll-mt-24">
+  <div class="roundup-faq__header">
+    <h2 class="roundup-faq__heading">Frequently asked questions</h2>
+    <p class="roundup-faq__subheading">Real questions. Honest answers.</p>
+  </div>
+
+  <div class="roundup-faq__chat" data-roundup-faq-chat>
+    <div class="roundup-faq__click-hint" data-roundup-faq-hint aria-hidden="true">
+      <span class="material-symbols-outlined roundup-faq__cursor-icon">near_me</span>
+    </div>
+    <div class="roundup-faq__list" data-roundup-faq>
+      {
+        items.map((item, i) => {
+          const sticker = stickers[i] ?? null;
+          return (
+            <details class="roundup-faq__thread">
+              <summary class="roundup-faq__question-row">
+                <span class="roundup-faq__bubble roundup-faq__bubble--question">
+                  {
+                    sticker && (
+                      <span class={`roundup-faq__sticker roundup-faq__sticker--${sticker.position}`} aria-hidden="true">
+                        {sticker.emoji}
+                      </span>
+                    )
+                  }
+                  <span class="roundup-faq__bubble-text">{item.question}</span>
+                </span>
+              </summary>
+              <div class="roundup-faq__answer-row">
+                <div class="roundup-faq__bubble roundup-faq__bubble--answer">
+                  <p>{item.answer}</p>
+                </div>
+                <img class="roundup-faq__avatar" src={hermanAvatar} alt="Herman Carter" width="36" height="36" loading="lazy" />
+              </div>
+            </details>
+          );
+        })
+      }
+    </div>
+  </div>
+</section>
+
+<script>
+  function initRoundupFaq() {
+    document.querySelectorAll<HTMLDetailsElement>('[data-roundup-faq] details').forEach((el) => {
+      if (el.dataset.bound === 'true') return;
+      el.dataset.bound = 'true';
+      el.addEventListener('toggle', () => {
+        if (!el.open) return;
+        el.parentElement?.querySelectorAll('details').forEach((sibling) => {
+          if (sibling !== el) sibling.open = false;
+        });
+      });
+    });
+
+    const section = document.querySelector<HTMLElement>('#roundup-faq');
+    if (!section || section.dataset.hintBound === 'true') return;
+    section.dataset.hintBound = 'true';
+
+    const chat = section.querySelector<HTMLElement>('[data-roundup-faq-chat]');
+    const hint = section.querySelector<HTMLElement>('[data-roundup-faq-hint]');
+    if (!chat || !hint) return;
+
+    function runFaqClickHint() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const target = section!.querySelector<HTMLElement>(
+        '.roundup-faq__thread:first-child .roundup-faq__bubble--question',
+      );
+      if (!target || section!.classList.contains('is-faq-hinting')) return;
+
+      const chatRect = chat.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const endX = targetRect.left - chatRect.left + targetRect.width * 0.62;
+      const endY = targetRect.top - chatRect.top + targetRect.height * 0.58;
+      const startX = endX + 36;
+      const startY = endY - 48;
+
+      hint.style.setProperty('--start-x', `${startX}px`);
+      hint.style.setProperty('--start-y', `${startY}px`);
+      hint.style.setProperty('--end-x', `${endX}px`);
+      hint.style.setProperty('--end-y', `${endY}px`);
+
+      section!.classList.add('is-faq-hinting');
+      target.classList.add('is-faq-hint-target');
+
+      window.setTimeout(() => {
+        section!.classList.remove('is-faq-hinting');
+        target.classList.remove('is-faq-hint-target');
+      }, 3600);
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        window.setTimeout(runFaqClickHint, 2000);
+      },
+      { threshold: 0.35, rootMargin: '0px 0px -8% 0px' },
+    );
+
+    observer.observe(section);
+  }
+
+  initRoundupFaq();
+  document.addEventListener('astro:page-load', initRoundupFaq);
+</script>

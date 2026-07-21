@@ -1,0 +1,200 @@
+---
+import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
+import RoundupMediaCarousel from './RoundupMediaCarousel.astro';
+import RoundupCategoryScores from './RoundupCategoryScores.astro';
+import RoundupSpecsCarousel from './RoundupSpecsCarousel.astro';
+
+interface Props {
+  pick: RoundupPick;
+  rank: number;
+}
+
+const { pick, rank } = Astro.props;
+---
+
+<article
+  id={`pick-${pick.id}`}
+  class="roundup-pick"
+  data-roundup-pick
+  data-pick-id={pick.id}
+  data-overall-score={pick.overallScore}
+  data-price={pick.priceMonthly}
+  data-ribbon-key={pick.ribbonKey}
+  data-category-scores={JSON.stringify(Object.fromEntries(pick.categoryScores.map((c) => [c.key, c.score])))}
+>
+  <div class="roundup-pick__ribbon-wrap">
+    <span class="roundup-pick__ribbon">
+      <span class="material-symbols-outlined roundup-pick__ribbon-icon" aria-hidden="true">emoji_events</span>
+      {pick.ribbon}
+    </span>
+  </div>
+
+  <header class="roundup-pick__header">
+    <div class="roundup-pick__title-row">
+      <h3 class="roundup-pick__title">
+        <a
+          href={pick.affiliateUrl}
+          target="_blank"
+          rel="nofollow sponsored noopener"
+          class="roundup-pick__title-link"
+          aria-label={`Visit ${pick.name} (opens in new tab)`}
+        >
+          <img class="roundup-pick__title-logo" src={pick.logo} alt="" width="28" height="28" loading="lazy" />
+          <span class="roundup-pick__title-text">
+            <span data-pick-rank>{rank}</span>. {pick.name}
+          </span>
+          <span class="material-symbols-outlined roundup-pick__title-external" aria-hidden="true">open_in_new</span>
+        </a>
+      </h3>
+    </div>
+    <p class="roundup-pick__intro text-base text-on-surface-variant leading-relaxed">{pick.intro}</p>
+  </header>
+
+  <div class="roundup-pick__media-row" id={`pick-${pick.id}-details`}>
+    <RoundupMediaCarousel
+      pickId={pick.id}
+      pickSlug={pick.slug}
+      pickName={pick.name}
+      images={pick.gallery}
+      overallScore={pick.overallScore}
+      overallSummary={pick.overallSummary}
+    />
+    <RoundupCategoryScores scores={pick.categoryScores} pickSlug={pick.slug} />
+  </div>
+
+  <div class="roundup-pick__expand-wrap" data-pick-expand-wrap>
+    <button
+      type="button"
+      class="roundup-pick__expand"
+      data-pick-expand-btn
+      aria-expanded="false"
+      aria-label={`Show more about ${pick.name}`}
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
+    </button>
+  </div>
+
+  <div class="roundup-specs-strip" data-reading-tier="medium">
+    <RoundupSpecsCarousel pickId={pick.id} specs={pick.specs} />
+  </div>
+
+  <div class="roundup-pros-cons" data-reading-tier="medium">
+    <div class="roundup-pros-cons__col">
+      <h4 class="roundup-pros-cons__title font-black text-lg mb-3 text-on-surface">Pros</h4>
+      <ul class="roundup-pros-cons__list">
+        {
+          pick.pros.map((pro) => (
+            <li class="roundup-pros-cons__item text-sm font-medium text-on-surface-variant leading-snug">
+              <span class="roundup-pros-cons__dot roundup-pros-cons__dot--pro" aria-hidden="true" />
+              <span>{pro}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+    <div class="roundup-pros-cons__col">
+      <h4 class="roundup-pros-cons__title font-black text-lg mb-3 text-on-surface">Cons</h4>
+      <ul class="roundup-pros-cons__list">
+        {
+          pick.cons.map((con) => (
+            <li class="roundup-pros-cons__item text-sm font-medium text-on-surface-variant leading-snug">
+              <span class="roundup-pros-cons__dot roundup-pros-cons__dot--con" aria-hidden="true" />
+              <span>{con}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+
+  <div class="roundup-pick__cta-wrap" data-reading-tier="medium">
+    <a
+      class="roundup-pick__cta bg-brand-cta"
+      href={pick.affiliateUrl}
+      target="_blank"
+      rel="nofollow sponsored noopener"
+    >
+      Visit {pick.name}
+      <span class="material-symbols-outlined roundup-pick__cta-icon" aria-hidden="true">arrow_outward</span>
+    </a>
+  </div>
+
+  <section class="roundup-pick__our-take" data-reading-tier="medium">
+    <button type="button" class="roundup-pick__our-take-toggle" data-our-take-toggle aria-expanded="false">
+      <img src="/brand/herman-main-icon.svg" alt="" class="roundup-pick__our-take-avatar" width="32" height="32" />
+      <span class="roundup-pick__our-take-heading">Our take</span>
+      <span class="material-symbols-outlined roundup-pick__our-take-chevron" aria-hidden="true">expand_more</span>
+    </button>
+    <div class="roundup-pick__our-take-body" data-our-take-body hidden>
+      <p class="roundup-pick__our-take-text text-sm md:text-base text-on-surface leading-relaxed">{pick.ourTake}</p>
+      {
+        pick.reviewUrl && (
+          <a class="roundup-pick__review-link rt-tooltip-actions__btn rt-tooltip-actions__btn--primary" href={pick.reviewUrl}>
+            Read our full {pick.name} review
+            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </a>
+        )
+      }
+    </div>
+  </section>
+</article>
+
+<script>
+  function initPickExpand() {
+    const root = document.querySelector<HTMLElement>('[data-roundup-root]');
+
+    function syncExpandButtons() {
+      const globalLength = root?.dataset.readingLength ?? 'skim';
+      document.querySelectorAll<HTMLElement>('[data-roundup-pick]').forEach((pick) => {
+        const wrap = pick.querySelector<HTMLElement>('[data-pick-expand-wrap]');
+        const expanded = pick.dataset.pickExpanded;
+        if (!wrap) return;
+        wrap.hidden = globalLength !== 'skim' || expanded === 'medium' || expanded === 'deep';
+      });
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('[data-pick-expand-btn]').forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+
+      btn.addEventListener('click', () => {
+        const pick = btn.closest<HTMLElement>('[data-roundup-pick]');
+        if (!pick) return;
+        pick.dataset.pickExpanded = 'medium';
+        btn.setAttribute('aria-expanded', 'true');
+        syncExpandButtons();
+        pick.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-our-take-toggle]').forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+
+      const body = btn.parentElement?.querySelector<HTMLElement>('[data-our-take-body]');
+      const chevron = btn.querySelector<HTMLElement>('.roundup-pick__our-take-chevron');
+      if (!body) return;
+
+      btn.addEventListener('click', () => {
+        const open = btn.getAttribute('aria-expanded') === 'true';
+        const pick = btn.closest<HTMLElement>('[data-roundup-pick]');
+        btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+        body.hidden = open;
+        chevron?.classList.toggle('is-open', !open);
+        if (!open && pick) pick.dataset.pickExpanded = 'deep';
+      });
+    });
+
+    if (root) {
+      const observer = new MutationObserver(() => {
+        syncExpandButtons();
+      });
+      observer.observe(root, { attributes: true, attributeFilter: ['data-reading-length'] });
+    }
+
+    syncExpandButtons();
+  }
+
+  initPickExpand();
+  document.addEventListener('astro:page-load', initPickExpand);
+</script>

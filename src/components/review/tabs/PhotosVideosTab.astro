@@ -3,6 +3,8 @@ import type { Product } from '../../../data/products';
 import type { FeaturedReviewVideo, MediaItem } from '../../../data/aura-ai-media';
 import { auraAiFeaturedVideo, auraAiMediaGallery } from '../../../data/aura-ai-media';
 import BrandIcon from '../../ui/BrandIcon.astro';
+import AgeRatingIcon from '../../ui/AgeRatingIcon.astro';
+import NsfwAgeGateModal from '../NsfwAgeGateModal.astro';
 import { brandIcons } from '../../../lib/brand-icons';
 
 interface Props {
@@ -54,41 +56,33 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
         </p>
       </div>
 
-      <div class="media-nsfw-box shrink-0 w-full lg:max-w-md">
-        <div class="flex items-start gap-4">
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-bold text-on-surface mb-3">18+ Content</p>
-            <div class="media-nsfw-toggle inline-flex p-1 rounded-full border border-surface-variant bg-surface-container-low w-full max-w-[280px]" role="group" aria-label="Content safety mode">
-              <button type="button" class="media-nsfw-btn media-nsfw-btn--active flex-1" data-nsfw-mode="safe" aria-pressed="true">
-                Safe only
-              </button>
-              <button type="button" class="media-nsfw-btn flex-1" data-nsfw-mode="nsfw" aria-pressed="false">
-                Show 18+
-              </button>
-            </div>
-            <p class="text-xs text-on-surface-variant mt-3 leading-relaxed max-w-sm">
-              No explicit media is shown by default. Everything sensitive stays blurred until you turn on Show 18+ above.
-            </p>
-          </div>
-          <span data-nsfw-avatar-safe>
-            <BrandIcon
-              src={brandIcons.sfw.dark}
-              srcLight={brandIcons.sfw.light}
-              width={64}
-              height={64}
-              class="media-nsfw-avatar shrink-0"
-            />
-          </span>
-          <span data-nsfw-avatar-nsfw class="hidden">
-            <BrandIcon
-              src={brandIcons.nsfw.dark}
-              srcLight={brandIcons.nsfw.light}
-              width={64}
-              height={64}
-              class="media-nsfw-avatar shrink-0"
-            />
-          </span>
+      <div class="media-nsfw-box shrink-0">
+        <div class="media-nsfw-toggle" role="group" aria-label="Content safety mode">
+          <button
+            type="button"
+            class="media-nsfw-btn media-nsfw-btn--safe media-nsfw-btn--active"
+            data-nsfw-mode="safe"
+            aria-pressed="true"
+            aria-label="Safe only"
+          >
+            <span class="material-symbols-outlined media-nsfw-btn__icon text-[22px]" aria-hidden="true">shield</span>
+            <span class="media-nsfw-btn__label">Safe only</span>
+          </button>
+          <button
+            type="button"
+            class="media-nsfw-btn media-nsfw-btn--nsfw"
+            data-nsfw-mode="nsfw"
+            aria-pressed="false"
+            aria-label="Show 18 plus content"
+          >
+            <AgeRatingIcon size={22} class="media-nsfw-btn__icon" />
+            <span class="media-nsfw-btn__label">18+</span>
+          </button>
         </div>
+        <p class="media-nsfw-status" data-nsfw-status>
+          <span class="material-symbols-outlined text-[14px]">lock</span>
+          <span data-nsfw-status-text>18+ content is hidden</span>
+        </p>
       </div>
     </div>
 
@@ -168,12 +162,7 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
             {
               item.nsfw && (
                 <button type="button" class="media-card__nsfw absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50 backdrop-blur-md text-white p-3 text-center">
-                  <BrandIcon
-                    src={brandIcons.nsfw.dark}
-                    srcLight={brandIcons.nsfw.light}
-                    width={40}
-                    height={40}
-                  />
+                  <AgeRatingIcon size={40} />
                   <span class="text-[10px] font-black uppercase tracking-widest">18+ Preview</span>
                   <span class="text-xs font-bold">Tap to reveal</span>
                 </button>
@@ -189,23 +178,31 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
 
     <p data-media-empty class="hidden text-center text-sm text-tertiary py-12">No media matches these filters.</p>
   </div>
+
+  <NsfwAgeGateModal />
 </section>
 
 <style>
   .media-nsfw-box {
     border-radius: 14px;
-    padding: 16px 18px;
+    padding: 12px 14px 10px;
   }
 
   .media-nsfw-toggle {
+    display: inline-flex;
+    padding: 4px;
+    border-radius: 999px;
+    border: 1px solid var(--color-surface-variant);
     background: var(--color-surface-container-low);
-    border-color: var(--color-surface-variant);
+    gap: 2px;
   }
 
   .media-nsfw-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 6px;
+    min-width: 96px;
     padding: 8px 12px;
     border-radius: 999px;
     font-size: 12px;
@@ -214,12 +211,33 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
     background: transparent;
     border: none;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  .media-nsfw-btn--active {
-    background: rgb(219 39 119 / 12%);
+  .media-nsfw-btn__icon {
+    flex-shrink: 0;
+  }
+
+  .media-nsfw-btn--safe.media-nsfw-btn--active {
+    background: rgb(218 246 108 / 35%);
+    color: #3d5a1e;
+    box-shadow: inset 0 0 0 1px rgb(218 246 108 / 45%);
+  }
+
+  .media-nsfw-btn--nsfw.media-nsfw-btn--active {
+    background: rgb(219 39 119 / 14%);
     color: var(--color-accent);
+    box-shadow: inset 0 0 0 1px rgb(219 39 119 / 25%);
+  }
+
+  .media-nsfw-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-tertiary);
   }
 
   .media-card[data-nsfw='true']:not(.media-card--revealed) .media-card__img {
@@ -258,7 +276,13 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
     color: #b8c4b2;
   }
 
-  [data-theme='dark'] .media-nsfw-btn--active {
+  [data-theme='dark'] .media-nsfw-btn--safe.media-nsfw-btn--active {
+    background: rgb(218 246 108 / 18%);
+    color: #daf66c;
+    box-shadow: inset 0 0 0 1px rgb(218 246 108 / 30%);
+  }
+
+  [data-theme='dark'] .media-nsfw-btn--nsfw.media-nsfw-btn--active {
     background: rgb(219 39 119 / 18%);
     color: #f472b6;
   }
@@ -304,6 +328,114 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
 </style>
 
 <script>
+  const NSFW_STORAGE_KEY = 'lr-nsfw-preference';
+  const NSFW_COOKIE_KEY = 'lr_nsfw_preference';
+
+  type NsfwMode = 'safe' | 'nsfw';
+
+  function readStoredMode(): NsfwMode | null {
+    try {
+      const fromStorage = localStorage.getItem(NSFW_STORAGE_KEY);
+      if (fromStorage === 'safe' || fromStorage === 'nsfw') return fromStorage;
+    } catch {
+      /* ignore */
+    }
+
+    const cookie = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith(`${NSFW_COOKIE_KEY}=`));
+    const value = cookie?.split('=')[1];
+    return value === 'safe' || value === 'nsfw' ? value : null;
+  }
+
+  function saveStoredMode(mode: NsfwMode, remember: boolean) {
+    if (!remember) {
+      try {
+        localStorage.removeItem(NSFW_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+      document.cookie = `${NSFW_COOKIE_KEY}=; path=/; max-age=0; SameSite=Lax`;
+      return;
+    }
+
+    try {
+      localStorage.setItem(NSFW_STORAGE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+
+    const maxAge = 60 * 60 * 24 * 365;
+    document.cookie = `${NSFW_COOKIE_KEY}=${mode}; path=/; max-age=${maxAge}; SameSite=Lax`;
+  }
+
+  function initNsfwGateOnce(
+    onConfirm: (remember: boolean) => void,
+    onCancel: () => void,
+  ) {
+    const html = document.documentElement;
+    if (html.dataset.nsfwGateBound === 'true') {
+      (window as Window & { __setNsfwGateHandlers?: (c: (remember: boolean) => void, x: () => void) => void }).__setNsfwGateHandlers?.(
+        onConfirm,
+        onCancel,
+      );
+      return;
+    }
+    html.dataset.nsfwGateBound = 'true';
+
+    const gate = document.querySelector<HTMLElement>('[data-nsfw-gate]');
+    const gateBackdrop = document.querySelector<HTMLElement>('[data-nsfw-gate-backdrop]');
+    const gateAge = document.querySelector<HTMLInputElement>('[data-nsfw-gate-age]');
+    const gateRemember = document.querySelector<HTMLInputElement>('[data-nsfw-gate-remember]');
+    const gateCancel = document.querySelector<HTMLButtonElement>('[data-nsfw-gate-cancel]');
+    const gateConfirm = document.querySelector<HTMLButtonElement>('[data-nsfw-gate-confirm]');
+
+    let confirmHandler = onConfirm;
+    let cancelHandler = onCancel;
+
+    function closeGate() {
+      if (!gate) return;
+      gate.classList.add('hidden');
+      gate.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    gateAge?.addEventListener('change', () => {
+      if (gateConfirm) gateConfirm.disabled = !gateAge.checked;
+    });
+
+    gateCancel?.addEventListener('click', () => {
+      cancelHandler();
+      closeGate();
+    });
+
+    gateBackdrop?.addEventListener('click', () => {
+      cancelHandler();
+      closeGate();
+    });
+
+    gateConfirm?.addEventListener('click', () => {
+      if (!gateAge?.checked) return;
+      confirmHandler(gateRemember?.checked ?? false);
+      closeGate();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && gate && !gate.classList.contains('hidden')) {
+        cancelHandler();
+        closeGate();
+      }
+    });
+
+    (window as Window & { __setNsfwGateHandlers?: (c: (remember: boolean) => void, x: () => void) => void }).__setNsfwGateHandlers = (
+      c,
+      x,
+    ) => {
+      confirmHandler = c;
+      cancelHandler = x;
+    };
+  }
+
   function initMediaGallery() {
     const root = document.querySelector('[data-media-gallery-root]');
     if (!root || root.dataset.bound === 'true') return;
@@ -312,16 +444,62 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
     const items = Array.from(root.querySelectorAll<HTMLElement>('[data-media-item]'));
     const filterBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-media-filter]'));
     const nsfwBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-nsfw-mode]'));
-    const avatarSafeWrap = root.querySelector<HTMLElement>('[data-nsfw-avatar-safe]');
-    const avatarNsfwWrap = root.querySelector<HTMLElement>('[data-nsfw-avatar-nsfw]');
+    const statusText = root.querySelector<HTMLElement>('[data-nsfw-status-text]');
     const emptyEl = root.querySelector<HTMLElement>('[data-media-empty]');
 
-    let activeFilter = 'all';
-    let nsfwMode: 'safe' | 'nsfw' = 'safe';
+    const gate = document.querySelector<HTMLElement>('[data-nsfw-gate]');
+    const gateAge = document.querySelector<HTMLInputElement>('[data-nsfw-gate-age]');
+    const gateConfirm = document.querySelector<HTMLButtonElement>('[data-nsfw-gate-confirm]');
 
-    function setNsfwAvatar(mode: 'safe' | 'nsfw') {
-      avatarSafeWrap?.classList.toggle('hidden', mode !== 'safe');
-      avatarNsfwWrap?.classList.toggle('hidden', mode !== 'nsfw');
+    let activeFilter = 'all';
+    let nsfwMode: NsfwMode = 'safe';
+    let pendingRevealItem: HTMLElement | null = null;
+
+    function updateToggleUi() {
+      nsfwBtns.forEach((btn) => {
+        const mode = btn.dataset.nsfwMode as NsfwMode;
+        const active = mode === nsfwMode;
+        btn.classList.toggle('media-nsfw-btn--active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+
+      if (statusText) {
+        statusText.textContent =
+          nsfwMode === 'safe' ? '18+ content is hidden' : '18+ content is visible';
+      }
+    }
+
+    function revealNsfwItems(target?: HTMLElement | null) {
+      if (target) {
+        target.classList.add('media-card--revealed');
+        return;
+      }
+
+      items.forEach((item) => {
+        if (item.dataset.nsfw === 'true') item.classList.add('media-card--revealed');
+      });
+    }
+
+    function hideNsfwItems() {
+      items.forEach((item) => {
+        if (item.dataset.nsfw === 'true') item.classList.remove('media-card--revealed');
+      });
+    }
+
+    function setNsfwMode(mode: NsfwMode, remember = false) {
+      nsfwMode = mode;
+      updateToggleUi();
+
+      if (mode === 'nsfw') {
+        revealNsfwItems(pendingRevealItem);
+        saveStoredMode('nsfw', remember);
+      } else {
+        hideNsfwItems();
+        saveStoredMode('safe', remember);
+      }
+
+      pendingRevealItem = null;
+      applyFilters();
     }
 
     function applyFilters() {
@@ -338,6 +516,46 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
       if (emptyEl) emptyEl.classList.toggle('hidden', visible > 0);
     }
 
+    function resetGateForm() {
+      if (gateAge) gateAge.checked = false;
+      const gateRemember = document.querySelector<HTMLInputElement>('[data-nsfw-gate-remember]');
+      if (gateRemember) gateRemember.checked = false;
+      if (gateConfirm) gateConfirm.disabled = true;
+    }
+
+    function openGate(target: HTMLElement | null = null) {
+      if (!gate) return;
+      pendingRevealItem = target;
+      resetGateForm();
+      gate.classList.remove('hidden');
+      gate.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      gateConfirm?.focus();
+    }
+
+    initNsfwGateOnce(
+      (remember) => setNsfwMode('nsfw', remember),
+      () => {
+        pendingRevealItem = null;
+      },
+    );
+
+    function requestNsfwAccess(target: HTMLElement | null = null) {
+      if (nsfwMode === 'nsfw') {
+        if (target) target.classList.add('media-card--revealed');
+        return;
+      }
+
+      const remembered = readStoredMode();
+      if (remembered === 'nsfw') {
+        setNsfwMode('nsfw', true);
+        if (target) target.classList.add('media-card--revealed');
+        return;
+      }
+
+      openGate(target);
+    }
+
     filterBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         activeFilter = btn.dataset.mediaFilter ?? 'all';
@@ -348,34 +566,38 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
 
     nsfwBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        nsfwMode = (btn.dataset.nsfwMode as 'safe' | 'nsfw') ?? 'safe';
-        nsfwBtns.forEach((b) => {
-          const active = b === btn;
-          b.classList.toggle('media-nsfw-btn--active', active);
-          b.setAttribute('aria-pressed', active ? 'true' : 'false');
-        });
-        setNsfwAvatar(nsfwMode);
-        applyFilters();
+        const mode = (btn.dataset.nsfwMode as NsfwMode) ?? 'safe';
+        if (mode === nsfwMode) return;
+
+        if (mode === 'safe') {
+          const remember = readStoredMode() !== null;
+          setNsfwMode('safe', remember);
+          return;
+        }
+
+        requestNsfwAccess();
       });
     });
 
     items.forEach((item) => {
       if (item.dataset.nsfw !== 'true') return;
+
       const overlay = item.querySelector<HTMLButtonElement>('.media-card__nsfw');
       overlay?.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (nsfwMode !== 'nsfw') {
-          nsfwMode = 'nsfw';
-          nsfwBtns.forEach((b) => {
-            const active = b.dataset.nsfwMode === 'nsfw';
-            b.classList.toggle('media-nsfw-btn--active', active);
-            b.setAttribute('aria-pressed', active ? 'true' : 'false');
-          });
-          setNsfwAvatar('nsfw');
-        }
-        item.classList.add('media-card--revealed');
+        e.preventDefault();
+        requestNsfwAccess(item);
       });
     });
+
+    const remembered = readStoredMode();
+    if (remembered === 'nsfw') {
+      nsfwMode = 'nsfw';
+      updateToggleUi();
+      revealNsfwItems();
+    } else {
+      updateToggleUi();
+    }
 
     applyFilters();
   }

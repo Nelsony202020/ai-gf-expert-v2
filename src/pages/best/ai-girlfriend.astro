@@ -1,0 +1,109 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import RoundupHero from '../../components/roundup/RoundupHero.astro';
+import RoundupHeroIntro from '../../components/roundup/RoundupHeroIntro.astro';
+import RoundupQuickCarousel from '../../components/roundup/RoundupQuickCarousel.astro';
+import RoundupSelectionSection from '../../components/roundup/RoundupSelectionSection.astro';
+import RoundupSidebar from '../../components/roundup/RoundupSidebar.astro';
+import RoundupMobileSheets from '../../components/roundup/RoundupMobileSheets.astro';
+import RoundupPick from '../../components/roundup/RoundupPick.astro';
+import RoundupCompare from '../../components/roundup/RoundupCompare.astro';
+import RoundupTestingSection from '../../components/roundup/RoundupTestingSection.astro';
+import RoundupFaq from '../../components/roundup/RoundupFaq.astro';
+import RoundupConclusion from '../../components/roundup/RoundupConclusion.astro';
+import RoundupScoreBarAnimate from '../../components/roundup/RoundupScoreBarAnimate.astro';
+import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
+import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
+import ArticleFeedbackLink from '../../components/article/ArticleFeedbackLink.astro';
+import { aiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
+
+const roundup = aiGirlfriendRoundup;
+const monthYear = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+const pageTitle = `${roundup.title} (${monthYear}) — AI Girlfriend Expert`;
+const canonical = new URL('/best/ai-girlfriend', Astro.site ?? Astro.url.origin).toString();
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={roundup.metaDescription}
+  image={roundup.featuredImage}
+>
+  <Header />
+  <main class="roundup-page" id="roundup-top" data-roundup-root data-reading-length="skim">
+    <RoundupHero roundup={roundup} />
+
+    <div class="section-container px-4 md:px-8 pb-16 md:pb-24">
+      <div class="roundup-layout">
+        <RoundupSidebar roundup={roundup} picks={roundup.picks} />
+
+        <div class="roundup-main min-w-0">
+          <RoundupHeroIntro roundup={roundup} shareUrl={canonical} />
+          <RoundupTestingSection testing={roundup.testing} />
+          <RoundupQuickCarousel heading={roundup.quickHeading} picks={roundup.picks} />
+          <RoundupSelectionSection selection={roundup.selection} />
+
+          <section id="roundup-detailed-picks" class="scroll-mt-24">
+            <h2>{roundup.picksHeading}</h2>
+            <p class="roundup-picks-sort-label" data-roundup-sort-label>Ranked by overall rating</p>
+
+            <div data-roundup-picks>
+              {
+                roundup.picks.map((pick, index) => (
+                  <RoundupPick pick={pick} rank={index + 1} />
+                ))
+              }
+            </div>
+          </section>
+
+          <RoundupCompare picks={roundup.picks} defaultIds={roundup.compareDefaultIds} />
+          <RoundupFaq items={roundup.faq} />
+          <RoundupConclusion conclusion={roundup.conclusion} picks={roundup.picks} />
+          <ArticleFeedbackLink pageTitle={pageTitle} pageUrl={canonical} />
+        </div>
+      </div>
+    </div>
+  </main>
+  <Footer />
+  <RoundupMobileSheets picks={roundup.picks} />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal />
+  <RoundupScoreBarAnimate />
+  <RatingsTooltipInit />
+</BaseLayout>
+
+<script>
+  function initAuthorPopovers() {
+    document.querySelectorAll<HTMLElement>('[data-author-trigger]').forEach((trigger) => {
+      if (trigger.dataset.bound === 'true') return;
+      trigger.dataset.bound = 'true';
+
+      const slug = trigger.dataset.authorTrigger;
+      const popover = document.querySelector<HTMLElement>(`[data-author-bio-popover="${slug}"]`);
+      if (!popover) return;
+
+      let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+      const show = () => {
+        if (hideTimer) clearTimeout(hideTimer);
+        popover.hidden = false;
+      };
+
+      const hide = () => {
+        hideTimer = setTimeout(() => {
+          popover.hidden = true;
+        }, 120);
+      };
+
+      trigger.addEventListener('mouseenter', show);
+      trigger.addEventListener('focus', show);
+      trigger.addEventListener('mouseleave', hide);
+      trigger.addEventListener('blur', hide);
+      popover.addEventListener('mouseenter', show);
+      popover.addEventListener('mouseleave', hide);
+    });
+  }
+
+  initAuthorPopovers();
+  document.addEventListener('astro:page-load', initAuthorPopovers);
+</script>

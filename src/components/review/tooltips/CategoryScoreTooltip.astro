@@ -13,9 +13,10 @@ import InfoIcon from '../../ui/InfoIcon.astro';
 interface Props {
   category: RatingCategory;
   compact?: boolean;
+  methodologyOnly?: boolean;
 }
 
-const { category, compact = false } = Astro.props;
+const { category, compact = false, methodologyOnly = false } = Astro.props;
 const tooltipId = `cat-${category.key}${compact ? '-compact' : ''}`;
 
 const currentScore = category.score;
@@ -93,7 +94,7 @@ const useDarkBrandIconOnly = category.key === 'customization' || category.key ==
         </div>
       </div>
       <ScoreMeaningCallout score={currentScore} avg={avgScore} />
-      <TooltipActionLinks categoryKey={category.key} />
+      <TooltipActionLinks categoryKey={category.key} methodologyOnly={methodologyOnly} />
     </div>
 
     <div class="ratings-tooltip-panel__body">
@@ -108,8 +109,8 @@ const useDarkBrandIconOnly = category.key === 'customization' || category.key ==
                   <div class="rt-comp-row__main">
                     <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(sub.score)}</span>
                     <span class="rt-comp-name rt-comp-name--truncate">{sub.name}</span>
+                    <TooltipActionLinks categoryKey={category.key} subscoreName={sub.name} compact methodologyOnly={methodologyOnly} />
                   </div>
-                  <TooltipActionLinks categoryKey={category.key} subscoreName={sub.name} compact />
                 </div>
               );
             })

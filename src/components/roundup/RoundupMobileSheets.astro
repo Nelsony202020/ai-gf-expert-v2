@@ -1,0 +1,57 @@
+---
+import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
+import {
+  ROUNDUP_READING_OPTIONS,
+  buildRoundupSortOptions,
+} from '../../lib/roundup-controls';
+
+interface Props {
+  picks: RoundupPick[];
+}
+
+const { picks } = Astro.props;
+const sortOptions = buildRoundupSortOptions(picks);
+---
+
+<div class="roundup-sheet" data-reading-sheet hidden aria-hidden="true">
+  <div class="roundup-sheet__backdrop" data-sheet-backdrop tabindex="-1"></div>
+  <div class="roundup-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="reading-sheet-title">
+    <div class="roundup-sheet__handle" aria-hidden="true"></div>
+    <h2 id="reading-sheet-title" class="roundup-sheet__title">Choose reading length</h2>
+    <div class="roundup-sheet__options" role="radiogroup" aria-label="Reading length">
+      {
+        ROUNDUP_READING_OPTIONS.map((opt, i) => (
+          <label class="roundup-sheet__option">
+            <input type="radio" name="roundup-reading" value={opt.value} checked={i === 0} />
+            <span class="roundup-sheet__option-body">
+              <span class="roundup-sheet__option-label">{opt.label}</span>
+              <span class="roundup-sheet__option-desc">{opt.description}</span>
+            </span>
+          </label>
+        ))
+      }
+    </div>
+    <button type="button" class="roundup-sheet__cancel" data-sheet-close>Cancel</button>
+  </div>
+</div>
+
+<div class="roundup-sheet" data-sort-sheet hidden aria-hidden="true">
+  <div class="roundup-sheet__backdrop" data-sheet-backdrop tabindex="-1"></div>
+  <div class="roundup-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="sort-sheet-title">
+    <div class="roundup-sheet__handle" aria-hidden="true"></div>
+    <h2 id="sort-sheet-title" class="roundup-sheet__title">Rank products by</h2>
+    <div class="roundup-sheet__options" role="radiogroup" aria-label="Sort rankings">
+      {
+        sortOptions.map((opt, i) => (
+          <label class="roundup-sheet__option">
+            <input type="radio" name="roundup-sort" value={opt.value} checked={i === 0} />
+            <span class="roundup-sheet__option-body">
+              <span class="roundup-sheet__option-label" data-sort-short={opt.shortLabel}>{opt.label}</span>
+            </span>
+          </label>
+        ))
+      }
+    </div>
+    <button type="button" class="roundup-sheet__cancel" data-sheet-close>Cancel</button>
+  </div>
+</div>

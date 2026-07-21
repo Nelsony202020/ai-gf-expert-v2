@@ -1,0 +1,112 @@
+---
+import type { RoundupCategoryScore } from '../../data/roundups/ai-girlfriend';
+import { toRatingCategory } from '../../data/roundups/ai-girlfriend';
+import { fmtScore } from '../../lib/scores';
+import { getScoreFillRatio, getSegmentFill, getSegmentFillClass } from '../../lib/roundup-scores';
+import CategoryScoreTooltip from '../review/tooltips/CategoryScoreTooltip.astro';
+import InfoIcon from '../ui/InfoIcon.astro';
+
+interface Props {
+  scores: RoundupCategoryScore[];
+  pickSlug?: string;
+}
+
+const { scores, pickSlug } = Astro.props;
+const leftCol = scores.slice(0, 4);
+const rightCol = scores.slice(4, 8);
+---
+
+<div class="roundup-category-grid">
+  <div class="roundup-category-col">
+    {
+      leftCol.map((item) => {
+        const category = toRatingCategory(item, pickSlug);
+        const fillClass = getSegmentFillClass(item.score);
+        return (
+          <div class="roundup-category-row">
+            <div class="roundup-category-row__label">
+              <span>{item.name}</span>
+              <CategoryScoreTooltip category={category} compact methodologyOnly>
+                <InfoIcon size="xs" class="text-tertiary/50 hover:text-tertiary/80" />
+              </CategoryScoreTooltip>
+            </div>
+            <span class="roundup-category-row__score">{fmtScore(item.score)}/10</span>
+            <div
+              class="roundup-category-row__bar"
+              data-roundup-score-bar
+              style={`--score-fill-ratio: ${getScoreFillRatio(item.score)}`}
+              aria-hidden="true"
+            >
+              <div class="roundup-score-bar__track">
+                {Array.from({ length: 5 }, () => (
+                  <span class="roundup-category-row__segment"></span>
+                ))}
+              </div>
+              <div class="roundup-score-bar__meter-fill">
+                {Array.from({ length: 5 }, (_, i) => {
+                  const seg = getSegmentFill(item.score, i);
+                  return (
+                    <span class={`roundup-category-row__segment ${seg.state === 'full' ? fillClass : ''}`}>
+                      {seg.state === 'partial' && (
+                        <span
+                          class={`roundup-category-row__segment-fill ${fillClass}`}
+                          style={`width: ${seg.partialPct}%`}
+                        ></span>
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })
+    }
+  </div>
+  <div class="roundup-category-col">
+    {
+      rightCol.map((item) => {
+        const category = toRatingCategory(item, pickSlug);
+        const fillClass = getSegmentFillClass(item.score);
+        return (
+          <div class="roundup-category-row">
+            <div class="roundup-category-row__label">
+              <span>{item.name}</span>
+              <CategoryScoreTooltip category={category} compact methodologyOnly>
+                <InfoIcon size="xs" class="text-tertiary/50 hover:text-tertiary/80" />
+              </CategoryScoreTooltip>
+            </div>
+            <span class="roundup-category-row__score">{fmtScore(item.score)}/10</span>
+            <div
+              class="roundup-category-row__bar"
+              data-roundup-score-bar
+              style={`--score-fill-ratio: ${getScoreFillRatio(item.score)}`}
+              aria-hidden="true"
+            >
+              <div class="roundup-score-bar__track">
+                {Array.from({ length: 5 }, () => (
+                  <span class="roundup-category-row__segment"></span>
+                ))}
+              </div>
+              <div class="roundup-score-bar__meter-fill">
+                {Array.from({ length: 5 }, (_, i) => {
+                  const seg = getSegmentFill(item.score, i);
+                  return (
+                    <span class={`roundup-category-row__segment ${seg.state === 'full' ? fillClass : ''}`}>
+                      {seg.state === 'partial' && (
+                        <span
+                          class={`roundup-category-row__segment-fill ${fillClass}`}
+                          style={`width: ${seg.partialPct}%`}
+                        ></span>
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })
+    }
+  </div>
+</div>

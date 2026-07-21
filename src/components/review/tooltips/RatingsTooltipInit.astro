@@ -64,18 +64,39 @@
           ? 300
           : 360;
 
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+    const isMobileMethodology =
+      panel.classList.contains('ratings-tooltip-panel--methodology') && viewportW < 768;
+
     panel.style.position = 'fixed';
     panel.style.zIndex = '9999';
-    panel.style.width = `${Math.min(maxWidth, window.innerWidth - margin * 2)}px`;
+    panel.style.width = `${Math.min(maxWidth, viewportW - margin * 2)}px`;
     panel.style.display = 'block';
     panel.style.visibility = 'hidden';
+    panel.style.maxHeight = '';
+    panel.classList.toggle('ratings-tooltip-panel--mobile-sheet', isMobileMethodology);
+
+    if (isMobileMethodology) {
+      panel.style.maxHeight = `${viewportH - margin * 2}px`;
+    }
 
     const panelWidth = panel.offsetWidth || maxWidth;
-    const panelHeight = panel.offsetHeight;
+    let panelHeight = panel.offsetHeight;
     panel.style.visibility = '';
 
+    if (isMobileMethodology) {
+      panelHeight = Math.min(panel.offsetHeight, viewportH - margin * 2);
+      const left = Math.max(margin, (viewportW - panelWidth) / 2);
+      const top = Math.max(margin, (viewportH - panelHeight) / 2);
+
+      panel.classList.remove('ratings-tooltip-panel--below', 'ratings-tooltip-panel--above');
+      panel.style.left = `${left}px`;
+      panel.style.top = `${top}px`;
+      return;
+    }
+
     const triggerCenterX = rect.left + rect.width / 2;
-    const viewportW = window.innerWidth;
 
     let left = triggerCenterX - panelWidth / 2;
 
@@ -270,6 +291,7 @@
 
   initRatingsTooltips();
   document.addEventListener('astro:page-load', initRatingsTooltips);
+  document.addEventListener('ratings-tooltips:reinit', initRatingsTooltips);
 </script>
 
 <style is:global>

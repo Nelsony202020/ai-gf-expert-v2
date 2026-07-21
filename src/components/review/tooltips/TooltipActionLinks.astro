@@ -38,7 +38,11 @@ const resultsAttrs = contributorLabel
     )
   }
   {
-    compact && !methodologyOnly ? (
+    methodologyOnly && compact ? (
+      <a href={methodologyHref} class="rt-tooltip-actions__icon-link" aria-label={methodologyLabel} title={methodologyLabel}>
+        <span class="material-symbols-outlined text-[14px]">science</span>
+      </a>
+    ) : compact && !methodologyOnly ? (
       <a href={methodologyHref} class="rt-tooltip-actions__icon-link" aria-label={methodologyLabel} title={methodologyLabel}>
         <span class="material-symbols-outlined text-[14px]">menu_book</span>
       </a>

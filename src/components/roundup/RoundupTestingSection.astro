@@ -1,0 +1,277 @@
+---
+import type { RoundupTesting } from '../../data/roundups/ai-girlfriend';
+
+interface Props {
+  testing: RoundupTesting;
+}
+
+const { testing } = Astro.props;
+const loopDuration = 8;
+---
+
+<section id="roundup-testing" class="roundup-testing scroll-mt-24" data-roundup-testing data-loop-duration={loopDuration}>
+  <div class="roundup-testing__panel">
+    <div class="roundup-testing__top">
+      <div class="roundup-testing__copy">
+        <div class="roundup-testing__title-row">
+          <span class="roundup-testing__title-icon material-symbols-outlined" aria-hidden="true">science</span>
+          <h2 class="roundup-testing__title">{testing.title}</h2>
+        </div>
+        <p class="roundup-testing__desc">{testing.description}</p>
+        <a href={testing.processHref} class="roundup-testing__link">
+          {testing.processLabel}
+          <span class="material-symbols-outlined roundup-testing__link-arrow" aria-hidden="true">arrow_forward</span>
+        </a>
+      </div>
+
+      <div class="roundup-testing__video-wrap" data-testing-video-wrap>
+        <div class="roundup-testing__video-frame">
+          <video
+            class="roundup-testing__video"
+            data-testing-video-el
+            poster={testing.videoPoster}
+            loop
+            muted
+            playsinline
+            preload="none"
+            aria-label="Clip from our AI girlfriend app testing lab"
+            hidden={!testing.videoSrc}
+          >
+            {testing.videoSrc && <source src={testing.videoSrc} type="video/mp4" />}
+          </video>
+          <img
+            class="roundup-testing__video-fallback"
+            data-testing-video-fallback
+            src={testing.videoPoster}
+            alt=""
+            width="1280"
+            height="720"
+            loading="lazy"
+            decoding="async"
+            hidden={Boolean(testing.videoSrc)}
+          />
+          <div class="roundup-testing__video-controls">
+            <button type="button" class="roundup-testing__video-btn" data-testing-play aria-label="Play video">
+              <span class="material-symbols-outlined text-[18px]" data-testing-play-icon>play_arrow</span>
+            </button>
+            <input
+              type="range"
+              class="roundup-testing__video-scrub"
+              data-testing-scrub
+              min="0"
+              max="1000"
+              value="0"
+              aria-label="Video progress"
+            />
+            <span class="roundup-testing__video-time" data-testing-time>0:00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="roundup-testing__stats">
+      {
+        testing.stats.map((stat) => (
+          <li class="roundup-testing__stat">
+            <span class="roundup-testing__stat-icon-wrap" aria-hidden="true">
+              <span class="material-symbols-outlined roundup-testing__stat-icon">{stat.icon}</span>
+            </span>
+            <div class="roundup-testing__stat-text">
+              <span class="roundup-testing__stat-title">{stat.title}</span>
+              {stat.subtitle && <span class="roundup-testing__stat-sub">{stat.subtitle}</span>}
+              {stat.lines?.map((line) => <span class="roundup-testing__stat-sub">{line}</span>)}
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<script>
+  function fmtTime(seconds: number) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  function initRoundupTesting() {
+    document.querySelectorAll<HTMLElement>('[data-roundup-testing]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const wrap = root.querySelector<HTMLElement>('[data-testing-video-wrap]');
+      const video = root.querySelector<HTMLVideoElement>('[data-testing-video-el]');
+      const fallback = root.querySelector<HTMLImageElement>('[data-testing-video-fallback]');
+      const scrub = root.querySelector<HTMLInputElement>('[data-testing-scrub]');
+      const timeEl = root.querySelector<HTMLElement>('[data-testing-time]');
+      const playBtn = root.querySelector<HTMLButtonElement>('[data-testing-play]');
+      const playIcon = root.querySelector<HTMLElement>('[data-testing-play-icon]');
+
+      if (!wrap || !scrub || !timeEl || !playBtn || !playIcon) return;
+
+      const loopDuration = Number(root.dataset.loopDuration) || 8;
+      let usingFallback = false;
+      let inView = false;
+      let playing = false;
+      let raf = 0;
+      let fallbackStart = 0;
+      let fallbackElapsed = 0;
+
+      function setPlaying(next: boolean) {
+        playing = next;
+        playIcon.textContent = playing ? 'pause' : 'play_arrow';
+        playBtn.setAttribute('aria-label', playing ? 'Pause video' : 'Play video');
+
+        if (!inView) return;
+
+        if (usingFallback) {
+          if (playing) {
+            fallbackStart = performance.now() - fallbackElapsed * 1000;
+            tickFallback();
+          } else if (raf) {
+            cancelAnimationFrame(raf);
+            raf = 0;
+          }
+          return;
+        }
+
+        if (!video) return;
+        if (playing) void video.play();
+        else video.pause();
+      }
+
+      function updateUi(ratio: number, seconds: number) {
+        scrub.value = String(Math.round(ratio * 1000));
+        timeEl.textContent = fmtTime(seconds);
+      }
+
+      function tickFallback() {
+        if (!playing || !inView) return;
+        const now = performance.now();
+        fallbackElapsed = ((now - fallbackStart) / 1000) % loopDuration;
+        updateUi(fallbackElapsed / loopDuration, fallbackElapsed);
+        raf = requestAnimationFrame(tickFallback);
+      }
+
+      function seekFallback(ratio: number) {
+        fallbackElapsed = ratio * loopDuration;
+        fallbackStart = performance.now() - fallbackElapsed * 1000;
+        updateUi(ratio, fallbackElapsed);
+      }
+
+      function enableFallback() {
+        usingFallback = true;
+        if (video) video.hidden = true;
+        if (fallback) fallback.hidden = false;
+      }
+
+      function startPlayback() {
+        if (usingFallback) {
+          fallbackStart = performance.now() - fallbackElapsed * 1000;
+          setPlaying(true);
+          return;
+        }
+
+        if (!video) {
+          enableFallback();
+          setPlaying(true);
+          return;
+        }
+
+        const hasSource = Boolean(video.querySelector('source')?.getAttribute('src'));
+        if (!hasSource) {
+          enableFallback();
+          setPlaying(true);
+          return;
+        }
+
+        video.muted = true;
+        video.playsInline = true;
+        void video.play().then(() => setPlaying(true)).catch(() => {
+          enableFallback();
+          setPlaying(true);
+        });
+      }
+
+      function stopPlayback() {
+        if (usingFallback && raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        } else if (video) {
+          video.pause();
+        }
+        playing = false;
+        playIcon.textContent = 'play_arrow';
+        playBtn.setAttribute('aria-label', 'Play video');
+      }
+
+      function wireVideo() {
+        if (!video) return enableFallback();
+
+        const hasSource = Boolean(video.querySelector('source')?.getAttribute('src'));
+        if (!hasSource) return enableFallback();
+
+        video.addEventListener('timeupdate', () => {
+          if (!video.duration || !Number.isFinite(video.duration)) return;
+          updateUi(video.currentTime / video.duration, video.currentTime);
+        });
+
+        video.addEventListener('error', enableFallback);
+      }
+
+      scrub.addEventListener('input', () => {
+        const ratio = Number(scrub.value) / 1000;
+        if (usingFallback) {
+          seekFallback(ratio);
+          return;
+        }
+        if (video?.duration) {
+          video.currentTime = ratio * video.duration;
+        }
+      });
+
+      playBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (!inView) return;
+        setPlaying(!playing);
+      });
+
+      const touchControls = window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse)').matches;
+
+      function setControlsVisible(visible: boolean) {
+        wrap.classList.toggle('is-controls-visible', visible);
+      }
+
+      if (touchControls) {
+        wrap.addEventListener('click', (event) => {
+          if ((event.target as HTMLElement).closest('[data-testing-play]')) return;
+          setControlsVisible(!wrap.classList.contains('is-controls-visible'));
+        });
+
+        document.addEventListener('click', (event) => {
+          if (!(event.target as HTMLElement).closest('[data-testing-video-wrap]')) {
+            setControlsVisible(false);
+          }
+        });
+      }
+
+      wireVideo();
+      if (!video?.querySelector('source')?.getAttribute('src')) enableFallback();
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          inView = entries.some((entry) => entry.isIntersecting);
+          if (inView) startPlayback();
+          else stopPlayback();
+        },
+        { threshold: 0.35, rootMargin: '0px 0px -5% 0px' },
+      );
+
+      observer.observe(wrap);
+    });
+  }
+
+  initRoundupTesting();
+  document.addEventListener('astro:page-load', initRoundupTesting);
+</script>

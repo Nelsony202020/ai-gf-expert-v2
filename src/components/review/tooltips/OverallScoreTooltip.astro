@@ -8,9 +8,10 @@ import InfoIcon from '../../ui/InfoIcon.astro';
 
 interface Props {
   product: Product;
+  methodologyOnly?: boolean;
 }
 
-const { product } = Astro.props;
+const { product, methodologyOnly = false } = Astro.props;
 const tooltipId = `overall-${product.slug}`;
 
 const currentScore = product.overallScore;
@@ -75,7 +76,7 @@ const avgScore = scorePoints.length
                       <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(category.score)}</span>
                       <span class="rt-comp-name rt-comp-name--truncate">{category.name}</span>
                     </div>
-                    <TooltipActionLinks categoryKey={category.key} compact />
+                    <TooltipActionLinks categoryKey={category.key} compact methodologyOnly={methodologyOnly} />
                   </div>
                 );
               })

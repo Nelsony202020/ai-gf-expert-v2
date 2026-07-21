@@ -1,0 +1,76 @@
+---
+import type { RoundupConclusion, RoundupPick } from '../../data/roundups/ai-girlfriend';
+import { fmtScore } from '../../lib/scores';
+
+interface Props {
+  conclusion: RoundupConclusion;
+  picks: RoundupPick[];
+}
+
+const { conclusion, picks } = Astro.props;
+
+const topPick = picks.find((p) => p.id === conclusion.topPickId) ?? picks[0];
+const altPick = conclusion.alternate
+  ? picks.find((p) => p.id === conclusion.alternate!.pickId)
+  : undefined;
+---
+
+<section id="roundup-conclusion" class="roundup-conclusion scroll-mt-24">
+  <p class="roundup-conclusion__eyebrow">{conclusion.eyebrow}</p>
+  <h2 class="roundup-conclusion__heading">{conclusion.heading}</h2>
+
+  <div class="roundup-conclusion__copy">
+    <p class="roundup-conclusion__lead">
+      <a href={`#pick-${topPick.id}`} class="roundup-conclusion__pick-link" data-pick-anchor={topPick.id}>
+        {topPick.name}
+      </a>
+      {' '}
+      is the app we recommend when someone asks for a single best AI girlfriend app in 2026.
+      {' '}
+      {conclusion.lead}
+    </p>
+
+    {
+      conclusion.alternate && altPick && (
+        <p class="roundup-conclusion__alternate">
+          {conclusion.alternate.before}{' '}
+          <a href={`#pick-${altPick.id}`} class="roundup-conclusion__pick-link" data-pick-anchor={altPick.id}>
+            {altPick.name}
+          </a>{' '}
+          {conclusion.alternate.after}
+        </p>
+      )
+    }
+  </div>
+
+  <div class="roundup-conclusion__footer">
+    <a href={`#pick-${topPick.id}`} class="roundup-conclusion__pick-meta" data-pick-anchor={topPick.id}>
+      <img class="roundup-conclusion__pick-logo" src={topPick.logo} alt="" width="48" height="48" loading="lazy" />
+      <span class="roundup-conclusion__pick-info">
+        <span class="roundup-conclusion__pick-name">#{1} {topPick.name}</span>
+        <span class="roundup-conclusion__pick-score">{fmtScore(topPick.overallScore)}/10 · {topPick.ribbon}</span>
+      </span>
+    </a>
+
+    <div class="roundup-conclusion__actions">
+      <a
+        class="roundup-conclusion__cta roundup-conclusion__cta--primary bg-brand-cta"
+        href={topPick.affiliateUrl}
+        target="_blank"
+        rel="nofollow sponsored noopener"
+      >
+        Try {topPick.name}
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+      </a>
+      <a class="roundup-conclusion__cta roundup-conclusion__cta--secondary" href="#roundup-compare">
+        {conclusion.compareLabel}
+        <span class="material-symbols-outlined" aria-hidden="true">compare_arrows</span>
+      </a>
+    </div>
+  </div>
+
+  <p class="roundup-conclusion__fineprint">
+    Affiliate links — scores are never paid for.
+    <a href="/legal/affiliate-disclosure">Disclosure</a>
+  </p>
+</section>

@@ -1,0 +1,21 @@
+---
+import type { Roundup } from '../../data/roundups/ai-girlfriend';
+
+interface Props {
+  roundup: Roundup;
+}
+
+const { roundup } = Astro.props;
+---
+
+<section class="roundup-hero" aria-hidden="false">
+  <img
+    class="roundup-featured w-full"
+    src={roundup.featuredImage}
+    alt={roundup.featuredImageAlt}
+    width="1600"
+    height="640"
+    loading="eager"
+    fetchpriority="high"
+  />
+</section>

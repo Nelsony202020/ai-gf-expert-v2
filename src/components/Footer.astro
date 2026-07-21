@@ -2,6 +2,7 @@
 // NOTE: Site footer — dark brand background, social links, dark mode toggle.
 import { authors } from '../data/authors';
 import SocialTooltip from './ui/SocialTooltip.astro';
+import ThemeToggle from './ui/ThemeToggle.astro';
 
 const herman = authors['herman-carter'];
 const year = new Date().getFullYear();
@@ -93,10 +94,7 @@ const columns = [
     <div class="site-footer__bottom">
       <p>&copy; {year} Nelson Digital FZ LLC. All rights reserved.</p>
       <div class="site-footer__legal">
-        <button type="button" class="site-footer__theme" data-theme-toggle aria-label="Toggle dark mode">
-          <span class="material-symbols-outlined text-[15px] theme-toggle__icon">dark_mode</span>
-          <span class="theme-toggle__label">Dark mode</span>
-        </button>
+        <ThemeToggle variant="footer" />
         <a href="/legal/privacy">Privacy</a>
         <a href="/legal/terms">Terms</a>
         <a href="/legal/copyright">Copyright</a>
@@ -213,7 +211,7 @@ const columns = [
   }
 
   .site-footer__legal a,
-  .site-footer__theme {
+  .theme-toggle--footer {
     color: #5a6b52;
     text-decoration: none;
     font-weight: 600;
@@ -221,7 +219,7 @@ const columns = [
   }
 
   .site-footer__legal a:hover,
-  .site-footer__theme:hover {
+  .theme-toggle--footer:hover {
     color: #db2777;
   }
 </style>
@@ -274,12 +272,12 @@ const columns = [
   }
 
   [data-theme='dark'] .site-footer__legal a,
-  [data-theme='dark'] .site-footer__theme {
+  [data-theme='dark'] .theme-toggle--footer {
     color: #9cab96;
   }
 
   [data-theme='dark'] .site-footer__legal a:hover,
-  [data-theme='dark'] .site-footer__theme:hover {
+  [data-theme='dark'] .theme-toggle--footer:hover {
     color: #fff;
   }
 
@@ -287,51 +285,4 @@ const columns = [
     background: rgb(255 255 255 / 8%);
     border-color: rgb(255 255 255 / 12%);
   }
-
-  .site-footer__theme {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    border: none;
-    background: none;
-    cursor: pointer;
-    padding: 0;
-    font-size: inherit;
-    font-family: inherit;
-  }
 </style>
-
-<script>
-  function initThemeToggle() {
-    const btn = document.querySelector('[data-theme-toggle]');
-    if (!btn || btn.dataset.bound) return;
-    btn.dataset.bound = 'true';
-
-    const root = document.documentElement;
-
-    function syncLabel() {
-      const dark = root.getAttribute('data-theme') === 'dark';
-      const icon = btn.querySelector('.theme-toggle__icon');
-      const label = btn.querySelector('.theme-toggle__label');
-      if (icon) icon.textContent = dark ? 'light_mode' : 'dark_mode';
-      if (label) label.textContent = dark ? 'Light mode' : 'Dark mode';
-    }
-
-    btn.addEventListener('click', () => {
-      const dark = root.getAttribute('data-theme') === 'dark';
-      if (dark) {
-        root.removeAttribute('data-theme');
-        localStorage.setItem('theme', 'light');
-      } else {
-        root.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-      }
-      syncLabel();
-    });
-
-    syncLabel();
-  }
-
-  initThemeToggle();
-  document.addEventListener('astro:page-load', initThemeToggle);
-</script>

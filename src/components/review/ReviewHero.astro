@@ -7,12 +7,15 @@ import MethodologyTooltip from './tooltips/MethodologyTooltip.astro';
 import InfoIcon from '../ui/InfoIcon.astro';
 import AuthorBioPopover from './AuthorBioPopover.astro';
 import VerifiedCheck from '../ui/VerifiedCheck.astro';
+import ShareMenu from '../ui/ShareMenu.astro';
 
 interface Props {
   product: Product;
+  shareUrl?: string;
 }
 
-const { product } = Astro.props;
+const { product, shareUrl } = Astro.props;
+const shareTitle = `${product.name} Review — AI Girlfriend Expert`;
 ---
 
 <section class="section-container pt-8 md:pt-12 pb-10 px-4 md:px-8">
@@ -28,17 +31,19 @@ const { product } = Astro.props;
       {product.name} <span class="font-serif italic font-normal text-on-surface">Review</span>
     </h1>
 
-    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-tertiary font-medium">
-      <p>Reviewed {product.reviewedDate}</p>
-      <div class="w-px h-3 bg-surface-variant hidden md:block"></div>
-      <p>Writing modified {product.modifiedDate}</p>
-      <div class="w-px h-3 bg-surface-variant hidden md:block"></div>
-      <p class="flex items-center gap-1">
-        Tested using {product.methodology}
+    <div class="article-meta-row mb-0">
+      <span>Reviewed {product.reviewedDate}</span>
+      <span class="article-meta-row__sep" aria-hidden="true">·</span>
+      <span>Updated {product.modifiedDate}</span>
+      <span class="article-meta-row__sep" aria-hidden="true">·</span>
+      <span class="article-meta-row__methodology">
+        {product.methodology}
         <MethodologyTooltip id={`hero-methodology-${product.slug}`}>
           <InfoIcon size="xs" class="text-tertiary hover:text-accent" />
         </MethodologyTooltip>
-      </p>
+      </span>
+      <span class="article-meta-row__sep article-meta-row__sep--before-share" aria-hidden="true">·</span>
+      <ShareMenu shareTitle={shareTitle} shareUrl={shareUrl} variant="inline" />
     </div>
   </div>
 
