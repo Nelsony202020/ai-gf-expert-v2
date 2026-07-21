@@ -1,66 +1,311 @@
 ---
-const navLinks = [
-  { label: 'Reviews', href: '#' },
-  { label: 'Roundups', href: '#' },
-  { label: 'Guides', href: '#' },
-];
+import { megaMenuColumns, trustBadges } from '../data/nav-mega-menu';
+import { buildSearchIndex } from '../data/site-search';
+
+const searchIndex = buildSearchIndex();
 ---
 
-<header class="site-header sticky top-0 z-50">
-  <div class="section-container h-16 flex items-center justify-between px-4 md:px-8 gap-4">
-    <div class="flex items-center gap-6 md:gap-8 min-w-0">
-      <a href="/" class="shrink-0 flex items-center">
-        <img src="/brand/ai-gf-logo-green.svg" alt="AI Girlfriend Expert" class="h-14 md:h-[4.5rem] w-auto object-contain" width="220" height="72" loading="lazy" />
+<header class="site-header sticky top-0 z-50" data-site-header>
+  <div class="section-container px-4 md:px-8 site-header__inner">
+    <div class="site-header__left">
+      <a href="/" class="site-logo-link shrink-0 flex items-center">
+        <img
+          src="/brand/ai-gf-logo-light.png"
+          alt="AI Girlfriend Expert"
+          class="h-14 md:h-[3.75rem] w-auto object-contain site-header__logo site-header__logo--light"
+          width="256"
+          height="256"
+          loading="eager"
+        />
+        <img
+          src="/brand/ai-gf-logo-white.png"
+          alt="AI Girlfriend Expert"
+          class="h-11 md:h-12 w-auto object-contain site-header__logo site-header__logo--dark hidden"
+          width="220"
+          height="72"
+          loading="eager"
+        />
       </a>
 
-      <nav class="hidden lg:flex items-center gap-6 text-sm font-semibold">
-        {
-          navLinks.map((link) => (
-            <a class="site-header__link hover:text-brand-lime transition-colors" href={link.href}>
-              {link.label}
-            </a>
-          ))
-        }
-      </nav>
-
-      <div class="hidden md:flex items-center min-w-0">
-        <div class="relative">
-          <input
-            class="site-header__search pl-4 pr-10 py-1.5 border rounded-full text-sm w-48 lg:w-64 xl:w-72 focus:ring-1 focus:ring-accent focus:border-accent outline-none"
-            placeholder="Search reviews…"
-            type="search"
-          />
-          <span class="material-symbols-outlined absolute right-3 top-1.5 text-[18px] pointer-events-none opacity-60">search</span>
+      <nav class="site-header__nav" aria-label="Main">
+        <div class="site-header__mega-wrap" data-mega-wrap>
+          <a
+            href="#"
+            class="site-header__nav-link"
+            data-mega-trigger
+            aria-haspopup="true"
+            aria-controls="site-mega-menu"
+          >
+            Explore
+            <span class="material-symbols-outlined site-header__nav-chevron">expand_more</span>
+          </a>
         </div>
-      </div>
+
+        <a href="#" class="site-header__nav-link">All Apps</a>
+        <a href="#" class="site-header__nav-link">How We Review</a>
+      </nav>
     </div>
 
-    <div class="flex items-center gap-3 md:gap-5 text-sm font-semibold shrink-0">
-      <a class="hidden sm:inline site-header__link hover:text-brand-lime transition-colors" href="#">Sign In</a>
-      <a class="bg-brand-cta px-4 md:px-5 py-2 rounded-full font-bold hover:opacity-90 transition shadow-sm text-sm">
+    <div class="site-header__actions">
+      <div class="site-header__search" data-header-search>
+        <button
+          type="button"
+          class="site-header__search-toggle"
+          data-search-toggle
+          aria-expanded="false"
+          aria-label="Search"
+        >
+          <span class="material-symbols-outlined">search</span>
+        </button>
+
+        <div class="site-header__search-field" data-search-field>
+          <span class="material-symbols-outlined site-header__search-field-icon">search</span>
+          <input
+            type="search"
+            class="site-header__search-input"
+            data-search-input
+            placeholder="Search reviews, guides, pages…"
+            autocomplete="off"
+            spellcheck="false"
+            tabindex="-1"
+          />
+        </div>
+
+        <div class="site-header__search-dropdown hidden" data-search-results role="listbox" />
+      </div>
+
+      <a href="#" class="hidden sm:inline site-header__link">Sign In</a>
+      <a href="#" class="site-header__join">
         Join Now
+        <span class="material-symbols-outlined">arrow_forward</span>
       </a>
+    </div>
+  </div>
+
+  <div
+    id="site-mega-menu"
+    class="site-header__mega hidden"
+    data-mega-panel
+    role="menu"
+    aria-label="Explore"
+  >
+    <div class="section-container px-4 md:px-8">
+      <div class="site-header__mega-trust">
+        {
+          trustBadges.map((badge) => (
+            <div class="site-header__trust-item">
+              <span class="site-header__trust-icon">
+                <span class="material-symbols-outlined">{badge.icon}</span>
+              </span>
+              <div>
+                <p class="site-header__trust-title">{badge.title}</p>
+                <p class="site-header__trust-sub">{badge.sub}</p>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="site-header__mega-grid">
+        {
+          megaMenuColumns.map((col) => (
+            <div class="site-header__mega-col">
+              <div class="site-header__mega-col-head">
+                <span class="site-header__mega-col-icon">
+                  <span class="material-symbols-outlined">{col.icon}</span>
+                </span>
+                <div>
+                  <p class="site-header__mega-col-title">{col.title}</p>
+                  <p class="site-header__mega-col-desc">{col.description}</p>
+                </div>
+              </div>
+              <ul class="site-header__mega-links">
+                {
+                  col.links.map((link) => (
+                    <li>
+                      <a href={link.href} class="site-header__mega-link" role="menuitem">
+                        <span>{link.label}</span>
+                        <span class="material-symbols-outlined">chevron_right</span>
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
+              <a href={col.viewAll.href} class="site-header__mega-view-all" role="menuitem">
+                <span class="link-text">{col.viewAll.label}</span>
+                <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </a>
+            </div>
+          ))
+        }
+      </div>
     </div>
   </div>
 </header>
 
-<style>
-  .site-header {
-    background-color: var(--color-footer);
-    border-bottom: 1px solid rgb(255 255 255 / 8%);
+<script define:vars={{ searchIndex }}>
+  function initSiteHeader() {
+    const header = document.querySelector('[data-site-header]');
+    if (!header || header.dataset.bound === 'true') return;
+    header.dataset.bound = 'true';
+
+    const megaWrap = header.querySelector('[data-mega-wrap]');
+    const megaTrigger = header.querySelector('[data-mega-trigger]');
+    const megaPanel = header.querySelector('[data-mega-panel]');
+    const searchRoot = header.querySelector('[data-header-search]');
+    const searchToggle = header.querySelector('[data-search-toggle]');
+    const searchField = header.querySelector('[data-search-field]');
+    const searchInput = header.querySelector('[data-search-input]');
+    const searchResults = header.querySelector('[data-search-results]');
+
+    let activeIndex = -1;
+    let currentResults = [];
+    let megaCloseTimer = null;
+
+    function closeMega() {
+      megaPanel?.classList.add('hidden');
+      megaTrigger?.classList.remove('site-header__nav-link--active');
+      header.classList.remove('site-header--mega-open');
+    }
+
+    function openMega() {
+      if (megaCloseTimer) {
+        clearTimeout(megaCloseTimer);
+        megaCloseTimer = null;
+      }
+      closeSearch();
+      megaPanel?.classList.remove('hidden');
+      megaTrigger?.classList.add('site-header__nav-link--active');
+      header.classList.add('site-header--mega-open');
+    }
+
+    function scheduleMegaClose() {
+      if (megaCloseTimer) clearTimeout(megaCloseTimer);
+      megaCloseTimer = setTimeout(closeMega, 120);
+    }
+
+    function closeSearch() {
+      searchRoot?.classList.remove('is-open');
+      searchToggle?.setAttribute('aria-expanded', 'false');
+      searchResults?.classList.add('hidden');
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.setAttribute('tabindex', '-1');
+      }
+      if (searchResults) searchResults.innerHTML = '';
+      activeIndex = -1;
+      currentResults = [];
+    }
+
+    function openSearch() {
+      closeMega();
+      searchRoot?.classList.add('is-open');
+      searchToggle?.setAttribute('aria-expanded', 'true');
+      searchInput?.setAttribute('tabindex', '0');
+      window.setTimeout(() => searchInput?.focus(), 180);
+    }
+
+    function renderResults(query) {
+      if (!searchResults) return;
+      const q = query.trim().toLowerCase();
+      if (!q) {
+        searchResults.innerHTML = '';
+        searchResults.classList.add('hidden');
+        currentResults = [];
+        activeIndex = -1;
+        return;
+      }
+
+      currentResults = searchIndex.filter((item) => {
+        const hay = `${item.label} ${item.meta ?? ''}`.toLowerCase();
+        return hay.includes(q);
+      }).slice(0, 8);
+
+      searchResults.classList.remove('hidden');
+
+      if (currentResults.length === 0) {
+        searchResults.innerHTML = '<p class="site-header__search-empty">No results found.</p>';
+        activeIndex = -1;
+        return;
+      }
+
+      searchResults.innerHTML = currentResults.map((item, i) => `
+        <a
+          href="${item.href}"
+          class="site-header__search-item${i === activeIndex ? ' is-active' : ''}"
+          role="option"
+          data-search-index="${i}"
+        >
+          <span class="site-header__search-item-label">${item.label}</span>
+          ${item.meta ? `<span class="site-header__search-item-meta">${item.meta}</span>` : ''}
+        </a>
+      `).join('');
+    }
+
+    megaWrap?.addEventListener('mouseenter', openMega);
+    megaWrap?.addEventListener('mouseleave', scheduleMegaClose);
+    megaPanel?.addEventListener('mouseenter', openMega);
+    megaPanel?.addEventListener('mouseleave', scheduleMegaClose);
+
+    megaTrigger?.addEventListener('click', (e) => {
+      e.preventDefault();
+    });
+
+    searchToggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (searchRoot?.classList.contains('is-open')) closeSearch();
+      else openSearch();
+    });
+
+    searchInput?.addEventListener('input', () => {
+      activeIndex = -1;
+      renderResults(searchInput.value);
+    });
+
+    searchInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeSearch();
+        return;
+      }
+      if (!currentResults.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, currentResults.length - 1);
+        renderResults(searchInput.value);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, 0);
+        renderResults(searchInput.value);
+      } else if (e.key === 'Enter' && activeIndex >= 0) {
+        e.preventDefault();
+        const target = currentResults[activeIndex];
+        if (target?.href && target.href !== '#') window.location.href = target.href;
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!searchRoot?.contains(e.target)) closeSearch();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeMega();
+        closeSearch();
+      }
+    });
   }
 
-  .site-header__link {
-    color: rgb(255 255 255 / 88%);
+  initSiteHeader();
+  document.addEventListener('astro:page-load', initSiteHeader);
+</script>
+
+<style is:global>
+  [data-theme='dark'] .site-header__logo--light {
+    display: none;
   }
 
-  .site-header__search {
-    background: rgb(255 255 255 / 8%);
-    border-color: rgb(255 255 255 / 12%);
-    color: #fff;
-  }
-
-  .site-header__search::placeholder {
-    color: rgb(255 255 255 / 45%);
+  [data-theme='dark'] .site-header__logo--dark {
+    display: block;
   }
 </style>

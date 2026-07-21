@@ -48,7 +48,11 @@
     const rect = trigger.getBoundingClientRect();
     const margin = 12;
     const gap = 8;
-    const maxWidth = panel.classList.contains('ratings-tooltip-panel--wide')
+    const maxWidth = panel.classList.contains('ratings-tooltip-panel--overall')
+      ? 420
+      : panel.classList.contains('ratings-tooltip-panel--category')
+      ? 420
+      : panel.classList.contains('ratings-tooltip-panel--wide')
       ? 380
       : panel.classList.contains('ratings-tooltip-panel--compact')
         ? panel.classList.contains('ratings-tooltip-panel--pipeline')
@@ -75,8 +79,8 @@
 
     let left = triggerCenterX - panelWidth / 2;
 
-    if (rect.left < viewportW * 0.28) {
-      left = Math.max(margin, rect.left - 4);
+    if (rect.left < viewportW * 0.35) {
+      left = Math.max(margin, rect.left);
     } else if (rect.right > viewportW * 0.72) {
       left = Math.min(rect.right - panelWidth + 4, viewportW - panelWidth - margin);
     }

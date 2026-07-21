@@ -1,8 +1,14 @@
 ---
-import type { Product } from '../../../data/products';
+import type { Product, VerdictItem } from '../../../data/products';
+import { getAuthor } from '../../../data/authors';
+import { getScoreVisual, fmtScore } from '../../../lib/scores';
+import ScoreRect from '../ScoreRect.astro';
+import InfoIcon from '../../ui/InfoIcon.astro';
+import VerifiedCheck from '../../ui/VerifiedCheck.astro';
+import OverallScoreTooltip from '../tooltips/OverallScoreTooltip.astro';
+import CategoryScoreTooltip from '../tooltips/CategoryScoreTooltip.astro';
+import VerdictCategoryIcon from '../VerdictCategoryIcon.astro';
 import CharacterStoryHighlights from '../CharacterStoryHighlights.astro';
-import ComparisonBarChart from '../ComparisonBarChart.astro';
-import SearchTrendsCard from '../SearchTrendsCard.astro';
 
 interface Props {
   product: Product;
@@ -10,68 +16,337 @@ interface Props {
 
 const { product } = Astro.props;
 const { overview } = product;
+
+function resolveScore(verdict: VerdictItem): number {
+  if (verdict.score != null) return verdict.score;
+  if (verdict.id === 'overall') return product.overallScore;
+  return product.categories.find((c) => c.key === verdict.id)?.score ?? product.overallScore;
+}
+
+const verdictEntries = product.verdicts.map((v) => ({
+  ...v,
+  score: resolveScore(v),
+}));
+
+const categoryByKey = Object.fromEntries(product.categories.map((c) => [c.key, c]));
+const defaultVerdict = verdictEntries.find((v) => v.id === 'overall') ?? verdictEntries[0];
+const herman = getAuthor('herman-carter');
 ---
 
-<section class="py-12 md:py-14 bg-white">
+<section class="bg-white py-12 md:py-14 pb-16 md:pb-20" data-verdict-overview>
   <div class="section-container px-4 md:px-8">
-    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-10 lg:gap-12">
-      <div class="space-y-8 min-w-0">
-        <div>
-          <h2 class="text-2xl md:text-3xl font-extrabold text-on-surface flex items-center gap-2.5 mb-5">
-            <img src="/brand/herman-main-icon.svg" alt="" class="w-10 h-10 md:w-11 md:h-11 shrink-0 object-contain" width="44" height="44" loading="lazy" />
-            Our Take
-          </h2>
-          <p class="text-on-surface-variant text-base md:text-lg leading-relaxed">{product.ourTake}</p>
+    <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-8 md:mb-10">Our Verdict</h2>
+
+    <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <!-- Vertical icon navigation -->
+      <nav class="verdict-icon-nav shrink-0" data-verdict-nav aria-label="Verdict categories">
+        {
+          verdictEntries.map((verdict) => {
+            const isDefault = verdict.id === defaultVerdict.id;
+            return (
+              <button
+                type="button"
+                data-verdict-nav={verdict.id}
+                aria-selected={isDefault ? 'true' : 'false'}
+                aria-label={verdict.label}
+                class:list={[
+                  'verdict-icon-nav__btn group',
+                  isDefault && 'verdict-icon-nav__btn--active',
+                ]}
+              >
+                <VerdictCategoryIcon id={verdict.id} />
+                <span class="verdict-icon-nav__tip">{verdict.label}</span>
+              </button>
+            );
+          })
+        }
+      </nav>
+
+      <!-- Main + sidebar -->
+      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-8 lg:gap-10 flex-1 min-w-0">
+        <div class="min-w-0">
+          {
+            verdictEntries.map((verdict) => {
+              const sv = getScoreVisual(verdict.score);
+              const isDefault = verdict.id === defaultVerdict.id;
+              return (
+                <div data-verdict-panel={verdict.id} class={isDefault ? '' : 'hidden'}>
+                  <div class="flex items-start gap-4 mb-4">
+                    <ScoreRect score={verdict.score} size="md" />
+                    <div class="min-w-0 pt-0.5">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <h3 class="text-xl md:text-2xl font-bold text-on-surface">{verdict.label}</h3>
+                        {
+                          verdict.id === 'overall' ? (
+                            <OverallScoreTooltip product={product}>
+                              <span class="inline-flex text-tertiary hover:text-accent shrink-0">
+                                <InfoIcon size="sm" />
+                              </span>
+                            </OverallScoreTooltip>
+                          ) : categoryByKey[verdict.id] ? (
+                            <CategoryScoreTooltip category={categoryByKey[verdict.id]}>
+                              <span class="inline-flex text-tertiary hover:text-accent shrink-0">
+                                <InfoIcon size="sm" />
+                              </span>
+                            </CategoryScoreTooltip>
+                          ) : null
+                        }
+                      </div>
+                      {verdict.tagline && (
+                        <p class="text-sm font-semibold text-tertiary mt-1">{verdict.tagline}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <p class="text-base text-on-surface-variant leading-relaxed mb-8 max-w-2xl">{verdict.summary}</p>
+
+                  <div class="grid md:grid-cols-2 gap-x-10 gap-y-6">
+                    <div>
+                      <h4 class="font-black text-lg mb-4 text-on-surface">Pros</h4>
+                      <ul class="space-y-3">
+                        {
+                          verdict.pros.map((pro) => (
+                            <li class="flex items-start gap-3">
+                              <span class={`material-symbols-outlined shrink-0 mt-0.5 ${sv.text}`} style="font-variation-settings: 'FILL' 1;">
+                                add_circle
+                              </span>
+                              <span class="text-sm font-medium text-on-surface-variant leading-snug">{pro}</span>
+                            </li>
+                          ))
+                        }
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 class="font-black text-lg mb-4 text-on-surface">Cons</h4>
+                      <ul class="space-y-3">
+                        {
+                          verdict.cons.map((con) => (
+                            <li class="flex items-start gap-3">
+                              <span class="material-symbols-outlined shrink-0 mt-0.5 text-red-600" style="font-variation-settings: 'FILL' 1;">
+                                remove_circle
+                              </span>
+                              <span class="text-sm font-medium text-on-surface-variant leading-snug">{con}</span>
+                            </li>
+                          ))
+                        }
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          }
+
+          {
+            herman && (
+              <div class="mt-10 pt-8 border-t border-surface-variant">
+                <div class="rounded-xl bg-surface-container-low border border-surface-variant p-5 md:p-6">
+                  <p class="text-[11px] font-black uppercase tracking-widest text-accent mb-4">
+                    Our Experts' Opinion
+                  </p>
+                  <div class="flex items-start gap-4">
+                    <img
+                      src={herman.avatar}
+                      alt={herman.name}
+                      class="w-12 h-12 rounded-full object-contain border-2 border-white shadow-sm shrink-0 bg-white p-0.5"
+                    />
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1 mb-2">
+                        <p class="text-sm font-bold text-on-surface">{herman.name}</p>
+                        <VerifiedCheck class="w-[18px] h-[18px]" />
+                      </div>
+                      <p class="text-sm md:text-base text-on-surface leading-relaxed">{product.expertOpinion}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }
         </div>
 
-        <SearchTrendsCard data={overview.searchTrends} />
+        <aside class="overview-sidebar-stack lg:sticky lg:top-32 space-y-6 self-start">
+          <div class="overview-sidebar-box p-5 rounded-xl border border-amber-200/80 bg-amber-50/60">
+            <h3 class="text-sm font-extrabold text-on-surface mb-3 flex items-center gap-2">
+              <span class="material-symbols-outlined text-accent text-[18px]">thumb_up</span>
+              Best for
+            </h3>
+            <ul class="space-y-2 mb-5">
+              {
+                overview.bestForList.map((item) => (
+                  <li class="flex items-start gap-2 text-sm text-on-surface-variant">
+                    <span class="material-symbols-outlined text-accent text-[16px] mt-0.5 shrink-0">check_circle</span>
+                    {item}
+                  </li>
+                ))
+              }
+            </ul>
+            <h3 class="text-sm font-extrabold text-on-surface mb-3 flex items-center gap-2">
+              <span class="material-symbols-outlined text-tertiary text-[18px]">remove_circle</span>
+              Not ideal if you
+            </h3>
+            <ul class="space-y-2">
+              {
+                overview.notIdealList.map((item) => (
+                  <li class="flex items-start gap-2 text-sm text-on-surface-variant">
+                    <span class="material-symbols-outlined text-tertiary text-[16px] mt-0.5 shrink-0">horizontal_rule</span>
+                    {item}
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
 
-        <button
-          type="button"
-          data-tab="review"
-          class="inline-flex items-center gap-1 text-sm font-bold text-accent hover:underline"
-        >
-          Read our complete verdict
-          <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-        </button>
-
-        <ComparisonBarChart productName={product.name} metrics={overview.comparisonMetrics} />
-      </div>
-
-      <div class="space-y-6">
-        <div class="overview-sidebar-box p-5 rounded-xl border border-amber-200/80 bg-amber-50/60">
-          <h3 class="text-sm font-extrabold text-on-surface mb-3 flex items-center gap-2">
-            <span class="material-symbols-outlined text-accent text-[18px]">thumb_up</span>
-            Best for
-          </h3>
-          <ul class="space-y-2 mb-5">
-            {
-              overview.bestForList.map((item) => (
-                <li class="flex items-start gap-2 text-sm text-on-surface-variant">
-                  <span class="material-symbols-outlined text-accent text-[16px] mt-0.5 shrink-0">check_circle</span>
-                  {item}
-                </li>
-              ))
-            }
-          </ul>
-          <h3 class="text-sm font-extrabold text-on-surface mb-3 flex items-center gap-2">
-            <span class="material-symbols-outlined text-tertiary text-[18px]">remove_circle</span>
-            Not ideal if you
-          </h3>
-          <ul class="space-y-2">
-            {
-              overview.notIdealList.map((item) => (
-                <li class="flex items-start gap-2 text-sm text-on-surface-variant">
-                  <span class="material-symbols-outlined text-tertiary text-[16px] mt-0.5 shrink-0">horizontal_rule</span>
-                  {item}
-                </li>
-              ))
-            }
-          </ul>
-        </div>
-
-        <CharacterStoryHighlights characters={overview.characters} productName={product.name} />
+          <CharacterStoryHighlights characters={overview.characters} productName={product.name} />
+        </aside>
       </div>
     </div>
   </div>
 </section>
+
+<style is:global>
+  .verdict-icon-nav {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .verdict-icon-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    .verdict-icon-nav {
+      flex-direction: column;
+      flex-wrap: nowrap;
+      overflow-x: visible;
+      width: 44px;
+      gap: 4px;
+      padding-bottom: 0;
+    }
+  }
+
+  .verdict-icon-nav__btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--color-on-surface);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .verdict-icon-nav__btn:hover,
+  .verdict-icon-nav__btn--active {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background: rgb(219 39 119 / 6%);
+    box-shadow: 0 2px 8px rgb(219 39 119 / 10%);
+  }
+
+  .verdict-icon-nav__tip {
+    position: absolute;
+    right: calc(100% + 8px);
+    left: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: #fff;
+    color: var(--color-on-surface);
+    border: 1px solid var(--color-surface-variant);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 8%);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
+    z-index: 20;
+  }
+
+  .verdict-icon-nav__btn:hover .verdict-icon-nav__tip,
+  .verdict-icon-nav__btn:focus-visible .verdict-icon-nav__tip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(-2px);
+  }
+
+  @media (max-width: 1023px) {
+    .verdict-icon-nav__tip {
+      right: auto;
+      left: 50%;
+      top: calc(100% + 6px);
+      transform: translateX(-50%);
+    }
+
+    .verdict-icon-nav__btn:hover .verdict-icon-nav__tip,
+    .verdict-icon-nav__btn:focus-visible .verdict-icon-nav__tip {
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  [data-theme='dark'] .verdict-icon-nav__btn {
+    background: #1a1f18;
+    border-color: #2a3328;
+    color: #ececec;
+  }
+
+  [data-theme='dark'] .verdict-icon-nav__tip {
+    background: #1a1f18;
+    border-color: #2a3328;
+    color: #ececec;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 35%);
+  }
+
+  [data-theme='dark'] .verdict-icon-nav__btn:hover,
+  [data-theme='dark'] .verdict-icon-nav__btn--active {
+    background: rgb(219 39 119 / 12%);
+  }
+</style>
+
+<script define:vars={{ verdictMeta: verdictEntries.map((v) => ({ id: v.id, label: v.label })) }}>
+  function initVerdictOverview() {
+    const root = document.querySelector('[data-verdict-overview]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const navBtns = Array.from(root.querySelectorAll('[data-verdict-nav]'));
+    const panels = Array.from(root.querySelectorAll('[data-verdict-panel]'));
+
+    function show(id) {
+      panels.forEach((panel) => {
+        panel.classList.toggle('hidden', panel.dataset.verdictPanel !== id);
+      });
+      navBtns.forEach((btn) => {
+        const active = btn.dataset.verdictNav === id;
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        btn.classList.toggle('verdict-icon-nav__btn--active', active);
+      });
+    }
+
+    navBtns.forEach((btn) => {
+      const id = btn.dataset.verdictNav;
+      if (!id) return;
+      btn.addEventListener('mouseenter', () => show(id));
+      btn.addEventListener('focus', () => show(id));
+      btn.addEventListener('click', () => show(id));
+    });
+
+    show('overall');
+  }
+
+  initVerdictOverview();
+  document.addEventListener('astro:page-load', initVerdictOverview);
+</script>

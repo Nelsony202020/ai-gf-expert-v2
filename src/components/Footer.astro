@@ -23,6 +23,7 @@ const columns = [
       { label: 'Buying Guides', href: '#' },
       { label: 'Our Methodology', href: '#' },
       { label: 'FAQ', href: '/faq' },
+      { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure' },
     ],
   },
   {
@@ -42,11 +43,19 @@ const columns = [
   <div class="section-container px-4 md:px-8 relative z-[1]">
     <div class="site-footer__main">
       <div class="site-footer__brand">
-        <a href="/" class="inline-block mb-5">
+        <a href="/" class="site-logo-link inline-block mb-5">
           <img
-            src="/brand/ai-gf-logo-white.svg"
+            src="/brand/ai-gf-logo-light.png"
             alt="AI Girlfriend Expert"
-            class="h-16 md:h-[4.75rem] w-auto object-contain"
+            class="site-footer__logo site-footer__logo--light h-14 md:h-16 w-auto object-contain"
+            width="256"
+            height="256"
+            loading="lazy"
+          />
+          <img
+            src="/brand/ai-gf-logo-white.png"
+            alt="AI Girlfriend Expert"
+            class="site-footer__logo site-footer__logo--dark h-14 md:h-16 w-auto object-contain hidden"
             width="240"
             height="76"
             loading="lazy"
@@ -59,7 +68,7 @@ const columns = [
           herman && (
             <div class="mt-6">
               <p class="site-footer__label">Follow us</p>
-              <SocialTooltip items={herman.socials} variant="dark" />
+              <SocialTooltip items={herman.socials} variant="light" class="site-footer__socials" />
             </div>
           )
         }
@@ -103,10 +112,15 @@ const columns = [
 <style>
   .site-footer {
     position: relative;
-    background: #1a2418;
-    color: #ececec;
+    background: #f4f7ef;
+    color: #1a2418;
     padding: 3.5rem 0 2rem;
     overflow: hidden;
+    border-top: 1px solid #e2e9dc;
+  }
+
+  .site-footer__logo--dark {
+    display: none;
   }
 
   .site-footer__accent {
@@ -116,17 +130,6 @@ const columns = [
     right: 0;
     height: 3px;
     background: linear-gradient(90deg, #daf66c, #db2777, #daf66c);
-  }
-
-  [data-theme='dark'] .site-footer__accent {
-    background: linear-gradient(90deg, #daf66c, #db2777, #daf66c, #daf66c);
-    background-size: 200% 100%;
-    animation: footer-accent-slide 10s linear infinite;
-  }
-
-  @keyframes footer-accent-slide {
-    0% { background-position: 0% 0; }
-    100% { background-position: 200% 0; }
   }
 
   .site-footer__main {
@@ -156,7 +159,7 @@ const columns = [
     max-width: 280px;
     font-size: 0.8125rem;
     line-height: 1.55;
-    color: #9cab96;
+    color: #5a6b52;
   }
 
   .site-footer__label {
@@ -165,7 +168,7 @@ const columns = [
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #daf66c;
+    color: #3d5235;
   }
 
   .site-footer__links {
@@ -180,26 +183,26 @@ const columns = [
   .site-footer__links a {
     font-size: 0.8125rem;
     font-weight: 500;
-    color: #9cab96;
+    color: #5a6b52;
     text-decoration: none;
     transition: color 0.15s ease;
   }
 
   .site-footer__links a:hover {
-    color: #fff;
+    color: #db2777;
   }
 
   .site-footer__bottom {
     margin-top: 2.5rem;
     padding-top: 1.25rem;
-    border-top: 1px solid rgb(255 255 255 / 10%);
+    border-top: 1px solid #dde5d3;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
     font-size: 0.6875rem;
-    color: #9cab96;
+    color: #5a6b52;
   }
 
   .site-footer__legal {
@@ -211,7 +214,7 @@ const columns = [
 
   .site-footer__legal a,
   .site-footer__theme {
-    color: #9cab96;
+    color: #5a6b52;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.15s ease;
@@ -219,7 +222,70 @@ const columns = [
 
   .site-footer__legal a:hover,
   .site-footer__theme:hover {
+    color: #db2777;
+  }
+</style>
+
+<style is:global>
+  [data-theme='dark'] .site-footer__accent {
+    background: linear-gradient(90deg, #daf66c, #db2777, #daf66c, #daf66c);
+    background-size: 200% 100%;
+    animation: footer-accent-slide 10s linear infinite;
+  }
+
+  @keyframes footer-accent-slide {
+    0% { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  [data-theme='dark'] .site-footer {
+    background: #1a2418;
+    color: #ececec;
+    border-top-color: transparent;
+  }
+
+  [data-theme='dark'] .site-footer__logo--light {
+    display: none;
+  }
+
+  [data-theme='dark'] .site-footer__logo--dark {
+    display: block;
+  }
+
+  [data-theme='dark'] .site-footer__tagline {
+    color: #9cab96;
+  }
+
+  [data-theme='dark'] .site-footer__label {
+    color: #daf66c;
+  }
+
+  [data-theme='dark'] .site-footer__links a {
+    color: #9cab96;
+  }
+
+  [data-theme='dark'] .site-footer__links a:hover {
     color: #fff;
+  }
+
+  [data-theme='dark'] .site-footer__bottom {
+    border-top-color: rgb(255 255 255 / 10%);
+    color: #9cab96;
+  }
+
+  [data-theme='dark'] .site-footer__legal a,
+  [data-theme='dark'] .site-footer__theme {
+    color: #9cab96;
+  }
+
+  [data-theme='dark'] .site-footer__legal a:hover,
+  [data-theme='dark'] .site-footer__theme:hover {
+    color: #fff;
+  }
+
+  [data-theme='dark'] .site-footer__socials.social-tooltip--light .social-tooltip__link {
+    background: rgb(255 255 255 / 8%);
+    border-color: rgb(255 255 255 / 12%);
   }
 
   .site-footer__theme {

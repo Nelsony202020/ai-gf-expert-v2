@@ -2,9 +2,8 @@
 import type { Product } from '../../../data/products';
 import { products } from '../../../data/products';
 import { getScoreChipClass, fmtScore } from '../../../lib/scores';
-import { buildAllScoreBins } from '../../../lib/score-distribution';
 import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
-import ScoreDistributionChart from './ScoreDistributionChart.astro';
+import TooltipActionLinks from './TooltipActionLinks.astro';
 import InfoIcon from '../../ui/InfoIcon.astro';
 
 interface Props {
@@ -24,8 +23,6 @@ const scorePoints = products
 const avgScore = scorePoints.length
   ? scorePoints.reduce((s, x) => s + x.score, 0) / scorePoints.length
   : currentScore;
-
-const bins = buildAllScoreBins(scorePoints);
 ---
 
 <span
@@ -36,13 +33,13 @@ const bins = buildAllScoreBins(scorePoints);
   aria-label="About overall performance score"
 >
   <slot>
-    <InfoIcon size="xs" />
+    <InfoIcon size="xs" class="text-tertiary/45 hover:text-tertiary/70" />
   </slot>
 </span>
 
 <template id={`tooltip-${tooltipId}`}>
-  <div class="ratings-tooltip-panel">
-    <div class="ratings-tooltip-panel__header">
+  <div class="ratings-tooltip-panel ratings-tooltip-panel--overall ratings-tooltip-panel--compact">
+    <div class="ratings-tooltip-panel__header ratings-tooltip-panel__header--compact">
       <div class="ratings-tooltip-panel__header-grid">
         <div class="min-w-0">
           <p class="ratings-tooltip-panel__section-title">What it is</p>
@@ -51,7 +48,7 @@ const bins = buildAllScoreBins(scorePoints);
         <div class="ratings-tooltip-panel__score-block">
           <div class="ratings-tooltip-panel__score-row">
             <span class={`rt-score-chip ${currentChip}`}>{fmtScore(currentScore)}</span>
-            <span class="ratings-tooltip-panel__score-label">{product.name} score</span>
+            <span class="ratings-tooltip-panel__score-label">{product.name}</span>
           </div>
           <p class="ratings-tooltip-panel__avg">
             Avg: <span class="tabular-nums">{fmtScore(avgScore)}</span>
@@ -60,39 +57,31 @@ const bins = buildAllScoreBins(scorePoints);
       </div>
     </div>
 
-    <div class="ratings-tooltip-panel__body">
-      <div>
-        <p class="ratings-tooltip-panel__section-title">Where this sits</p>
-        <RatingHierarchyPipeline highlight="overall" brandName={product.name} showTitle={false} />
-      </div>
-
-      <div>
-        <p class="ratings-tooltip-panel__section-title">Category scores</p>
-        <div class="rt-comp-list">
-          {
-            product.categories.map((category) => {
-              const chip = getScoreChipClass(category.score);
-              return (
-                <a
-                  href={`/reviews/${product.slug}#ratings`}
-                  class="rt-comp-row rt-comp-row--link"
-                  data-goto-category={category.key}
-                >
-                  <span class="rt-comp-pct">{category.weight}%</span>
-                  <div class="rt-comp-name">
-                    <span class={`rt-score-chip rt-score-chip--outline ${chip}`}>{fmtScore(category.score)}</span>
-                    <span>{category.name}</span>
-                  </div>
-                </a>
-              );
-            })
-          }
+    <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
+      <div class="ratings-tooltip-panel__split">
+        <div class="ratings-tooltip-panel__split-col">
+          <p class="ratings-tooltip-panel__section-title">Where this sits</p>
+          <RatingHierarchyPipeline highlight="overall" brandName={product.name} showTitle={false} />
         </div>
-      </div>
-
-      <div>
-        <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-        <ScoreDistributionChart bins={bins} />
+        <div class="ratings-tooltip-panel__split-col">
+          <p class="ratings-tooltip-panel__section-title">Category scores</p>
+          <div class="rt-comp-list rt-comp-list--dense">
+            {
+              product.categories.map((category) => {
+                const chip = getScoreChipClass(category.score);
+                return (
+                  <div class="rt-comp-row rt-comp-row--inline">
+                    <div class="rt-comp-row__main">
+                      <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(category.score)}</span>
+                      <span class="rt-comp-name rt-comp-name--truncate">{category.name}</span>
+                    </div>
+                    <TooltipActionLinks categoryKey={category.key} compact />
+                  </div>
+                );
+              })
+            }
+          </div>
+        </div>
       </div>
     </div>
   </div>

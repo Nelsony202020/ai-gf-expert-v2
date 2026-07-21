@@ -1,4 +1,4 @@
-export type MediaFilter = 'all' | 'proof' | 'characters' | 'image-generator' | 'gallery';
+export type MediaFilter = 'all' | 'proof' | 'videos' | 'characters' | 'chat' | 'image-generator' | 'gallery';
 
 export interface MediaItem {
   id: string;
@@ -22,7 +22,8 @@ const img = (seed: string, w: number, h: number) => `https://picsum.photos/seed/
 export const auraAiFeaturedVideo: FeaturedReviewVideo = {
   youtubeId: 'dQw4w9WgXcQ',
   title: 'Aura AI — Full Video Review',
-  description: 'Watch our hands-on walkthrough of chat, characters, image generation, and privacy.',
+  description:
+    'My complete hands-on review of Aura AI — chat, characters, images, video, and more. Watch the full walkthrough on our YouTube channel.',
 };
 
 export const auraAiMediaGallery: MediaItem[] = [
@@ -41,7 +42,7 @@ export const auraAiMediaGallery: MediaItem[] = [
     src: img('aura-char-ui', 1280, 720),
     thumb: img('aura-char-ui', 400, 300),
     alt: 'Character library',
-    caption: 'Character library browse',
+    caption: 'Character library',
     filter: 'characters',
   },
   {
@@ -51,7 +52,7 @@ export const auraAiMediaGallery: MediaItem[] = [
     thumb: img('aura-chat-ui', 400, 300),
     alt: 'Chat interface',
     caption: 'Chat interface',
-    filter: 'gallery',
+    filter: 'chat',
   },
   {
     id: 'proof-char-lib',
@@ -79,6 +80,15 @@ export const auraAiMediaGallery: MediaItem[] = [
     alt: 'Browsing test recording',
     caption: 'Browsing test (video)',
     filter: 'proof',
+  },
+  {
+    id: 'video-review-clip',
+    type: 'video',
+    src: img('aura-review-clip', 1280, 720),
+    thumb: img('aura-review-clip', 400, 300),
+    alt: 'Review clip',
+    caption: 'Review clip excerpt',
+    filter: 'videos',
   },
   {
     id: 'img-gen-1',
@@ -117,5 +127,14 @@ export const auraAiMediaGallery: MediaItem[] = [
     caption: 'Character preview — 18+',
     filter: 'characters',
     nsfw: true,
+  },
+  {
+    id: 'chat-screenshot',
+    type: 'image',
+    src: img('aura-chat-2', 900, 1200),
+    thumb: img('aura-chat-2', 400, 300),
+    alt: 'Extended chat session',
+    caption: 'Long-form chat session',
+    filter: 'chat',
   },
 ];

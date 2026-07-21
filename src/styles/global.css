@@ -1,5 +1,8 @@
 @import 'tailwindcss';
+@import './header.css';
 @import './ratings-tooltips.css';
+@import './market-data.css';
+@import './video-review-modal.css';
 
 /* ===========================================================================
    Design tokens ported from the mockups' DESIGN.md ("Vibrant Editorial")
@@ -196,9 +199,25 @@
   background-color: #1a1f18 !important;
 }
 
-/* Footer always stays brand dark */
-.site-footer {
-  background: #1a2418 !important;
+[data-theme='dark'] .dark-section {
+  background-color: #121612 !important;
+}
+
+[data-theme='dark'] .review-toc__toggle,
+[data-theme='dark'] .review-toc__panel {
+  background: #1a1f18;
+  border-color: #2a3328;
+  color: #ececec;
+}
+
+[data-theme='dark'] .review-toc__link {
+  color: #b8c4b2;
+}
+
+[data-theme='dark'] .review-toc__link:hover,
+[data-theme='dark'] .review-toc__link.is-active {
+  background: rgb(219 39 119 / 12%);
+  color: #f472b6;
 }
 
 /* ---- Dark mode component overrides ---- */
@@ -312,4 +331,95 @@
     'opsz' 24;
   vertical-align: middle;
   user-select: none;
+}
+
+/* Links/buttons with icons: underline .link-text only on hover (not every inner span) */
+:is(a, button):has(.material-symbols-outlined, svg, img[data-link-icon]) {
+  text-decoration: none;
+}
+
+:is(a, button):has(.material-symbols-outlined, svg, img[data-link-icon]):hover {
+  text-decoration: none !important;
+}
+
+:is(a, button):has(.material-symbols-outlined, svg, img[data-link-icon]) .link-text {
+  text-decoration: none;
+}
+
+:is(a, button):has(.material-symbols-outlined, svg, img[data-link-icon]):hover .link-text {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+:is(a, button) .material-symbols-outlined,
+:is(a, button) svg {
+  text-decoration: none !important;
+}
+
+/* Branded Herman PNG stickers */
+.brand-icon {
+  object-fit: contain;
+}
+
+/* Light mode — icons ship with their own circle artwork; no extra ring */
+.brand-icon--light {
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-theme='dark'] .brand-icon--light {
+  display: none !important;
+}
+
+.brand-icon--dark {
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 32%);
+}
+
+[data-theme='dark'] .brand-icon--dark {
+  display: block !important;
+}
+
+/* Legacy single-image usage (dark assets only) */
+.brand-icon:not(.brand-icon--light):not(.brand-icon--dark) {
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 50% 42%,
+    rgb(218 246 108 / 42%) 0%,
+    rgb(218 246 108 / 16%) 50%,
+    rgb(26 36 24 / 6%) 100%
+  );
+  box-shadow:
+    0 2px 10px rgb(26 36 24 / 12%),
+    0 0 0 1px rgb(26 36 24 / 8%);
+}
+
+[data-theme='dark'] .brand-icon:not(.brand-icon--light):not(.brand-icon--dark) {
+  background: transparent;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 32%);
+}
+
+/* Always show dark-circle branded assets (chat, customization tooltips) */
+.brand-icon--always {
+  display: block !important;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
+}
+
+/* Header / footer logo — subtle hover affordance */
+.site-logo-link {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.site-logo-link:hover {
+  transform: scale(1.04);
+}
+
+.site-logo-link:active {
+  transform: scale(1.02);
 }

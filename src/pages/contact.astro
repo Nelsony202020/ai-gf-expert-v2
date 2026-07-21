@@ -1,8 +1,581 @@
 ---
-import LegalPage from '../layouts/LegalPage.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import BrandIcon from '../components/ui/BrandIcon.astro';
+import { brandIcons } from '../lib/brand-icons';
+
+const supportCards = [
+  {
+    icon: 'edit_note',
+    title: 'Corrections',
+    description: 'Spotted an error in a review or score? Select "Report a correction" in the form above.',
+  },
+  {
+    icon: 'handshake',
+    title: 'Partnerships',
+    description: 'Collaborations, affiliate programs, and brand partnerships — choose Partnership inquiry.',
+  },
+  {
+    icon: 'newspaper',
+    title: 'Press & Media',
+    description: 'Interview requests, media inquiries, and press kit requests welcome.',
+  },
+  {
+    icon: 'help',
+    title: 'General Questions',
+    description: 'Anything about our reviews, methodology, or how we score apps.',
+  },
+];
+
+const faqs = [
+  {
+    q: 'How quickly do you respond to messages?',
+    a: 'We aim to reply within 1–2 business days. Urgent correction requests are prioritized.',
+  },
+  {
+    q: 'Can I request a review of a specific app?',
+    a: 'Yes — we track reader requests and factor them into our review queue. Send us the app name and why you want it covered.',
+  },
+  {
+    q: 'Do you accept sponsored reviews?',
+    a: 'No. All reviews are independent. We may use affiliate links, but scores and conclusions are never paid for.',
+  },
+  {
+    q: 'How do I report outdated pricing or features?',
+    a: 'Use the correction form or email us with the product name, what changed, and a link if possible.',
+  },
+  {
+    q: 'Can brands submit products for review?',
+    a: 'We welcome submissions, but acceptance does not guarantee a positive score. Our methodology applies equally to all products.',
+  },
+];
 ---
 
-<LegalPage title="Contact" description="Contact Lovelace Reviews.">
-  <p>For editorial inquiries, corrections, or partnership questions, reach us at:</p>
-  <p><a href="mailto:hello@lovelacereviews.com" class="text-accent font-semibold hover:underline">hello@lovelacereviews.com</a></p>
-</LegalPage>
+<BaseLayout title="Contact Us — AI Girlfriend Expert" description="Get in touch with the AI Girlfriend Expert team for corrections, partnerships, press, or general questions.">
+  <Header />
+  <main class="contact-page">
+    <div class="section-container px-4 md:px-8 py-10 md:py-14">
+      <nav class="text-sm text-tertiary mb-8 flex items-center gap-1.5" aria-label="Breadcrumb">
+        <a href="/" class="hover:text-accent transition-colors">Home</a>
+        <span aria-hidden="true">›</span>
+        <span class="text-on-surface-variant font-semibold">Contact</span>
+      </nav>
+
+      <section class="contact-hero grid lg:grid-cols-2 gap-10 lg:gap-14 items-start mb-16">
+        <div>
+          <p class="contact-kicker">Contact us</p>
+          <h1 class="contact-hero__title">
+            We'd love to <em>hear</em> from you
+          </h1>
+          <p class="text-base text-on-surface-variant leading-relaxed mb-8 max-w-lg">
+            Questions about a review, spotted an error, or want to work together? Send us a message — real people read every note.
+          </p>
+
+          <ul class="contact-values">
+            <li>
+              <span class="contact-values__icon"><span class="material-symbols-outlined">verified_user</span></span>
+              <div>
+                <p class="font-bold text-on-surface text-sm">Independent &amp; transparent</p>
+                <p class="text-xs text-on-surface-variant mt-0.5">Scores are never sold. We disclose affiliate relationships clearly.</p>
+              </div>
+            </li>
+            <li>
+              <span class="contact-values__icon"><span class="material-symbols-outlined">groups</span></span>
+              <div>
+                <p class="font-bold text-on-surface text-sm">Real people, real support</p>
+                <p class="text-xs text-on-surface-variant mt-0.5">No bots — our editorial team handles corrections and inquiries.</p>
+              </div>
+            </li>
+            <li>
+              <span class="contact-values__icon"><span class="material-symbols-outlined">schedule</span></span>
+              <div>
+                <p class="font-bold text-on-surface text-sm">Fast responses</p>
+                <p class="text-xs text-on-surface-variant mt-0.5">Most messages get a reply within 1–2 business days.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="contact-form-card">
+          <h2 class="text-lg font-black text-on-surface mb-5">Send us a message</h2>
+          <form class="contact-form" action="mailto:hello@lovelacereviews.com" method="post" enctype="text/plain">
+            <div class="contact-form__row">
+              <label class="contact-form__field">
+                <span>Name</span>
+                <input type="text" name="name" required placeholder="Your name" autocomplete="name" />
+              </label>
+              <label class="contact-form__field">
+                <span>Email</span>
+                <input type="email" name="email" required placeholder="you@example.com" autocomplete="email" />
+              </label>
+            </div>
+            <label class="contact-form__field">
+              <span>Subject</span>
+              <select name="subject" required>
+                <option value="">Choose a topic</option>
+                <option value="Correction">Report a correction</option>
+                <option value="Partnership">Partnership inquiry</option>
+                <option value="Press">Press &amp; media</option>
+                <option value="General">General question</option>
+              </select>
+            </label>
+            <label class="contact-form__field">
+              <span>Message</span>
+              <textarea name="message" rows="5" required placeholder="Tell us what's on your mind…"></textarea>
+            </label>
+            <button type="submit" class="contact-form__submit">
+              Send message
+              <span class="material-symbols-outlined text-[18px]">send</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section class="contact-topics mb-16">
+        <div class="mb-8">
+          <p class="contact-kicker">Topics we handle</p>
+          <h2 class="text-xl md:text-2xl font-black text-on-surface">What can we help with?</h2>
+          <p class="text-sm text-on-surface-variant mt-2 max-w-2xl">
+            Pick the matching subject in the form above — no need to email separately.
+          </p>
+        </div>
+        <div class="contact-topics__grid">
+          {
+            supportCards.map((card) => (
+              <article class="contact-support-card">
+                <span class="contact-support-card__icon">
+                  <span class="material-symbols-outlined">{card.icon}</span>
+                </span>
+                <h3 class="contact-support-card__title">{card.title}</h3>
+                <p class="contact-support-card__desc">{card.description}</p>
+              </article>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="contact-faq mb-16">
+        <div class="text-center mb-8">
+          <p class="contact-kicker">FAQ</p>
+          <h2 class="text-2xl md:text-3xl font-black text-on-surface">Frequently Asked Questions</h2>
+        </div>
+        <div class="contact-faq__list max-w-3xl mx-auto" data-contact-faq>
+          {
+            faqs.map((item, i) => (
+              <details class="contact-faq__item" open={i === 0}>
+                <summary class="contact-faq__question">
+                  {item.q}
+                  <span class="material-symbols-outlined contact-faq__chevron">add</span>
+                </summary>
+                <div class="contact-faq__answer">
+                  <p>{item.a}</p>
+                </div>
+              </details>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="contact-banner">
+        <BrandIcon
+          src={brandIcons.calling.dark}
+          srcLight={brandIcons.calling.light}
+          width={80}
+          height={80}
+          class="contact-banner__icon shrink-0"
+        />
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-on-surface text-base md:text-lg">Thanks for helping us keep AI reviews honest</p>
+          <p class="text-sm text-on-surface-variant mt-1">Your feedback shapes how we test, score, and update every review.</p>
+        </div>
+        <a href="#" class="contact-banner__cta">
+          <span class="link-text">Read our editorial guidelines</span>
+          <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+        </a>
+      </section>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>
+
+<style>
+  .contact-page {
+    background: var(--color-background);
+    min-height: 60vh;
+  }
+
+  .contact-kicker {
+    margin: 0 0 10px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .contact-hero__title {
+    margin: 0 0 16px;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--color-on-surface);
+  }
+
+  .contact-hero__title em {
+    font-style: normal;
+    color: var(--color-accent);
+  }
+
+  .contact-values {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .contact-values li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .contact-values__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: rgb(218 246 108 / 35%);
+    color: #4d7c0f;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .contact-values__icon .material-symbols-outlined {
+    font-size: 18px;
+  }
+
+  .contact-form-card {
+    background: #fff;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 24px rgb(0 0 0 / 6%);
+  }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .contact-form__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  @media (max-width: 520px) {
+    .contact-form__row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .contact-form__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .contact-form__field span {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-on-surface-variant);
+  }
+
+  .contact-form__field input,
+  .contact-form__field select,
+  .contact-form__field textarea {
+    width: 100%;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--color-on-surface);
+    background: var(--color-background);
+    transition: border-color 0.15s ease;
+  }
+
+  .contact-form__field input:focus,
+  .contact-form__field select:focus,
+  .contact-form__field textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+
+  .contact-form__field textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  .contact-form__submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 4px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 999px;
+    background: var(--color-brand-lime);
+    color: var(--color-on-brand-lime);
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+
+  .contact-form__submit:hover {
+    background: var(--color-brand-lime-dark);
+  }
+
+  .contact-form__submit:active {
+    transform: scale(0.99);
+  }
+
+  .contact-topics__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  @media (min-width: 1024px) {
+    .contact-topics__grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 520px) {
+    .contact-topics__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .contact-support-card {
+    background: #fff;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 16px;
+    padding: 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 100%;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 4%);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .contact-support-card:hover {
+    border-color: rgb(218 246 108 / 55%);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 6%);
+  }
+
+  .contact-support-card__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: rgb(218 246 108 / 35%);
+    color: #4d7c0f;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .contact-support-card__icon .material-symbols-outlined {
+    font-size: 20px;
+  }
+
+  .contact-support-card__title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--color-on-surface);
+    line-height: 1.3;
+  }
+
+  .contact-support-card__desc {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--color-on-surface-variant);
+  }
+
+  .contact-faq__item {
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 12px;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .contact-faq__item + .contact-faq__item {
+    margin-top: 8px;
+  }
+
+  .contact-faq__question {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-on-surface);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .contact-faq__question::-webkit-details-marker {
+    display: none;
+  }
+
+  .contact-faq__chevron {
+    font-size: 20px;
+    color: var(--color-tertiary);
+    transition: transform 0.2s ease;
+  }
+
+  .contact-faq__item[open] .contact-faq__chevron {
+    transform: rotate(45deg);
+  }
+
+  .contact-faq__answer {
+    padding: 0 18px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-on-surface-variant);
+  }
+
+  .contact-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 20px;
+    padding: 20px 22px;
+    border-radius: 16px;
+    background: rgb(218 246 108 / 28%);
+    border: 1px solid rgb(218 246 108 / 45%);
+  }
+
+  .contact-banner__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1.5px solid #1a2418;
+    background: rgb(255 255 255 / 55%);
+    font-size: 12px;
+    font-weight: 800;
+    color: #1a2418;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .contact-banner__cta:hover {
+    background: #1a2418;
+    border-color: #1a2418;
+    color: #daf66c;
+  }
+
+  .contact-banner__cta:hover .link-text {
+    text-decoration: none;
+  }
+
+  .contact-banner__cta .material-symbols-outlined {
+    font-size: 16px;
+  }
+</style>
+
+<style is:global>
+  [data-theme='dark'] .contact-form-card,
+  [data-theme='dark'] .contact-faq__item {
+    background: #1a1f18;
+    border-color: #2a3328;
+  }
+
+  [data-theme='dark'] .contact-form__field input,
+  [data-theme='dark'] .contact-form__field select,
+  [data-theme='dark'] .contact-form__field textarea {
+    background: #121612;
+    border-color: #2a3328;
+    color: #ececec;
+  }
+
+  [data-theme='dark'] .contact-values__icon {
+    background: rgb(218 246 108 / 16%);
+    color: #daf66c;
+  }
+
+  [data-theme='dark'] .contact-support-card {
+    background: #1a1f18;
+    border-color: #2a3328;
+    box-shadow: none;
+  }
+
+  [data-theme='dark'] .contact-support-card:hover {
+    border-color: rgb(218 246 108 / 30%);
+    box-shadow: 0 4px 20px rgb(0 0 0 / 25%);
+  }
+
+  [data-theme='dark'] .contact-support-card__icon {
+    background: rgb(218 246 108 / 16%);
+    color: #daf66c;
+  }
+
+  [data-theme='dark'] .contact-banner {
+    background: rgb(218 246 108 / 10%);
+    border-color: rgb(218 246 108 / 22%);
+  }
+
+  [data-theme='dark'] .contact-banner__cta {
+    border-color: #daf66c;
+    background: transparent;
+    color: #daf66c;
+  }
+
+  [data-theme='dark'] .contact-banner__cta:hover {
+    background: #daf66c;
+    border-color: #daf66c;
+    color: #1a2418;
+  }
+
+  [data-theme='dark'] .contact-banner__cta:hover .link-text {
+    text-decoration: none;
+  }
+</style>
+
+<script>
+  function initContactFaq() {
+    const root = document.querySelector('[data-contact-faq]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    root.querySelectorAll('.contact-faq__item').forEach((item) => {
+      item.addEventListener('toggle', () => {
+        if (!item.open) return;
+        root.querySelectorAll('.contact-faq__item').forEach((other) => {
+          if (other !== item) other.open = false;
+        });
+      });
+    });
+  }
+
+  initContactFaq();
+  document.addEventListener('astro:page-load', initContactFaq);
+</script>

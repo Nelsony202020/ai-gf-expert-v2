@@ -100,6 +100,12 @@ function segmentPath(index: number, total: number, radius = 46): string {
       <div class="char-stories__bottom-fade" aria-hidden="true" />
       <button type="button" class="char-stories__tap char-stories__tap--prev" data-story-prev aria-label="Previous" />
       <button type="button" class="char-stories__tap char-stories__tap--next" data-story-next aria-label="Next" />
+      <button type="button" class="char-stories__nav-arrow char-stories__nav-arrow--prev" data-story-nav-prev aria-label="Previous slide">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <button type="button" class="char-stories__nav-arrow char-stories__nav-arrow--next" data-story-nav-next aria-label="Next slide">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
       <div class="char-stories__footer">
         <input
           type="text"
@@ -154,6 +160,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
     let timer = null;
     let didDrag = false;
 
+    const STORY_DURATION = 5200;
     const AUTO_SPEED = 0.05;
     const FRICTION = 0.982;
     const MIN_VELOCITY = 0.04;
@@ -310,7 +317,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
 
         setTimeout(() => {
           modal.classList.remove('is-char-entering');
-          timer = setTimeout(advanceSlide, 4500);
+          startSlideTimer();
         }, 320);
       }, 260);
     }
@@ -326,6 +333,26 @@ function segmentPath(index: number, total: number, radius = 46): string {
       showSlide();
     }
 
+    function updateNavArrows() {
+      const prevArrow = root.querySelector('[data-story-nav-prev]');
+      if (prevArrow) prevArrow.classList.toggle('is-visible', slideIndex > 0);
+    }
+
+    function startSlideTimer() {
+      clearTimer();
+      if (progress) {
+        progress.querySelectorAll('.char-stories__bar').forEach((bar, i) => {
+          bar.classList.remove('is-active', 'is-done');
+          if (i < slideIndex) bar.classList.add('is-done');
+          else if (i === slideIndex) {
+            bar.classList.add('is-active');
+            void bar.offsetWidth;
+          }
+        });
+      }
+      timer = setTimeout(advanceSlide, STORY_DURATION);
+    }
+
     function showSlide() {
       const char = characters[charIndex];
       if (!char?.storySlides?.length) return;
@@ -335,8 +362,20 @@ function segmentPath(index: number, total: number, radius = 46): string {
       slideEl.src = char.storySlides[slideIndex];
       updateHeader(char);
       renderBars(char.storySlides.length, slideIndex);
-      clearTimer();
-      timer = setTimeout(advanceSlide, 4500);
+      updateNavArrows();
+      startSlideTimer();
+    }
+
+    function mountViewerToBody() {
+      if (viewer.parentElement === document.body) return;
+      viewer.dataset.charStoriesPlaceholder = 'true';
+      document.body.appendChild(viewer);
+    }
+
+    function restoreViewer() {
+      if (viewer.parentElement !== document.body || !root) return;
+      root.appendChild(viewer);
+      delete viewer.dataset.charStoriesPlaceholder;
     }
 
     function openViewer(i) {
@@ -344,6 +383,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
       charIndex = i; slideIndex = 0; paused = true;
       if (likeBtn) likeBtn.classList.remove('is-liked');
       if (chatInput) chatInput.value = '';
+      mountViewerToBody();
       viewer.classList.remove('hidden');
       viewer.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
@@ -355,6 +395,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
       viewer.classList.add('hidden');
       viewer.setAttribute('aria-hidden', 'true');
       document.body.style.overflow = '';
+      restoreViewer();
       paused = false;
     }
 
@@ -370,6 +411,15 @@ function segmentPath(index: number, total: number, radius = 46): string {
       e.stopPropagation();
       slideIndex--;
       showSlide();
+    });
+    root.querySelector('[data-story-nav-prev]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      slideIndex--;
+      showSlide();
+    });
+    root.querySelector('[data-story-nav-next]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      advanceSlide();
     });
 
     likeBtn?.addEventListener('click', (e) => {
@@ -440,7 +490,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
   }
   .char-stories__verified { width: 10px; height: 10px; flex-shrink: 0; }
-  .char-stories__viewer { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .char-stories__viewer { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 16px; }
   .char-stories__viewer.hidden { display: none; }
   .char-stories__backdrop { position: absolute; inset: 0; background: rgb(0 0 0 / 72%); }
   .char-stories__modal { position: relative; width: min(380px,100%); aspect-ratio: 9/16; max-height: 88vh; border-radius: 16px; overflow: hidden; background: #111; z-index: 1; }
@@ -457,7 +507,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
   .char-stories__progress { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; gap: 4px; z-index: 4; }
   .char-stories__bar { flex: 1; height: 3px; border-radius: 999px; background: rgb(255 255 255 / 35%); }
   .char-stories__bar.is-done { background: #fff; }
-  .char-stories__bar.is-active { background: rgb(255 255 255 / 50%); animation: barFill 4.5s linear forwards; }
+  .char-stories__bar.is-active { background: rgb(255 255 255 / 50%); animation: barFill 5.2s linear forwards; }
   @keyframes barFill { from { box-shadow: inset 0 0 0 0 #fff; } to { box-shadow: inset 100px 0 0 0 #fff; } }
   .char-stories__close { position: absolute; top: 28px; right: 10px; z-index: 5; width: 32px; height: 32px; border: none; border-radius: 999px; background: rgb(0 0 0 / 35%); color: #fff; cursor: pointer; }
   .char-stories__modal-header { position: absolute; top: 28px; left: 10px; z-index: 5; display: flex; align-items: center; gap: 8px; color: #fff; font-size: 13px; font-weight: 800; }
@@ -515,6 +565,32 @@ function segmentPath(index: number, total: number, radius = 46): string {
   .char-stories__tap { position: absolute; top: 0; bottom: 56px; width: 35%; border: none; background: transparent; cursor: pointer; z-index: 3; }
   .char-stories__tap--prev { left: 0; }
   .char-stories__tap--next { right: 0; }
+  .char-stories__nav-arrow {
+    display: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 6;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 92%);
+    color: #172218;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 18%);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .char-stories__nav-arrow .material-symbols-outlined { font-size: 22px; }
+  .char-stories__nav-arrow:hover { transform: translateY(-50%) scale(1.06); }
+  .char-stories__nav-arrow--prev { left: 10px; opacity: 0; pointer-events: none; }
+  .char-stories__nav-arrow--prev.is-visible { opacity: 1; pointer-events: auto; }
+  .char-stories__nav-arrow--next { right: 10px; }
+  @media (min-width: 768px) {
+    .char-stories__nav-arrow { display: flex; }
+  }
   .char-stories__footer {
     position: absolute; bottom: 0; left: 0; right: 0; z-index: 5;
     display: flex; align-items: center; gap: 10px;

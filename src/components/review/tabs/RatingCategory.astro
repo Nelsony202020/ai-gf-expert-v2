@@ -223,6 +223,7 @@ const evidenceBySubscore = category.subscores.map((sub) => {
     document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
       input.checked = input.value === 'all-in';
     });
+    document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level: 'all-in' } }));
   }
 
   function initSubscoreSelect() {

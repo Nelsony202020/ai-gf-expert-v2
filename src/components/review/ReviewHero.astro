@@ -91,7 +91,7 @@ const { product } = Astro.props;
   <!-- Gallery + sticky ratings -->
   <div class="flex flex-col lg:flex-row gap-8">
     <div class="lg:w-[68%]">
-      <Gallery images={product.gallery} />
+      <Gallery images={product.gallery} product={product} />
     </div>
     <div class="lg:w-[32%]">
       <RatingSidebar product={product} />

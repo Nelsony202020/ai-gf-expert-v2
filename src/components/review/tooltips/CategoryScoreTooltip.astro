@@ -3,10 +3,11 @@ import type { RatingCategory } from '../../../data/products';
 import { products } from '../../../data/products';
 import { getScoreChipClass, fmtScore } from '../../../lib/scores';
 import { buildAllScoreBins } from '../../../lib/score-distribution';
-import { testSubscoreUrl } from '../../../lib/slugs';
+import TooltipActionLinks from './TooltipActionLinks.astro';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
 import ScoreMeaningCallout from './ScoreMeaningCallout.astro';
-import { getCategoryBrandIcon } from '../../../lib/category-brand-icons';
+import { getCategoryBrandIcon, getCategoryBrandIconLight } from '../../../lib/category-brand-icons';
+import BrandIcon from '../../ui/BrandIcon.astro';
 import InfoIcon from '../../ui/InfoIcon.astro';
 
 interface Props {
@@ -33,6 +34,8 @@ const avgScore = scorePoints.length
 
 const bins = buildAllScoreBins(scorePoints);
 const brandIcon = getCategoryBrandIcon(category.key);
+const brandIconLight = getCategoryBrandIconLight(category.key);
+const useDarkBrandIconOnly = category.key === 'customization' || category.key === 'chat';
 ---
 
 <span
@@ -43,22 +46,37 @@ const brandIcon = getCategoryBrandIcon(category.key);
   aria-label={`About ${category.name} score`}
 >
   <slot>
-    <InfoIcon size="xs" />
+    <InfoIcon size="xs" class="text-tertiary/45 hover:text-tertiary/70" />
   </slot>
 </span>
 
 <template id={`tooltip-${tooltipId}`}>
-  <div class={`ratings-tooltip-panel ${compact ? 'ratings-tooltip-panel--compact' : ''}`}>
+  <div class={`ratings-tooltip-panel ${compact ? 'ratings-tooltip-panel--compact ratings-tooltip-panel--category' : ''}`}>
     <div class="ratings-tooltip-panel__header">
       <div class="ratings-tooltip-panel__header-grid">
         <div class="ratings-tooltip-panel__what-block min-w-0">
           <p class="ratings-tooltip-panel__section-title">What it is</p>
-          <div class="ratings-tooltip-panel__what-body">
+          <div class="ratings-tooltip-panel__what-row">
             <p class="ratings-tooltip-panel__desc">{category.description}</p>
             {
               brandIcon && (
-                <div class="ratings-tooltip-panel__brand-icon">
-                  <img src={brandIcon} alt="" width="48" height="48" loading="lazy" />
+                <div class="ratings-tooltip-panel__brand-slot" aria-hidden="true">
+                  {
+                    useDarkBrandIconOnly ? (
+                      <img
+                        src={brandIcon}
+                        alt=""
+                        width="56"
+                        height="56"
+                        loading="lazy"
+                        class="brand-icon brand-icon--dark brand-icon--always"
+                      />
+                    ) : brandIconLight ? (
+                      <BrandIcon src={brandIcon} srcLight={brandIconLight} width={56} height={56} />
+                    ) : (
+                      <img src={brandIcon} alt="" width="56" height="56" loading="lazy" class={brandIcon.endsWith('.png') ? 'brand-icon' : ''} />
+                    )
+                  }
                 </div>
               )
             }
@@ -75,6 +93,7 @@ const brandIcon = getCategoryBrandIcon(category.key);
         </div>
       </div>
       <ScoreMeaningCallout score={currentScore} avg={avgScore} />
+      <TooltipActionLinks categoryKey={category.key} />
     </div>
 
     <div class="ratings-tooltip-panel__body">
@@ -84,15 +103,14 @@ const brandIcon = getCategoryBrandIcon(category.key);
           {
             category.subscores.map((sub) => {
               const chip = getScoreChipClass(sub.score);
-              const href = testSubscoreUrl(category.key, sub.name);
               return (
-                <a href={href} class="rt-comp-row rt-comp-row--link">
-                  <span class="rt-comp-pct">{sub.weight}%</span>
-                  <div class="rt-comp-name">
-                    <span class={`rt-score-chip rt-score-chip--outline ${chip}`}>{fmtScore(sub.score)}</span>
-                    <span>{sub.name}</span>
+                <div class="rt-comp-row rt-comp-row--inline">
+                  <div class="rt-comp-row__main">
+                    <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(sub.score)}</span>
+                    <span class="rt-comp-name rt-comp-name--truncate">{sub.name}</span>
                   </div>
-                </a>
+                  <TooltipActionLinks categoryKey={category.key} subscoreName={sub.name} compact />
+                </div>
               );
             })
           }

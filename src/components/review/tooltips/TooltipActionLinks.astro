@@ -1,0 +1,52 @@
+---
+import { categoryMethodologyUrl, testContributorUrl, testSubscoreUrl } from '../../../lib/slugs';
+
+interface Props {
+  categoryKey: string;
+  subscoreName?: string;
+  contributorLabel?: string;
+  compact?: boolean;
+  methodologyOnly?: boolean;
+}
+
+const { categoryKey, subscoreName, contributorLabel, compact = false, methodologyOnly = false } = Astro.props;
+
+const methodologyHref = subscoreName
+  ? testSubscoreUrl(categoryKey, subscoreName)
+  : categoryMethodologyUrl(categoryKey);
+
+const methodologyLabel = subscoreName
+  ? `How we test ${subscoreName.toLowerCase()}`
+  : contributorLabel
+    ? `How we test ${contributorLabel.toLowerCase()}`
+    : `How we score ${categoryKey.replace(/-/g, ' ')}`;
+
+const resultsAttrs = contributorLabel
+  ? { 'data-view-results': '', 'data-category': categoryKey, 'data-subscore': subscoreName, 'data-contributor': contributorLabel }
+  : subscoreName
+    ? { 'data-view-results': '', 'data-category': categoryKey, 'data-subscore': subscoreName }
+    : { 'data-view-results': '', 'data-category': categoryKey };
+---
+
+<div class={`rt-tooltip-actions ${compact ? 'rt-tooltip-actions--compact' : ''}`}>
+  {
+    !methodologyOnly && (
+      <button type="button" class="rt-tooltip-actions__btn rt-tooltip-actions__btn--primary" {...resultsAttrs}>
+        <span class="material-symbols-outlined text-[14px]">visibility</span>
+        View results
+      </button>
+    )
+  }
+  {
+    compact && !methodologyOnly ? (
+      <a href={methodologyHref} class="rt-tooltip-actions__icon-link" aria-label={methodologyLabel} title={methodologyLabel}>
+        <span class="material-symbols-outlined text-[14px]">menu_book</span>
+      </a>
+    ) : (
+      <a href={methodologyHref} class="rt-tooltip-actions__btn rt-tooltip-actions__btn--secondary">
+        <span class="material-symbols-outlined text-[14px]">science</span>
+        <span class="link-text">{methodologyLabel}</span>
+      </a>
+    )
+  }
+</div>

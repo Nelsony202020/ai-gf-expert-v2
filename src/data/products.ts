@@ -145,6 +145,12 @@ export interface VerdictItem {
   score?: number;
 }
 
+export interface VideoReview {
+  embedUrl: string;
+  channelUrl: string;
+  channelLabel?: string;
+}
+
 export interface Product {
   slug: string;
   name: string;
@@ -167,6 +173,7 @@ export interface Product {
   verdicts: VerdictItem[];
   expertOpinion: string;
   pricingDisplay: { monthly: string; storeLabel: string };
+  videoReview?: VideoReview;
 }
 
 const img = (seed: string, w: number, h: number) => `https://picsum.photos/seed/${seed}/${w}/${h}`;
@@ -366,6 +373,11 @@ const auraAi: Product = {
   verdicts: auraAiVerdicts,
   expertOpinion: auraAiExpertOpinion,
   pricingDisplay: { monthly: '$12.99 / mo', storeLabel: 'Aura AI' },
+  videoReview: {
+    embedUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    channelUrl: 'https://www.youtube.com/@ai-girlfriend-expert',
+    channelLabel: 'AI Girlfriend Expert on YouTube',
+  },
 };
 
 export const products: Product[] = [auraAi];

@@ -20,7 +20,7 @@ const overall = getScoreVisual(product.overallScore);
     <span class="text-lg font-bold flex items-center gap-1.5">
       Overall Performance
       <OverallScoreTooltip product={product}>
-        <span class="inline-flex text-white/70 hover:text-white">
+        <span class="inline-flex text-white/90 hover:text-white">
           <InfoIcon size="xs" />
         </span>
       </OverallScoreTooltip>
@@ -65,10 +65,10 @@ const overall = getScoreVisual(product.overallScore);
         Visit {product.name}
       </a>
       <p class="text-center text-[10px] text-tertiary uppercase font-bold">
-        <span class="flex items-center justify-center gap-1">
-          <span class="material-symbols-outlined text-[12px] text-tertiary">verified_user</span>
+        <a href="/legal/affiliate-disclosure" class="inline-flex items-center justify-center gap-1 hover:text-accent transition-colors">
+          <span class="material-symbols-outlined text-[12px]">verified_user</span>
           Affiliate Link · Secure Site
-        </span>
+        </a>
       </p>
     </div>
   </div>

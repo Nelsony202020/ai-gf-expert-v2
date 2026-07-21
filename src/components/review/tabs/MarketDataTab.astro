@@ -1,0 +1,577 @@
+---
+import type { Product } from '../../../data/products';
+import { getAuthor } from '../../../data/authors';
+import VerifiedCheck from '../../ui/VerifiedCheck.astro';
+import InfoIcon from '../../ui/InfoIcon.astro';
+import BrandIcon from '../../ui/BrandIcon.astro';
+import { brandIcons } from '../../../lib/brand-icons';
+import InlineHelpTooltip from '../tooltips/InlineHelpTooltip.astro';
+import { fmtScore } from '../../../lib/scores';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const { overview } = product;
+const herman = getAuthor('herman-carter');
+
+const categoryAvgPrice = 15.8;
+const productPrice = 12.99;
+const priceSavingsPct = Math.round(((categoryAvgPrice - productPrice) / categoryAvgPrice) * 100);
+
+const metrics = [
+  { label: 'Search interest', value: `${overview.searchTrends.currentInterest}/100`, sub: 'High', icon: 'trending_up', tone: 'pink' },
+  { label: '12-month growth', value: `+${overview.searchTrends.changePercent}%`, sub: 'vs. previous 12 months', icon: 'schedule', tone: 'green' },
+  { label: 'Market rank', value: `#${overview.searchTrends.popularityRank}`, sub: `of ${overview.searchTrends.totalReviewed} AI companion apps`, icon: 'emoji_events', tone: 'amber' },
+  { label: 'Monthly price', value: overview.highlights.startingPrice, sub: `vs. category avg $${categoryAvgPrice.toFixed(2)}`, icon: 'sell', tone: 'pink' },
+  { label: 'Value rank', value: '#2', sub: 'Best value in top 5', icon: 'star', tone: 'green' },
+  { label: 'Category position', value: 'Top 15%', sub: 'Overall market presence', icon: 'visibility', tone: 'purple' },
+];
+
+const rankList = [
+  { name: 'Candy AI', interest: 85, medal: 'gold' as const },
+  { name: 'Kindroid', interest: 74, medal: 'silver' as const },
+  { name: product.name, interest: overview.searchTrends.currentInterest, medal: 'bronze' as const, highlight: true },
+  { name: 'Nastia AI', interest: 61, medal: null },
+  { name: 'DreamGF', interest: 54, medal: null },
+];
+
+const competitors = [
+  { name: product.name, interest: overview.searchTrends.currentInterest, growth: overview.searchTrends.changePercent, price: productPrice, overall: product.overallScore, images: 8.4, chat: 9.2, value: 8.8, highlight: true },
+  { name: 'Candy AI', interest: 85, growth: 12, price: 19.99, overall: 8.4, images: 8.1, chat: 8.6, value: 7.2, highlight: false },
+  { name: 'Kindroid', interest: 68, growth: -4, price: 13.99, overall: 8.1, images: 7.8, chat: 8.9, value: 8.0, highlight: false },
+  { name: 'Nastia AI', interest: 61, growth: 6, price: 14.99, overall: 7.9, images: 7.5, chat: 8.2, value: 7.6, highlight: false },
+  { name: 'DreamGF', interest: 54, growth: -8, price: 9.99, overall: 7.4, images: 7.2, chat: 7.8, value: 7.9, highlight: false },
+];
+
+const priceBars = [
+  { label: 'Candy AI', price: 19.99, color: '#a855f7' },
+  { label: 'Kindroid', price: 13.99, color: '#3b82f6' },
+  { label: product.name, price: productPrice, color: '#db2777', highlight: true },
+  { label: 'Nastia AI', price: 14.99, color: '#f97316' },
+  { label: 'DreamGF', price: 9.99, color: '#22c55e' },
+];
+const maxPrice = 22;
+const chartBarMaxPx = 160;
+const avgLinePx = Math.round((categoryAvgPrice / maxPrice) * chartBarMaxPx);
+
+const scatterPoints = [
+  { name: product.name, price: productPrice, score: product.overallScore, color: '#db2777', highlight: true },
+  { name: 'Candy AI', price: 19.99, score: 8.4, color: '#a855f7' },
+  { name: 'Kindroid', price: 13.99, score: 8.1, color: '#3b82f6' },
+  { name: 'Nastia AI', price: 14.99, score: 7.9, color: '#f97316' },
+  { name: 'DreamGF', price: 9.99, score: 7.4, color: '#22c55e' },
+];
+const scatterMaxPrice = 22;
+const scatterMinScore = 7;
+const scatterMaxScore = 10;
+
+const trendMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const trendSeries = {
+  product: [58, 60, 62, 61, 64, 66, 67, 68, 69, 70, 71, overview.searchTrends.currentInterest],
+  candy: [72, 74, 76, 75, 78, 80, 81, 82, 83, 84, 84, 85],
+  kindroid: [62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51],
+  avg: [60, 61, 62, 62, 63, 64, 64, 65, 65, 66, 66, 67],
+};
+const trendMin = 45;
+const trendMax = 95;
+
+function trendPoints(values: number[]) {
+  const width = 360;
+  const height = 140;
+  const step = width / (values.length - 1);
+  return values
+    .map((v, i) => {
+      const x = i * step;
+      const y = height - ((v - trendMin) / (trendMax - trendMin)) * height;
+      return `${x},${y}`;
+    })
+    .join(' ');
+}
+
+const takeaways = [
+  { icon: 'trending_up', tone: 'pink', parts: ['Search interest grew ', '18%', ' over 12 months — above the category average.'] },
+  { icon: 'sell', tone: 'green', parts: ['At ', '$12.99/mo', ', it undercuts the category average while ranking ', '#3', ' for overall interest.'] },
+  { icon: 'photo_library', tone: 'blue', parts: ['Image quality (', '8.4', ') and chat quality (', '9.2', ') beat the competitive set average.'] },
+  { icon: 'star', tone: 'amber', parts: ['Value rank ', '#2', ' suggests a strong score-to-price ratio among fully reviewed apps.'] },
+  { icon: 'groups', tone: 'purple', parts: ['Competition from higher-interest apps remains meaningful — popularity ≠ quality.'] },
+];
+---
+
+<section class="py-12 md:py-14 bg-white dark-section">
+  <div class="section-container px-4 md:px-8">
+    <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-8">Market Data</h2>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4 mb-10">
+      {
+        metrics.map((m) => (
+          <div class="md-metric-card">
+            <div class={`md-metric-card__icon md-metric-card__icon--${m.tone}`}>
+              <span class="material-symbols-outlined text-[18px]">{m.icon}</span>
+            </div>
+            <p class="md-metric-card__label">{m.label}</p>
+            <p class="md-metric-card__value">{m.value}</p>
+            <p class="md-metric-card__sub">{m.sub}</p>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)] gap-6 mb-10">
+      <div class="md-panel">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div class="flex items-center gap-1.5">
+            <h3 class="text-lg font-black text-on-surface">Search interest over time</h3>
+            <InlineHelpTooltip
+              id={`md-trends-${product.slug}`}
+              title="Google Trends data"
+              label="About search interest"
+              text="Pulled from Google Trends. This shows relative brand search volume — not which app is best. High interest can reflect marketing spend or hype as much as product quality."
+            >
+              <InfoIcon size="xs" class="text-tertiary hover:text-accent" />
+            </InlineHelpTooltip>
+          </div>
+          <select class="md-select" aria-label="Time range">
+            <option>12 months</option>
+            <option>24 months</option>
+          </select>
+        </div>
+        <div class="md-line-chart">
+          <div class="md-line-chart__wrap">
+            <svg viewBox="0 0 360 140" class="md-line-chart__svg" preserveAspectRatio="none" aria-hidden="true">
+              {[0, 25, 50, 75, 100].map((pct) => (
+                <line x1="0" y1={(140 * pct) / 100} x2="360" y2={(140 * pct) / 100} stroke="#ececec" stroke-width="1" />
+              ))}
+              <polyline fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="5 4" points={trendPoints(trendSeries.avg)} />
+              <polyline fill="none" stroke="#a855f7" stroke-width="2.5" points={trendPoints(trendSeries.candy)} />
+              <polyline fill="none" stroke="#3b82f6" stroke-width="2.5" points={trendPoints(trendSeries.kindroid)} />
+              <polyline fill="none" stroke="#db2777" stroke-width="3" points={trendPoints(trendSeries.product)} />
+            </svg>
+            <div class="md-line-chart__ylabels" aria-hidden="true">
+              <span>100</span>
+              <span>75</span>
+              <span>50</span>
+            </div>
+          </div>
+          <div class="md-line-chart__months" aria-hidden="true">
+            {trendMonths.map((m) => <span>{m}</span>)}
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3 mt-3 text-xs font-semibold text-on-surface-variant">
+          <span class="inline-flex items-center gap-1.5"><span class="w-4 h-0.5 bg-accent rounded" /> {product.name}</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-4 h-0.5 bg-purple-500 rounded" /> Candy AI</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-4 h-0.5 bg-blue-500 rounded" /> Kindroid</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-4 h-0.5 bg-gray-400 rounded" style="border-style:dashed" /> Category avg</span>
+        </div>
+      </div>
+
+      <div class="md-panel">
+        <div class="flex items-center gap-1.5 mb-1">
+          <h3 class="text-lg font-black text-on-surface">Market rank</h3>
+          <InlineHelpTooltip
+            id={`md-rank-${product.slug}`}
+            title="Market rank"
+            label="About market rank"
+            text="Ranked by Google Trends search interest (1–100 scale) among AI companion apps we track. Higher = more relative search volume."
+          >
+            <InfoIcon size="xs" class="text-tertiary hover:text-accent" />
+          </InlineHelpTooltip>
+        </div>
+        <p class="text-xs text-tertiary mb-4">vs. AI companion apps</p>
+        <ol class="space-y-3">
+          {
+            rankList.map((item, i) => (
+              <li class="md-rank-row">
+                <span class="md-rank-row__pos">
+                  {
+                    item.medal === 'gold' ? '🥇' :
+                    item.medal === 'silver' ? '🥈' :
+                    item.medal === 'bronze' ? '🥉' :
+                    <span class="text-tertiary tabular-nums">{i + 1}</span>
+                  }
+                </span>
+                <div class="md-rank-row__body min-w-0">
+                  <div class="flex items-center justify-between gap-2 mb-1">
+                    <span class={`text-sm font-bold truncate ${item.highlight ? 'text-accent' : 'text-on-surface'}`}>{item.name}</span>
+                    <span class="text-xs font-black tabular-nums text-on-surface-variant shrink-0">{item.interest}</span>
+                  </div>
+                  <div class="h-2 rounded-full bg-surface-container overflow-hidden">
+                    <div
+                      class={`h-full rounded-full ${item.highlight ? 'bg-accent' : 'bg-tertiary/35'}`}
+                      style={`width: ${item.interest}%`}
+                    />
+                  </div>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+        <button type="button" class="md-btn-outline w-full mt-5">View full ranking</button>
+      </div>
+    </div>
+
+    <div class="md-panel mb-10 overflow-hidden p-0">
+      <div class="p-5 border-b border-surface-variant">
+        <h3 class="text-lg font-black text-on-surface">Competitive comparison</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="md-comp-table w-full min-w-[880px] text-sm">
+          <thead>
+            <tr class="text-left text-[11px] uppercase tracking-wide text-tertiary border-b border-surface-variant">
+              <th class="p-3">Product</th>
+              <th class="p-3">Search interest</th>
+              <th class="p-3">12M growth</th>
+              <th class="p-3">Monthly price</th>
+              <th class="p-3">Overall score</th>
+              <th class="p-3">Image quality</th>
+              <th class="p-3">Chat quality</th>
+              <th class="p-3">Value score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              competitors.map((c) => (
+                <tr class={`md-comp-table__row border-b border-surface-variant/60 ${c.highlight ? 'md-comp-table__highlight bg-accent/[0.04]' : ''}`}>
+                  <td class="p-3 font-bold text-on-surface">{c.name}</td>
+                  <td class="p-3 tabular-nums">{c.interest}/100</td>
+                  <td class="p-3">
+                    <span class={`md-growth ${c.growth >= 0 ? 'md-growth--up' : 'md-growth--down'}`}>
+                      {c.growth >= 0 ? '+' : ''}{c.growth}%
+                    </span>
+                  </td>
+                  <td class="p-3 tabular-nums">${c.price.toFixed(2)}</td>
+                  <td class="p-3 tabular-nums font-bold">{fmtScore(c.overall)}</td>
+                  <td class="p-3 tabular-nums">{fmtScore(c.images)}</td>
+                  <td class="p-3 tabular-nums">{fmtScore(c.chat)}</td>
+                  <td class="p-3 tabular-nums">{fmtScore(c.value)}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="p-4 text-center border-t border-surface-variant">
+        <button type="button" class="md-btn-outline">Compare more apps</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+      <div class="md-panel">
+        <div class="flex items-center gap-1.5 mb-4">
+          <h3 class="text-lg font-black text-on-surface">Price position</h3>
+          <InlineHelpTooltip
+            id={`md-price-${product.slug}`}
+            title="Price position"
+            label="About price position"
+            text="Compares monthly subscription price against competitors and our tracked category average."
+          >
+            <InfoIcon size="xs" class="text-tertiary hover:text-accent" />
+          </InlineHelpTooltip>
+        </div>
+        <div class="md-price-chart">
+          <div class="md-price-chart__y-label">Price ($)</div>
+          <div class="md-price-chart__bars">
+            {
+              priceBars.map((bar) => (
+                <div class="md-price-chart__col">
+                  <span class="md-price-chart__val">${bar.price.toFixed(2)}</span>
+                  <div
+                    class={`md-price-chart__bar ${bar.highlight ? 'md-price-chart__bar--highlight' : ''}`}
+                    style={`height: ${Math.round((bar.price / maxPrice) * chartBarMaxPx)}px; background: ${bar.color};`}
+                  />
+                  <span class={`md-price-chart__name ${bar.highlight ? 'text-accent font-bold' : ''}`}>{bar.label}</span>
+                </div>
+              ))
+            }
+            <div class="md-price-chart__avg-line" style={`bottom: ${avgLinePx + 28}px`}>
+              <span>Category avg ${categoryAvgPrice.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="md-price-callout mt-4">
+          <p class="text-xs font-bold text-tertiary uppercase tracking-wide">{product.name} vs. Category Avg</p>
+          <p class="text-lg font-black text-green-700">−{priceSavingsPct}%</p>
+          <p class="text-sm font-semibold text-green-800">More affordable</p>
+        </div>
+      </div>
+
+      <div class="md-panel">
+        <div class="flex items-center gap-1.5 mb-4">
+          <h3 class="text-lg font-black text-on-surface">Value for money</h3>
+          <InlineHelpTooltip
+            id={`md-value-${product.slug}`}
+            title="Value for money"
+            label="About value chart"
+            text="Plots overall performance score against monthly price. Top-left quadrant = high score, lower price (best value)."
+          >
+            <InfoIcon size="xs" class="text-tertiary hover:text-accent" />
+          </InlineHelpTooltip>
+        </div>
+        <p class="text-xs text-tertiary mb-2">Score vs. Price</p>
+        <div class="md-scatter">
+          <span class="md-scatter__ylabel">Overall Score ↑</span>
+          <span class="md-scatter__xlabel">Monthly Price →</span>
+          <div class="md-scatter__grid">
+            <span class="md-scatter__quad md-scatter__quad--tl">Best Value</span>
+            <span class="md-scatter__quad md-scatter__quad--tr">Premium</span>
+            <span class="md-scatter__quad md-scatter__quad--bl">Budget</span>
+            <span class="md-scatter__quad md-scatter__quad--br">Overpriced</span>
+            {
+              scatterPoints.map((pt) => {
+                const leftPct = ((pt.price - 8) / (scatterMaxPrice - 8)) * 100;
+                const bottomPct = ((pt.score - scatterMinScore) / (scatterMaxScore - scatterMinScore)) * 100;
+                return (
+                  <span
+                    class={`md-scatter__point ${pt.highlight ? 'md-scatter__point--highlight' : ''}`}
+                    style={`left: ${Math.min(92, Math.max(8, leftPct))}%; bottom: ${Math.min(92, Math.max(8, bottomPct))}%; --pt-color: ${pt.color};`}
+                  >
+                    <span class="md-scatter__dot" />
+                    <span class="md-scatter__label">{pt.name}</span>
+                  </span>
+                );
+              })
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,0.52fr)_minmax(0,0.48fr)] gap-6">
+      <div class="md-panel">
+        <h3 class="text-lg font-black text-on-surface mb-4">Key takeaways</h3>
+        <ul class="space-y-4">
+          {
+            takeaways.map((item) => (
+              <li class="md-takeaway">
+                <span class={`md-takeaway__icon md-takeaway__icon--${item.tone}`}>
+                  <span class="material-symbols-outlined text-[16px]">{item.icon}</span>
+                </span>
+                <p class="text-sm text-on-surface-variant leading-relaxed">
+                  {item.parts[0]}
+                  <strong class="text-on-surface font-black">{item.parts[1]}</strong>
+                  {item.parts[2]}
+                  {item.parts[3] && <strong class="text-on-surface font-black">{item.parts[3]}</strong>}
+                  {item.parts[4]}
+                  {item.parts[5] && <strong class="text-on-surface font-black">{item.parts[5]}</strong>}
+                  {item.parts[6]}
+                </p>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      {
+        herman && (
+          <div class="md-panel md-expert">
+            <h3 class="text-lg font-black text-on-surface mb-4">Expert analysis</h3>
+            <p class="text-sm text-on-surface leading-relaxed mb-4">
+              {product.name} sits in a strong position on paper — search interest is climbing, pricing undercuts the category average, and our hands-on scores back up the hype on chat and characters. That said, Candy AI still leads raw search volume, which usually means heavier marketing rather than a better product.
+            </p>
+            <p class="text-sm text-on-surface leading-relaxed mb-5">
+              If you care about value for money, the data here aligns with our testing: you are getting premium-tier conversation quality without paying premium-tier prices. I would still watch image generation latency — that is where the score gap shows up in real use.
+            </p>
+            <div class="md-expert__byline flex items-center gap-3">
+              <BrandIcon
+                src={brandIcons.scientist.dark}
+                srcLight={brandIcons.scientist.light}
+                width={48}
+                height={48}
+                class="shrink-0"
+              />
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <p class="text-sm font-bold text-on-surface">{herman.name}</p>
+                  <VerifiedCheck class="w-[18px] h-[18px]" />
+                </div>
+                <p class="text-xs text-tertiary font-medium">Lead Reviewer</p>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .md-metric-card {
+    background: #fff;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 4%);
+  }
+  .md-metric-card__icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .md-metric-card__icon--pink { background: rgb(219 39 119 / 10%); color: #db2777; }
+  .md-metric-card__icon--green { background: rgb(34 197 94 / 10%); color: #16a34a; }
+  .md-metric-card__icon--amber { background: rgb(245 158 11 / 10%); color: #d97706; }
+  .md-metric-card__icon--purple { background: rgb(168 85 247 / 10%); color: #9333ea; }
+  .md-metric-card__label { margin: 10px 0 2px; font-size: 11px; font-weight: 700; color: var(--color-tertiary); }
+  .md-metric-card__value { font-size: 1.35rem; font-weight: 900; color: var(--color-on-surface); line-height: 1.1; }
+  .md-metric-card__sub { margin-top: 4px; font-size: 11px; color: var(--color-on-surface-variant); line-height: 1.35; }
+
+  .md-panel {
+    background: #fff;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 4%);
+  }
+
+  .md-select {
+    font-size: 12px; font-weight: 700;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 8px; padding: 6px 10px; background: #fff;
+  }
+
+  .md-line-chart__wrap {
+    position: relative;
+    padding-left: 28px;
+  }
+
+  .md-line-chart__svg {
+    width: 100%;
+    height: 160px;
+    display: block;
+  }
+
+  .md-line-chart__ylabels {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-tertiary);
+    padding: 2px 0;
+  }
+
+  .md-line-chart__months {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 4px;
+    margin-top: 8px;
+    padding-left: 28px;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--color-tertiary);
+    text-align: center;
+  }
+
+  .md-btn-outline {
+    padding: 10px 16px; border-radius: 10px;
+    border: 1px solid var(--color-surface-variant);
+    font-size: 13px; font-weight: 700;
+    color: var(--color-on-surface-variant);
+    background: #fff; cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .md-btn-outline:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+  .md-rank-row { display: flex; align-items: flex-start; gap: 10px; }
+  .md-rank-row__pos { width: 24px; text-align: center; font-size: 14px; flex-shrink: 0; padding-top: 2px; }
+
+  .md-growth { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+  .md-growth--up { background: rgb(34 197 94 / 12%); color: #15803d; }
+  .md-growth--down { background: rgb(239 68 68 / 12%); color: #b91c1c; }
+
+  .md-price-chart { position: relative; padding-left: 28px; }
+  .md-price-chart__y-label {
+    position: absolute; left: 0; top: 50%; transform: rotate(-90deg) translateX(-50%);
+    font-size: 10px; font-weight: 700; color: var(--color-tertiary); white-space: nowrap;
+  }
+  .md-price-chart__bars {
+    position: relative; display: flex; align-items: flex-end; justify-content: space-around;
+    height: 200px; border-bottom: 1px solid var(--color-surface-variant); padding-bottom: 28px;
+  }
+  .md-price-chart__col {
+    display: flex; flex-direction: column; align-items: center; width: 18%;
+    height: calc(100% - 28px); justify-content: flex-end; gap: 0;
+  }
+  .md-price-chart__val { font-size: 10px; font-weight: 800; margin-bottom: 4px; color: var(--color-on-surface-variant); }
+  .md-price-chart__bar { width: 100%; max-width: 48px; border-radius: 6px 6px 0 0; min-height: 8px; flex-shrink: 0; }
+  .md-price-chart__bar--highlight { box-shadow: 0 0 0 2px rgb(219 39 119 / 30%); }
+  .md-price-chart__name { margin-top: 8px; font-size: 10px; font-weight: 700; text-align: center; color: var(--color-on-surface-variant); line-height: 1.2; min-height: 24px; }
+  .md-price-chart__avg-line {
+    position: absolute; left: 0; right: 0;
+    border-top: 2px dashed #9ca3af; pointer-events: none; z-index: 1;
+  }
+  .md-price-chart__avg-line span {
+    position: absolute; right: 0; top: -18px;
+    font-size: 10px; font-weight: 700; color: #6b7280; background: #fff; padding: 0 4px;
+  }
+
+  .md-price-callout {
+    display: inline-block; padding: 12px 16px;
+    border: 1px solid #bbf7d0; border-radius: 12px; background: #f0fdf4;
+  }
+
+  .md-scatter { position: relative; padding: 8px 8px 28px 36px; }
+  .md-scatter__ylabel { position: absolute; left: 0; top: 50%; transform: rotate(-90deg) translateX(-50%); font-size: 10px; font-weight: 700; color: var(--color-tertiary); white-space: nowrap; }
+  .md-scatter__xlabel { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: var(--color-tertiary); }
+  .md-scatter__grid {
+    position: relative; height: 240px;
+    border-left: 1px solid var(--color-surface-variant);
+    border-bottom: 1px solid var(--color-surface-variant);
+    background:
+      linear-gradient(to right, transparent 49.5%, rgb(226 226 226 / 80%) 49.5%, rgb(226 226 226 / 80%) 50.5%, transparent 50.5%),
+      linear-gradient(to top, transparent 49.5%, rgb(226 226 226 / 80%) 49.5%, rgb(226 226 226 / 80%) 50.5%, transparent 50.5%);
+  }
+  .md-scatter__quad { position: absolute; font-size: 9px; font-weight: 700; color: var(--color-tertiary); opacity: 0.7; }
+  .md-scatter__quad--tl { top: 8px; left: 8px; }
+  .md-scatter__quad--tr { top: 8px; right: 8px; }
+  .md-scatter__quad--bl { bottom: 8px; left: 8px; }
+  .md-scatter__quad--br { bottom: 8px; right: 8px; }
+  .md-scatter__point {
+    position: absolute;
+    transform: translate(-50%, 50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    z-index: 2;
+  }
+  .md-scatter__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--pt-color);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 20%);
+    flex-shrink: 0;
+  }
+  .md-scatter__label {
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--color-on-surface-variant);
+    white-space: nowrap;
+    background: rgb(255 255 255 / 92%);
+    padding: 1px 5px;
+    border-radius: 999px;
+    border: 1px solid rgb(226 226 226 / 80%);
+  }
+  .md-scatter__point--highlight .md-scatter__label {
+    background: var(--pt-color);
+    color: #fff;
+    border-color: transparent;
+  }
+
+  .md-takeaway { display: flex; gap: 12px; align-items: flex-start; }
+  .md-takeaway__icon {
+    width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .md-takeaway__icon--pink { background: rgb(219 39 119 / 10%); color: #db2777; }
+  .md-takeaway__icon--green { background: rgb(34 197 94 / 10%); color: #16a34a; }
+  .md-takeaway__icon--blue { background: rgb(59 130 246 / 10%); color: #2563eb; }
+  .md-takeaway__icon--amber { background: rgb(245 158 11 / 10%); color: #d97706; }
+  .md-takeaway__icon--purple { background: rgb(168 85 247 / 10%); color: #9333ea; }
+</style>

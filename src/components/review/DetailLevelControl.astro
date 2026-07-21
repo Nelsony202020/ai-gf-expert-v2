@@ -23,7 +23,7 @@ const options = [
               type="radio"
               name="detail-level"
               value={opt.id}
-              checked={opt.id === 'all-in'}
+              checked={opt.id === 'skim'}
               class="peer sr-only"
             />
             <span class="block px-3 py-1.5 text-xs font-bold rounded-md transition-colors peer-checked:bg-brand-lime peer-checked:text-on-brand-lime peer-checked:shadow-sm text-on-surface-variant hover:text-on-surface">
@@ -37,7 +37,11 @@ const options = [
 </div>
 
 <style is:global>
-  [data-ratings-root][data-detail-level='skim'] [data-accordion-content] {
+  [data-ratings-root][data-detail-level='skim'] [data-detail-tier='deep'] {
+    display: none !important;
+  }
+
+  [data-ratings-root][data-detail-level='skim'] [data-subscore-breakdown] {
     display: none !important;
   }
 
@@ -76,51 +80,94 @@ const options = [
   [data-ratings-root][data-detail-level='all-in'] .subscore-card:hover {
     background: rgb(243 243 243 / 55%);
   }
+
+  [data-theme='dark'] [data-ratings-root][data-detail-level='medium'] .subscore-card:hover {
+    background: rgb(255 255 255 / 6%) !important;
+  }
+
+  [data-theme='dark'] [data-ratings-root][data-detail-level='medium'] .subscore-card--active {
+    background: rgb(255 255 255 / 10%) !important;
+  }
+
+  [data-theme='dark'] [data-ratings-root][data-detail-level='all-in'] .subscore-card--active {
+    background: rgb(255 255 255 / 6%);
+  }
+
+  [data-theme='dark'] [data-ratings-root][data-detail-level='all-in'] .subscore-card:hover {
+    background: rgb(255 255 255 / 8%);
+  }
 </style>
 
 <script>
-  function initDetailLevel() {
+  function syncAccordionVisibility(level: string) {
     const root = document.querySelector<HTMLElement>('[data-ratings-root]');
-    const control = document.querySelector<HTMLElement>('[data-detail-level-control]');
-    if (!root || !control || control.dataset.bound === 'true') return;
-    control.dataset.bound = 'true';
+    if (!root) return;
 
-    function syncAccordionVisibility() {
-      root!.querySelectorAll<HTMLElement>('[data-category]').forEach((cat) => {
-        const toggle = cat.querySelector<HTMLElement>('[data-accordion-toggle]');
-        const content = cat.querySelector<HTMLElement>('[data-accordion-content]');
-        if (!toggle || !content) return;
-        const isOpen = toggle.getAttribute('aria-expanded') === 'true';
-        content.classList.toggle('hidden', !isOpen);
-      });
-    }
-
-    function setLevel(level: string) {
-      root!.dataset.detailLevel = level;
+    root.querySelectorAll<HTMLElement>('[data-category]').forEach((cat) => {
+      const toggle = cat.querySelector<HTMLElement>('[data-accordion-toggle]');
+      const content = cat.querySelector<HTMLElement>('[data-accordion-content]');
+      if (!toggle || !content) return;
 
       if (level === 'skim') {
-        root!.querySelectorAll<HTMLElement>('[data-accordion-content]').forEach((el) => el.classList.add('hidden'));
-        root!.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((toggle) => {
-          toggle.setAttribute('aria-expanded', 'false');
-        });
-      } else {
-        syncAccordionVisibility();
+        toggle.setAttribute('aria-expanded', 'false');
+        content.classList.add('hidden');
+        return;
       }
 
-      document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
-        input.checked = input.value === level;
-      });
+      const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+      content.classList.toggle('hidden', !isOpen);
+    });
+  }
 
-      document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level } }));
-    }
+  function applyDetailLevel(level: string, options: { syncAccordions?: boolean } = {}) {
+    const root = document.querySelector<HTMLElement>('[data-ratings-root]');
+    if (!root) return;
 
-    control.addEventListener('change', (event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLInputElement) || target.name !== 'detail-level' || !target.checked) return;
-      setLevel(target.value);
+    const prev = root.dataset.detailLevel || 'skim';
+    root.dataset.detailLevel = level;
+
+    document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
+      input.checked = input.value === level;
     });
 
-    setLevel(root.dataset.detailLevel || 'all-in');
+    if (options.syncAccordions !== false && level === 'skim' && prev !== 'skim') {
+      syncAccordionVisibility(level);
+    } else if (options.syncAccordions !== false && prev === 'skim' && level !== 'skim') {
+      syncAccordionVisibility(level);
+    }
+
+    document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level } }));
+  }
+
+  function initDetailLevel() {
+    const root = document.querySelector<HTMLElement>('[data-ratings-root]');
+    if (!root) return;
+
+    const html = document.documentElement;
+    if (html.dataset.detailLevelBound !== 'true') {
+      html.dataset.detailLevelBound = 'true';
+
+      document.addEventListener('change', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement) || target.name !== 'detail-level' || !target.checked) return;
+        applyDetailLevel(target.value);
+      });
+
+      document.addEventListener('click', (event) => {
+        const label = (event.target as HTMLElement).closest('label');
+        if (!label || !label.closest('[data-detail-level-control]')) return;
+        const input = label.querySelector<HTMLInputElement>('input[name="detail-level"]');
+        if (!input) return;
+        window.requestAnimationFrame(() => {
+          if (input.checked) applyDetailLevel(input.value);
+        });
+      });
+    }
+
+    const level = root.dataset.detailLevel || 'skim';
+    document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
+      input.checked = input.value === level;
+    });
   }
 
   initDetailLevel();

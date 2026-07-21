@@ -11,7 +11,7 @@ interface Props {
 const { product } = Astro.props;
 ---
 
-<section class="bg-white py-12 md:py-14" data-ratings-root data-detail-level="all-in">
+<section class="bg-white py-12 md:py-14" data-ratings-root data-detail-level="skim">
   <div class="section-container px-4 md:px-8">
     <div class="mb-6 md:mb-8">
       <h2 class="text-3xl md:text-4xl font-black text-on-surface">Ratings &amp; Specs</h2>
@@ -23,7 +23,7 @@ const { product } = Astro.props;
 
     <div class="space-y-5 md:space-y-6" data-accordion-group>
       {product.categories.map((category, i) => (
-        <RatingCategory category={category} productName={product.name} open={i === 0} />
+        <RatingCategory category={category} productName={product.name} open={false} />
       ))}
     </div>
   </div>

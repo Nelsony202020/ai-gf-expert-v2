@@ -1,33 +1,38 @@
 ---
-import type { GalleryImage } from '../../data/products';
+import type { GalleryImage, Product } from '../../data/products';
+import VideoReviewLightbox from './VideoReviewLightbox.astro';
 
 interface Props {
   images: GalleryImage[];
+  product: Product;
 }
 
-const { images } = Astro.props;
+const { images, product } = Astro.props;
 const first = images[0];
 ---
 
 <div class="space-y-3" data-gallery>
-  <button
-    type="button"
-    class="relative rounded-xl overflow-hidden aspect-video shadow-lg border border-surface-variant/40 bg-surface-container w-full block group cursor-zoom-in"
-    data-lightbox-open={first?.full}
-    data-lightbox-alt={first?.alt}
-    data-gallery-main-trigger
-  >
-    <img
-      data-gallery-main
-      alt={first?.alt ?? ''}
-      class="w-full h-full object-cover transition group-hover:scale-[1.01]"
-      src={first?.full}
-    />
-    <span class="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/50 text-white text-[11px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-      <span class="material-symbols-outlined text-[14px]">zoom_in</span>
-      Enlarge
-    </span>
-  </button>
+  <div class="relative rounded-xl overflow-hidden aspect-video shadow-lg border border-surface-variant/40 bg-surface-container w-full">
+    <button
+      type="button"
+      class="relative w-full h-full block group cursor-zoom-in"
+      data-lightbox-open={first?.full}
+      data-lightbox-alt={first?.alt}
+      data-gallery-main-trigger
+    >
+      <img
+        data-gallery-main
+        alt={first?.alt ?? ''}
+        class="w-full h-full object-cover transition group-hover:scale-[1.01]"
+        src={first?.full}
+      />
+      <span class="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/50 text-white text-[11px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+        <span class="material-symbols-outlined text-[14px]">zoom_in</span>
+        Enlarge
+      </span>
+    </button>
+    <VideoReviewLightbox product={product} />
+  </div>
 
   <div class="relative group">
     <div class="flex overflow-x-auto gap-2 pb-1 no-scrollbar" data-thumb-track>
@@ -50,7 +55,7 @@ const first = images[0];
     <button
       type="button"
       data-thumb-next
-      class="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 p-1.5 rounded-full shadow border border-surface-variant opacity-0 group-hover:opacity-100 transition-opacity"
+      class="gallery-thumb-scroll absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 p-1.5 rounded-full shadow border border-surface-variant opacity-0 group-hover:opacity-100 transition-opacity"
       aria-label="Scroll thumbnails"
     >
       <span class="material-symbols-outlined text-sm">chevron_right</span>

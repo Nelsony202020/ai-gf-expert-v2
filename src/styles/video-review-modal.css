@@ -1,0 +1,176 @@
+/* Video review lightbox — global (unscoped) so dark mode applies correctly */
+
+.video-review-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.video-review-modal.hidden {
+  display: none;
+}
+
+.video-review-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 72%);
+}
+
+.video-review-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(720px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--color-surface-variant);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 25%);
+  color: var(--color-on-surface);
+}
+
+.video-review-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: rgb(243 243 243);
+  color: #db2777;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-review-modal__hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding-right: 36px;
+}
+
+.video-review-modal__icon {
+  flex-shrink: 0;
+}
+
+.video-review-modal__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-on-surface);
+}
+
+.video-review-modal__by {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-tertiary);
+}
+
+.video-review-modal__intro {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-on-surface-variant);
+}
+
+.video-review-modal__embed {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111;
+  margin-bottom: 16px;
+}
+
+.video-review-modal__embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.video-review-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.video-review-modal__link-external {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-tertiary);
+  text-decoration: none;
+}
+
+.video-review-modal__link-external:hover {
+  color: var(--color-accent);
+}
+
+.video-review-modal__link-internal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-brand-lime);
+  color: var(--color-on-brand-lime);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.video-review-modal__link-internal:hover {
+  opacity: 0.9;
+}
+
+[data-theme='dark'] .video-review-modal__panel {
+  background: #1a2418;
+  border-color: #2a3328;
+  color: #ececec;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 55%);
+}
+
+[data-theme='dark'] .video-review-modal__title {
+  color: #ececec;
+}
+
+[data-theme='dark'] .video-review-modal__by,
+[data-theme='dark'] .video-review-modal__intro {
+  color: #b8c4b2;
+}
+
+[data-theme='dark'] .video-review-modal__link-external {
+  color: #b8c4b2;
+}
+
+[data-theme='dark'] .video-review-modal__link-external:hover {
+  color: #f472b6;
+}
+
+[data-theme='dark'] .video-review-modal__close {
+  background: rgb(255 255 255 / 10%);
+  color: #ececec;
+}
+
+[data-theme='dark'] .video-review-modal__close:hover {
+  background: rgb(255 255 255 / 16%);
+}

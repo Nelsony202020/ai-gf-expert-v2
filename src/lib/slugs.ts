@@ -18,3 +18,7 @@ export function testSubscoreUrl(category: string, subscore: string): string {
 export function reviewRatingsUrl(productSlug: string): string {
   return `/reviews/${productSlug}#ratings`;
 }
+
+export function categoryMethodologyUrl(categoryKey: string): string {
+  return `/tests/${toSlug(categoryKey)}`;
+}

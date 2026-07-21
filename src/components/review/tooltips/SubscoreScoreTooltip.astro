@@ -3,7 +3,7 @@ import type { Subscore } from '../../../data/products';
 import { products } from '../../../data/products';
 import { equalWeights, fmtScore, getScoreChipClass, weightedValue } from '../../../lib/scores';
 import { buildAllScoreBins } from '../../../lib/score-distribution';
-import { testContributorUrl } from '../../../lib/slugs';
+import TooltipActionLinks from './TooltipActionLinks.astro';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
 import ScoreMeaningCallout from './ScoreMeaningCallout.astro';
 import InfoIcon from '../../ui/InfoIcon.astro';
@@ -54,7 +54,7 @@ const bins = buildAllScoreBins(scorePoints);
   aria-label={`About ${sub.name} subscore`}
 >
   <slot>
-    <InfoIcon size="xs" />
+    <InfoIcon size="xs" class="text-tertiary/45 hover:text-tertiary/70" />
   </slot>
 </span>
 
@@ -77,6 +77,7 @@ const bins = buildAllScoreBins(scorePoints);
         </div>
       </div>
       <ScoreMeaningCallout score={currentScore} avg={avgScore} />
+      <TooltipActionLinks categoryKey={categoryKey} subscoreName={sub.name} />
     </div>
 
     <div class="ratings-tooltip-panel__body">
@@ -98,15 +99,19 @@ const bins = buildAllScoreBins(scorePoints);
             contributorPoints.map((c) => {
               const pct = (c.contribution / rawSubTotal) * 100;
               const chip = getScoreChipClass(c.internal);
-              const href = testContributorUrl(categoryKey, sub.name, c.label);
               return (
-                <a href={href} class="rt-comp-row rt-comp-row--link">
-                  <span class="rt-comp-pct">{pct.toFixed(1)}%</span>
-                  <div class="rt-comp-name">
-                    <span class={`rt-score-chip rt-score-chip--outline ${chip}`}>{fmtScore(c.internal)}</span>
-                    <span>{c.label}</span>
+                <div class="rt-comp-row rt-comp-row--inline">
+                  <div class="rt-comp-row__main">
+                    <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(c.internal)}</span>
+                    <span class="rt-comp-name rt-comp-name--truncate">{c.label}</span>
                   </div>
-                </a>
+                  <TooltipActionLinks
+                    categoryKey={categoryKey}
+                    subscoreName={sub.name}
+                    contributorLabel={c.label}
+                    compact
+                  />
+                </div>
               );
             })
           }

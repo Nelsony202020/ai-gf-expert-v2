@@ -1,0 +1,185 @@
+---
+import type { Product } from '../../data/products';
+import BrandIcon from '../ui/BrandIcon.astro';
+import { brandIcons } from '../../lib/brand-icons';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const modalId = `video-review-${product.slug}`;
+const embedUrl = product.videoReview?.embedUrl ?? 'https://www.youtube.com/embed/dQw4w9WgXcQ';
+const channelUrl = product.videoReview?.channelUrl ?? 'https://www.youtube.com/@ai-girlfriend-expert';
+const channelLabel = product.videoReview?.channelLabel ?? 'AI Girlfriend Expert on YouTube';
+---
+
+<div class="video-review-trigger-wrap">
+  <button
+    type="button"
+    class="video-review-trigger group"
+    data-video-review-open={modalId}
+    aria-label={`Watch ${product.name} video review`}
+  >
+    <BrandIcon
+      src={brandIcons.youtube.dark}
+      srcLight={brandIcons.youtube.light}
+      width={56}
+      height={56}
+      class="video-review-trigger__avatar"
+    />
+    <span class="video-review-trigger__ribbon">
+      Watch video review
+    </span>
+  </button>
+</div>
+
+<div class="video-review-modal hidden" data-video-review-modal={modalId} aria-hidden="true">
+  <div class="video-review-modal__backdrop" data-video-review-close />
+  <div class="video-review-modal__panel" role="dialog" aria-modal="true" aria-label="Video review">
+    <button type="button" class="video-review-modal__close" data-video-review-close aria-label="Close">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+
+    <div class="video-review-modal__hero">
+      <BrandIcon
+        src={brandIcons.youtube.dark}
+        srcLight={brandIcons.youtube.light}
+        width={72}
+        height={72}
+        class="video-review-modal__icon shrink-0"
+      />
+      <div>
+        <h3 class="video-review-modal__title">{product.name} full video review</h3>
+        <p class="video-review-modal__by">by Herman Carter</p>
+      </div>
+    </div>
+
+    <p class="video-review-modal__intro">
+      My complete hands-on review of {product.name} — chat, characters, images, video, and more.
+    </p>
+
+    <div class="video-review-modal__embed">
+      <iframe
+        src=""
+        data-video-review-iframe
+        title={`${product.name} video review`}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        loading="lazy"
+      />
+    </div>
+
+    <div class="video-review-modal__actions">
+      <a
+        href={channelUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="video-review-modal__link-external"
+      >
+        <span class="link-text">{channelLabel}</span>
+        <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+      </a>
+      <button type="button" class="video-review-modal__link-internal" data-tab="photos">
+        <span class="link-text">View all photos &amp; videos</span>
+        <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ modalId, embedUrl }}>
+  function initVideoReview() {
+    const trigger = document.querySelector(`[data-video-review-open="${modalId}"]`);
+    const modal = document.querySelector(`[data-video-review-modal="${modalId}"]`);
+    const iframe = modal?.querySelector('[data-video-review-iframe]');
+    if (!trigger || !modal || !iframe) return;
+    if (trigger.dataset.bound === 'true') return;
+    trigger.dataset.bound = 'true';
+
+    const open = () => {
+      iframe.src = embedUrl + (embedUrl.includes('?') ? '&' : '?') + 'autoplay=1';
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    };
+
+    const close = () => {
+      iframe.src = '';
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    };
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      open();
+    });
+
+    modal.querySelectorAll('[data-video-review-close]').forEach((el) => {
+      el.addEventListener('click', close);
+    });
+
+    modal.querySelector('[data-tab="photos"]')?.addEventListener('click', () => {
+      close();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) close();
+    });
+  }
+
+  initVideoReview();
+  document.addEventListener('astro:page-load', initVideoReview);
+</script>
+
+<style>
+  .video-review-trigger-wrap {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .video-review-trigger {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    filter: drop-shadow(0 4px 12px rgb(0 0 0 / 25%));
+    transition: transform 0.2s ease, filter 0.2s ease;
+  }
+
+  .video-review-trigger:hover {
+    transform: translateY(-2px) scale(1.02);
+    filter: drop-shadow(0 6px 16px rgb(0 0 0 / 30%));
+  }
+
+  .video-review-trigger__avatar {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .video-review-trigger__ribbon {
+    margin-left: -10px;
+    padding: 6px 14px 6px 18px;
+    background: linear-gradient(135deg, #db2777, #be185d);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    border-radius: 0 999px 999px 0;
+    white-space: nowrap;
+    align-self: center;
+    box-shadow: 0 2px 8px rgb(219 39 119 / 35%);
+  }
+</style>

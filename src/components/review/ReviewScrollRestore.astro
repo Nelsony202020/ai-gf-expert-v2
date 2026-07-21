@@ -31,7 +31,7 @@ const { productSlug } = Astro.props;
         tab: window.location.hash.replace('#', '') || 'ratings',
         categoryKey: openCategory?.dataset.category ?? null,
         subscoreIndex: activeSub?.dataset.subscoreIndex ?? null,
-        detailLevel: ratingsRoot?.dataset.detailLevel ?? 'all-in',
+        detailLevel: ratingsRoot?.dataset.detailLevel ?? 'skim',
         ...extra,
       }),
     );
@@ -58,6 +58,9 @@ const { productSlug } = Astro.props;
           document.querySelectorAll('input[name="detail-level"]').forEach((input) => {
             input.checked = input.value === state.detailLevel;
           });
+          document.dispatchEvent(
+            new CustomEvent('detail-level-change', { detail: { level: state.detailLevel } }),
+          );
         }
       }
 

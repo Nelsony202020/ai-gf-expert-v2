@@ -36,9 +36,9 @@ const { author } = Astro.props;
 
   <a
     href={author.profileUrl}
-    class="inline-flex items-center gap-1.5 text-sm font-bold text-accent hover:underline"
+    class="inline-flex items-center gap-1.5 text-sm font-bold text-accent"
   >
-    View full profile
+    <span class="link-text">View full profile</span>
     <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
   </a>
 </div>

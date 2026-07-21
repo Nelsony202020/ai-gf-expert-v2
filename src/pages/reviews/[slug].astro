@@ -6,8 +6,9 @@ import ReviewHero from '../../components/review/ReviewHero.astro';
 import TabBar from '../../components/review/TabBar.astro';
 import type { Tab } from '../../components/review/TabBar.astro';
 import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
+import ReviewArticleTab from '../../components/review/tabs/ReviewArticleTab.astro';
+import MarketDataTab from '../../components/review/tabs/MarketDataTab.astro';
 import RatingsSpecsTab from '../../components/review/tabs/RatingsSpecsTab.astro';
-import ReviewTab from '../../components/review/tabs/ReviewTab.astro';
 import PlaceholderTab from '../../components/review/tabs/PlaceholderTab.astro';
 import PhotosVideosTab from '../../components/review/tabs/PhotosVideosTab.astro';
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
@@ -31,6 +32,7 @@ const tabs: Tab[] = [
   { id: 'review', label: 'Review' },
   { id: 'photos', label: 'Photos & Videos' },
   { id: 'pricing', label: 'Pricing' },
+  { id: 'market-data', label: 'Market Data' },
 ];
 
 const title = `${product.name} Review (${product.reviewedDate}) — Lovelace Reviews`;
@@ -51,7 +53,7 @@ const description = product.tagline;
         <RatingsSpecsTab product={product} />
       </div>
       <div data-tab-panel="review" class="hidden">
-        <ReviewTab product={product} />
+        <ReviewArticleTab product={product} />
       </div>
       <div data-tab-panel="photos" class="hidden">
         <PhotosVideosTab product={product} />
@@ -62,6 +64,9 @@ const description = product.tagline;
           icon="sell"
           description="A detailed breakdown of every plan, what each tier unlocks, and how the value compares to competitors is coming soon."
         />
+      </div>
+      <div data-tab-panel="market-data" class="hidden">
+        <MarketDataTab product={product} />
       </div>
     </div>
   </main>
@@ -112,8 +117,7 @@ const description = product.tagline;
       if (!content) return;
 
       const ratingsRoot = document.querySelector<HTMLElement>('[data-ratings-root]');
-      const detailLevel = ratingsRoot?.dataset.detailLevel ?? 'all-in';
-      if (detailLevel === 'skim') return;
+      const detailLevel = ratingsRoot?.dataset.detailLevel ?? 'skim';
 
       const willOpen = force ?? content.classList.contains('hidden');
 
@@ -148,6 +152,61 @@ const description = product.tagline;
 
     // Sidebar / tooltip category jumps -> ratings tab + expand + scroll
     document.addEventListener('click', (e) => {
+      const viewBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-view-results]');
+      if (viewBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const categoryKey = viewBtn.dataset.category;
+        const subscoreName = viewBtn.dataset.subscore;
+        const contributor = viewBtn.dataset.contributor;
+        if (!categoryKey) return;
+
+        setActiveTab('ratings', false);
+
+        const ratingsRoot = document.querySelector<HTMLElement>('[data-ratings-root]');
+        if (ratingsRoot && ratingsRoot.dataset.detailLevel !== 'all-in') {
+          ratingsRoot.dataset.detailLevel = 'all-in';
+          document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
+            input.checked = input.value === 'all-in';
+          });
+          document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level: 'all-in' } }));
+        }
+
+        const categoryEl = document.querySelector<HTMLElement>(`[data-category="${categoryKey}"]`);
+        const toggle = categoryEl?.querySelector<HTMLElement>('[data-accordion-toggle]');
+        if (toggle) toggleAccordion(toggle, true);
+
+        let highlightEl: HTMLElement | null = null;
+
+        if (subscoreName && categoryEl) {
+          const cards = Array.from(categoryEl.querySelectorAll<HTMLElement>('[data-subscore-select]'));
+          const match = cards.find((c) => {
+            const label = c.querySelector('[data-subscore-label]')?.textContent?.trim();
+            return label?.toLowerCase() === subscoreName.toLowerCase();
+          });
+          const index = match?.dataset.subscoreIndex ?? '0';
+          (categoryEl as HTMLElement & { selectSubscore?: (i: string, scroll?: boolean) => void }).selectSubscore?.(index, true);
+
+          if (contributor && match) {
+            const panel = categoryEl.querySelector<HTMLElement>(`[data-subscore-panel][data-subscore-index="${index}"]`);
+            const rows = Array.from(panel?.querySelectorAll<HTMLElement>('.evidence-table__row') ?? []);
+            highlightEl = rows.find((r) => r.textContent?.includes(contributor)) ?? panel;
+          } else {
+            highlightEl = match ?? categoryEl;
+          }
+        } else {
+          highlightEl = categoryEl;
+        }
+
+        if (highlightEl) {
+          highlightEl.classList.add('results-highlight');
+          const y = highlightEl.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET - 12;
+          window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
+          setTimeout(() => highlightEl?.classList.remove('results-highlight'), 2400);
+        }
+        return;
+      }
+
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-goto-category]');
       if (!btn) return;
       e.preventDefault();

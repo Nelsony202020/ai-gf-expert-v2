@@ -1,0 +1,42 @@
+---
+interface Props {
+  /** Dark-mode / default asset path */
+  src: string;
+  /** Light-mode asset (built-in circle artwork). Falls back to src. */
+  srcLight?: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+  class?: string;
+}
+
+const {
+  src,
+  srcLight,
+  alt = '',
+  width,
+  height,
+  class: className = '',
+} = Astro.props;
+
+const light = srcLight ?? src;
+---
+
+<span class={`brand-icon-pair inline-flex shrink-0 ${className}`}>
+  <img
+    src={light}
+    alt={alt}
+    width={width}
+    height={height}
+    loading="lazy"
+    class="brand-icon brand-icon--light object-contain"
+  />
+  <img
+    src={src}
+    alt={alt}
+    width={width}
+    height={height}
+    loading="lazy"
+    class="brand-icon brand-icon--dark object-contain hidden"
+  />
+</span>

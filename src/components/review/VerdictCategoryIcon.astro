@@ -1,0 +1,33 @@
+---
+interface Props {
+  id: string;
+  class?: string;
+}
+
+const { id, class: className = 'w-5 h-5' } = Astro.props;
+
+const icons: Record<string, string> = {
+  overall: 'leaderboard',
+  characters: 'groups',
+  customization: 'draw',
+  chat: 'chat_bubble',
+  'chat-features': 'widgets',
+  images: 'photo_library',
+  video: 'videocam',
+  privacy: 'shield',
+  pricing: 'payments',
+};
+
+const icon = icons[id] ?? 'category';
+---
+
+<span class={`material-symbols-outlined verdict-cat-icon ${className}`} style="font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;">
+  {icon}
+</span>
+
+<style>
+  .verdict-cat-icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+</style>

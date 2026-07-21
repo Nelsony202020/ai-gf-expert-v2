@@ -1,0 +1,424 @@
+---
+import type { Product } from '../../../data/products';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+
+const sections = [
+  { id: 'first-impressions', label: 'First Impressions' },
+  { id: 'chat-experience', label: 'Chat Experience' },
+  { id: 'media-experience', label: 'Media Experience' },
+  { id: 'pricing-in-real-use', label: 'Pricing in Real Use' },
+  { id: 'what-stands-out', label: 'What Stands Out' },
+  { id: 'what-frustrated-me', label: 'What Frustrated Me' },
+  { id: 'final-recommendation', label: 'Final Recommendation' },
+];
+---
+
+<section class="bg-white py-12 md:py-14" data-review-article>
+  <div class="section-container px-4 md:px-8">
+    <div class="review-article-layout">
+      <aside class="review-toc" data-review-toc aria-label="Table of contents">
+        <div class="review-toc__sticky">
+          <div class="review-toc__rail">
+            <button
+              type="button"
+              class="review-toc__toggle"
+              data-review-toc-toggle
+              aria-expanded="false"
+              aria-controls="review-toc-panel"
+              aria-label="Toggle table of contents"
+            >
+              <span class="material-symbols-outlined">menu_book</span>
+            </button>
+          </div>
+          <nav class="review-toc__drawer" data-review-toc-panel id="review-toc-panel" aria-hidden="true">
+            <p class="review-toc__title">On this page</p>
+            <ol class="review-toc__list">
+              {
+                sections.map((s) => (
+                  <li>
+                    <a href={`#${s.id}`} class="review-toc__link" data-review-toc-link>
+                      {s.label}
+                    </a>
+                  </li>
+                ))
+              }
+            </ol>
+          </nav>
+        </div>
+      </aside>
+
+      <article class="review-article prose-review min-w-0">
+        <header class="mb-10">
+          <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-3">
+            {product.name} — hands-on review
+          </h2>
+          <p class="text-base text-on-surface-variant leading-relaxed max-w-2xl">
+            This is my personal write-up after spending real time with {product.name}. The scores tell one story;
+            this section is what it actually felt like day to day.
+          </p>
+        </header>
+
+        <section id="first-impressions" class="review-section">
+          <h3>First Impressions</h3>
+          <p>
+            I opened {product.name} expecting another polished chat wrapper, and the first surprise was how quickly
+            the characters felt like people rather than templates. Setup was straightforward — no awkward onboarding
+            quiz — and I was talking to a companion within a couple of minutes.
+          </p>
+          <p>
+            What felt good: the UI is clean, the default character has personality, and nothing screams "beta product."
+            What felt a little awkward: a few premium features are visible before you upgrade, which nudges you early
+            even if you are just exploring.
+          </p>
+        </section>
+
+        <section id="chat-experience" class="review-section">
+          <h3>Chat Experience</h3>
+          <p>
+            This is where {product.name} earns most of its score for me. Replies stay in character, remember context
+            across sessions better than average, and rarely fall into the generic "As an AI language model…" trap.
+          </p>
+          <p>
+            What surprised me: emotional beats land — frustration, flirtation, inside jokes — without me having to
+            over-direct every message. What annoyed me: occasional repetition after long sessions, especially when
+            I pushed the same scenario for 30+ minutes.
+          </p>
+          <p>
+            In real use, the chat score mostly means "will I keep coming back?" For {product.name}, yes — at least
+            for roleplay-heavy sessions.
+          </p>
+        </section>
+
+        <section id="media-experience" class="review-section">
+          <h3>Media Experience</h3>
+          <p>
+            Images and video are a mixed bag. When generation hits, results can look genuinely good — especially
+            character portraits that match the chat persona. When it misses, you wait longer than you'd like for
+            something slightly off-model.
+          </p>
+          <p>
+            What felt good: voice notes and call-style features add immersion without feeling gimmicky. What felt
+            awkward: switching between chat and media modes breaks the fantasy for a few seconds while assets load.
+          </p>
+        </section>
+
+        <section id="pricing-in-real-use" class="review-section">
+          <h3>Pricing in Real Use</h3>
+          <p>
+            On paper, {product.name} sits in the mid-premium tier. In practice, the free tier is usable enough to
+            understand the product, but the meaningful features — better models, faster media, deeper memory — sit
+            behind the paywall fast.
+          </p>
+          <p>
+            What the pricing numbers meant for me: I would pay if chat quality is my priority; I'd hesitate if I
+            mainly want unlimited image generation. The value depends on how often you actually open the app, not
+            the feature list alone.
+          </p>
+        </section>
+
+        <section id="what-stands-out" class="review-section">
+          <h3>What Stands Out</h3>
+          <p>
+            Character depth and consistency. {product.name} does not just offer quantity — the companions feel
+            differentiated, and that makes repeat sessions more interesting than swapping skins on the same bot.
+          </p>
+          <p>
+            The overall performance score reflects that strength: this is a product built for people who want an
+            ongoing relationship with a persona, not a one-off prompt toy.
+          </p>
+        </section>
+
+        <section id="what-frustrated-me" class="review-section">
+          <h3>What Frustrated Me</h3>
+          <p>
+            Media latency is the main friction point. When I am in a flow state chatting, waiting 10–15 seconds
+            for an image pulls me out. Privacy settings also take a bit of digging — not terrible, but not as
+            front-and-center as I'd prefer for this category.
+          </p>
+          <p>
+            Minor UI nits add up: some buttons look tappable but aren't, and the upgrade prompts appear at
+            emotionally bad moments (mid-conversation).
+          </p>
+        </section>
+
+        <section id="final-recommendation" class="review-section">
+          <h3>Final Recommendation</h3>
+          <p>
+            Would I keep using {product.name}? Yes — primarily for chat and character variety. I'd treat media
+            as a bonus, not the main reason to subscribe.
+          </p>
+          <p>
+            If you want a companion that feels present, remembers you, and supports longer roleplay arcs,
+            {product.name} is an easy recommend. If you need fast, unlimited visual generation or the cheapest
+            entry point, look elsewhere first — then come back if the conversation quality wins you over.
+          </p>
+        </section>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style is:global>
+  .gallery-thumb-scroll {
+    color: var(--color-on-surface);
+  }
+
+  [data-theme='dark'] .gallery-thumb-scroll {
+    background: rgb(26 31 24 / 92%) !important;
+    border-color: #2a3328 !important;
+    color: rgb(255 255 255 / 88%);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 35%);
+  }
+
+  .review-article-layout {
+    margin: 0 auto;
+  }
+
+  .review-toc {
+    display: none;
+  }
+
+  @media (min-width: 1100px) {
+    [data-review-article] .section-container {
+      max-width: none;
+      padding-left: max(1rem, calc((100vw - 720px) / 2));
+      padding-right: max(1rem, calc((100vw - 720px) / 2));
+      overflow: visible;
+    }
+
+    .review-article-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 720px);
+      justify-content: center;
+    }
+
+    .review-toc {
+      display: block;
+      grid-column: 1;
+      grid-row: 1;
+      justify-self: start;
+      align-self: start;
+      position: sticky;
+      top: 8.5rem;
+      z-index: 20;
+      margin-left: calc(-56px - 12px);
+      width: max-content;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .review-toc__sticky,
+    .review-toc__rail,
+    .review-toc__toggle,
+    .review-toc__drawer {
+      pointer-events: auto;
+    }
+
+    .review-toc__sticky {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      overflow: visible;
+    }
+
+    .review-article {
+      grid-column: 1;
+      grid-row: 1;
+    }
+  }
+
+  .review-toc__rail {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .review-toc__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 10px;
+    background: #f5f5f5;
+    color: var(--color-on-surface);
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+
+  .review-toc__toggle:hover,
+  .review-toc.is-open .review-toc__toggle {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background: rgb(219 39 119 / 5%);
+  }
+
+  .review-toc__drawer {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 8px);
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: #f5f5f5;
+    transition:
+      width 0.25s ease,
+      opacity 0.2s ease,
+      padding 0.25s ease,
+      border-color 0.2s ease;
+    padding: 0;
+    pointer-events: none;
+  }
+
+  .review-toc.is-open .review-toc__drawer {
+    width: 220px;
+    opacity: 1;
+    padding: 14px 16px;
+    border-color: var(--color-surface-variant);
+    pointer-events: auto;
+  }
+
+  .review-toc__title {
+    margin: 0 0 10px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+    white-space: nowrap;
+  }
+
+  .review-toc__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .review-toc__link {
+    display: block;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-on-surface-variant);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .review-toc__link:hover,
+  .review-toc__link.is-active {
+    background: rgb(219 39 119 / 8%);
+    color: var(--color-accent);
+  }
+
+  .prose-review {
+    width: 100%;
+  }
+
+  .review-section {
+    margin-bottom: 2.5rem;
+    scroll-margin-top: 8rem;
+  }
+
+  .review-section h3 {
+    margin: 0 0 12px;
+    font-size: 1.375rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .review-section p {
+    margin: 0 0 14px;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--color-on-surface-variant);
+  }
+
+  .review-section p:last-child {
+    margin-bottom: 0;
+  }
+
+  [data-theme='dark'] .review-toc__toggle {
+    background: #1a1f18;
+    border-color: #2a3328;
+    color: rgb(255 255 255 / 88%);
+  }
+
+  [data-theme='dark'] .review-toc__drawer {
+    background: #1a1f18;
+  }
+
+  [data-theme='dark'] .review-toc.is-open .review-toc__drawer {
+    border-color: #2a3328;
+  }
+
+  [data-theme='dark'] .review-toc__link:hover,
+  [data-theme='dark'] .review-toc__link.is-active {
+    background: rgb(219 39 119 / 12%);
+  }
+</style>
+
+<script>
+  function initReviewToc() {
+    const root = document.querySelector('[data-review-article]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const toc = root.querySelector('[data-review-toc]');
+    const toggle = root.querySelector('[data-review-toc-toggle]');
+    const panel = root.querySelector('[data-review-toc-panel]');
+    const links = Array.from(root.querySelectorAll('[data-review-toc-link]'));
+    if (!toc || !toggle || !panel) return;
+
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+      panel.setAttribute('aria-hidden', open ? 'true' : 'false');
+      toc.classList.toggle('is-open', !open);
+    });
+
+    links.forEach((link) => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth < 1100) {
+          toggle.setAttribute('aria-expanded', 'false');
+          panel.setAttribute('aria-hidden', 'true');
+          toc.classList.remove('is-open');
+        }
+      });
+    });
+
+    const headings = links
+      .map((l) => document.querySelector(l.getAttribute('href') || ''))
+      .filter(Boolean) as Element[];
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const id = entry.target.id;
+          links.forEach((l) => {
+            l.classList.toggle('is-active', l.getAttribute('href') === `#${id}`);
+          });
+        });
+      },
+      { rootMargin: '-30% 0px -55% 0px', threshold: 0 },
+    );
+
+    headings.forEach((h) => observer.observe(h));
+  }
+
+  initReviewToc();
+  document.addEventListener('astro:page-load', initReviewToc);
+</script>

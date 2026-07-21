@@ -13,6 +13,7 @@ const rest = entries.slice(1);
 {
   latest && (
     <div class="changelog-footnote" data-changelog-compact>
+      <p class="changelog-footnote__heading">Recent updates</p>
       <button type="button" class="changelog-footnote__toggle" data-changelog-toggle aria-expanded="false">
         <span class="changelog-footnote__dot" aria-hidden="true" />
         <span class="changelog-footnote__text">
@@ -66,6 +67,15 @@ const rest = entries.slice(1);
     margin-bottom: 1.25rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid rgb(226 226 226 / 60%);
+  }
+
+  .changelog-footnote__heading {
+    margin: 0 0 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-on-surface);
   }
 
   .changelog-footnote__toggle {
@@ -126,5 +136,15 @@ const rest = entries.slice(1);
     font-size: 10px;
     color: var(--color-tertiary);
     line-height: 1.4;
+  }
+</style>
+
+<style is:global>
+  [data-theme='dark'] .changelog-footnote {
+    border-bottom-color: rgb(255 255 255 / 10%);
+  }
+
+  [data-theme='dark'] .changelog-footnote__heading {
+    color: #ececec;
   }
 </style>
