@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import AppDirectory from '../components/directory/AppDirectory.astro';
+import { buildExplorerApps } from '../data/homepage';
+
+const apps = buildExplorerApps();
+---
+
+<BaseLayout
+  title="Explore AI Girlfriend Apps — Directory | AI Girlfriend Expert"
+  description="Browse and filter AI companion apps tested by our editorial team. Compare scores, pricing, features, and read full reviews."
+>
+  <Header />
+  <main>
+    <AppDirectory apps={apps} basePath="/apps" />
+  </main>
+  <Footer />
+</BaseLayout>

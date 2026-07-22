@@ -1,0 +1,95 @@
+---
+import type { HomeExplorerApp } from '../../data/homepage';
+import { buildExplorerApps } from '../../data/homepage';
+import { getProduct } from '../../data/products';
+import { getScoreChipClass, fmtScore } from '../../lib/scores';
+import OverallScoreTooltip from '../review/tooltips/OverallScoreTooltip.astro';
+import RatingHierarchyPipeline from '../review/tooltips/RatingHierarchyPipeline.astro';
+import TooltipActionLinks from '../review/tooltips/TooltipActionLinks.astro';
+import InfoIcon from '../ui/InfoIcon.astro';
+
+interface Props {
+  app: HomeExplorerApp;
+}
+
+const { app } = Astro.props;
+const fullProduct = getProduct(app.slug);
+const tooltipId = `overall-explorer-${app.id}`;
+const currentChip = getScoreChipClass(app.overallScore);
+const scorePoints = buildExplorerApps().map((entry) => entry.overallScore);
+const avgScore = scorePoints.length
+  ? scorePoints.reduce((sum, score) => sum + score, 0) / scorePoints.length
+  : app.overallScore;
+---
+
+{
+  fullProduct ? (
+    <OverallScoreTooltip product={fullProduct} methodologyOnly>
+      <span class="home-app-card__score-info">
+        <InfoIcon size="xs" class="text-tertiary/70 hover:text-accent" />
+      </span>
+    </OverallScoreTooltip>
+  ) : (
+    <>
+      <span
+        role="button"
+        tabindex="0"
+        class="rt-tooltip-trigger home-app-card__score-info"
+        data-ratings-tooltip-trigger={tooltipId}
+        aria-label={`About ${app.name} overall performance score`}
+      >
+        <InfoIcon size="xs" class="text-tertiary/70 hover:text-accent" />
+      </span>
+      <template id={`tooltip-${tooltipId}`}>
+        <div class="ratings-tooltip-panel ratings-tooltip-panel--overall ratings-tooltip-panel--compact">
+          <div class="ratings-tooltip-panel__header ratings-tooltip-panel__header--compact">
+            <div class="ratings-tooltip-panel__header-grid">
+              <div class="min-w-0">
+                <p class="ratings-tooltip-panel__section-title">What it is</p>
+                <p class="ratings-tooltip-panel__desc">{app.overallSummary}</p>
+              </div>
+              <div class="ratings-tooltip-panel__score-block">
+                <div class="ratings-tooltip-panel__score-row">
+                  <span class={`rt-score-chip ${currentChip}`}>{fmtScore(app.overallScore)}</span>
+                  <span class="ratings-tooltip-panel__score-label">{app.name}</span>
+                </div>
+                <p class="ratings-tooltip-panel__avg">
+                  Avg: <span class="tabular-nums">{fmtScore(avgScore)}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
+            <div class="ratings-tooltip-panel__split">
+              <div class="ratings-tooltip-panel__split-col">
+                <p class="ratings-tooltip-panel__section-title">Where this sits</p>
+                <RatingHierarchyPipeline highlight="overall" brandName={app.name} showTitle={false} />
+              </div>
+              <div class="ratings-tooltip-panel__split-col">
+                <p class="ratings-tooltip-panel__section-title">Category scores</p>
+                <div class="rt-comp-list rt-comp-list--dense">
+                  {
+                    app.categoryScores.map((category) => {
+                      const chip = getScoreChipClass(category.score);
+                      return (
+                        <div class="rt-comp-row rt-comp-row--inline">
+                          <div class="rt-comp-row__main">
+                            <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>
+                              {fmtScore(category.score)}
+                            </span>
+                            <span class="rt-comp-name rt-comp-name--truncate">{category.name}</span>
+                          </div>
+                          <TooltipActionLinks categoryKey={category.key} compact methodologyOnly />
+                        </div>
+                      );
+                    })
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </>
+  )
+}

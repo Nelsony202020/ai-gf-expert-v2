@@ -1,0 +1,58 @@
+---
+import type { explorerPriorityOptions } from '../../data/homepage';
+
+type PriorityOption = (typeof explorerPriorityOptions)[number];
+
+interface Props {
+  slotIndex: number;
+  value: string;
+  options: readonly PriorityOption[];
+}
+
+const { slotIndex, value, options } = Astro.props;
+const selected = options.find((opt) => opt.value === value) ?? options[0];
+---
+
+<div class="home-priority-picker" data-home-priority-picker>
+  <input type="hidden" name={`home-priority-${slotIndex}`} value={selected.value} data-home-priority />
+  <button
+    type="button"
+    class="home-priority-picker__trigger"
+    data-priority-trigger
+    aria-expanded="false"
+    aria-haspopup="listbox"
+    aria-label={`Priority ${slotIndex + 1}: ${selected.label}`}
+  >
+    <span class="home-priority-picker__trigger-label">{selected.label}</span>
+    <span class="material-symbols-outlined home-priority-picker__chevron" aria-hidden="true">expand_more</span>
+  </button>
+  <div class="home-priority-picker__menu" data-priority-menu hidden role="listbox">
+    <div class="home-priority-picker__menu-head">
+      <span class="home-priority-picker__menu-title">Choose a priority</span>
+      <span class="home-priority-picker__menu-badge">Score focuses on…</span>
+    </div>
+    {
+      options.map((opt) => (
+        <button
+          type="button"
+          class="home-priority-picker__option"
+          role="option"
+          data-priority-option={opt.value}
+          data-priority-icon={opt.icon}
+          data-priority-color={opt.color}
+          data-priority-label={opt.label}
+          aria-selected={opt.value === selected.value ? 'true' : 'false'}
+        >
+          <span class="home-priority-picker__option-icon" style={`background:${opt.color}20;color:${opt.color}`}>
+            <span class="material-symbols-outlined" aria-hidden="true">{opt.icon}</span>
+          </span>
+          <span class="home-priority-picker__option-copy">
+            <span class="home-priority-picker__option-label">{opt.label}</span>
+            <span class="home-priority-picker__option-desc">{opt.description}</span>
+          </span>
+          <span class="material-symbols-outlined home-priority-picker__check" aria-hidden="true">check</span>
+        </button>
+      ))
+    }
+  </div>
+</div>

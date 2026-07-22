@@ -1,43 +1,120 @@
 ---
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
-import ScorePill from '../review/ScorePill.astro';
+import { getRoundupRibbonHref, getRoundupRibbonLabel } from '../../data/homepage';
+import { fmtScore, getScoreVisual } from '../../lib/scores';
 
 interface Props {
   picks: RoundupPick[];
+  embedded?: boolean;
 }
 
-const { picks } = Astro.props;
+const { picks, embedded = false } = Astro.props;
 ---
 
-<section class="home-section section-container px-4 md:px-8" aria-labelledby="home-top-picks-title">
-  <div class="home-section__head">
-    <h2 id="home-top-picks-title" class="home-section__title">Our top picks</h2>
-    <a href="/best/ai-girlfriend" class="home-section__link">
-      View full rankings
-      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
-    </a>
-  </div>
+{
+  embedded ? (
+    <div class="home-picks">
+      <div class="home-section__head home-section__head--stack">
+        <div class="home-section__intro">
+          <h2 id="home-top-picks-title" class="home-section__title home-section__title--icon">
+            <span class="material-symbols-outlined home-section__title-icon" aria-hidden="true">star</span>
+            Our top picks
+          </h2>
+          <p class="home-section__subtitle">
+            The best AI girlfriend apps, chosen after testing 24+ platforms.
+          </p>
+        </div>
+      </div>
 
-  <div class="home-picks__track-wrap">
-    <div class="home-picks__track" tabindex="0" role="region" aria-label="Editorial top picks">
-      {
-        picks.map((pick) => (
-          <a
-            href={pick.reviewUrl ?? `/best/ai-girlfriend#pick-${pick.id}`}
-            class="home-pick-card"
-          >
-            <span class="home-pick-card__ribbon">{pick.ribbon}</span>
-            <div class="home-pick-card__row">
-              <img class="home-pick-card__logo" src={pick.logo} alt="" width="48" height="48" loading="lazy" />
-              <div>
-                <h3 class="home-pick-card__name">{pick.name}</h3>
-                <ScorePill score={pick.overallScore} size="sm" />
-              </div>
-            </div>
-            <p class="home-pick-card__summary">{pick.overallSummary}</p>
-          </a>
-        ))
-      }
+      <div class="home-picks__stack">
+        {
+          picks.map((pick, index) => {
+            const reviewHref = pick.reviewUrl ?? `/best/ai-girlfriend#pick-${pick.id}`;
+            const thumb = pick.gallery[0]?.full ?? pick.logo;
+            const scoreVisual = getScoreVisual(pick.overallScore);
+            const ribbonLabel = getRoundupRibbonLabel(pick);
+            return (
+              <article class:list={['home-pick-card', index === 0 && 'home-pick-card--featured']}>
+                <div class="home-pick-card__inner">
+                  <div class="home-pick-card__main">
+                    <img class="home-pick-card__thumb" src={thumb} alt="" width="72" height="72" loading="lazy" />
+                    <div class="home-pick-card__copy">
+                      <h3 class="home-pick-card__name">{pick.name}</h3>
+                      <a href={getRoundupRibbonHref(pick)} class="home-pick-card__ribbon">
+                        {index === 0 && (
+                          <span class="material-symbols-outlined home-pick-card__ribbon-icon" aria-hidden="true">star</span>
+                        )}
+                        {ribbonLabel}
+                      </a>
+                      <p class="home-pick-card__summary">{pick.overallSummary}</p>
+                      <a href={reviewHref} class="home-pick-card__cta">
+                        Read review
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="home-pick-card__score-panel">
+                    <div class={`home-pick-card__score-value ${scoreVisual.bg}`}>{fmtScore(pick.overallScore)}</div>
+                    <span class="home-pick-card__score-caption">{pick.ribbon}</span>
+                  </div>
+                </div>
+              </article>
+            );
+          })
+        }
+      </div>
     </div>
-  </div>
-</section>
+  ) : (
+    <section class="home-section section-container px-4 md:px-8" aria-labelledby="home-top-picks-title">
+      <div class="home-section__head home-section__head--stack">
+        <div class="home-section__intro">
+          <h2 id="home-top-picks-title" class="home-section__title home-section__title--icon">
+            <span class="material-symbols-outlined home-section__title-icon" aria-hidden="true">star</span>
+            Our top picks
+          </h2>
+          <p class="home-section__subtitle">
+            The best AI girlfriend apps, chosen after testing 24+ platforms.
+          </p>
+        </div>
+      </div>
+
+      <div class="home-picks__grid">
+        {
+          picks.map((pick, index) => {
+            const reviewHref = pick.reviewUrl ?? `/best/ai-girlfriend#pick-${pick.id}`;
+            const thumb = pick.gallery[0]?.full ?? pick.logo;
+            const scoreVisual = getScoreVisual(pick.overallScore);
+            const ribbonLabel = getRoundupRibbonLabel(pick);
+            return (
+              <article class:list={['home-pick-card', index === 0 && 'home-pick-card--featured']}>
+                <div class="home-pick-card__inner">
+                  <div class="home-pick-card__main">
+                    <img class="home-pick-card__thumb" src={thumb} alt="" width="72" height="72" loading="lazy" />
+                    <div class="home-pick-card__copy">
+                      <h3 class="home-pick-card__name">{pick.name}</h3>
+                      <a href={getRoundupRibbonHref(pick)} class="home-pick-card__ribbon">
+                        {index === 0 && (
+                          <span class="material-symbols-outlined home-pick-card__ribbon-icon" aria-hidden="true">star</span>
+                        )}
+                        {ribbonLabel}
+                      </a>
+                      <p class="home-pick-card__summary">{pick.overallSummary}</p>
+                      <a href={reviewHref} class="home-pick-card__cta">
+                        Read review
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="home-pick-card__score-panel">
+                    <div class={`home-pick-card__score-value ${scoreVisual.bg}`}>{fmtScore(pick.overallScore)}</div>
+                    <span class="home-pick-card__score-caption">{pick.ribbon}</span>
+                  </div>
+                </div>
+              </article>
+            );
+          })
+        }
+      </div>
+    </section>
+  )
+}

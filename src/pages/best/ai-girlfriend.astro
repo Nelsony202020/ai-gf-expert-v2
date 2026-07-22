@@ -13,6 +13,7 @@ import RoundupCompare from '../../components/roundup/RoundupCompare.astro';
 import RoundupTestingSection from '../../components/roundup/RoundupTestingSection.astro';
 import RoundupFaq from '../../components/roundup/RoundupFaq.astro';
 import RoundupConclusion from '../../components/roundup/RoundupConclusion.astro';
+import RoundupAffiliateFineprint from '../../components/roundup/RoundupAffiliateFineprint.astro';
 import RoundupScoreBarAnimate from '../../components/roundup/RoundupScoreBarAnimate.astro';
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
@@ -32,6 +33,9 @@ const canonical = new URL('/best/ai-girlfriend', Astro.site ?? Astro.url.origin)
 >
   <Header />
   <main class="roundup-page" id="roundup-top" data-roundup-root data-reading-length="skim">
+    <div class="roundup-affiliate-bar section-container px-4 md:px-8">
+      <RoundupAffiliateFineprint />
+    </div>
     <RoundupHero roundup={roundup} />
 
     <div class="section-container px-4 md:px-8 pb-16 md:pb-24">

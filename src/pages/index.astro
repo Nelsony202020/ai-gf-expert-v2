@@ -4,7 +4,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import HomeHero from '../components/home/HomeHero.astro';
 import HomeTrustStrip from '../components/home/HomeTrustStrip.astro';
-import HomeTopPicks from '../components/home/HomeTopPicks.astro';
+import HomePicksAndCharacters from '../components/home/HomePicksAndCharacters.astro';
 import HomeAppExplorer from '../components/home/HomeAppExplorer.astro';
 import HomeFindMatch from '../components/home/HomeFindMatch.astro';
 import HomeRecentUpdates from '../components/home/HomeRecentUpdates.astro';
@@ -15,6 +15,7 @@ import HomeFinalCta from '../components/home/HomeFinalCta.astro';
 import {
   buildExplorerApps,
   featuredGuides,
+  featuredCharactersDisplayOrder,
   homeMeta,
   recentUpdates,
   topPicks,
@@ -28,7 +29,7 @@ const apps = buildExplorerApps();
   <main>
     <HomeHero />
     <HomeTrustStrip />
-    <HomeTopPicks picks={topPicks} />
+    <HomePicksAndCharacters picks={topPicks} characters={featuredCharactersDisplayOrder} />
     <HomeAppExplorer apps={apps} />
 
     <section class="home-section section-container px-4 md:px-8">

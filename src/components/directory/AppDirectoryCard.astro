@@ -1,0 +1,158 @@
+---
+import type { HomeExplorerApp } from '../../data/homepage';
+import {
+  appAcceptsCard,
+  appAcceptsCrypto,
+  appAcceptsPaypal,
+  EXPLORER_METRIC_CARDS,
+} from '../../data/homepage';
+import HomePaymentIcon from '../home/HomePaymentIcon.astro';
+import AppOverallScoreTooltip from './AppOverallScoreTooltip.astro';
+import VerifiedCheck from '../ui/VerifiedCheck.astro';
+import { fmtScore, getScoreVisual } from '../../lib/scores';
+
+interface Props {
+  app: HomeExplorerApp;
+  formatReviewCount: (count: number) => string;
+  showMetrics?: boolean;
+}
+
+const { app, formatReviewCount, showMetrics = true } = Astro.props;
+const showCard = appAcceptsCard(app);
+const showPaypal = appAcceptsPaypal(app);
+const showCrypto = appAcceptsCrypto(app);
+const reviewHref = app.reviewUrl ?? `/best/ai-girlfriend#pick-${app.id}`;
+const overallVisual = getScoreVisual(app.overallScore);
+
+function metricScore(key: string) {
+  return app.categoryScores.find((c) => c.key === key)?.score ?? app.overallScore;
+}
+---
+
+<article
+  class="home-app-card"
+  data-home-app={app.id}
+  data-overall-score={app.overallScore}
+  data-price={app.priceMonthly}
+  data-review-count={app.reviewCount}
+  data-filters={app.filters.join(',')}
+  data-payments={app.payments.join(',')}
+  data-category-scores={JSON.stringify(Object.fromEntries(app.categoryScores.map((c) => [c.key, c.score])))}
+>
+  <div class="home-app-card__media">
+    <a
+      href={app.roundupHref}
+      class={`home-app-card__ribbon home-app-card__ribbon--${app.ribbonKey}`}
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">star</span>
+      {app.roundupRibbonLabel}
+    </a>
+    <div class="home-app-card__media-actions">
+      <button
+        type="button"
+        class="home-app-card__icon-btn"
+        data-home-save={app.id}
+        aria-label={`Save ${app.name}`}
+        aria-pressed="false"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+      </button>
+      <button
+        type="button"
+        class="home-app-card__icon-btn"
+        data-home-compare-btn={app.id}
+        data-home-compare-name={app.name}
+        data-home-compare-score={app.overallScore}
+        aria-label={`Compare ${app.name}`}
+        aria-pressed="false"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">compare_arrows</span>
+      </button>
+    </div>
+    <a href={reviewHref} class="home-app-card__media-link" tabindex="-1" aria-hidden="true">
+      <img
+        class="home-app-card__image"
+        src={app.gallery[0]?.full ?? app.logo}
+        alt={app.gallery[0]?.alt ?? `${app.name} screenshot`}
+        width="640"
+        height="400"
+        loading="lazy"
+      />
+    </a>
+  </div>
+
+  <div class="home-app-card__body">
+    <div class="home-app-card__top">
+      <img class="home-app-card__logo" src={app.logo} alt="" width="48" height="48" loading="lazy" />
+      <div class="home-app-card__identity">
+        <h3 class="home-app-card__name">
+          <a href={reviewHref}>{app.name}</a>
+          {app.hasReview && (
+            <span class="home-app-card__verified">
+              <VerifiedCheck class="w-[16px] h-[16px]" />
+              <span>Verified</span>
+            </span>
+          )}
+        </h3>
+        <p class="home-app-card__summary">{app.overallSummary}</p>
+      </div>
+      <div class="home-app-card__overall">
+        <div class={`home-app-card__overall-score ${overallVisual.bg}`}>{fmtScore(app.overallScore)}</div>
+        <div class="home-app-card__overall-label">
+          <span>Overall score</span>
+          <AppOverallScoreTooltip app={app} />
+        </div>
+      </div>
+    </div>
+
+    {
+      showMetrics && (
+        <div class="home-app-card__metric-grid">
+          {
+            EXPLORER_METRIC_CARDS.map((metric) => {
+              const score = metricScore(metric.key);
+              return (
+                <div class="home-app-card__metric-tile">
+                  <span class="material-symbols-outlined home-app-card__metric-icon" style={`color:${metric.color}`} aria-hidden="true">
+                    {metric.icon}
+                  </span>
+                  <span class="home-app-card__metric-label">{metric.label}</span>
+                  <span class="home-app-card__metric-value">{fmtScore(score)}</span>
+                </div>
+              );
+            })
+          }
+        </div>
+      )
+    }
+
+    <div class="home-app-card__footer">
+      <div class="home-app-card__footer-main">
+        <p class="home-app-card__price">
+          <strong>{app.priceLabel}</strong>
+          {app.creditsNote && <span class="home-app-card__credits">{app.creditsNote}</span>}
+        </p>
+        <div class="home-app-card__icons" aria-label="Payment methods">
+          {showCard && <HomePaymentIcon type="card" tooltipId={`pay-card-${app.id}`} />}
+          {showPaypal && <HomePaymentIcon type="paypal" tooltipId={`pay-paypal-${app.id}`} />}
+          {showCrypto && <HomePaymentIcon type="crypto" tooltipId={`pay-crypto-${app.id}`} />}
+        </div>
+      </div>
+      <button
+        type="button"
+        class="home-app-card__like"
+        data-home-like={app.id}
+        aria-label={`Like ${app.name}`}
+        aria-pressed="false"
+      >
+        <span class="material-symbols-outlined home-app-card__like-icon" aria-hidden="true">favorite</span>
+        {formatReviewCount(app.reviewCount)}
+      </button>
+    </div>
+
+    <a class="home-app-card__cta" href={reviewHref}>
+      Read full review
+      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
+    </a>
+  </div>
+</article>

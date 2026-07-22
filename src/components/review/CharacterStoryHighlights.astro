@@ -1,15 +1,43 @@
 ---
-import type { OverviewCharacter } from '../../../data/products';
+import type { StoryHighlightCharacter } from '../../../data/products';
 import VerifiedCheck from '../ui/VerifiedCheck.astro';
 
+export type { StoryHighlightCharacter };
+
 interface Props {
-  characters: OverviewCharacter[];
+  characters: StoryHighlightCharacter[];
   productName: string;
+  heading?: string;
+  badge?: string;
+  hideHeading?: boolean;
+  maxDisplay?: number;
+  showPlatform?: boolean;
+  showVerified?: boolean;
+  layout?: 'contained' | 'full-bleed';
+  staticCarousel?: boolean;
+  featuredGrid?: boolean;
+  manualDrag?: boolean;
 }
 
-const { characters, productName } = Astro.props;
-const displayChars = characters.slice(0, 4);
+const {
+  characters,
+  productName,
+  heading,
+  badge,
+  hideHeading = false,
+  maxDisplay = 4,
+  showPlatform = false,
+  showVerified = true,
+  layout = 'contained',
+  staticCarousel = false,
+  featuredGrid = false,
+  manualDrag = false,
+} = Astro.props;
+
+const displayChars = characters.slice(0, maxDisplay);
+const carouselChars = manualDrag || !staticCarousel ? [...displayChars, ...displayChars] : displayChars;
 const dataId = `char-stories-${productName.replace(/\s+/g, '-').toLowerCase()}`;
+const headingText = heading ?? `Meet some of ${productName}'s characters`;
 
 function segmentPath(index: number, total: number, radius = 46): string {
   const gapDegrees = total > 1 ? 12 : 0;
@@ -27,53 +55,75 @@ function segmentPath(index: number, total: number, radius = 46): string {
 }
 ---
 
-<section class="char-stories" data-char-stories={dataId}>
-  <h3 class="char-stories__heading">
-    <img src="/brand/herman-in-love-icon.svg" alt="" class="char-stories__heading-icon" width="44" height="44" />
-    Meet some of {productName}'s characters
-  </h3>
+<section
+  class:list={[
+    'char-stories',
+    layout === 'full-bleed' && 'char-stories--full-bleed',
+    showPlatform && 'char-stories--with-platform',
+    staticCarousel && 'char-stories--static',
+    featuredGrid && 'char-stories--featured-grid',
+    manualDrag && 'char-stories--manual-drag',
+  ]}
+  data-char-stories={dataId}
+  data-char-static={staticCarousel ? 'true' : undefined}
+  data-char-manual-drag={manualDrag ? 'true' : undefined}
+>
+  {
+    !hideHeading && (
+      <h3 class="char-stories__heading">
+        <img src="/brand/herman-in-love-icon.svg" alt="" class="char-stories__heading-icon" width="44" height="44" />
+        {headingText}
+        {badge && <span class="char-stories__badge">{badge}</span>}
+      </h3>
+    )
+  }
 
-  <div class="char-stories__carousel" data-char-carousel tabindex="0">
-    <div class="char-stories__track" data-char-track>
-      {
-        [...displayChars, ...displayChars].map((char, i) => {
-          const origIndex = i % displayChars.length;
-          const slideCount = char.storySlides.length;
-          const thumb = char.storySlides[char.storySlides.length - 1] ?? char.avatar;
-          return (
-            <button
-              type="button"
-              class="char-stories__item"
-              data-story-open={origIndex}
-              aria-label={`View ${char.name}'s story`}
-            >
-              <div class="char-stories__ring-wrap">
-                <svg class="char-stories__ring" viewBox="0 0 100 100" aria-hidden="true">
-                  {
-                    Array.from({ length: slideCount }).map((_, seg) => (
-                      <path
-                        d={segmentPath(seg, slideCount)}
-                        fill="none"
-                        stroke-width="5"
-                        stroke-linecap="round"
-                        class="char-stories__segment"
-                        data-segment={seg}
-                      />
-                    ))
-                  }
-                </svg>
-                <div class="char-stories__avatar-wrap">
-                  <img src={thumb} alt={char.name} class="char-stories__avatar" loading="lazy" width="64" height="64" />
+  <div class="char-stories__carousel-outer">
+    <div class="char-stories__carousel" data-char-carousel tabindex="0">
+      <div class="char-stories__track" data-char-track>
+        {
+          carouselChars.map((char, i) => {
+            const origIndex = i % displayChars.length;
+            const slideCount = char.storySlides.length;
+            const thumb = char.storySlides[char.storySlides.length - 1] ?? char.avatar;
+            return (
+              <button
+                type="button"
+                class="char-stories__item"
+                data-story-open={origIndex}
+                aria-label={`View ${char.name}'s story`}
+              >
+                <div class="char-stories__ring-wrap">
+                  <svg class="char-stories__ring" viewBox="0 0 100 100" aria-hidden="true">
+                    {
+                      Array.from({ length: slideCount }).map((_, seg) => (
+                        <path
+                          d={segmentPath(seg, slideCount)}
+                          fill="none"
+                          stroke-width="5"
+                          stroke-linecap="round"
+                          class="char-stories__segment"
+                          data-segment={seg}
+                        />
+                      ))
+                    }
+                  </svg>
+                  <div class="char-stories__avatar-wrap">
+                    <img src={thumb} alt={char.name} class="char-stories__avatar" loading="lazy" width="64" height="64" />
+                  </div>
                 </div>
-              </div>
-              <span class="char-stories__name-row">
-                <span class="char-stories__name">{char.name}</span>
-                <VerifiedCheck class="char-stories__verified" />
-              </span>
-            </button>
-          );
-        })
-      }
+                <span class="char-stories__label-stack">
+                  <span class="char-stories__name-row">
+                    <span class="char-stories__name">{char.name}</span>
+                    {showVerified && <VerifiedCheck class="char-stories__verified" />}
+                  </span>
+                  {showPlatform && char.platform && <span class="char-stories__platform">{char.platform}</span>}
+                </span>
+              </button>
+            );
+          })
+        }
+      </div>
     </div>
   </div>
 
@@ -128,6 +178,11 @@ function segmentPath(index: number, total: number, radius = 46): string {
     if (!root || root.dataset.init) return;
     root.dataset.init = 'true';
 
+    const isStatic = root.dataset.charStatic === 'true';
+    const isManualDrag = root.dataset.charManualDrag === 'true';
+    const allowAutoScroll = !isStatic;
+    const allowDrag = allowAutoScroll || isManualDrag;
+
     const dataEl = document.getElementById(`${dataId}-data`);
     if (!dataEl) return;
     let characters = [];
@@ -173,13 +228,14 @@ function segmentPath(index: number, total: number, radius = 46): string {
     }
 
     function applyTransform() {
-      wrapOffset();
-      track.style.transform = `translateX(-${offset}px)`;
+      if (allowDrag) wrapOffset();
+      track.style.transform = allowDrag ? `translateX(-${offset}px)` : '';
     }
 
     function tick() {
+      if (isStatic && !isManualDrag) return;
       if (!dragging) {
-        if (!paused && Math.abs(velocity) < MIN_VELOCITY) {
+        if (allowAutoScroll && !paused && Math.abs(velocity) < MIN_VELOCITY) {
           offset += AUTO_SPEED;
         } else if (Math.abs(velocity) >= MIN_VELOCITY) {
           offset += velocity;
@@ -190,13 +246,15 @@ function segmentPath(index: number, total: number, radius = 46): string {
       }
       raf = requestAnimationFrame(tick);
     }
-    raf = requestAnimationFrame(tick);
+    if (allowAutoScroll || isManualDrag) raf = requestAnimationFrame(tick);
 
     carousel.addEventListener('mouseenter', () => {
+      if (!allowAutoScroll) return;
       paused = true;
       carousel.classList.add('is-paused');
     });
     carousel.addEventListener('mouseleave', () => {
+      if (!allowAutoScroll) return;
       if (viewer.classList.contains('hidden')) {
         paused = false;
         dragging = false;
@@ -212,7 +270,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
     }
 
     carousel.addEventListener('mousedown', (e) => {
-      if (e.button !== 0) return;
+      if (!allowDrag || e.button !== 0) return;
       dragging = true;
       didDrag = false;
       paused = true;
@@ -226,7 +284,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
     });
 
     window.addEventListener('mousemove', (e) => {
-      if (!dragging) return;
+      if (!allowDrag || !dragging) return;
       const now = Date.now();
       const dx = dragX - e.clientX;
       if (Math.abs(dx) > 4) didDrag = true;
@@ -241,7 +299,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
     window.addEventListener('mouseup', endDrag);
 
     carousel.addEventListener('touchstart', (e) => {
-      if (e.touches.length !== 1) return;
+      if (!allowDrag || e.touches.length !== 1) return;
       dragging = true;
       didDrag = false;
       paused = true;
@@ -254,7 +312,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
     }, { passive: true });
 
     carousel.addEventListener('touchmove', (e) => {
-      if (!dragging || e.touches.length !== 1) return;
+      if (!allowDrag || !dragging || e.touches.length !== 1) return;
       const now = Date.now();
       const clientX = e.touches[0].clientX;
       const dx = dragX - clientX;
@@ -452,17 +510,131 @@ function segmentPath(index: number, total: number, radius = 46): string {
 
 <style is:global>
   .char-stories { width: 100%; max-width: 100%; overflow: hidden; }
+  .char-stories--static { overflow: visible; }
+  .char-stories--static:not(.char-stories--manual-drag) .char-stories__carousel {
+    overflow: visible;
+    cursor: default;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .char-stories--static:not(.char-stories--manual-drag) .char-stories__track {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    gap: 18px 14px;
+    transform: none !important;
+  }
+  .char-stories--static:not(.char-stories--manual-drag) .char-stories__carousel.is-paused,
+  .char-stories--static:not(.char-stories--manual-drag) .char-stories__carousel.is-dragging {
+    cursor: default;
+  }
+  .char-stories--full-bleed {
+    width: 100%;
+    max-width: none;
+    overflow: visible;
+  }
   .char-stories__heading {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
     margin: 0 0 14px; font-size: 1.125rem; font-weight: 800; color: var(--color-on-surface);
   }
+  .char-stories__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+    font-size: 0.625rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
   .char-stories__heading-icon { flex-shrink: 0; width: 44px; height: 44px; object-fit: contain; }
+  .char-stories__carousel-outer {
+    width: 100%;
+    max-width: 100%;
+  }
+  .char-stories--full-bleed .char-stories__carousel-outer {
+    width: 100%;
+    margin-left: 0;
+    overflow: hidden;
+  }
+  .char-stories--full-bleed .char-stories__carousel {
+    width: 100%;
+    max-width: none;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  @media (min-width: 768px) {
+    .char-stories--full-bleed .char-stories__carousel {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .char-stories--full-bleed .char-stories__carousel {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+  .char-stories--full-bleed.char-stories--with-platform .char-stories__item {
+    width: 104px;
+  }
+  .char-stories--full-bleed .char-stories__ring-wrap {
+    width: 80px;
+    height: 80px;
+  }
+  .char-stories--full-bleed .char-stories__ring {
+    width: 80px;
+    height: 80px;
+  }
+  .char-stories--full-bleed .char-stories__track {
+    gap: 18px;
+  }
+  .char-stories--full-bleed .char-stories__name {
+    font-size: 12px;
+  }
+  .char-stories--full-bleed .char-stories__platform {
+    max-width: 104px;
+    font-size: 10px;
+  }
+  .char-stories--full-bleed.char-stories--with-platform .char-stories__name-row {
+    max-width: 104px;
+  }
+  @media (min-width: 1024px) {
+    .char-stories--full-bleed.char-stories--with-platform .char-stories__item {
+      width: 132px;
+    }
+    .char-stories--full-bleed .char-stories__ring-wrap {
+      width: 96px;
+      height: 96px;
+    }
+    .char-stories--full-bleed .char-stories__ring {
+      width: 96px;
+      height: 96px;
+    }
+    .char-stories--full-bleed .char-stories__track {
+      gap: 28px;
+    }
+    .char-stories--full-bleed .char-stories__name {
+      font-size: 13px;
+    }
+    .char-stories--full-bleed .char-stories__platform {
+      max-width: 132px;
+      font-size: 11px;
+    }
+    .char-stories--full-bleed.char-stories--with-platform .char-stories__name-row {
+      max-width: 132px;
+    }
+  }
   .char-stories__carousel {
     width: 100%;
     max-width: 100%;
     overflow: hidden;
     cursor: grab;
     user-select: none;
+    padding-top: 0.25rem;
+    padding-bottom: 0.5rem;
   }
   .char-stories__carousel.is-paused { cursor: pointer; }
   .char-stories__carousel.is-dragging { cursor: grabbing; }
@@ -474,6 +646,26 @@ function segmentPath(index: number, total: number, radius = 46): string {
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
     gap: 6px; width: 72px; padding: 0; border: none; background: none; cursor: inherit;
   }
+  .char-stories--with-platform .char-stories__item { width: 92px; }
+  .char-stories__label-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+  }
+  .char-stories__platform {
+    display: block;
+    max-width: 92px;
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    color: var(--color-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .char-stories__ring-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
   .char-stories__ring { position: absolute; inset: 0; width: 64px; height: 64px; }
   .char-stories__segment { stroke: #db2777; }
@@ -483,8 +675,9 @@ function segmentPath(index: number, total: number, radius = 46): string {
   .char-stories__avatar { width: 100%; height: 100%; border-radius: 999px; object-fit: cover; display: block; }
   .char-stories__name-row {
     display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-    max-width: 72px;
+    max-width: 100%;
   }
+  .char-stories--with-platform .char-stories__name-row { max-width: 92px; }
   .char-stories__name {
     font-size: 10px; font-weight: 800; text-align: center; color: var(--color-on-surface);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;

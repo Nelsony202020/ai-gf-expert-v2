@@ -79,7 +79,16 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
 </BaseLayout>
 
 <script>
-  const HEADER_OFFSET = 116; // sticky header (64) + tab bar (~52)
+  const TABBAR_OFFSET = 52;
+
+  function getScrollOffset() {
+    const header = document.querySelector<HTMLElement>('[data-site-header]');
+    const tabbar = document.querySelector<HTMLElement>('[data-tabbar]');
+    const headerHidden = header?.classList.contains('site-header--hidden');
+    const headerHeight = header && !headerHidden ? header.offsetHeight : 0;
+    const tabbarHeight = tabbar?.offsetHeight ?? TABBAR_OFFSET;
+    return headerHeight + tabbarHeight;
+  }
 
   function initReview() {
     const panelsWrap = document.querySelector<HTMLElement>('[data-panels]');
@@ -101,7 +110,7 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
       tabButtons.forEach((btn) => btn.setAttribute('aria-current', btn.dataset.tab === id ? 'true' : 'false'));
       if (history.replaceState) history.replaceState(null, '', `#${id}`);
       if (scroll) {
-        const y = panelsWrap.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+        const y = panelsWrap.getBoundingClientRect().top + window.scrollY - getScrollOffset();
         window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
       }
     }
@@ -203,7 +212,7 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
 
         if (highlightEl) {
           highlightEl.classList.add('results-highlight');
-          const y = highlightEl.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET - 12;
+          const y = highlightEl.getBoundingClientRect().top + window.scrollY - getScrollOffset() - 12;
           window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
           setTimeout(() => highlightEl?.classList.remove('results-highlight'), 2400);
         }
@@ -220,7 +229,7 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
       const toggle = target?.querySelector<HTMLElement>('[data-accordion-toggle]');
       if (toggle) toggleAccordion(toggle, true);
       if (target) {
-        const y = target.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+        const y = target.getBoundingClientRect().top + window.scrollY - getScrollOffset();
         window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
       }
     });

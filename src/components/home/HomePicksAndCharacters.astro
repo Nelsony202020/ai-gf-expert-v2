@@ -1,0 +1,99 @@
+---
+import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
+import type { StoryHighlightCharacter } from '../../data/products';
+import { getRoundupRibbonHref, getRoundupRibbonLabel } from '../../data/homepage';
+import { fmtScore, getScoreVisual } from '../../lib/scores';
+import CharacterStoryHighlights from '../review/CharacterStoryHighlights.astro';
+
+interface Props {
+  picks: RoundupPick[];
+  characters: StoryHighlightCharacter[];
+}
+
+const { picks, characters } = Astro.props;
+const featuredCharacters = characters.slice(0, 10);
+---
+
+<section class="home-section section-container px-4 md:px-8 home-picks-characters" aria-label="Top picks and featured characters">
+  <div class="home-picks-characters__layout">
+    <div class="home-picks-characters__picks-head">
+      <div class="home-section__intro">
+        <h2 id="home-top-picks-title" class="home-section__title home-section__title--icon">
+          <span class="material-symbols-outlined home-section__title-icon" aria-hidden="true">star</span>
+          Our top picks
+        </h2>
+        <p class="home-section__subtitle">
+          The best AI girlfriend apps, chosen after testing 24+ platforms.
+        </p>
+      </div>
+    </div>
+
+    <div class="home-picks-characters__divider" aria-hidden="true"></div>
+
+    <div class="home-picks-characters__characters-head">
+      <h2 id="home-characters-title" class="home-section__title home-section__title--icon">
+        <span class="material-symbols-outlined home-section__title-icon" aria-hidden="true">groups</span>
+        Featured characters
+      </h2>
+      <span class="home-characters__badge">
+        <span class="material-symbols-outlined home-characters__badge-icon" aria-hidden="true">auto_awesome</span>
+        New picks this week
+      </span>
+    </div>
+
+    <div class="home-picks-characters__picks-body">
+      <div class="home-picks__stack">
+        {
+          picks.map((pick, index) => {
+            const reviewHref = pick.reviewUrl ?? `/best/ai-girlfriend#pick-${pick.id}`;
+            const thumb = pick.gallery[0]?.full ?? pick.logo;
+            const scoreVisual = getScoreVisual(pick.overallScore);
+            const ribbonLabel = getRoundupRibbonLabel(pick);
+            return (
+              <article class:list={['home-pick-card', index === 0 && 'home-pick-card--featured']}>
+                <div class="home-pick-card__inner">
+                  <div class="home-pick-card__main">
+                    <img class="home-pick-card__thumb" src={thumb} alt="" width="72" height="72" loading="lazy" />
+                    <div class="home-pick-card__copy">
+                      <h3 class="home-pick-card__name">{pick.name}</h3>
+                      <a href={getRoundupRibbonHref(pick)} class="home-pick-card__ribbon">
+                        {index === 0 && (
+                          <span class="material-symbols-outlined home-pick-card__ribbon-icon" aria-hidden="true">star</span>
+                        )}
+                        {ribbonLabel}
+                      </a>
+                      <p class="home-pick-card__summary">{pick.overallSummary}</p>
+                      <a href={reviewHref} class="home-pick-card__cta">
+                        Read review
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="home-pick-card__score-panel">
+                    <div class={`home-pick-card__score-value ${scoreVisual.bg}`}>{fmtScore(pick.overallScore)}</div>
+                    <span class="home-pick-card__score-caption">{pick.ribbon}</span>
+                  </div>
+                </div>
+              </article>
+            );
+          })
+        }
+      </div>
+    </div>
+
+    <div class="home-picks-characters__characters-body">
+      <CharacterStoryHighlights
+        characters={featuredCharacters}
+        productName="homepage-featured"
+        hideHeading={true}
+        maxDisplay={10}
+        showPlatform={true}
+        showVerified={false}
+        layout="contained"
+        staticCarousel={true}
+        featuredGrid={true}
+        manualDrag={true}
+      />
+    </div>
+  </div>
+</section>

@@ -50,6 +50,21 @@ import { brandIcons } from '../../lib/brand-icons';
         <input type="hidden" name="pageTitle" value="" data-feedback-title-input />
 
         <label class="article-feedback__field">
+          <span class="article-feedback__field-label">Email <span class="article-feedback__required" aria-hidden="true">*</span></span>
+          <input
+            type="email"
+            name="email"
+            data-feedback-email
+            class="article-feedback__input"
+            placeholder="you@example.com"
+            autocomplete="email"
+            inputmode="email"
+            required
+          />
+          <span class="article-feedback__field-hint">Required — we’ll only use this to reply to your note.</span>
+        </label>
+
+        <label class="article-feedback__field">
           <span class="sr-only">Your feedback</span>
           <textarea
             data-feedback-message
@@ -104,6 +119,7 @@ import { brandIcons } from '../../lib/brand-icons';
     const successView = root.querySelector<HTMLElement>('[data-feedback-success-view]');
     const form = root.querySelector<HTMLFormElement>('[data-feedback-form]');
     const message = root.querySelector<HTMLTextAreaElement>('[data-feedback-message]');
+    const email = root.querySelector<HTMLInputElement>('[data-feedback-email]');
     const counter = root.querySelector<HTMLElement>('[data-feedback-counter]');
     const categoryInput = root.querySelector<HTMLInputElement>('[data-feedback-category-input]');
     const urlInput = root.querySelector<HTMLInputElement>('[data-feedback-url-input]');
@@ -171,8 +187,15 @@ import { brandIcons } from '../../lib/brand-icons';
         return;
       }
 
+      if (!email?.value.trim() || !email.checkValidity()) {
+        email?.focus();
+        email?.reportValidity();
+        return;
+      }
+
       const payload = {
         category: categoryInput.value,
+        email: email.value.trim(),
         message: message?.value ?? '',
         pageUrl,
         pageTitle,

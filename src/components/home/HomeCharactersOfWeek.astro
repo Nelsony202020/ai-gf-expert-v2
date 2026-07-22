@@ -1,0 +1,65 @@
+---
+import CharacterStoryHighlights from '../review/CharacterStoryHighlights.astro';
+import type { StoryHighlightCharacter } from '../../data/products';
+
+interface Props {
+  characters: StoryHighlightCharacter[];
+  embedded?: boolean;
+}
+
+const { characters, embedded = false } = Astro.props;
+---
+
+{
+  embedded ? (
+    <div class="home-characters">
+      <div class="home-characters__head">
+        <h2 id="home-characters-title" class="home-section__title home-section__title--icon">
+          <span class="material-symbols-outlined home-section__title-icon" aria-hidden="true">groups</span>
+          Featured characters
+        </h2>
+        <span class="home-characters__badge">
+          <span class="material-symbols-outlined home-characters__badge-icon" aria-hidden="true">auto_awesome</span>
+          New picks this week
+        </span>
+      </div>
+
+      <CharacterStoryHighlights
+        characters={characters}
+        productName="homepage"
+        hideHeading={true}
+        maxDisplay={characters.length}
+        showPlatform={true}
+        showVerified={false}
+        layout="contained"
+        staticCarousel={true}
+      />
+    </div>
+  ) : (
+    <section class="home-section home-characters" aria-labelledby="home-characters-title">
+      <div class="section-container px-4 md:px-8">
+        <div class="home-characters__head">
+          <h2 id="home-characters-title" class="home-section__title home-section__title--icon">
+            <span class="material-symbols-outlined home-section__title-icon" aria-hidden="true">groups</span>
+            Featured characters
+          </h2>
+          <span class="home-characters__badge">
+            <span class="material-symbols-outlined home-characters__badge-icon" aria-hidden="true">auto_awesome</span>
+            New picks this week
+          </span>
+        </div>
+      </div>
+
+      <CharacterStoryHighlights
+        characters={characters}
+        productName="homepage"
+        hideHeading={true}
+        maxDisplay={characters.length}
+        showPlatform={true}
+        showVerified={false}
+        layout="full-bleed"
+        staticCarousel={true}
+      />
+    </section>
+  )
+}

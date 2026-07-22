@@ -84,6 +84,8 @@ export interface OverviewCharacter {
   profileUrl?: string;
 }
 
+export type StoryHighlightCharacter = OverviewCharacter & { platform?: string };
+
 export interface OverviewFeatureCard {
   id: string;
   title: string;
