@@ -1,0 +1,83 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import TestBreadcrumbs from '../../../components/test/TestBreadcrumbs.astro';
+import { getTestCategories, getTestCategory } from '../../../lib/test-framework';
+import { testHubUrl } from '../../../lib/slugs';
+import '../../../styles/test-hub.css';
+
+export function getStaticPaths() {
+  return getTestCategories().map((cat) => ({
+    params: { category: cat.key },
+  }));
+}
+
+const { category: categoryKey } = Astro.params;
+const category = getTestCategory(categoryKey!);
+
+if (!category) {
+  throw new Error(`Unknown test category: ${categoryKey}`);
+}
+
+const pageTitle = `${category.name} Testing Methodology — AI Girlfriend Expert`;
+---
+
+<BaseLayout title={pageTitle} description={category.description}>
+  <Header />
+  <main class="test-page">
+    <div class="section-container px-4 md:px-8 py-10 md:py-14">
+      <TestBreadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'How We Test', href: testHubUrl() },
+          { label: category.name },
+        ]}
+      />
+
+      <header class="test-page__header">
+        <p class="test-page__eyebrow">Category methodology</p>
+        <h1 class="test-page__title">{category.name}</h1>
+        <p class="test-page__intro">{category.description}</p>
+        <p class="test-page__weight">{category.weight}% of overall performance score</p>
+      </header>
+
+      <section class="test-page__section">
+        <h2 class="test-page__h2">Subscores</h2>
+        <div class="test-subscore-list">
+          {
+            category.subscores.map((sub) => (
+              <article class="test-subscore-card">
+                <div class="test-subscore-card__head">
+                  <h3 class="test-subscore-card__title">
+                    <a href={sub.href}>{sub.name}</a>
+                  </h3>
+                  <a class="test-inline-link" href={sub.href}>
+                    View methodology
+                    <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                  </a>
+                </div>
+                <p class="test-subscore-card__desc">{sub.description}</p>
+                <ul class="test-evidence-links">
+                  {
+                    sub.contributors.map((c) => (
+                      <li>
+                        <a href={c.href}>{c.label}</a>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </article>
+            ))
+          }
+        </div>
+      </section>
+
+      <a class="test-inline-link test-page__back" href={testHubUrl()}>
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+        Back to how we test
+      </a>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

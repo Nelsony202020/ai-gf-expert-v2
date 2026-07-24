@@ -9,13 +9,12 @@ import HomeAppExplorer from '../components/home/HomeAppExplorer.astro';
 import HomeFindMatch from '../components/home/HomeFindMatch.astro';
 import HomeRecentUpdates from '../components/home/HomeRecentUpdates.astro';
 import HomeHowWeTest from '../components/home/HomeHowWeTest.astro';
-import HomeBrowseGoals from '../components/home/HomeBrowseGoals.astro';
 import HomeGuides from '../components/home/HomeGuides.astro';
 import HomeFinalCta from '../components/home/HomeFinalCta.astro';
 import {
   buildExplorerApps,
   featuredGuides,
-  featuredCharactersDisplayOrder,
+  featuredCharactersShowcase,
   homeMeta,
   recentUpdates,
   topPicks,
@@ -29,7 +28,7 @@ const apps = buildExplorerApps();
   <main>
     <HomeHero />
     <HomeTrustStrip />
-    <HomePicksAndCharacters picks={topPicks} characters={featuredCharactersDisplayOrder} />
+    <HomePicksAndCharacters picks={topPicks} characters={featuredCharactersShowcase} />
     <HomeAppExplorer apps={apps} />
 
     <section class="home-section section-container px-4 md:px-8">
@@ -40,7 +39,6 @@ const apps = buildExplorerApps();
     </section>
 
     <HomeHowWeTest />
-    <HomeBrowseGoals />
     <HomeGuides guides={featuredGuides} />
     <HomeFinalCta />
   </main>

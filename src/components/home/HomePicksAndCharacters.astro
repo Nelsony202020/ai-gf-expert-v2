@@ -1,17 +1,16 @@
 ---
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
-import type { StoryHighlightCharacter } from '../../data/products';
+import type { HomeFeaturedCharacter } from '../../data/homepage';
 import { getRoundupRibbonHref, getRoundupRibbonLabel } from '../../data/homepage';
 import { fmtScore, getScoreVisual } from '../../lib/scores';
-import CharacterStoryHighlights from '../review/CharacterStoryHighlights.astro';
+import HomeFeaturedCharacterShowcase from './HomeFeaturedCharacterShowcase.astro';
 
 interface Props {
   picks: RoundupPick[];
-  characters: StoryHighlightCharacter[];
+  characters: HomeFeaturedCharacter[];
 }
 
 const { picks, characters } = Astro.props;
-const featuredCharacters = characters.slice(0, 10);
 ---
 
 <section class="home-section section-container px-4 md:px-8 home-picks-characters" aria-label="Top picks and featured characters">
@@ -82,18 +81,7 @@ const featuredCharacters = characters.slice(0, 10);
     </div>
 
     <div class="home-picks-characters__characters-body">
-      <CharacterStoryHighlights
-        characters={featuredCharacters}
-        productName="homepage-featured"
-        hideHeading={true}
-        maxDisplay={10}
-        showPlatform={true}
-        showVerified={false}
-        layout="contained"
-        staticCarousel={true}
-        featuredGrid={true}
-        manualDrag={true}
-      />
+      <HomeFeaturedCharacterShowcase characters={characters} />
     </div>
   </div>
 </section>

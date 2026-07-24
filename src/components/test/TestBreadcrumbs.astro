@@ -1,0 +1,35 @@
+---
+export interface TestBreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface Props {
+  items: TestBreadcrumbItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<nav class="test-breadcrumbs" aria-label="Breadcrumb">
+  <ol class="test-breadcrumbs__list">
+    {
+      items.map((item, index) => (
+        <li class="test-breadcrumbs__item">
+          {index > 0 && <span class="test-breadcrumbs__sep" aria-hidden="true">›</span>}
+          {
+            item.href ? (
+              <a class="test-breadcrumbs__link" href={item.href}>
+                {item.label}
+              </a>
+            ) : (
+              <span class="test-breadcrumbs__current" aria-current="page">
+                {item.label}
+              </span>
+            )
+          }
+        </li>
+      ))
+    }
+  </ol>
+</nav>

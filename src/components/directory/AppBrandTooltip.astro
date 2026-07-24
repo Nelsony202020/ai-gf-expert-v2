@@ -1,0 +1,59 @@
+---
+import type { HomeExplorerApp } from '../../data/homepage';
+import InfoIcon from '../ui/InfoIcon.astro';
+import VerifiedCheck from '../ui/VerifiedCheck.astro';
+
+interface Props {
+  app: HomeExplorerApp;
+}
+
+const { app } = Astro.props;
+const tooltipId = `brand-explorer-${app.id}`;
+---
+
+<span
+  role="button"
+  tabindex="0"
+  class="rt-tooltip-trigger home-app-card__brand-tip"
+  data-ratings-tooltip-trigger={tooltipId}
+  aria-label={`About ${app.name}`}
+>
+  <InfoIcon size="xs" class="text-tertiary/70 hover:text-accent" />
+</span>
+
+<template id={`tooltip-${tooltipId}`}>
+  <div class="ratings-tooltip-panel ratings-tooltip-panel--brand-card">
+    <div class="home-brand-tip">
+      <p class="home-brand-tip__title">
+        <span>{app.name}</span>
+        {app.hasReview && (
+          <span class="home-brand-tip__verified" title="Verified">
+            <VerifiedCheck class="w-[14px] h-[14px]" />
+          </span>
+        )}
+      </p>
+      <p class="home-brand-tip__liner">{app.brandLiner}</p>
+      <div class="home-brand-tip__divider" aria-hidden="true"></div>
+      <ul class="home-brand-tip__rows">
+        <li class="home-brand-tip__row">
+          <span class="home-brand-tip__icon home-brand-tip__icon--best" aria-hidden="true">
+            <span class="material-symbols-outlined">group</span>
+          </span>
+          <div class="home-brand-tip__copy">
+            <span class="home-brand-tip__label">Best for</span>
+            <span class="home-brand-tip__value">{app.bestFor}</span>
+          </div>
+        </li>
+        <li class="home-brand-tip__row">
+          <span class="home-brand-tip__icon home-brand-tip__icon--watch" aria-hidden="true">
+            <span class="material-symbols-outlined">warning</span>
+          </span>
+          <div class="home-brand-tip__copy">
+            <span class="home-brand-tip__label">Watch out for</span>
+            <span class="home-brand-tip__value">{app.watchOutFor}</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</template>

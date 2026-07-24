@@ -1,0 +1,110 @@
+---
+---
+
+<div
+  class="coming-soon-modal"
+  data-coming-soon-accounts
+  hidden
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="coming-soon-accounts-title"
+>
+  <button type="button" class="coming-soon-modal__backdrop" data-coming-soon-accounts-close aria-label="Close"></button>
+  <div class="coming-soon-modal__panel">
+    <button type="button" class="coming-soon-modal__dismiss" data-coming-soon-accounts-close aria-label="Close dialog">
+      <span class="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
+    </button>
+    <span class="coming-soon-badge coming-soon-modal__badge">Coming soon</span>
+    <h2 id="coming-soon-accounts-title" class="coming-soon-modal__title">Accounts are on the way</h2>
+    <p class="coming-soon-modal__text">
+      Sign in and Join Now will soon let you save apps, build comparison shortlists, and unlock personalized recommendations.
+    </p>
+    <div class="coming-soon-modal__actions">
+      <button type="button" class="coming-soon-modal__close" data-coming-soon-accounts-close>Got it</button>
+    </div>
+  </div>
+</div>
+
+<div class="coming-soon-toast" data-coming-soon-toast role="status" aria-live="polite" hidden></div>
+
+<script>
+  function initComingSoonLayer() {
+    const modal = document.querySelector('[data-coming-soon-accounts]');
+    const toastEl = document.querySelector('[data-coming-soon-toast]');
+    if (!(modal instanceof HTMLElement) || !(toastEl instanceof HTMLElement)) return;
+    if (modal.dataset.bound === 'true') return;
+    modal.dataset.bound = 'true';
+
+    let toastTimer;
+    let lastFocus = null;
+
+    function openAccounts() {
+      lastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      modal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      const closeBtn = modal.querySelector('.coming-soon-modal__close');
+      if (closeBtn instanceof HTMLElement) closeBtn.focus();
+    }
+
+    function closeAccounts() {
+      modal.hidden = true;
+      document.body.style.overflow = '';
+      lastFocus?.focus();
+      lastFocus = null;
+    }
+
+    function toast(message) {
+      window.clearTimeout(toastTimer);
+      toastEl.hidden = false;
+      toastEl.textContent = message;
+      requestAnimationFrame(() => toastEl.classList.add('is-visible'));
+      toastTimer = window.setTimeout(() => {
+        toastEl.classList.remove('is-visible');
+        window.setTimeout(() => {
+          toastEl.hidden = true;
+          toastEl.textContent = '';
+        }, 180);
+      }, 2800);
+    }
+
+    window.comingSoon = { openAccounts, closeAccounts, toast };
+
+    modal.querySelectorAll('[data-coming-soon-accounts-close]').forEach((el) => {
+      el.addEventListener('click', closeAccounts);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.hidden) closeAccounts();
+    });
+
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+
+      const trigger = target.closest('[data-coming-soon]');
+      if (!(trigger instanceof HTMLElement)) return;
+
+      const kind = trigger.dataset.comingSoon;
+      if (!kind) return;
+
+      e.preventDefault();
+
+      if (kind === 'accounts') {
+        openAccounts();
+        return;
+      }
+
+      if (kind === 'compare') {
+        toast('Side-by-side comparisons are coming soon.');
+        return;
+      }
+
+      if (kind === 'match') {
+        toast('Personalized matching is coming soon.');
+      }
+    });
+  }
+
+  initComingSoonLayer();
+  document.addEventListener('astro:page-load', initComingSoonLayer);
+</script>

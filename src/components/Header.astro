@@ -75,14 +75,48 @@ const searchIndex = buildSearchIndex();
         <div class="site-header__search-dropdown hidden" data-search-results role="listbox" />
       </div>
 
-      <ThemeToggle variant="header" />
+      <div class="site-header__theme-desktop">
+        <ThemeToggle variant="header" />
+      </div>
 
-      <a href="#" class="hidden sm:inline site-header__link">Sign In</a>
-      <a href="#" class="site-header__join">
-        <span class="site-header__join-text site-header__join-text--full">Join Now</span>
-        <span class="site-header__join-text site-header__join-text--short">Join</span>
-        <span class="material-symbols-outlined site-header__join-arrow">arrow_forward</span>
-      </a>
+      <div class="site-header__auth site-header__auth--desktop">
+        <button type="button" class="site-header__link coming-soon-tip coming-soon-muted site-header__auth-btn" data-coming-soon-tip="Coming soon">
+          Sign In
+        </button>
+        <button type="button" class="site-header__join coming-soon-tip coming-soon-muted site-header__auth-btn" data-coming-soon-tip="Coming soon">
+          <span class="site-header__join-text site-header__join-text--full">Join Now</span>
+          <span class="site-header__join-text site-header__join-text--short">Join</span>
+          <span class="material-symbols-outlined site-header__join-arrow" aria-hidden="true">arrow_forward</span>
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="site-header__menu-toggle"
+        data-mobile-menu-toggle
+        aria-expanded="false"
+        aria-controls="site-mobile-menu"
+        aria-label="Open menu"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="site-mobile-menu" class="site-header__mobile-menu hidden" data-mobile-menu hidden>
+    <nav class="site-header__mobile-nav" aria-label="Mobile">
+      <a href="#" class="site-header__mobile-link">Explore</a>
+      <a href="#" class="site-header__mobile-link">All Apps</a>
+      <a href="#" class="site-header__mobile-link">How We Review</a>
+    </nav>
+    <div class="site-header__mobile-actions">
+      <ThemeToggle variant="footer" />
+      <button type="button" class="site-header__mobile-link coming-soon-tip coming-soon-muted site-header__auth-btn" data-coming-soon-tip="Coming soon">
+        Sign In
+      </button>
+      <button type="button" class="site-header__mobile-join coming-soon-tip coming-soon-muted site-header__auth-btn" data-coming-soon-tip="Coming soon">
+        Join
+      </button>
     </div>
   </div>
 
@@ -147,6 +181,20 @@ const searchIndex = buildSearchIndex();
   </div>
 </header>
 
+<script>
+  import {
+    applyScrollDirectionBodyClass,
+    readScrollDirection,
+    shouldHideSiteHeader,
+  } from '../lib/scroll-chrome.ts';
+
+  window.__scrollChrome = {
+    applyScrollDirectionBodyClass,
+    readScrollDirection,
+    shouldHideSiteHeader,
+  };
+</script>
+
 <script define:vars={{ searchIndex }}>
   function initSiteHeader() {
     const header = document.querySelector('[data-site-header]');
@@ -161,10 +209,56 @@ const searchIndex = buildSearchIndex();
     const searchField = header.querySelector('[data-search-field]');
     const searchInput = header.querySelector('[data-search-input]');
     const searchResults = header.querySelector('[data-search-results]');
+    const mobileMenuToggle = header.querySelector('[data-mobile-menu-toggle]');
+    const mobileMenu = header.querySelector('[data-mobile-menu]');
 
     let activeIndex = -1;
     let currentResults = [];
     let megaCloseTimer = null;
+
+    function closeMobileMenu() {
+      mobileMenu?.classList.add('hidden');
+      mobileMenu?.setAttribute('hidden', '');
+      mobileMenuToggle?.setAttribute('aria-expanded', 'false');
+      mobileMenuToggle?.setAttribute('aria-label', 'Open menu');
+      const icon = mobileMenuToggle?.querySelector('.material-symbols-outlined');
+      if (icon) icon.textContent = 'menu';
+      header.classList.remove('site-header--menu-open');
+      document.body.classList.remove('site-header-menu-open');
+    }
+
+    function openMobileMenu() {
+      closeMega();
+      closeSearch();
+      header.classList.remove('site-header--hidden');
+      mobileMenu?.classList.remove('hidden');
+      mobileMenu?.removeAttribute('hidden');
+      mobileMenuToggle?.setAttribute('aria-expanded', 'true');
+      mobileMenuToggle?.setAttribute('aria-label', 'Close menu');
+      const icon = mobileMenuToggle?.querySelector('.material-symbols-outlined');
+      if (icon) icon.textContent = 'close';
+      header.classList.add('site-header--menu-open');
+      document.body.classList.add('site-header-menu-open');
+      lastScrollY = window.scrollY;
+    }
+
+    mobileMenuToggle?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (mobileMenu?.classList.contains('hidden')) openMobileMenu();
+      else closeMobileMenu();
+    });
+
+    mobileMenuToggle?.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+    });
+
+    header.querySelectorAll('.site-header__auth-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
 
     function closeMega() {
       megaPanel?.classList.add('hidden');
@@ -289,34 +383,63 @@ const searchIndex = buildSearchIndex();
     });
 
     document.addEventListener('click', (e) => {
+      if (mobileMenuToggle?.contains(e.target)) return;
       if (!searchRoot?.contains(e.target)) closeSearch();
+      if (
+        mobileMenu &&
+        !mobileMenu.classList.contains('hidden') &&
+        !header.contains(e.target)
+      ) {
+        closeMobileMenu();
+      }
     });
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeMega();
         closeSearch();
+        closeMobileMenu();
       }
     });
 
     let lastScrollY = window.scrollY;
     let scrollTicking = false;
 
-    function updateHeaderVisibility() {
-      const y = window.scrollY;
-      const delta = y - lastScrollY;
+    function syncHeaderOffset() {
+      const hidden = header.classList.contains('site-header--hidden');
+      const offset = hidden ? 0 : header.offsetHeight;
+      document.documentElement.style.setProperty('--site-header-offset', `${offset}px`);
+      document.dispatchEvent(new CustomEvent('site-header-offset-change'));
+    }
 
-      if (y <= 64) {
+    function updateHeaderVisibility() {
+      if (header.classList.contains('site-header--menu-open')) {
         header.classList.remove('site-header--hidden');
-      } else if (delta > 6) {
-        header.classList.add('site-header--hidden');
-      } else if (delta < -6) {
-        header.classList.remove('site-header--hidden');
+        syncHeaderOffset();
+        lastScrollY = window.scrollY;
+        scrollTicking = false;
+        return;
       }
+
+      const y = window.scrollY;
+      const { readScrollDirection, applyScrollDirectionBodyClass, shouldHideSiteHeader } =
+        window.__scrollChrome ?? {};
+      const direction = readScrollDirection ? readScrollDirection(y, lastScrollY) : 'none';
+      if (direction !== 'none' && applyScrollDirectionBodyClass) {
+        applyScrollDirectionBodyClass(direction);
+      }
+
+      const hide = shouldHideSiteHeader ? shouldHideSiteHeader(y, direction, false) : y > 64;
+
+      header.classList.toggle('site-header--hidden', hide);
+      syncHeaderOffset();
 
       lastScrollY = y;
       scrollTicking = false;
     }
+
+    syncHeaderOffset();
+    window.addEventListener('resize', syncHeaderOffset, { passive: true });
 
     window.addEventListener(
       'scroll',

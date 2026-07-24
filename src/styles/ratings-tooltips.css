@@ -229,6 +229,21 @@
   color: var(--color-tertiary, #5f5e5e);
 }
 
+.ratings-tooltip-panel__score-block--compare-avg {
+  text-align: right;
+}
+
+.ratings-tooltip-panel__avg--solo {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-on-surface);
+  line-height: 1.1;
+}
+
+.ratings-tooltip-panel--compare-avg .ratings-tooltip-panel__score-block--compare-avg .ratings-tooltip-panel__section-title {
+  margin-bottom: 0.25rem;
+}
+
 /* Score chip — only the number gets the colored box */
 .rt-score-chip {
   display: inline-flex;
@@ -514,6 +529,32 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.rt-inline-test-link {
+  color: var(--color-on-surface, #1b1b1b);
+  text-decoration: underline;
+  text-decoration-color: rgb(219 39 119 / 38%);
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color 0.12s ease, text-decoration-color 0.12s ease;
+}
+
+.rt-inline-test-link:hover {
+  color: var(--color-accent);
+  text-decoration-color: var(--color-accent);
+}
+
+a.rt-inline-test-link.rt-comp-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ratings-tooltip-panel__score-label.rt-inline-test-link {
+  font-size: inherit;
+  line-height: inherit;
 }
 
 /* Score distribution chart */

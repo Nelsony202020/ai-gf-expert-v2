@@ -1,0 +1,33 @@
+---
+import { categoryMethodologyUrl, testContributorUrl, testSubscoreUrl } from '../../../lib/slugs';
+
+interface Props {
+  categoryKey: string;
+  subscoreName?: string;
+  contributorLabel?: string;
+  class?: string;
+}
+
+const { categoryKey, subscoreName, contributorLabel, class: className } = Astro.props;
+
+const href = contributorLabel && subscoreName
+  ? testContributorUrl(categoryKey, subscoreName, contributorLabel)
+  : subscoreName
+    ? testSubscoreUrl(categoryKey, subscoreName)
+    : categoryMethodologyUrl(categoryKey);
+
+const label = contributorLabel
+  ? `How we test ${contributorLabel.toLowerCase()}`
+  : subscoreName
+    ? `How we test ${subscoreName.toLowerCase()}`
+    : `How we score ${categoryKey.replace(/-/g, ' ')}`;
+---
+
+<a
+  href={href}
+  class:list={['rt-inline-test-link', className]}
+  title={label}
+  aria-label={label}
+>
+  <slot />
+</a>

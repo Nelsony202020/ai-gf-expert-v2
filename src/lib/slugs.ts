@@ -7,12 +7,22 @@ export function toSlug(value: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-export function testContributorUrl(category: string, subscore: string, contributor: string): string {
-  return `/tests/${toSlug(category)}/${toSlug(subscore)}/${toSlug(contributor)}`;
+/** Main testing methodology hub */
+export function testHubUrl(): string {
+  return '/test/';
+}
+
+export function testCategoryUrl(categoryKey: string): string {
+  return `/test/${toSlug(categoryKey)}/`;
 }
 
 export function testSubscoreUrl(category: string, subscore: string): string {
-  return `/tests/${toSlug(category)}/${toSlug(subscore)}`;
+  return `/test/${toSlug(category)}/${toSlug(subscore)}/`;
+}
+
+/** Evidence points anchor on the subscore methodology page */
+export function testContributorUrl(category: string, subscore: string, contributor: string): string {
+  return `${testSubscoreUrl(category, subscore)}#${toSlug(contributor)}`;
 }
 
 export function reviewRatingsUrl(productSlug: string): string {
@@ -20,5 +30,5 @@ export function reviewRatingsUrl(productSlug: string): string {
 }
 
 export function categoryMethodologyUrl(categoryKey: string): string {
-  return `/tests/${toSlug(categoryKey)}`;
+  return testCategoryUrl(categoryKey);
 }

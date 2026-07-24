@@ -1,0 +1,75 @@
+---
+import { HUB_NAV_TABS, type HubTabId } from '../../lib/hub-nav';
+
+interface Props {
+  active?: HubTabId;
+}
+
+const { active = 'best-apps' } = Astro.props;
+---
+
+<nav class="roundup-hub-nav" data-hub-nav aria-label="Hub sections">
+  <div class="roundup-hub-nav__scroll">
+    <div class="roundup-hub-nav__track">
+      {
+        HUB_NAV_TABS.map((tab) => {
+          const isActive = tab.id === active;
+          const mobileLabel = tab.mobileLabel ?? tab.label;
+          return isActive ? (
+            <span class="roundup-hub-nav__tab is-active" aria-current="page">
+              <span class="material-symbols-outlined roundup-hub-nav__icon" aria-hidden="true">{tab.icon}</span>
+              <span class="roundup-hub-nav__label roundup-hub-nav__label--desktop">{tab.label}</span>
+              <span class="roundup-hub-nav__label roundup-hub-nav__label--mobile">{mobileLabel}</span>
+            </span>
+          ) : (
+            <a class="roundup-hub-nav__tab" href={tab.href} data-hub-nav-link>
+              <span class="material-symbols-outlined roundup-hub-nav__icon" aria-hidden="true">{tab.icon}</span>
+              <span class="roundup-hub-nav__label roundup-hub-nav__label--desktop">{tab.label}</span>
+              <span class="roundup-hub-nav__label roundup-hub-nav__label--mobile">{mobileLabel}</span>
+            </a>
+          );
+        })
+      }
+    </div>
+    <div class="roundup-hub-nav__fade" aria-hidden="true"></div>
+  </div>
+</nav>
+
+<script>
+  function initRoundupHubNav() {
+    const nav = document.querySelector('[data-hub-nav]');
+    if (!nav || nav.dataset.bound === 'true') return;
+    nav.dataset.bound = 'true';
+
+    const SCROLL_KEY_PREFIX = 'hub-nav-scroll:';
+    const path = window.location.pathname;
+
+    function saveScroll() {
+      sessionStorage.setItem(SCROLL_KEY_PREFIX + path, String(window.scrollY));
+    }
+
+    function restoreScroll() {
+      const saved = sessionStorage.getItem(SCROLL_KEY_PREFIX + path);
+      if (saved == null) return;
+      const y = Number.parseInt(saved, 10);
+      if (!Number.isFinite(y)) return;
+      requestAnimationFrame(() => {
+        window.scrollTo(0, y);
+      });
+    }
+
+    restoreScroll();
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) restoreScroll();
+    });
+
+    document.querySelectorAll('[data-hub-nav-link]').forEach((link) => {
+      link.addEventListener('click', () => {
+        saveScroll();
+      });
+    });
+  }
+
+  initRoundupHubNav();
+  document.addEventListener('astro:page-load', initRoundupHubNav);
+</script>

@@ -17,6 +17,8 @@ interface Props {
   staticCarousel?: boolean;
   featuredGrid?: boolean;
   manualDrag?: boolean;
+  /** Pixels per frame for auto-scroll (default 0.05) */
+  autoScrollSpeed?: number;
 }
 
 const {
@@ -32,6 +34,7 @@ const {
   staticCarousel = false,
   featuredGrid = false,
   manualDrag = false,
+  autoScrollSpeed = 0.05,
 } = Astro.props;
 
 const displayChars = characters.slice(0, maxDisplay);
@@ -67,6 +70,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
   data-char-stories={dataId}
   data-char-static={staticCarousel ? 'true' : undefined}
   data-char-manual-drag={manualDrag ? 'true' : undefined}
+  data-char-auto-speed={autoScrollSpeed}
 >
   {
     !hideHeading && (
@@ -216,7 +220,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
     let didDrag = false;
 
     const STORY_DURATION = 5200;
-    const AUTO_SPEED = 0.05;
+    const AUTO_SPEED = Number(root.dataset.charAutoSpeed || 0.05) || 0.05;
     const FRICTION = 0.982;
     const MIN_VELOCITY = 0.04;
     const half = () => track.scrollWidth / 2;

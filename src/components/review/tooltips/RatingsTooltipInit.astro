@@ -62,7 +62,9 @@
         ? 340
         : panel.classList.contains('ratings-tooltip-panel--help')
           ? 300
-          : 360;
+          : panel.classList.contains('ratings-tooltip-panel--brand-card')
+            ? 320
+            : 360;
 
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;

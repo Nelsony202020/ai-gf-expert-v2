@@ -15,7 +15,6 @@ import {
   explorerQuickSortOptions,
 } from '../../data/homepage';
 import { appsPageUrl, totalPages } from '../../lib/app-directory';
-import { buildRoundupSortOptions } from '../../lib/roundup-controls';
 import AppDirectoryCard from './AppDirectoryCard.astro';
 import ExplorerFilterIcon from './ExplorerFilterIcon.astro';
 import PriorityPicker from './PriorityPicker.astro';
@@ -37,10 +36,9 @@ const {
   showCardMetrics = true,
 } = Astro.props;
 
-const sortOptions = buildRoundupSortOptions(apps);
 const histogram = buildExplorerPriceHistogram(apps);
 const moreFilterGroups = getExplorerCollapsedFilterGroups();
-const defaultPriorities = ['chat', 'images', 'pricing'] as const;
+const defaultPriorities = ['chat', 'images', 'video'] as const;
 const priorityByValue = Object.fromEntries(explorerPriorityOptions.map((opt) => [opt.value, opt]));
 const pageCount = totalPages(apps.length);
 const paginationPages = Array.from({ length: pageCount }, (_, i) => i + 1);
@@ -67,9 +65,16 @@ function formatReviewCount(count: number): string {
         <h1 id="app-directory-title" class="home-section__title">{title}</h1>
         <p class="home-explorer__subtitle">{subtitle}</p>
       </div>
-      <button type="button" class="home-explorer__saved-btn" data-home-saved-toggle aria-pressed="false">
+      <button
+        type="button"
+        class="home-explorer__saved-btn coming-soon-tip coming-soon-muted"
+        data-coming-soon="accounts"
+        data-coming-soon-tip="Save apps — coming soon"
+        aria-label="Saved apps — coming soon"
+      >
         <span class="material-symbols-outlined text-[18px]" aria-hidden="true">bookmark</span>
-        View saved apps (<span data-home-saved-count>0</span>)
+        Saved apps
+        <span class="coming-soon-badge">Coming soon</span>
       </button>
     </div>
 
@@ -264,24 +269,6 @@ function formatReviewCount(count: number): string {
       </aside>
 
       <div class="home-explorer__main">
-        <div class="home-explorer__results-head">
-          <div class="home-explorer__results-summary">
-            <span class="home-explorer__results-icon material-symbols-outlined" aria-hidden="true">auto_awesome</span>
-            <div>
-              <p class="home-explorer__results-title">
-                <strong data-home-count>{apps.length}</strong> apps match your filters
-              </p>
-              <p class="home-explorer__results-subtitle" data-home-sort-label>Sorted by Overall rating</p>
-            </div>
-          </div>
-          <div class="home-explorer__sort">
-            <label class="home-explorer__sort-label" for="home-sort">Sort by</label>
-            <select id="home-sort" class="home-explorer__sort-select" data-home-sort>
-              {sortOptions.map((opt) => <option value={opt.value}>{opt.label}</option>)}
-            </select>
-          </div>
-        </div>
-
         <div class="home-explorer__active-filters" data-home-active-filters hidden></div>
 
         <div class="home-explorer__customize" data-home-customize>
@@ -305,9 +292,6 @@ function formatReviewCount(count: number): string {
                 const option = priorityByValue[value];
                 return (
                   <div class="home-explorer__priority-slot" data-home-priority-slot>
-                    <button type="button" class="home-explorer__priority-drag" data-home-priority-drag aria-label="Drag to reorder priority">
-                      <span class="material-symbols-outlined" aria-hidden="true">drag_indicator</span>
-                    </button>
                     <span class="home-explorer__priority-rank">{index + 1}</span>
                     <span
                       class="home-explorer__priority-icon"
@@ -378,27 +362,12 @@ function formatReviewCount(count: number): string {
         </div>
 
         <div class="home-explorer__footer">
-          <p class="home-explorer__footnote">
-            We test every app with paid accounts using our 8-category rating system.
-            <a href="/tests/customization">How we test →</a>
-          </p>
           <p class="home-explorer__updated">Last updated: {explorerLastUpdated}</p>
         </div>
       </div>
     </div>
   </div>
 </section>
-
-<div class="home-compare-tray" data-home-compare-tray data-visible="false" hidden>
-  <div class="home-compare-tray__inner section-container px-4 md:px-8">
-    <p class="home-compare-tray__meta"><span data-home-compare-count>0</span> apps selected</p>
-    <div class="home-compare-tray__pills" data-home-compare-pills></div>
-    <div class="home-compare-tray__actions">
-      <button type="button" class="home-compare-tray__clear" data-home-compare-clear>Clear</button>
-      <button type="button" class="home-compare-tray__go" data-home-compare-go>Compare now</button>
-    </div>
-  </div>
-</div>
 
 <RatingsTooltipInit />
 

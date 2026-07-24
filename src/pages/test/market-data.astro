@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import TestBreadcrumbs from '../../components/test/TestBreadcrumbs.astro';
+import { marketDataSections } from '../../data/methodology-support-content';
+import { testHubUrl } from '../../lib/slugs';
+import '../../styles/test-hub.css';
+---
+
+<BaseLayout
+  title="Market Data Methodology — AI Girlfriend Expert"
+  description="How we use Google Trends, search interest, internal popularity data, and competitive comparisons — and why market data does not affect product scores."
+>
+  <Header />
+  <main class="test-page">
+    <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">
+      <TestBreadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'How We Test', href: testHubUrl() },
+          { label: 'Market data' },
+        ]}
+      />
+
+      <header class="test-page__header">
+        <p class="test-page__eyebrow">Market context</p>
+        <h1 class="test-page__title">Market data methodology</h1>
+        <p class="test-page__intro">
+          How we collect and present Google Trends, search interest, growth, internal popularity, and competitive market data — and why none of it changes structured product scores.
+        </p>
+      </header>
+
+      {
+        marketDataSections.map((section) => (
+          <section class="test-page__section">
+            <h2 class="test-page__h2">{section.title}</h2>
+            <p class="test-prose">{section.body}</p>
+          </section>
+        ))
+      }
+
+      <blockquote class="test-hub__note">
+        Popularity and search demand provide useful context. They do not measure how well an app performs in hands-on testing and do not affect the overall performance score.
+      </blockquote>
+
+      <a class="test-inline-link test-page__back" href={testHubUrl()}>
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+        Back to how we test
+      </a>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

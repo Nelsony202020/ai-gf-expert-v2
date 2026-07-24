@@ -86,7 +86,7 @@ const { productSlug } = Astro.props;
   }
 
   document.addEventListener('click', (e) => {
-    const link = e.target.closest('a[href^="/tests/"]');
+    const link = e.target.closest('a[href^="/test/"]');
     if (!link || link.target === '_blank') return;
     saveReviewScroll();
   }, true);

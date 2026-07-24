@@ -4,101 +4,9 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import BrandIcon from '../components/ui/BrandIcon.astro';
 import { brandIcons } from '../lib/brand-icons';
-import { products } from '../data/products';
+import { buildHtmlSitemapSections } from '../lib/sitemap';
 
-const sections = [
-  {
-    id: 'reviews',
-    title: 'Reviews',
-    count: products.length,
-    icon: 'star',
-    tone: 'amber',
-    links: products.slice(0, 5).map((p) => ({ label: `${p.name} Review`, href: `/reviews/${p.slug}` })),
-    viewAll: { label: 'View all reviews', href: '#' },
-  },
-  {
-    id: 'roundups',
-    title: 'Roundups',
-    count: 8,
-    icon: 'checklist',
-    tone: 'lime',
-    links: [
-      { label: 'Best AI Girlfriend Apps', href: '#' },
-      { label: 'Best Free AI Companions', href: '#' },
-      { label: 'Best NSFW AI Chat Apps', href: '#' },
-      { label: 'Best AI Character Creators', href: '#' },
-      { label: 'Best AI Roleplay Apps', href: '#' },
-    ],
-    viewAll: { label: 'View all roundups', href: '#' },
-  },
-  {
-    id: 'guides',
-    title: 'Guides',
-    count: 6,
-    icon: 'menu_book',
-    tone: 'green',
-    links: [
-      { label: 'AI Girlfriend Buying Guide', href: '#' },
-      { label: 'How AI Companion Chat Works', href: '#' },
-      { label: 'Privacy & Safety Checklist', href: '#' },
-      { label: 'Understanding AI Image Gen', href: '#' },
-      { label: 'Voice & Video Features Explained', href: '#' },
-    ],
-    viewAll: { label: 'View all guides', href: '#' },
-  },
-  {
-    id: 'authors',
-    title: 'Authors',
-    count: 1,
-    icon: 'person',
-    tone: 'amber',
-    links: [{ label: 'Herman Carter', href: '/author/herman-carter' }],
-    viewAll: { label: 'View all authors', href: '/author/herman-carter' },
-  },
-  {
-    id: 'resources',
-    title: 'Resources',
-    count: 7,
-    icon: 'folder',
-    tone: 'lime',
-    links: [
-      { label: 'Our Methodology', href: '#' },
-      { label: 'How We Test', href: '#' },
-      { label: 'Scoring System', href: '#' },
-      { label: 'FAQ', href: '/faq' },
-      { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure' },
-    ],
-    viewAll: { label: 'View all resources', href: '/faq' },
-  },
-  {
-    id: 'legal',
-    title: 'Legal & Info',
-    count: 6,
-    icon: 'shield',
-    tone: 'lime',
-    links: [
-      { label: 'Privacy Policy', href: '/legal/privacy' },
-      { label: 'Terms of Service', href: '/legal/terms' },
-      { label: 'Copyright Policy', href: '/legal/copyright' },
-      { label: 'Disclaimer', href: '/legal/disclaimer' },
-      { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure' },
-    ],
-    viewAll: { label: 'View all legal & info', href: '/legal/privacy' },
-  },
-  {
-    id: 'company',
-    title: 'Company',
-    count: 3,
-    icon: 'apartment',
-    tone: 'green',
-    links: [
-      { label: 'About Us', href: '#' },
-      { label: 'Contact', href: '/contact' },
-      { label: 'HTML Sitemap', href: '/sitemap' },
-    ],
-    viewAll: null,
-  },
-];
+const sections = buildHtmlSitemapSections();
 ---
 
 <BaseLayout title="HTML Sitemap — AI Girlfriend Expert" description="Browse all reviews, roundups, guides, authors, resources, and company pages.">
@@ -114,7 +22,7 @@ const sections = [
       <div class="max-w-3xl mb-10">
         <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-3">HTML Sitemap</h1>
         <p class="text-base text-on-surface-variant leading-relaxed">
-          Browse all reviews, roundups, guides, authors, resources, and company pages.
+          Browse reviews, roundups, guides, testing methodology, authors, resources, and company pages. Counts update automatically as content is published.
         </p>
       </div>
 

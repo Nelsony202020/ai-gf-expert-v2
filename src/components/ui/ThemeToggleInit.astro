@@ -1,9 +1,19 @@
 <script>
   function initThemeToggles() {
-    const buttons = document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]');
+    const buttons = document.querySelectorAll('[data-theme-toggle]');
     if (!buttons.length) return;
 
     const root = document.documentElement;
+
+    function applyTheme(dark) {
+      if (dark) {
+        root.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        root.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+      }
+    }
 
     function syncAll() {
       const dark = root.getAttribute('data-theme') === 'dark';
@@ -13,6 +23,7 @@
         if (icon) icon.textContent = dark ? 'light_mode' : 'dark_mode';
         if (label) label.textContent = dark ? 'Light mode' : 'Dark mode';
         btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+        btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
       });
     }
 
@@ -22,14 +33,20 @@
 
       btn.addEventListener('click', () => {
         const dark = root.getAttribute('data-theme') === 'dark';
-        if (dark) {
-          root.removeAttribute('data-theme');
-          localStorage.setItem('theme', 'light');
+        const nextDark = !dark;
+
+        const switchTheme = () => {
+          applyTheme(nextDark);
+          syncAll();
+        };
+
+        if (typeof document.startViewTransition === 'function') {
+          document.startViewTransition(switchTheme);
         } else {
-          root.setAttribute('data-theme', 'dark');
-          localStorage.setItem('theme', 'dark');
+          root.classList.add('theme-transition');
+          switchTheme();
+          window.setTimeout(() => root.classList.remove('theme-transition'), 320);
         }
-        syncAll();
       });
     });
 

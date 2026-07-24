@@ -1,23 +1,79 @@
 ---
 import { findMatchGoals } from '../../data/homepage';
+
+const mid = Math.ceil(findMatchGoals.length / 2);
+const leftGoals = findMatchGoals.slice(0, mid);
+const rightGoals = findMatchGoals.slice(mid);
 ---
 
 <div class="home-match">
-  <div>
-    <h2 class="home-match__title">Find your perfect match</h2>
+  <div class="home-match__copy">
+    <div class="home-match__sparkles" aria-hidden="true">
+      <span class="material-symbols-outlined">auto_awesome</span>
+      <span class="material-symbols-outlined">auto_awesome</span>
+    </div>
+    <h2 class="home-match__title">
+      Find your <em>perfect</em> match
+    </h2>
     <p class="home-match__lead">
-      Not sure where to start? Tell us what matters most — chat quality, images, voice, memory, or privacy — and we will point you to the right app.
+      Answer a few quick questions and we'll recommend the best AI girlfriend apps for your needs.
     </p>
-    <ul class="home-match__list">
-      {
-        findMatchGoals.map((goal) => (
-          <li class="home-match__list-item">
-            <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-            {goal}
-          </li>
-        ))
-      }
-    </ul>
+    <button type="button" class="home-match__cta" data-coming-soon="match">
+      Coming soon
+      <span class="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_forward</span>
+    </button>
+    <div class="home-match__lists">
+      <ul class="home-match__list">
+        {
+          leftGoals.map((goal) => (
+            <li class="home-match__list-item">
+              <span class="home-match__check" aria-hidden="true">
+                <span class="material-symbols-outlined">check</span>
+              </span>
+              {goal}
+            </li>
+          ))
+        }
+      </ul>
+      <ul class="home-match__list">
+        {
+          rightGoals.map((goal) => (
+            <li class="home-match__list-item">
+              <span class="home-match__check" aria-hidden="true">
+                <span class="material-symbols-outlined">check</span>
+              </span>
+              {goal}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
   </div>
-  <a href="#" class="home-match__cta">Take the quiz</a>
+
+  <div class="home-match__visual" aria-hidden="true">
+    <div class="home-match__orb home-match__orb--lg"></div>
+    <div class="home-match__orb home-match__orb--sm"></div>
+    <div class="home-match__heart home-match__heart--left">
+      <span class="material-symbols-outlined">favorite</span>
+    </div>
+    <div class="home-match__heart home-match__heart--right">
+      <span class="material-symbols-outlined">favorite</span>
+    </div>
+    <div class="home-match__phone">
+      <div class="home-match__phone-notch"></div>
+      <div class="home-match__phone-screen">
+        {
+          Array.from({ length: 5 }).map(() => (
+            <div class="home-match__phone-row">
+              <span class="home-match__phone-dot"></span>
+              <span class="home-match__phone-line"></span>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+    <div class="home-match__phone-base">
+      <span class="material-symbols-outlined">favorite</span>
+    </div>
+  </div>
 </div>

@@ -9,9 +9,11 @@ interface Props {
   pageUrl?: string;
   /** Mobile: back-to-top only; share/feedback elsewhere on page */
   mobileMinimal?: boolean;
+  /** Mobile roundup: floating nav button opens hub + TOC sheet */
+  showMobileNav?: boolean;
 }
 
-const { pageTitle, pageUrl, mobileMinimal = false } = Astro.props;
+const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Astro.props;
 ---
 
 <aside
@@ -25,6 +27,19 @@ const { pageTitle, pageUrl, mobileMinimal = false } = Astro.props;
   </div>
 
   <div class="article-util-rail__stack">
+    {
+      showMobileNav && (
+        <button
+          type="button"
+          class="article-util-rail__btn article-util-rail__btn--nav"
+          data-nav-sheet-open
+          aria-label="Open table of contents"
+        >
+          <span class="material-symbols-outlined article-util-rail__nav-icon" aria-hidden="true">description</span>
+        </button>
+      )
+    }
+
     <button
       type="button"
       class="article-util-rail__btn article-util-rail__btn--top hidden"

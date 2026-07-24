@@ -7,6 +7,7 @@ import RatingsChangelogCompact from '../review/RatingsChangelogCompact.astro';
 import InfoIcon from '../ui/InfoIcon.astro';
 import VerifiedCheck from '../ui/VerifiedCheck.astro';
 import ShareMenu from '../ui/ShareMenu.astro';
+import RoundupHubNav from './RoundupHubNav.astro';
 
 interface Props {
   roundup: Roundup;
@@ -52,7 +53,7 @@ const shareTitle = `${roundup.title} (${monthYear}) — AI Girlfriend Expert`;
     <ShareMenu shareTitle={shareTitle} shareUrl={shareUrl} variant="inline" />
   </div>
 
-  <div class="flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-surface-variant pb-5 mb-5">
+  <div class="flex flex-wrap items-center gap-x-5 gap-y-3 pb-5">
     {
       roundup.authors.map((author, i) => {
         const profile = author.slug ? getAuthor(author.slug) : undefined;
@@ -90,7 +91,11 @@ const shareTitle = `${roundup.title} (${monthYear}) — AI Girlfriend Expert`;
       })
     }
   </div>
+</div>
 
+<RoundupHubNav active="best-apps" />
+
+<div class="roundup-hero-intro__body">
   <p class="text-[15px] md:text-base text-on-surface-variant leading-relaxed">
     {roundup.intro}
   </p>

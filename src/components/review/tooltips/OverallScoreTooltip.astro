@@ -4,14 +4,17 @@ import { products } from '../../../data/products';
 import { getScoreChipClass, fmtScore } from '../../../lib/scores';
 import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
 import TooltipActionLinks from './TooltipActionLinks.astro';
+import InlineTestLink from './InlineTestLink.astro';
 import InfoIcon from '../../ui/InfoIcon.astro';
 
 interface Props {
   product: Product;
   methodologyOnly?: boolean;
+  /** Roundup pages — link test pages from labels instead of vial icons */
+  inlineTestLinks?: boolean;
 }
 
-const { product, methodologyOnly = false } = Astro.props;
+const { product, methodologyOnly = false, inlineTestLinks = false } = Astro.props;
 const tooltipId = `overall-${product.slug}`;
 
 const currentScore = product.overallScore;
@@ -74,9 +77,19 @@ const avgScore = scorePoints.length
                   <div class="rt-comp-row rt-comp-row--inline">
                     <div class="rt-comp-row__main">
                       <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(category.score)}</span>
-                      <span class="rt-comp-name rt-comp-name--truncate">{category.name}</span>
+                      {
+                        inlineTestLinks ? (
+                          <InlineTestLink categoryKey={category.key} class="rt-comp-name rt-comp-name--truncate">
+                            {category.name}
+                          </InlineTestLink>
+                        ) : (
+                          <>
+                            <span class="rt-comp-name rt-comp-name--truncate">{category.name}</span>
+                            <TooltipActionLinks categoryKey={category.key} compact methodologyOnly={methodologyOnly} />
+                          </>
+                        )
+                      }
                     </div>
-                    <TooltipActionLinks categoryKey={category.key} compact methodologyOnly={methodologyOnly} />
                   </div>
                 );
               })

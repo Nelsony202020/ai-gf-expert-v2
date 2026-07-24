@@ -1,0 +1,461 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import TestBreadcrumbs from '../../components/test/TestBreadcrumbs.astro';
+import { getTestCategories } from '../../lib/test-framework';
+import {
+  testHubEvidenceExamples,
+  testHubFaq,
+  testHubImportantTests,
+  testHubOverallExample,
+  testHubProcessSteps,
+  testHubTocSections,
+  testHubTrustMetrics,
+  testHubVersions,
+} from '../../data/test-hub-content';
+import { testHubScoredVsInformational } from '../../data/methodology-support-content';
+import { testHubUrl } from '../../lib/slugs';
+import '../../styles/test-hub.css';
+
+const categories = getTestCategories();
+const pageTitle = 'How We Test AI Girlfriend Apps — AI Girlfriend Expert';
+---
+
+<BaseLayout
+  title={pageTitle}
+  description="How we test AI girlfriend apps using paid accounts, structured scenarios, and measurable evidence across eight rating categories."
+>
+  <Header />
+  <main class="test-hub">
+    <div class="section-container px-4 md:px-8">
+      <div class="test-hub__hero">
+        <TestBreadcrumbs
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'How We Test' },
+          ]}
+        />
+        <p class="test-hub__eyebrow">Testing methodology</p>
+        <h1 class="test-hub__title">How We Test AI Girlfriend Apps</h1>
+        <p class="test-hub__intro">
+          We test AI girlfriend apps using paid accounts, structured test scenarios, and measurable evidence. Every score on our reviews, roundups, comparisons, and directories comes from the same rating framework.
+        </p>
+        <p class="test-hub__intro" style="margin-top: 0.75rem;">
+          This page explains how our scores are calculated and links to the methodology behind every category, subscore, and major test.
+        </p>
+        <ul class="test-hub__metrics">
+          {
+            testHubTrustMetrics.map((m) => (
+              <li class="test-hub__metric">
+                <span class="material-symbols-outlined" aria-hidden="true">{m.icon}</span>
+                {m.value}
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="test-hub__layout">
+        <aside class="test-hub__toc test-hub__toc--desktop" aria-label="Table of contents">
+          <p class="test-hub__toc-title">On this page</p>
+          <ul class="test-hub__toc-list">
+            {testHubTocSections.map((s) => (
+              <li><a href={`#${s.id}`}>{s.label}</a></li>
+            ))}
+          </ul>
+          <p class="test-hub__toc-title">Explore tests</p>
+          <ul class="test-hub__toc-list">
+            {categories.map((c) => (
+              <li><a href={c.href}>{c.name}</a></li>
+            ))}
+          </ul>
+        </aside>
+
+        <article class="test-hub__main">
+          <section id="how-scores-work" class="test-hub__section">
+            <h2 class="test-hub__h2">How our rating system works</h2>
+            <p class="test-hub__lead">
+              Our rating system has four levels. Specific evidence points feed into subscores, subscores create category ratings, and the weighted category ratings combine to produce the overall performance score.
+            </p>
+            <pre class="test-hub__diagram">Overall performance score
+        ↓
+8 weighted category scores
+        ↓
+3 subscores per category
+        ↓
+Individual evidence points</pre>
+            <p class="test-hub__note">Every level links to a dedicated methodology page where available.</p>
+          </section>
+
+          <section id="overall-score" class="test-hub__section">
+            <h2 class="test-hub__h2">Overall performance score</h2>
+            <div class="test-hub__split">
+              <div>
+                <p class="test-hub__lead">
+                  The overall performance score is the final rating shown across the site. It summarizes how well an app performs across all eight categories.
+                </p>
+                <p class="test-hub__lead">
+                  The score is not a simple average. Each category has a different weight based on how important it is to the overall AI companion experience.
+                </p>
+                <a class="test-inline-link" href={testHubUrl()}>View how the overall score is calculated →</a>
+              </div>
+              <div class="test-hub__score-card">
+                <p class="test-hub__score-card-title">Overall Performance</p>
+                <p class="test-hub__score-card-value">9.1</p>
+                {
+                  testHubOverallExample.map((row) => (
+                    <div class="test-hub__score-card-row">
+                      <span>{row.label}</span>
+                      <span>{row.score}</span>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          </section>
+
+          <section id="category-scores" class="test-hub__section">
+            <h2 class="test-hub__h2">Category scores</h2>
+            <p class="test-hub__lead">
+              Every app receives a score in eight main categories. These category scores are weighted when calculating the overall performance score.
+            </p>
+            <div class="test-category-list">
+              {
+                categories.map((cat) => (
+                  <article class="test-category-item">
+                    <div class="test-category-item__head">
+                      <h3 class="test-category-item__name">{cat.name}</h3>
+                      <span class="test-category-item__weight">{cat.weight}%</span>
+                    </div>
+                    <p class="test-category-item__desc">{cat.description}</p>
+                    <p class="test-category-item__subs">
+                      <strong>Subscores:</strong>{' '}
+                      {cat.subscores.map((s) => s.name).join(' · ')}
+                    </p>
+                    <a class="test-inline-link" href={cat.href}>
+                      View {cat.name} methodology
+                      <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                    </a>
+                  </article>
+                ))
+              }
+            </div>
+          </section>
+
+          <section id="subscores" class="test-hub__section">
+            <h2 class="test-hub__h2">How subscores work</h2>
+            <p class="test-hub__lead">
+              Each category is divided into three broad subscores. These organize related measurements into results that are easier to understand and compare.
+            </p>
+            <h3 class="test-hub__h3">Example: Chat</h3>
+            {
+              categories.find((c) => c.key === 'chat')?.subscores.map((sub) => (
+                <div class="test-subscore-card" style="margin-bottom: 0.75rem;">
+                  <h4 class="test-subscore-card__title"><a href={sub.href}>{sub.name}</a></h4>
+                  <p class="test-subscore-card__desc">{sub.description}</p>
+                  <a class="test-inline-link" href={sub.href}>View {sub.name} methodology →</a>
+                </div>
+              ))
+            }
+            <h3 class="test-hub__h3">Browse all subscores</h3>
+            <div class="test-subscore-browse">
+              {
+                categories.map((cat) => (
+                  <div class="test-subscore-browse__group">
+                    <p class="test-subscore-browse__cat">
+                      <a href={cat.href}>{cat.name}</a>
+                    </p>
+                    <ul class="test-subscore-browse__list">
+                      {
+                        cat.subscores.map((sub) => (
+                          <li><a href={sub.href}>{sub.name}</a></li>
+                        ))
+                      }
+                    </ul>
+                  </div>
+                ))
+              }
+            </div>
+          </section>
+
+          <section id="evidence" class="test-hub__section">
+            <h2 class="test-hub__h2">Evidence points</h2>
+            <p class="test-hub__lead">
+              Evidence points are the individual measurements collected during testing. They are the foundation of every score. Some are simple yes/no checks; others use percentages, counts, timings, or structured quality assessments.
+            </p>
+            <pre class="test-hub__diagram">Chat
+└── Understanding
+    ├── Memory
+    ├── Relevance
+    ├── Context
+    ├── Instruction following
+    └── Roleplay accuracy</pre>
+            <div class="test-evidence-list">
+              {
+                testHubEvidenceExamples.map((ex) => (
+                  <article class="test-evidence-item">
+                    <h3 class="test-evidence-item__title">{ex.title}</h3>
+                    <p class="test-evidence-item__body">{ex.body}</p>
+                    <p class="test-evidence-item__result"><strong>Displayed result:</strong> {ex.result}</p>
+                    <a class="test-inline-link" href={ex.href}>View {ex.title} test methodology →</a>
+                  </article>
+                ))
+              }
+            </div>
+          </section>
+
+          <section id="full-framework" class="test-hub__section">
+            <h2 class="test-hub__h2">Explore our full testing framework</h2>
+            <div class="test-framework-accordion">
+              {
+                categories.map((cat, i) => (
+                  <details open={i === 0}>
+                    <summary>{cat.name}</summary>
+                    <div class="test-framework-accordion__body">
+                      {
+                        cat.subscores.map((sub) => (
+                          <div class="test-framework-sub">
+                            <h4><a href={sub.href}>{sub.name}</a></h4>
+                            <ul>
+                              {sub.contributors.map((c) => (
+                                <li><a href={c.href}>{c.label}</a></li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))
+                      }
+                      <a class="test-inline-link" href={cat.href}>View {cat.name} methodology →</a>
+                    </div>
+                  </details>
+                ))
+              }
+            </div>
+          </section>
+
+          <section id="in-practice" class="test-hub__section">
+            <h2 class="test-hub__h2">How we test AI girlfriend apps in practice</h2>
+            <ol class="test-process-list">
+              {testHubProcessSteps.map((step) => (
+                <li>
+                  <strong>{step.title}</strong>
+                  <p>{step.body}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section id="important-tests" class="test-hub__section">
+            <h2 class="test-hub__h2">Important individual tests</h2>
+            <p class="test-hub__lead">
+              These tests have dedicated methodology pages because they require more explanation, benchmarking, or repeated measurements.
+            </p>
+            <div class="test-important-grid">
+              {
+                testHubImportantTests.map((t) => (
+                  <div class="test-important-item">
+                    <a href={t.href}>{t.label}</a>
+                    <p>{t.desc}</p>
+                  </div>
+                ))
+              }
+            </div>
+          </section>
+
+          <section id="across-site" class="test-hub__section">
+            <h2 class="test-hub__h2">Where you will see our scores</h2>
+            <p class="test-hub__lead"><strong>Reviews</strong> — Full overall, category, subscore, and evidence-level results for one app.</p>
+            <p class="test-hub__lead"><strong>Roundups</strong> — Condensed results used to compare and rank several apps.</p>
+            <p class="test-hub__lead"><strong>Comparisons</strong> — Side-by-side category and evidence comparisons.</p>
+            <p class="test-hub__lead"><strong>App directory</strong> — Summary scores, pricing information, and key strengths for browsing and filtering.</p>
+            <p class="test-hub__lead"><strong>Tooltips</strong> — Short explanations with links to the relevant testing methodology.</p>
+          </section>
+
+          <section id="beyond-the-score" class="test-hub__section">
+            <h2 class="test-hub__h2">Beyond the score</h2>
+            <p class="test-hub__lead">
+              Structured ratings are the foundation of every review, but they are not the whole story. Our full reviews also include written analysis, visual evidence, optional video walkthroughs, and market context — each with a clear role and none of them replacing the score.
+            </p>
+            <ul class="test-beyond-links">
+              <li>
+                <a class="test-inline-link" href="/review-process/">
+                  Review process
+                  <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                </a>
+                — Written reviews, personal experience, screenshots, galleries, and YouTube video reviews.
+              </li>
+              <li>
+                <a class="test-inline-link" href="/test/market-data/">
+                  Market data methodology
+                  <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                </a>
+                — Google Trends, search interest, growth, internal popularity rankings, and competitive comparisons.
+              </li>
+              <li>
+                <a class="test-inline-link" href="/editorial-guidelines/">
+                  Editorial guidelines
+                  <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                </a>
+                — Independence, fact-checking, corrections, and affiliate disclosures.
+              </li>
+            </ul>
+            <blockquote class="test-hub__note">
+              Structured ratings measure product performance. Editorial reviews, video reviews, and market data provide additional context but do not directly change the overall score.
+            </blockquote>
+            <h3 class="test-hub__h3">Scored vs informational</h3>
+            <table class="test-scored-table">
+              <thead>
+                <tr>
+                  <th>Content type</th>
+                  <th>Affects score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  testHubScoredVsInformational.map((row) => (
+                    <tr>
+                      <td>
+                        {row.item}
+                        {row.note && <span class="test-scored-table__note"> — {row.note}</span>}
+                      </td>
+                      <td>{row.affectsScore ? 'Yes' : 'No'}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </section>
+
+          <section id="consistency" class="test-hub__section">
+            <h2 class="test-hub__h2">How we keep scores consistent</h2>
+            <p class="test-hub__lead">All apps use the same category structure. Important tests use fixed samples and repeatable tasks. Unknown privacy information is not treated as a positive result.</p>
+            <p class="test-hub__lead">Image and video costs appear in their respective sections but affect the final rating under Pricing to avoid double scoring. Offering a feature does not automatically produce a high score.</p>
+            <p class="test-hub__note">Each review displays the methodology version used for its scores.</p>
+          </section>
+
+          <section id="updates" class="test-hub__section">
+            <h2 class="test-hub__h2">Updates and methodology versions</h2>
+            <p class="test-hub__lead">Current methodology: <strong>V3.1</strong> (July 2026). We recalculate or retest when products or methodology versions change.</p>
+            <table class="test-version-table">
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Date</th>
+                  <th>Main change</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  testHubVersions.map((v) => (
+                    <tr>
+                      <td>{v.version}</td>
+                      <td>{v.date}</td>
+                      <td>{v.change}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </section>
+
+          <section id="faq" class="test-hub__section test-faq">
+            <h2 class="test-hub__h2">Frequently asked questions</h2>
+            {
+              testHubFaq.map((item) => (
+                <details>
+                  <summary>{item.q}</summary>
+                  <p>{item.a}</p>
+                </details>
+              ))
+            }
+          </section>
+
+          <footer class="test-hub-nav-footer">
+            <div>
+              <h3>Rating categories</h3>
+              <ul>
+                {categories.map((c) => (
+                  <li><a href={c.href}>{c.name}</a></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3>Popular individual tests</h3>
+              <ul>
+                <li><a href="/test/chat/understanding/#memory">Memory</a></li>
+                <li><a href="/test/chat/reliability/#speed">Reply speed</a></li>
+                <li><a href="/test/images/accuracy/#character-consistency">Character consistency</a></li>
+                <li><a href="/test/images/accuracy/#prompt-accuracy">Prompt accuracy</a></li>
+                <li><a href="/test/pricing/value/#real-cost">Real monthly cost</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3>Related pages</h3>
+              <ul>
+                <li><a href="/test/all/">View all tests</a></li>
+                <li><a href="/review-process/">Review process</a></li>
+                <li><a href="/test/market-data/">Market data methodology</a></li>
+                <li><a href="/editorial-guidelines/">Editorial guidelines</a></li>
+                <li><a href="/best/ai-girlfriend">Best AI girlfriend apps</a></li>
+                <li><a href="/apps">App directory</a></li>
+              </ul>
+            </div>
+          </footer>
+        </article>
+      </div>
+    </div>
+
+    <button type="button" class="test-hub__mobile-toc-btn lg:hidden" data-test-hub-toc-open aria-label="Open table of contents">
+      <span class="material-symbols-outlined" aria-hidden="true">description</span>
+    </button>
+
+    <div class="test-hub-sheet" data-test-hub-sheet hidden aria-hidden="true">
+      <div class="test-hub-sheet__backdrop" data-test-hub-sheet-close tabindex="-1"></div>
+      <div class="test-hub-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="test-hub-sheet-title">
+        <h2 id="test-hub-sheet-title" class="test-hub-sheet__title">Contents</h2>
+        <ul class="test-hub__toc-list">
+          {testHubTocSections.map((s) => (
+            <li><a href={`#${s.id}`} data-test-hub-sheet-link>{s.label}</a></li>
+          ))}
+        </ul>
+        <p class="test-hub__toc-title">Explore tests</p>
+        <ul class="test-hub__toc-list">
+          {categories.map((c) => (
+            <li><a href={c.href}>{c.name}</a></li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </main>
+  <Footer />
+
+  <script>
+    function initTestHubSheet() {
+      const sheet = document.querySelector('[data-test-hub-sheet]');
+      const openBtn = document.querySelector('[data-test-hub-toc-open]');
+      if (!sheet || !openBtn || openBtn.dataset.bound === 'true') return;
+      openBtn.dataset.bound = 'true';
+
+      function close() {
+        sheet.hidden = true;
+        sheet.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('roundup-sheet-open');
+      }
+
+      function open() {
+        sheet.hidden = false;
+        sheet.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('roundup-sheet-open');
+      }
+
+      openBtn.addEventListener('click', open);
+      sheet.querySelector('[data-test-hub-sheet-close]')?.addEventListener('click', close);
+      sheet.querySelectorAll('[data-test-hub-sheet-link]').forEach((link) => {
+        link.addEventListener('click', close);
+      });
+    }
+
+    initTestHubSheet();
+    document.addEventListener('astro:page-load', initTestHubSheet);
+  </script>
+</BaseLayout>

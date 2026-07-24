@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import TestBreadcrumbs from '../components/test/TestBreadcrumbs.astro';
+import { editorialGuidelinesSections } from '../data/methodology-support-content';
+import { testHubUrl } from '../lib/slugs';
+import '../styles/test-hub.css';
+---
+
+<BaseLayout
+  title="Editorial Guidelines — AI Girlfriend Expert"
+  description="Our editorial independence, fact-checking standards, correction policy, affiliate disclosures, and separation between commercial relationships and product scoring."
+>
+  <Header />
+  <main class="test-page">
+    <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">
+      <TestBreadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'Editorial guidelines' },
+        ]}
+      />
+
+      <header class="test-page__header">
+        <p class="test-page__eyebrow">Editorial standards</p>
+        <h1 class="test-page__title">Editorial guidelines</h1>
+        <p class="test-page__intro">
+          How we maintain editorial independence, verify facts, handle corrections, disclose affiliate relationships, and keep commercial interests separate from scoring.
+        </p>
+      </header>
+
+      {
+        editorialGuidelinesSections.map((section) => (
+          <section class="test-page__section">
+            <h2 class="test-page__h2">{section.title}</h2>
+            <p class="test-prose">{section.body}</p>
+          </section>
+        ))
+      }
+
+      <p class="test-prose">
+        For affiliate disclosure details, see our{' '}
+        <a class="test-inline-link" href="/legal/affiliate-disclosure/">affiliate disclosure</a>.
+      </p>
+
+      <a class="test-inline-link test-page__back" href={testHubUrl()}>
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+        Back to how we test
+      </a>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

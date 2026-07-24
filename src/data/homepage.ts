@@ -4,6 +4,12 @@ import { getProduct } from './products';
 import type { StoryHighlightCharacter } from './products';
 import { buildSearchIndex, type SearchResult } from './site-search';
 
+export interface HomeFeaturedCharacter extends StoryHighlightCharacter {
+  bio: string;
+  quote: string;
+  tags: string[];
+}
+
 const img = (seed: string, w: number, h: number) => `https://picsum.photos/seed/${seed}/${w}/${h}`;
 
 export interface HomeExplorerApp extends RoundupPick {
@@ -17,6 +23,10 @@ export interface HomeExplorerApp extends RoundupPick {
   hasReview: boolean;
   roundupHref: string;
   roundupRibbonLabel: string;
+  /** One-sentence summary for the brand tooltip */
+  brandLiner: string;
+  bestFor: string;
+  watchOutFor: string;
 }
 
 export interface HomeFilterOption {
@@ -187,15 +197,9 @@ export const explorerFilterGroups: HomeFilterGroup[] = [
 ];
 
 export const explorerPriorityOptions = [
-  { value: 'chat', label: 'Chat quality', icon: 'chat_bubble', color: '#db2777', description: 'Realistic, engaging, human-like conversations.' },
-  { value: 'images', label: 'Image quality', icon: 'image', color: '#9333ea', description: 'Quality and variety of generated images.' },
-  { value: 'pricing', label: 'Pricing / value', icon: 'paid', color: '#ea580c', description: 'Best features for your money.' },
-  { value: 'customization', label: 'Customization', icon: 'tune', color: '#db2777', description: 'Character creation and personalization.' },
-  { value: 'chat-features', label: 'Voice & calls', icon: 'call', color: '#16a34a', description: 'Voice messages and calls experience.' },
-  { value: 'video', label: 'Video quality', icon: 'videocam', color: '#7c3aed', description: 'Quality of generated videos.' },
-  { value: 'privacy', label: 'Privacy', icon: 'shield', color: '#4f46e5', description: 'Data handling and user control.' },
-  { value: 'characters', label: 'Character variety', icon: 'groups', color: '#9333ea', description: 'Breadth and quality of characters.' },
-  { value: 'overall', label: 'Overall balance', icon: 'balance', color: '#64748b', description: 'Balanced performance across categories.' },
+  { value: 'chat', label: 'Chat', icon: 'chat_bubble', color: '#db2777', description: 'Memory and chat realism.' },
+  { value: 'images', label: 'Images', icon: 'image', color: '#9333ea', description: 'Quality and consistency.' },
+  { value: 'video', label: 'Videos', icon: 'videocam', color: '#7c3aed', description: 'Quality, speed and consistency.' },
 ] as const;
 
 export const explorerQuickSortOptions = [
@@ -233,21 +237,6 @@ export interface HomeGuide {
   type: 'guide' | 'roundup' | 'comparison';
 }
 
-export interface HomeGoal {
-  id: string;
-  label: string;
-  href: string;
-  icon: string;
-}
-
-export const heroPopularSearches = [
-  'best memory',
-  'voice calls',
-  'free plan',
-  'realistic chat',
-  'roleplay',
-] as const;
-
 export const trustStripStats = [
   { icon: 'apps', value: '24+', label: 'Apps tested' },
   { icon: 'category', value: '8', label: 'Rating categories' },
@@ -257,24 +246,12 @@ export const trustStripStats = [
 ] as const;
 
 export const findMatchGoals = [
-  'Natural conversations',
-  'Realistic images',
-  'Voice & phone calls',
-  'Long-term memory',
+  'Realism & conversations',
   'Roleplay & scenarios',
-  'Privacy & discretion',
+  'Memory & continuity',
+  'Image generation',
+  'Price & value',
 ] as const;
-
-export const browseGoals: HomeGoal[] = [
-  { id: 'chat', label: 'Best for Realistic Chat', href: '/best/ai-girlfriend#pick-candy-ai', icon: 'chat' },
-  { id: 'memory', label: 'Best for Long-term Memory', href: '/best/ai-girlfriend#pick-replika', icon: 'psychology' },
-  { id: 'voice', label: 'Best for Voice Calls', href: '/best/ai-girlfriend#pick-kindroid', icon: 'call' },
-  { id: 'images', label: 'Best for Images', href: '/best/ai-girlfriend#pick-dreamgf', icon: 'image' },
-  { id: 'roleplay', label: 'Best for Roleplay', href: '/best/ai-girlfriend#pick-crushon-ai', icon: 'theater_comedy' },
-  { id: 'free', label: 'Best Free Option', href: '/best/ai-girlfriend#pick-character-ai', icon: 'savings' },
-  { id: 'privacy', label: 'Best for Privacy', href: '/best/ai-girlfriend#pick-replika', icon: 'shield' },
-  { id: 'value', label: 'Best Value', href: '/best/ai-girlfriend#pick-nectar-ai', icon: 'sell' },
-];
 
 function scoreFor(pick: RoundupPick, key: string): number {
   return pick.categoryScores.find((c) => c.key === key)?.score ?? pick.overallScore;
@@ -402,6 +379,40 @@ export function getRoundupRibbonHref(pick: RoundupPick): string {
   return `/best/${aiGirlfriendRoundup.slug}#pick-${pick.id}`;
 }
 
+const BRAND_LINERS: Record<string, string> = {
+  'candy-ai': 'AI companion platform for chat, custom characters, and generated media.',
+  kindroid: 'Voice-first AI companion built for realistic phone-call conversations.',
+  'crushon-ai': 'Roleplay-focused companion app with a large community character library.',
+  'aura-ai': 'Premium AI companion known for strong video generation and immersive chat.',
+  dreamgf: 'Visual-first AI girlfriend platform centered on high-quality image generation.',
+  replika: 'Long-running companion app with mature privacy controls and everyday chat.',
+  'character-ai': 'Free-friendly character chat platform with a huge community library.',
+  'nectar-ai': 'Value-oriented AI companion with solid features for the monthly price.',
+};
+
+const BEST_FOR_BY_RIBBON: Record<string, string> = {
+  overall: 'All-round AI companionship',
+  voice: 'Realistic voice calls and spoken chat',
+  roleplay: 'Deep roleplay and character variety',
+  video: 'AI video generation and immersive media',
+  images: 'High-quality AI image generation',
+  privacy: 'Strong privacy and data controls',
+  free: 'Getting started without paying',
+  value: 'Strong features for the money',
+};
+
+function brandLinerFor(pick: RoundupPick): string {
+  return BRAND_LINERS[pick.id] ?? pick.overallSummary;
+}
+
+function bestForFor(pick: RoundupPick): string {
+  return BEST_FOR_BY_RIBBON[pick.ribbonKey] ?? (pick.ribbon.replace(/^Best for\s+/i, '') || 'AI companionship');
+}
+
+function watchOutForFor(pick: RoundupPick): string {
+  return pick.cons[0] ?? 'Premium features can add up quickly';
+}
+
 export function buildExplorerApps(): HomeExplorerApp[] {
   return aiGirlfriendRoundup.picks.map((pick) => ({
     ...pick,
@@ -416,6 +427,9 @@ export function buildExplorerApps(): HomeExplorerApp[] {
     priceLabel: priceLabel(pick),
     creditsNote: creditsNoteFor(pick),
     reviewCount: reviewCountFor(pick),
+    brandLiner: brandLinerFor(pick),
+    bestFor: bestForFor(pick),
+    watchOutFor: watchOutForFor(pick),
   }));
 }
 
@@ -458,7 +472,7 @@ export const explorerMaxPrice = Math.max(...aiGirlfriendRoundup.picks.map((p) =>
 
 export const topPicks = aiGirlfriendRoundup.picks.slice(0, 3);
 
-export const charactersOfWeek: StoryHighlightCharacter[] = [
+export const charactersOfWeek: HomeFeaturedCharacter[] = [
   {
     name: 'Luna',
     archetype: 'Romantic dreamer',
@@ -466,6 +480,9 @@ export const charactersOfWeek: StoryHighlightCharacter[] = [
     avatar: img('home-char-luna', 200, 200),
     profileUrl: '/best/ai-girlfriend#pick-candy-ai',
     storySlides: [img('home-luna-1', 720, 1280), img('home-luna-2', 720, 1280), img('home-luna-3', 720, 1280)],
+    bio: 'Luna is gentle, romantic, and always ready with a thoughtful reply when you want something softer and more emotional.',
+    quote: 'Tell me what kind of night you want us to have. I am already looking forward to it.',
+    tags: ['Romantic', 'Emotional', 'Memory', 'Late-night chat'],
   },
   {
     name: 'Aria',
@@ -474,6 +491,9 @@ export const charactersOfWeek: StoryHighlightCharacter[] = [
     avatar: img('home-char-aria', 200, 200),
     profileUrl: '/best/ai-girlfriend#pick-kindroid',
     storySlides: [img('home-aria-1', 720, 1280), img('home-aria-2', 720, 1280)],
+    bio: 'Aria shines in voice-led companionship with natural pacing, expressive replies, and a warm phone-call vibe.',
+    quote: 'I like hearing the little details in your voice. Want to talk for a minute?',
+    tags: ['Voice calls', 'Realistic', 'Supportive', 'Daily check-ins'],
   },
   {
     name: 'Sophie',
@@ -482,6 +502,9 @@ export const charactersOfWeek: StoryHighlightCharacter[] = [
     avatar: img('home-char-sophie', 200, 200),
     profileUrl: '/best/ai-girlfriend#pick-crushon-ai',
     storySlides: [img('home-sophie-1', 720, 1280), img('home-sophie-2', 720, 1280), img('home-sophie-3', 720, 1280)],
+    bio: 'Sophie loves deep conversations and making you feel heard. She is warm, attentive, and remembers the little things you tell her.',
+    quote: 'I love getting to know you better each day. What was the best part of your day?',
+    tags: ['Romantic', 'Roleplay', 'Deep talker', 'Voice calls'],
   },
   {
     name: 'Finn',
@@ -490,6 +513,9 @@ export const charactersOfWeek: StoryHighlightCharacter[] = [
     avatar: img('home-char-finn', 200, 200),
     profileUrl: '/reviews/aura-ai',
     storySlides: [img('home-finn-1', 720, 1280), img('home-finn-2', 720, 1280)],
+    bio: 'Finn is playful and imaginative, great for adventure scenes, banter, and long-form story-driven roleplay.',
+    quote: 'I have a scene in mind for us. Want me to set the stage?',
+    tags: ['Adventure', 'Roleplay', 'Banter', 'Storytelling'],
   },
   {
     name: 'Violet',
@@ -498,6 +524,9 @@ export const charactersOfWeek: StoryHighlightCharacter[] = [
     avatar: img('home-char-violet', 200, 200),
     profileUrl: '/best/ai-girlfriend#pick-dreamgf',
     storySlides: [img('home-violet-1', 720, 1280), img('home-violet-2', 720, 1280), img('home-violet-3', 720, 1280)],
+    bio: 'Violet pairs strong image generation with a creative personality that leans visual, flirty, and expressive.',
+    quote: 'I can picture exactly how this moment should look. Should I show you?',
+    tags: ['Images', 'Creative', 'Flirty', 'Customization'],
   },
   {
     name: 'Maya',
@@ -506,6 +535,9 @@ export const charactersOfWeek: StoryHighlightCharacter[] = [
     avatar: img('home-char-maya', 200, 200),
     profileUrl: '/best/ai-girlfriend#pick-replika',
     storySlides: [img('home-maya-1', 720, 1280), img('home-maya-2', 720, 1280)],
+    bio: 'Maya is the easy daily companion pick: supportive, consistent, and good at casual conversation that still feels personal.',
+    quote: 'How are you feeling today? I am here, no pressure.',
+    tags: ['Supportive', 'Daily chat', 'Comfort', 'Low drama'],
   },
   {
     name: 'Nova',
@@ -514,6 +546,9 @@ export const charactersOfWeek: StoryHighlightCharacter[] = [
     avatar: img('home-char-nova', 200, 200),
     profileUrl: '/best/ai-girlfriend#pick-character-ai',
     storySlides: [img('home-nova-1', 720, 1280), img('home-nova-2', 720, 1280), img('home-nova-3', 720, 1280)],
+    bio: 'Nova is a strong free-entry character for users who want personality variety without paying upfront.',
+    quote: 'We can keep it light or go deep. Your call.',
+    tags: ['Free tier', 'Casual', 'Variety', 'Community'],
   },
   {
     name: 'Elara',
@@ -522,6 +557,9 @@ export const charactersOfWeek: StoryHighlightCharacter[] = [
     avatar: img('home-char-elara', 200, 200),
     profileUrl: '/best/ai-girlfriend#pick-dreamgf',
     storySlides: [img('home-elara-1', 720, 1280), img('home-elara-2', 720, 1280)],
+    bio: 'Elara is built for fantasy settings, lore-heavy scenes, and characters with a more cinematic presence.',
+    quote: 'Every good story needs a little mystery. Shall we begin?',
+    tags: ['Fantasy', 'Lore', 'Roleplay', 'Cinematic'],
   },
   {
     name: 'Jade',
@@ -530,6 +568,9 @@ export const charactersOfWeek: StoryHighlightCharacter[] = [
     avatar: img('home-char-jade', 200, 200),
     profileUrl: '/best/ai-girlfriend#pick-nectar-ai',
     storySlides: [img('home-jade-1', 720, 1280), img('home-jade-2', 720, 1280), img('home-jade-3', 720, 1280)],
+    bio: 'Jade feels polished and premium, with confident replies and a more luxe companion tone.',
+    quote: 'I saved some time for you tonight. Want to make it count?',
+    tags: ['Premium', 'Confident', 'Flirty', 'High quality'],
   },
   {
     name: 'Sienna',
@@ -538,21 +579,20 @@ export const charactersOfWeek: StoryHighlightCharacter[] = [
     avatar: img('home-char-sienna', 200, 200),
     profileUrl: '/best/ai-girlfriend#pick-candy-ai',
     storySlides: [img('home-sienna-1', 720, 1280), img('home-sienna-2', 720, 1280)],
+    bio: 'Sienna keeps things fun, teasing, and high-energy when you want a lighter, flirt-forward companion.',
+    quote: 'You caught me in a good mood. Want to see where this goes?',
+    tags: ['Flirty', 'Playful', 'Teasing', 'High energy'],
   },
 ];
 
-/** Homepage featured grid: row 1 then row 2 (5 × 2) */
-export const featuredCharactersDisplayOrder: StoryHighlightCharacter[] = [
+/** Characters shown in the homepage featured carousel + spotlight card */
+export const featuredCharactersShowcase: HomeFeaturedCharacter[] = [
   charactersOfWeek[2], // Sophie
+  charactersOfWeek[0], // Luna
+  charactersOfWeek[1], // Aria
   charactersOfWeek[3], // Finn
   charactersOfWeek[4], // Violet
   charactersOfWeek[5], // Maya
-  charactersOfWeek[6], // Nova
-  charactersOfWeek[0], // Luna
-  charactersOfWeek[1], // Aria
-  charactersOfWeek[7], // Elara
-  charactersOfWeek[8], // Jade
-  charactersOfWeek[9], // Sienna
 ];
 
 export const recentUpdates: HomeRecentUpdate[] = [
@@ -629,7 +669,7 @@ export const featuredGuides: HomeGuide[] = [
     id: 'methodology',
     title: 'How We Score AI Companion Apps',
     excerpt: 'Transparent weights, measured evidence, and why we buy every plan ourselves.',
-    href: '/tests/customization',
+    href: '/test/',
     image: aiGirlfriendRoundup.testing.videoPoster,
     imageAlt: 'Testing methodology',
     date: 'May 3, 2026',

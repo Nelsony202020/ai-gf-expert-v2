@@ -6,6 +6,7 @@ import { fmtScore } from '../../lib/scores';
 import { getSegmentFill, getSegmentFillClass } from '../../lib/roundup-scores';
 import RoundupOverallScoreBadge from './RoundupOverallScoreBadge.astro';
 import CategoryScoreTooltip from '../review/tooltips/CategoryScoreTooltip.astro';
+import SubscoreScoreTooltip from '../review/tooltips/SubscoreScoreTooltip.astro';
 import InfoIcon from '../ui/InfoIcon.astro';
 
 interface Props {
@@ -30,10 +31,18 @@ const comparePayload = picks.map((p) => ({
   image: p.gallery[0]?.full ?? p.logo,
   imageAlt: p.gallery[0]?.alt ?? `${p.name} screenshot`,
   overallScore: p.overallScore,
-  priceLabel: p.priceMonthly <= 0 ? 'Free' : `$${p.priceMonthly.toFixed(2)} / mo`,
   affiliateUrl: p.affiliateUrl,
   specs: Object.fromEntries(p.specs.map((s) => [s.label, s.value])),
-  categories: Object.fromEntries(p.categoryScores.map((c) => [c.key, { name: c.name, score: c.score }])),
+  categories: Object.fromEntries(
+    p.categoryScores.map((c) => [
+      c.key,
+      {
+        name: c.name,
+        score: c.score,
+        subscores: Object.fromEntries((c.subscores ?? []).map((s) => [s.name, s.score])),
+      },
+    ]),
+  ),
 }));
 
 function barHtml(score: number) {
@@ -56,6 +65,7 @@ function barHtml(score: number) {
   <h2 class="roundup-compare__heading">Compare the best AI girlfriend apps</h2>
 
   <div class="roundup-compare__pickers" data-compare-pickers>
+    <div class="roundup-compare__label-spacer" aria-hidden="true"></div>
     {
       defaultIds.map((id, slot) => {
         const pick = picks.find((p) => p.id === id)!;
@@ -100,6 +110,7 @@ function barHtml(score: number) {
   </div>
 
   <div class="roundup-compare__grid" data-compare-grid>
+    <div class="roundup-compare__label-spacer" aria-hidden="true"></div>
     {
       defaultIds.map((id) => {
         const pick = picks.find((p) => p.id === id)!;
@@ -118,10 +129,7 @@ function barHtml(score: number) {
                   />
                 </div>
               </div>
-              <h3 class="roundup-compare__name">
-                {pick.name}
-                <span class="roundup-compare__price">({pick.priceMonthly <= 0 ? 'Free' : `$${pick.priceMonthly.toFixed(2)} / mo`})</span>
-              </h3>
+              <h3 class="roundup-compare__name">{pick.name}</h3>
               <p class="roundup-compare__intro">{pick.intro}</p>
               <a class="roundup-compare__cta bg-brand-cta" href={pick.affiliateUrl} target="_blank" rel="nofollow sponsored noopener">
                 Visit {pick.name}
@@ -157,14 +165,31 @@ function barHtml(score: number) {
     <h3 class="roundup-compare__table-title">Category scores</h3>
     <div class="roundup-compare__table" data-compare-perf-table>
       {
-        categoryKeys.map((key) => {
+        categoryKeys.flatMap((key) => {
           const catItem = picks[0].categoryScores.find((c) => c.key === key)!;
           const category = toRatingCategory(catItem, tooltipProductSlug);
-          return (
-            <div class="roundup-compare__row roundup-compare__row--perf" data-perf-row={key}>
-              <div class="roundup-compare__row-label">
+          const subscores = catItem.subscores ?? [];
+
+          const categoryRow = (
+            <div
+              class="roundup-compare__row roundup-compare__row--perf roundup-compare__row--category"
+              data-perf-row={key}
+              data-compare-category={key}
+            >
+              <div class="roundup-compare__row-label roundup-compare__row-label--category">
+                <button
+                  type="button"
+                  class="roundup-compare__expand"
+                  data-compare-expand={key}
+                  data-compare-category-name={catItem.name}
+                  aria-expanded="false"
+                  aria-controls={`compare-subs-${key}`}
+                  aria-label={`Show ${catItem.name} subscores`}
+                >
+                  <span class="material-symbols-outlined roundup-compare__expand-icon" aria-hidden="true">chevron_right</span>
+                </button>
                 <span>{catItem.name}</span>
-                <CategoryScoreTooltip category={category} compact methodologyOnly>
+                <CategoryScoreTooltip category={category} compact compareTableOnly>
                   <InfoIcon size="xs" class="text-tertiary/50 hover:text-tertiary/80" />
                 </CategoryScoreTooltip>
               </div>
@@ -183,6 +208,57 @@ function barHtml(score: number) {
               }
             </div>
           );
+
+          const subRows = subscores.map((sub, subIndex) => {
+            const fullCategory = toRatingCategory(catItem, tooltipProductSlug);
+            const fullSub = fullCategory.subscores.find((s) => s.name === sub.name) ?? {
+              name: sub.name,
+              score: sub.score,
+              weight: 33,
+              description: '',
+              contributors: [],
+            };
+            const isLastSub = subIndex === subscores.length - 1;
+
+            return (
+            <div
+              class="roundup-compare__row roundup-compare__row--perf roundup-compare__row--sub"
+              data-sub-row
+              data-perf-key={key}
+              data-sub-name={sub.name}
+              id={subIndex === 0 ? `compare-subs-${key}` : undefined}
+              hidden
+              data-sub-last={isLastSub ? 'true' : undefined}
+            >
+              <div class="roundup-compare__row-label roundup-compare__row-label--sub">
+                <span class="roundup-compare__sub-label">{sub.name}</span>
+                <SubscoreScoreTooltip categoryKey={key} categoryName={catItem.name} sub={fullSub} compact compareTableOnly>
+                  <InfoIcon size="xs" class="text-tertiary/50 hover:text-tertiary/80" />
+                </SubscoreScoreTooltip>
+              </div>
+              {
+                defaultIds.map((id) => {
+                  const pick = picks.find((p) => p.id === id)!;
+                  const cat = pick.categoryScores.find((c) => c.key === key);
+                  const subScore = cat?.subscores?.find((s) => s.name === sub.name)?.score ?? 0;
+                  return (
+                    <div
+                      class="roundup-compare__row-val roundup-compare__row-val--perf roundup-compare__row-val--sub"
+                      data-compare-sub-val={id}
+                      data-perf-key={key}
+                      data-sub-name={sub.name}
+                    >
+                      <span class="roundup-compare__perf-score">{fmtScore(subScore)}/10</span>
+                      <div set:html={barHtml(subScore)} />
+                    </div>
+                  );
+                })
+              }
+            </div>
+            );
+          });
+
+          return [categoryRow, ...subRows];
         })
       }
     </div>
@@ -275,7 +351,7 @@ function barHtml(score: number) {
             <img src="${pick.image}" alt="${pick.imageAlt}" width="640" height="400" loading="lazy" />
             <div class="roundup-compare__score">${scoreBadgeHtml(pick)}</div>
           </div>
-          <h3 class="roundup-compare__name">${pick.name} <span class="roundup-compare__price">(${pick.priceLabel})</span></h3>
+          <h3 class="roundup-compare__name">${pick.name}</h3>
           <p class="roundup-compare__intro">${pick.intro}</p>
           <a class="roundup-compare__cta bg-brand-cta" href="${pick.affiliateUrl}" target="_blank" rel="nofollow sponsored noopener">Visit ${pick.name}</a>
         </div>`;
@@ -295,6 +371,17 @@ function barHtml(score: number) {
           cell.innerHTML = `<span class="roundup-compare__perf-score">${fmtScoreClient(score)}/10</span>${barHtmlClient(score)}`;
           document.dispatchEvent(new CustomEvent('roundup:score-bars-added', { detail: { root: cell } }));
         }
+
+        root.querySelectorAll(`[data-sub-row][data-perf-key="${key}"]`).forEach((subRow) => {
+          const subName = subRow.dataset.subName;
+          if (!subName) return;
+          const subScore = cat?.subscores?.[subName] ?? 0;
+          const subCell = subRow.querySelectorAll('[data-compare-sub-val]')[slot];
+          if (subCell) {
+            subCell.innerHTML = `<span class="roundup-compare__perf-score">${fmtScoreClient(subScore)}/10</span>${barHtmlClient(subScore)}`;
+            document.dispatchEvent(new CustomEvent('roundup:score-bars-added', { detail: { root: subCell } }));
+          }
+        });
       });
 
       const labelWrap = root.querySelector(`[data-compare-picker="${slot}"] [data-compare-picker-label]`);
@@ -344,6 +431,31 @@ function barHtml(score: number) {
     });
 
     document.addEventListener('click', closeAllMenus);
+
+    root.querySelectorAll('[data-compare-expand]').forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.compareExpand;
+        const name = btn.dataset.compareCategoryName ?? 'category';
+        if (!key) return;
+
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        const nextExpanded = !expanded;
+        const subs = root.querySelectorAll(`[data-sub-row][data-perf-key="${key}"]`);
+        const categoryRow = root.querySelector(`[data-compare-category="${key}"]`);
+
+        btn.setAttribute('aria-expanded', String(nextExpanded));
+        btn.setAttribute('aria-label', nextExpanded ? `Hide ${name} subscores` : `Show ${name} subscores`);
+
+        subs.forEach((row) => {
+          row.hidden = !nextExpanded;
+        });
+
+        categoryRow?.classList.toggle('is-expanded', nextExpanded);
+      });
+    });
 
     syncPickerDisabled();
   }

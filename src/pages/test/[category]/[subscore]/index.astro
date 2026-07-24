@@ -1,0 +1,108 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import Header from '../../../../components/Header.astro';
+import Footer from '../../../../components/Footer.astro';
+import TestBreadcrumbs from '../../../../components/test/TestBreadcrumbs.astro';
+import { findTestSubscore } from '../../../../lib/test-framework';
+import { getMethodology } from '../../../../data/methodology';
+import { testCategoryUrl, testHubUrl, toSlug } from '../../../../lib/slugs';
+import { getTestCategories } from '../../../../lib/test-framework';
+import '../../../../styles/test-hub.css';
+
+export function getStaticPaths() {
+  const paths: { params: { category: string; subscore: string } }[] = [];
+
+  for (const cat of getTestCategories()) {
+    for (const sub of cat.subscores) {
+      paths.push({
+        params: {
+          category: cat.key,
+          subscore: sub.slug,
+        },
+      });
+    }
+  }
+
+  return paths;
+}
+
+const { category, subscore } = Astro.params;
+const match = findTestSubscore(category!, subscore!);
+
+if (!match) {
+  throw new Error(`Unknown subscore: ${category}/${subscore}`);
+}
+
+const { category: catNode, sub: subNode, rawSub } = match;
+const pageTitle = `${subNode.name} — ${catNode.name} — How We Test`;
+---
+
+<BaseLayout title={pageTitle} description={subNode.description}>
+  <Header />
+  <main class="test-page">
+    <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">
+      <TestBreadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'How We Test', href: testHubUrl() },
+          { label: catNode.name, href: testCategoryUrl(catNode.key) },
+          { label: subNode.name },
+        ]}
+      />
+
+      <header class="test-page__header">
+        <p class="test-page__eyebrow">Subscore methodology</p>
+        <h1 class="test-page__title">{subNode.name}</h1>
+        <p class="test-page__intro">{subNode.description}</p>
+      </header>
+
+      {
+        rawSub && (
+          <>
+            <section class="test-page__section">
+              <h2 class="test-page__h2">Evidence we measure</h2>
+              <div class="test-evidence-list">
+                {
+                  rawSub.contributors.map((c) => {
+                    const contributorSlug = toSlug(c.label);
+                    const methodology = getMethodology(category!, subscore!, contributorSlug);
+                    return (
+                      <article class="test-evidence-item" id={contributorSlug}>
+                        <div class="test-evidence-item__head">
+                          <h3 class="test-evidence-item__title">{c.label}</h3>
+                        </div>
+                        {
+                          methodology ? (
+                            <>
+                              <p class="test-evidence-item__lead">{methodology.measured}</p>
+                              <p class="test-evidence-item__body">{methodology.howToTest}</p>
+                              {methodology.resultFormat && (
+                                <p class="test-evidence-item__result">
+                                  <strong>Displayed result:</strong> {methodology.resultFormat}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <p class="test-evidence-item__body">
+                              Documentation for this evidence point is being added.
+                            </p>
+                          )
+                        }
+                      </article>
+                    );
+                  })
+                }
+              </div>
+            </section>
+          </>
+        )
+      }
+
+      <a class="test-inline-link test-page__back" href={catNode.href}>
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+        Back to {catNode.name}
+      </a>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

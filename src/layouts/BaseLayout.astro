@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import ImageLightbox from '../components/ui/ImageLightbox.astro';
 import ThemeToggleInit from '../components/ui/ThemeToggleInit.astro';
+import ComingSoonLayer from '../components/ui/ComingSoonLayer.astro';
 
 interface Props {
   title?: string;
@@ -81,5 +82,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).to
     <slot />
     <ImageLightbox />
     <ThemeToggleInit />
+    <ComingSoonLayer />
   </body>
 </html>

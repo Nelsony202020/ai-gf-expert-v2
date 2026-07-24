@@ -1,5 +1,5 @@
 ---
-import { heroPopularSearches, homeMeta, getHomeSearchIndex } from '../../data/homepage';
+import { homeMeta, getHomeSearchIndex } from '../../data/homepage';
 
 const searchIndex = getHomeSearchIndex();
 ---
@@ -19,34 +19,25 @@ const searchIndex = getHomeSearchIndex();
       </p>
 
       <div class="home-hero__search" data-home-search>
-        <form class="home-hero__search-form" role="search" data-home-search-form>
-          <input
-            type="search"
-            name="q"
-            class="home-hero__search-input"
-            placeholder="Search reviews, roundups, and guides…"
-            autocomplete="off"
-            aria-label="Search the site"
-            aria-expanded="false"
-            aria-controls="home-search-results"
-            data-home-search-input
-          />
-          <button type="submit" class="home-hero__search-btn">
-            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">search</span>
-            <span class="hidden sm:inline">Search</span>
-          </button>
-        </form>
-        <div id="home-search-results" class="home-hero__search-panel" hidden data-home-search-panel></div>
-
-        <div class="home-hero__tags">
-          <span class="text-[11px] font-bold uppercase tracking-wider text-tertiary mr-1">Popular:</span>
-          {
-            heroPopularSearches.map((term) => (
-              <a href={`/#explore-apps`} class="home-hero__tag" data-home-popular-search={term}>
-                {term}
-              </a>
-            ))
-          }
+        <div class="home-hero__search-wrap">
+          <form class="home-hero__search-form" role="search" data-home-search-form>
+            <input
+              type="search"
+              name="q"
+              class="home-hero__search-input"
+              placeholder="Search reviews, roundups, and guides…"
+              autocomplete="off"
+              aria-label="Search the site"
+              aria-expanded="false"
+              aria-controls="home-search-results"
+              data-home-search-input
+            />
+            <button type="submit" class="home-hero__search-btn">
+              <span class="material-symbols-outlined text-[18px]" aria-hidden="true">search</span>
+              <span class="hidden sm:inline">Search</span>
+            </button>
+          </form>
+          <div id="home-search-results" class="home-hero__search-panel" hidden data-home-search-panel></div>
         </div>
       </div>
     </div>
@@ -159,17 +150,6 @@ const searchIndex = getHomeSearchIndex();
         panel.hidden = true;
         input.setAttribute('aria-expanded', 'false');
       }
-    });
-
-    root.querySelectorAll('[data-home-popular-search]').forEach((tag) => {
-      tag.addEventListener('click', (e) => {
-        e.preventDefault();
-        input.value = tag.textContent?.trim() ?? '';
-        input.focus();
-        renderResults(filter(input.value));
-        const explore = document.getElementById('explore-apps');
-        if (explore) explore.scrollIntoView({ behavior: 'smooth' });
-      });
     });
   }
 

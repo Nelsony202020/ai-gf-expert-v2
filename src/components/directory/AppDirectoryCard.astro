@@ -7,8 +7,8 @@ import {
   EXPLORER_METRIC_CARDS,
 } from '../../data/homepage';
 import HomePaymentIcon from '../home/HomePaymentIcon.astro';
+import AppBrandTooltip from './AppBrandTooltip.astro';
 import AppOverallScoreTooltip from './AppOverallScoreTooltip.astro';
-import VerifiedCheck from '../ui/VerifiedCheck.astro';
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 
 interface Props {
@@ -50,21 +50,19 @@ function metricScore(key: string) {
     <div class="home-app-card__media-actions">
       <button
         type="button"
-        class="home-app-card__icon-btn"
-        data-home-save={app.id}
-        aria-label={`Save ${app.name}`}
-        aria-pressed="false"
+        class="home-app-card__icon-btn coming-soon-tip coming-soon-muted"
+        data-coming-soon="accounts"
+        data-coming-soon-tip="Save apps — coming soon"
+        aria-label={`Save ${app.name} — coming soon`}
       >
         <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
       </button>
       <button
         type="button"
-        class="home-app-card__icon-btn"
-        data-home-compare-btn={app.id}
-        data-home-compare-name={app.name}
-        data-home-compare-score={app.overallScore}
-        aria-label={`Compare ${app.name}`}
-        aria-pressed="false"
+        class="home-app-card__icon-btn coming-soon-tip"
+        data-coming-soon="compare"
+        data-coming-soon-tip="Compare — coming soon"
+        aria-label={`Compare ${app.name} — coming soon`}
       >
         <span class="material-symbols-outlined" aria-hidden="true">compare_arrows</span>
       </button>
@@ -83,18 +81,12 @@ function metricScore(key: string) {
 
   <div class="home-app-card__body">
     <div class="home-app-card__top">
-      <img class="home-app-card__logo" src={app.logo} alt="" width="48" height="48" loading="lazy" />
-      <div class="home-app-card__identity">
+      <div class="home-app-card__brand">
+        <img class="home-app-card__logo" src={app.logo} alt="" width="48" height="48" loading="lazy" />
         <h3 class="home-app-card__name">
           <a href={reviewHref}>{app.name}</a>
-          {app.hasReview && (
-            <span class="home-app-card__verified">
-              <VerifiedCheck class="w-[16px] h-[16px]" />
-              <span>Verified</span>
-            </span>
-          )}
+          <AppBrandTooltip app={app} />
         </h3>
-        <p class="home-app-card__summary">{app.overallSummary}</p>
       </div>
       <div class="home-app-card__overall">
         <div class={`home-app-card__overall-score ${overallVisual.bg}`}>{fmtScore(app.overallScore)}</div>
@@ -138,6 +130,13 @@ function metricScore(key: string) {
           {showCrypto && <HomePaymentIcon type="crypto" tooltipId={`pay-crypto-${app.id}`} />}
         </div>
       </div>
+    </div>
+
+    <div class="home-app-card__actions">
+      <a class="home-app-card__cta" href={reviewHref}>
+        Read full review
+        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
+      </a>
       <button
         type="button"
         class="home-app-card__like"
@@ -149,10 +148,5 @@ function metricScore(key: string) {
         {formatReviewCount(app.reviewCount)}
       </button>
     </div>
-
-    <a class="home-app-card__cta" href={reviewHref}>
-      Read full review
-      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
-    </a>
   </div>
 </article>

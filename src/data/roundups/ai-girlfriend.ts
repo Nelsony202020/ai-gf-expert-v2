@@ -515,7 +515,7 @@ export const aiGirlfriendRoundup: Roundup = {
     title: 'How We Test AI Girlfriend Apps',
     description:
       'We purchase every plan, run real conversations for weeks, and score each app with the same eight-category framework we use in our full reviews — so rankings reflect hands-on testing, not marketing pages.',
-    processHref: '/tests/customization',
+    processHref: '/test/',
     processLabel: 'See our full testing process',
     videoPoster: img('roundup-testing-lab', 1280, 720),
     stats: [

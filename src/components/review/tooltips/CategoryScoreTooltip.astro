@@ -4,6 +4,7 @@ import { products } from '../../../data/products';
 import { getScoreChipClass, fmtScore } from '../../../lib/scores';
 import { buildAllScoreBins } from '../../../lib/score-distribution';
 import TooltipActionLinks from './TooltipActionLinks.astro';
+import InlineTestLink from './InlineTestLink.astro';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
 import ScoreMeaningCallout from './ScoreMeaningCallout.astro';
 import { getCategoryBrandIcon, getCategoryBrandIconLight } from '../../../lib/category-brand-icons';
@@ -14,10 +15,29 @@ interface Props {
   category: RatingCategory;
   compact?: boolean;
   methodologyOnly?: boolean;
+  /** Roundup compare table — site category average only, no single-app score */
+  compareAverageOnly?: boolean;
+  /** Multi-product compare table — methodology only, no scores vs site avg */
+  compareMode?: boolean;
+  /** Compare table — what it is, site avg, and score distribution only */
+  compareTableOnly?: boolean;
+  /** Roundup pages — link test pages from labels instead of vial icons */
+  inlineTestLinks?: boolean;
 }
 
-const { category, compact = false, methodologyOnly = false } = Astro.props;
-const tooltipId = `cat-${category.key}${compact ? '-compact' : ''}`;
+const {
+  category,
+  compact = false,
+  methodologyOnly = false,
+  compareAverageOnly = false,
+  compareMode = false,
+  compareTableOnly = false,
+  inlineTestLinks = false,
+} = Astro.props;
+const tooltipId = `cat-${category.key}${compact ? '-compact' : ''}${compareAverageOnly ? '-compare' : ''}${compareMode ? '-compare-mode' : ''}${compareTableOnly ? '-compare-table' : ''}${inlineTestLinks ? '-inline' : ''}`;
+const hideSiteAverage = compareAverageOnly || compareMode;
+const hideScoreBlock = compareAverageOnly || compareTableOnly;
+const linksMethodologyOnly = methodologyOnly || compareMode;
 
 const currentScore = category.score;
 const currentChip = getScoreChipClass(currentScore);
@@ -44,7 +64,7 @@ const useDarkBrandIconOnly = category.key === 'customization' || category.key ==
   tabindex="0"
   class="rt-tooltip-trigger inline-flex cursor-help shrink-0"
   data-ratings-tooltip-trigger={tooltipId}
-  aria-label={`About ${category.name} score`}
+  aria-label={compareTableOnly ? `About ${category.name}` : compareMode ? `About ${category.name}` : compareAverageOnly ? `About ${category.name} category average` : `About ${category.name} score`}
 >
   <slot>
     <InfoIcon size="xs" class="text-tertiary/45 hover:text-tertiary/70" />
@@ -52,76 +72,143 @@ const useDarkBrandIconOnly = category.key === 'customization' || category.key ==
 </span>
 
 <template id={`tooltip-${tooltipId}`}>
-  <div class={`ratings-tooltip-panel ${compact ? 'ratings-tooltip-panel--compact ratings-tooltip-panel--category' : ''}`}>
+  <div class={`ratings-tooltip-panel ${compact ? 'ratings-tooltip-panel--compact ratings-tooltip-panel--category' : ''}${compareAverageOnly || compareTableOnly ? ' ratings-tooltip-panel--compare-avg' : ''}`}>
     <div class="ratings-tooltip-panel__header">
       <div class="ratings-tooltip-panel__header-grid">
         <div class="ratings-tooltip-panel__what-block min-w-0">
           <p class="ratings-tooltip-panel__section-title">What it is</p>
-          <div class="ratings-tooltip-panel__what-row">
-            <p class="ratings-tooltip-panel__desc">{category.description}</p>
-            {
-              brandIcon && (
-                <div class="ratings-tooltip-panel__brand-slot" aria-hidden="true">
+          {
+            compareTableOnly ? (
+              <p class="ratings-tooltip-panel__desc">{category.description}</p>
+            ) : (
+              <div class="ratings-tooltip-panel__what-row">
+                <p class="ratings-tooltip-panel__desc">{category.description}</p>
+                {
+                  brandIcon && (
+                    <div class="ratings-tooltip-panel__brand-slot" aria-hidden="true">
+                      {
+                        useDarkBrandIconOnly ? (
+                          <img
+                            src={brandIcon}
+                            alt=""
+                            width="56"
+                            height="56"
+                            loading="lazy"
+                            class="brand-icon brand-icon--dark brand-icon--always"
+                          />
+                        ) : brandIconLight ? (
+                          <BrandIcon src={brandIcon} srcLight={brandIconLight} width={56} height={56} />
+                        ) : (
+                          <img src={brandIcon} alt="" width="56" height="56" loading="lazy" class={brandIcon.endsWith('.png') ? 'brand-icon' : ''} />
+                        )
+                      }
+                    </div>
+                  )
+                }
+              </div>
+            )
+          }
+        </div>
+        {
+          compareTableOnly ? (
+            <div class="ratings-tooltip-panel__score-block ratings-tooltip-panel__score-block--compare-avg">
+              <p class="ratings-tooltip-panel__section-title">Avg</p>
+              <p class="ratings-tooltip-panel__avg ratings-tooltip-panel__avg--solo tabular-nums">{fmtScore(avgScore)}</p>
+            </div>
+          ) : !hideScoreBlock && (
+            compareAverageOnly ? (
+              <div class="ratings-tooltip-panel__score-block ratings-tooltip-panel__score-block--compare-avg">
+                <p class="ratings-tooltip-panel__section-title">Category avg</p>
+                <p class="ratings-tooltip-panel__avg ratings-tooltip-panel__avg--solo tabular-nums">{fmtScore(avgScore)}</p>
+              </div>
+            ) : (
+              <div class="ratings-tooltip-panel__score-block">
+                <div class="ratings-tooltip-panel__score-row">
+                  <span class={`rt-score-chip rt-score-chip--outline ${currentChip}`}>{fmtScore(currentScore)}</span>
                   {
-                    useDarkBrandIconOnly ? (
-                      <img
-                        src={brandIcon}
-                        alt=""
-                        width="56"
-                        height="56"
-                        loading="lazy"
-                        class="brand-icon brand-icon--dark brand-icon--always"
-                      />
-                    ) : brandIconLight ? (
-                      <BrandIcon src={brandIcon} srcLight={brandIconLight} width={56} height={56} />
+                    inlineTestLinks ? (
+                      <InlineTestLink categoryKey={category.key} class="ratings-tooltip-panel__score-label">
+                        {category.name}
+                      </InlineTestLink>
                     ) : (
-                      <img src={brandIcon} alt="" width="56" height="56" loading="lazy" class={brandIcon.endsWith('.png') ? 'brand-icon' : ''} />
+                      <span class="ratings-tooltip-panel__score-label">{category.name}</span>
                     )
                   }
                 </div>
-              )
-            }
-          </div>
-        </div>
-        <div class="ratings-tooltip-panel__score-block">
-          <div class="ratings-tooltip-panel__score-row">
-            <span class={`rt-score-chip rt-score-chip--outline ${currentChip}`}>{fmtScore(currentScore)}</span>
-            <span class="ratings-tooltip-panel__score-label">{category.name}</span>
-          </div>
-          <p class="ratings-tooltip-panel__avg">
-            Avg: <span class="tabular-nums">{fmtScore(avgScore)}</span>
-          </p>
-        </div>
+                {
+                  !hideSiteAverage && (
+                    <p class="ratings-tooltip-panel__avg">
+                      Avg: <span class="tabular-nums">{fmtScore(avgScore)}</span>
+                    </p>
+                  )
+                }
+              </div>
+            )
+          )
+        }
       </div>
-      <ScoreMeaningCallout score={currentScore} avg={avgScore} />
-      <TooltipActionLinks categoryKey={category.key} methodologyOnly={methodologyOnly} />
+      {!compareTableOnly && !hideSiteAverage && !compareAverageOnly && <ScoreMeaningCallout score={currentScore} avg={avgScore} />}
+      {!compareTableOnly && !inlineTestLinks && <TooltipActionLinks categoryKey={category.key} methodologyOnly={linksMethodologyOnly} />}
     </div>
 
-    <div class="ratings-tooltip-panel__body">
-      <div>
-        <p class="ratings-tooltip-panel__section-title">Subscores</p>
-        <div class="rt-comp-list">
+    {
+      !compareTableOnly && (
+        <div class="ratings-tooltip-panel__body">
           {
-            category.subscores.map((sub) => {
-              const chip = getScoreChipClass(sub.score);
-              return (
-                <div class="rt-comp-row rt-comp-row--inline">
-                  <div class="rt-comp-row__main">
-                    <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(sub.score)}</span>
-                    <span class="rt-comp-name rt-comp-name--truncate">{sub.name}</span>
-                    <TooltipActionLinks categoryKey={category.key} subscoreName={sub.name} compact methodologyOnly={methodologyOnly} />
-                  </div>
+            !compareAverageOnly && (
+              <div>
+                <p class="ratings-tooltip-panel__section-title">Subscores</p>
+                <div class="rt-comp-list">
+                  {
+                    category.subscores.map((sub) => {
+                      const chip = getScoreChipClass(sub.score);
+                      return (
+                        <div class="rt-comp-row rt-comp-row--inline">
+                          <div class="rt-comp-row__main">
+                            <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(sub.score)}</span>
+                            {
+                              inlineTestLinks ? (
+                                <InlineTestLink
+                                  categoryKey={category.key}
+                                  subscoreName={sub.name}
+                                  class="rt-comp-name rt-comp-name--truncate"
+                                >
+                                  {sub.name}
+                                </InlineTestLink>
+                              ) : (
+                                <>
+                                  <span class="rt-comp-name rt-comp-name--truncate">{sub.name}</span>
+                                  <TooltipActionLinks categoryKey={category.key} subscoreName={sub.name} compact methodologyOnly={linksMethodologyOnly} />
+                                </>
+                              )
+                            }
+                          </div>
+                        </div>
+                      );
+                    })
+                  }
                 </div>
-              );
-            })
+              </div>
+            )
           }
-        </div>
-      </div>
 
-      <div>
-        <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-        <ScoreDistributionChart bins={bins} />
-      </div>
-    </div>
+          <div>
+            <p class="ratings-tooltip-panel__section-title">Score distribution</p>
+            <ScoreDistributionChart bins={bins} />
+          </div>
+        </div>
+      )
+    }
+
+    {
+      compareTableOnly && (
+        <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compare-table">
+          <div>
+            <p class="ratings-tooltip-panel__section-title">Score distribution</p>
+            <ScoreDistributionChart bins={bins} />
+          </div>
+        </div>
+      )
+    }
   </div>
 </template>

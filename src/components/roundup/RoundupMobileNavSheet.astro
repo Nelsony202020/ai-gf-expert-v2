@@ -1,0 +1,138 @@
+---
+import type { Roundup } from '../../data/roundups/ai-girlfriend';
+import { HUB_NAV_TABS, type HubTabId } from '../../lib/hub-nav';
+
+interface Props {
+  roundup: Roundup;
+  active?: HubTabId;
+}
+
+const { roundup, active = 'best-apps' } = Astro.props;
+
+const mainSections = roundup.tocSections.filter((s) => s.level !== 3);
+const pickSections = roundup.tocSections.filter((s) => s.level === 3);
+---
+
+<div class="roundup-sheet roundup-nav-sheet" data-nav-sheet hidden aria-hidden="true">
+  <div class="roundup-sheet__backdrop" data-sheet-backdrop tabindex="-1"></div>
+  <div
+    class="roundup-sheet__panel roundup-nav-sheet__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="nav-sheet-title"
+  >
+    <div class="roundup-sheet__handle" aria-hidden="true"></div>
+    <h2 id="nav-sheet-title" class="sr-only">Page navigation</h2>
+
+    <nav class="roundup-nav-sheet__hub" aria-label="Hub sections">
+      {
+        HUB_NAV_TABS.map((tab) => {
+          const isActive = tab.id === active;
+          const mobileLabel = tab.mobileLabel ?? tab.label;
+          return isActive ? (
+            <span class="roundup-nav-sheet__hub-tab is-active" aria-current="page">
+              <span class="material-symbols-outlined roundup-nav-sheet__hub-icon" aria-hidden="true">{tab.icon}</span>
+              <span>{mobileLabel}</span>
+            </span>
+          ) : (
+            <a class="roundup-nav-sheet__hub-tab" href={tab.href} data-hub-nav-link>
+              <span class="material-symbols-outlined roundup-nav-sheet__hub-icon" aria-hidden="true">{tab.icon}</span>
+              <span>{mobileLabel}</span>
+            </a>
+          );
+        })
+      }
+    </nav>
+
+    <div class="roundup-nav-sheet__divider" aria-hidden="true"></div>
+
+    <nav class="roundup-nav-sheet__toc" aria-label="Table of contents">
+      <p class="roundup-nav-sheet__toc-title">Contents</p>
+      <ul class="roundup-nav-sheet__toc-list">
+        <li>
+          <a class="roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--top" href="#roundup-top">
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+            Top
+          </a>
+        </li>
+        {
+          mainSections.map((section) => (
+            <li>
+              <a class="roundup-nav-sheet__toc-link" href={`#${section.id}`} data-toc-link={section.id}>
+                {section.label}
+              </a>
+              {
+                section.id === 'roundup-detailed-picks' && (
+                  <ul class="roundup-nav-sheet__toc-sublist roundup-toc__sublist">
+                    {
+                      pickSections.map((pick) => (
+                        <li>
+                          <a
+                            class="roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h3"
+                            href={`#${pick.id}`}
+                            data-toc-link={pick.id}
+                          >
+                            {pick.label}
+                          </a>
+                        </li>
+                      ))
+                    }
+                  </ul>
+                )
+              }
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <button type="button" class="roundup-sheet__cancel" data-sheet-close>Close</button>
+  </div>
+</div>
+
+<script>
+  function initRoundupMobileNavSheet() {
+    const sheet = document.querySelector<HTMLElement>('[data-nav-sheet]');
+    if (!sheet || sheet.dataset.bound === 'true') return;
+    sheet.dataset.bound = 'true';
+
+    function closeSheet() {
+      sheet!.hidden = true;
+      sheet!.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('roundup-sheet-open');
+    }
+
+    function openSheet() {
+      sheet!.hidden = false;
+      sheet!.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('roundup-sheet-open');
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('[data-nav-sheet-open]').forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+      btn.addEventListener('click', openSheet);
+    });
+
+    sheet.querySelector('[data-sheet-close]')?.addEventListener('click', closeSheet);
+    sheet.querySelector('[data-sheet-backdrop]')?.addEventListener('click', closeSheet);
+
+    sheet.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach((link) => {
+      link.addEventListener('click', () => {
+        closeSheet();
+      });
+    });
+
+    const SCROLL_KEY_PREFIX = 'hub-nav-scroll:';
+    const path = window.location.pathname;
+
+    sheet.querySelectorAll<HTMLAnchorElement>('[data-hub-nav-link]').forEach((link) => {
+      link.addEventListener('click', () => {
+        sessionStorage.setItem(SCROLL_KEY_PREFIX + path, String(window.scrollY));
+      });
+    });
+  }
+
+  initRoundupMobileNavSheet();
+  document.addEventListener('astro:page-load', initRoundupMobileNavSheet);
+</script>

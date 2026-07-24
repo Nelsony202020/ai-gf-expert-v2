@@ -1,0 +1,88 @@
+---
+import type { HomeFeaturedCharacter } from '../../data/homepage';
+import CharacterStoryHighlights from '../review/CharacterStoryHighlights.astro';
+
+interface Props {
+  characters: HomeFeaturedCharacter[];
+}
+
+const { characters } = Astro.props;
+const carouselChars = characters.slice(0, 6);
+/** Static trending card — not synced to the carousel */
+const spotlight: HomeFeaturedCharacter = {
+  name: 'Sophie',
+  archetype: 'Roleplay lead',
+  platform: 'CrushOn AI',
+  avatar: 'https://picsum.photos/seed/home-spotlight-sophie/200/200',
+  profileUrl: '/best/ai-girlfriend#pick-crushon-ai',
+  storySlides: [
+    'https://picsum.photos/seed/home-spotlight-sophie-1/720/1280',
+    'https://picsum.photos/seed/home-spotlight-sophie-2/720/1280',
+  ],
+  bio: 'Sophie loves deep conversations and making you feel heard. She is warm, attentive, and remembers the little things you tell her.',
+  quote: 'I love getting to know you better each day. What was the best part of your day?',
+  tags: ['Romantic', 'Roleplay', 'Deep talker', 'Voice calls'],
+};
+const portrait = spotlight.storySlides[0] ?? spotlight.avatar;
+---
+
+<div class="home-featured-chars">
+  <div class="home-featured-chars__carousel-wrap">
+    <CharacterStoryHighlights
+      characters={carouselChars}
+      productName="homepage-featured"
+      hideHeading={true}
+      maxDisplay={6}
+      showPlatform={true}
+      showVerified={false}
+      layout="contained"
+      autoScrollSpeed={0.09}
+    />
+  </div>
+
+  <article class="home-featured-spotlight__panel">
+    <div class="home-featured-spotlight__media">
+      <span class="home-featured-spotlight__badge">
+        <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
+        Trending character
+      </span>
+      <img
+        class="home-featured-spotlight__portrait"
+        src={portrait}
+        alt={`${spotlight.name} profile`}
+        width="320"
+        height="420"
+        loading="lazy"
+      />
+    </div>
+    <div class="home-featured-spotlight__body">
+      <div class="home-featured-spotlight__head">
+        <div>
+          <h3 class="home-featured-spotlight__name">
+            {spotlight.name}
+            <span class="material-symbols-outlined home-featured-spotlight__heart" aria-hidden="true">favorite</span>
+          </h3>
+          {spotlight.platform && <p class="home-featured-spotlight__platform">{spotlight.platform}</p>}
+        </div>
+      </div>
+
+      <div class="home-featured-spotlight__tags" aria-label="Character traits">
+        {spotlight.tags.map((tag) => (
+          <span class="home-featured-spotlight__tag">{tag}</span>
+        ))}
+      </div>
+
+      <p class="home-featured-spotlight__bio">{spotlight.bio}</p>
+
+      <blockquote class="home-featured-spotlight__quote">
+        <span class="material-symbols-outlined home-featured-spotlight__quote-icon" aria-hidden="true">format_quote</span>
+        {spotlight.quote}
+      </blockquote>
+
+      <a class="home-featured-spotlight__cta" href={spotlight.profileUrl ?? '#'}>
+        <span class="material-symbols-outlined text-[18px]" aria-hidden="true">person</span>
+        View profile
+      </a>
+    </div>
+  </article>
+</div>

@@ -1,18 +1,13 @@
 ---
 import type { Roundup, RoundupPick } from '../../data/roundups/ai-girlfriend';
-import {
-  ROUNDUP_READING_OPTIONS,
-  buildRoundupSortOptions,
-} from '../../lib/roundup-controls';
 
 interface Props {
   roundup: Roundup;
   picks: RoundupPick[];
 }
 
-const { roundup, picks } = Astro.props;
+const { roundup } = Astro.props;
 
-const sortOptions = buildRoundupSortOptions(picks);
 const mainSections = roundup.tocSections.filter((s) => s.level !== 3);
 const pickSections = roundup.tocSections.filter((s) => s.level === 3);
 ---
@@ -53,46 +48,6 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
       }
     </ul>
   </nav>
-
-  <div class="roundup-panel">
-    <button type="button" class="roundup-panel__header" data-panel-toggle="sort" aria-expanded="false">
-      <span class="roundup-panel__icon" aria-hidden="true">
-        <span class="material-symbols-outlined">tune</span>
-      </span>
-      <span class="roundup-panel__title">Sort</span>
-      <span class="roundup-panel__toggle" data-panel-icon="sort">+</span>
-    </button>
-    <div class="roundup-panel__body" data-panel-body="sort" hidden>
-      {
-        sortOptions.map((opt, i) => (
-          <label class="roundup-radio">
-            <input type="radio" name="roundup-sort" value={opt.value} checked={i === 0} />
-            <span>{opt.label}</span>
-          </label>
-        ))
-      }
-    </div>
-  </div>
-
-  <div class="roundup-panel">
-    <button type="button" class="roundup-panel__header" data-panel-toggle="reading" aria-expanded="false">
-      <span class="roundup-panel__icon" aria-hidden="true">
-        <span class="material-symbols-outlined">article</span>
-      </span>
-      <span class="roundup-panel__title">Reading</span>
-      <span class="roundup-panel__toggle" data-panel-icon="reading">+</span>
-    </button>
-    <div class="roundup-panel__body" data-panel-body="reading" hidden>
-      {
-        ROUNDUP_READING_OPTIONS.map((opt, i) => (
-          <label class="roundup-radio">
-            <input type="radio" name="roundup-reading" value={opt.value} checked={i === 0} />
-            <span>{opt.label}</span>
-          </label>
-        ))
-      }
-    </div>
-  </div>
 </aside>
 
 <script>
@@ -158,18 +113,18 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
     }
 
     function reorderTocPicks(picks: HTMLElement[]) {
-      const tocSublist = document.querySelector<HTMLElement>('.roundup-toc__sublist');
-      if (!tocSublist) return;
-
-      const items = Array.from(tocSublist.querySelectorAll<HTMLLIElement>('li'));
       const order = picks.map((p) => p.id);
-      items
-        .sort((a, b) => {
-          const aId = a.querySelector('a')?.dataset.tocLink ?? '';
-          const bId = b.querySelector('a')?.dataset.tocLink ?? '';
-          return order.indexOf(aId) - order.indexOf(bId);
-        })
-        .forEach((item) => tocSublist.appendChild(item));
+
+      document.querySelectorAll<HTMLElement>('.roundup-toc__sublist').forEach((tocSublist) => {
+        const items = Array.from(tocSublist.querySelectorAll<HTMLLIElement>('li'));
+        items
+          .sort((a, b) => {
+            const aId = a.querySelector('a')?.dataset.tocLink ?? '';
+            const bId = b.querySelector('a')?.dataset.tocLink ?? '';
+            return order.indexOf(aId) - order.indexOf(bId);
+          })
+          .forEach((item) => tocSublist.appendChild(item));
+      });
     }
 
     function sortPicks(sortKey: string) {
@@ -260,21 +215,6 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
           syncRadios('roundup-reading', input.value);
           applyReadingLength(input.value);
         }
-      });
-    });
-
-    document.querySelectorAll<HTMLButtonElement>('[data-panel-toggle]').forEach((btn) => {
-      if (btn.dataset.panelBound === 'true') return;
-      btn.dataset.panelBound = 'true';
-
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.panelToggle!;
-        const body = document.querySelector<HTMLElement>(`[data-panel-body="${key}"]`);
-        const icon = document.querySelector<HTMLElement>(`[data-panel-icon="${key}"]`);
-        const expanded = btn.getAttribute('aria-expanded') === 'true';
-        btn.setAttribute('aria-expanded', String(!expanded));
-        if (body) body.hidden = expanded;
-        if (icon) icon.textContent = expanded ? '+' : '−';
       });
     });
 

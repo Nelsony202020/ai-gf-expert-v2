@@ -4,6 +4,7 @@ import { products } from '../../../data/products';
 import { equalWeights, fmtScore, getScoreChipClass, weightedValue } from '../../../lib/scores';
 import { buildAllScoreBins } from '../../../lib/score-distribution';
 import TooltipActionLinks from './TooltipActionLinks.astro';
+import InlineTestLink from './InlineTestLink.astro';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
 import ScoreMeaningCallout from './ScoreMeaningCallout.astro';
 import InfoIcon from '../../ui/InfoIcon.astro';
@@ -13,10 +14,16 @@ interface Props {
   categoryName: string;
   sub: Subscore;
   compact?: boolean;
+  /** Multi-product compare table — methodology only, no scores vs site avg */
+  compareMode?: boolean;
+  /** Compare table — what it is and site avg only */
+  compareTableOnly?: boolean;
+  /** Roundup pages — link test pages from labels instead of vial icons */
+  inlineTestLinks?: boolean;
 }
 
-const { categoryKey, categoryName, sub, compact = false } = Astro.props;
-const tooltipId = `sub-${categoryKey}-${sub.name}${compact ? '-compact' : ''}`.replace(/[^a-zA-Z0-9_-]/g, '-');
+const { categoryKey, categoryName, sub, compact = false, compareMode = false, compareTableOnly = false, inlineTestLinks = false } = Astro.props;
+const tooltipId = `sub-${categoryKey}-${sub.name}${compact ? '-compact' : ''}${compareMode ? '-compare' : ''}${compareTableOnly ? '-compare-table' : ''}${inlineTestLinks ? '-inline' : ''}`.replace(/[^a-zA-Z0-9_-]/g, '-');
 
 const currentScore = sub.score;
 const currentChip = getScoreChipClass(currentScore);
@@ -59,7 +66,24 @@ const bins = buildAllScoreBins(scorePoints);
 </span>
 
 <template id={`tooltip-${tooltipId}`}>
-  <div class={`ratings-tooltip-panel ${compact ? 'ratings-tooltip-panel--compact' : ''}`}>
+  {
+    compareTableOnly ? (
+      <div class={`ratings-tooltip-panel ${compact ? 'ratings-tooltip-panel--compact' : ''} ratings-tooltip-panel--compare-avg`}>
+        <div class="ratings-tooltip-panel__header">
+          <div class="ratings-tooltip-panel__header-grid">
+            <div class="min-w-0">
+              <p class="ratings-tooltip-panel__section-title">What it is</p>
+              <p class="ratings-tooltip-panel__desc">{sub.description}</p>
+            </div>
+            <div class="ratings-tooltip-panel__score-block ratings-tooltip-panel__score-block--compare-avg">
+              <p class="ratings-tooltip-panel__section-title">Avg</p>
+              <p class="ratings-tooltip-panel__avg ratings-tooltip-panel__avg--solo tabular-nums">{fmtScore(avgScore)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div class={`ratings-tooltip-panel ${compact ? 'ratings-tooltip-panel--compact' : ''}`}>
     <div class="ratings-tooltip-panel__header">
       <div class="ratings-tooltip-panel__header-grid">
         <div class="min-w-0">
@@ -69,15 +93,27 @@ const bins = buildAllScoreBins(scorePoints);
         <div class="ratings-tooltip-panel__score-block">
           <div class="ratings-tooltip-panel__score-row">
             <span class={`rt-score-chip rt-score-chip--outline ${currentChip}`}>{fmtScore(currentScore)}</span>
-            <span class="ratings-tooltip-panel__score-label">{sub.name}</span>
+            {
+              inlineTestLinks ? (
+                <InlineTestLink categoryKey={categoryKey} subscoreName={sub.name} class="ratings-tooltip-panel__score-label">
+                  {sub.name}
+                </InlineTestLink>
+              ) : (
+                <span class="ratings-tooltip-panel__score-label">{sub.name}</span>
+              )
+            }
           </div>
-          <p class="ratings-tooltip-panel__avg">
-            Avg: <span class="tabular-nums">{fmtScore(avgScore)}</span>
-          </p>
+          {
+            !compareMode && (
+              <p class="ratings-tooltip-panel__avg">
+                Avg: <span class="tabular-nums">{fmtScore(avgScore)}</span>
+              </p>
+            )
+          }
         </div>
       </div>
-      <ScoreMeaningCallout score={currentScore} avg={avgScore} />
-      <TooltipActionLinks categoryKey={categoryKey} subscoreName={sub.name} />
+      {!compareMode && <ScoreMeaningCallout score={currentScore} avg={avgScore} />}
+      {!inlineTestLinks && <TooltipActionLinks categoryKey={categoryKey} subscoreName={sub.name} methodologyOnly={compareMode} />}
     </div>
 
     <div class="ratings-tooltip-panel__body">
@@ -92,31 +128,51 @@ const bins = buildAllScoreBins(scorePoints);
         </>
       )}
 
-      <div>
-        <p class="ratings-tooltip-panel__section-title">Evidence</p>
-        <div class="rt-comp-list">
-          {
-            contributorPoints.map((c) => {
-              const pct = (c.contribution / rawSubTotal) * 100;
-              const chip = getScoreChipClass(c.internal);
-              return (
-                <div class="rt-comp-row rt-comp-row--inline">
-                  <div class="rt-comp-row__main">
-                    <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(c.internal)}</span>
-                    <span class="rt-comp-name rt-comp-name--truncate">{c.label}</span>
-                  </div>
-                  <TooltipActionLinks
-                    categoryKey={categoryKey}
-                    subscoreName={sub.name}
-                    contributorLabel={c.label}
-                    compact
-                  />
-                </div>
-              );
-            })
-          }
-        </div>
-      </div>
+      {
+        contributorPoints.length > 0 && (
+          <div>
+            <p class="ratings-tooltip-panel__section-title">Evidence</p>
+            <div class="rt-comp-list">
+              {
+                contributorPoints.map((c) => {
+                  const chip = getScoreChipClass(c.internal);
+                  return (
+                    <div class="rt-comp-row rt-comp-row--inline">
+                      <div class="rt-comp-row__main">
+                        <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(c.internal)}</span>
+                        {
+                          inlineTestLinks ? (
+                            <InlineTestLink
+                              categoryKey={categoryKey}
+                              subscoreName={sub.name}
+                              contributorLabel={c.label}
+                              class="rt-comp-name rt-comp-name--truncate"
+                            >
+                              {c.label}
+                            </InlineTestLink>
+                          ) : (
+                            <span class="rt-comp-name rt-comp-name--truncate">{c.label}</span>
+                          )
+                        }
+                      </div>
+                      {
+                        !inlineTestLinks && (
+                          <TooltipActionLinks
+                            categoryKey={categoryKey}
+                            subscoreName={sub.name}
+                            contributorLabel={c.label}
+                            compact
+                          />
+                        )
+                      }
+                    </div>
+                  );
+                })
+              }
+            </div>
+          </div>
+        )
+      }
 
       <div>
         <p class="ratings-tooltip-panel__section-title">Score distribution</p>
@@ -124,4 +180,6 @@ const bins = buildAllScoreBins(scorePoints);
       </div>
     </div>
   </div>
+    )
+  }
 </template>

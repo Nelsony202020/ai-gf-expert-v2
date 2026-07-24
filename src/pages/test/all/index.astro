@@ -1,0 +1,115 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import TestBreadcrumbs from '../../../components/test/TestBreadcrumbs.astro';
+import { getTestCategories } from '../../../lib/test-framework';
+import { testHubImportantTests } from '../../../data/test-hub-content';
+import { testHubUrl } from '../../../lib/slugs';
+import { getAllSitemapEntries } from '../../../lib/sitemap';
+import '../../../styles/test-hub.css';
+
+const categories = getTestCategories();
+const testPageCount = getAllSitemapEntries().filter((e) => e.sitemapSection === 'tests').length;
+
+const featuredByCategory = new Map<string, typeof testHubImportantTests>();
+
+for (const test of testHubImportantTests) {
+  const match = test.href.match(/^\/test\/([^/]+)\//);
+  if (!match) continue;
+  const key = match[1];
+  const list = featuredByCategory.get(key) ?? [];
+  list.push(test);
+  featuredByCategory.set(key, list);
+}
+
+const pageTitle = 'All Tests — AI Girlfriend Expert';
+---
+
+<BaseLayout
+  title={pageTitle}
+  description="Complete directory of our AI girlfriend app testing methodology — categories, subscores, evidence points, and featured individual tests."
+>
+  <Header />
+  <main class="test-page test-archive">
+    <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">
+      <TestBreadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'How We Test', href: testHubUrl() },
+          { label: 'All tests' },
+        ]}
+      />
+
+      <header class="test-page__header">
+        <p class="test-page__eyebrow">Complete directory</p>
+        <h1 class="test-page__title">All tests</h1>
+        <p class="test-page__intro">
+          Full hierarchy of our testing methodology — {testPageCount} pages covering categories, subscores, and individual evidence points.
+        </p>
+        <a class="test-inline-link" href={testHubUrl()}>
+          How We Test AI Girlfriend Apps
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+        </a>
+      </header>
+
+      <div class="test-archive__tree">
+        {
+          categories.map((cat, i) => {
+            const featured = featuredByCategory.get(cat.key) ?? [];
+            return (
+              <details class="test-archive__category" open={i === 0}>
+                <summary>
+                  <a href={cat.href} class="test-archive__category-link">{cat.name}</a>
+                </summary>
+                <div class="test-archive__body">
+                  {
+                    cat.subscores.map((sub) => (
+                      <div class="test-archive__sub">
+                        <h2 class="test-archive__sub-title">
+                          <a href={sub.href}>{sub.name}</a>
+                        </h2>
+                        <ul class="test-archive__evidence">
+                          {sub.contributors.map((c) => (
+                            <li><a href={c.href}>{c.label}</a></li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))
+                  }
+                  {
+                    featured.length > 0 && (
+                      <div class="test-archive__featured">
+                        <p class="test-archive__featured-label">Featured individual tests</p>
+                        <ul class="test-archive__evidence">
+                          {featured.map((t) => (
+                            <li><a href={t.href}>{t.label}</a></li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  }
+                </div>
+              </details>
+            );
+          })
+        }
+      </div>
+
+      <section class="test-page__section test-archive__supporting">
+        <h2 class="test-page__h2">Supporting methodology</h2>
+        <ul class="test-archive__support-links">
+          <li><a href="/test/market-data/">Market Data Methodology</a></li>
+          <li><a href="/review-process/">Review Process</a></li>
+          <li><a href="/editorial-guidelines/">Editorial Guidelines</a></li>
+        </ul>
+      </section>
+
+      <a class="test-inline-link test-page__back" href={testHubUrl()}>
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+        Back to how we test
+      </a>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

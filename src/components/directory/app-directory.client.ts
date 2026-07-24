@@ -1,19 +1,12 @@
 import { APPS_PER_PAGE, appsPageUrl, parseAppsPage, totalPages } from '../../lib/app-directory';
 
-const SAVED_KEY = 'home-saved-apps';
 const LIKED_KEY = 'home-liked-apps';
-const DEFAULT_PRIORITIES = ['chat', 'images', 'pricing'];
+const DEFAULT_PRIORITIES = ['chat', 'images', 'video'];
 const PRIORITY_WEIGHTS = [0.5, 0.3, 0.2];
 const PRIORITY_META: Record<string, { icon: string; color: string; label: string }> = {
-  chat: { icon: 'chat_bubble', color: '#db2777', label: 'Chat quality' },
-  images: { icon: 'image', color: '#9333ea', label: 'Image quality' },
-  pricing: { icon: 'paid', color: '#ea580c', label: 'Pricing / value' },
-  customization: { icon: 'tune', color: '#db2777', label: 'Customization' },
-  'chat-features': { icon: 'call', color: '#16a34a', label: 'Voice & calls' },
-  video: { icon: 'videocam', color: '#7c3aed', label: 'Video quality' },
-  privacy: { icon: 'shield', color: '#4f46e5', label: 'Privacy' },
-  characters: { icon: 'groups', color: '#9333ea', label: 'Character variety' },
-  overall: { icon: 'balance', color: '#64748b', label: 'Overall balance' },
+  chat: { icon: 'chat_bubble', color: '#db2777', label: 'Chat' },
+  images: { icon: 'image', color: '#9333ea', label: 'Images' },
+  video: { icon: 'videocam', color: '#7c3aed', label: 'Videos' },
 };
 const QUICK_SORT_LABELS: Record<string, string> = {
   overall: 'Overall rating',
@@ -143,10 +136,8 @@ export function initAppDirectory() {
   const priceFill = root.querySelector('[data-home-price-fill]') as HTMLElement | null;
   const budgetPresets = [...root.querySelectorAll('[data-home-budget-preset]')] as HTMLButtonElement[];
   const minRatingInputs = [...root.querySelectorAll('[data-home-min-rating]')] as HTMLInputElement[];
-  const priorityList = root.querySelector('[data-home-priority-list]');
   let prioritySlots = [...root.querySelectorAll('[data-home-priority-slot]')] as HTMLElement[];
   let priorityInputs = [...root.querySelectorAll('[data-home-priority]')] as HTMLInputElement[];
-  const initialSlotOrder = [...prioritySlots];
   const prioritiesReset = root.querySelector('[data-home-priorities-reset]');
   const customizeStatus = root.querySelector('[data-home-customize-status]');
   const quickSortButtons = [...root.querySelectorAll('[data-home-quick-sort]')] as HTMLButtonElement[];
@@ -162,21 +153,8 @@ export function initAppDirectory() {
   const pagePrev = root.querySelector('[data-home-page-prev]') as HTMLAnchorElement | null;
   const pageNext = root.querySelector('[data-home-page-next]') as HTMLAnchorElement | null;
 
-  const savedToggle = document.querySelector('[data-home-saved-toggle]');
-  const savedCountEl = document.querySelector('[data-home-saved-count]');
-  const saveButtons = [...document.querySelectorAll('[data-home-save]')] as HTMLButtonElement[];
   const likeButtons = [...document.querySelectorAll('[data-home-like]')] as HTMLButtonElement[];
-  const compareButtons = [...document.querySelectorAll('[data-home-compare-btn]')] as HTMLButtonElement[];
-
-  const tray = document.querySelector('[data-home-compare-tray]');
-  const comparePills = tray?.querySelector('[data-home-compare-pills]');
-  const compareClear = tray?.querySelector('[data-home-compare-clear]');
-  const compareGo = tray?.querySelector('[data-home-compare-go]');
-
-  const selected = new Map<string, { name: string; score: string }>();
-  const saved = loadSet(SAVED_KEY);
   const liked = loadSet(LIKED_KEY);
-  let savedOnly = false;
   let loadedPages = parseAppsPage(window.location.search);
   let personalized = false;
   let quickSortMode = 'overall';
@@ -263,13 +241,6 @@ export function initAppDirectory() {
     });
   }
 
-  function refreshPrioritySlots() {
-    prioritySlots = [...root.querySelectorAll('[data-home-priority-slot]')] as HTMLElement[];
-    priorityInputs = [...root.querySelectorAll('[data-home-priority]')] as HTMLInputElement[];
-    updatePriorityRanks();
-    updatePrioritySlotIcons();
-  }
-
   function closeAllPriorityMenus() {
     root.querySelectorAll('[data-priority-menu]').forEach((menu) => {
       (menu as HTMLElement).hidden = true;
@@ -320,57 +291,6 @@ export function initAppDirectory() {
     });
   }
 
-  function initPriorityDrag() {
-    root.querySelectorAll('[data-home-priority-drag]').forEach((handle) => {
-      handle.addEventListener('pointerdown', (event) => {
-        if (!(event instanceof PointerEvent) || !priorityList) return;
-        const slot = handle.closest('[data-home-priority-slot]') as HTMLElement | null;
-        if (!slot) return;
-        event.preventDefault();
-        handle.setPointerCapture(event.pointerId);
-        slot.classList.add('is-dragging');
-        document.body.classList.add('home-priority-dragging');
-
-        const move = (ev: PointerEvent) => {
-          const hit = document.elementFromPoint(ev.clientX, ev.clientY);
-          const target = hit?.closest('[data-home-priority-slot]') as HTMLElement | null;
-          if (!target || target === slot) return;
-          const rect = target.getBoundingClientRect();
-          const before = ev.clientX < rect.left + rect.width / 2;
-          if (before) {
-            if (slot.previousElementSibling !== target) target.before(slot);
-          } else if (slot.nextElementSibling !== target) {
-            target.after(slot);
-          }
-          refreshPrioritySlots();
-        };
-
-        const end = () => {
-          slot.classList.remove('is-dragging');
-          document.body.classList.remove('home-priority-dragging');
-          try {
-            handle.releasePointerCapture(event.pointerId);
-          } catch {}
-          document.removeEventListener('pointermove', move);
-          document.removeEventListener('pointerup', end);
-          refreshPrioritySlots();
-          setPersonalized(true);
-          applyFiltersAndSort();
-        };
-
-        document.addEventListener('pointermove', move);
-        document.addEventListener('pointerup', end);
-      });
-    });
-  }
-
-  function updatePriorityRanks() {
-    prioritySlots.forEach((slot, index) => {
-      const rank = slot.querySelector('.home-explorer__priority-rank');
-      if (rank) rank.textContent = String(index + 1);
-    });
-  }
-
   function isDefaultPriorities() {
     return currentPriorities().every((value, index) => value === DEFAULT_PRIORITIES[index]);
   }
@@ -405,14 +325,12 @@ export function initAppDirectory() {
     const cardPayments = (card.dataset.payments ?? '').split(',').filter(Boolean);
     const price = Number(card.dataset.price ?? 0);
     const score = Number(card.dataset.overallScore ?? 0);
-    const id = card.dataset.homeApp ?? '';
 
     const matchesFilters = filters.length === 0 || filters.every((f) => cardFilters.includes(f));
     const matchesPayments = payments.length === 0 || payments.every((p) => cardMatchesPayment(cardPayments, p));
     const matchesRating = score >= selectedMinRating();
     const matchesPrice = price >= selectedPriceMin() && price <= selectedPriceMax();
-    const matchesSaved = !savedOnly || saved.has(id);
-    return matchesFilters && matchesPayments && matchesRating && matchesPrice && matchesSaved;
+    return matchesFilters && matchesPayments && matchesRating && matchesPrice;
   }
 
   function countMatchingCards() {
@@ -520,26 +438,6 @@ export function initAppDirectory() {
     updateClearButtons();
   }
 
-  function renderCompareTray() {
-    const compareCountEl = tray?.querySelector('[data-home-compare-count]');
-    if (!tray || !comparePills || !compareCountEl) return;
-    comparePills.innerHTML = '';
-    compareCountEl.textContent = String(selected.size);
-    tray.dataset.visible = selected.size > 0 ? 'true' : 'false';
-    tray.hidden = selected.size === 0;
-
-    selected.forEach((item, id) => {
-      const pill = document.createElement('span');
-      pill.className = 'home-compare-tray__pill';
-      pill.innerHTML = `${item.name} <button type="button" class="home-compare-tray__pill-remove material-symbols-outlined text-[14px]" data-remove-compare="${id}" aria-label="Remove ${item.name}">close</button>`;
-      comparePills.appendChild(pill);
-    });
-
-    compareButtons.forEach((btn) => {
-      btn.setAttribute('aria-pressed', selected.has(btn.dataset.homeCompareBtn ?? '') ? 'true' : 'false');
-    });
-  }
-
   function clearChip(type: string, id: string) {
     if (type === 'filter') {
       filterInputs.filter((input) => input.value === id).forEach((input) => {
@@ -582,12 +480,9 @@ export function initAppDirectory() {
   }
 
   function resetPriorities() {
-    if (priorityList) {
-      initialSlotOrder.forEach((slot) => priorityList.appendChild(slot));
-    }
     prioritySlots.forEach((slot, index) => {
       const hidden = slot.querySelector('[data-home-priority]') as HTMLInputElement | null;
-      const defaultValue = DEFAULT_PRIORITIES[index] ?? 'overall';
+      const defaultValue = DEFAULT_PRIORITIES[index] ?? 'chat';
       if (hidden) hidden.value = defaultValue;
       const triggerLabel = slot.querySelector('.home-priority-picker__trigger-label');
       const meta = PRIORITY_META[defaultValue];
@@ -596,7 +491,7 @@ export function initAppDirectory() {
         opt.setAttribute('aria-selected', (opt as HTMLElement).dataset.priorityOption === defaultValue ? 'true' : 'false');
       });
     });
-    refreshPrioritySlots();
+    updatePrioritySlotIcons();
     setPersonalized(false);
     quickSortMode = 'overall';
     quickSortButtons.forEach((btn) => {
@@ -643,7 +538,6 @@ export function initAppDirectory() {
   });
 
   initPriorityPickers();
-  initPriorityDrag();
 
   quickSortButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -737,20 +631,6 @@ export function initAppDirectory() {
   syncPriceInputs(0, maxPriceDefault);
   updatePrioritySlotIcons();
 
-  saveButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.homeSave ?? '';
-      if (!id) return;
-      if (saved.has(id)) saved.delete(id);
-      else saved.add(id);
-      persistSet(SAVED_KEY, saved);
-      btn.setAttribute('aria-pressed', saved.has(id) ? 'true' : 'false');
-      if (savedCountEl) savedCountEl.textContent = String(saved.size);
-      applyFiltersAndSort();
-      updatePreviewCounts();
-    });
-  });
-
   likeButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.homeLike ?? '';
@@ -760,53 +640,6 @@ export function initAppDirectory() {
       persistSet(LIKED_KEY, liked);
       btn.setAttribute('aria-pressed', liked.has(id) ? 'true' : 'false');
     });
-  });
-
-  savedToggle?.addEventListener('click', () => {
-    savedOnly = !savedOnly;
-    savedToggle.setAttribute('aria-pressed', savedOnly ? 'true' : 'false');
-    loadedPages = 1;
-    pushPageUrl(1, true);
-    applyFiltersAndSort();
-    updatePreviewCounts();
-  });
-
-  compareButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.homeCompareBtn ?? '';
-      const name = btn.dataset.homeCompareName ?? id;
-      const score = btn.dataset.homeCompareScore ?? '';
-      if (!id) return;
-      if (selected.has(id)) selected.delete(id);
-      else {
-        if (selected.size >= 3) return;
-        selected.set(id, { name, score });
-      }
-      renderCompareTray();
-    });
-  });
-
-  comparePills?.addEventListener('click', (e) => {
-    const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
-    const removeId = target.dataset.removeCompare;
-    if (!removeId) return;
-    selected.delete(removeId);
-    renderCompareTray();
-  });
-
-  compareClear?.addEventListener('click', () => {
-    selected.clear();
-    renderCompareTray();
-  });
-
-  compareGo?.addEventListener('click', () => {
-    const ids = [...selected.keys()];
-    if (!ids.length) return;
-    window.location.href = '/best/ai-girlfriend#roundup-compare';
-    try {
-      sessionStorage.setItem('home-compare-ids', JSON.stringify(ids));
-    } catch {}
   });
 
   loadMoreBtn?.addEventListener('click', () => {
@@ -845,12 +678,9 @@ export function initAppDirectory() {
     applyFiltersAndSort();
   });
 
-  saveButtons.forEach((btn) => btn.setAttribute('aria-pressed', saved.has(btn.dataset.homeSave ?? '') ? 'true' : 'false'));
-  if (savedCountEl) savedCountEl.textContent = String(saved.size);
   likeButtons.forEach((btn) => btn.setAttribute('aria-pressed', liked.has(btn.dataset.homeLike ?? '') ? 'true' : 'false'));
 
   pushPageUrl(loadedPages, true);
-  renderCompareTray();
   updatePreviewCounts();
   applyFiltersAndSort();
 }

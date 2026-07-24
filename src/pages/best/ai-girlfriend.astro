@@ -8,6 +8,7 @@ import RoundupQuickCarousel from '../../components/roundup/RoundupQuickCarousel.
 import RoundupSelectionSection from '../../components/roundup/RoundupSelectionSection.astro';
 import RoundupSidebar from '../../components/roundup/RoundupSidebar.astro';
 import RoundupMobileSheets from '../../components/roundup/RoundupMobileSheets.astro';
+import RoundupMobileNavSheet from '../../components/roundup/RoundupMobileNavSheet.astro';
 import RoundupPick from '../../components/roundup/RoundupPick.astro';
 import RoundupCompare from '../../components/roundup/RoundupCompare.astro';
 import RoundupTestingSection from '../../components/roundup/RoundupTestingSection.astro';
@@ -33,8 +34,10 @@ const canonical = new URL('/best/ai-girlfriend', Astro.site ?? Astro.url.origin)
 >
   <Header />
   <main class="roundup-page" id="roundup-top" data-roundup-root data-reading-length="skim">
-    <div class="roundup-affiliate-bar section-container px-4 md:px-8">
-      <RoundupAffiliateFineprint />
+    <div class="roundup-affiliate-bar">
+      <div class="section-container px-4 md:px-8">
+        <RoundupAffiliateFineprint />
+      </div>
     </div>
     <RoundupHero roundup={roundup} />
 
@@ -71,7 +74,8 @@ const canonical = new URL('/best/ai-girlfriend', Astro.site ?? Astro.url.origin)
   </main>
   <Footer />
   <RoundupMobileSheets picks={roundup.picks} />
-  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal />
+  <RoundupMobileNavSheet roundup={roundup} active="best-apps" />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
   <RoundupScoreBarAnimate />
   <RatingsTooltipInit />
 </BaseLayout>

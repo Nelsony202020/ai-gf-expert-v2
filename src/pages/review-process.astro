@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import TestBreadcrumbs from '../components/test/TestBreadcrumbs.astro';
+import { reviewProcessSections } from '../data/methodology-support-content';
+import { testHubUrl } from '../lib/slugs';
+import '../styles/test-hub.css';
+---
+
+<BaseLayout
+  title="Review Process — AI Girlfriend Expert"
+  description="How we produce written reviews, select screenshots and media, produce YouTube video reviews, and keep editorial content separate from structured scores."
+>
+  <Header />
+  <main class="test-page">
+    <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">
+      <TestBreadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'Review process' },
+        ]}
+      />
+
+      <header class="test-page__header">
+        <p class="test-page__eyebrow">Editorial methodology</p>
+        <h1 class="test-page__title">Review process</h1>
+        <p class="test-page__intro">
+          How hands-on written reviews, visual evidence, and optional YouTube videos are produced — and how they relate to structured test scores.
+        </p>
+      </header>
+
+      {
+        reviewProcessSections.map((section) => (
+          <section class="test-page__section">
+            <h2 class="test-page__h2">{section.title}</h2>
+            <p class="test-prose">{section.body}</p>
+          </section>
+        ))
+      }
+
+      <blockquote class="test-hub__note">
+        Structured ratings measure product performance. Written reviews, video reviews, and media galleries provide context but do not directly change the overall score.
+      </blockquote>
+
+      <a class="test-inline-link test-page__back" href={testHubUrl()}>
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+        Back to how we test
+      </a>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

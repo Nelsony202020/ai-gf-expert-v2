@@ -1,0 +1,30 @@
+---
+import { getTestCategories } from '../../../../lib/test-framework';
+import { toSlug } from '../../../../lib/slugs';
+
+export function getStaticPaths() {
+  const paths: {
+    params: { category: string; subscore: string; contributor: string };
+  }[] = [];
+
+  for (const cat of getTestCategories()) {
+    for (const sub of cat.subscores) {
+      for (const contributor of sub.contributors) {
+        paths.push({
+          params: {
+            category: cat.key,
+            subscore: sub.slug,
+            contributor: contributor.slug,
+          },
+        });
+      }
+    }
+  }
+
+  return paths;
+}
+
+const { category, subscore, contributor } = Astro.params;
+
+return Astro.redirect(`/test/${category}/${subscore}/#${contributor}`, 301);
+---

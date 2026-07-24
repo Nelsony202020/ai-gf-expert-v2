@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import './header.css';
+@import './coming-soon.css';
 @import './ratings-tooltips.css';
 @import './market-data.css';
 @import './video-review-modal.css';
@@ -179,6 +180,25 @@
   .hover\:text-primary-container:hover {
     color: var(--color-accent);
   }
+}
+
+/* Smooth theme toggle */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.35s;
+  animation-timing-function: ease;
+}
+
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 0.3s ease,
+    color 0.25s ease,
+    border-color 0.3s ease,
+    fill 0.25s ease,
+    box-shadow 0.3s ease !important;
 }
 
 /* Dark mode */

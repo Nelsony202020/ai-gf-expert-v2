@@ -22,7 +22,7 @@ const currentChip = getScoreChipClass(overallScore);
   <ScorePill score={overallScore} size="sm" />
   {
     fullProduct ? (
-      <OverallScoreTooltip product={fullProduct} methodologyOnly>
+      <OverallScoreTooltip product={fullProduct} methodologyOnly inlineTestLinks>
         <span class="roundup-overall-score__info">
           <InfoIcon size="xs" class={compact ? 'text-white/90 hover:text-white' : 'text-tertiary/70 hover:text-accent'} />
         </span>

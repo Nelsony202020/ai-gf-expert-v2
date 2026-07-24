@@ -1,0 +1,38 @@
+---
+import { getTestCategories } from '../../lib/test-framework';
+
+export function getStaticPaths() {
+  const paths: { params: { path: string } }[] = [];
+
+  for (const cat of getTestCategories()) {
+    paths.push({ params: { path: `${cat.key}/` } });
+    paths.push({ params: { path: cat.key } });
+
+    for (const sub of cat.subscores) {
+      paths.push({ params: { path: `${cat.key}/${sub.slug}/` } });
+      paths.push({ params: { path: `${cat.key}/${sub.slug}` } });
+
+      for (const contributor of sub.contributors) {
+        paths.push({
+          params: { path: `${cat.key}/${sub.slug}/${contributor.slug}/` },
+        });
+        paths.push({
+          params: { path: `${cat.key}/${sub.slug}/${contributor.slug}` },
+        });
+      }
+    }
+  }
+
+  return paths;
+}
+
+const { path } = Astro.params;
+
+if (!path) {
+  return Astro.redirect('/test/', 301);
+}
+
+const normalized = path.endsWith('/') ? path : `${path}/`;
+
+return Astro.redirect(`/test/${normalized}`, 301);
+---
