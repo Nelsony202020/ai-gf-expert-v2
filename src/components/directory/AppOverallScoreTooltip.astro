@@ -4,8 +4,8 @@ import { buildExplorerApps } from '../../data/homepage';
 import { getProduct } from '../../data/products';
 import { getScoreChipClass, fmtScore } from '../../lib/scores';
 import OverallScoreTooltip from '../review/tooltips/OverallScoreTooltip.astro';
+import InlineTestLink from '../review/tooltips/InlineTestLink.astro';
 import RatingHierarchyPipeline from '../review/tooltips/RatingHierarchyPipeline.astro';
-import TooltipActionLinks from '../review/tooltips/TooltipActionLinks.astro';
 import InfoIcon from '../ui/InfoIcon.astro';
 
 interface Props {
@@ -77,9 +77,10 @@ const avgScore = scorePoints.length
                             <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>
                               {fmtScore(category.score)}
                             </span>
-                            <span class="rt-comp-name rt-comp-name--truncate">{category.name}</span>
+                            <InlineTestLink categoryKey={category.key} class="rt-comp-name rt-comp-name--truncate">
+                              {category.name}
+                            </InlineTestLink>
                           </div>
-                          <TooltipActionLinks categoryKey={category.key} compact methodologyOnly />
                         </div>
                       );
                     })

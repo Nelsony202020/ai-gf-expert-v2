@@ -1,0 +1,51 @@
+---
+/** Methodology explainer — same visual language as review tooltips, all four levels visible. */
+
+const tiers = [
+  {
+    icon: 'crown',
+    label: 'Overall performance score',
+    sub: 'The single rating shown on reviews and roundups',
+  },
+  {
+    icon: 'apps',
+    label: '8 weighted category scores',
+    sub: 'Characters, Chat, Images, Privacy, and more',
+  },
+  {
+    icon: 'bar_chart',
+    label: '3 subscores per category',
+    sub: 'Variety, Discovery, Quality — and similar groups',
+  },
+  {
+    icon: 'description',
+    label: 'Individual evidence points',
+    sub: 'Memory, reply speed, image accuracy, and more',
+  },
+];
+---
+
+<div class="rt-pipeline rt-pipeline--explainer test-hub__pipeline" role="img" aria-label="Rating hierarchy from overall score down to individual evidence">
+  <div class="rt-pipeline__track">
+    {
+      tiers.map((tier, i) => (
+        <div class="rt-pipeline__step rt-pipeline__step--explainer">
+          <div class="rt-pipeline__rail">
+            <div class="rt-pipeline__node">
+              <span class="material-symbols-outlined rt-pipeline__node-icon">{tier.icon}</span>
+            </div>
+            {i < tiers.length - 1 && (
+              <div class="rt-pipeline__connector rt-pipeline__connector--filled">
+                <span class="rt-pipeline__connector-fill" />
+              </div>
+            )}
+          </div>
+          <div class="rt-pipeline__card">
+            <span class="rt-pipeline__label">{tier.label}</span>
+            <span class="rt-pipeline__sub">{tier.sub}</span>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</div>

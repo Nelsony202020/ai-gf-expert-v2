@@ -1,0 +1,20 @@
+---
+import type { TestTooltipUsageItem } from '../../data/test-tooltips-content';
+
+interface Props {
+  items: TestTooltipUsageItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<ul class="test-tooltip-usage" aria-label="Where this tooltip appears">
+  {
+    items.map((item) => (
+      <li class="test-tooltip-usage__item">
+        <span class="material-symbols-outlined test-tooltip-usage__icon" aria-hidden="true">{item.icon}</span>
+        <span>{item.label}</span>
+      </li>
+    ))
+  }
+</ul>

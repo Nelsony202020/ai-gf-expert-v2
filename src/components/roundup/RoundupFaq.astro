@@ -3,9 +3,19 @@ import type { RoundupFaqItem } from '../../data/roundups/ai-girlfriend';
 
 interface Props {
   items: RoundupFaqItem[];
+  sectionId?: string;
+  heading?: string;
+  subheading?: string;
+  sectionClass?: string;
 }
 
-const { items } = Astro.props;
+const {
+  items,
+  sectionId = 'roundup-faq',
+  heading = 'Frequently asked questions',
+  subheading = 'Real questions. Honest answers.',
+  sectionClass = '',
+} = Astro.props;
 
 const hermanAvatar = '/brand/herman-main-icon.svg';
 
@@ -18,10 +28,10 @@ const stickers: ({ emoji: string; position: 'tl' | 'tr' } | null)[] = [
 ];
 ---
 
-<section id="roundup-faq" class="roundup-faq scroll-mt-24">
+<section id={sectionId} class={`roundup-faq scroll-mt-24 ${sectionClass}`.trim()} data-roundup-faq-section>
   <div class="roundup-faq__header">
-    <h2 class="roundup-faq__heading">Frequently asked questions</h2>
-    <p class="roundup-faq__subheading">Real questions. Honest answers.</p>
+    <h2 class="roundup-faq__heading">{heading}</h2>
+    <p class="roundup-faq__subheading">{subheading}</p>
   </div>
 
   <div class="roundup-faq__chat" data-roundup-faq-chat>
@@ -73,7 +83,7 @@ const stickers: ({ emoji: string; position: 'tl' | 'tr' } | null)[] = [
       });
     });
 
-    const section = document.querySelector<HTMLElement>('#roundup-faq');
+    const section = document.querySelector<HTMLElement>('[data-roundup-faq-section]');
     if (!section || section.dataset.hintBound === 'true') return;
     section.dataset.hintBound = 'true';
 
@@ -107,14 +117,14 @@ const stickers: ({ emoji: string; position: 'tl' | 'tr' } | null)[] = [
       window.setTimeout(() => {
         section!.classList.remove('is-faq-hinting');
         target.classList.remove('is-faq-hint-target');
-      }, 3600);
+      }, 2100);
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return;
         observer.disconnect();
-        window.setTimeout(runFaqClickHint, 2000);
+        window.setTimeout(runFaqClickHint, 500);
       },
       { threshold: 0.35, rootMargin: '0px 0px -8% 0px' },
     );

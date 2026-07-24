@@ -1,0 +1,76 @@
+---
+import type { TestCategoryNode } from '../../lib/test-framework';
+import { getCategoryBrandIcon, getCategoryBrandIconLight } from '../../lib/category-brand-icons';
+import BrandIcon from '../ui/BrandIcon.astro';
+
+interface Props {
+  categories: TestCategoryNode[];
+}
+
+const { categories } = Astro.props;
+---
+
+<div class="test-framework-accordion">
+  {
+    categories.map((cat) => {
+      const brandIcon = getCategoryBrandIcon(cat.key);
+      const brandIconLight = getCategoryBrandIconLight(cat.key);
+      const useDarkBrandIconOnly = cat.key === 'customization' || cat.key === 'chat';
+
+      return (
+      <details class="test-framework-item" open>
+        <summary class="test-framework-item__summary">
+          <span class="test-framework-item__summary-main">
+            {
+              brandIcon && (
+                <span class="test-framework-item__icon" aria-hidden="true">
+                  {
+                    useDarkBrandIconOnly ? (
+                      <img src={brandIcon} alt="" width="22" height="22" loading="lazy" class="object-contain" />
+                    ) : brandIconLight ? (
+                      <BrandIcon src={brandIcon} srcLight={brandIconLight} width={22} height={22} />
+                    ) : (
+                      <img src={brandIcon} alt="" width="22" height="22" loading="lazy" class="object-contain" />
+                    )
+                  }
+                </span>
+              )
+            }
+            <span class="test-framework-item__name">{cat.name}</span>
+          </span>
+          <span class="material-symbols-outlined test-framework-item__chevron" aria-hidden="true">expand_more</span>
+        </summary>
+
+        <div class="test-framework-accordion__body">
+          <div class="test-framework-subgrid">
+            {
+              cat.subscores.map((sub) => (
+                <div class="test-framework-sub">
+                  <h4 class="test-framework-sub__title">
+                    <a href={sub.href}>{sub.name}</a>
+                  </h4>
+                  <ul class="test-framework-sub__list">
+                    {
+                      sub.contributors.map((c) => (
+                        <li>
+                          <a href={c.href}>{c.label}</a>
+                        </li>
+                      ))
+                    }
+                  </ul>
+                </div>
+              ))
+            }
+          </div>
+          <div class="test-framework-accordion__footer">
+            <a class="test-inline-link" href={cat.href}>
+              View {cat.name} methodology
+              <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+            </a>
+          </div>
+        </div>
+      </details>
+      );
+    })
+  }
+</div>

@@ -1,0 +1,29 @@
+---
+import { products } from '../../data/products';
+import { buildExplorerApps } from '../../data/homepage';
+import ProductBrandTooltipPanel from '../review/tooltips/ProductBrandTooltipPanel.astro';
+import TestTooltipAnnotation from './TestTooltipAnnotation.astro';
+import { testTooltipsProductAnnotations } from '../../data/test-tooltips-content';
+
+const product = products[0];
+const app = buildExplorerApps().find((entry) => entry.slug === product.slug) ?? buildExplorerApps()[0];
+---
+
+<TestTooltipAnnotation
+  idPrefix="product"
+  ariaLabel="Product information tooltip annotated example"
+  annotations={testTooltipsProductAnnotations}
+  leftCallouts={[
+    { n: 1, row: 'top' },
+    { n: 3, row: 'bottom' },
+  ]}
+  rightCallouts={[{ n: 2, row: 'middle' }]}
+  connectors={[
+    { n: '1', side: 'left' },
+    { n: '2', side: 'right' },
+    { n: '3', side: 'left' },
+  ]}
+  variant="product"
+>
+  <ProductBrandTooltipPanel app={app} embed annotate />
+</TestTooltipAnnotation>

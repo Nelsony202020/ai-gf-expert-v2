@@ -1,0 +1,32 @@
+---
+import { products } from '../../data/products';
+import { getScoreVisual, fmtScore } from '../../lib/scores';
+import ScorePill from '../review/ScorePill.astro';
+
+const product = products.find((p) => p.slug === 'aura-ai') ?? products[0];
+
+if (!product) {
+  throw new Error('TestHubScoreExample requires at least one product in the catalog.');
+}
+
+const overall = getScoreVisual(product.overallScore);
+---
+
+<aside class="test-hub__score-example" aria-label="Example overall performance score display">
+  <div class={`test-hub__score-example-head ${overall.bg}`}>
+    <span class="test-hub__score-example-value tabular-nums">{fmtScore(product.overallScore)}</span>
+    <span class="test-hub__score-example-title">Overall Performance</span>
+  </div>
+  <p class="test-hub__score-example-summary">{product.overallSummary}</p>
+  <ul class="test-hub__score-example-cats">
+    {
+      product.categories.map((category) => (
+        <li class="test-hub__score-example-cat">
+          <ScorePill score={category.score} size="sm" class="shrink-0" />
+          <span class="test-hub__score-example-cat-name">{category.name}</span>
+        </li>
+      ))
+    }
+  </ul>
+  <p class="test-hub__score-example-caption">Example from our {product.name} review</p>
+</aside>

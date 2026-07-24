@@ -82,12 +82,8 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
   const TABBAR_OFFSET = 52;
 
   function getScrollOffset() {
-    const header = document.querySelector<HTMLElement>('[data-site-header]');
     const tabbar = document.querySelector<HTMLElement>('[data-tabbar]');
-    const headerHidden = header?.classList.contains('site-header--hidden');
-    const headerHeight = header && !headerHidden ? header.offsetHeight : 0;
-    const tabbarHeight = tabbar?.offsetHeight ?? TABBAR_OFFSET;
-    return headerHeight + tabbarHeight;
+    return tabbar?.offsetHeight ?? TABBAR_OFFSET;
   }
 
   function initReview() {

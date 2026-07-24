@@ -1,0 +1,54 @@
+---
+import type { HtmlSitemapLink } from '../../types/sitemap';
+
+interface Props {
+  count: number;
+  resources: HtmlSitemapLink[];
+  legal: HtmlSitemapLink[];
+}
+
+const { count, resources, legal } = Astro.props;
+---
+
+<section class="sitemap-card sitemap-card--resources-legal">
+  <div class="sitemap-card__head">
+    <span class="sitemap-card__icon sitemap-card__icon--purple">
+      <span class="material-symbols-outlined">shield</span>
+    </span>
+    <h2 class="sitemap-card__title">Resources &amp; Legal ({count})</h2>
+  </div>
+
+  <div class="sitemap-resources-legal">
+    <div class="sitemap-resources-legal__group">
+      <p class="sitemap-resources-legal__label">Resources</p>
+      <ul class="sitemap-card__links">
+        {
+          resources.map((link) => (
+            <li>
+              <a href={link.href} class="sitemap-card__link">
+                <span>{link.label}</span>
+                <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="sitemap-resources-legal__group">
+      <p class="sitemap-resources-legal__label">Legal &amp; info</p>
+      <ul class="sitemap-card__links">
+        {
+          legal.map((link) => (
+            <li>
+              <a href={link.href} class="sitemap-card__link">
+                <span>{link.label}</span>
+                <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</section>

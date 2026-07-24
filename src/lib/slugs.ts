@@ -12,6 +12,10 @@ export function testHubUrl(): string {
   return '/test/';
 }
 
+export function testTooltipsUrl(): string {
+  return '/test/tooltips/';
+}
+
 export function testCategoryUrl(categoryKey: string): string {
   return `/test/${toSlug(categoryKey)}/`;
 }

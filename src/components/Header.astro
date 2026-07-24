@@ -6,7 +6,7 @@ import ThemeToggle from './ui/ThemeToggle.astro';
 const searchIndex = buildSearchIndex();
 ---
 
-<header class="site-header sticky top-0 z-50" data-site-header>
+<header class="site-header relative z-50" data-site-header>
   <div class="section-container px-4 md:px-8 site-header__inner">
     <div class="site-header__left">
       <a href="/" class="site-logo-link shrink-0 flex items-center">
@@ -182,16 +182,10 @@ const searchIndex = buildSearchIndex();
 </header>
 
 <script>
-  import {
-    applyScrollDirectionBodyClass,
-    readScrollDirection,
-    shouldHideSiteHeader,
-  } from '../lib/scroll-chrome.ts';
-
   window.__scrollChrome = {
-    applyScrollDirectionBodyClass,
-    readScrollDirection,
-    shouldHideSiteHeader,
+    applyScrollDirectionBodyClass: () => {},
+    readScrollDirection: () => 'none',
+    shouldHideSiteHeader: () => false,
   };
 </script>
 
@@ -230,7 +224,6 @@ const searchIndex = buildSearchIndex();
     function openMobileMenu() {
       closeMega();
       closeSearch();
-      header.classList.remove('site-header--hidden');
       mobileMenu?.classList.remove('hidden');
       mobileMenu?.removeAttribute('hidden');
       mobileMenuToggle?.setAttribute('aria-expanded', 'true');
@@ -239,7 +232,6 @@ const searchIndex = buildSearchIndex();
       if (icon) icon.textContent = 'close';
       header.classList.add('site-header--menu-open');
       document.body.classList.add('site-header-menu-open');
-      lastScrollY = window.scrollY;
     }
 
     mobileMenuToggle?.addEventListener('click', (e) => {
@@ -402,54 +394,13 @@ const searchIndex = buildSearchIndex();
       }
     });
 
-    let lastScrollY = window.scrollY;
-    let scrollTicking = false;
-
     function syncHeaderOffset() {
-      const hidden = header.classList.contains('site-header--hidden');
-      const offset = hidden ? 0 : header.offsetHeight;
-      document.documentElement.style.setProperty('--site-header-offset', `${offset}px`);
+      document.documentElement.style.setProperty('--site-header-offset', '0px');
       document.dispatchEvent(new CustomEvent('site-header-offset-change'));
-    }
-
-    function updateHeaderVisibility() {
-      if (header.classList.contains('site-header--menu-open')) {
-        header.classList.remove('site-header--hidden');
-        syncHeaderOffset();
-        lastScrollY = window.scrollY;
-        scrollTicking = false;
-        return;
-      }
-
-      const y = window.scrollY;
-      const { readScrollDirection, applyScrollDirectionBodyClass, shouldHideSiteHeader } =
-        window.__scrollChrome ?? {};
-      const direction = readScrollDirection ? readScrollDirection(y, lastScrollY) : 'none';
-      if (direction !== 'none' && applyScrollDirectionBodyClass) {
-        applyScrollDirectionBodyClass(direction);
-      }
-
-      const hide = shouldHideSiteHeader ? shouldHideSiteHeader(y, direction, false) : y > 64;
-
-      header.classList.toggle('site-header--hidden', hide);
-      syncHeaderOffset();
-
-      lastScrollY = y;
-      scrollTicking = false;
     }
 
     syncHeaderOffset();
     window.addEventListener('resize', syncHeaderOffset, { passive: true });
-
-    window.addEventListener(
-      'scroll',
-      () => {
-        if (scrollTicking) return;
-        scrollTicking = true;
-        requestAnimationFrame(updateHeaderVisibility);
-      },
-      { passive: true },
-    );
   }
 
   initSiteHeader();

@@ -3,12 +3,6 @@
 .site-header {
   background-color: #f8faf3;
   border-bottom: 1px solid #e5e9df;
-  transition: transform var(--scroll-chrome-duration, 0.28s) var(--scroll-chrome-easing, ease);
-  will-change: transform;
-}
-
-.site-header--hidden {
-  transform: translateY(-100%);
 }
 
 .site-header__inner {

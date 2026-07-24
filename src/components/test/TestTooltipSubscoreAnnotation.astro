@@ -1,0 +1,33 @@
+---
+import { products } from '../../data/products';
+import SubscoreScoreTooltipPanel from '../review/tooltips/SubscoreScoreTooltipPanel.astro';
+import TestTooltipAnnotation from './TestTooltipAnnotation.astro';
+import { testTooltipsSubscoreAnnotations } from '../../data/test-tooltips-content';
+
+const product = products[0];
+const chatCategory = product.categories.find((category) => category.key === 'chat')!;
+const understanding = chatCategory.subscores.find((subscore) => subscore.name === 'Understanding')!;
+---
+
+<TestTooltipAnnotation
+  idPrefix="subscore"
+  ariaLabel="Subscore tooltip annotated example"
+  annotations={testTooltipsSubscoreAnnotations}
+  leftCallouts={[
+    { n: 1, row: 'top' },
+    { n: 3, row: 'bottom' },
+  ]}
+  rightCallouts={[
+    { n: 2, row: 'top' },
+    { n: 4, row: 'bottom' },
+  ]}
+  connectors={[
+    { n: '1', side: 'left' },
+    { n: '2', side: 'right' },
+    { n: '3', side: 'left' },
+    { n: '4', side: 'right' },
+  ]}
+  variant="wide"
+>
+  <SubscoreScoreTooltipPanel categoryKey={chatCategory.key} sub={understanding} embed annotate />
+</TestTooltipAnnotation>

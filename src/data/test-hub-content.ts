@@ -9,12 +9,11 @@ export const testHubTrustMetrics = [
 export const testHubTocSections = [
   { id: 'how-scores-work', label: 'How our scores work' },
   { id: 'overall-score', label: 'Overall performance score' },
-  { id: 'category-scores', label: 'Rating categories' },
+  { id: 'category-scores', label: 'Category scores' },
   { id: 'subscores', label: 'Subscores' },
   { id: 'evidence', label: 'Evidence points' },
   { id: 'full-framework', label: 'Our eight rating categories' },
   { id: 'in-practice', label: 'How we test in practice' },
-  { id: 'important-tests', label: 'Important individual tests' },
   { id: 'across-site', label: 'Where scores appear' },
   { id: 'beyond-the-score', label: 'Beyond the score' },
   { id: 'consistency', label: 'Keeping scores fair' },
@@ -22,10 +21,38 @@ export const testHubTocSections = [
   { id: 'faq', label: 'Frequently asked questions' },
 ];
 
+export const testHubRelatedMethodology = [
+  { label: 'How score tooltips work', href: '/test/tooltips/' },
+  { label: 'Editorial standards', href: '/editorial-guidelines/' },
+];
+
+export const testHubScoreLocations = [
+  {
+    label: 'Reviews',
+    description: 'Full overall, category, subscore, and evidence-level results for one app.',
+    icon: 'reviews',
+  },
+  {
+    label: 'Roundups',
+    description: 'Condensed results used to compare and rank several apps.',
+    icon: 'leaderboard',
+  },
+  {
+    label: 'Comparisons',
+    description: 'Side-by-side category and evidence comparisons.',
+    icon: 'balance',
+  },
+  {
+    label: 'App directory',
+    description: 'Summary scores, pricing information, and key strengths for browsing and filtering.',
+    icon: 'apps',
+  },
+];
+
 export const testHubProcessSteps = [
   {
     title: 'We purchase access',
-    body: 'We buy paid plans ourselves and test the same versions available to regular customers. We do not rely on sponsored access or limited demos.',
+    body: 'We buy the paid plans ourselves and test the same versions available to regular customers. We do not rely on sponsored access or limited demos. We go through the same customer journey as everyone else.',
   },
   {
     title: 'We create a test plan',
@@ -33,23 +60,27 @@ export const testHubProcessSteps = [
   },
   {
     title: 'We use the app like a real customer',
-    body: 'We create characters, hold conversations, generate media, test account controls, and examine the real cost of regular use.',
+    body: 'We create characters, hold conversations, generate media, including NSFW content, test account controls, and examine the real cost of regular use.',
   },
   {
     title: 'We collect evidence',
     body: 'We record counts, percentages, timings, feature availability, failures, limits, and qualitative test results.',
   },
   {
-    title: 'We calculate scores',
-    body: 'Evidence points contribute to subscores. Subscores create category scores. Weighted category scores produce the overall performance score.',
+    title: 'We calculate the scores',
+    body: 'Evidence points contribute to subscores. Subscores create category scores, and the weighted category scores produce the overall performance score.',
   },
   {
     title: 'We write and fact-check the review',
-    body: 'Our editorial conclusions explain the data rather than replacing it.',
+    body: 'Our editorial conclusions explain the data rather than replace it.',
+  },
+  {
+    title: 'We include personal experience and a video review',
+    body: 'One of our experts creates a detailed review, which may also include a YouTube video. This does not contribute to the performance rating, but it helps explain our scores.',
   },
   {
     title: 'We retest and update',
-    body: 'We update scores when pricing, features, models, policies, or output quality change meaningfully.',
+    body: 'We update scores when pricing, features, models, policies, or output quality change in a meaningful way. We check every review at least once every three months, but many are updated more often because the industry changes quickly.',
   },
 ];
 
@@ -110,8 +141,10 @@ export const testHubFaq = [
 ];
 
 export const testHubVersions = [
-  { version: 'V3.1', date: 'July 2026', change: 'Updated image and pricing tests' },
-  { version: 'V3.0', date: 'January 2026', change: 'Introduced eight-category framework' },
+  { version: 'V3.1', date: 'August 2026', change: 'Updated image and pricing tests' },
+  { version: 'V3.0', date: 'July 2026', change: 'Introduced eight-category framework' },
+  { version: 'V2', date: 'Early 2025', change: 'Expanded categories using a survey of AI girlfriend users' },
+  { version: 'V1', date: 'October 2024', change: 'Initial ratings based on personal experience' },
 ];
 
 export const testHubEvidenceExamples = [

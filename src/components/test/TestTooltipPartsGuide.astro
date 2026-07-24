@@ -1,0 +1,29 @@
+---
+import type { TestTooltipPartItem } from '../../data/test-tooltips-content';
+
+interface Props {
+  parts: TestTooltipPartItem[];
+}
+
+const { parts } = Astro.props;
+---
+
+<div class="test-tooltip-parts">
+  <h3 class="test-tooltip-parts__title">What each part shows</h3>
+  <ol class="test-tooltip-parts__list">
+    {
+      parts.map((part) => (
+        <li id={`${part.anchorId}-desc`} data-callout-desc={part.n}>
+          <a href={`#${part.anchorId}`} class="test-tooltip-parts__num" data-tooltip-callout-link={part.n}>
+            {part.n}
+          </a>
+          <span class="test-tooltip-parts__icon material-symbols-outlined" aria-hidden="true">{part.icon}</span>
+          <div class="test-tooltip-parts__copy">
+            <strong>{part.label}</strong>
+            <p>{part.desc}</p>
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+</div>

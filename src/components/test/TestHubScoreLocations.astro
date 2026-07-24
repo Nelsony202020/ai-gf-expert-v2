@@ -1,0 +1,35 @@
+---
+import { testHubScoreLocations } from '../../data/test-hub-content';
+import { testTooltipsUrl } from '../../lib/slugs';
+---
+
+<div class="test-across">
+  <ul class="test-across__list">
+    {
+      testHubScoreLocations.map((item) => (
+        <li class="test-across__row">
+          <span class="test-across__icon" aria-hidden="true">
+            <span class="material-symbols-outlined">{item.icon}</span>
+          </span>
+          <span class="test-across__label">{item.label}</span>
+          <span class="test-across__divider" aria-hidden="true"></span>
+          <p class="test-across__desc">{item.description}</p>
+        </li>
+      ))
+    }
+  </ul>
+
+  <aside class="test-across__tooltips">
+    <span class="test-across__tooltips-icon" aria-hidden="true">i</span>
+    <div class="test-across__tooltips-copy">
+      <h3 class="test-across__tooltips-title">Tooltips and score breakdowns</h3>
+      <p class="test-across__tooltips-body">
+        Tooltips provide extra context for scores without interrupting the page. They may show subscores, benchmarks, score distributions, evidence, and links to the relevant methodology.
+      </p>
+      <a class="test-across__tooltips-link" href={testTooltipsUrl()}>
+        See how our score tooltips work
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+      </a>
+    </div>
+  </aside>
+</div>

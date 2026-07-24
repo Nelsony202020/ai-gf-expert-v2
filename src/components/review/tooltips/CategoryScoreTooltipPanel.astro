@@ -1,0 +1,122 @@
+---
+import type { RatingCategory } from '../../../data/products';
+import { products } from '../../../data/products';
+import { getScoreChipClass, fmtScore } from '../../../lib/scores';
+import { buildAllScoreBins } from '../../../lib/score-distribution';
+import ScoreDistributionChart from './ScoreDistributionChart.astro';
+import { getCategoryBrandIcon, getCategoryBrandIconLight } from '../../../lib/category-brand-icons';
+import BrandIcon from '../../ui/BrandIcon.astro';
+
+interface Props {
+  category: RatingCategory;
+  embed?: boolean;
+  annotate?: boolean;
+}
+
+const { category, embed = false, annotate = false } = Astro.props;
+
+const currentScore = category.score;
+const currentChip = getScoreChipClass(currentScore);
+
+const scorePoints = products
+  .map((p) => {
+    const cat = p.categories.find((c) => c.key === category.key);
+    return cat ? { slug: p.slug, name: p.name, score: cat.score } : null;
+  })
+  .filter((x): x is { slug: string; name: string; score: number } => !!x);
+
+const avgScore = scorePoints.length
+  ? scorePoints.reduce((s, x) => s + x.score, 0) / scorePoints.length
+  : currentScore;
+
+const bins = buildAllScoreBins(scorePoints);
+const brandIcon = getCategoryBrandIcon(category.key);
+const brandIconLight = getCategoryBrandIconLight(category.key);
+const useDarkBrandIconOnly = category.key === 'customization' || category.key === 'chat';
+
+const panelClass = [
+  'ratings-tooltip-panel',
+  'ratings-tooltip-panel--compact',
+  'ratings-tooltip-panel--category',
+  embed && 'ratings-tooltip-panel--embed',
+  embed && 'test-tooltip-demo__panel',
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class={panelClass}>
+  <div class="ratings-tooltip-panel__header">
+    <div class="ratings-tooltip-panel__header-grid">
+      <div class="ratings-tooltip-panel__what-block min-w-0">
+        <p class="ratings-tooltip-panel__section-title">What it is</p>
+        <div class="ratings-tooltip-panel__what-row">
+          <p class="ratings-tooltip-panel__desc">{category.description}</p>
+          {
+            brandIcon && (
+              <div class="ratings-tooltip-panel__brand-slot" aria-hidden="true">
+                {
+                  useDarkBrandIconOnly ? (
+                    <img
+                      src={brandIcon}
+                      alt=""
+                      width="56"
+                      height="56"
+                      loading="lazy"
+                      class="brand-icon brand-icon--dark brand-icon--always"
+                    />
+                  ) : brandIconLight ? (
+                    <BrandIcon src={brandIcon} srcLight={brandIconLight} width={56} height={56} />
+                  ) : (
+                    <img src={brandIcon} alt="" width="56" height="56" loading="lazy" class={brandIcon.endsWith('.png') ? 'brand-icon' : ''} />
+                  )
+                }
+              </div>
+            )
+          }
+        </div>
+      </div>
+      <div class="ratings-tooltip-panel__score-block">
+        <div
+          class="ratings-tooltip-panel__score-row"
+          {...(annotate ? { 'data-annotation-target': '1' } : {})}
+        >
+          <span class={`rt-score-chip rt-score-chip--outline ${currentChip}`}>{fmtScore(currentScore)}</span>
+          <span class="ratings-tooltip-panel__score-label">{category.name}</span>
+        </div>
+        <p
+          class="ratings-tooltip-panel__avg"
+          {...(annotate ? { 'data-annotation-target': '2' } : {})}
+        >
+          Avg: <span class="tabular-nums">{fmtScore(avgScore)}</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="ratings-tooltip-panel__body">
+    <div {...(annotate ? { 'data-annotation-target': '3' } : {})}>
+      <p class="ratings-tooltip-panel__section-title">Subscores</p>
+      <div class="rt-comp-list">
+        {
+          category.subscores.map((sub) => {
+            const chip = getScoreChipClass(sub.score);
+            return (
+              <div class="rt-comp-row rt-comp-row--inline">
+                <div class="rt-comp-row__main">
+                  <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(sub.score)}</span>
+                  <span class="rt-comp-name rt-comp-name--truncate">{sub.name}</span>
+                </div>
+              </div>
+            );
+          })
+        }
+      </div>
+    </div>
+
+    <div {...(annotate ? { 'data-annotation-target': '4' } : {})}>
+      <p class="ratings-tooltip-panel__section-title">Score distribution</p>
+      <ScoreDistributionChart bins={bins} />
+    </div>
+  </div>
+</div>

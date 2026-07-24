@@ -6,7 +6,6 @@ import { buildAllScoreBins } from '../../../lib/score-distribution';
 import TooltipActionLinks from './TooltipActionLinks.astro';
 import InlineTestLink from './InlineTestLink.astro';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
-import ScoreMeaningCallout from './ScoreMeaningCallout.astro';
 import InfoIcon from '../../ui/InfoIcon.astro';
 
 interface Props {
@@ -112,7 +111,6 @@ const bins = buildAllScoreBins(scorePoints);
           }
         </div>
       </div>
-      {!compareMode && <ScoreMeaningCallout score={currentScore} avg={avgScore} />}
       {!inlineTestLinks && <TooltipActionLinks categoryKey={categoryKey} subscoreName={sub.name} methodologyOnly={compareMode} />}
     </div>
 
@@ -151,20 +149,30 @@ const bins = buildAllScoreBins(scorePoints);
                               {c.label}
                             </InlineTestLink>
                           ) : (
-                            <span class="rt-comp-name rt-comp-name--truncate">{c.label}</span>
+                            <>
+                              <InlineTestLink
+                                categoryKey={categoryKey}
+                                subscoreName={sub.name}
+                                contributorLabel={c.label}
+                                class="rt-comp-name rt-comp-name--truncate"
+                              >
+                                {c.label}
+                              </InlineTestLink>
+                              {
+                                !compareMode && (
+                                  <TooltipActionLinks
+                                    categoryKey={categoryKey}
+                                    subscoreName={sub.name}
+                                    contributorLabel={c.label}
+                                    compact
+                                    resultsOnly
+                                  />
+                                )
+                              }
+                            </>
                           )
                         }
                       </div>
-                      {
-                        !inlineTestLinks && (
-                          <TooltipActionLinks
-                            categoryKey={categoryKey}
-                            subscoreName={sub.name}
-                            contributorLabel={c.label}
-                            compact
-                          />
-                        )
-                      }
                     </div>
                   );
                 })

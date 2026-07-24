@@ -1,0 +1,33 @@
+---
+import type { TestCategoryNode } from '../../lib/test-framework';
+
+interface Props {
+  categories: TestCategoryNode[];
+}
+
+const { categories } = Astro.props;
+---
+
+<div class="test-subscore-browse-grid">
+  {
+    categories.map((cat) => (
+      <div class="test-subscore-browse-group">
+        <h4 class="test-subscore-browse-group__title">
+          <a href={cat.href}>{cat.name}</a>
+        </h4>
+        <ul class="test-subscore-browse-group__list">
+          {
+            cat.subscores.map((sub) => (
+              <li>
+                <a href={sub.href}>
+                  {sub.name}
+                  <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    ))
+  }
+</div>

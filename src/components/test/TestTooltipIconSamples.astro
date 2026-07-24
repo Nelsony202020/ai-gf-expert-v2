@@ -1,0 +1,18 @@
+---
+import InfoIcon from '../ui/InfoIcon.astro';
+---
+
+<div class="test-tooltip-icon-samples" aria-label="Tooltip icon example">
+  <div class="test-tooltip-icon-samples__item">
+    <span class="test-tooltip-icon-samples__preview" aria-hidden="true">
+      <span class="test-tooltip-icon-samples__mock-text">Example label</span>
+      <span class="rt-tooltip-trigger test-tooltip-icon-samples__trigger">
+        <InfoIcon size="xs" class="text-tertiary/45 hover:text-tertiary/70" />
+      </span>
+    </span>
+    <div class="test-tooltip-icon-samples__copy">
+      <strong>Tooltip icon</strong>
+      <span>Look for this icon next to scores, product cards, and labels throughout the site.</span>
+    </div>
+  </div>
+</div>

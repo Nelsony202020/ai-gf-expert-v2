@@ -1,5 +1,7 @@
 ---
 import type { HomeExplorerApp } from '../../data/homepage';
+import type { BreadcrumbItem } from '../ui/Breadcrumbs.astro';
+import Breadcrumbs from '../ui/Breadcrumbs.astro';
 import {
   APPS_PER_PAGE,
   buildExplorerPriceHistogram,
@@ -26,6 +28,7 @@ interface Props {
   title?: string;
   subtitle?: string;
   showCardMetrics?: boolean;
+  breadcrumbs?: BreadcrumbItem[];
 }
 
 const {
@@ -34,6 +37,7 @@ const {
   title = 'Explore AI girlfriend apps',
   subtitle = 'Find the best AI companion apps based on our hands-on testing of 24+ platforms.',
   showCardMetrics = true,
+  breadcrumbs,
 } = Astro.props;
 
 const histogram = buildExplorerPriceHistogram(apps);
@@ -60,6 +64,7 @@ function formatReviewCount(count: number): string {
   data-histogram={JSON.stringify(histogram)}
 >
   <div class="section-container px-4 md:px-8">
+    {breadcrumbs && <Breadcrumbs items={breadcrumbs} />}
     <div class="home-explorer__page-head">
       <div>
         <h1 id="app-directory-title" class="home-section__title">{title}</h1>

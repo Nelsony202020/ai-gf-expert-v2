@@ -7,9 +7,18 @@ interface Props {
   contributorLabel?: string;
   compact?: boolean;
   methodologyOnly?: boolean;
+  /** Compact rows — show only the view-results control (methodology lives on the label link). */
+  resultsOnly?: boolean;
 }
 
-const { categoryKey, subscoreName, contributorLabel, compact = false, methodologyOnly = false } = Astro.props;
+const {
+  categoryKey,
+  subscoreName,
+  contributorLabel,
+  compact = false,
+  methodologyOnly = false,
+  resultsOnly = false,
+} = Astro.props;
 
 const methodologyHref = subscoreName
   ? testSubscoreUrl(categoryKey, subscoreName)
@@ -38,19 +47,21 @@ const resultsAttrs = contributorLabel
     )
   }
   {
-    methodologyOnly && compact ? (
-      <a href={methodologyHref} class="rt-tooltip-actions__icon-link" aria-label={methodologyLabel} title={methodologyLabel}>
-        <span class="material-symbols-outlined text-[14px]">science</span>
-      </a>
-    ) : compact && !methodologyOnly ? (
-      <a href={methodologyHref} class="rt-tooltip-actions__icon-link" aria-label={methodologyLabel} title={methodologyLabel}>
-        <span class="material-symbols-outlined text-[14px]">menu_book</span>
-      </a>
-    ) : (
-      <a href={methodologyHref} class="rt-tooltip-actions__btn rt-tooltip-actions__btn--secondary">
-        <span class="material-symbols-outlined text-[14px]">science</span>
-        <span class="link-text">{methodologyLabel}</span>
-      </a>
+    !resultsOnly && (
+      methodologyOnly && compact ? (
+        <a href={methodologyHref} class="rt-tooltip-actions__icon-link" aria-label={methodologyLabel} title={methodologyLabel}>
+          <span class="material-symbols-outlined text-[14px]">science</span>
+        </a>
+      ) : compact && !methodologyOnly ? (
+        <a href={methodologyHref} class="rt-tooltip-actions__icon-link" aria-label={methodologyLabel} title={methodologyLabel}>
+          <span class="material-symbols-outlined text-[14px]">menu_book</span>
+        </a>
+      ) : (
+        <a href={methodologyHref} class="rt-tooltip-actions__btn rt-tooltip-actions__btn--secondary">
+          <span class="material-symbols-outlined text-[14px]">science</span>
+          <span class="link-text">{methodologyLabel}</span>
+        </a>
+      )
     )
   }
 </div>

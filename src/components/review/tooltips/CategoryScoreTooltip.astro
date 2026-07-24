@@ -6,7 +6,6 @@ import { buildAllScoreBins } from '../../../lib/score-distribution';
 import TooltipActionLinks from './TooltipActionLinks.astro';
 import InlineTestLink from './InlineTestLink.astro';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
-import ScoreMeaningCallout from './ScoreMeaningCallout.astro';
 import { getCategoryBrandIcon, getCategoryBrandIconLight } from '../../../lib/category-brand-icons';
 import BrandIcon from '../../ui/BrandIcon.astro';
 import InfoIcon from '../../ui/InfoIcon.astro';
@@ -147,7 +146,6 @@ const useDarkBrandIconOnly = category.key === 'customization' || category.key ==
           )
         }
       </div>
-      {!compareTableOnly && !hideSiteAverage && !compareAverageOnly && <ScoreMeaningCallout score={currentScore} avg={avgScore} />}
       {!compareTableOnly && !inlineTestLinks && <TooltipActionLinks categoryKey={category.key} methodologyOnly={linksMethodologyOnly} />}
     </div>
 
@@ -177,8 +175,23 @@ const useDarkBrandIconOnly = category.key === 'customization' || category.key ==
                                 </InlineTestLink>
                               ) : (
                                 <>
-                                  <span class="rt-comp-name rt-comp-name--truncate">{sub.name}</span>
-                                  <TooltipActionLinks categoryKey={category.key} subscoreName={sub.name} compact methodologyOnly={linksMethodologyOnly} />
+                                  <InlineTestLink
+                                    categoryKey={category.key}
+                                    subscoreName={sub.name}
+                                    class="rt-comp-name rt-comp-name--truncate"
+                                  >
+                                    {sub.name}
+                                  </InlineTestLink>
+                                  {
+                                    !linksMethodologyOnly && (
+                                      <TooltipActionLinks
+                                        categoryKey={category.key}
+                                        subscoreName={sub.name}
+                                        compact
+                                        resultsOnly
+                                      />
+                                    )
+                                  }
                                 </>
                               )
                             }

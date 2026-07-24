@@ -1,0 +1,57 @@
+---
+import type { TestSubscoreNode } from '../../lib/test-framework';
+import { getCategoryBrandIcon } from '../../lib/category-brand-icons';
+
+interface Props {
+  categoryName: string;
+  categoryKey: string;
+  subscores: TestSubscoreNode[];
+}
+
+const { categoryName, categoryKey, subscores } = Astro.props;
+
+const brandIcon = getCategoryBrandIcon(categoryKey);
+
+const subscoreIcons: Record<string, string> = {
+  Understanding: 'psychology',
+  Realism: 'sentiment_satisfied',
+  Reliability: 'verified_user',
+};
+---
+
+<div class="test-subscore-example">
+  <div class="test-subscore-example__header">
+    {
+      brandIcon && (
+        <span class="test-subscore-example__cat-icon" aria-hidden="true">
+          <img src={brandIcon} alt="" width="36" height="36" loading="lazy" class="object-contain" />
+        </span>
+      )
+    }
+    <div class="test-subscore-example__intro">
+      <h3 class="test-subscore-example__title">Example: {categoryName}</h3>
+      <p class="test-subscore-example__lead">
+        The {categoryName} category is evaluated across three subscores.
+      </p>
+    </div>
+  </div>
+
+  <div class="test-subscore-example__cards">
+    {
+      subscores.map((sub, i) => (
+        <article class="test-subscore-example__card">
+          <span class="test-subscore-example__num" aria-hidden="true">{i + 1}</span>
+          <span class="test-subscore-example__sub-icon material-symbols-outlined" aria-hidden="true">
+            {subscoreIcons[sub.name] ?? 'analytics'}
+          </span>
+          <h4 class="test-subscore-example__sub-title">{sub.name}</h4>
+          <p class="test-subscore-example__sub-desc">{sub.description}</p>
+          <a class="test-inline-link test-subscore-example__link" href={sub.href}>
+            View {sub.name} methodology
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+          </a>
+        </article>
+      ))
+    }
+  </div>
+</div>

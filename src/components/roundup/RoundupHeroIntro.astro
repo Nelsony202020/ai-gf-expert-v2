@@ -8,6 +8,7 @@ import InfoIcon from '../ui/InfoIcon.astro';
 import VerifiedCheck from '../ui/VerifiedCheck.astro';
 import ShareMenu from '../ui/ShareMenu.astro';
 import RoundupHubNav from './RoundupHubNav.astro';
+import Breadcrumbs from '../ui/Breadcrumbs.astro';
 
 interface Props {
   roundup: Roundup;
@@ -20,13 +21,13 @@ const shareTitle = `${roundup.title} (${monthYear}) — AI Girlfriend Expert`;
 ---
 
 <div class="roundup-hero-intro">
-  <nav class="text-[12px] font-medium text-tertiary mb-5 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
-    <a href="/" class="hover:text-accent transition-colors">Home</a>
-    <span aria-hidden="true">›</span>
-    <a href="/best/ai-girlfriend" class="hover:text-accent transition-colors">Roundups</a>
-    <span aria-hidden="true">›</span>
-    <span class="text-on-surface-variant">{roundup.title}</span>
-  </nav>
+  <Breadcrumbs
+    items={[
+      { label: 'Home', href: '/' },
+      { label: 'Roundups', href: '/best/ai-girlfriend' },
+      { label: roundup.title },
+    ]}
+  />
 
   <div class="roundup-hero-intro__title-row">
     <h1 class="roundup-hero-intro__title text-3xl md:text-4xl lg:text-5xl font-black text-on-surface tracking-tight mb-0">

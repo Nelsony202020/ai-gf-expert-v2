@@ -1,0 +1,107 @@
+---
+import type { Subscore } from '../../../data/products';
+import { products } from '../../../data/products';
+import { equalWeights, fmtScore, getScoreChipClass, weightedValue } from '../../../lib/scores';
+import { buildAllScoreBins } from '../../../lib/score-distribution';
+import ScoreDistributionChart from './ScoreDistributionChart.astro';
+
+interface Props {
+  categoryKey: string;
+  sub: Subscore;
+  embed?: boolean;
+  annotate?: boolean;
+}
+
+const { categoryKey, sub, embed = false, annotate = false } = Astro.props;
+
+const currentScore = sub.score;
+const currentChip = getScoreChipClass(currentScore);
+
+const contributorWeights = equalWeights(sub.contributors.length);
+
+const contributorPoints = sub.contributors.map((c, i) => {
+  const internal = c.internalScore ?? sub.score;
+  const weight = contributorWeights[i] ?? 0;
+  const contribution = weightedValue(internal, weight);
+  return { ...c, internal, weight, contribution };
+});
+
+const scorePoints = products
+  .map((p) => {
+    const cat = p.categories.find((c) => c.key === categoryKey);
+    const matchSub = cat?.subscores.find((s) => s.name === sub.name);
+    return matchSub ? { slug: p.slug, name: p.name, score: matchSub.score } : null;
+  })
+  .filter((x): x is { slug: string; name: string; score: number } => !!x);
+
+const avgScore = scorePoints.length
+  ? scorePoints.reduce((s, x) => s + x.score, 0) / scorePoints.length
+  : currentScore;
+
+const bins = buildAllScoreBins(scorePoints);
+
+const panelClass = [
+  'ratings-tooltip-panel',
+  'ratings-tooltip-panel--compact',
+  embed && 'ratings-tooltip-panel--embed',
+  embed && 'test-tooltip-demo__panel',
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class={panelClass}>
+  <div class="ratings-tooltip-panel__header">
+    <div class="ratings-tooltip-panel__header-grid">
+      <div class="min-w-0">
+        <p class="ratings-tooltip-panel__section-title">What it is</p>
+        <p class="ratings-tooltip-panel__desc">{sub.description}</p>
+      </div>
+      <div class="ratings-tooltip-panel__score-block">
+        <div class="ratings-tooltip-panel__score-row">
+          <span
+            class={`rt-score-chip rt-score-chip--outline ${currentChip}`}
+            {...(annotate ? { 'data-annotation-target': '1' } : {})}
+          >{fmtScore(currentScore)}</span>
+          <span class="ratings-tooltip-panel__score-label">{sub.name}</span>
+        </div>
+        <p
+          class="ratings-tooltip-panel__avg"
+          {...(annotate ? { 'data-annotation-target': '2' } : {})}
+        >
+          Avg: <span class="tabular-nums">{fmtScore(avgScore)}</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="ratings-tooltip-panel__body">
+    {
+      contributorPoints.length > 0 && (
+        <div {...(annotate ? { 'data-annotation-target': '3' } : {})}>
+          <p class="ratings-tooltip-panel__section-title">Evidence</p>
+          <div class="rt-comp-list">
+            {
+              contributorPoints.map((c) => {
+                const chip = getScoreChipClass(c.internal);
+                return (
+                  <div class="rt-comp-row rt-comp-row--inline">
+                    <div class="rt-comp-row__main">
+                      <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(c.internal)}</span>
+                      <span class="rt-comp-name rt-comp-name--truncate">{c.label}</span>
+                    </div>
+                  </div>
+                );
+              })
+            }
+          </div>
+        </div>
+      )
+    }
+
+    <div {...(annotate ? { 'data-annotation-target': '4' } : {})}>
+      <p class="ratings-tooltip-panel__section-title">Score distribution</p>
+      <ScoreDistributionChart bins={bins} />
+    </div>
+  </div>
+</div>

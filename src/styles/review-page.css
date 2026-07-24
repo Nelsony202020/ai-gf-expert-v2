@@ -1,12 +1,10 @@
-/* Review page — sticky tab bar synced with auto-hiding site header */
+/* Review page — sticky tab bar */
 
 :root {
   --site-header-height: 3.25rem;
-  --site-header-offset: var(--site-header-height);
+  --site-header-offset: 0px;
   --review-tabbar-height: 3.25rem;
   --roundup-hub-nav-height: 2.625rem;
-  --scroll-chrome-duration: 0.28s;
-  --scroll-chrome-easing: ease;
 }
 
 @media (min-width: 768px) {
@@ -24,13 +22,9 @@
 
 [data-tabbar].review-tabbar {
   position: sticky;
-  top: var(--site-header-offset, var(--site-header-height));
+  top: 0;
   z-index: 40;
   background: #fff;
-}
-
-.site-header--hidden ~ main [data-tabbar].review-tabbar {
-  top: var(--site-header-offset, 0px);
 }
 
 [data-theme='dark'] [data-tabbar].review-tabbar {
@@ -40,11 +34,6 @@
 
 @media (min-width: 1024px) {
   .overview-sidebar-stack {
-    top: calc(var(--site-header-height) + var(--review-tabbar-height));
-    transition: top 0.28s ease;
-  }
-
-  .site-header--hidden ~ main .overview-sidebar-stack {
     top: var(--review-tabbar-height);
   }
 }

@@ -1,0 +1,30 @@
+---
+import { products } from '../../data/products';
+import OverallScoreTooltipPanel from '../review/tooltips/OverallScoreTooltipPanel.astro';
+import TestTooltipAnnotation from './TestTooltipAnnotation.astro';
+import { testTooltipsOverallAnnotations } from '../../data/test-tooltips-content';
+
+const product = products[0];
+---
+
+<TestTooltipAnnotation
+  idPrefix="overall"
+  ariaLabel="Overall performance tooltip annotated example"
+  annotations={testTooltipsOverallAnnotations}
+  leftCallouts={[
+    { n: 1, row: 'top' },
+    { n: 3, row: 'bottom' },
+  ]}
+  rightCallouts={[
+    { n: 2, row: 'top' },
+    { n: 4, row: 'bottom' },
+  ]}
+  connectors={[
+    { n: '1', side: 'left' },
+    { n: '2', side: 'right' },
+    { n: '3', side: 'left' },
+    { n: '4', side: 'right' },
+  ]}
+>
+  <OverallScoreTooltipPanel product={product} methodologyOnly embed annotate />
+</TestTooltipAnnotation>

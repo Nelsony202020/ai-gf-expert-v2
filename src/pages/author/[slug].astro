@@ -5,6 +5,7 @@ import Footer from '../../components/Footer.astro';
 import SocialIcon from '../../components/ui/SocialIcon.astro';
 import { authors, getAuthor } from '../../data/authors';
 import VerifiedCheck from '../../components/ui/VerifiedCheck.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
 
 export function getStaticPaths() {
   return Object.keys(authors).map((slug) => ({ params: { slug } }));
@@ -23,10 +24,12 @@ const title = `${author.name} — Lovelace Reviews`;
 <BaseLayout title={title} description={author.bio}>
   <Header />
   <main class="section-container px-4 md:px-8 py-10 md:py-14">
-    <nav class="text-[12px] font-medium text-tertiary mb-8">
-      <a class="hover:text-primary-container" href="/">Home</a> /
-      <span class="text-on-surface">{author.name}</span>
-    </nav>
+    <Breadcrumbs
+      items={[
+        { label: 'Home', href: '/' },
+        { label: author.name },
+      ]}
+    />
 
     <div class="max-w-3xl">
       <div class="flex items-start gap-5 mb-8">

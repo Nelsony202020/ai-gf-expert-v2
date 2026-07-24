@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import BrandIcon from '../components/ui/BrandIcon.astro';
+import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
 import { brandIcons } from '../lib/brand-icons';
 
 const supportCards = [
@@ -56,11 +57,12 @@ const faqs = [
   <Header />
   <main class="contact-page">
     <div class="section-container px-4 md:px-8 py-10 md:py-14">
-      <nav class="text-sm text-tertiary mb-8 flex items-center gap-1.5" aria-label="Breadcrumb">
-        <a href="/" class="hover:text-accent transition-colors">Home</a>
-        <span aria-hidden="true">›</span>
-        <span class="text-on-surface-variant font-semibold">Contact</span>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'Contact' },
+        ]}
+      />
 
       <section class="contact-hero grid lg:grid-cols-2 gap-10 lg:gap-14 items-start mb-16">
         <div>

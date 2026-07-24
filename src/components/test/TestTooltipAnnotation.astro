@@ -1,0 +1,138 @@
+---
+import type {
+  TestTooltipAboveCalloutPlacement,
+  TestTooltipAnnotationCalloutPlacement,
+  TestTooltipAnnotationConnector,
+  TestTooltipAnnotationItem,
+} from '../../data/test-tooltips-content';
+import TestTooltipAnnotationCallout from './TestTooltipAnnotationCallout.astro';
+
+interface Props {
+  idPrefix: string;
+  ariaLabel: string;
+  annotations: TestTooltipAnnotationItem[];
+  leftCallouts: TestTooltipAnnotationCalloutPlacement[];
+  rightCallouts: TestTooltipAnnotationCalloutPlacement[];
+  aboveCallouts?: TestTooltipAboveCalloutPlacement[];
+  connectors: TestTooltipAnnotationConnector[];
+  variant?: 'default' | 'product' | 'wide';
+}
+
+const {
+  idPrefix,
+  ariaLabel,
+  annotations,
+  leftCallouts,
+  rightCallouts,
+  aboveCallouts = [],
+  connectors,
+  variant = 'default',
+} = Astro.props;
+
+const variantClass =
+  variant === 'product'
+    ? ' test-tooltip-annotation--product'
+    : variant === 'wide'
+      ? ' test-tooltip-annotation--wide'
+      : '';
+
+const byNumber = new Map(annotations.map((item) => [item.n, item]));
+
+function getCallout(n: number) {
+  const item = byNumber.get(n);
+  if (!item) throw new Error(`Missing annotation copy for callout ${n}`);
+  return item;
+}
+---
+
+<figure
+  class={`test-tooltip-annotation${variantClass}`}
+  data-tooltip-annotation
+  data-annotation-connectors={JSON.stringify(connectors)}
+  aria-label={ariaLabel}
+>
+  <svg class="test-tooltip-annotation__svg" aria-hidden="true" focusable="false"></svg>
+
+  <div class={`test-tooltip-annotation__canvas${aboveCallouts.length ? ' test-tooltip-annotation__canvas--has-above' : ''}`}>
+    {
+      aboveCallouts.map(({ n, align }) => {
+        const item = getCallout(n);
+        return (
+          <TestTooltipAnnotationCallout
+            idPrefix={idPrefix}
+            n={item.n}
+            icon={item.icon}
+            label={item.label}
+            desc={item.desc}
+            side="above"
+            align={align}
+          />
+        );
+      })
+    }
+    <div class="test-tooltip-annotation__side test-tooltip-annotation__side--left">
+      {
+        leftCallouts.map(({ n, row }) => {
+          const item = getCallout(n);
+          return (
+            <TestTooltipAnnotationCallout
+              idPrefix={idPrefix}
+              n={item.n}
+              icon={item.icon}
+              label={item.label}
+              desc={item.desc}
+              side="left"
+              row={row}
+            />
+          );
+        })
+      }
+    </div>
+
+    <div class="test-tooltip-annotation__tooltip" data-annotation-tooltip>
+      <slot />
+    </div>
+
+    <div class="test-tooltip-annotation__side test-tooltip-annotation__side--right">
+      {
+        rightCallouts.map(({ n, row }) => {
+          const item = getCallout(n);
+          return (
+            <TestTooltipAnnotationCallout
+              idPrefix={idPrefix}
+              n={item.n}
+              icon={item.icon}
+              label={item.label}
+              desc={item.desc}
+              side="right"
+              row={row}
+            />
+          );
+        })
+      }
+    </div>
+  </div>
+
+  <ol class="test-tooltip-annotation__mobile-list">
+    {
+      annotations.map((item) => (
+        <li id={`${idPrefix}-part-${item.n}-desc`}>
+          <span class="test-tooltip-annotation__icon" aria-hidden="true">
+            <span class="material-symbols-outlined">{item.icon}</span>
+          </span>
+          <div class="test-tooltip-annotation__copy">
+            <strong class="test-tooltip-annotation__label">{item.label}</strong>
+            <p class="test-tooltip-annotation__desc">{item.desc}</p>
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+</figure>
+
+<script>
+  import { initTooltipAnnotations } from './test-tooltip-annotation.client.ts';
+
+  initTooltipAnnotations();
+  document.addEventListener('astro:page-load', initTooltipAnnotations);
+</script>

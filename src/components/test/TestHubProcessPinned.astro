@@ -1,0 +1,97 @@
+---
+interface Step {
+  title: string;
+  body: string;
+}
+
+interface Props {
+  steps: Step[];
+}
+
+const { steps } = Astro.props;
+
+/** Pin centers — aligned with desktop card positions (top + ~55px). */
+const pinPoints = [
+  { x: 180, y: 55 },
+  { x: 720, y: 335 },
+  { x: 180, y: 615 },
+  { x: 720, y: 895 },
+  { x: 180, y: 1175 },
+  { x: 720, y: 1455 },
+  { x: 180, y: 1735 },
+  { x: 720, y: 2015 },
+];
+
+/** Smooth cubic spline through pin points (Catmull-Rom style). */
+function buildSmoothPath(points: { x: number; y: number }[], tension = 1.15): string {
+  if (points.length < 2) return '';
+  let d = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+    const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension;
+    const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension;
+    const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension;
+    const cp2y = p2.y - ((p3.y - p1.y) / 6) * tension;
+    d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x} ${p2.y}`;
+  }
+
+  return d;
+}
+
+const pathD = buildSmoothPath(pinPoints);
+const pathViewHeight = 2015;
+const pathEndY = 2015;
+
+/** Alternating layout positions for desktop pinned cards. */
+const positions = [
+  { className: 'test-process-pin--1', rotate: 'test-process-pin--tilt-r' },
+  { className: 'test-process-pin--2', rotate: 'test-process-pin--tilt-l' },
+  { className: 'test-process-pin--3', rotate: 'test-process-pin--tilt-r' },
+  { className: 'test-process-pin--4', rotate: 'test-process-pin--tilt-l' },
+  { className: 'test-process-pin--5', rotate: 'test-process-pin--tilt-r' },
+  { className: 'test-process-pin--6', rotate: 'test-process-pin--tilt-l' },
+  { className: 'test-process-pin--7', rotate: 'test-process-pin--tilt-r' },
+  { className: 'test-process-pin--8', rotate: 'test-process-pin--tilt-l' },
+];
+---
+
+<div class="test-process-pinned">
+  <div
+    class="test-process-pinned__lines"
+    style={`--test-process-path-end: ${pathEndY}px`}
+    aria-hidden="true"
+  >
+    <svg class="test-process-pinned__path" viewBox={`0 0 1000 ${pathViewHeight}`} preserveAspectRatio="none">
+      <path class="test-process-pinned__path-flow" d={pathD} />
+    </svg>
+  </div>
+
+  <div class="test-process-pinned__track">
+    {
+      steps.map((step, index) => {
+        const position = positions[index % positions.length];
+        const num = String(index + 1).padStart(2, '0');
+
+        return (
+          <article class={`test-process-pin ${position.className} ${position.rotate}`}>
+            <div class="test-process-pin__shell">
+              <svg class="test-process-pin__pin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M16 3a1 1 0 0 1 .117 1.993l-.117 .007v4.764l1.894 3.789a1 1 0 0 1 .1 .331l.006 .116v2a1 1 0 0 1 -.883 .993l-.117 .007h-4v4a1 1 0 0 1 -1.993 .117l-.007 -.117v-4h-4a1 1 0 0 1 -.993 -.883l-.007 -.117v-2a1 1 0 0 1 .06 -.34l.046 -.107l1.894 -3.791v-4.762a1 1 0 0 1 -.117 -1.993l.117 -.007h8z" />
+              </svg>
+              <div class="test-process-pin__card">
+                <span class="test-process-pin__num">{num}</span>
+                <h3 class="test-process-pin__title">{step.title}</h3>
+                <p class="test-process-pin__body">{step.body}</p>
+              </div>
+            </div>
+          </article>
+        );
+      })
+    }
+  </div>
+</div>

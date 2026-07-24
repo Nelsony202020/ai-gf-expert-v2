@@ -1,0 +1,289 @@
+---
+import { products } from '../../data/products';
+import { fmtScore, getScoreChipClass } from '../../lib/scores';
+import { buildAllScoreBins } from '../../lib/score-distribution';
+import ScoreDistributionChart from '../review/tooltips/ScoreDistributionChart.astro';
+import RatingHierarchyPipeline from '../review/tooltips/RatingHierarchyPipeline.astro';
+import { getCategoryBrandIcon, getCategoryBrandIconLight } from '../../lib/category-brand-icons';
+import BrandIcon from '../ui/BrandIcon.astro';
+
+interface Props {
+  variant: 'overall' | 'category' | 'subscore' | 'evidence' | 'product';
+}
+
+const { variant } = Astro.props;
+
+const product = products[0];
+const chatCategory = product.categories.find((c) => c.key === 'chat')!;
+const understanding = chatCategory.subscores.find((s) => s.name === 'Understanding')!;
+const memory = understanding.contributors.find((c) => c.label === 'Memory')!;
+
+const chatChip = getScoreChipClass(chatCategory.score);
+const subChip = getScoreChipClass(understanding.score);
+const overallChip = getScoreChipClass(product.overallScore);
+
+const scorePoints = products
+  .map((p) => {
+    const cat = p.categories.find((c) => c.key === 'chat');
+    return cat ? { slug: p.slug, name: p.name, score: cat.score } : null;
+  })
+  .filter((x): x is { slug: string; name: string; score: number } => !!x);
+
+const bins = buildAllScoreBins(scorePoints);
+const brandIcon = getCategoryBrandIcon('chat');
+const brandIconLight = getCategoryBrandIconLight('chat');
+const embedClass = 'ratings-tooltip-panel--embed';
+---
+
+{
+  variant === 'overall' && (
+    <figure class="test-tooltip-demo">
+      <div class="test-tooltip-demo__frame">
+        <div class={`ratings-tooltip-panel ${embedClass} ratings-tooltip-panel--overall ratings-tooltip-panel--compact test-tooltip-demo__panel`}>
+          <div class="ratings-tooltip-panel__header ratings-tooltip-panel__header--compact">
+            <div class="ratings-tooltip-panel__header-grid">
+              <div class="min-w-0">
+                <p class="ratings-tooltip-panel__section-title">What it is</p>
+                <p class="ratings-tooltip-panel__desc">{product.overallSummary}</p>
+              </div>
+              <div class="ratings-tooltip-panel__score-block">
+                <div class="ratings-tooltip-panel__score-row">
+                  <span class={`rt-score-chip ${overallChip}`}>{fmtScore(product.overallScore)}</span>
+                  <span class="ratings-tooltip-panel__score-label">{product.name}</span>
+                </div>
+                <p class="ratings-tooltip-panel__avg">
+                  Avg: <span class="tabular-nums">8.5</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
+            <div class="ratings-tooltip-panel__split">
+              <div class="ratings-tooltip-panel__split-col">
+                <p class="ratings-tooltip-panel__section-title">Where this sits</p>
+                <RatingHierarchyPipeline highlight="overall" brandName={product.name} showTitle={false} />
+              </div>
+              <div class="ratings-tooltip-panel__split-col">
+                <p class="ratings-tooltip-panel__section-title">Category scores</p>
+                <div class="rt-comp-list rt-comp-list--dense">
+                  {
+                    product.categories.slice(0, 4).map((category) => {
+                      const chip = getScoreChipClass(category.score);
+                      return (
+                        <div class="rt-comp-row rt-comp-row--inline">
+                          <div class="rt-comp-row__main">
+                            <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(category.score)}</span>
+                            <span class="rt-comp-name rt-comp-name--truncate">{category.name}</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+  )
+}
+
+{
+  variant === 'category' && (
+    <figure class="test-tooltip-demo">
+      <div class="test-tooltip-demo__frame">
+        <div class={`ratings-tooltip-panel ${embedClass} ratings-tooltip-panel--compact ratings-tooltip-panel--category test-tooltip-demo__panel`}>
+          <div class="ratings-tooltip-panel__header">
+            <div class="ratings-tooltip-panel__header-grid">
+              <div class="ratings-tooltip-panel__what-block min-w-0">
+                <p class="ratings-tooltip-panel__section-title">What it is</p>
+                <div class="ratings-tooltip-panel__what-row">
+                  <p class="ratings-tooltip-panel__desc">{chatCategory.description}</p>
+                  {
+                    brandIcon && (
+                      <div class="ratings-tooltip-panel__brand-slot" aria-hidden="true">
+                        {
+                          brandIconLight ? (
+                            <BrandIcon src={brandIcon} srcLight={brandIconLight} width={56} height={56} />
+                          ) : (
+                            <img src={brandIcon} alt="" width="56" height="56" loading="lazy" class="object-contain" />
+                          )
+                        }
+                      </div>
+                    )
+                  }
+                </div>
+              </div>
+              <div class="ratings-tooltip-panel__score-block">
+                <div class="ratings-tooltip-panel__score-row">
+                  <span class={`rt-score-chip rt-score-chip--outline ${chatChip}`}>{fmtScore(chatCategory.score)}</span>
+                  <span class="ratings-tooltip-panel__score-label">Chat</span>
+                </div>
+                <p class="ratings-tooltip-panel__avg">
+                  Avg: <span class="tabular-nums">8.7</span>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="ratings-tooltip-panel__body">
+            <div>
+              <p class="ratings-tooltip-panel__section-title">Subscores</p>
+              <div class="rt-comp-list">
+                {
+                  chatCategory.subscores.map((sub) => {
+                    const chip = getScoreChipClass(sub.score);
+                    return (
+                      <div class="rt-comp-row rt-comp-row--inline">
+                        <div class="rt-comp-row__main">
+                          <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(sub.score)}</span>
+                          <span class="rt-comp-name rt-comp-name--truncate">{sub.name}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                }
+              </div>
+            </div>
+            <div>
+              <p class="ratings-tooltip-panel__section-title">Score distribution</p>
+              <ScoreDistributionChart bins={bins} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+  )
+}
+
+{
+  variant === 'subscore' && (
+    <figure class="test-tooltip-demo">
+      <div class="test-tooltip-demo__frame">
+        <div class={`ratings-tooltip-panel ${embedClass} ratings-tooltip-panel--compact test-tooltip-demo__panel`}>
+          <div class="ratings-tooltip-panel__header">
+            <div class="ratings-tooltip-panel__header-grid">
+              <div class="min-w-0">
+                <p class="ratings-tooltip-panel__section-title">What it is</p>
+                <p class="ratings-tooltip-panel__desc">{understanding.description}</p>
+              </div>
+              <div class="ratings-tooltip-panel__score-block">
+                <div class="ratings-tooltip-panel__score-row">
+                  <span class={`rt-score-chip rt-score-chip--outline ${subChip}`}>{fmtScore(understanding.score)}</span>
+                  <span class="ratings-tooltip-panel__score-label">Understanding</span>
+                </div>
+                <p class="ratings-tooltip-panel__avg">
+                  Avg: <span class="tabular-nums">8.4</span>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="ratings-tooltip-panel__body">
+            <div>
+              <p class="ratings-tooltip-panel__section-title">Evidence</p>
+              <div class="rt-comp-list">
+                {
+                  understanding.contributors.slice(0, 3).map((c) => {
+                    const chip = getScoreChipClass(c.internalScore ?? understanding.score);
+                    return (
+                      <div class="rt-comp-row rt-comp-row--inline">
+                        <div class="rt-comp-row__main">
+                          <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(c.internalScore ?? understanding.score)}</span>
+                          <span class="rt-comp-name rt-comp-name--truncate">{c.label}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                }
+              </div>
+            </div>
+            <div>
+              <p class="ratings-tooltip-panel__section-title">Score distribution</p>
+              <ScoreDistributionChart bins={bins} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+  )
+}
+
+{
+  variant === 'evidence' && (
+    <figure class="test-tooltip-demo">
+      <div class="test-tooltip-demo__frame test-tooltip-demo__frame--narrow">
+        <div class={`ratings-tooltip-panel ${embedClass} ratings-tooltip-panel--help test-tooltip-demo__panel`}>
+          <div class="ratings-tooltip-panel__header">
+            <p class="ratings-tooltip-panel__section-title">Memory</p>
+          </div>
+          <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
+            <p class="ratings-tooltip-panel__desc">
+              Measures how accurately the app remembers tested facts across a conversation.
+            </p>
+            <dl class="test-tooltip-demo__facts">
+              <div>
+                <dt>Measured result</dt>
+                <dd>{memory.value}</dd>
+              </div>
+              <div>
+                <dt>Sample size</dt>
+                <dd>12 fixed facts across 3 sessions</dd>
+              </div>
+              <div>
+                <dt>Scoring threshold</dt>
+                <dd>80%+ = Excellent, 65%+ = Good</dd>
+              </div>
+              <div>
+                <dt>Methodology version</dt>
+                <dd>V3.1 · July 2026</dd>
+              </div>
+            </dl>
+            <p class="test-tooltip-demo__method-link">
+              <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+              View Memory test methodology
+            </p>
+          </div>
+        </div>
+      </div>
+    </figure>
+  )
+}
+
+{
+  variant === 'product' && (
+    <figure class="test-tooltip-demo">
+      <div class="test-tooltip-demo__frame test-tooltip-demo__frame--narrow">
+        <div class={`ratings-tooltip-panel ${embedClass} ratings-tooltip-panel--brand-card test-tooltip-demo__panel`}>
+          <div class="home-brand-tip">
+            <p class="home-brand-tip__title">
+              <span>{product.name}</span>
+            </p>
+            <p class="home-brand-tip__liner">{product.overallSummary}</p>
+            <div class="home-brand-tip__divider" aria-hidden="true"></div>
+            <ul class="home-brand-tip__rows">
+              <li class="home-brand-tip__row">
+                <span class="home-brand-tip__icon home-brand-tip__icon--best" aria-hidden="true">
+                  <span class="material-symbols-outlined">group</span>
+                </span>
+                <div class="home-brand-tip__copy">
+                  <span class="home-brand-tip__label">Best for</span>
+                  <span class="home-brand-tip__value">Realistic chat and immersive media</span>
+                </div>
+              </li>
+              <li class="home-brand-tip__row">
+                <span class="home-brand-tip__icon home-brand-tip__icon--watch" aria-hidden="true">
+                  <span class="material-symbols-outlined">warning</span>
+                </span>
+                <div class="home-brand-tip__copy">
+                  <span class="home-brand-tip__label">Watch out for</span>
+                  <span class="home-brand-tip__value">Image generation can be slower than top rivals</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </figure>
+  )
+}

@@ -14,7 +14,14 @@ const apps = buildExplorerApps();
 >
   <Header />
   <main>
-    <AppDirectory apps={apps} basePath="/apps" />
+    <AppDirectory
+      apps={apps}
+      basePath="/apps"
+      breadcrumbs={[
+        { label: 'Home', href: '/' },
+        { label: 'Explore apps' },
+      ]}
+    />
   </main>
   <Footer />
 </BaseLayout>

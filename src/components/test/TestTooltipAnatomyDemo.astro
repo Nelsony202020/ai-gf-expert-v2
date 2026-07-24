@@ -1,0 +1,105 @@
+---
+import { products } from '../../data/products';
+import { fmtScore, getScoreChipClass } from '../../lib/scores';
+import { getCategoryBrandIcon } from '../../lib/category-brand-icons';
+import { testTooltipsAnatomyCallouts } from '../../data/test-tooltips-content';
+import TestTooltipCalloutBadge from './TestTooltipCalloutBadge.astro';
+
+const product = products[0];
+const chatCategory = product.categories.find((c) => c.key === 'chat')!;
+const chatChip = getScoreChipClass(chatCategory.score);
+const brandIcon = getCategoryBrandIcon('chat');
+---
+
+<figure class="test-tooltip-anatomy" id="tooltip-anatomy-demo" aria-labelledby="tooltip-anatomy-caption">
+  <div class="test-tooltip-demo__frame">
+    <div class="ratings-tooltip-panel ratings-tooltip-panel--embed ratings-tooltip-panel--compact ratings-tooltip-panel--category test-tooltip-demo__panel">
+      <div class="ratings-tooltip-panel__header">
+        <div class="ratings-tooltip-panel__header-grid">
+          <div
+            class="test-tooltip-callout-target ratings-tooltip-panel__what-block min-w-0"
+            id="tooltip-callout-3"
+            data-callout="3"
+          >
+            <TestTooltipCalloutBadge n={3} anchorId="tooltip-callout-3" />
+            <p class="ratings-tooltip-panel__section-title">What it is</p>
+            <div class="ratings-tooltip-panel__what-row">
+              <p class="ratings-tooltip-panel__desc">{chatCategory.description}</p>
+              {
+                brandIcon && (
+                  <div class="ratings-tooltip-panel__brand-slot" aria-hidden="true">
+                    <img src={brandIcon} alt="" width="56" height="56" loading="lazy" class="object-contain brand-icon brand-icon--dark brand-icon--always" />
+                  </div>
+                )
+              }
+            </div>
+          </div>
+
+          <div class="ratings-tooltip-panel__score-block">
+            <div class="test-tooltip-callout-target" id="tooltip-callout-1" data-callout="1">
+              <TestTooltipCalloutBadge n={1} anchorId="tooltip-callout-1" />
+              <div class="ratings-tooltip-panel__score-row">
+                <span class={`rt-score-chip rt-score-chip--outline ${chatChip}`}>{fmtScore(chatCategory.score)}</span>
+                <span class="ratings-tooltip-panel__score-label">Chat</span>
+              </div>
+            </div>
+            <div class="test-tooltip-callout-target ratings-tooltip-panel__avg" id="tooltip-callout-2" data-callout="2">
+              <TestTooltipCalloutBadge n={2} anchorId="tooltip-callout-2" />
+              Avg: <span class="tabular-nums">8.7</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ratings-tooltip-panel__body">
+        <div class="test-tooltip-callout-target" id="tooltip-callout-4" data-callout="4">
+          <TestTooltipCalloutBadge n={4} anchorId="tooltip-callout-4" />
+          <p class="ratings-tooltip-panel__section-title">Subscores</p>
+          <div class="rt-comp-list">
+            {
+              chatCategory.subscores.map((sub) => {
+                const chip = getScoreChipClass(sub.score);
+                return (
+                  <div class="rt-comp-row rt-comp-row--inline">
+                    <div class="rt-comp-row__main">
+                      <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(sub.score)}</span>
+                      <span class="rt-comp-name rt-comp-name--truncate">{sub.name}</span>
+                    </div>
+                  </div>
+                );
+              })
+            }
+          </div>
+        </div>
+
+        <p class="test-tooltip-demo__method-link test-tooltip-callout-target" id="tooltip-callout-5" data-callout="5">
+          <TestTooltipCalloutBadge n={5} anchorId="tooltip-callout-5" />
+          <span class="material-symbols-outlined" aria-hidden="true">science</span>
+          View Chat methodology
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <figcaption id="tooltip-anatomy-caption" class="sr-only">Example category score tooltip with numbered callouts</figcaption>
+
+  <ol class="test-tooltip-callout-list">
+    {
+      testTooltipsAnatomyCallouts.map((item) => (
+        <li id={`${item.anchorId}-desc`} data-callout-desc={item.n}>
+          <a
+            href={`#${item.anchorId}`}
+            class="test-tooltip-callout-list__n"
+            data-tooltip-callout-link={item.n}
+          >
+            {item.n}
+          </a>
+          <div>
+            <strong>{item.label}</strong>
+            <p>{item.desc}</p>
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+</figure>

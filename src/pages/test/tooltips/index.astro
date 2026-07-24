@@ -1,0 +1,441 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import TestBreadcrumbs from '../../../components/test/TestBreadcrumbs.astro';
+import TestTooltipIconSamples from '../../../components/test/TestTooltipIconSamples.astro';
+import TestTooltipOverallAnnotation from '../../../components/test/TestTooltipOverallAnnotation.astro';
+import TestTooltipProductAnnotation from '../../../components/test/TestTooltipProductAnnotation.astro';
+import TestTooltipCategoryAnnotation from '../../../components/test/TestTooltipCategoryAnnotation.astro';
+import TestTooltipSubscoreAnnotation from '../../../components/test/TestTooltipSubscoreAnnotation.astro';
+import TestHubSidebar from '../../../components/test/TestHubSidebar.astro';
+import TestTooltipUsageRow from '../../../components/test/TestTooltipUsageRow.astro';
+import RoundupFaq from '../../../components/roundup/RoundupFaq.astro';
+import { getTestCategories } from '../../../lib/test-framework';
+import {
+  testTooltipsCategoryUsage,
+  testTooltipsFaq,
+  testTooltipsOverallUsage,
+  testTooltipsProductUsage,
+  testTooltipsRelatedMethodology,
+  testTooltipsSubscoreUsage,
+  testTooltipsTocSections,
+} from '../../../data/test-tooltips-content';
+import { testHubUrl } from '../../../lib/slugs';
+import '../../../styles/test-hub.css';
+import '../../../styles/ratings-tooltips.css';
+
+const categories = getTestCategories();
+const tooltipFaqItems = testTooltipsFaq.map((item) => ({
+  question: item.q,
+  answer: item.a,
+}));
+
+const pageTitle = 'How Our Score Tooltips Work — AI Girlfriend Expert';
+---
+
+<BaseLayout
+  title={pageTitle}
+  description="How tooltips explain our ratings across reviews, roundups, directories, and the rest of AI Girlfriend Expert — and what each type of tooltip shows."
+>
+  <Header />
+  <main class="test-hub test-tooltips-page">
+    <div class="section-container px-4 md:px-8">
+      <div class="test-hub__hero">
+        <TestBreadcrumbs
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Tests', href: testHubUrl() },
+            { label: 'How score tooltips work' },
+          ]}
+        />
+        <p class="test-hub__eyebrow">Score transparency</p>
+        <h1 class="test-hub__title">How Our Score Tooltips Work</h1>
+        <p class="test-hub__intro">
+          You may have noticed that we use a lot of tooltips throughout AI Girlfriend Expert.
+        </p>
+        <p class="test-hub__intro">
+          These tooltips explain our ratings and provide helpful information, giving you more context before you sign up for an AI girlfriend app.
+        </p>
+        <p class="test-hub__intro test-hub__intro--spaced">
+          This page explains where we use tooltips and what each type of tooltip does.
+        </p>
+      </div>
+
+      <div class="test-hub__layout">
+        <aside class="test-hub__toc test-hub__toc--desktop" aria-label="Table of contents">
+          <TestHubSidebar
+            categories={categories}
+            tocSections={testTooltipsTocSections}
+            relatedMethodology={testTooltipsRelatedMethodology}
+          />
+        </aside>
+
+        <article class="test-hub__main">
+          <section id="why-tooltips" class="test-hub__section">
+            <h2 class="test-hub__h2">Why do we use tooltips?</h2>
+            <p class="test-hub__lead">
+              Our reviews contain a lot of data. We have an overall performance score, eight category ratings, subscores, and dozens of individual evidence points.
+            </p>
+            <p class="test-hub__lead">
+              This level of detail makes our reviews more helpful and accurate, but it can also feel overwhelming.
+            </p>
+            <p class="test-hub__lead">
+              We have received plenty of emails from readers who simply want to know which app is the best. If we bored those people to death with a crazy number of statistics and data points, our reviews would quickly become annoying.
+            </p>
+            <p class="test-hub__lead">
+              That is why we place a lot of the additional information inside tooltips. You can choose to open them when you want more context without having all the data displayed on the page at once.
+            </p>
+            <p class="test-hub__lead">
+              Each tooltip can be recognized by the icon shown below.
+            </p>
+            <TestTooltipIconSamples />
+            <p class="test-hub__lead">
+              On desktop, you can open a tooltip by hovering over it. On mobile, simply tap the tooltip icon.
+            </p>
+            <p class="test-hub__lead">
+              We currently use five main types of tooltips.
+            </p>
+            <ul class="test-tooltip-type-nav">
+              <li><a href="#product-info"><span class="test-tooltip-type-nav__n">1</span> Product information tooltips</a></li>
+              <li><a href="#overall"><span class="test-tooltip-type-nav__n">2</span> Overall performance tooltips</a></li>
+              <li><a href="#category"><span class="test-tooltip-type-nav__n">3</span> Category score tooltips</a></li>
+              <li><a href="#subscore"><span class="test-tooltip-type-nav__n">4</span> Subscore tooltips</a></li>
+              <li><a href="#additional-info"><span class="test-tooltip-type-nav__n">5</span> Additional information tooltips</a></li>
+            </ul>
+          </section>
+
+          <section id="product-info" class="test-hub__section">
+            <h2 class="test-hub__h2">1. Product information tooltips</h2>
+            <p class="test-hub__lead">
+              Product information tooltips can be found in our directories, including the directory on our homepage.
+            </p>
+            <p class="test-hub__lead">
+              They appear next to certain text and give you some quick additional information about a platform, such as what it is best for and anything you may need to watch out for.
+            </p>
+            <TestTooltipUsageRow items={testTooltipsProductUsage} />
+            <TestTooltipProductAnnotation />
+          </section>
+
+          <section id="overall" class="test-hub__section">
+            <h2 class="test-hub__h2">2. Overall performance tooltips</h2>
+            <p class="test-hub__lead">
+              Overall performance tooltips appear in our reviews and roundup pages.
+            </p>
+            <p class="test-hub__lead">
+              They give you a quick one-line explanation of how the app performed in our testing.
+            </p>
+            <TestTooltipUsageRow items={testTooltipsOverallUsage} />
+            <TestTooltipOverallAnnotation />
+          </section>
+
+          <section id="category" class="test-hub__section">
+            <h2 class="test-hub__h2">3. Category score tooltips</h2>
+            <p class="test-hub__lead">
+              Category score tooltips explain how an AI girlfriend app performed in a specific category, such as Chat, Images, Privacy, or Pricing.
+            </p>
+            <p class="test-hub__lead">They show you:</p>
+            <ul class="test-tooltip-bullets">
+              <li>The app’s score for that category</li>
+              <li>The average category score across all the apps we have reviewed</li>
+              <li>The subscores that make up the category rating</li>
+              <li>A score distribution showing how the app compares with other apps</li>
+            </ul>
+            <TestTooltipUsageRow items={testTooltipsCategoryUsage} />
+            <TestTooltipCategoryAnnotation />
+            <p class="test-hub__lead">
+              You can click a range inside the score distribution to see every app that scored within that range.
+            </p>
+            <p class="test-hub__lead">
+              For example, selecting the range from 8.9 to 9.2 will show you all the reviewed apps with a category score between 8.9 and 9.2.
+            </p>
+          </section>
+
+          <section id="subscore" class="test-hub__section">
+            <h2 class="test-hub__h2">4. Subscore tooltips</h2>
+            <p class="test-hub__lead">
+              Subscore tooltips work similarly to category score tooltips, but they go one level deeper.
+            </p>
+            <p class="test-hub__lead">
+              They quickly explain what the subscore measures and show you:
+            </p>
+            <ul class="test-tooltip-bullets">
+              <li>The app’s subscore</li>
+              <li>The average subscore across all the apps we have reviewed</li>
+              <li>The evidence used to calculate the score</li>
+              <li>A score distribution comparing the app with others</li>
+            </ul>
+            <TestTooltipUsageRow items={testTooltipsSubscoreUsage} />
+            <TestTooltipSubscoreAnnotation />
+            <p class="test-hub__lead">
+              You can select any range in the score distribution to see all the AI girlfriend apps that scored within it.
+            </p>
+          </section>
+
+          <section id="additional-info" class="test-hub__section">
+            <h2 class="test-hub__h2">5. Additional information tooltips</h2>
+            <p class="test-hub__lead">
+              We may also use smaller tooltips in other parts of the site whenever something needs a quick explanation.
+            </p>
+            <p class="test-hub__lead">
+              These might explain a feature, term, calculation, warning, or piece of information that could otherwise be confusing.
+            </p>
+            <p class="test-hub__lead">
+              It would not be worth listing every single tooltip on this page. Otherwise, you would still be here tomorrow.
+            </p>
+            <p class="test-hub__lead">
+              The important thing to remember is simple: whenever you see a tooltip icon, hover over it on desktop or tap it on mobile to get more context.
+            </p>
+          </section>
+
+          <RoundupFaq sectionId="faq" sectionClass="test-hub__section" items={tooltipFaqItems} />
+
+          <aside class="test-tooltips-methodology-banner" aria-label="Testing methodology">
+            <span class="material-symbols-outlined test-tooltips-methodology-banner__icon" aria-hidden="true">menu_book</span>
+            <div class="test-tooltips-methodology-banner__copy">
+              <p>Want to see how we calculate these scores?</p>
+              <p>
+                Learn more in our <a href={`${testHubUrl()}#how-scores-work`}>How our scores work</a> methodology.
+              </p>
+            </div>
+            <a class="test-tooltips-methodology-banner__action" href={testHubUrl()}>
+              Read methodology
+              <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+            </a>
+          </aside>
+        </article>
+      </div>
+    </div>
+
+    <button type="button" class="test-hub__mobile-toc-btn lg:hidden" data-test-hub-toc-open aria-label="Open table of contents">
+      <span class="material-symbols-outlined" aria-hidden="true">description</span>
+    </button>
+
+    <div class="test-hub-sheet" data-test-hub-sheet hidden aria-hidden="true">
+      <div class="test-hub-sheet__backdrop" data-test-hub-sheet-close tabindex="-1"></div>
+      <div class="test-hub-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="test-tooltips-sheet-title">
+        <h2 id="test-tooltips-sheet-title" class="test-hub-sheet__title">Contents</h2>
+        <TestHubSidebar
+          categories={categories}
+          tocSections={testTooltipsTocSections}
+          relatedMethodology={testTooltipsRelatedMethodology}
+          mobile
+        />
+      </div>
+    </div>
+  </main>
+  <Footer />
+
+  <script>
+    function initTestHubNav() {
+      const navs = Array.from(document.querySelectorAll('[data-test-hub-nav]'));
+      if (!navs.length || document.documentElement.dataset.testHubNavBound === 'true') return;
+      document.documentElement.dataset.testHubNavBound = 'true';
+
+      const sectionLinks = Array.from(
+        navs[0].querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]'),
+      );
+      if (!sectionLinks.length) return;
+
+      const sections = sectionLinks
+        .map((link) => {
+          const id = link.dataset.sectionId;
+          return id ? document.getElementById(id) : null;
+        })
+        .filter((section): section is HTMLElement => section instanceof HTMLElement);
+
+      const setActive = (id: string | null) => {
+        navs.forEach((nav) => {
+          nav.querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]').forEach((link) => {
+            const active = link.dataset.sectionId === id;
+            link.classList.toggle('is-active', active);
+            if (active) link.setAttribute('aria-current', 'location');
+            else link.removeAttribute('aria-current');
+          });
+        });
+      };
+
+      const scrollOffset = 24;
+
+      navs.forEach((nav) => {
+        nav.querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]').forEach((link) => {
+          link.addEventListener('click', (event) => {
+            const id = link.dataset.sectionId;
+            if (!id) return;
+            const section = document.getElementById(id);
+            if (!section) return;
+            event.preventDefault();
+            const y = section.getBoundingClientRect().top + window.scrollY - scrollOffset;
+            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+            history.pushState(null, '', `#${id}`);
+            setActive(id);
+          });
+        });
+      });
+
+      const updateActiveSection = () => {
+        const marker = window.scrollY + scrollOffset + 8;
+        let currentId: string | null = sections[0]?.id ?? null;
+
+        for (const section of sections) {
+          if (section.offsetTop <= marker) currentId = section.id;
+          else break;
+        }
+
+        setActive(currentId);
+      };
+
+      updateActiveSection();
+      window.addEventListener('scroll', updateActiveSection, { passive: true });
+      window.addEventListener('resize', updateActiveSection);
+    }
+
+    function initTestHubSheet() {
+      const sheet = document.querySelector('[data-test-hub-sheet]');
+      const openBtn = document.querySelector('[data-test-hub-toc-open]');
+      if (!sheet || !openBtn || openBtn.dataset.bound === 'true') return;
+      openBtn.dataset.bound = 'true';
+
+      function close() {
+        sheet.hidden = true;
+        sheet.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('roundup-sheet-open');
+      }
+
+      function open() {
+        sheet.hidden = false;
+        sheet.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('roundup-sheet-open');
+      }
+
+      openBtn.addEventListener('click', open);
+      sheet.querySelector('[data-test-hub-sheet-close]')?.addEventListener('click', close);
+      sheet.querySelectorAll('[data-test-hub-sheet-link]').forEach((link) => {
+        link.addEventListener('click', close);
+      });
+    }
+
+    function initTooltipCalloutLinks() {
+      if (document.documentElement.dataset.tooltipCalloutBound === 'true') return;
+      document.documentElement.dataset.tooltipCalloutBound = 'true';
+
+      const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-callout]'));
+      const descItems = Array.from(document.querySelectorAll<HTMLElement>('[data-callout-desc]'));
+
+      const highlight = (n: string | null) => {
+        targets.forEach((el) => el.classList.toggle('is-highlighted', el.dataset.callout === n));
+        descItems.forEach((el) => el.classList.toggle('is-highlighted', el.dataset.calloutDesc === n));
+      };
+
+      document.querySelectorAll<HTMLAnchorElement>('[data-tooltip-callout-link], [data-tooltip-callout-badge]').forEach((link) => {
+        link.addEventListener('click', () => {
+          const n = link.dataset.tooltipCalloutLink ?? link.dataset.tooltipCalloutBadge ?? null;
+          if (!n) return;
+          highlight(n);
+          window.setTimeout(() => highlight(null), 2200);
+        });
+      });
+    }
+
+    function initStaticDistCharts() {
+      document.querySelectorAll<HTMLElement>('[data-dist-chart]').forEach((chart) => {
+        if (chart.dataset.distBound === 'true') return;
+        chart.dataset.distBound = 'true';
+
+        let bins: Array<{ start: number; end: number; apps: Array<{ slug: string; name: string; score: number }> }> = [];
+        try {
+          bins = JSON.parse(chart.dataset.distBins || '[]');
+        } catch {
+          return;
+        }
+
+        let idx = Number(chart.dataset.distActive ?? '-1');
+        const buttons = Array.from(chart.querySelectorAll<HTMLButtonElement>('[data-dist-bin]'));
+        const appsEl = chart.querySelector<HTMLElement>('[data-dist-apps]');
+        const rangeLabel = chart.querySelector<HTMLElement>('[data-dist-range-label]');
+        const rangeRow = chart.querySelector<HTMLElement>('[data-dist-range-row]');
+        const hint = chart.querySelector<HTMLElement>('[data-dist-hint]');
+        if (!appsEl) return;
+
+        function scoreChipClass(score: number): string {
+          if (score >= 7.6) return 'rt-score-chip--good';
+          if (score >= 5.1) return 'rt-score-chip--fair';
+          return 'rt-score-chip--poor';
+        }
+
+        function clearSelection() {
+          idx = -1;
+          chart.dataset.distActive = '-1';
+          buttons.forEach((btn) => {
+            btn.setAttribute('aria-pressed', 'false');
+            btn.querySelector('.rt-dist-chart__bar-fill')?.classList.remove('rt-dist-chart__bar-fill--active');
+          });
+          if (rangeRow) rangeRow.hidden = true;
+          appsEl!.hidden = true;
+          appsEl!.innerHTML = '';
+          if (hint) hint.hidden = false;
+        }
+
+        function renderApps(selected: (typeof bins)[number]) {
+          if (rangeLabel) rangeLabel.textContent = `${selected.start.toFixed(1)}–${selected.end.toFixed(1)}`;
+          if (rangeRow) rangeRow.hidden = false;
+          if (hint) hint.hidden = true;
+          appsEl!.hidden = false;
+          appsEl!.innerHTML = '';
+
+          if (!selected.apps.length) {
+            appsEl!.innerHTML = '<p class="rt-dist-chart__empty">No apps in this range.</p>';
+            return;
+          }
+
+          selected.apps.forEach((app) => {
+            const a = document.createElement('a');
+            a.href = `/reviews/${app.slug}#ratings`;
+            a.className = 'rt-dist-chart__app';
+            a.innerHTML = `<span>${app.name}</span><span class="rt-score-chip ${scoreChipClass(app.score)}">${app.score.toFixed(1)}</span>`;
+            appsEl!.appendChild(a);
+          });
+        }
+
+        function setActive(nextIdx: number) {
+          if (idx === nextIdx) {
+            clearSelection();
+            return;
+          }
+
+          idx = nextIdx;
+          chart.dataset.distActive = String(idx);
+          buttons.forEach((btn) => {
+            const i = Number(btn.dataset.distBin ?? '0');
+            const fill = btn.querySelector('.rt-dist-chart__bar-fill');
+            const isActive = i === idx;
+            btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            fill?.classList.toggle('rt-dist-chart__bar-fill--active', isActive);
+          });
+          const selected = bins[idx];
+          if (selected) renderApps(selected);
+        }
+
+        if (idx < 0) clearSelection();
+
+        buttons.forEach((btn) => {
+          btn.addEventListener('click', (event) => {
+            event.preventDefault();
+            setActive(Number(btn.dataset.distBin ?? '0'));
+          });
+        });
+      });
+    }
+
+    initTestHubNav();
+    initTestHubSheet();
+    initTooltipCalloutLinks();
+    initStaticDistCharts();
+    document.addEventListener('astro:page-load', () => {
+      initTestHubNav();
+      initTestHubSheet();
+      initTooltipCalloutLinks();
+      initStaticDistCharts();
+    });
+  </script>
+</BaseLayout>

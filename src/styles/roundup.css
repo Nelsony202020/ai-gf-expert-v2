@@ -298,10 +298,10 @@
     display: flex;
     flex-direction: column;
     position: sticky;
-    top: 5rem;
+    top: 1.5rem;
     align-self: start;
     padding-top: var(--roundup-intro-offset);
-    max-height: calc(100vh - 5.5rem);
+    max-height: calc(100vh - 2rem);
   }
 
   .roundup-toc {
@@ -525,7 +525,7 @@
 .roundup-sticky-nav {
   display: block;
   position: sticky;
-  top: 4rem;
+  top: 0;
   z-index: 35;
   margin: 0 0 1rem;
   padding: 0.625rem 0;
@@ -3125,7 +3125,7 @@ body.roundup-sheet-open {
 
 .roundup-faq.is-faq-hinting .roundup-faq__click-hint {
   visibility: visible;
-  animation: roundupFaqCursor 3.4s ease forwards;
+  animation: roundupFaqCursor 2s ease forwards;
 }
 
 @keyframes roundupFaqCursor {
@@ -3157,7 +3157,7 @@ body.roundup-sheet-open {
 }
 
 .roundup-faq__bubble--question.is-faq-hint-target {
-  animation: roundupFaqHintPress 3.4s ease;
+  animation: roundupFaqHintPress 2s ease;
 }
 
 @keyframes roundupFaqHintPress {

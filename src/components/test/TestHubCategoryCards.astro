@@ -1,0 +1,62 @@
+---
+import type { TestCategoryNode } from '../../lib/test-framework';
+import { getCategoryBrandIcon, getCategoryBrandIconLight } from '../../lib/category-brand-icons';
+import BrandIcon from '../ui/BrandIcon.astro';
+
+interface Props {
+  categories: TestCategoryNode[];
+}
+
+const { categories } = Astro.props;
+---
+
+<div class="test-category-grid">
+  {
+    categories.map((cat) => {
+      const brandIcon = getCategoryBrandIcon(cat.key);
+      const brandIconLight = getCategoryBrandIconLight(cat.key);
+      const useDarkBrandIconOnly = cat.key === 'customization' || cat.key === 'chat';
+
+      return (
+        <article class="test-category-card" id={`category-${cat.key}`}>
+          <div class="test-category-card__head">
+            <div class="test-category-card__title-row">
+              {
+                brandIcon && (
+                  <span class="test-category-card__icon" aria-hidden="true">
+                    {
+                      useDarkBrandIconOnly ? (
+                        <img src={brandIcon} alt="" width="28" height="28" loading="lazy" class="object-contain" />
+                      ) : brandIconLight ? (
+                        <BrandIcon src={brandIcon} srcLight={brandIconLight} width={28} height={28} />
+                      ) : (
+                        <img src={brandIcon} alt="" width="28" height="28" loading="lazy" class="object-contain" />
+                      )
+                    }
+                  </span>
+                )
+              }
+              <h3 class="test-category-card__name">{cat.name}</h3>
+            </div>
+            <span class="test-category-card__weight">{cat.weight}%</span>
+          </div>
+
+          <p class="test-category-card__desc">{cat.description}</p>
+
+          <div class="test-category-card__subs">
+            <span class="test-category-card__subs-label">Subscores:</span>
+            <ul class="test-category-card__subs-list">
+              {
+                cat.subscores.map((sub) => (
+                  <li>
+                    <a href={sub.href} class="test-category-card__sub-pill">{sub.name}</a>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+        </article>
+      );
+    })
+  }
+</div>

@@ -1,0 +1,429 @@
+/* HTML sitemap page */
+
+.sitemap-page {
+  background: var(--color-background);
+  min-height: 60vh;
+}
+
+.sitemap-page__header {
+  max-width: 42rem;
+  margin-bottom: 2rem;
+}
+
+.sitemap-page__title {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.875rem, 4vw, 2.5rem);
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: var(--color-on-surface);
+}
+
+.sitemap-page__intro {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-on-surface-variant);
+}
+
+.sitemap-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sitemap-row {
+  display: grid;
+  gap: 1rem;
+}
+
+.sitemap-row--top {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.sitemap-row--bottom {
+  grid-template-columns: minmax(0, 1fr) 17.5rem;
+  align-items: stretch;
+}
+
+@media (max-width: 1100px) {
+  .sitemap-row--top {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sitemap-row--bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .sitemap-row--top {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sitemap-card {
+  background: #fff;
+  border: 1px solid var(--color-surface-variant);
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 4%);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.sitemap-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sitemap-card__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sitemap-card__icon .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.sitemap-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-on-surface);
+}
+
+.sitemap-card__links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.sitemap-card__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.sitemap-card__link:hover {
+  background: rgb(219 39 119 / 6%);
+}
+
+.sitemap-card__arrow {
+  font-size: 16px;
+  color: var(--color-tertiary);
+}
+
+/* Tests & Methodology — full-width multi-column */
+.sitemap-card--tests {
+  padding-bottom: 1.25rem;
+}
+
+.sitemap-tests__grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0 1rem;
+}
+
+.sitemap-tests__hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  margin: 0 0 1rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: rgb(219 39 119 / 5%);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+}
+
+.sitemap-tests__hint .material-symbols-outlined {
+  font-size: 1rem;
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+@media (max-width: 1100px) {
+  .sitemap-tests__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .sitemap-tests__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .sitemap-tests__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sitemap-tests__col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  padding: 0 1rem;
+}
+
+.sitemap-tests__col:first-child {
+  padding-left: 0;
+}
+
+.sitemap-tests__col--divider {
+  border-right: 1px solid var(--color-surface-variant);
+}
+
+@media (max-width: 520px) {
+  .sitemap-tests__col {
+    padding: 0;
+    border-right: none !important;
+    border-bottom: 1px solid var(--color-surface-variant);
+    padding-bottom: 1rem;
+  }
+
+  .sitemap-tests__col:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.sitemap-tests__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.sitemap-tests__group--supporting {
+  margin-top: 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--color-surface-variant);
+}
+
+.sitemap-tests__label,
+.sitemap-resources-legal__label {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+}
+
+.sitemap-tests__cat {
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sitemap-tests__cat a {
+  color: var(--color-on-surface);
+  text-decoration: none;
+}
+
+.sitemap-tests__cat a:hover {
+  color: var(--color-accent);
+}
+
+.sitemap-tests__sub {
+  border-radius: 8px;
+}
+
+.sitemap-tests__sub-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.sitemap-tests__sub-summary::-webkit-details-marker {
+  display: none;
+}
+
+.sitemap-tests__expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 4px;
+  background: rgb(219 39 119 / 8%);
+  color: var(--color-accent);
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.sitemap-tests__sub-summary:hover .sitemap-tests__expand {
+  background: rgb(219 39 119 / 14%);
+}
+
+.sitemap-tests__expand .material-symbols-outlined {
+  font-size: 1rem;
+  transition: transform 0.15s ease;
+}
+
+.sitemap-tests__sub[open] .sitemap-tests__expand .material-symbols-outlined {
+  transform: rotate(90deg);
+}
+
+.sitemap-tests__sub-link {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.sitemap-tests__sub-link:hover {
+  text-decoration: underline;
+}
+
+.sitemap-card__link--compact {
+  padding: 6px 4px;
+  font-size: 0.75rem;
+}
+
+.sitemap-tests__evidence {
+  list-style: none;
+  margin: 0.25rem 0 0.375rem 1.625rem;
+  padding: 0;
+}
+
+.sitemap-tests__evidence li {
+  margin-bottom: 0.125rem;
+}
+
+/* Resources & Legal sidebar */
+.sitemap-card--resources-legal {
+  height: 100%;
+}
+
+.sitemap-resources-legal {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  flex: 1;
+}
+
+.sitemap-resources-legal__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+/* Icon tones */
+.sitemap-card__icon--amber {
+  background: rgb(245 158 11 / 12%);
+  color: #d97706;
+}
+
+.sitemap-card__icon--lime {
+  background: rgb(218 246 108 / 35%);
+  color: #4d7c0f;
+}
+
+.sitemap-card__icon--green {
+  background: rgb(34 197 94 / 12%);
+  color: #15803d;
+}
+
+.sitemap-card__icon--blue {
+  background: rgb(59 130 246 / 12%);
+  color: #2563eb;
+}
+
+.sitemap-card__icon--purple {
+  background: rgb(168 85 247 / 12%);
+  color: #9333ea;
+}
+
+[data-theme='dark'] .sitemap-card {
+  background: #1a1f18;
+  border-color: #2a3328;
+}
+
+[data-theme='dark'] .sitemap-card__title {
+  color: #ececec;
+}
+
+[data-theme='dark'] .sitemap-card__icon--amber {
+  background: rgb(251 191 36 / 14%);
+  color: #fbbf24;
+}
+
+[data-theme='dark'] .sitemap-card__icon--lime {
+  background: rgb(218 246 108 / 14%);
+  color: #daf66c;
+}
+
+[data-theme='dark'] .sitemap-card__icon--green {
+  background: rgb(134 239 172 / 12%);
+  color: #86efac;
+}
+
+[data-theme='dark'] .sitemap-card__icon--blue {
+  background: rgb(96 165 250 / 14%);
+  color: #93c5fd;
+}
+
+[data-theme='dark'] .sitemap-card__icon--purple {
+  background: rgb(192 132 252 / 14%);
+  color: #d8b4fe;
+}
+
+[data-theme='dark'] .sitemap-card__icon .material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 1,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+[data-theme='dark'] .sitemap-card__arrow {
+  color: #9cab96;
+}
+
+[data-theme='dark'] .sitemap-card__link:hover {
+  background: rgb(219 39 119 / 10%);
+}
+
+[data-theme='dark'] .sitemap-tests__sub-link {
+  color: var(--color-accent);
+}
+
+[data-theme='dark'] .sitemap-tests__cat a {
+  color: #ececec;
+}
+
+[data-theme='dark'] .sitemap-tests__expand {
+  background: rgb(219 39 119 / 14%);
+}

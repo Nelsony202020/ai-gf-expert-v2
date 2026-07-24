@@ -1,0 +1,127 @@
+---
+import type { TestCategoryNode } from '../../lib/test-framework';
+import {
+  distributeTestCategoryColumns,
+  testMainMethodologyLinks,
+  testSupportingLinks,
+} from '../../lib/sitemap';
+import { getTestCategories } from '../../lib/test-framework';
+
+interface Props {
+  count: number;
+}
+
+const { count } = Astro.props;
+
+const categories = getTestCategories();
+const columns = distributeTestCategoryColumns(categories);
+---
+
+<section class="sitemap-card sitemap-card--tests">
+  <div class="sitemap-card__head">
+    <span class="sitemap-card__icon sitemap-card__icon--blue">
+      <span class="material-symbols-outlined">science</span>
+    </span>
+    <h2 class="sitemap-card__title">Tests &amp; Methodology ({count})</h2>
+  </div>
+
+  <p class="sitemap-tests__hint">
+    <span class="material-symbols-outlined" aria-hidden="true">info</span>
+    Click a name to open the page. Click the arrow beside it to expand evidence points.
+  </p>
+
+  <div class="sitemap-tests__grid">
+    {
+      columns.map((colCategories, colIndex) => (
+        <div class:list={['sitemap-tests__col', colIndex < columns.length - 1 && 'sitemap-tests__col--divider']}>
+          {
+            colIndex === 0 && (
+              <div class="sitemap-tests__group">
+                <p class="sitemap-tests__label">Main methodology</p>
+                <ul class="sitemap-card__links">
+                  {
+                    testMainMethodologyLinks.map((link) => (
+                      <li>
+                        <a href={link.href} class="sitemap-card__link">
+                          <span>{link.label}</span>
+                          <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
+                        </a>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </div>
+            )
+          }
+
+          {
+            colCategories.map((cat: TestCategoryNode) => (
+              <div class="sitemap-tests__group">
+                <p class="sitemap-tests__cat">
+                  <a href={cat.href}>{cat.name}</a>
+                </p>
+                {
+                  cat.subscores.map((sub) => (
+                    <details class="sitemap-tests__sub">
+                      <summary class="sitemap-tests__sub-summary">
+                        <span class="sitemap-tests__expand" aria-hidden="true">
+                          <span class="material-symbols-outlined">chevron_right</span>
+                        </span>
+                        <a href={sub.href} class="sitemap-tests__sub-link">{sub.name}</a>
+                      </summary>
+                      <ul class="sitemap-tests__evidence">
+                        {
+                          sub.contributors.map((c) => (
+                            <li>
+                              <a href={c.href} class="sitemap-card__link sitemap-card__link--compact">
+                                <span>{c.label}</span>
+                                <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
+                              </a>
+                            </li>
+                          ))
+                        }
+                      </ul>
+                    </details>
+                  ))
+                }
+              </div>
+            ))
+          }
+
+          {
+            colIndex === columns.length - 1 && (
+              <div class="sitemap-tests__group sitemap-tests__group--supporting">
+                <p class="sitemap-tests__label">Supporting methodology</p>
+                <ul class="sitemap-card__links">
+                  {
+                    testSupportingLinks.map((link) => (
+                      <li>
+                        <a href={link.href} class="sitemap-card__link">
+                          <span>{link.label}</span>
+                          <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
+                        </a>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </div>
+            )
+          }
+        </div>
+      ))
+    }
+  </div>
+</section>
+
+<script>
+  function initSitemapTestLinks() {
+    document.querySelectorAll('.sitemap-tests__sub-link').forEach((link) => {
+      if (link.dataset.bound === 'true') return;
+      link.dataset.bound = 'true';
+      link.addEventListener('click', (e) => e.stopPropagation());
+    });
+  }
+
+  initSitemapTestLinks();
+  document.addEventListener('astro:page-load', initSitemapTestLinks);
+</script>

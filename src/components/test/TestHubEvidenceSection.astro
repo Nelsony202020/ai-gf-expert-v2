@@ -1,0 +1,80 @@
+---
+import { getTestCategory } from '../../lib/test-framework';
+import { testHubEvidenceExamples } from '../../data/test-hub-content';
+
+const chat = getTestCategory('chat');
+const understanding = chat?.subscores.find((s) => s.slug === 'understanding');
+
+const contributorIcons: Record<string, string> = {
+  Memory: 'memory',
+  Relevance: 'target',
+  Context: 'hub',
+  Instructions: 'checklist',
+  'Roleplay Accuracy': 'theater_comedy',
+};
+
+const spotlightIcons: Record<string, string> = {
+  Memory: 'memory',
+  'Reply speed': 'speed',
+  'Character consistency': 'compare',
+};
+---
+
+<div class="test-evidence-section">
+  {
+    chat && understanding && (
+      <div class="test-evidence-tree">
+        <div class="test-evidence-tree__root">
+          <span class="test-evidence-tree__root-icon material-symbols-outlined" aria-hidden="true">chat_bubble</span>
+          <span class="test-evidence-tree__root-label">{chat.name}</span>
+        </div>
+
+        <div class="test-evidence-tree__branch-block">
+          <a class="test-evidence-tree__subscore" href={understanding.href}>{understanding.name}</a>
+
+          <ul class="test-evidence-tree__pills">
+            {
+              understanding.contributors.map((contributor) => (
+                <li>
+                  <a
+                    class="test-evidence-tree__pill"
+                    href={contributor.href}
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">
+                      {contributorIcons[contributor.label] ?? 'analytics'}
+                    </span>
+                    {contributor.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
+  <div class="test-evidence-spotlights">
+    {
+      testHubEvidenceExamples.map((example) => (
+        <article class="test-evidence-spotlight">
+          <div class="test-evidence-spotlight__head">
+            <span class="test-evidence-spotlight__icon material-symbols-outlined" aria-hidden="true">
+              {spotlightIcons[example.title] ?? 'analytics'}
+            </span>
+            <h3 class="test-evidence-spotlight__title">{example.title}</h3>
+          </div>
+          <p class="test-evidence-spotlight__body">{example.body}</p>
+          <p class="test-evidence-spotlight__result">
+            <span class="material-symbols-outlined" aria-hidden="true">bar_chart</span>
+            <span><strong>Displayed result:</strong> {example.result}</span>
+          </p>
+          <a class="test-inline-link" href={example.href}>
+            View {example.title} test methodology
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+          </a>
+        </article>
+      ))
+    }
+  </div>
+</div>

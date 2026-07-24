@@ -156,10 +156,6 @@
   max-height: min(55vh, 320px);
 }
 
-.ratings-tooltip-panel__header .rt-score-meaning {
-  margin-top: 10px;
-}
-
 .ratings-tooltip-panel__header > .rt-tooltip-actions {
   margin-top: 6px;
 }
@@ -996,56 +992,6 @@ a.rt-inline-test-link.rt-comp-name {
   color: rgb(95 94 94 / 55%);
 }
 
-/* Score meaning callout */
-.rt-score-meaning {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-}
-
-.rt-score-meaning--good {
-  background: rgb(22 163 74 / 7%);
-  border-color: rgb(22 163 74 / 18%);
-}
-
-.rt-score-meaning--fair {
-  background: rgb(249 115 22 / 7%);
-  border-color: rgb(249 115 22 / 18%);
-}
-
-.rt-score-meaning--poor {
-  background: rgb(220 38 38 / 7%);
-  border-color: rgb(220 38 38 / 18%);
-}
-
-.rt-score-meaning__band {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.rt-score-meaning--good .rt-score-meaning__band {
-  color: #15803d;
-}
-
-.rt-score-meaning--fair .rt-score-meaning__band {
-  color: #c2410c;
-}
-
-.rt-score-meaning--poor .rt-score-meaning__band {
-  color: #b91c1c;
-}
-
-.rt-score-meaning__line {
-  font-size: 11px;
-  line-height: 1.35;
-  color: var(--color-on-surface-variant, #5a4136);
-}
-
 /* Rating hierarchy pipeline (vertical) */
 .rt-pipeline {
   display: flex;
@@ -1561,12 +1507,6 @@ a.rt-inline-test-link.rt-comp-name {
 [data-theme='dark'] .evidence-table__total {
   background: rgb(26 36 24 / 50%);
   border-color: #2a3328;
-}
-
-[data-theme='dark'] .rt-score-meaning {
-  background: rgb(219 39 119 / 12%);
-  border-color: rgb(219 39 119 / 25%);
-  color: #ececec;
 }
 
 /* Score chips & methodology badges — always black on white inside tooltips */

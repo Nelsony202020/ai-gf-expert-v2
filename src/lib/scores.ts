@@ -82,17 +82,6 @@ export function fmtScore(score: number): string {
   return score.toFixed(1);
 }
 
-/** One short line comparing a score to the site average (for tooltips). */
-export function getScoreMeaningLine(score: number, avg: number): string {
-  const a = fmtScore(avg);
-  const diff = score - avg;
-  if (Math.abs(diff) < 0.15) return `Matches the ${a} site avg.`;
-  if (diff >= 0.5) return `Well above the ${a} site avg.`;
-  if (diff > 0) return `Above the ${a} site avg.`;
-  if (diff <= -0.5) return `Well below the ${a} site avg.`;
-  return `Below the ${a} site avg.`;
-}
-
 /** Weighted contribution of a subscore to its category (score * weight%). */
 export function weightedValue(score: number, weightPct: number): number {
   return (score * weightPct) / 100;

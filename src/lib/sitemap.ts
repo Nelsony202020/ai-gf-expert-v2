@@ -1,4 +1,4 @@
-import type { HtmlSitemapSection, SitemapEntry } from '../types/sitemap';
+import type { HtmlSitemapFullPage, HtmlSitemapLink, HtmlSitemapSection, SitemapEntry } from '../types/sitemap';
 import { authors } from '../data/authors';
 import { megaMenuColumns } from '../data/nav-mega-menu';
 import { products } from '../data/products';
@@ -142,6 +142,13 @@ export function getAllSitemapEntries(): SitemapEntry[] {
   });
 
   push({
+    title: 'How Score Tooltips Work',
+    url: '/test/tooltips/',
+    contentType: 'methodology',
+    sitemapSection: 'tests',
+  });
+
+  push({
     title: 'Review Process',
     url: '/review-process/',
     contentType: 'methodology',
@@ -210,6 +217,96 @@ export function getAllSitemapEntries(): SitemapEntry[] {
 
 export function getXmlSitemapEntries(): SitemapEntry[] {
   return getAllSitemapEntries().filter((e) => e.includeInXmlSitemap);
+}
+
+function dedupeLinks(items: HtmlSitemapLink[]): HtmlSitemapLink[] {
+  return [...new Map(items.map((l) => [l.href, l])).values()];
+}
+
+function entriesToLinks(items: SitemapEntry[]): HtmlSitemapLink[] {
+  return items.map((e) => ({ label: e.title, href: e.url }));
+}
+
+/** Drop mega-menu "View all …" rows from the HTML sitemap lists. */
+function filterNavLinks(links: HtmlSitemapLink[]): HtmlSitemapLink[] {
+  return links.filter((l) => !/^view all/i.test(l.label));
+}
+
+/** Distribute test categories across methodology columns (col 0 holds fewer cats). */
+export function distributeTestCategoryColumns(categories: ReturnType<typeof getTestCategories>) {
+  const cols: (typeof categories)[] = [[], [], [], [], []];
+
+  if (categories.length === 0) return cols;
+
+  cols[0].push(categories[0]);
+  const remaining = categories.slice(1);
+  const bucketCount = cols.length - 1;
+  const perCol = Math.ceil(remaining.length / bucketCount);
+
+  for (let c = 1; c < cols.length; c++) {
+    const start = (c - 1) * perCol;
+    cols[c] = remaining.slice(start, start + perCol);
+  }
+
+  return cols;
+}
+
+export const testMainMethodologyLinks: HtmlSitemapLink[] = [
+  { label: 'How We Test AI Girlfriend Apps', href: testHubUrl() },
+  { label: 'Scoring System', href: `${testHubUrl()}#how-scores-work` },
+  { label: 'Testing Process Overview', href: `${testHubUrl()}#in-practice` },
+];
+
+export const testSupportingLinks: HtmlSitemapLink[] = [
+  { label: 'Market Data Methodology', href: '/test/market-data/' },
+  { label: 'Review Process', href: '/review-process/' },
+  { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
+];
+
+/** Full HTML sitemap page data — every published link, no truncation. */
+export function buildFullHtmlSitemapPage(): HtmlSitemapFullPage {
+  const all = getAllSitemapEntries();
+
+  const reviews = dedupeLinks(
+    filterNavLinks(
+      entriesToLinks(all.filter((e) => e.sitemapSection === 'reviews' && e.contentType === 'review')),
+    ),
+  );
+
+  const roundups = dedupeLinks(filterNavLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'roundups'))));
+  const guides = dedupeLinks(filterNavLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'guides'))));
+  const authors = dedupeLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'authors')));
+
+  const resources = dedupeLinks([
+    { label: 'FAQ', href: '/faq' },
+    { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure' },
+    ...entriesToLinks(
+      all.filter(
+        (e) =>
+          e.sitemapSection === 'resources'
+          && e.contentType !== 'test-hub'
+          && e.url !== '/editorial-guidelines/',
+      ),
+    ),
+  ]);
+
+  const legal = dedupeLinks([
+    ...entriesToLinks(all.filter((e) => e.sitemapSection === 'legal')),
+    { label: 'Contact Us', href: '/contact' },
+  ]);
+
+  const testCount = all.filter((e) => e.sitemapSection === 'tests').length;
+
+  return {
+    reviews,
+    roundups,
+    guides,
+    authors,
+    testCount,
+    resourcesLegalCount: resources.length + legal.length,
+    resources,
+    legal,
+  };
 }
 
 /** Curated HTML sitemap card sections — not every deep URL. */

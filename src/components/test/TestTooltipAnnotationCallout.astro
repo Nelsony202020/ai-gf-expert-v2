@@ -1,0 +1,30 @@
+---
+interface Props {
+  idPrefix: string;
+  n: number;
+  icon: string;
+  label: string;
+  desc: string;
+  side: 'left' | 'right' | 'above';
+  row?: 'top' | 'bottom' | 'middle';
+  align?: 'left' | 'right';
+}
+
+const { idPrefix, n, icon, label, desc, side, row = 'top', align = 'right' } = Astro.props;
+const anchorId = `${idPrefix}-part-${n}`;
+const rowClass = side === 'above' ? `test-tooltip-annotation__callout--above-${align}` : `test-tooltip-annotation__callout--${row}`;
+---
+
+<div
+  class={`test-tooltip-annotation__callout test-tooltip-annotation__callout--${side} ${rowClass}`}
+  data-annotation-callout={n}
+  id={`${anchorId}-callout`}
+>
+  <span class="test-tooltip-annotation__icon" aria-hidden="true">
+    <span class="material-symbols-outlined">{icon}</span>
+  </span>
+  <div class="test-tooltip-annotation__copy">
+    <strong class="test-tooltip-annotation__label">{label}</strong>
+    <p class="test-tooltip-annotation__desc">{desc}</p>
+  </div>
+</div>

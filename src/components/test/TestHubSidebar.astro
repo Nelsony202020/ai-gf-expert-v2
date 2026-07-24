@@ -1,0 +1,94 @@
+---
+import type { TestCategoryNode } from '../../lib/test-framework';
+import { testHubRelatedMethodology, testHubTocSections } from '../../data/test-hub-content';
+
+interface TocSection {
+  id: string;
+  label: string;
+}
+
+interface RelatedLink {
+  label: string;
+  href: string;
+}
+
+interface Props {
+  categories: TestCategoryNode[];
+  mobile?: boolean;
+  tocSections?: TocSection[];
+  relatedMethodology?: RelatedLink[];
+}
+
+const {
+  categories,
+  mobile = false,
+  tocSections = testHubTocSections,
+  relatedMethodology = testHubRelatedMethodology,
+} = Astro.props;
+const linkAttr = mobile ? { 'data-test-hub-sheet-link': true } : {};
+---
+
+<nav class="test-hub-nav" aria-label="Test hub navigation" data-test-hub-nav>
+  <div class="test-hub-nav__section">
+    <p class="test-hub-nav__label">On this page</p>
+    <ul class="test-hub-nav__list test-hub-nav__list--primary">
+      {
+        tocSections.map((section) => (
+          <li>
+            <a
+              href={`#${section.id}`}
+              class="test-hub-nav__link"
+              data-test-hub-nav-link
+              data-section-id={section.id}
+              {...linkAttr}
+            >
+              {section.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <details class="test-hub-nav__group">
+    <summary class="test-hub-nav__group-toggle">
+      <span class="test-hub-nav__group-label">
+        <span class="material-symbols-outlined test-hub-nav__group-icon" aria-hidden="true">category</span>
+        <span>Eight testing categories</span>
+      </span>
+      <span class="material-symbols-outlined test-hub-nav__chevron" aria-hidden="true">expand_more</span>
+    </summary>
+    <ul class="test-hub-nav__list test-hub-nav__list--nested">
+      {
+        categories.map((cat) => (
+          <li>
+            <a href={cat.href} class="test-hub-nav__link test-hub-nav__link--nested" {...linkAttr}>
+              {cat.name}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </details>
+
+  <details class="test-hub-nav__group">
+    <summary class="test-hub-nav__group-toggle">
+      <span class="test-hub-nav__group-label">
+        <span class="material-symbols-outlined test-hub-nav__group-icon" aria-hidden="true">menu_book</span>
+        <span>Related methodology</span>
+      </span>
+      <span class="material-symbols-outlined test-hub-nav__chevron" aria-hidden="true">expand_more</span>
+    </summary>
+    <ul class="test-hub-nav__list test-hub-nav__list--nested">
+      {
+        relatedMethodology.map((link) => (
+          <li>
+            <a href={link.href} class="test-hub-nav__link test-hub-nav__link--nested" {...linkAttr}>
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </details>
+</nav>

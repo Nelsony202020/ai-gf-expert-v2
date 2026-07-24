@@ -48,7 +48,18 @@ export interface HtmlSitemapSection {
   title: string;
   count: number;
   icon: string;
-  tone: 'amber' | 'lime' | 'green';
+  tone: 'amber' | 'lime' | 'green' | 'blue' | 'purple';
   links: HtmlSitemapLink[];
   viewAll: HtmlSitemapLink | null;
+}
+
+export interface HtmlSitemapFullPage {
+  reviews: HtmlSitemapLink[];
+  roundups: HtmlSitemapLink[];
+  guides: HtmlSitemapLink[];
+  authors: HtmlSitemapLink[];
+  testCount: number;
+  resourcesLegalCount: number;
+  resources: HtmlSitemapLink[];
+  legal: HtmlSitemapLink[];
 }

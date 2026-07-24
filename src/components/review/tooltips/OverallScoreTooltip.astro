@@ -1,10 +1,6 @@
 ---
 import type { Product } from '../../../data/products';
-import { products } from '../../../data/products';
-import { getScoreChipClass, fmtScore } from '../../../lib/scores';
-import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
-import TooltipActionLinks from './TooltipActionLinks.astro';
-import InlineTestLink from './InlineTestLink.astro';
+import OverallScoreTooltipPanel from './OverallScoreTooltipPanel.astro';
 import InfoIcon from '../../ui/InfoIcon.astro';
 
 interface Props {
@@ -16,17 +12,6 @@ interface Props {
 
 const { product, methodologyOnly = false, inlineTestLinks = false } = Astro.props;
 const tooltipId = `overall-${product.slug}`;
-
-const currentScore = product.overallScore;
-const currentChip = getScoreChipClass(currentScore);
-
-const scorePoints = products
-  .map((p) => ({ slug: p.slug, name: p.name, score: p.overallScore }))
-  .filter((x) => Number.isFinite(x.score));
-
-const avgScore = scorePoints.length
-  ? scorePoints.reduce((s, x) => s + x.score, 0) / scorePoints.length
-  : currentScore;
 ---
 
 <span
@@ -42,61 +27,5 @@ const avgScore = scorePoints.length
 </span>
 
 <template id={`tooltip-${tooltipId}`}>
-  <div class="ratings-tooltip-panel ratings-tooltip-panel--overall ratings-tooltip-panel--compact">
-    <div class="ratings-tooltip-panel__header ratings-tooltip-panel__header--compact">
-      <div class="ratings-tooltip-panel__header-grid">
-        <div class="min-w-0">
-          <p class="ratings-tooltip-panel__section-title">What it is</p>
-          <p class="ratings-tooltip-panel__desc">{product.overallSummary}</p>
-        </div>
-        <div class="ratings-tooltip-panel__score-block">
-          <div class="ratings-tooltip-panel__score-row">
-            <span class={`rt-score-chip ${currentChip}`}>{fmtScore(currentScore)}</span>
-            <span class="ratings-tooltip-panel__score-label">{product.name}</span>
-          </div>
-          <p class="ratings-tooltip-panel__avg">
-            Avg: <span class="tabular-nums">{fmtScore(avgScore)}</span>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
-      <div class="ratings-tooltip-panel__split">
-        <div class="ratings-tooltip-panel__split-col">
-          <p class="ratings-tooltip-panel__section-title">Where this sits</p>
-          <RatingHierarchyPipeline highlight="overall" brandName={product.name} showTitle={false} />
-        </div>
-        <div class="ratings-tooltip-panel__split-col">
-          <p class="ratings-tooltip-panel__section-title">Category scores</p>
-          <div class="rt-comp-list rt-comp-list--dense">
-            {
-              product.categories.map((category) => {
-                const chip = getScoreChipClass(category.score);
-                return (
-                  <div class="rt-comp-row rt-comp-row--inline">
-                    <div class="rt-comp-row__main">
-                      <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(category.score)}</span>
-                      {
-                        inlineTestLinks ? (
-                          <InlineTestLink categoryKey={category.key} class="rt-comp-name rt-comp-name--truncate">
-                            {category.name}
-                          </InlineTestLink>
-                        ) : (
-                          <>
-                            <span class="rt-comp-name rt-comp-name--truncate">{category.name}</span>
-                            <TooltipActionLinks categoryKey={category.key} compact methodologyOnly={methodologyOnly} />
-                          </>
-                        )
-                      }
-                    </div>
-                  </div>
-                );
-              })
-            }
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <OverallScoreTooltipPanel product={product} methodologyOnly={methodologyOnly} inlineTestLinks={inlineTestLinks} />
 </template>

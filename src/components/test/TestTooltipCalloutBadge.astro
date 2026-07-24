@@ -1,0 +1,18 @@
+---
+interface Props {
+  n: number;
+  anchorId: string;
+}
+
+const { n, anchorId } = Astro.props;
+const descId = `${anchorId}-desc`;
+---
+
+<a
+  href={`#${descId}`}
+  class="test-tooltip-callout-badge"
+  data-tooltip-callout-badge={n}
+  aria-label={`Jump to explanation ${n}`}
+>
+  {n}
+</a>

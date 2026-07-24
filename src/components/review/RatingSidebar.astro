@@ -14,7 +14,7 @@ const { product } = Astro.props;
 const overall = getScoreVisual(product.overallScore);
 ---
 
-<div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm sticky top-24">
+<div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm sticky top-4">
   <div class={`${overall.bg} p-5 flex items-center gap-4 min-h-[72px]`}>
     <span class="inline-flex items-center justify-center min-w-[3.25rem] text-3xl font-black tabular-nums">{fmtScore(product.overallScore)}</span>
     <span class="text-lg font-bold flex items-center gap-1.5">

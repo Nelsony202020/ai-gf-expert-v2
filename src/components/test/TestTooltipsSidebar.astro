@@ -1,0 +1,84 @@
+---
+import type { TestCategoryNode } from '../../lib/test-framework';
+import { testTooltipsRelatedMethodology, testTooltipsTocSections } from '../../data/test-tooltips-content';
+import { testHubUrl } from '../../lib/slugs';
+
+interface Props {
+  categories: TestCategoryNode[];
+  mobile?: boolean;
+}
+
+const { categories, mobile = false } = Astro.props;
+const linkAttr = mobile ? { 'data-test-hub-sheet-link': true } : {};
+---
+
+<nav class="test-hub-nav test-hub-nav--panel" aria-label="Tooltip guide navigation" data-test-hub-nav>
+  <div class="test-hub-nav__section">
+    <p class="test-hub-nav__label">On this page</p>
+    <ul class="test-hub-nav__list test-hub-nav__list--primary">
+      {
+        testTooltipsTocSections.map((section) => (
+          <li>
+            <a
+              href={`#${section.id}`}
+              class="test-hub-nav__link"
+              data-test-hub-nav-link
+              data-section-id={section.id}
+              {...linkAttr}
+            >
+              {section.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <details class="test-hub-nav__group">
+    <summary class="test-hub-nav__group-toggle">
+      <span class="test-hub-nav__group-label">
+        <span class="material-symbols-outlined test-hub-nav__group-icon" aria-hidden="true">menu_book</span>
+        <span>Related methodology</span>
+      </span>
+      <span class="material-symbols-outlined test-hub-nav__chevron" aria-hidden="true">expand_more</span>
+    </summary>
+    <ul class="test-hub-nav__list test-hub-nav__list--nested">
+      {
+        testTooltipsRelatedMethodology.map((link) => (
+          <li>
+            <a href={link.href} class="test-hub-nav__link test-hub-nav__link--nested" {...linkAttr}>
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </details>
+
+  <details class="test-hub-nav__group">
+    <summary class="test-hub-nav__group-toggle">
+      <span class="test-hub-nav__group-label">
+        <span class="material-symbols-outlined test-hub-nav__group-icon" aria-hidden="true">category</span>
+        <span>Explore tests</span>
+      </span>
+      <span class="material-symbols-outlined test-hub-nav__chevron" aria-hidden="true">expand_more</span>
+    </summary>
+    <ul class="test-hub-nav__list test-hub-nav__list--nested">
+      {
+        categories.map((cat) => (
+          <li>
+            <a href={cat.href} class="test-hub-nav__link test-hub-nav__link--nested" {...linkAttr}>
+              {cat.name}
+            </a>
+          </li>
+        ))
+      }
+      <li>
+        <a href={`${testHubUrl()}#full-framework`} class="test-hub-nav__link test-hub-nav__link--nested test-hub-nav__link--footer" {...linkAttr}>
+          View all tests
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+        </a>
+      </li>
+    </ul>
+  </details>
+</nav>
