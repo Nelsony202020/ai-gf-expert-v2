@@ -382,7 +382,17 @@ const auraAi: Product = {
   },
 };
 
-export const products: Product[] = [auraAi];
+/**
+ * File-based products (fallback / pre-migration content).
+ * The canonical source of truth is InstantDB: when USE_DB_CONTENT=1 is set,
+ * published DB products (with published test-run scores) replace these at
+ * build time via the content store. See src/lib/content/store.ts.
+ */
+const fileProducts: Product[] = [auraAi];
+
+const { loadProductsWithDb } = await import('../lib/content/store');
+
+export const products: Product[] = await loadProductsWithDb(fileProducts);
 
 export function getProduct(slug: string): Product | undefined {
   return products.find((p) => p.slug === slug);

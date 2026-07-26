@@ -89,13 +89,26 @@
 
       e.preventDefault();
 
+      trigger.classList.add('is-coming-soon-pressed');
+      window.setTimeout(() => trigger.classList.remove('is-coming-soon-pressed'), 220);
+
       if (kind === 'accounts') {
         openAccounts();
         return;
       }
 
       if (kind === 'compare') {
-        toast('Side-by-side comparisons are coming soon.');
+        toast('Coming soon — side-by-side comparisons are in development.');
+        return;
+      }
+
+      if (kind === 'like') {
+        toast('Coming soon — likes are in development.');
+        return;
+      }
+
+      if (kind === 'save') {
+        toast('Coming soon — save is in development.');
         return;
       }
 

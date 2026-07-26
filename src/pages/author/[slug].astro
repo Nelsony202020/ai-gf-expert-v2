@@ -18,7 +18,9 @@ if (!author) {
   return Astro.redirect('/404');
 }
 
-const title = `${author.name} — Lovelace Reviews`;
+const title = `${author.name} — AI Girlfriend Expert`;
+const intro = author.intro?.length ? author.intro : [author.bio];
+const firstName = author.name.split(' ')[0];
 ---
 
 <BaseLayout title={title} description={author.bio}>
@@ -33,7 +35,11 @@ const title = `${author.name} — Lovelace Reviews`;
 
     <div class="max-w-3xl">
       <div class="flex items-start gap-5 mb-8">
-        <img src={author.avatar} alt={author.name} class="w-24 h-24 rounded-full object-cover border-2 border-surface-variant shadow-sm shrink-0" />
+        <img
+          src={author.avatar}
+          alt={author.name}
+          class="w-24 h-24 rounded-full object-cover border-2 border-surface-variant shadow-sm shrink-0"
+        />
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-3xl md:text-4xl font-black text-on-surface">{author.name}</h1>
@@ -46,23 +52,160 @@ const title = `${author.name} — Lovelace Reviews`;
         </div>
       </div>
 
-      <p class="text-base text-on-surface-variant leading-relaxed mb-8">{author.bio}</p>
+      {
+        intro.map((p) => (
+          <p class="text-base text-on-surface-variant leading-relaxed mb-6">{p}</p>
+        ))
+      }
 
-      <div class="flex flex-wrap gap-2">
-        {
-          author.socials.map((s) => (
-            <a
-              href={s.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-surface-variant text-sm font-semibold text-on-surface-variant hover:border-primary-container hover:text-primary-container transition-colors"
-            >
-              <SocialIcon platform={s.icon} class="w-4 h-4" />
-              {s.platform}
-            </a>
-          ))
-        }
-      </div>
+      {
+        author.socials.length > 0 && (
+          <div class="flex flex-wrap gap-2 mb-10">
+            {
+              author.socials.map((s) => (
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-surface-variant text-sm font-semibold text-on-surface-variant hover:border-primary-container hover:text-primary-container transition-colors"
+                >
+                  <SocialIcon platform={s.icon} class="w-4 h-4" />
+                  {s.platform}
+                </a>
+              ))
+            }
+          </div>
+        )
+      }
+
+      {
+        author.featuredIn?.length && (
+          <section class="mb-10">
+            <h2 class="text-xs font-extrabold uppercase tracking-widest text-tertiary mb-4">Featured In</h2>
+            <div class="flex flex-wrap items-center gap-6">
+              {
+                author.featuredIn.map((outlet) => (
+                  <img
+                    src={outlet.logo}
+                    alt={outlet.name}
+                    class="h-6 w-auto object-contain opacity-70 grayscale"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ))
+              }
+            </div>
+          </section>
+        )
+      }
+
+      {
+        author.youtubeVideoId && (
+          <div class="mb-10 aspect-video rounded-xl overflow-hidden border border-surface-variant">
+            <iframe
+              src={`https://www.youtube.com/embed/${author.youtubeVideoId}`}
+              title={`${author.name} on YouTube`}
+              class="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+              loading="lazy"
+            />
+          </div>
+        )
+      }
+
+      {
+        (author.education?.length || author.specialties?.length) && (
+          <section class="mb-10">
+            <h2 class="text-2xl font-black text-on-surface mb-6">{firstName}’s Background</h2>
+
+            {
+              author.education?.length && (
+                <div class="mb-8">
+                  <h3 class="text-sm font-extrabold uppercase tracking-widest text-tertiary mb-4">Education</h3>
+                  <ul class="space-y-4">
+                    {
+                      author.education.map((item) => (
+                        <li>
+                          <p class="text-xs font-extrabold text-accent mb-1">{item.period}</p>
+                          <p class="text-sm font-bold text-on-surface">{item.title}</p>
+                          {item.detail && <p class="text-sm text-on-surface-variant mt-1 leading-relaxed">{item.detail}</p>}
+                        </li>
+                      ))
+                    }
+                  </ul>
+                </div>
+              )
+            }
+
+            {
+              author.specialties?.length && (
+                <div>
+                  <h3 class="text-sm font-extrabold uppercase tracking-widest text-tertiary mb-4">Specialties</h3>
+                  <ul class="space-y-4">
+                    {
+                      author.specialties.map((item) => (
+                        <li>
+                          <p class="text-sm font-bold text-on-surface">{item.title}</p>
+                          <p class="text-sm text-on-surface-variant mt-1 leading-relaxed">{item.body}</p>
+                        </li>
+                      ))
+                    }
+                  </ul>
+                </div>
+              )
+            }
+          </section>
+        )
+      }
+
+      {
+        author.workExperience && (
+          <section class="mb-10">
+            <h2 class="text-2xl font-black text-on-surface mb-4">Work Experience</h2>
+            <p class="text-base text-on-surface-variant leading-relaxed">{author.workExperience}</p>
+          </section>
+        )
+      }
+
+      {
+        author.pressAppearances?.length && (
+          <section class="mb-10">
+            <h2 class="text-2xl font-black text-on-surface mb-4">Press Appearances</h2>
+            <ul class="space-y-4">
+              {
+                author.pressAppearances.map((item) => (
+                  <li class="flex gap-4">
+                    <span class="text-sm font-extrabold text-accent shrink-0 w-12">{item.year}</span>
+                    <p class="text-sm text-on-surface-variant leading-relaxed">{item.body}</p>
+                  </li>
+                ))
+              }
+            </ul>
+          </section>
+        )
+      }
+
+      {
+        (author.quote || author.signature) && (
+          <footer class="pt-6 border-t border-surface-variant">
+            {author.quote && (
+              <p class="text-base italic text-on-surface leading-relaxed mb-4">“{author.quote}”</p>
+            )}
+            {
+              author.signature && (
+                <img
+                  src={author.signature}
+                  alt={`${author.name} signature`}
+                  class="h-12 w-auto"
+                  loading="lazy"
+                  decoding="async"
+                />
+              )
+            }
+          </footer>
+        )
+      }
     </div>
   </main>
   <Footer />

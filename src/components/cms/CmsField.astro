@@ -1,0 +1,19 @@
+---
+/** Marks copy that is sourced from the admin CMS / InstantDB product fields. */
+interface Props {
+  /** Admin field name shown in the hover hint, e.g. `tagline`. */
+  field: string;
+  as?: 'span' | 'p' | 'div' | 'li' | 'strong' | 'a';
+  class?: string;
+}
+
+const { field, as: Tag = 'span', class: className } = Astro.props;
+---
+
+<Tag
+  class:list={['cms-field', className]}
+  data-cms-field={field}
+  title={`CMS · ${field}`}
+>
+  <slot />
+</Tag>

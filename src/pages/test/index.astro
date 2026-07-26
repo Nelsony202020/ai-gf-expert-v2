@@ -2,7 +2,12 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import TestBreadcrumbs from '../../components/test/TestBreadcrumbs.astro';
+import TestCategoryHero from '../../components/test/TestCategoryHero.astro';
+import TestHubHeroIntro from '../../components/test/TestHubHeroIntro.astro';
+import TestHubRoundupSidebar from '../../components/test/TestHubRoundupSidebar.astro';
+import TestHubMobileNavSheet from '../../components/test/TestHubMobileNavSheet.astro';
+import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
+import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
 import TestHubCategoryCards from '../../components/test/TestHubCategoryCards.astro';
 import TestHubFrameworkAccordion from '../../components/test/TestHubFrameworkAccordion.astro';
 import TestHubHierarchyPipeline from '../../components/test/TestHubHierarchyPipeline.astro';
@@ -12,17 +17,19 @@ import TestHubScoreLocations from '../../components/test/TestHubScoreLocations.a
 import TestHubScoreExample from '../../components/test/TestHubScoreExample.astro';
 import TestHubSubscoreBrowse from '../../components/test/TestHubSubscoreBrowse.astro';
 import TestHubSubscoreExample from '../../components/test/TestHubSubscoreExample.astro';
-import TestHubSidebar from '../../components/test/TestHubSidebar.astro';
 import RoundupFaq from '../../components/roundup/RoundupFaq.astro';
 import { getTestCategories } from '../../lib/test-framework';
 import {
   testHubFaq,
   testHubProcessSteps,
-  testHubTrustMetrics,
   testHubVersions,
 } from '../../data/test-hub-content';
 import { testHubScoredVsInformational } from '../../data/methodology-support-content';
-import { testHubUrl } from '../../lib/slugs';
+import {
+  testHubFeaturedImage,
+  testHubFeaturedImageAlt,
+  testMethodologyPageMeta,
+} from '../../data/test-category-pages';
 import '../../styles/test-hub.css';
 import '../../styles/ratings-tooltips.css';
 
@@ -33,51 +40,26 @@ const testFaqItems = testHubFaq.map((item) => ({
   answer: item.a,
 }));
 const pageTitle = 'How We Test AI Girlfriend Apps — AI Girlfriend Expert';
+const canonical = new URL('/test/', Astro.site ?? Astro.url.origin).toString();
 ---
 
 <BaseLayout
   title={pageTitle}
   description="How we test AI girlfriend apps using paid accounts, structured scenarios, and measurable evidence across eight rating categories."
+  image={testHubFeaturedImage}
 >
   <Header />
-  <main class="test-hub">
-    <div class="section-container px-4 md:px-8">
-      <div class="test-hub__hero">
-        <TestBreadcrumbs
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'How We Test' },
-          ]}
-        />
-        <p class="test-hub__eyebrow">Testing methodology</p>
-        <h1 class="test-hub__title">How We Test AI Girlfriend Apps</h1>
-        <p class="test-hub__intro">
-          In a world where everyone hammers out AI-generated affiliate articles and calls themselves an “expert” who gives honest reviews, we do things differently.
-        </p>
-        <p class="test-hub__intro test-hub__intro--spaced">
-          Every AI girlfriend app mentioned on aigirlfriend.expert goes through a rigorous review process that relies heavily on data-driven scores.
-        </p>
-        <p class="test-hub__intro test-hub__intro--spaced">
-          This page explains our entire scoring process, what those scores mean, and how we calculate them.
-        </p>
-        <ul class="test-hub__metrics">
-          {
-            testHubTrustMetrics.map((m) => (
-              <li class="test-hub__metric">
-                <span class="material-symbols-outlined" aria-hidden="true">{m.icon}</span>
-                {m.value}
-              </li>
-            ))
-          }
-        </ul>
-      </div>
+  <main class="roundup-page test-hub-page" id="test-hub-top">
+    <TestCategoryHero image={testHubFeaturedImage} alt={testHubFeaturedImageAlt} />
 
-      <div class="test-hub__layout">
-        <aside class="test-hub__toc test-hub__toc--desktop" aria-label="Table of contents">
-          <TestHubSidebar categories={categories} />
-        </aside>
+    <div class="section-container px-4 md:px-8 pb-16 md:pb-24">
+      <div class="roundup-layout">
+        <TestHubRoundupSidebar categories={categories} />
 
-        <article class="test-hub__main">
+        <div class="roundup-main min-w-0">
+          <TestHubHeroIntro meta={testMethodologyPageMeta} shareUrl={canonical} />
+
+          <article class="test-hub__main">
           <section id="how-scores-work" class="test-hub__section">
             <h2 class="test-hub__h2">How our rating system works</h2>
             <p class="test-hub__lead">
@@ -167,7 +149,7 @@ const pageTitle = 'How We Test AI Girlfriend Apps — AI Girlfriend Expert';
               )
             }
 
-            <h3 class="test-hub__h3 test-hub__h3--spaced">Browse all subscores</h3>
+            <h3 id="browse-all-subscores" class="test-hub__h3 test-hub__h3--spaced">Browse all subscores</h3>
             <TestHubSubscoreBrowse categories={categories} />
           </section>
 
@@ -201,13 +183,6 @@ const pageTitle = 'How We Test AI Girlfriend Apps — AI Girlfriend Expert';
             </p>
             <ul class="test-beyond-links">
               <li class="test-beyond-links__item">
-                <a class="test-beyond-links__title" href="/review-process/">
-                  Review process
-                  <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-                </a>
-                <p class="test-beyond-links__desc">Written reviews, personal experience, screenshots, galleries, and YouTube video reviews.</p>
-              </li>
-              <li class="test-beyond-links__item">
                 <a class="test-beyond-links__title" href="/test/market-data/">
                   Market data methodology
                   <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
@@ -222,7 +197,7 @@ const pageTitle = 'How We Test AI Girlfriend Apps — AI Girlfriend Expert';
                 <p class="test-beyond-links__desc">Independence, fact-checking, corrections, and affiliate disclosures.</p>
               </li>
             </ul>
-            <h3 class="test-hub__h3">Scored vs informational</h3>
+            <h3 id="scored-vs-informational" class="test-hub__h3">Scored vs informational</h3>
             <table class="test-scored-table">
               <thead>
                 <tr>
@@ -280,110 +255,45 @@ const pageTitle = 'How We Test AI Girlfriend Apps — AI Girlfriend Expert';
           </section>
 
           <RoundupFaq sectionId="faq" sectionClass="test-hub__section" items={testFaqItems} />
-        </article>
-      </div>
-    </div>
-
-    <button type="button" class="test-hub__mobile-toc-btn lg:hidden" data-test-hub-toc-open aria-label="Open table of contents">
-      <span class="material-symbols-outlined" aria-hidden="true">description</span>
-    </button>
-
-    <div class="test-hub-sheet" data-test-hub-sheet hidden aria-hidden="true">
-      <div class="test-hub-sheet__backdrop" data-test-hub-sheet-close tabindex="-1"></div>
-      <div class="test-hub-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="test-hub-sheet-title">
-        <h2 id="test-hub-sheet-title" class="test-hub-sheet__title">Contents</h2>
-        <TestHubSidebar categories={categories} mobile />
+          </article>
+        </div>
       </div>
     </div>
   </main>
   <Footer />
+  <TestHubMobileNavSheet categories={categories} active="how-we-test" />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
+  <RatingsTooltipInit />
 
   <script>
-    function initTestHubNav() {
-      const navs = Array.from(document.querySelectorAll('[data-test-hub-nav]'));
-      if (!navs.length || document.documentElement.dataset.testHubNavBound === 'true') return;
-      document.documentElement.dataset.testHubNavBound = 'true';
+    function initAuthorPopovers() {
+      document.querySelectorAll<HTMLElement>('[data-author-trigger]').forEach((trigger) => {
+        if (trigger.dataset.bound === 'true') return;
+        trigger.dataset.bound = 'true';
 
-      const sectionLinks = Array.from(
-        navs[0].querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]'),
-      );
-      if (!sectionLinks.length) return;
+        const slug = trigger.dataset.authorTrigger;
+        const popover = document.querySelector<HTMLElement>(`[data-author-bio-popover="${slug}"]`);
+        if (!popover) return;
 
-      const sections = sectionLinks
-        .map((link) => {
-          const id = link.dataset.sectionId;
-          return id ? document.getElementById(id) : null;
-        })
-        .filter((section): section is HTMLElement => section instanceof HTMLElement);
+        let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
-      const setActive = (id: string | null) => {
-        navs.forEach((nav) => {
-          nav.querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]').forEach((link) => {
-            const active = link.dataset.sectionId === id;
-            link.classList.toggle('is-active', active);
-            if (active) link.setAttribute('aria-current', 'location');
-            else link.removeAttribute('aria-current');
-          });
-        });
-      };
+        const show = () => {
+          if (hideTimer) clearTimeout(hideTimer);
+          popover.hidden = false;
+        };
 
-      const scrollOffset = 24;
+        const hide = () => {
+          hideTimer = setTimeout(() => {
+            popover.hidden = true;
+          }, 120);
+        };
 
-      navs.forEach((nav) => {
-        nav.querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]').forEach((link) => {
-          link.addEventListener('click', (event) => {
-            const id = link.dataset.sectionId;
-            if (!id) return;
-            const section = document.getElementById(id);
-            if (!section) return;
-            event.preventDefault();
-            const y = section.getBoundingClientRect().top + window.scrollY - scrollOffset;
-            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-            history.pushState(null, '', `#${id}`);
-            setActive(id);
-          });
-        });
-      });
-
-      const updateActiveSection = () => {
-        const marker = window.scrollY + scrollOffset + 8;
-        let currentId: string | null = sections[0]?.id ?? null;
-
-        for (const section of sections) {
-          if (section.offsetTop <= marker) currentId = section.id;
-          else break;
-        }
-
-        setActive(currentId);
-      };
-
-      updateActiveSection();
-      window.addEventListener('scroll', updateActiveSection, { passive: true });
-      window.addEventListener('resize', updateActiveSection);
-    }
-
-    function initTestHubSheet() {
-      const sheet = document.querySelector('[data-test-hub-sheet]');
-      const openBtn = document.querySelector('[data-test-hub-toc-open]');
-      if (!sheet || !openBtn || openBtn.dataset.bound === 'true') return;
-      openBtn.dataset.bound = 'true';
-
-      function close() {
-        sheet.hidden = true;
-        sheet.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('roundup-sheet-open');
-      }
-
-      function open() {
-        sheet.hidden = false;
-        sheet.setAttribute('aria-hidden', 'false');
-        document.body.classList.add('roundup-sheet-open');
-      }
-
-      openBtn.addEventListener('click', open);
-      sheet.querySelector('[data-test-hub-sheet-close]')?.addEventListener('click', close);
-      sheet.querySelectorAll('[data-test-hub-sheet-link]').forEach((link) => {
-        link.addEventListener('click', close);
+        trigger.addEventListener('mouseenter', show);
+        trigger.addEventListener('focus', show);
+        trigger.addEventListener('mouseleave', hide);
+        trigger.addEventListener('blur', hide);
+        popover.addEventListener('mouseenter', show);
+        popover.addEventListener('mouseleave', hide);
       });
     }
 
@@ -445,12 +355,10 @@ const pageTitle = 'How We Test AI Girlfriend Apps — AI Girlfriend Expert';
       }
     }
 
-    initTestHubNav();
-    initTestHubSheet();
+    initAuthorPopovers();
     initCategoryJumpHighlight();
     document.addEventListener('astro:page-load', () => {
-      initTestHubNav();
-      initTestHubSheet();
+      initAuthorPopovers();
       initCategoryJumpHighlight();
     });
   </script>

@@ -35,18 +35,12 @@
         const dark = root.getAttribute('data-theme') === 'dark';
         const nextDark = !dark;
 
-        const switchTheme = () => {
-          applyTheme(nextDark);
-          syncAll();
-        };
-
-        if (typeof document.startViewTransition === 'function') {
-          document.startViewTransition(switchTheme);
-        } else {
-          root.classList.add('theme-transition');
-          switchTheme();
-          window.setTimeout(() => root.classList.remove('theme-transition'), 320);
-        }
+        // Avoid view transitions — they snapshot the old header/logo and can
+        // flash duplicate logo/text below the header during the crossfade.
+        root.classList.add('theme-transition');
+        applyTheme(nextDark);
+        syncAll();
+        window.setTimeout(() => root.classList.remove('theme-transition'), 320);
       });
     });
 

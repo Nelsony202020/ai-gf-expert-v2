@@ -124,11 +124,15 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
     });
 
     const SCROLL_KEY_PREFIX = 'hub-nav-scroll:';
-    const path = window.location.pathname;
 
     sheet.querySelectorAll<HTMLAnchorElement>('[data-hub-nav-link]').forEach((link) => {
       link.addEventListener('click', () => {
-        sessionStorage.setItem(SCROLL_KEY_PREFIX + path, String(window.scrollY));
+        try {
+          const dest = new URL(link.href, window.location.href).pathname;
+          sessionStorage.removeItem(SCROLL_KEY_PREFIX + dest);
+        } catch {
+          /* ignore malformed href */
+        }
       });
     });
   }

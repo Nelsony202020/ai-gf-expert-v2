@@ -42,30 +42,23 @@ const { active = 'best-apps' } = Astro.props;
     nav.dataset.bound = 'true';
 
     const SCROLL_KEY_PREFIX = 'hub-nav-scroll:';
-    const path = window.location.pathname;
 
-    function saveScroll() {
-      sessionStorage.setItem(SCROLL_KEY_PREFIX + path, String(window.scrollY));
-    }
-
-    function restoreScroll() {
-      const saved = sessionStorage.getItem(SCROLL_KEY_PREFIX + path);
-      if (saved == null) return;
-      const y = Number.parseInt(saved, 10);
-      if (!Number.isFinite(y)) return;
-      requestAnimationFrame(() => {
-        window.scrollTo(0, y);
+    try {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith(SCROLL_KEY_PREFIX)) sessionStorage.removeItem(key);
       });
+    } catch {
+      /* ignore storage errors */
     }
 
-    restoreScroll();
-    window.addEventListener('pageshow', (event) => {
-      if (event.persisted) restoreScroll();
-    });
-
-    document.querySelectorAll('[data-hub-nav-link]').forEach((link) => {
+    document.querySelectorAll<HTMLAnchorElement>('[data-hub-nav-link]').forEach((link) => {
       link.addEventListener('click', () => {
-        saveScroll();
+        try {
+          const dest = new URL(link.href, window.location.href).pathname;
+          sessionStorage.removeItem(SCROLL_KEY_PREFIX + dest);
+        } catch {
+          /* ignore malformed href */
+        }
       });
     });
   }

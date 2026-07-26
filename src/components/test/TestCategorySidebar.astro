@@ -1,0 +1,104 @@
+---
+import type { TestCategoryNode } from '../../lib/test-framework';
+import { testHubRelatedMethodology } from '../../data/test-hub-content';
+import { testHubUrl } from '../../lib/slugs';
+
+interface Props {
+  category: TestCategoryNode;
+}
+
+const { category } = Astro.props;
+---
+
+<aside class="roundup-sidebar" aria-label="Category methodology navigation">
+  <nav class="roundup-toc" aria-label="Table of contents">
+    <p class="roundup-toc__title">Contents</p>
+    <ul class="roundup-toc__list">
+      <li>
+        <a class="roundup-toc__link roundup-toc__link--top" href="#test-category-top">
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+          Top
+        </a>
+      </li>
+      <li>
+        <a class="roundup-toc__link" href="#category-subscores" data-toc-link="category-subscores">
+          Subscores
+        </a>
+        <ul class="roundup-toc__sublist">
+          {
+            category.subscores.map((sub) => (
+              <li>
+                <a
+                  class="roundup-toc__link roundup-toc__link--h3"
+                  href={`#${sub.slug}`}
+                  data-toc-link={sub.slug}
+                >
+                  {sub.name}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </li>
+      <li>
+        <a class="roundup-toc__link" href={testHubUrl()} data-toc-link="how-we-test">
+          How we test
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <nav class="roundup-toc test-category-sidebar__related" aria-label="Related methodology">
+    <p class="roundup-toc__title">Related</p>
+    <ul class="roundup-toc__list">
+      {
+        testHubRelatedMethodology.map((link) => (
+          <li>
+            <a class="roundup-toc__link" href={link.href}>
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+      <li>
+        <a class="roundup-toc__link" href={`${testHubUrl()}#full-framework`}>
+          All eight categories
+        </a>
+      </li>
+    </ul>
+  </nav>
+</aside>
+
+<script>
+  function initTestCategorySidebar() {
+    const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]'));
+    const sections = tocLinks
+      .map((link) => {
+        const id = link.dataset.tocLink!;
+        const el = document.getElementById(id);
+        return el ? { link, el } : null;
+      })
+      .filter((x): x is { link: HTMLAnchorElement; el: HTMLElement } => !!x);
+
+    if (!sections.length) return;
+
+    function updateTocActive() {
+      const offset = 100;
+      let current: string | null = null;
+      for (const { link, el } of sections) {
+        if (el.getBoundingClientRect().top - offset <= 0) {
+          current = link.dataset.tocLink!;
+        }
+      }
+      tocLinks.forEach((link) => {
+        link.classList.toggle('is-active', link.dataset.tocLink === current);
+      });
+    }
+
+    window.addEventListener('scroll', updateTocActive, { passive: true });
+    updateTocActive();
+  }
+
+  initTestCategorySidebar();
+  document.addEventListener('astro:page-load', initTestCategorySidebar);
+</script>

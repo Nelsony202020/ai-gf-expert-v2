@@ -1,5 +1,7 @@
 /** Explore mega menu — update links as content is published. */
 
+import { buyingGuideSlug } from './buying-guide-content';
+
 export interface MegaMenuLink {
   label: string;
   href: string;
@@ -45,10 +47,6 @@ export const megaMenuColumns: MegaMenuColumn[] = [
     description: 'In-depth reviews and ratings of AI girlfriend platforms.',
     links: [
       { label: 'Aura AI Review', href: '/reviews/aura-ai' },
-      { label: 'FantasyGF Review', href: '#' },
-      { label: 'DreamGF Review', href: '#' },
-      { label: 'Candy AI Review', href: '#' },
-      { label: 'Kindroid Review', href: '#' },
     ],
     viewAll: { label: 'View all reviews', href: '/' },
   },
@@ -59,10 +57,6 @@ export const megaMenuColumns: MegaMenuColumn[] = [
     description: 'Curated lists to help you find the best AI girlfriend apps.',
     links: [
       { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend' },
-      { label: 'Best Free AI Girlfriends', href: '#' },
-      { label: 'Most Realistic AI Girlfriends', href: '#' },
-      { label: 'Best AI Roleplay Apps', href: '#' },
-      { label: 'Best AI Sexting Apps', href: '#' },
     ],
     viewAll: { label: 'View all best picks', href: '/best/ai-girlfriend' },
   },
@@ -70,14 +64,13 @@ export const megaMenuColumns: MegaMenuColumn[] = [
     id: 'guides',
     title: 'Guides',
     icon: 'menu_book',
-    description: 'Expert guides and tips to get the most from AI companions.',
+    description: 'Practical guides to choosing and using AI girlfriend apps.',
     links: [
-      { label: 'AI Girlfriend Buying Guide', href: '#' },
-      { label: 'Getting Started', href: '#' },
-      { label: 'Privacy & Safety', href: '#' },
-      { label: 'Pricing Guides', href: '#' },
-      { label: 'Prompting Tips', href: '#' },
+      {
+        label: 'How to Choose an AI Girlfriend App',
+        href: `/guides/${buyingGuideSlug}`,
+      },
     ],
-    viewAll: { label: 'View all guides', href: '#' },
+    viewAll: { label: 'View all guides', href: '/guides' },
   },
 ];

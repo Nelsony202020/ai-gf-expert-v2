@@ -2,6 +2,7 @@
 import type { HomeExplorerApp } from '../../data/homepage';
 import InfoIcon from '../ui/InfoIcon.astro';
 import VerifiedCheck from '../ui/VerifiedCheck.astro';
+import CmsField from '../cms/CmsField.astro';
 
 interface Props {
   app: HomeExplorerApp;
@@ -32,7 +33,7 @@ const tooltipId = `brand-explorer-${app.id}`;
           </span>
         )}
       </p>
-      <p class="home-brand-tip__liner">{app.brandLiner}</p>
+      <CmsField field="tagline" as="p" class="home-brand-tip__liner">{app.tagline}</CmsField>
       <div class="home-brand-tip__divider" aria-hidden="true"></div>
       <ul class="home-brand-tip__rows">
         <li class="home-brand-tip__row">
@@ -41,7 +42,7 @@ const tooltipId = `brand-explorer-${app.id}`;
           </span>
           <div class="home-brand-tip__copy">
             <span class="home-brand-tip__label">Best for</span>
-            <span class="home-brand-tip__value">{app.bestFor}</span>
+            <CmsField field="bestFor" class="home-brand-tip__value">{app.bestFor}</CmsField>
           </div>
         </li>
         <li class="home-brand-tip__row">
@@ -50,7 +51,7 @@ const tooltipId = `brand-explorer-${app.id}`;
           </span>
           <div class="home-brand-tip__copy">
             <span class="home-brand-tip__label">Watch out for</span>
-            <span class="home-brand-tip__value">{app.watchOutFor}</span>
+            <CmsField field="notIdealFor" class="home-brand-tip__value">{app.watchOutFor}</CmsField>
           </div>
         </li>
       </ul>

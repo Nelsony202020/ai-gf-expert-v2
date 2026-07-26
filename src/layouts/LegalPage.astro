@@ -19,14 +19,58 @@ const trail =
   ];
 ---
 
-<BaseLayout title={`${title} — Lovelace Reviews`} description={description || title}>
+<BaseLayout title={`${title} — AI Girlfriend Expert`} description={description || title}>
   <Header />
   <main class="section-container px-4 md:px-8 py-14 md:py-16 max-w-3xl">
     <Breadcrumbs items={trail} />
     <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-6">{title}</h1>
-    <div class="prose prose-neutral max-w-none text-on-surface-variant leading-relaxed space-y-4">
+    <div class="legal-prose prose prose-neutral max-w-none text-on-surface-variant leading-relaxed space-y-4">
       <slot />
     </div>
   </main>
   <Footer />
 </BaseLayout>
+
+<style is:global>
+  .legal-prose h2 {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--color-on-surface);
+  }
+
+  .legal-prose h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .legal-prose ul,
+  .legal-prose ol {
+    padding-left: 1.25rem;
+  }
+
+  .legal-prose li + li {
+    margin-top: 0.35rem;
+  }
+
+  .legal-prose a {
+    color: var(--color-accent);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .legal-prose a:hover {
+    text-decoration: underline;
+  }
+
+  .legal-prose .legal-updated {
+    margin: 0 0 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-tertiary);
+  }
+</style>

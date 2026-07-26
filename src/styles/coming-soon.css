@@ -59,6 +59,17 @@
   transform: translateX(0) translateY(0);
 }
 
+.home-app-card__like.coming-soon-tip::after {
+  left: auto;
+  right: 0;
+  transform: translateX(0) translateY(0.15rem);
+}
+
+.home-app-card__like.coming-soon-tip:hover::after,
+.home-app-card__like.coming-soon-tip:focus-visible::after {
+  transform: translateX(0) translateY(0);
+}
+
 .home-explorer__saved-btn.coming-soon-tip::after {
   left: auto;
   right: 0;
@@ -70,6 +81,20 @@
   transform: translateX(0) translateY(0);
 }
 
+.dir-row__actions .coming-soon-tip::after {
+  top: calc(100% + 0.4rem);
+  bottom: auto;
+  left: auto;
+  right: 0;
+  z-index: 50;
+  transform: translateX(0) translateY(-0.15rem);
+}
+
+.dir-row__actions .coming-soon-tip:hover::after,
+.dir-row__actions .coming-soon-tip:focus-visible::after {
+  transform: translateX(0) translateY(0);
+}
+
 .coming-soon-muted {
   opacity: 0.55;
 }
@@ -77,6 +102,10 @@
 .coming-soon-muted:hover,
 .coming-soon-muted:focus-visible {
   opacity: 0.75;
+}
+
+.coming-soon-muted.is-coming-soon-pressed {
+  opacity: 0.45;
 }
 
 .coming-soon-modal {

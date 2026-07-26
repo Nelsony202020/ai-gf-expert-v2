@@ -70,11 +70,7 @@ const evidenceBySubscore = category.subscores.map((sub) => {
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-1">
         <span class="text-lg md:text-xl font-bold text-on-surface truncate">{category.name}</span>
-        <CategoryScoreTooltip category={category} compact>
-          <span class="inline-flex text-tertiary hover:text-accent">
-            <span class="material-symbols-outlined text-[18px]">info</span>
-          </span>
-        </CategoryScoreTooltip>
+        <CategoryScoreTooltip category={category} compact />
       </div>
       <p class="text-xs text-tertiary font-medium">Weighting: {category.weight}%</p>
     </div>
@@ -130,11 +126,7 @@ const evidenceBySubscore = category.subscores.map((sub) => {
                           <span data-subscore-label class="text-sm font-bold transition-colors truncate text-on-surface">
                             {sub.name}
                           </span>
-                          <SubscoreScoreTooltip categoryKey={category.key} categoryName={category.name} sub={sub} compact>
-                            <span class="inline-flex shrink-0 text-tertiary/70 hover:text-primary-container">
-                              <span class="material-symbols-outlined text-[14px]">info</span>
-                            </span>
-                          </SubscoreScoreTooltip>
+                          <SubscoreScoreTooltip categoryKey={category.key} categoryName={category.name} sub={sub} compact />
                         </span>
                         <span class="text-[10px] text-tertiary leading-tight line-clamp-2">{sub.description}</span>
                       </div>

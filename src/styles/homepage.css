@@ -2504,6 +2504,50 @@ body.home-filters-open {
   color: var(--color-on-surface-variant);
 }
 
+.home-app-card__insights {
+  margin-bottom: 0.875rem;
+}
+
+.home-app-card__insights .dir-score-table {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 2rem;
+  width: 100%;
+  max-width: none;
+}
+
+.home-app-card__insights:not(.is-expanded) .dir-score-table__row--extra {
+  display: none;
+}
+
+.home-app-card__scores-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.home-app-card__scores-toggle .material-symbols-outlined {
+  font-size: 1.25rem;
+  transition: transform 0.2s ease;
+}
+
+.home-app-card__scores-toggle:hover {
+  color: var(--color-accent);
+  background: rgb(219 39 119 / 6%);
+}
+
+.home-app-card__insights.is-expanded .home-app-card__scores-toggle .material-symbols-outlined {
+  transform: rotate(180deg);
+}
+
 .home-app-card__metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

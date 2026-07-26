@@ -1,0 +1,152 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import TestCategoryHero from '../../components/test/TestCategoryHero.astro';
+import BuyingGuideHeroIntro from '../../components/guides/BuyingGuideHeroIntro.astro';
+import BuyingGuideSidebar from '../../components/guides/BuyingGuideSidebar.astro';
+import BuyingGuideMobileNavSheet from '../../components/guides/BuyingGuideMobileNavSheet.astro';
+import BuyingGuideFigure from '../../components/guides/BuyingGuideFigure.astro';
+import BuyingGuideQuiz from '../../components/guides/BuyingGuideQuiz.astro';
+import BuyingGuideUserTypeCard from '../../components/guides/BuyingGuideUserTypeCard.astro';
+import BuyingGuideNarrowDown from '../../components/guides/BuyingGuideNarrowDown.astro';
+import BuyingGuideTestingHelps from '../../components/guides/BuyingGuideTestingHelps.astro';
+import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
+import ArticleFeedbackLink from '../../components/article/ArticleFeedbackLink.astro';
+import {
+  buyingGuideFeaturedImage,
+  buyingGuideFeaturedImageAlt,
+  buyingGuideMeta,
+  buyingGuideSlug,
+  buyingGuideUserTypes,
+  commonMistakes,
+} from '../../data/buying-guide-content';
+import { enrichBuyingGuideUserTypes } from '../../lib/buying-guide-apps';
+import '../../styles/test-hub.css';
+import '../../styles/buying-guide.css';
+
+const pageTitle = 'How to Choose an AI Girlfriend App — Buying Guide — AI Girlfriend Expert';
+const description =
+  'A practical buying guide for AI girlfriend apps — figure out whether you are chat-first, media-first, or balanced, avoid common mistakes, and narrow your options using tested results.';
+const canonical = new URL(`/guides/${buyingGuideSlug}`, Astro.site ?? Astro.url.origin).toString();
+const enrichedUserTypes = await enrichBuyingGuideUserTypes(buyingGuideUserTypes);
+---
+
+<BaseLayout title={pageTitle} description={description} image={buyingGuideFeaturedImage}>
+  <Header />
+  <main class="roundup-page buying-guide-page" id="buying-guide-top">
+    <TestCategoryHero image={buyingGuideFeaturedImage} alt={buyingGuideFeaturedImageAlt} />
+
+    <div class="section-container px-4 md:px-8 pb-16 md:pb-24">
+      <div class="roundup-layout">
+        <BuyingGuideSidebar />
+
+        <div class="roundup-main min-w-0">
+          <BuyingGuideHeroIntro meta={buyingGuideMeta} shareUrl={canonical} />
+
+          <article class="test-hub__main">
+            <section id="what-type-of-user" class="test-hub__section">
+              <h2 class="test-hub__h2">What type of user are you?</h2>
+              <p class="test-hub__lead">
+                Most users I interview fall into one of three groups: chat-first users, image and video-first users, and balanced users. Take the quick test below to discover your type, then read the section that applies to you.
+              </p>
+
+              <div id="quick-test" class="buying-guide-subsection">
+                <BuyingGuideQuiz />
+              </div>
+
+              {
+                enrichedUserTypes.map((userType) => (
+                  <BuyingGuideUserTypeCard userType={userType} />
+                ))
+              }
+
+              <div id="monthly-cost" class="buying-guide-subsection">
+                <h3 class="test-hub__h3">Calculate your expected monthly cost</h3>
+                <div class="buying-guide-coming-soon">
+                  <span class="material-symbols-outlined buying-guide-coming-soon__icon" aria-hidden="true">calculate</span>
+                  <div>
+                    <p class="buying-guide-coming-soon__badge">Coming soon</p>
+                    <h3 class="buying-guide-coming-soon__title">AI girlfriend cost calculator</h3>
+                    <p class="buying-guide-coming-soon__text">
+                      We are working on an interactive cost calculator to help you estimate your expected monthly spend based on how you use the app.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section id="common-mistakes" class="test-hub__section">
+              <h2 class="test-hub__h2">Common mistakes when choosing an AI girlfriend app</h2>
+              {
+                commonMistakes.map((mistake) => (
+                  <div class="buying-guide-mistake" id={mistake.id}>
+                    <h3 class="test-hub__h3">{mistake.title}</h3>
+                    {mistake.paragraphs.map((paragraph) => (
+                      <p class="test-hub__lead">{paragraph}</p>
+                    ))}
+                    {
+                      mistake.figure && (
+                        <BuyingGuideFigure
+                          src={mistake.figure.src}
+                          alt={mistake.figure.alt}
+                          caption={mistake.figure.caption}
+                        />
+                      )
+                    }
+                  </div>
+                ))
+              }
+            </section>
+
+            <BuyingGuideNarrowDown />
+
+            <BuyingGuideTestingHelps />
+
+            <ArticleFeedbackLink pageTitle={pageTitle} pageUrl={canonical} />
+          </article>
+        </div>
+      </div>
+    </div>
+  </main>
+  <Footer />
+  <BuyingGuideMobileNavSheet active="buying-guide" />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
+
+  <script>
+    function initAuthorPopovers() {
+      document.querySelectorAll<HTMLElement>('[data-author-trigger]').forEach((trigger) => {
+        if (trigger.dataset.bound === 'true') return;
+        trigger.dataset.bound = 'true';
+
+        const slug = trigger.dataset.authorTrigger;
+        const popover = document.querySelector<HTMLElement>(`[data-author-bio-popover="${slug}"]`);
+        if (!popover) return;
+
+        let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+        const show = () => {
+          if (hideTimer) clearTimeout(hideTimer);
+          popover.hidden = false;
+        };
+
+        const hide = () => {
+          hideTimer = setTimeout(() => {
+            popover.hidden = true;
+          }, 120);
+        };
+
+        trigger.addEventListener('mouseenter', show);
+        trigger.addEventListener('focus', show);
+        trigger.addEventListener('mouseleave', hide);
+        trigger.addEventListener('blur', hide);
+
+        popover.addEventListener('mouseenter', show);
+        popover.addEventListener('mouseleave', hide);
+      });
+    }
+
+    initAuthorPopovers();
+    document.addEventListener('astro:page-load', initAuthorPopovers);
+  </script>
+</BaseLayout>

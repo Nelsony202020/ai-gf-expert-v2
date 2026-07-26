@@ -5,6 +5,7 @@ import { testHubRelatedMethodology, testHubTocSections } from '../../data/test-h
 interface TocSection {
   id: string;
   label: string;
+  children?: { id: string; label: string }[];
 }
 
 interface RelatedLink {

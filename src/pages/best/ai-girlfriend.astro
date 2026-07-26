@@ -9,6 +9,7 @@ import RoundupSelectionSection from '../../components/roundup/RoundupSelectionSe
 import RoundupSidebar from '../../components/roundup/RoundupSidebar.astro';
 import RoundupMobileSheets from '../../components/roundup/RoundupMobileSheets.astro';
 import RoundupMobileNavSheet from '../../components/roundup/RoundupMobileNavSheet.astro';
+import RoundupDetailedPicksHeader from '../../components/roundup/RoundupDetailedPicksHeader.astro';
 import RoundupPick from '../../components/roundup/RoundupPick.astro';
 import RoundupCompare from '../../components/roundup/RoundupCompare.astro';
 import RoundupTestingSection from '../../components/roundup/RoundupTestingSection.astro';
@@ -52,8 +53,7 @@ const canonical = new URL('/best/ai-girlfriend', Astro.site ?? Astro.url.origin)
           <RoundupSelectionSection selection={roundup.selection} />
 
           <section id="roundup-detailed-picks" class="scroll-mt-24">
-            <h2>{roundup.picksHeading}</h2>
-            <p class="roundup-picks-sort-label" data-roundup-sort-label>Ranked by overall rating</p>
+            <RoundupDetailedPicksHeader heading={roundup.picksHeading} picks={roundup.picks} />
 
             <div data-roundup-picks>
               {

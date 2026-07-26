@@ -15,7 +15,7 @@ const { heading, picks } = Astro.props;
     <h2 class="roundup-quick__heading">{heading}</h2>
     <button
       type="button"
-      class="roundup-sort-trigger lg:hidden"
+      class="roundup-sort-trigger roundup-mobile-only"
       data-sort-sheet-open
       aria-haspopup="dialog"
       aria-label="Change ranking sort"

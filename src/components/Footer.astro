@@ -9,20 +9,19 @@ const year = new Date().getFullYear();
 
 const columns = [
   {
-    title: 'Reviews & Advice',
+    title: 'Reviews',
     links: [
-      { label: 'AI Girlfriends', href: '#' },
-      { label: 'AI Companions', href: '#' },
-      { label: 'NSFW Apps', href: '#' },
-      { label: 'Character Chatbots', href: '#' },
+      { label: 'Aura AI Review', href: '/reviews/aura-ai' },
+      { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend' },
+      { label: 'App Directory', href: '/ai-girlfriend-apps' },
     ],
   },
   {
     title: 'Resources',
     links: [
-      { label: 'Best-Of Roundups', href: '#' },
-      { label: 'Buying Guides', href: '#' },
-      { label: 'Our Methodology', href: '#' },
+      { label: 'Our Methodology', href: '/test/' },
+      { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
+      { label: 'Editorial Process', href: '/editorial-process' },
       { label: 'FAQ', href: '/faq' },
       { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure' },
     ],
@@ -30,7 +29,7 @@ const columns = [
   {
     title: 'Company',
     links: [
-      { label: 'About Us', href: '#' },
+      { label: 'About Us', href: '/about' },
       { label: 'Contact', href: '/contact' },
       { label: 'HTML Sitemap', href: '/sitemap' },
     ],
@@ -44,22 +43,25 @@ const columns = [
   <div class="section-container px-4 md:px-8 relative z-[1]">
     <div class="site-footer__main">
       <div class="site-footer__brand">
-        <a href="/" class="site-logo-link inline-block mb-5">
+        <a href="/" class="site-logo-link site-footer__logo-link mb-5">
           <img
             src="/brand/ai-gf-logo-light.png"
             alt="AI Girlfriend Expert"
-            class="site-footer__logo site-footer__logo--light h-14 md:h-16 w-auto object-contain"
-            width="256"
-            height="256"
+            class="site-footer__logo site-footer__logo--light"
+            width="127"
+            height="100"
             loading="lazy"
+            decoding="async"
           />
           <img
             src="/brand/ai-gf-logo-white.png"
-            alt="AI Girlfriend Expert"
-            class="site-footer__logo site-footer__logo--dark h-14 md:h-16 w-auto object-contain hidden"
-            width="240"
-            height="76"
+            alt=""
+            class="site-footer__logo site-footer__logo--dark"
+            width="127"
+            height="100"
             loading="lazy"
+            decoding="async"
+            aria-hidden="true"
           />
         </a>
         <p class="site-footer__tagline">
@@ -97,6 +99,8 @@ const columns = [
         <ThemeToggle variant="footer" />
         <a href="/legal/privacy">Privacy</a>
         <a href="/legal/terms">Terms</a>
+        <a href="/legal/accessibility">Accessibility</a>
+        <a href="/legal/affiliate-disclosure">Affiliate</a>
         <a href="/legal/copyright">Copyright</a>
         <a href="/legal/disclaimer">Disclaimer</a>
         <a href="/faq">FAQ</a>
@@ -117,8 +121,54 @@ const columns = [
     border-top: 1px solid #e2e9dc;
   }
 
-  .site-footer__logo--dark {
-    display: none;
+  .site-logo-link.site-footer__logo-link {
+    display: grid;
+    align-items: center;
+    justify-items: start;
+    background: transparent;
+    box-shadow: none;
+    height: 3.5rem;
+    max-height: 3.5rem;
+    max-width: 12rem;
+    overflow: hidden;
+  }
+
+  .site-footer__logo {
+    grid-area: 1 / 1;
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: 3.5rem;
+    max-height: 3.5rem;
+    background: transparent;
+    box-shadow: none;
+    filter: none;
+    mix-blend-mode: normal;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  .site-footer__logo.site-footer__logo--light {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .site-footer__logo.site-footer__logo--dark {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  @media (min-width: 768px) {
+    .site-logo-link.site-footer__logo-link {
+      height: 4rem;
+      max-height: 4rem;
+      max-width: 14rem;
+    }
+
+    .site-footer__logo {
+      height: 4rem;
+      max-height: 4rem;
+    }
   }
 
   .site-footer__accent {
@@ -242,12 +292,14 @@ const columns = [
     border-top-color: transparent;
   }
 
-  [data-theme='dark'] .site-footer__logo--light {
-    display: none;
+  [data-theme='dark'] .site-footer__logo.site-footer__logo--light {
+    opacity: 0;
+    visibility: hidden;
   }
 
-  [data-theme='dark'] .site-footer__logo--dark {
-    display: block;
+  [data-theme='dark'] .site-footer__logo.site-footer__logo--dark {
+    opacity: 1;
+    visibility: visible;
   }
 
   [data-theme='dark'] .site-footer__tagline {

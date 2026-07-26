@@ -4,41 +4,29 @@ import {
   appAcceptsCard,
   appAcceptsCrypto,
   appAcceptsPaypal,
-  EXPLORER_METRIC_CARDS,
 } from '../../data/homepage';
 import HomePaymentIcon from '../home/HomePaymentIcon.astro';
 import AppBrandTooltip from './AppBrandTooltip.astro';
 import AppOverallScoreTooltip from './AppOverallScoreTooltip.astro';
+import DirectoryCategoryScoresCard from './DirectoryCategoryScoresCard.astro';
 import { fmtScore, getScoreVisual } from '../../lib/scores';
+import { reviewPageUrl } from '../../lib/slugs';
 
 interface Props {
   app: HomeExplorerApp;
   formatReviewCount: (count: number) => string;
-  showMetrics?: boolean;
 }
 
-const { app, formatReviewCount, showMetrics = true } = Astro.props;
+const { app, formatReviewCount } = Astro.props;
 const showCard = appAcceptsCard(app);
 const showPaypal = appAcceptsPaypal(app);
 const showCrypto = appAcceptsCrypto(app);
-const reviewHref = app.reviewUrl ?? `/best/ai-girlfriend#pick-${app.id}`;
+const reviewHref = app.reviewUrl ?? reviewPageUrl(app.slug);
 const overallVisual = getScoreVisual(app.overallScore);
-
-function metricScore(key: string) {
-  return app.categoryScores.find((c) => c.key === key)?.score ?? app.overallScore;
-}
 ---
 
-<article
-  class="home-app-card"
-  data-home-app={app.id}
-  data-overall-score={app.overallScore}
-  data-price={app.priceMonthly}
-  data-review-count={app.reviewCount}
-  data-filters={app.filters.join(',')}
-  data-payments={app.payments.join(',')}
-  data-category-scores={JSON.stringify(Object.fromEntries(app.categoryScores.map((c) => [c.key, c.score])))}
->
+{/* Filtering data attributes live on the directory item wrapper (AppDirectory.astro). */}
+<article class="home-app-card">
   <div class="home-app-card__media">
     <a
       href={app.roundupHref}
@@ -51,8 +39,8 @@ function metricScore(key: string) {
       <button
         type="button"
         class="home-app-card__icon-btn coming-soon-tip coming-soon-muted"
-        data-coming-soon="accounts"
-        data-coming-soon-tip="Save apps — coming soon"
+        data-coming-soon="save"
+        data-coming-soon-tip="Save — coming soon"
         aria-label={`Save ${app.name} — coming soon`}
       >
         <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
@@ -97,26 +85,9 @@ function metricScore(key: string) {
       </div>
     </div>
 
-    {
-      showMetrics && (
-        <div class="home-app-card__metric-grid">
-          {
-            EXPLORER_METRIC_CARDS.map((metric) => {
-              const score = metricScore(metric.key);
-              return (
-                <div class="home-app-card__metric-tile">
-                  <span class="material-symbols-outlined home-app-card__metric-icon" style={`color:${metric.color}`} aria-hidden="true">
-                    {metric.icon}
-                  </span>
-                  <span class="home-app-card__metric-label">{metric.label}</span>
-                  <span class="home-app-card__metric-value">{fmtScore(score)}</span>
-                </div>
-              );
-            })
-          }
-        </div>
-      )
-    }
+    <div class="home-app-card__insights" data-card-scores>
+      <DirectoryCategoryScoresCard scores={app.categoryScores} pickSlug={app.slug} />
+    </div>
 
     <div class="home-app-card__footer">
       <div class="home-app-card__footer-main">
@@ -139,10 +110,10 @@ function metricScore(key: string) {
       </a>
       <button
         type="button"
-        class="home-app-card__like"
-        data-home-like={app.id}
-        aria-label={`Like ${app.name}`}
-        aria-pressed="false"
+        class="home-app-card__like coming-soon-tip coming-soon-muted"
+        data-coming-soon="like"
+        data-coming-soon-tip="Coming soon"
+        aria-label={`Like ${app.name} — coming soon`}
       >
         <span class="material-symbols-outlined home-app-card__like-icon" aria-hidden="true">favorite</span>
         {formatReviewCount(app.reviewCount)}

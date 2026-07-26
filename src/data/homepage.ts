@@ -3,6 +3,8 @@ import { aiGirlfriendRoundup } from './roundups/ai-girlfriend';
 import { getProduct } from './products';
 import type { StoryHighlightCharacter } from './products';
 import { buildSearchIndex, type SearchResult } from './site-search';
+import { reviewPageUrl } from '../lib/slugs';
+import { DIRECTORY_PRIORITY_OPTIONS } from '../lib/directory/meta';
 
 export interface HomeFeaturedCharacter extends StoryHighlightCharacter {
   bio: string;
@@ -23,10 +25,29 @@ export interface HomeExplorerApp extends RoundupPick {
   hasReview: boolean;
   roundupHref: string;
   roundupRibbonLabel: string;
-  /** One-sentence summary for the brand tooltip */
-  brandLiner: string;
+  /** Admin `tagline` — tooltip liner and compact previews */
+  tagline: string;
+  /** Admin `directoryDescription` — directory list row copy */
+  directoryDescription: string;
+  /** Formatted from admin `bestFor` list */
   bestFor: string;
+  /** Formatted from admin `notIdealFor` list */
   watchOutFor: string;
+  /** Whether a paid-account test run exists (`lastTestedAt` in admin) */
+  paidAccountTested: boolean;
+  /** Display label for last hands-on test date */
+  lastTestedLabel: string;
+  /** Display label for latest pricing verification date */
+  pricingVerifiedLabel: string;
+  /** Placeholder quick stats for directory row footer (CMS-backed later) */
+  quickStats: DirectoryQuickStat[];
+}
+
+export interface DirectoryQuickStat {
+  label: string;
+  value: string;
+  /** Admin field name for CMS marker */
+  field: string;
 }
 
 export interface HomeFilterOption {
@@ -158,8 +179,8 @@ export const EXPLORER_METRIC_CARDS = [
   { key: 'customization', label: 'Customization', icon: 'tune', color: '#db2777' },
   { key: 'chat', label: 'Chat', icon: 'chat_bubble', color: '#2563eb' },
   { key: 'chat-features', label: 'Chat quality', icon: 'forum', color: '#0891b2' },
-  { key: 'images', label: 'Images', icon: 'image', color: '#ea580c' },
-  { key: 'video', label: 'Video', icon: 'videocam', color: '#7c3aed' },
+  { key: 'images', label: 'Images', icon: 'image', color: '#ca8a04' },
+  { key: 'video', label: 'Video', icon: 'videocam', color: '#dc2626' },
   { key: 'privacy', label: 'Privacy', icon: 'shield', color: '#4f46e5' },
   { key: 'pricing', label: 'Pricing', icon: 'paid', color: '#ca8a04' },
 ] as const;
@@ -196,11 +217,8 @@ export const explorerFilterGroups: HomeFilterGroup[] = [
   },
 ];
 
-export const explorerPriorityOptions = [
-  { value: 'chat', label: 'Chat', icon: 'chat_bubble', color: '#db2777', description: 'Memory and chat realism.' },
-  { value: 'images', label: 'Images', icon: 'image', color: '#9333ea', description: 'Quality and consistency.' },
-  { value: 'video', label: 'Videos', icon: 'videocam', color: '#7c3aed', description: 'Quality, speed and consistency.' },
-] as const;
+/** Ranking factors available in "Customize your results" (chat, images, video). */
+export const explorerPriorityOptions = DIRECTORY_PRIORITY_OPTIONS;
 
 export const explorerQuickSortOptions = [
   { id: 'overall', label: 'Overall rating', icon: 'star' },
@@ -370,6 +388,26 @@ function priceLabel(pick: RoundupPick): string {
   return `From $${pick.priceMonthly.toFixed(2)} / month`;
 }
 
+const LAST_TESTED_LABELS: Record<string, string> = {
+  'candy-ai': 'Jun 2026',
+  'kindroid': 'May 2026',
+  'crushon-ai': 'Jun 2026',
+  'aura-ai': 'Jul 2026',
+  'dreamgf': 'Apr 2026',
+  'replika': 'Mar 2026',
+  'character-ai': 'Jun 2026',
+  'nectar-ai': 'May 2026',
+};
+
+function lastTestedLabelFor(pick: RoundupPick): string {
+  const product = getProduct(pick.slug);
+  return product?.reviewedDate ?? LAST_TESTED_LABELS[pick.id] ?? '2026';
+}
+
+function pricingVerifiedLabelFor(pick: RoundupPick): string {
+  return LAST_TESTED_LABELS[pick.id] ?? lastTestedLabelFor(pick);
+}
+
 export function getRoundupRibbonLabel(pick: RoundupPick): string {
   if (pick.ribbonKey === 'overall') return 'Best AI girlfriend';
   return pick.ribbon;
@@ -401,7 +439,11 @@ const BEST_FOR_BY_RIBBON: Record<string, string> = {
   value: 'Strong features for the money',
 };
 
-function brandLinerFor(pick: RoundupPick): string {
+function taglineFor(pick: RoundupPick): string {
+  return BRAND_LINERS[pick.id] ?? pick.overallSummary;
+}
+
+function directoryDescriptionFor(pick: RoundupPick): string {
   return BRAND_LINERS[pick.id] ?? pick.overallSummary;
 }
 
@@ -413,10 +455,52 @@ function watchOutForFor(pick: RoundupPick): string {
   return pick.cons[0] ?? 'Premium features can add up quickly';
 }
 
+const QUICK_STATS_BY_APP: Record<string, DirectoryQuickStat[]> = {
+  'candy-ai': [
+    { label: 'Characters', value: '500+', field: 'characterCount' },
+    { label: 'Custom chars', value: 'Yes', field: 'capCustomCharacters' },
+  ],
+  'kindroid': [
+    { label: 'Voice calls', value: 'Yes', field: 'capVoiceCalls' },
+    { label: 'Characters', value: '120+', field: 'characterCount' },
+  ],
+  'crushon-ai': [
+    { label: 'Characters', value: '1,000+', field: 'characterCount' },
+    { label: 'Roleplay', value: 'Deep', field: 'capCustomScenarios' },
+  ],
+  'aura-ai': [
+    { label: 'Characters', value: '300+', field: 'characterCount' },
+    { label: 'Video gen', value: 'Yes', field: 'capVideoGeneration' },
+  ],
+  'dreamgf': [
+    { label: 'Characters', value: '200+', field: 'characterCount' },
+    { label: 'Image gen', value: 'Yes', field: 'capImageGeneration' },
+  ],
+  'replika': [
+    { label: 'Characters', value: '1', field: 'characterCount' },
+    { label: 'Memory', value: 'Strong', field: 'capLongTermMemory' },
+  ],
+  'character-ai': [
+    { label: 'Characters', value: '10M+', field: 'characterCount' },
+    { label: 'Free tier', value: 'Yes', field: 'capFreePlan' },
+  ],
+  'nectar-ai': [
+    { label: 'Characters', value: '150+', field: 'characterCount' },
+    { label: 'Image gen', value: 'Yes', field: 'capImageGeneration' },
+  ],
+};
+
+function quickStatsFor(pick: RoundupPick): DirectoryQuickStat[] {
+  return QUICK_STATS_BY_APP[pick.id] ?? [
+    { label: 'Characters', value: '—', field: 'characterCount' },
+    { label: 'Custom chars', value: '—', field: 'capCustomCharacters' },
+  ];
+}
+
 export function buildExplorerApps(): HomeExplorerApp[] {
   return aiGirlfriendRoundup.picks.map((pick) => ({
     ...pick,
-    reviewUrl: pick.reviewUrl ?? (getProduct(pick.slug) ? `/reviews/${pick.slug}` : undefined),
+    reviewUrl: pick.reviewUrl ?? reviewPageUrl(pick.slug),
     hasReview: Boolean(pick.reviewUrl ?? getProduct(pick.slug)),
     roundupHref: getRoundupRibbonHref(pick),
     roundupRibbonLabel: getRoundupRibbonLabel(pick),
@@ -427,10 +511,22 @@ export function buildExplorerApps(): HomeExplorerApp[] {
     priceLabel: priceLabel(pick),
     creditsNote: creditsNoteFor(pick),
     reviewCount: reviewCountFor(pick),
-    brandLiner: brandLinerFor(pick),
+    tagline: taglineFor(pick),
+    directoryDescription: directoryDescriptionFor(pick),
     bestFor: bestForFor(pick),
     watchOutFor: watchOutForFor(pick),
+    paidAccountTested: true,
+    lastTestedLabel: lastTestedLabelFor(pick),
+    pricingVerifiedLabel: pricingVerifiedLabelFor(pick),
+    quickStats: quickStatsFor(pick),
   }));
+}
+
+/** Explorer apps with admin editorial fields overlaid when the DB is configured. */
+export async function loadExplorerApps(): Promise<HomeExplorerApp[]> {
+  const apps = buildExplorerApps();
+  const { overlayExplorerAppsWithDb } = await import('../lib/content/store');
+  return overlayExplorerAppsWithDb(apps);
 }
 
 export function getExplorerPerformanceScores(app: HomeExplorerApp): { label: string; score: number; key: string }[] {
@@ -585,8 +681,10 @@ export const charactersOfWeek: HomeFeaturedCharacter[] = [
   },
 ];
 
-/** Characters shown in the homepage featured carousel + spotlight card */
-export const featuredCharactersShowcase: HomeFeaturedCharacter[] = [
+/** Characters shown in the homepage featured carousel + spotlight card.
+ *  When USE_DB_CONTENT=1, active homepage slots in the admin control the
+ *  selection/order. See src/lib/content/store.ts. */
+const fileFeaturedCharacters: HomeFeaturedCharacter[] = [
   charactersOfWeek[2], // Sophie
   charactersOfWeek[0], // Luna
   charactersOfWeek[1], // Aria
@@ -594,6 +692,11 @@ export const featuredCharactersShowcase: HomeFeaturedCharacter[] = [
   charactersOfWeek[4], // Violet
   charactersOfWeek[5], // Maya
 ];
+
+const { overlayFeaturedCharactersWithDb } = await import('../lib/content/store');
+
+export const featuredCharactersShowcase: HomeFeaturedCharacter[] =
+  await overlayFeaturedCharactersWithDb(fileFeaturedCharacters);
 
 export const recentUpdates: HomeRecentUpdate[] = [
   {
@@ -635,6 +738,16 @@ export const recentUpdates: HomeRecentUpdate[] = [
 ];
 
 export const featuredGuides: HomeGuide[] = [
+  {
+    id: 'buying-guide',
+    title: 'How to Choose an AI Girlfriend App',
+    excerpt: 'Chat-first, media-first, or balanced? Avoid common mistakes and narrow your options using tested results.',
+    href: '/guides/how-to-choose-an-ai-girlfriend-app',
+    image: 'https://picsum.photos/seed/buying-guide-hero/960/540',
+    imageAlt: 'How to choose an AI girlfriend app buying guide',
+    date: 'Jul 26, 2026',
+    type: 'guide',
+  },
   {
     id: 'best-2026',
     title: 'Best AI Girlfriend Apps in 2026',

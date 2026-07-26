@@ -1,0 +1,56 @@
+---
+import type { RoundupCategoryScore } from '../../data/roundups/ai-girlfriend';
+import { toRatingCategory } from '../../data/roundups/ai-girlfriend';
+import CategoryScoreTooltip from '../review/tooltips/CategoryScoreTooltip.astro';
+import InfoIcon from '../ui/InfoIcon.astro';
+import { fmtScore, getScoreVisual } from '../../lib/scores';
+
+interface Props {
+  scores: RoundupCategoryScore[];
+  pickSlug: string;
+}
+
+const { scores, pickSlug } = Astro.props;
+
+/** Two columns × four rows: col 0 → scores 0–3, col 1 → scores 4–7 */
+const columns = [
+  scores.slice(0, 4),
+  scores.slice(4, 8),
+];
+---
+
+<div class="dir-score-table dir-score-table--card">
+  {
+    columns.map((colScores) => (
+      <div class="dir-score-table__col">
+        {
+          colScores.map((item, rowIndex) => {
+            const category = toRatingCategory(item, pickSlug);
+            const visual = getScoreVisual(item.score);
+            return (
+              <div class:list={['dir-score-table__row', rowIndex > 0 && 'dir-score-table__row--extra']}>
+                <div class="dir-score-table__label">
+                  <span>{item.name}</span>
+                  <CategoryScoreTooltip category={category} compact methodologyOnly inlineTestLinks>
+                    <InfoIcon size="xs" class="text-tertiary/50 hover:text-tertiary/80" />
+                  </CategoryScoreTooltip>
+                </div>
+                <span class={`dir-score-table__value ${visual.bg}`}>{fmtScore(item.score)}</span>
+              </div>
+            );
+          })
+        }
+      </div>
+    ))
+  }
+</div>
+
+<button
+  type="button"
+  class="home-app-card__scores-toggle"
+  data-card-scores-toggle
+  aria-expanded="false"
+  aria-label="Show all category ratings"
+>
+  <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
+</button>

@@ -1,0 +1,77 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import { guides } from '../../data/guides';
+import {
+  buyingGuideFeaturedImage,
+  buyingGuideFeaturedImageAlt,
+  buyingGuideSlug,
+} from '../../data/buying-guide-content';
+
+const title = 'Guides — AI Girlfriend Expert';
+const description =
+  'Practical guides to choosing and using AI girlfriend apps — written by our editorial team and grounded in our structured test data.';
+
+const staticGuides = [
+  {
+    slug: buyingGuideSlug,
+    title: 'How to Choose an AI Girlfriend App',
+    excerpt:
+      'Figure out whether you are chat-first, media-first, or balanced — then narrow your options using tested results instead of marketing claims.',
+    heroImageUrl: buyingGuideFeaturedImage,
+    heroImageAlt: buyingGuideFeaturedImageAlt,
+    author: { name: 'Herman Carter' },
+    noindex: false,
+  },
+];
+
+const allGuides = [...staticGuides, ...guides.filter((g) => g.slug !== buyingGuideSlug && !g.noindex)];
+---
+
+<BaseLayout title={title} description={description}>
+  <Header />
+  <main class="section-container px-4 md:px-8 py-14 md:py-16 max-w-5xl">
+    <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Guides' }]} />
+    <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-2">Guides</h1>
+    <p class="text-on-surface-variant mb-10 max-w-2xl">{description}</p>
+
+    {allGuides.length === 0 ? (
+      <div class="rounded-2xl border border-outline-variant p-10 text-center text-on-surface-variant">
+        <p class="font-bold text-on-surface mb-1">Guides are coming soon.</p>
+        <p class="text-sm">Our first in-depth guides are being written right now.</p>
+      </div>
+    ) : (
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {allGuides.map((guide) => (
+            <a
+              href={`/guides/${guide.slug}`}
+              class="group rounded-2xl border border-outline-variant overflow-hidden hover:border-accent transition-colors"
+            >
+              {guide.heroImageUrl && (
+                <img
+                  src={guide.heroImageUrl}
+                  alt={guide.heroImageAlt ?? guide.title}
+                  class="aspect-[16/9] w-full object-cover"
+                  loading="lazy"
+                />
+              )}
+              <div class="p-5">
+                <h2 class="font-black text-on-surface group-hover:text-accent transition-colors">
+                  {guide.title}
+                </h2>
+                {guide.excerpt && (
+                  <p class="mt-2 text-sm text-on-surface-variant line-clamp-3">{guide.excerpt}</p>
+                )}
+                {guide.author && (
+                  <p class="mt-3 text-xs font-semibold text-tertiary">By {guide.author.name}</p>
+                )}
+              </div>
+            </a>
+          ))}
+      </div>
+    )}
+  </main>
+  <Footer />
+</BaseLayout>

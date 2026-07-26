@@ -1,0 +1,20 @@
+---
+interface Props {
+  image: string;
+  alt: string;
+}
+
+const { image, alt } = Astro.props;
+---
+
+<section class="roundup-hero" aria-hidden="false">
+  <img
+    class="roundup-featured w-full"
+    src={image}
+    alt={alt}
+    width="1600"
+    height="640"
+    loading="eager"
+    fetchpriority="high"
+  />
+</section>

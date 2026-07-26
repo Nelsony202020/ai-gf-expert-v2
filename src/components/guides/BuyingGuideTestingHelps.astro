@@ -1,0 +1,78 @@
+---
+import { buyingGuideTestingFeatures } from '../../data/buying-guide-content';
+---
+
+<section id="how-testing-helps" class="test-hub__section buying-guide-testing">
+  <div class="buying-guide-icon-heading buying-guide-icon-heading--h2">
+    <span class="buying-guide-icon-heading__badge" aria-hidden="true">
+      <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+    </span>
+    <h2 class="test-hub__h2">How our testing helps you choose</h2>
+  </div>
+
+  <div class="buying-guide-icon-heading buying-guide-icon-heading--h3">
+    <span class="buying-guide-icon-heading__glyph" aria-hidden="true">
+      <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
+    </span>
+    <h3 class="test-hub__h3">We test chat and media separately</h3>
+  </div>
+  <p class="test-hub__lead">
+    We test every AI girlfriend app across eight main categories. Chat, Chat Features, Images, and Video are all separate categories, each with multiple subscores.
+  </p>
+  <p class="test-hub__lead">
+    This allows us to make data-driven recommendations based on specific use cases, such as finding the best app for chatting, generating images, or creating videos.
+  </p>
+
+  <div class="buying-guide-testing__features" role="list">
+    {
+      buyingGuideTestingFeatures.map((feature) => (
+        <div class="buying-guide-testing__feature" role="listitem">
+          <span class="buying-guide-testing__feature-icon" aria-hidden="true">
+            <span class="material-symbols-outlined" aria-hidden="true">{feature.icon}</span>
+          </span>
+          <p class="buying-guide-testing__feature-title">{feature.title}</p>
+          <p class="buying-guide-testing__feature-text">{feature.text}</p>
+        </div>
+      ))
+    }
+  </div>
+
+  <div class="buying-guide-icon-heading buying-guide-icon-heading--h3">
+    <span class="buying-guide-icon-heading__glyph" aria-hidden="true">
+      <span class="material-symbols-outlined" aria-hidden="true">show_chart</span>
+    </span>
+    <h3 class="test-hub__h3">We measure real performance</h3>
+  </div>
+  <p class="test-hub__lead">
+    Our scores are based on repeatable tests, raw evidence, category ratings, pricing checks, and repeated content generations.
+  </p>
+  <p class="test-hub__lead">
+    The AI industry changes extremely quickly, so we also use live data from sources such as Google Trends to help keep our reviews up to date.
+  </p>
+  <p class="test-hub__lead">
+    For example, if searches for terms such as “Candy AI down” or “Candy AI bug” suddenly increase, we receive a notification and investigate. If the app is experiencing a real issue, we update our reviews and other relevant content accordingly.
+  </p>
+  <p class="test-hub__lead">
+    Every review also receives a standard update at least once every three months. We encourage brands to notify us whenever they release new features or make important changes.
+  </p>
+
+  <div class="buying-guide-icon-heading buying-guide-icon-heading--h3">
+    <span class="buying-guide-icon-heading__glyph" aria-hidden="true">
+      <span class="material-symbols-outlined" aria-hidden="true">menu_book</span>
+    </span>
+    <h3 class="test-hub__h3">Explore our full testing methodology</h3>
+  </div>
+  <p class="test-hub__lead">
+    This is only a brief overview. You can explore our full methodology and individual test pages to see exactly how we test each feature and calculate every score.
+  </p>
+  <div class="buying-guide-testing__links">
+    <a class="buying-guide-testing__cta buying-guide-testing__cta--primary" href="/test/">
+      <span class="material-symbols-outlined" aria-hidden="true">science</span>
+      How We Test
+    </a>
+    <a class="buying-guide-testing__cta buying-guide-testing__cta--secondary" href="/test/tooltips/">
+      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+      How Score Tooltips Work
+    </a>
+  </div>
+</section>

@@ -488,7 +488,7 @@ const picks: RoundupPick[] = [
   },
 ];
 
-export const aiGirlfriendRoundup: Roundup = {
+const fileRoundup: Roundup = {
   slug: 'ai-girlfriend',
   title: 'Best AI Girlfriend Apps',
   titleYear: 2026,
@@ -629,6 +629,12 @@ export const aiGirlfriendRoundup: Roundup = {
     ...picks.map((p) => ({ id: `pick-${p.id}`, label: p.name, level: 3 as const })),
   ],
 };
+
+// DB overlay: when USE_DB_CONTENT=1, the admin-managed roundup entries
+// control pick order, award labels, and reasons. See src/lib/content/store.ts.
+const { overlayRoundupWithDb } = await import('../../lib/content/store');
+
+export const aiGirlfriendRoundup: Roundup = await overlayRoundupWithDb(fileRoundup);
 
 export function getRoundupSortScore(pick: RoundupPick, sortKey: string): number {
   if (sortKey === 'overall') return pick.overallScore;

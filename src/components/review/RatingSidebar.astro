@@ -5,6 +5,7 @@ import ScorePill from './ScorePill.astro';
 import OverallScoreTooltip from './tooltips/OverallScoreTooltip.astro';
 import CategoryScoreTooltip from './tooltips/CategoryScoreTooltip.astro';
 import InfoIcon from '../ui/InfoIcon.astro';
+import CmsField from '../cms/CmsField.astro';
 
 interface Props {
   product: Product;
@@ -27,7 +28,7 @@ const overall = getScoreVisual(product.overallScore);
     </span>
   </div>
   <div class="bg-surface-container-low px-4 py-2 text-[11px] font-medium border-b border-surface-variant text-on-surface-variant">
-    {product.overallSummary}
+    <CmsField field="oneLineVerdict">{product.overallSummary}</CmsField>
   </div>
 
   <div class="p-4 space-y-3.5">

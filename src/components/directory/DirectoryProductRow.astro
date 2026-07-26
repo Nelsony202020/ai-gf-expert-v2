@@ -1,0 +1,182 @@
+---
+import type { HomeExplorerApp } from '../../data/homepage';
+import {
+  appAcceptsCard,
+  appAcceptsCrypto,
+  appAcceptsPaypal,
+} from '../../data/homepage';
+import { fmtScore, getScoreVisual } from '../../lib/scores';
+import { reviewPageUrl } from '../../lib/slugs';
+import DirectoryCategoryScores from './DirectoryCategoryScores.astro';
+import AppBrandTooltip from './AppBrandTooltip.astro';
+import AppOverallScoreTooltip from './AppOverallScoreTooltip.astro';
+import HomePaymentIcon from '../home/HomePaymentIcon.astro';
+import VerifiedCheck from '../ui/VerifiedCheck.astro';
+import CmsField from '../cms/CmsField.astro';
+
+interface Props {
+  app: HomeExplorerApp;
+  formatReviewCount: (count: number) => string;
+}
+
+const { app, formatReviewCount } = Astro.props;
+const reviewHref = app.reviewUrl ?? reviewPageUrl(app.slug);
+const overallVisual = getScoreVisual(app.overallScore);
+const showCard = appAcceptsCard(app);
+const showPaypal = appAcceptsPaypal(app);
+const showCrypto = appAcceptsCrypto(app);
+---
+
+<article class="dir-row">
+  <div class="dir-row__media">
+    {
+      app.roundupRibbonLabel && (
+        <a href={app.roundupHref} class={`dir-row__ribbon home-app-card__ribbon home-app-card__ribbon--${app.ribbonKey}`}>
+          <span class="material-symbols-outlined" aria-hidden="true">star</span>
+          {app.roundupRibbonLabel}
+        </a>
+      )
+    }
+    <a href={reviewHref} class="dir-row__image-link" tabindex="-1" aria-hidden="true">
+      <img
+        class="dir-row__image"
+        src={app.gallery[0]?.full ?? app.logo}
+        alt={app.gallery[0]?.alt ?? `${app.name} screenshot`}
+        width="640"
+        height="400"
+        loading="lazy"
+      />
+    </a>
+  </div>
+
+  <div class="dir-row__middle">
+    <div class="dir-row__middle-header">
+      <div class="dir-row__identity">
+        <img class="dir-row__logo" src={app.logo} alt="" width="40" height="40" loading="lazy" />
+        <div class="dir-row__identity-copy">
+          <div class="dir-row__name-row">
+            <h3 class="dir-row__name">
+              <a href={reviewHref}>{app.name}</a>
+              <AppBrandTooltip app={app} />
+            </h3>
+            {
+              app.hasReview && (
+                <span
+                  class="dir-row__verified"
+                  role="img"
+                  aria-label="Verified"
+                  title="Product details and current availability have been checked by our team."
+                >
+                  <VerifiedCheck class="w-4 h-4" />
+                </span>
+              )
+            }
+          </div>
+          <CmsField field="directoryDescription" as="p" class="dir-row__tagline">{app.directoryDescription}</CmsField>
+        </div>
+      </div>
+
+      <div class="dir-row__actions">
+        <button
+          type="button"
+          class="dir-row__action-btn dir-row__action-btn--like coming-soon-tip coming-soon-muted"
+          data-coming-soon="like"
+          data-coming-soon-tip="Coming soon"
+          aria-label={`Like ${app.name} — coming soon`}
+        >
+          <span class="material-symbols-outlined dir-row__like-icon" aria-hidden="true">favorite</span>
+          <span class="dir-row__like-count">{formatReviewCount(app.reviewCount)}</span>
+        </button>
+        <button
+          type="button"
+          class="dir-row__action-btn coming-soon-tip coming-soon-muted"
+          data-coming-soon="compare"
+          data-coming-soon-tip="Compare — coming soon"
+          aria-label={`Compare ${app.name} — coming soon`}
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">compare_arrows</span>
+        </button>
+        <button
+          type="button"
+          class="dir-row__action-btn coming-soon-tip coming-soon-muted"
+          data-coming-soon="save"
+          data-coming-soon-tip="Save — coming soon"
+          aria-label={`Save ${app.name} — coming soon`}
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+          <span class="dir-row__action-label">Save</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="dir-row__insights">
+      <DirectoryCategoryScores scores={app.categoryScores} pickSlug={app.slug} />
+    </div>
+
+    <ul class="dir-row__trust" aria-label="Testing and verification">
+      {
+        app.paidAccountTested && (
+          <li class="dir-row__trust-item">
+            <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+            <CmsField field="paidAccountTested">Paid account tested</CmsField>
+          </li>
+        )
+      }
+      <li class="dir-row__trust-item">
+        <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
+        <span>
+          Last tested <CmsField field="lastTestedAt">{app.lastTestedLabel}</CmsField>
+        </span>
+      </li>
+      <li class="dir-row__trust-item">
+        <span class="material-symbols-outlined" aria-hidden="true">sell</span>
+        <span>
+          Pricing verified <CmsField field="subscriptionPlans.lastVerifiedAt">{app.pricingVerifiedLabel}</CmsField>
+        </span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="dir-row__right">
+    <div class="dir-row__overall">
+      <span class={`dir-row__overall-score ${overallVisual.bg}`}>{fmtScore(app.overallScore)}</span>
+      <span class="dir-row__overall-label">
+        Overall
+        <AppOverallScoreTooltip app={app} />
+      </span>
+    </div>
+
+    <div class="dir-row__pricing">
+      <p class="dir-row__price">
+        <CmsField field="subscriptionPlans.price"><strong>{app.priceLabel}</strong></CmsField>
+      </p>
+      {app.creditsNote && (
+        <p class="dir-row__credits">
+          <CmsField field="creditPackages">{app.creditsNote}</CmsField>
+        </p>
+      )}
+    </div>
+
+    <div class="dir-row__payments" aria-label="Payment methods">
+      {showCard && <HomePaymentIcon type="card" tooltipId={`row-pay-card-${app.id}`} />}
+      {showPaypal && <HomePaymentIcon type="paypal" tooltipId={`row-pay-paypal-${app.id}`} />}
+      {showCrypto && <HomePaymentIcon type="crypto" tooltipId={`row-pay-crypto-${app.id}`} />}
+    </div>
+
+    <div class="dir-row__cta-group">
+      <a class="dir-row__cta" href={reviewHref}>
+        Read {app.name} review
+      </a>
+      <a
+        class="dir-row__cta-external"
+        href={app.affiliateUrl}
+        target="_blank"
+        rel="sponsored nofollow noopener"
+        data-directory-visit={app.id}
+        aria-label={`Visit ${app.name}`}
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+      </a>
+    </div>
+  </div>
+</article>

@@ -32,13 +32,17 @@ export const ROUNDUP_READING_OPTIONS: RoundupReadingOption[] = [
 ];
 
 export function buildRoundupSortOptions(picks: RoundupPick[]): RoundupSortOption[] {
-  return [
-    { value: 'overall', label: 'Overall rating', shortLabel: 'Overall' },
-    ...picks.map((p) => ({
+  const ribbonOptions = picks
+    .filter((p) => p.ribbonKey !== 'overall')
+    .map((p) => ({
       value: p.ribbonKey,
       label: p.ribbon,
       shortLabel: p.ribbon.replace(/^Best for /i, '').replace(/^Best /i, ''),
-    })),
+    }));
+
+  return [
+    { value: 'overall', label: 'Overall rating', shortLabel: 'Overall' },
+    ...ribbonOptions,
     { value: 'price-asc', label: 'Price: low to high', shortLabel: 'Price ↑' },
     { value: 'price-desc', label: 'Price: high to low', shortLabel: 'Price ↓' },
   ];

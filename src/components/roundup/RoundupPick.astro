@@ -3,6 +3,7 @@ import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
 import RoundupMediaCarousel from './RoundupMediaCarousel.astro';
 import RoundupCategoryScores from './RoundupCategoryScores.astro';
 import RoundupSpecsCarousel from './RoundupSpecsCarousel.astro';
+import CmsField from '../cms/CmsField.astro';
 
 interface Props {
   pick: RoundupPick;
@@ -17,6 +18,7 @@ const { pick, rank } = Astro.props;
   class="roundup-pick"
   data-roundup-pick
   data-pick-id={pick.id}
+  data-pick-name={pick.name}
   data-overall-score={pick.overallScore}
   data-price={pick.priceMonthly}
   data-ribbon-key={pick.ribbonKey}
@@ -25,7 +27,7 @@ const { pick, rank } = Astro.props;
   <div class="roundup-pick__ribbon-wrap">
     <span class="roundup-pick__ribbon">
       <span class="material-symbols-outlined roundup-pick__ribbon-icon" aria-hidden="true">emoji_events</span>
-      {pick.ribbon}
+      <CmsField field="award">{pick.ribbon}</CmsField>
     </span>
   </div>
 
@@ -126,7 +128,9 @@ const { pick, rank } = Astro.props;
       <span class="material-symbols-outlined roundup-pick__our-take-chevron" aria-hidden="true">expand_more</span>
     </button>
     <div class="roundup-pick__our-take-body" data-our-take-body hidden>
-      <p class="roundup-pick__our-take-text text-sm md:text-base text-on-surface leading-relaxed">{pick.ourTake}</p>
+      <p class="roundup-pick__our-take-text text-sm md:text-base text-on-surface leading-relaxed">
+        <CmsField field="ourTake">{pick.ourTake}</CmsField>
+      </p>
       {
         pick.reviewUrl && (
           <a class="roundup-pick__review-link rt-tooltip-actions__btn rt-tooltip-actions__btn--primary" href={pick.reviewUrl}>
@@ -147,10 +151,41 @@ const { pick, rank } = Astro.props;
       const globalLength = root?.dataset.readingLength ?? 'skim';
       document.querySelectorAll<HTMLElement>('[data-roundup-pick]').forEach((pick) => {
         const wrap = pick.querySelector<HTMLElement>('[data-pick-expand-wrap]');
+        const btn = pick.querySelector<HTMLButtonElement>('[data-pick-expand-btn]');
         const expanded = pick.dataset.pickExpanded;
-        if (!wrap) return;
-        wrap.hidden = globalLength !== 'skim' || expanded === 'medium' || expanded === 'deep';
+        if (!wrap || !btn) return;
+
+        wrap.hidden = globalLength !== 'skim';
+
+        const isExpanded = expanded === 'medium' || expanded === 'deep';
+        btn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+        btn.setAttribute(
+          'aria-label',
+          isExpanded
+            ? `Show less about ${pick.dataset.pickName ?? 'this app'}`
+            : `Show more about ${pick.dataset.pickName ?? 'this app'}`,
+        );
+
+        const icon = btn.querySelector<HTMLElement>('.material-symbols-outlined');
+        if (icon) icon.textContent = isExpanded ? 'expand_less' : 'expand_more';
       });
+    }
+
+    function collapsePick(pick: HTMLElement) {
+      delete pick.dataset.pickExpanded;
+
+      const btn = pick.querySelector<HTMLButtonElement>('[data-pick-expand-btn]');
+      btn?.setAttribute('aria-expanded', 'false');
+
+      const ourTakeBtn = pick.querySelector<HTMLButtonElement>('[data-our-take-toggle]');
+      const ourTakeBody = pick.querySelector<HTMLElement>('[data-our-take-body]');
+      if (ourTakeBtn && ourTakeBody) {
+        ourTakeBtn.setAttribute('aria-expanded', 'false');
+        ourTakeBody.hidden = true;
+        ourTakeBtn.querySelector<HTMLElement>('.roundup-pick__our-take-chevron')?.classList.remove('is-open');
+      }
+
+      syncExpandButtons();
     }
 
     document.querySelectorAll<HTMLButtonElement>('[data-pick-expand-btn]').forEach((btn) => {
@@ -160,6 +195,14 @@ const { pick, rank } = Astro.props;
       btn.addEventListener('click', () => {
         const pick = btn.closest<HTMLElement>('[data-roundup-pick]');
         if (!pick) return;
+
+        const expanded = pick.dataset.pickExpanded;
+        if (expanded === 'medium' || expanded === 'deep') {
+          collapsePick(pick);
+          pick.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          return;
+        }
+
         pick.dataset.pickExpanded = 'medium';
         btn.setAttribute('aria-expanded', 'true');
         syncExpandButtons();
@@ -182,6 +225,10 @@ const { pick, rank } = Astro.props;
         body.hidden = open;
         chevron?.classList.toggle('is-open', !open);
         if (!open && pick) pick.dataset.pickExpanded = 'deep';
+        if (open && pick && pick.dataset.pickExpanded === 'deep') {
+          pick.dataset.pickExpanded = 'medium';
+        }
+        syncExpandButtons();
       });
     });
 

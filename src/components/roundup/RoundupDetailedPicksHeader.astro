@@ -1,0 +1,45 @@
+---
+import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
+import RoundupControlSegments from './RoundupControlSegments.astro';
+
+interface Props {
+  heading: string;
+  picks: RoundupPick[];
+}
+
+const { heading, picks } = Astro.props;
+---
+
+<div class="roundup-detailed-picks__intro">
+  <div class="roundup-detailed-picks__head">
+    <h2>{heading}</h2>
+    <div class="roundup-detailed-picks__mobile-triggers roundup-mobile-only">
+      <button
+        type="button"
+        class="roundup-sort-trigger"
+        data-sort-sheet-open
+        aria-haspopup="dialog"
+        aria-label="Change ranking sort"
+      >
+        <span data-mobile-sort-value>Overall</span>
+        <span class="material-symbols-outlined roundup-sort-trigger__chevron" aria-hidden="true">expand_more</span>
+      </button>
+      <button
+        type="button"
+        class="roundup-reading-trigger roundup-reading-trigger--inline"
+        data-reading-sheet-open
+        aria-haspopup="dialog"
+      >
+        <span class="roundup-reading-trigger__label">Reading:</span>
+        <span class="roundup-reading-trigger__value" data-mobile-reading-value>Skim</span>
+        <span class="material-symbols-outlined roundup-reading-trigger__chevron" aria-hidden="true">expand_more</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="roundup-detailed-picks__controls roundup-desktop-only">
+    <RoundupControlSegments picks={picks} layout="bar" />
+  </div>
+
+  <p class="roundup-picks-sort-label" data-roundup-sort-label>Ranked by overall rating</p>
+</div>

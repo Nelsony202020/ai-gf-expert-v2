@@ -1,0 +1,75 @@
+---
+import { buyingGuideNarrowDown } from '../../data/buying-guide-content';
+
+const section = buyingGuideNarrowDown;
+---
+
+<section id="narrow-down-options" class="test-hub__section buying-guide-narrow">
+  <h2 class="test-hub__h2">How to narrow down your options</h2>
+  <p class="test-hub__lead">{section.intro}</p>
+
+  <div class="buying-guide-narrow__split">
+    <div id={section.mainUseCase.id} class="buying-guide-narrow__col">
+      <h3 class="test-hub__h3">{section.mainUseCase.title}</h3>
+      <p class="test-hub__lead">{section.mainUseCase.lead}</p>
+      <ul class="buying-guide-narrow__dots">
+        {section.mainUseCase.items.map((item) => <li>{item}</li>)}
+      </ul>
+      <blockquote class="buying-guide-narrow__quote">{section.mainUseCase.quote}</blockquote>
+    </div>
+
+    <div id={section.topFeatures.id} class="buying-guide-narrow__col">
+      <h3 class="test-hub__h3">{section.topFeatures.title}</h3>
+      <p class="test-hub__lead">{section.topFeatures.lead}</p>
+      <div class="buying-guide-narrow__feature-cols">
+        {
+          section.topFeatures.columns.map((column) => (
+            <ul class="buying-guide-narrow__dots">
+              {column.map((item) => <li>{item}</li>)}
+            </ul>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <div id={section.budget.id} class="buying-guide-narrow__budget">
+    <h3 class="test-hub__h3">{section.budget.title}</h3>
+    <p class="test-hub__lead">{section.budget.lead}</p>
+    <div class="buying-guide-narrow__budget-grid" role="list">
+      {
+        section.budget.tiers.map((tier) => (
+          <div class="buying-guide-narrow__budget-cell" role="listitem">
+            <p class="buying-guide-narrow__budget-label">{tier.label}</p>
+            <p class="buying-guide-narrow__budget-range">{tier.range}</p>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="buying-guide-narrow__split">
+    <div id={section.mustHave.id} class="buying-guide-narrow__col">
+      <h3 class="test-hub__h3">{section.mustHave.title}</h3>
+      <p class="test-hub__lead">{section.mustHave.lead}</p>
+      <ul class="buying-guide-narrow__checks buying-guide-narrow__checks--remove">
+        {section.mustHave.items.map((item) => (
+          <li>
+            <span class="material-symbols-outlined" aria-hidden="true">cancel</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <div id={section.compare.id} class="buying-guide-narrow__col">
+      <h3 class="test-hub__h3">{section.compare.title}</h3>
+      <p class="test-hub__lead">{section.compare.lead}</p>
+      <a class="buying-guide-narrow__cta" href={section.compare.ctaHref}>
+        {section.compare.ctaLabel} →
+      </a>
+    </div>
+  </div>
+
+  <p class="test-hub__lead buying-guide-narrow__outro">{section.outro}</p>
+</section>

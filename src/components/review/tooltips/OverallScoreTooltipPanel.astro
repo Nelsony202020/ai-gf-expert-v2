@@ -5,6 +5,7 @@ import { getScoreChipClass, fmtScore } from '../../../lib/scores';
 import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
 import TooltipActionLinks from './TooltipActionLinks.astro';
 import InlineTestLink from './InlineTestLink.astro';
+import CmsField from '../../cms/CmsField.astro';
 
 interface Props {
   product: Product;
@@ -47,7 +48,7 @@ const panelClass = [
           class="ratings-tooltip-panel__desc"
           {...(annotate ? { 'data-annotation-target': '1' } : {})}
         >
-          {product.overallSummary}
+          <CmsField field="oneLineVerdict">{product.overallSummary}</CmsField>
         </p>
       </div>
       <div

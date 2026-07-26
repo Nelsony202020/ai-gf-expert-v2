@@ -1,0 +1,1478 @@
+/* Buying guide — prose layout aligned with test-hub spacing */
+
+.buying-guide-page .roundup-hero-intro__title-main,
+.buying-guide-page .roundup-hero-intro__title-date {
+  display: block;
+}
+
+.buying-guide-page .roundup-hero-intro__title-date {
+  margin-top: 0.125rem;
+}
+
+.buying-guide-page .test-hub__main {
+  max-width: 48rem;
+}
+
+.buying-guide-page #what-type-of-user,
+.buying-guide-page #narrow-down-options {
+  max-width: none;
+}
+
+.buying-guide-page .test-hub__section {
+  scroll-margin-top: 5.5rem;
+}
+
+.buying-guide-page .test-hub__h3 {
+  margin-top: 1.75rem;
+}
+
+.buying-guide-page .test-hub__h3:first-child {
+  margin-top: 0;
+}
+
+.buying-guide-page .test-hub__lead:last-child {
+  margin-bottom: 0;
+}
+
+.buying-guide-subsection {
+  margin-top: 1.75rem;
+}
+
+.buying-guide-subsection:first-child {
+  margin-top: 0.5rem;
+}
+
+.buying-guide-list {
+  margin: 0 0 1.25rem;
+  padding-left: 1.25rem;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-list li + li {
+  margin-top: 0.35rem;
+}
+
+.buying-guide-list--platforms {
+  list-style: disc;
+}
+
+.buying-guide-note {
+  margin: 0 0 1.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-tertiary);
+  font-style: italic;
+}
+
+.buying-guide-coming-soon {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  margin-top: 0.5rem;
+  padding: 1rem 1.125rem;
+  border: 1px dashed color-mix(in srgb, var(--color-accent) 30%, rgb(26 36 24 / 16%));
+  border-radius: var(--radius-lg, 1rem);
+  background: color-mix(in srgb, var(--color-accent) 5%, #fff);
+}
+
+[data-theme='dark'] .buying-guide-coming-soon {
+  border-color: color-mix(in srgb, var(--color-accent) 28%, rgb(255 255 255 / 14%));
+  background: color-mix(in srgb, var(--color-accent) 8%, rgb(255 255 255 / 3%));
+}
+
+.buying-guide-coming-soon__icon {
+  flex-shrink: 0;
+  font-size: 1.75rem;
+  color: var(--color-accent);
+}
+
+.buying-guide-coming-soon__badge {
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.buying-guide-coming-soon__title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.3;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-coming-soon__text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-callout {
+  margin: 1.5rem 0;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, transparent);
+  border-radius: var(--radius-lg, 1rem);
+  padding: 1rem 1.125rem;
+  background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+}
+
+.buying-guide-callout__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.0625rem;
+  font-weight: 900;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-callout__text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-callout__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.buying-guide-callout__cta:hover {
+  text-decoration: underline;
+}
+
+.buying-guide-table-wrap {
+  margin: 0 0 1.25rem;
+  overflow-x: auto;
+  border-radius: var(--radius-lg, 1rem);
+  border: 1px solid rgb(26 36 24 / 10%);
+}
+
+[data-theme='dark'] .buying-guide-table-wrap {
+  border-color: rgb(255 255 255 / 10%);
+}
+
+.buying-guide-cost-table {
+  width: 100%;
+  min-width: 20rem;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.buying-guide-cost-table th,
+.buying-guide-cost-table td {
+  padding: 0.75rem 0.875rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid rgb(26 36 24 / 8%);
+}
+
+[data-theme='dark'] .buying-guide-cost-table th,
+[data-theme='dark'] .buying-guide-cost-table td {
+  border-bottom-color: rgb(255 255 255 / 8%);
+}
+
+.buying-guide-cost-table tr:last-child th,
+.buying-guide-cost-table tr:last-child td {
+  border-bottom: none;
+}
+
+.buying-guide-cost-table thead th {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+  background: rgb(26 36 24 / 3%);
+}
+
+[data-theme='dark'] .buying-guide-cost-table thead th {
+  background: rgb(255 255 255 / 4%);
+}
+
+.buying-guide-cost-table tbody th {
+  width: 8.5rem;
+  font-weight: 800;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-cost-table tbody td {
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-mistake {
+  margin-top: 2rem;
+}
+
+.buying-guide-mistake:first-of-type {
+  margin-top: 0.5rem;
+}
+
+.buying-guide-figure {
+  margin: 1rem 0 0;
+}
+
+.buying-guide-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg, 0.875rem);
+  border: 1px solid rgb(26 36 24 / 10%);
+  background: rgb(26 36 24 / 3%);
+}
+
+[data-theme='dark'] .buying-guide-figure img {
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 4%);
+}
+
+.buying-guide-figure figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-tertiary);
+}
+
+.buying-guide-priority-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .buying-guide-priority-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.buying-guide-priority-card {
+  border: 1px solid rgb(26 36 24 / 10%);
+  border-radius: var(--radius-lg, 0.875rem);
+  padding: 0.875rem 1rem;
+  background: rgb(26 36 24 / 2%);
+}
+
+[data-theme='dark'] .buying-guide-priority-card {
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 3%);
+}
+
+.buying-guide-priority-card__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 900;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-priority-card ol {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+}
+
+.buying-guide-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.625rem;
+  border-radius: 999px;
+  border: 1px solid rgb(26 36 24 / 12%);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+  background: #fff;
+}
+
+[data-theme='dark'] .buying-guide-tag {
+  border-color: rgb(255 255 255 / 12%);
+  background: rgb(255 255 255 / 4%);
+}
+
+.buying-guide-claims {
+  margin: 0 0 1.25rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-lg, 0.875rem);
+  border: 1px dashed rgb(26 36 24 / 16%);
+  background: rgb(26 36 24 / 2%);
+}
+
+[data-theme='dark'] .buying-guide-claims {
+  border-color: rgb(255 255 255 / 14%);
+  background: rgb(255 255 255 / 3%);
+}
+
+.buying-guide-claims p {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+}
+
+.buying-guide-claims ul {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-related-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  margin-top: 0.25rem;
+}
+
+.buying-guide-related-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgb(26 36 24 / 12%);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--color-on-surface);
+  text-decoration: none;
+  background: #fff;
+}
+
+[data-theme='dark'] .buying-guide-related-links a {
+  border-color: rgb(255 255 255 / 12%);
+  background: rgb(255 255 255 / 4%);
+}
+
+.buying-guide-related-links a:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  color: var(--color-accent);
+}
+
+/* Embedded user-type quiz */
+.buying-guide-quiz {
+  margin-top: 0.75rem;
+}
+
+.buying-guide-quiz__shell {
+  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, rgb(26 36 24 / 12%));
+  border-radius: var(--radius-lg, 1rem);
+  padding: 1rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-accent) 5%, #fff) 0%,
+    #fff 100%
+  );
+  box-shadow: 0 1px 2px rgb(26 36 24 / 4%);
+}
+
+[data-theme='dark'] .buying-guide-quiz__shell {
+  border-color: color-mix(in srgb, var(--color-accent) 28%, rgb(255 255 255 / 12%));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-accent) 8%, rgb(255 255 255 / 4%)) 0%,
+    rgb(255 255 255 / 3%) 100%
+  );
+}
+
+.buying-guide-quiz__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.buying-guide-quiz__eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.buying-guide-quiz__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-quiz__intro {
+  margin: 0.35rem 0 0;
+  max-width: 28rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-quiz__progress-wrap {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.buying-guide-quiz__progress {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+}
+
+.buying-guide-quiz__dots {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.buying-guide-quiz__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: rgb(26 36 24 / 14%);
+}
+
+[data-theme='dark'] .buying-guide-quiz__dot {
+  background: rgb(255 255 255 / 18%);
+}
+
+.buying-guide-quiz__dot.is-active,
+.buying-guide-quiz__dot.is-done {
+  background: var(--color-accent);
+}
+
+.buying-guide-quiz__body {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .buying-guide-quiz__body {
+    grid-template-columns: minmax(0, 1fr) 11.5rem;
+    align-items: start;
+  }
+}
+
+.buying-guide-quiz__main {
+  min-width: 0;
+}
+
+.buying-guide-quiz__question {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.45;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-quiz__question-icon {
+  flex-shrink: 0;
+  font-size: 1.125rem;
+  color: var(--color-accent);
+}
+
+.buying-guide-quiz__answers {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.buying-guide-quiz__answer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid rgb(26 36 24 / 12%);
+  border-radius: 0.75rem;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+[data-theme='dark'] .buying-guide-quiz__answer {
+  border-color: rgb(255 255 255 / 12%);
+  background: rgb(255 255 255 / 3%);
+}
+
+.buying-guide-quiz__answer:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+.buying-guide-quiz__answer.is-selected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+.buying-guide-quiz__answer-label {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-quiz__answer-check {
+  flex-shrink: 0;
+  font-size: 1.125rem;
+  color: rgb(26 36 24 / 28%);
+}
+
+[data-theme='dark'] .buying-guide-quiz__answer-check {
+  color: rgb(255 255 255 / 35%);
+}
+
+.buying-guide-quiz__answer.is-selected .buying-guide-quiz__answer-check {
+  color: var(--color-accent);
+}
+
+.buying-guide-quiz__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.875rem;
+}
+
+.buying-guide-quiz__back,
+.buying-guide-quiz__next {
+  border: none;
+  background: none;
+  font-size: 0.875rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.buying-guide-quiz__back {
+  color: var(--color-tertiary);
+}
+
+.buying-guide-quiz__back:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.buying-guide-quiz__next {
+  padding: 0.45rem 0.15rem;
+  color: var(--color-accent);
+}
+
+.buying-guide-quiz__next:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.buying-guide-quiz__aside {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(26 36 24 / 10%);
+  background: rgb(26 36 24 / 2%);
+}
+
+[data-theme='dark'] .buying-guide-quiz__aside {
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 3%);
+}
+
+.buying-guide-quiz__aside-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-quiz__aside-label .material-symbols-outlined {
+  font-size: 0.9375rem;
+  color: var(--color-accent);
+}
+
+.buying-guide-quiz__aside-copy {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-quiz__match-preview {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 900;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-quiz__match-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.buying-guide-quiz__match-tags span {
+  display: inline-flex;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  color: var(--color-on-surface-variant);
+  background: rgb(26 36 24 / 6%);
+}
+
+[data-theme='dark'] .buying-guide-quiz__match-tags span {
+  background: rgb(255 255 255 / 8%);
+}
+
+.buying-guide-quiz__match-preview[data-match-type='chat-first'] ~ .buying-guide-quiz__match-tags span:first-child,
+.buying-guide-quiz__match-preview[data-match-type='media-first'] ~ .buying-guide-quiz__match-tags span:nth-child(2),
+.buying-guide-quiz__match-preview[data-match-type='balanced'] ~ .buying-guide-quiz__match-tags span:nth-child(3) {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.buying-guide-quiz.is-result .buying-guide-quiz__shell {
+  padding-bottom: 1rem;
+}
+
+.buying-guide-quiz__result {
+  padding-top: 0.15rem;
+}
+
+.buying-guide-quiz__result-head {
+  margin-bottom: 0.25rem;
+}
+
+.buying-guide-quiz__result-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.buying-guide-quiz__result-badge .material-symbols-outlined {
+  font-size: 0.9375rem;
+  font-variation-settings: 'FILL' 1;
+}
+
+.buying-guide-quiz__result-title {
+  margin: 0 0 0.45rem;
+  font-size: 1.375rem;
+  font-weight: 900;
+  line-height: 1.25;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-quiz__result-summary {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-quiz__result-divider {
+  margin: 1rem 0;
+  border: none;
+  border-top: 1px solid rgb(26 36 24 / 10%);
+}
+
+[data-theme='dark'] .buying-guide-quiz__result-divider {
+  border-top-color: rgb(255 255 255 / 10%);
+}
+
+.buying-guide-quiz__result-columns {
+  display: grid;
+  gap: 1rem 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .buying-guide-quiz__result-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.buying-guide-quiz__result-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-quiz__result-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.buying-guide-quiz__result-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-quiz__result-list li + li {
+  margin-top: 0.35rem;
+}
+
+.buying-guide-quiz__result-list .material-symbols-outlined {
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+  font-size: 1rem;
+  color: var(--color-accent);
+  font-variation-settings: 'FILL' 1;
+}
+
+.buying-guide-quiz__result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.125rem;
+}
+
+.buying-guide-quiz__result-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1.125rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #fff;
+  text-decoration: none;
+  background: var(--color-accent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-accent) 28%, transparent);
+}
+
+.buying-guide-quiz__result-cta:hover {
+  filter: brightness(1.05);
+}
+
+.buying-guide-quiz__result-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-on-surface-variant);
+  background: color-mix(in srgb, var(--color-accent) 8%, #fff);
+}
+
+[data-theme='dark'] .buying-guide-quiz__result-info {
+  background: color-mix(in srgb, var(--color-accent) 12%, rgb(255 255 255 / 4%));
+}
+
+.buying-guide-quiz__result-info .material-symbols-outlined {
+  flex-shrink: 0;
+  font-size: 1rem;
+  color: var(--color-accent);
+}
+
+.buying-guide-quiz__result-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.buying-guide-quiz__retake {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--color-accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.buying-guide-quiz__result-privacy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-tertiary);
+}
+
+.buying-guide-quiz__result-privacy .material-symbols-outlined {
+  font-size: 0.875rem;
+}
+
+.buying-guide-quiz__privacy {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-tertiary);
+}
+
+.buying-guide-quiz__privacy .material-symbols-outlined {
+  font-size: 0.875rem;
+}
+
+/* User type persona cards */
+.buying-guide-user-type {
+  margin-top: 2.25rem;
+}
+
+.buying-guide-user-type:first-of-type {
+  margin-top: 1.75rem;
+}
+
+.buying-guide-user-type__title {
+  margin-top: 0;
+}
+
+.buying-guide-user-type-card {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0 1.25rem;
+  padding: 1.125rem;
+  border: 1px solid rgb(26 36 24 / 8%);
+  border-radius: 1.125rem;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(26 36 24 / 6%);
+}
+
+[data-theme='dark'] .buying-guide-user-type-card {
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(20 24 20);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 24%);
+}
+
+@media (min-width: 900px) {
+  .buying-guide-user-type-card {
+    grid-template-columns: 6.5rem minmax(0, 1fr) 12.75rem;
+    gap: 1.25rem;
+    align-items: stretch;
+    padding: 1.25rem;
+  }
+}
+
+.buying-guide-user-type-card__icon-wrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 0.15rem;
+}
+
+@media (min-width: 900px) {
+  .buying-guide-user-type-card__icon-wrap {
+    align-self: start;
+  }
+}
+
+.buying-guide-user-type-card__icon {
+  font-size: 3rem;
+  color: var(--color-accent);
+  font-variation-settings: 'FILL' 1;
+}
+
+.buying-guide-user-type-card__body {
+  min-width: 0;
+}
+
+.buying-guide-user-type-card__tagline {
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--color-accent);
+}
+
+.buying-guide-user-type-card__columns {
+  display: grid;
+  gap: 1rem 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .buying-guide-user-type-card__columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.buying-guide-user-type-card__column-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+}
+
+.buying-guide-user-type-card__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.buying-guide-user-type-card__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-user-type-card__list li + li {
+  margin-top: 0.45rem;
+}
+
+.buying-guide-user-type-card__list .material-symbols-outlined {
+  flex-shrink: 0;
+  margin-top: 0.02rem;
+  font-size: 1.05rem;
+}
+
+.buying-guide-user-type-card__list--want .material-symbols-outlined {
+  color: #059669;
+}
+
+.buying-guide-user-type-card__list--dont .material-symbols-outlined {
+  color: #dc2626;
+}
+
+.buying-guide-user-type-card__note {
+  margin: 1rem 0 0;
+  padding-top: 0.875rem;
+  border-top: 1px solid rgb(26 36 24 / 8%);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--color-tertiary);
+  font-style: italic;
+}
+
+[data-theme='dark'] .buying-guide-user-type-card__note {
+  border-top-color: rgb(255 255 255 / 8%);
+}
+
+.buying-guide-user-type-card__examples {
+  display: flex;
+  flex-direction: column;
+  padding: 0.875rem;
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--color-accent) 8%, #fff);
+}
+
+[data-theme='dark'] .buying-guide-user-type-card__examples {
+  background: color-mix(in srgb, var(--color-accent) 12%, rgb(255 255 255 / 4%));
+}
+
+.buying-guide-user-type-card__examples-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-user-type-card__examples-label .material-symbols-outlined {
+  flex-shrink: 0;
+  font-size: 1rem;
+  color: var(--color-accent);
+  font-variation-settings: 'FILL' 1;
+}
+
+.buying-guide-user-type-card__examples-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.buying-guide-user-type-card__examples-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-user-type-card__examples-list li + li {
+  margin-top: 0.5rem;
+}
+
+.buying-guide-user-type-card__example-logo {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid rgb(26 36 24 / 8%);
+  background: #fff;
+}
+
+[data-theme='dark'] .buying-guide-user-type-card__example-logo {
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 6%);
+}
+
+/* Narrow down your options */
+.buying-guide-narrow .test-hub__h3 {
+  margin-top: 0;
+}
+
+.buying-guide-narrow .test-hub__h3:not(:first-child) {
+  margin-top: 0;
+}
+
+.buying-guide-narrow__split {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.75rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid rgb(26 36 24 / 10%);
+}
+
+.buying-guide-narrow__split:first-of-type {
+  margin-top: 1.25rem;
+  padding-top: 0;
+  border-top: none;
+}
+
+@media (min-width: 768px) {
+  .buying-guide-narrow__split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem;
+  }
+
+  .buying-guide-narrow__col + .buying-guide-narrow__col {
+    padding-left: 2rem;
+    border-left: 1px solid rgb(26 36 24 / 10%);
+  }
+}
+
+[data-theme='dark'] .buying-guide-narrow__split,
+[data-theme='dark'] .buying-guide-narrow__col + .buying-guide-narrow__col {
+  border-color: rgb(255 255 255 / 10%);
+}
+
+.buying-guide-narrow__col .test-hub__lead:last-child {
+  margin-bottom: 0;
+}
+
+.buying-guide-narrow__dots {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.buying-guide-narrow__dots li {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-narrow__dots li + li {
+  margin-top: 0.35rem;
+}
+
+.buying-guide-narrow__dots li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+}
+
+.buying-guide-narrow__quote {
+  margin: 0;
+  padding-left: 0.875rem;
+  border-left: 3px solid var(--color-accent);
+  font-size: 0.9375rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--color-accent);
+}
+
+.buying-guide-narrow__feature-cols {
+  display: grid;
+  gap: 0.75rem 1.25rem;
+}
+
+@media (min-width: 480px) {
+  .buying-guide-narrow__feature-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.buying-guide-narrow__budget {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgb(26 36 24 / 10%);
+}
+
+[data-theme='dark'] .buying-guide-narrow__budget {
+  border-top-color: rgb(255 255 255 / 10%);
+}
+
+.buying-guide-narrow__budget-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1rem;
+  border-top: 1px solid rgb(26 36 24 / 10%);
+  border-bottom: 1px solid rgb(26 36 24 / 10%);
+}
+
+@media (min-width: 768px) {
+  .buying-guide-narrow__budget-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+[data-theme='dark'] .buying-guide-narrow__budget-grid {
+  border-color: rgb(255 255 255 / 10%);
+}
+
+.buying-guide-narrow__budget-cell {
+  padding: 1rem 0.875rem;
+  text-align: center;
+}
+
+.buying-guide-narrow__budget-cell:not(:last-child) {
+  border-right: 1px solid rgb(26 36 24 / 10%);
+}
+
+.buying-guide-narrow__budget-cell:nth-child(odd) {
+  border-bottom: 1px solid rgb(26 36 24 / 10%);
+}
+
+@media (min-width: 768px) {
+  .buying-guide-narrow__budget-cell:nth-child(odd) {
+    border-bottom: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .buying-guide-narrow__budget-cell:nth-child(2) {
+    border-right: none;
+  }
+
+  .buying-guide-narrow__budget-cell:nth-child(3) {
+    border-bottom: none;
+  }
+}
+
+[data-theme='dark'] .buying-guide-narrow__budget-cell:not(:last-child),
+[data-theme='dark'] .buying-guide-narrow__budget-cell:nth-child(odd) {
+  border-color: rgb(255 255 255 / 10%);
+}
+
+.buying-guide-narrow__budget-label {
+  margin: 0 0 0.25rem;
+  font-size: 0.9375rem;
+  font-weight: 900;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-narrow__budget-range {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-narrow__checks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.buying-guide-narrow__checks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-narrow__checks li + li {
+  margin-top: 0.45rem;
+}
+
+.buying-guide-narrow__checks .material-symbols-outlined {
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+  font-size: 1rem;
+  color: var(--color-accent);
+  font-variation-settings: 'FILL' 1;
+}
+
+.buying-guide-narrow__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.25rem;
+  padding: 0.65rem 1.125rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--color-accent);
+  text-decoration: none;
+  background: #fff;
+}
+
+[data-theme='dark'] .buying-guide-narrow__cta {
+  background: rgb(255 255 255 / 4%);
+}
+
+.buying-guide-narrow__cta:hover {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 6%, #fff);
+}
+
+.buying-guide-narrow__outro {
+  margin-top: 1.75rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid rgb(26 36 24 / 10%);
+}
+
+[data-theme='dark'] .buying-guide-narrow__outro {
+  border-top-color: rgb(255 255 255 / 10%);
+}
+
+/* How our testing helps */
+.buying-guide-icon-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.buying-guide-icon-heading--h2 {
+  margin-bottom: 1.25rem;
+}
+
+.buying-guide-icon-heading--h3 {
+  margin-top: 1.75rem;
+}
+
+.buying-guide-icon-heading--h3:first-of-type {
+  margin-top: 0;
+}
+
+.buying-guide-icon-heading .test-hub__h2,
+.buying-guide-icon-heading .test-hub__h3 {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.buying-guide-icon-heading__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-accent) 12%, #fff);
+  color: var(--color-accent);
+}
+
+.buying-guide-icon-heading__badge .material-symbols-outlined {
+  font-size: 1.125rem;
+  font-variation-settings: 'FILL' 1;
+}
+
+.buying-guide-icon-heading__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+.buying-guide-icon-heading__glyph .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+[data-theme='dark'] .buying-guide-icon-heading__badge {
+  background: color-mix(in srgb, var(--color-accent) 18%, rgb(255 255 255 / 6%));
+}
+
+.buying-guide-testing__features {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 1.5rem 0 0.25rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 14%, rgb(26 36 24 / 10%));
+  border-radius: var(--radius-lg, 1rem);
+  background: color-mix(in srgb, var(--color-accent) 5%, #fff);
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .buying-guide-testing__features {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+[data-theme='dark'] .buying-guide-testing__features {
+  border-color: color-mix(in srgb, var(--color-accent) 20%, rgb(255 255 255 / 10%));
+  background: color-mix(in srgb, var(--color-accent) 8%, rgb(255 255 255 / 4%));
+}
+
+.buying-guide-testing__feature {
+  padding: 1rem 0.875rem;
+  text-align: center;
+}
+
+.buying-guide-testing__feature:not(:last-child) {
+  border-right: 1px solid color-mix(in srgb, var(--color-accent) 12%, rgb(26 36 24 / 10%));
+}
+
+.buying-guide-testing__feature:nth-child(odd) {
+  border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 12%, rgb(26 36 24 / 10%));
+}
+
+@media (min-width: 768px) {
+  .buying-guide-testing__feature:nth-child(odd) {
+    border-bottom: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .buying-guide-testing__feature:nth-child(2) {
+    border-right: none;
+  }
+
+  .buying-guide-testing__feature:nth-child(3) {
+    border-bottom: none;
+  }
+}
+
+[data-theme='dark'] .buying-guide-testing__feature:not(:last-child),
+[data-theme='dark'] .buying-guide-testing__feature:nth-child(odd) {
+  border-color: rgb(255 255 255 / 10%);
+}
+
+.buying-guide-testing__feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.35rem;
+  color: var(--color-accent);
+}
+
+.buying-guide-testing__feature-icon .material-symbols-outlined {
+  font-size: 1.375rem;
+}
+
+.buying-guide-testing__feature-title {
+  margin: 0 0 0.2rem;
+  font-size: 0.875rem;
+  font-weight: 900;
+  line-height: 1.35;
+  color: var(--color-on-surface);
+}
+
+.buying-guide-testing__feature-text {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--color-on-surface-variant);
+}
+
+.buying-guide-testing__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  margin-top: 0.25rem;
+}
+
+.buying-guide-testing__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.buying-guide-testing__cta .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.buying-guide-testing__cta--primary {
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.buying-guide-testing__cta--primary:hover {
+  background: color-mix(in srgb, var(--color-accent) 88%, #000);
+  border-color: color-mix(in srgb, var(--color-accent) 88%, #000);
+}
+
+.buying-guide-testing__cta--secondary {
+  border: 1px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
+  background: #fff;
+  color: var(--color-accent);
+}
+
+[data-theme='dark'] .buying-guide-testing__cta--secondary {
+  background: rgb(255 255 255 / 4%);
+}
+
+.buying-guide-testing__cta--secondary:hover {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 6%, #fff);
+}

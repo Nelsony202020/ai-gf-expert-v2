@@ -1,20 +1,20 @@
-import { APPS_PER_PAGE, appsPageUrl, parseAppsPage, totalPages } from '../../lib/app-directory';
+import { APPS_PER_PAGE, appsPageUrl, parseAppsPage, parseAppsSort, totalPages } from '../../lib/app-directory';
+import {
+  DEFAULT_RANKING_PRIORITIES,
+  DIRECTORY_FILTER_LABELS,
+  DIRECTORY_PRIORITY_OPTIONS_BY_VALUE,
+  DIRECTORY_SCORE_META_BY_VALUE,
+  DIRECTORY_SORT_LABELS,
+  getVisibleScoreKeys,
+} from '../../lib/directory/meta';
+import {
+  loadDirectoryPreferences,
+  saveDirectoryPreferences,
+  type DirectoryView,
+} from '../../lib/directory/preferences';
 
 const LIKED_KEY = 'home-liked-apps';
-const DEFAULT_PRIORITIES = ['chat', 'images', 'video'];
 const PRIORITY_WEIGHTS = [0.5, 0.3, 0.2];
-const PRIORITY_META: Record<string, { icon: string; color: string; label: string }> = {
-  chat: { icon: 'chat_bubble', color: '#db2777', label: 'Chat' },
-  images: { icon: 'image', color: '#9333ea', label: 'Images' },
-  video: { icon: 'videocam', color: '#7c3aed', label: 'Videos' },
-};
-const QUICK_SORT_LABELS: Record<string, string> = {
-  overall: 'Overall rating',
-  popular: 'Most popular',
-  newest: 'Newest',
-  value: 'Best value',
-  rating: 'Highest rated',
-};
 const RATING_THRESHOLDS: Record<string, number> = {
   'rating-any': 0,
   'rating-8': 8,
@@ -27,25 +27,10 @@ const BUDGET_PRESETS: Record<string, { min: number; max: number }> = {
   'budget-15-25': { min: 15, max: 25 },
   'budget-over-25': { min: 25, max: Infinity },
 };
-const FILTER_LABELS: Record<string, string> = {
-  'realistic-chat': 'Realistic chat',
-  roleplay: 'Roleplay',
-  memory: 'Memory',
-  images: 'Images',
-  video: 'Video',
-  voice: 'Voice calls',
-  custom: 'Custom characters',
-  nsfw: 'NSFW',
-  mobile: 'Mobile app',
-  'voice-messages': 'Voice messages',
-  'free-plan': 'Free tier',
-  'privacy-high': 'Strong privacy',
-  'no-credit-system': 'No credit system',
-  'pay-card': 'Card',
-  'pay-paypal': 'PayPal',
-  'pay-crypto': 'Cryptocurrency',
-  'pay-discreet': 'Discreet billing',
-};
+
+function track(event: string, detail: Record<string, unknown> = {}) {
+  document.dispatchEvent(new CustomEvent('agfx:directory', { detail: { event, ...detail } }));
+}
 
 function getSortScore(card: HTMLElement, sortKey: string) {
   if (sortKey === 'price-asc' || sortKey === 'price-desc') {
@@ -103,65 +88,88 @@ function cardMatchesPayment(cardPayments: string[], filterId: string) {
   return cardPayments.includes(filterId);
 }
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function initAppDirectory() {
-  const section = document.querySelector('[data-app-directory]');
-  const root = section?.querySelector('[data-home-explorer]');
-  if (!root || root.dataset.bound === 'true') return;
+  const section = document.querySelector<HTMLElement>('[data-app-directory]');
+  const root = section?.querySelector<HTMLElement>('[data-home-explorer]');
+  if (!section || !root || root.dataset.bound === 'true') return;
   root.dataset.bound = 'true';
 
-  const basePath = section?.dataset.basePath ?? '/apps';
-  const perPage = Number(section?.dataset.perPage ?? APPS_PER_PAGE);
-  const maxPriceDefault = Number(section?.dataset.maxPrice ?? 30);
+  const basePath = section.dataset.basePath ?? '/ai-girlfriend-apps';
+  const perPage = Number(section.dataset.perPage ?? APPS_PER_PAGE);
+  const maxPriceDefault = Number(section.dataset.maxPrice ?? 30);
 
-  const grid = root.querySelector('[data-home-grid]');
-  const sortSelect = root.querySelector('[data-home-sort]') as HTMLSelectElement | null;
-  const sortLabelEl = root.querySelector('[data-home-sort-label]');
-  const countEl = root.querySelector('[data-home-count]');
+  const grid = root.querySelector<HTMLElement>('[data-home-grid]');
+  const sortSelect = section.querySelector<HTMLSelectElement>('[data-home-sort]');
+  const resultCountEl = section.querySelector<HTMLElement>('[data-home-result-count]');
+  const filterCountEl = section.querySelector<HTMLElement>('[data-home-filter-count]');
   const sheetCountEls = [...root.querySelectorAll('[data-home-sheet-count], [data-home-sheet-count-mobile]')] as HTMLElement[];
-  const emptyEl = root.querySelector('[data-home-empty]');
-  const activeFiltersEl = root.querySelector('[data-home-active-filters]');
+  const emptyEl = root.querySelector<HTMLElement>('[data-home-empty]');
+  const activeFiltersEl = root.querySelector<HTMLElement>('[data-home-active-filters]');
   const clearButtons = [
-    ...document.querySelectorAll('[data-home-clear-filters], [data-home-clear-filters-sheet]'),
+    ...section.querySelectorAll('[data-home-clear-filters], [data-home-clear-filters-sheet], [data-home-clear-filters-empty]'),
   ] as HTMLButtonElement[];
   const applyButtons = [
     ...root.querySelectorAll('[data-home-apply-filters], [data-home-apply-filters-mobile]'),
   ] as HTMLButtonElement[];
   const filterInputs = [...root.querySelectorAll('[data-home-filter]')] as HTMLInputElement[];
   const paymentInputs = [...root.querySelectorAll('[data-home-payment-filter]')] as HTMLInputElement[];
-  const cards = [...root.querySelectorAll('[data-home-app]')] as HTMLElement[];
-  const priceMinInput = root.querySelector('[data-home-price-min]') as HTMLInputElement | null;
-  const priceMaxInput = root.querySelector('[data-home-price-max]') as HTMLInputElement | null;
-  const priceMinRange = root.querySelector('[data-home-price-min-range]') as HTMLInputElement | null;
-  const priceMaxRange = root.querySelector('[data-home-price-max-range]') as HTMLInputElement | null;
-  const priceFill = root.querySelector('[data-home-price-fill]') as HTMLElement | null;
+  const items = [...root.querySelectorAll('[data-home-app]')] as HTMLElement[];
+  const priceMinInput = root.querySelector<HTMLInputElement>('[data-home-price-min]');
+  const priceMaxInput = root.querySelector<HTMLInputElement>('[data-home-price-max]');
+  const priceMinRange = root.querySelector<HTMLInputElement>('[data-home-price-min-range]');
+  const priceMaxRange = root.querySelector<HTMLInputElement>('[data-home-price-max-range]');
+  const priceFill = root.querySelector<HTMLElement>('[data-home-price-fill]');
   const budgetPresets = [...root.querySelectorAll('[data-home-budget-preset]')] as HTMLButtonElement[];
   const minRatingInputs = [...root.querySelectorAll('[data-home-min-rating]')] as HTMLInputElement[];
-  let prioritySlots = [...root.querySelectorAll('[data-home-priority-slot]')] as HTMLElement[];
-  let priorityInputs = [...root.querySelectorAll('[data-home-priority]')] as HTMLInputElement[];
+  const prioritySlots = [...root.querySelectorAll('[data-home-priority-slot]')] as HTMLElement[];
+  const priorityInputs = [...root.querySelectorAll('[data-home-priority]')] as HTMLInputElement[];
   const prioritiesReset = root.querySelector('[data-home-priorities-reset]');
-  const customizeStatus = root.querySelector('[data-home-customize-status]');
-  const quickSortButtons = [...root.querySelectorAll('[data-home-quick-sort]')] as HTMLButtonElement[];
-  const popularMore = root.querySelector('[data-home-popular-more]');
-  const popularMoreToggle = root.querySelector('[data-home-popular-more-toggle]');
-  const filtersPanel = root.querySelector('[data-home-filters-panel]');
-  const filtersBackdrop = root.querySelector('[data-home-filters-backdrop]');
-  const filtersOpen = document.querySelector('[data-home-filters-open]');
-  const filtersCloseButtons = [...document.querySelectorAll('[data-home-filters-close]')] as HTMLButtonElement[];
-  const loadMoreBtn = root.querySelector('[data-home-load-more]') as HTMLButtonElement | null;
-  const paginationNav = root.querySelector('[data-home-pagination]');
+  const customizeStatus = root.querySelector<HTMLElement>('[data-home-customize-status]');
+  const customizeToggle = section.querySelector<HTMLButtonElement>('[data-home-customize-toggle]');
+  const customizePanel = section.querySelector<HTMLElement>('[data-home-customize-panel]');
+  const popularMore = root.querySelector<HTMLElement>('[data-home-popular-more]');
+  const popularMoreToggle = root.querySelector<HTMLButtonElement>('[data-home-popular-more-toggle]');
+  const filtersPanel = root.querySelector<HTMLElement>('[data-home-filters-panel]');
+  const filtersBackdrop = root.querySelector<HTMLElement>('[data-home-filters-backdrop]');
+  const filtersOpen = section.querySelector<HTMLButtonElement>('[data-home-filters-open]');
+  const filtersCloseButtons = [...section.querySelectorAll('[data-home-filters-close]')] as HTMLButtonElement[];
+  const loadMoreBtn = root.querySelector<HTMLButtonElement>('[data-home-load-more]');
+  const paginationNav = root.querySelector<HTMLElement>('[data-home-pagination]');
   const pageLinks = [...root.querySelectorAll('[data-home-page-link]')] as HTMLAnchorElement[];
-  const pagePrev = root.querySelector('[data-home-page-prev]') as HTMLAnchorElement | null;
-  const pageNext = root.querySelector('[data-home-page-next]') as HTMLAnchorElement | null;
+  const pagePrev = root.querySelector<HTMLAnchorElement>('[data-home-page-prev]');
+  const pageNext = root.querySelector<HTMLAnchorElement>('[data-home-page-next]');
+  const viewButtons = [...section.querySelectorAll('[data-home-view]')] as HTMLButtonElement[];
+  const savedToggle = section.querySelector<HTMLButtonElement>('[data-home-saved-toggle]');
+  const savedCountEl = section.querySelector<HTMLElement>('[data-home-saved-count]');
+  const saveButtons = [...section.querySelectorAll('[data-home-save]')] as HTMLButtonElement[];
+  const prefsNotice = section.querySelector<HTMLElement>('[data-home-prefs-notice]');
+  const prefsResetBtn = section.querySelector<HTMLButtonElement>('[data-home-prefs-reset]');
 
-  const likeButtons = [...document.querySelectorAll('[data-home-like]')] as HTMLButtonElement[];
+  const likeButtons = [...section.querySelectorAll('[data-home-like]')] as HTMLButtonElement[];
   const liked = loadSet(LIKED_KEY);
+
+  let prefs = loadDirectoryPreferences();
+  const saved = new Set<string>(prefs.saved);
   let loadedPages = parseAppsPage(window.location.search);
   let personalized = false;
-  let quickSortMode = 'overall';
+  let savedOnly = false;
+  let currentView: DirectoryView = prefs.view;
+  let lastFocusedBeforeDrawer: HTMLElement | null = null;
+
+  /* ------------------------------------------------------------------ */
+  /* Selection helpers                                                    */
+  /* ------------------------------------------------------------------ */
 
   function selectedMinRating() {
     const checked = minRatingInputs.find((input) => input.checked);
     return RATING_THRESHOLDS[checked?.value ?? 'rating-any'] ?? 0;
+  }
+
+  function selectedMinRatingId() {
+    return minRatingInputs.find((input) => input.checked)?.value ?? 'rating-any';
   }
 
   function selectedPriceMin() {
@@ -199,40 +207,53 @@ export function initAppDirectory() {
   }
 
   function activePayments() {
-    return paymentInputs.filter((input) => input.checked).map((input) => input.value);
+    return [...new Set(paymentInputs.filter((input) => input.checked).map((input) => input.value))];
   }
 
-  function hasPendingFilters() {
-    const filters = activeFilters();
-    const payments = activePayments();
-    const minRating = selectedMinRating();
-    const minPrice = selectedPriceMin();
-    const maxPrice = selectedPriceMax();
-    return (
-      filters.length > 0 ||
-      payments.length > 0 ||
-      minRating > 0 ||
-      minPrice > 0 ||
-      maxPrice < maxPriceDefault
-    );
-  }
-
-  function updateClearButtons() {
-    clearButtons.forEach((btn) => {
-      btn.hidden = false;
-    });
+  function activeFilterCount() {
+    let count = activeFilters().length + activePayments().length;
+    if (selectedPriceMin() > 0 || selectedPriceMax() < maxPriceDefault) count += 1;
+    if (selectedMinRating() > 0) count += 1;
+    return count;
   }
 
   function currentPriorities() {
     return priorityInputs.map((input) => input.value);
   }
 
+  function isDefaultPriorities() {
+    return currentPriorities().every((value, index) => value === DEFAULT_RANKING_PRIORITIES[index]);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Persistence                                                          */
+  /* ------------------------------------------------------------------ */
+
+  function persistState(extra: Partial<Parameters<typeof saveDirectoryPreferences>[0]> = {}) {
+    prefs = saveDirectoryPreferences({
+      view: currentView,
+      filters: activeFilters(),
+      payments: activePayments(),
+      minRating: selectedMinRatingId(),
+      priceMin: selectedPriceMin() > 0 ? selectedPriceMin() : null,
+      priceMax: selectedPriceMax() < maxPriceDefault ? selectedPriceMax() : null,
+      sort: sortSelect?.value ?? 'overall',
+      priorities: personalized ? currentPriorities() : null,
+      saved: [...saved],
+      ...extra,
+    });
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Priorities / personalized ranking                                    */
+  /* ------------------------------------------------------------------ */
+
   function updatePrioritySlotIcons() {
     prioritySlots.forEach((slot) => {
-      const input = slot.querySelector('[data-home-priority]') as HTMLInputElement | null;
-      const iconWrap = slot.querySelector('[data-home-priority-icon]') as HTMLElement | null;
+      const input = slot.querySelector<HTMLInputElement>('[data-home-priority]');
+      const iconWrap = slot.querySelector<HTMLElement>('[data-home-priority-icon]');
       if (!input || !iconWrap) return;
-      const meta = PRIORITY_META[input.value];
+      const meta = DIRECTORY_PRIORITY_OPTIONS_BY_VALUE[input.value];
       if (!meta) return;
       iconWrap.style.background = `${meta.color}20`;
       iconWrap.style.color = meta.color;
@@ -241,8 +262,28 @@ export function initAppDirectory() {
     });
   }
 
+  function setPriorities(values: string[]) {
+    prioritySlots.forEach((slot, index) => {
+      const hidden = slot.querySelector<HTMLInputElement>('[data-home-priority]');
+      const value = values[index] ?? DEFAULT_RANKING_PRIORITIES[index] ?? 'chat';
+      if (hidden) hidden.value = value;
+      const triggerLabel = slot.querySelector('.home-priority-picker__trigger-label');
+      const meta = DIRECTORY_PRIORITY_OPTIONS_BY_VALUE[value];
+      if (triggerLabel && meta) triggerLabel.textContent = meta.label;
+      slot.querySelectorAll('[data-priority-option]').forEach((opt) => {
+        opt.setAttribute('aria-selected', (opt as HTMLElement).dataset.priorityOption === value ? 'true' : 'false');
+      });
+    });
+    updatePrioritySlotIcons();
+  }
+
+  function setPersonalized(active: boolean) {
+    personalized = active;
+    if (customizeStatus) customizeStatus.hidden = !active;
+  }
+
   function closeAllPriorityMenus() {
-    root.querySelectorAll('[data-priority-menu]').forEach((menu) => {
+    root!.querySelectorAll('[data-priority-menu]').forEach((menu) => {
       (menu as HTMLElement).hidden = true;
       const trigger = menu.closest('[data-home-priority-picker]')?.querySelector('[data-priority-trigger]');
       trigger?.setAttribute('aria-expanded', 'false');
@@ -250,10 +291,10 @@ export function initAppDirectory() {
   }
 
   function initPriorityPickers() {
-    root.querySelectorAll('[data-home-priority-picker]').forEach((picker) => {
-      const trigger = picker.querySelector('[data-priority-trigger]') as HTMLButtonElement | null;
-      const menu = picker.querySelector('[data-priority-menu]') as HTMLElement | null;
-      const hidden = picker.querySelector('[data-home-priority]') as HTMLInputElement | null;
+    root!.querySelectorAll('[data-home-priority-picker]').forEach((picker) => {
+      const trigger = picker.querySelector<HTMLButtonElement>('[data-priority-trigger]');
+      const menu = picker.querySelector<HTMLElement>('[data-priority-menu]');
+      const hidden = picker.querySelector<HTMLInputElement>('[data-home-priority]');
       const triggerLabel = picker.querySelector('.home-priority-picker__trigger-label');
       if (!trigger || !menu || !hidden) return;
 
@@ -279,6 +320,7 @@ export function initAppDirectory() {
           trigger.setAttribute('aria-expanded', 'false');
           updatePrioritySlotIcons();
           setPersonalized(!isDefaultPriorities());
+          track('ranking_customized', { priorities: currentPriorities() });
           applyFiltersAndSort();
         });
       });
@@ -291,34 +333,19 @@ export function initAppDirectory() {
     });
   }
 
-  function isDefaultPriorities() {
-    return currentPriorities().every((value, index) => value === DEFAULT_PRIORITIES[index]);
+  function resetPriorities() {
+    setPriorities([...DEFAULT_RANKING_PRIORITIES]);
+    setPersonalized(false);
+    applyFiltersAndSort();
   }
 
-  function setPersonalized(active: boolean) {
-    personalized = active;
-    if (customizeStatus) customizeStatus.hidden = !active;
-  }
-
-  function updateSortLabel() {
-    if (!sortLabelEl) return;
-    if (personalized) {
-      sortLabelEl.textContent = 'Personalized by your top priorities';
-      return;
-    }
-    const label = QUICK_SORT_LABELS[quickSortMode] ?? sortSelect?.selectedOptions[0]?.textContent ?? 'Overall rating';
-    sortLabelEl.textContent = `Sorted by ${label}`;
-  }
-
-  function updatePreviewCounts() {
-    const matched = countMatchingCards();
-    sheetCountEls.forEach((el) => {
-      el.textContent = String(matched.length);
-    });
-    updateClearButtons();
-  }
+  /* ------------------------------------------------------------------ */
+  /* Matching                                                             */
+  /* ------------------------------------------------------------------ */
 
   function cardMatches(card: HTMLElement) {
+    if (savedOnly && !saved.has(card.dataset.homeApp ?? '')) return false;
+
     const filters = activeFilters();
     const payments = activePayments();
     const cardFilters = (card.dataset.filters ?? '').split(',').filter(Boolean);
@@ -334,35 +361,118 @@ export function initAppDirectory() {
   }
 
   function countMatchingCards() {
-    return cards.filter((card) => cardMatches(card));
+    return items.filter((card) => cardMatches(card));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Rendering helpers                                                    */
+  /* ------------------------------------------------------------------ */
+
+  function updateResultCount(matchedCount: number) {
+    if (!resultCountEl) return;
+    const hasFilters = activeFilterCount() > 0 || savedOnly;
+    let text: string;
+    if (personalized) {
+      text = `${matchedCount} ${matchedCount === 1 ? 'app' : 'apps'} ranked for your priorities`;
+    } else if (hasFilters) {
+      text = `${matchedCount} ${matchedCount === 1 ? 'app matches' : 'apps match'} your filters`;
+    } else {
+      text = `${matchedCount} tested apps`;
+    }
+    resultCountEl.textContent = text;
+  }
+
+  function updateFilterCountBadge() {
+    if (!filterCountEl) return;
+    const count = activeFilterCount();
+    filterCountEl.hidden = count === 0;
+    filterCountEl.textContent = `· ${count}`;
+  }
+
+  function updateSavedUi() {
+    if (savedCountEl) {
+      savedCountEl.hidden = saved.size === 0;
+      savedCountEl.textContent = `· ${saved.size}`;
+    }
+    saveButtons.forEach((btn) => {
+      const id = btn.dataset.homeSave ?? '';
+      const isSaved = saved.has(id);
+      btn.setAttribute('aria-pressed', isSaved ? 'true' : 'false');
+      btn.classList.toggle('is-saved', isSaved);
+      const label = btn.querySelector('[data-save-label]');
+      if (label) label.textContent = isSaved ? 'Saved' : 'Save';
+    });
+    likeButtons.forEach((btn) => {
+      const id = btn.dataset.homeLike ?? '';
+      btn.setAttribute('aria-pressed', liked.has(id) ? 'true' : 'false');
+      btn.classList.toggle('is-liked', liked.has(id));
+    });
+  }
+
+  function updateVisibleScores() {
+    const keys = personalized ? getVisibleScoreKeys(currentPriorities()) : getVisibleScoreKeys(null);
+    items.forEach((item) => {
+      let scores: Record<string, number> = {};
+      try {
+        scores = JSON.parse(item.dataset.categoryScores ?? '{}');
+      } catch {}
+      const fallback = Number(item.dataset.overallScore ?? 0);
+
+      const cardSlots = [...item.querySelectorAll<HTMLElement>('.home-app-card [data-metric-slot]')];
+      cardSlots.forEach((slot, index) => {
+        const key = keys[index];
+        if (!key) return;
+        const meta = DIRECTORY_SCORE_META_BY_VALUE[key];
+        const iconEl = slot.querySelector<HTMLElement>('[data-metric-icon]');
+        const labelEl = slot.querySelector('[data-metric-label]');
+        const valueEl = slot.querySelector('[data-metric-value]');
+        if (iconEl && meta) {
+          iconEl.textContent = meta.icon;
+          iconEl.style.color = meta.color;
+        }
+        if (labelEl && meta) labelEl.textContent = meta.label;
+        if (valueEl) valueEl.textContent = (scores[key] ?? fallback).toFixed(1);
+      });
+    });
+  }
+
+  function updatePreviewCounts() {
+    const matched = countMatchingCards();
+    sheetCountEls.forEach((el) => {
+      el.textContent = String(matched.length);
+    });
   }
 
   function renderActiveChips(filters: string[], payments: string[]) {
     if (!activeFiltersEl) return;
-    const items: { type: string; id: string; label: string }[] = [];
-    filters.forEach((id) => items.push({ type: 'filter', id, label: FILTER_LABELS[id] ?? id }));
-    payments.forEach((id) => items.push({ type: 'payment', id, label: FILTER_LABELS[id] ?? id }));
+    const chips: { type: string; id: string; label: string }[] = [];
+    filters.forEach((id) => chips.push({ type: 'filter', id, label: DIRECTORY_FILTER_LABELS[id] ?? id }));
+    payments.forEach((id) => chips.push({ type: 'payment', id, label: DIRECTORY_FILTER_LABELS[id] ?? id }));
 
     const minPrice = selectedPriceMin();
     const maxPrice = selectedPriceMax();
     if (minPrice > 0 || maxPrice < maxPriceDefault) {
-      items.push({ type: 'price', id: 'price-range', label: `$${minPrice}–$${maxPrice}/mo` });
+      chips.push({ type: 'price', id: 'price-range', label: `$${minPrice}–$${maxPrice}/mo` });
     }
     const minRating = selectedMinRating();
     if (minRating > 0) {
-      items.push({ type: 'rating', id: 'min-rating', label: `${minRating}+ rating` });
+      chips.push({ type: 'rating', id: 'min-rating', label: `${minRating}+ rating` });
     }
 
-    activeFiltersEl.innerHTML = items
+    const chipsHtml = chips
       .map(
         (item) =>
-          `<button type="button" class="home-explorer__active-chip" data-remove-chip-type="${item.type}" data-remove-chip-id="${item.id}">
+          `<button type="button" class="home-explorer__active-chip" data-remove-chip-type="${item.type}" data-remove-chip-id="${item.id}" aria-label="Remove filter: ${item.label}">
             <span>${item.label}</span>
             <span class="material-symbols-outlined" aria-hidden="true">close</span>
           </button>`,
       )
       .join('');
-    activeFiltersEl.hidden = items.length === 0;
+    const clearAllHtml = chips.length > 0
+      ? '<button type="button" class="home-explorer__active-clear" data-remove-chip-type="all" data-remove-chip-id="all">Clear all</button>'
+      : '';
+    activeFiltersEl.innerHTML = chipsHtml + clearAllHtml;
+    activeFiltersEl.hidden = chips.length === 0;
   }
 
   function updatePaginationUi(filteredCount: number) {
@@ -398,13 +508,13 @@ export function initAppDirectory() {
   function applyFiltersAndSort() {
     const filters = activeFilters();
     const payments = activePayments();
-    const matched = cards.filter((card) => cardMatches(card));
+    const matched = items.filter((card) => cardMatches(card));
 
     matched.sort((a, b) => {
       if (personalized) {
         return getWeightedScore(b, currentPriorities()) - getWeightedScore(a, currentPriorities());
       }
-      const sortKey = quickSortMode === 'overall' ? (sortSelect?.value ?? 'overall') : quickSortMode;
+      const sortKey = sortSelect?.value ?? 'overall';
       const aScore = getSortScore(a, sortKey);
       const bScore = getSortScore(b, sortKey);
       if (sortKey === 'price-asc') return aScore - bScore;
@@ -412,13 +522,13 @@ export function initAppDirectory() {
       return bScore - aScore;
     });
 
-    matched.forEach((card) => grid?.appendChild(card));
+    matched.forEach((card) => grid?.insertBefore(card, emptyEl));
 
     const visibleLimit = loadedPages * perPage;
     matched.forEach((card, index) => {
       card.hidden = index >= visibleLimit;
     });
-    cards.filter((card) => !cardMatches(card)).forEach((card) => {
+    items.filter((card) => !cardMatches(card)).forEach((card) => {
       card.hidden = true;
       card.dataset.filtered = 'false';
     });
@@ -426,19 +536,29 @@ export function initAppDirectory() {
       card.dataset.filtered = 'true';
     });
 
-    if (countEl) countEl.textContent = String(matched.length);
     sheetCountEls.forEach((el) => {
       el.textContent = String(matched.length);
     });
     if (emptyEl) emptyEl.hidden = matched.length > 0;
+    if (matched.length === 0) track('no_results', { filters, payments });
 
     updatePaginationUi(matched.length);
     renderActiveChips(filters, payments);
-    updateSortLabel();
-    updateClearButtons();
+    updateResultCount(matched.length);
+    updateFilterCountBadge();
+    updateVisibleScores();
+    persistState();
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Clearing                                                             */
+  /* ------------------------------------------------------------------ */
+
   function clearChip(type: string, id: string) {
+    if (type === 'all') {
+      clearAllFilters();
+      return;
+    }
     if (type === 'filter') {
       filterInputs.filter((input) => input.value === id).forEach((input) => {
         input.checked = false;
@@ -457,6 +577,7 @@ export function initAppDirectory() {
     }
     loadedPages = 1;
     pushPageUrl(1, true);
+    track('filter_cleared', { type, id });
     applyFiltersAndSort();
     updatePreviewCounts();
   }
@@ -475,43 +596,123 @@ export function initAppDirectory() {
     });
     loadedPages = 1;
     pushPageUrl(1, true);
+    track('filter_cleared', { type: 'all' });
     applyFiltersAndSort();
     updatePreviewCounts();
   }
 
-  function resetPriorities() {
-    prioritySlots.forEach((slot, index) => {
-      const hidden = slot.querySelector('[data-home-priority]') as HTMLInputElement | null;
-      const defaultValue = DEFAULT_PRIORITIES[index] ?? 'chat';
-      if (hidden) hidden.value = defaultValue;
-      const triggerLabel = slot.querySelector('.home-priority-picker__trigger-label');
-      const meta = PRIORITY_META[defaultValue];
-      if (triggerLabel && meta) triggerLabel.textContent = meta.label;
-      slot.querySelectorAll('[data-priority-option]').forEach((opt) => {
-        opt.setAttribute('aria-selected', (opt as HTMLElement).dataset.priorityOption === defaultValue ? 'true' : 'false');
-      });
-    });
-    updatePrioritySlotIcons();
-    setPersonalized(false);
-    quickSortMode = 'overall';
-    quickSortButtons.forEach((btn) => {
-      btn.setAttribute('aria-pressed', btn.dataset.homeQuickSort === 'overall' ? 'true' : 'false');
-    });
-    if (sortSelect) sortSelect.value = 'overall';
-    applyFiltersAndSort();
+  /* ------------------------------------------------------------------ */
+  /* Filter drawer (a11y: focus trap + return focus)                      */
+  /* ------------------------------------------------------------------ */
+
+  function drawerKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      closeFiltersSheet();
+      return;
+    }
+    if (event.key !== 'Tab' || !filtersPanel) return;
+    const focusables = [...filtersPanel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(
+      (el) => el.offsetParent !== null,
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   }
 
   function openFiltersSheet() {
+    lastFocusedBeforeDrawer = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     filtersPanel?.classList.add('is-open');
     if (filtersBackdrop) filtersBackdrop.hidden = false;
     document.body.classList.add('home-filters-open');
+    document.addEventListener('keydown', drawerKeydown);
+    updatePreviewCounts();
+    const closeBtn = filtersPanel?.querySelector<HTMLElement>('[data-home-filters-close]');
+    closeBtn?.focus();
+    track('filter_drawer_opened');
   }
 
   function closeFiltersSheet() {
     filtersPanel?.classList.remove('is-open');
     if (filtersBackdrop) filtersBackdrop.hidden = true;
     document.body.classList.remove('home-filters-open');
+    document.removeEventListener('keydown', drawerKeydown);
+    (lastFocusedBeforeDrawer ?? filtersOpen)?.focus();
+    lastFocusedBeforeDrawer = null;
   }
+
+  /* ------------------------------------------------------------------ */
+  /* View switching                                                       */
+  /* ------------------------------------------------------------------ */
+
+  function setView(view: DirectoryView, persist = true) {
+    currentView = view;
+    if (grid) grid.dataset.view = view;
+    viewButtons.forEach((btn) => {
+      btn.setAttribute('aria-pressed', btn.dataset.homeView === view ? 'true' : 'false');
+    });
+    if (persist) {
+      persistState();
+      track('view_switched', { view });
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Restore stored preferences                                           */
+  /* ------------------------------------------------------------------ */
+
+  function restorePreferences() {
+    // View
+    setView(prefs.view, false);
+
+    // Filters
+    filterInputs.forEach((input) => {
+      input.checked = prefs.filters.includes(input.value);
+    });
+    paymentInputs.forEach((input) => {
+      input.checked = prefs.payments.includes(input.value);
+    });
+    minRatingInputs.forEach((input) => {
+      input.checked = input.value === prefs.minRating;
+    });
+    if (!minRatingInputs.some((input) => input.checked) && minRatingInputs[0]) {
+      minRatingInputs[0].checked = true;
+    }
+    syncPriceInputs(prefs.priceMin ?? 0, prefs.priceMax ?? maxPriceDefault);
+
+    // Sort
+    if (sortSelect && [...sortSelect.options].some((opt) => opt.value === prefs.sort)) {
+      sortSelect.value = prefs.sort;
+    }
+
+    // Ranking priorities
+    if (prefs.priorities && prefs.priorities.length > 0) {
+      const values = prefs.priorities.filter((value) => DIRECTORY_PRIORITY_OPTIONS_BY_VALUE[value]);
+      if (values.length > 0) {
+        setPriorities(values);
+        setPersonalized(!isDefaultPriorities());
+        if (personalized && customizePanel && customizeToggle) {
+          customizePanel.hidden = false;
+          customizeToggle.setAttribute('aria-expanded', 'true');
+        }
+      }
+    }
+
+    // Homepage quick-finder handoff
+    if (prefs.homepage && prefsNotice) {
+      prefsNotice.hidden = false;
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Event wiring                                                         */
+  /* ------------------------------------------------------------------ */
 
   function onFilterInputChange() {
     updatePreviewCounts();
@@ -530,26 +731,18 @@ export function initAppDirectory() {
 
   sortSelect?.addEventListener('change', () => {
     setPersonalized(false);
-    quickSortMode = 'overall';
-    quickSortButtons.forEach((btn) => {
-      btn.setAttribute('aria-pressed', btn.dataset.homeQuickSort === 'overall' ? 'true' : 'false');
-    });
+    setPriorities([...DEFAULT_RANKING_PRIORITIES]);
+    track('sort_changed', { sort: sortSelect.value, label: DIRECTORY_SORT_LABELS[sortSelect.value] });
     applyFiltersAndSort();
   });
 
   initPriorityPickers();
 
-  quickSortButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const mode = btn.dataset.homeQuickSort ?? 'overall';
-      quickSortMode = mode;
-      setPersonalized(false);
-      quickSortButtons.forEach((other) => {
-        other.setAttribute('aria-pressed', other === btn ? 'true' : 'false');
-      });
-      if (mode === 'overall' && sortSelect) sortSelect.value = 'overall';
-      applyFiltersAndSort();
-    });
+  customizeToggle?.addEventListener('click', () => {
+    if (!customizePanel) return;
+    const willOpen = customizePanel.hidden === true;
+    customizePanel.hidden = !willOpen;
+    customizeToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
   });
 
   const onPriceInput = (source?: EventTarget | null) => {
@@ -594,6 +787,7 @@ export function initAppDirectory() {
     btn.addEventListener('click', () => {
       loadedPages = 1;
       pushPageUrl(1, true);
+      track('filters_applied', { filters: activeFilters(), payments: activePayments() });
       applyFiltersAndSort();
       closeFiltersSheet();
     });
@@ -623,14 +817,86 @@ export function initAppDirectory() {
       const expanded = toggle.getAttribute('aria-expanded') === 'true';
       const willExpand = !expanded;
       toggle.setAttribute('aria-expanded', willExpand ? 'true' : 'false');
-      body.hidden = !willExpand;
+      (body as HTMLElement).hidden = !willExpand;
       if (group instanceof HTMLElement) group.classList.toggle('is-open', willExpand);
     });
   });
 
-  syncPriceInputs(0, maxPriceDefault);
-  updatePrioritySlotIcons();
+  // View switcher
+  viewButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.homeView === 'list' ? 'list' : 'cards';
+      if (view !== currentView) setView(view);
+    });
+  });
 
+  // Saves
+  saveButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.homeSave ?? '';
+      if (!id) return;
+      if (saved.has(id)) saved.delete(id);
+      else saved.add(id);
+      updateSavedUi();
+      persistState();
+      track('product_saved', { app: id, saved: saved.has(id) });
+      if (savedOnly) applyFiltersAndSort();
+    });
+  });
+
+  savedToggle?.addEventListener('click', () => {
+    savedOnly = !savedOnly;
+    savedToggle.setAttribute('aria-pressed', savedOnly ? 'true' : 'false');
+    savedToggle.classList.toggle('is-active', savedOnly);
+    loadedPages = 1;
+    applyFiltersAndSort();
+  });
+
+  // Row expansion + external visits (delegated)
+  grid?.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const scoresToggle = target.closest('[data-card-scores-toggle]');
+    if (scoresToggle instanceof HTMLButtonElement) {
+      const insights = scoresToggle.closest('[data-card-scores]');
+      if (insights instanceof HTMLElement) {
+        const expanded = insights.classList.toggle('is-expanded');
+        scoresToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        scoresToggle.setAttribute(
+          'aria-label',
+          expanded ? 'Show fewer category ratings' : 'Show all category ratings',
+        );
+      }
+      return;
+    }
+
+    const visit = target.closest('[data-directory-visit]');
+    if (visit instanceof HTMLElement) {
+      track('external_app_visited', { app: visit.dataset.directoryVisit });
+    }
+  });
+
+  // Homepage-preferences notice reset
+  prefsResetBtn?.addEventListener('click', () => {
+    if (prefsNotice) prefsNotice.hidden = true;
+    setPriorities([...DEFAULT_RANKING_PRIORITIES]);
+    setPersonalized(false);
+    filterInputs.forEach((input) => {
+      input.checked = false;
+    });
+    paymentInputs.forEach((input) => {
+      input.checked = false;
+    });
+    syncPriceInputs(0, maxPriceDefault);
+    minRatingInputs.forEach((input, index) => {
+      input.checked = index === 0;
+    });
+    persistState({ homepage: null, priorities: null, filters: [], payments: [] });
+    applyFiltersAndSort();
+  });
+
+  // Likes (unchanged behavior)
   likeButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.homeLike ?? '';
@@ -641,6 +907,8 @@ export function initAppDirectory() {
       btn.setAttribute('aria-pressed', liked.has(id) ? 'true' : 'false');
     });
   });
+  likeButtons.forEach((btn) => btn.setAttribute('aria-pressed', liked.has(btn.dataset.homeLike ?? '') ? 'true' : 'false'));
+  likeButtons.forEach((btn) => btn.classList.toggle('is-liked', liked.has(btn.dataset.homeLike ?? '')));
 
   loadMoreBtn?.addEventListener('click', () => {
     loadedPages += 1;
@@ -678,8 +946,19 @@ export function initAppDirectory() {
     applyFiltersAndSort();
   });
 
-  likeButtons.forEach((btn) => btn.setAttribute('aria-pressed', liked.has(btn.dataset.homeLike ?? '') ? 'true' : 'false'));
+  /* ------------------------------------------------------------------ */
+  /* Init                                                                 */
+  /* ------------------------------------------------------------------ */
 
+  const initialSort = parseAppsSort(window.location.search);
+  if (initialSort && sortSelect && [...sortSelect.options].some((opt) => opt.value === initialSort)) {
+    sortSelect.value = initialSort;
+  }
+
+  syncPriceInputs(0, maxPriceDefault);
+  updatePrioritySlotIcons();
+  restorePreferences();
+  updateSavedUi();
   pushPageUrl(loadedPages, true);
   updatePreviewCounts();
   applyFiltersAndSort();

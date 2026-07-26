@@ -9,41 +9,45 @@ const searchIndex = buildSearchIndex();
 <header class="site-header relative z-50" data-site-header>
   <div class="section-container px-4 md:px-8 site-header__inner">
     <div class="site-header__left">
-      <a href="/" class="site-logo-link shrink-0 flex items-center">
+      <a href="/" class="site-logo-link site-header__logo-link shrink-0">
         <img
           src="/brand/ai-gf-logo-light.png"
           alt="AI Girlfriend Expert"
-          class="h-14 md:h-[3.75rem] w-auto object-contain site-header__logo site-header__logo--light"
-          width="256"
-          height="256"
+          class="site-header__logo site-header__logo--light"
+          width="127"
+          height="100"
           loading="eager"
+          decoding="async"
         />
         <img
           src="/brand/ai-gf-logo-white.png"
-          alt="AI Girlfriend Expert"
-          class="h-11 md:h-12 w-auto object-contain site-header__logo site-header__logo--dark hidden"
-          width="220"
-          height="72"
+          alt=""
+          class="site-header__logo site-header__logo--dark"
+          width="127"
+          height="100"
           loading="eager"
+          decoding="async"
+          aria-hidden="true"
         />
       </a>
 
       <nav class="site-header__nav" aria-label="Main">
         <div class="site-header__mega-wrap" data-mega-wrap>
-          <a
-            href="#"
+          <button
+            type="button"
             class="site-header__nav-link"
             data-mega-trigger
             aria-haspopup="true"
             aria-controls="site-mega-menu"
+            aria-expanded="false"
           >
             Explore
             <span class="material-symbols-outlined site-header__nav-chevron">expand_more</span>
-          </a>
+          </button>
         </div>
 
-        <a href="#" class="site-header__nav-link">All Apps</a>
-        <a href="#" class="site-header__nav-link">How We Review</a>
+        <a href="/ai-girlfriend-apps" class="site-header__nav-link">All Apps</a>
+        <a href="/test/" class="site-header__nav-link">How We Review</a>
       </nav>
     </div>
 
@@ -105,9 +109,11 @@ const searchIndex = buildSearchIndex();
 
   <div id="site-mobile-menu" class="site-header__mobile-menu hidden" data-mobile-menu hidden>
     <nav class="site-header__mobile-nav" aria-label="Mobile">
-      <a href="#" class="site-header__mobile-link">Explore</a>
-      <a href="#" class="site-header__mobile-link">All Apps</a>
-      <a href="#" class="site-header__mobile-link">How We Review</a>
+      <a href="/ai-girlfriend-apps" class="site-header__mobile-link">All Apps</a>
+      <a href="/best/ai-girlfriend" class="site-header__mobile-link">Best AI Girlfriend Apps</a>
+      <a href="/guides/how-to-choose-an-ai-girlfriend-app" class="site-header__mobile-link">How to Choose an AI Girlfriend App</a>
+      <a href="/reviews/aura-ai" class="site-header__mobile-link">Aura AI Review</a>
+      <a href="/test/" class="site-header__mobile-link">How We Review</a>
     </nav>
     <div class="site-header__mobile-actions">
       <ThemeToggle variant="footer" />
@@ -255,6 +261,7 @@ const searchIndex = buildSearchIndex();
     function closeMega() {
       megaPanel?.classList.add('hidden');
       megaTrigger?.classList.remove('site-header__nav-link--active');
+      megaTrigger?.setAttribute('aria-expanded', 'false');
       header.classList.remove('site-header--mega-open');
     }
 
@@ -266,6 +273,7 @@ const searchIndex = buildSearchIndex();
       closeSearch();
       megaPanel?.classList.remove('hidden');
       megaTrigger?.classList.add('site-header__nav-link--active');
+      megaTrigger?.setAttribute('aria-expanded', 'true');
       header.classList.add('site-header--mega-open');
     }
 
@@ -408,11 +416,16 @@ const searchIndex = buildSearchIndex();
 </script>
 
 <style is:global>
-  [data-theme='dark'] .site-header__logo--light {
-    display: none;
+  [data-theme='dark'] .site-header__logo.site-header__logo--light {
+    opacity: 0;
+    visibility: hidden;
   }
 
-  [data-theme='dark'] .site-header__logo--dark {
-    display: block;
+  [data-theme='dark'] .site-header__logo.site-header__logo--dark {
+    opacity: 1;
+    visibility: visible;
+    background: transparent;
+    box-shadow: none;
+    filter: none;
   }
 </style>

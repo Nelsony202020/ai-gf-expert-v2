@@ -33,6 +33,10 @@ export function reviewRatingsUrl(productSlug: string): string {
   return `/reviews/${productSlug}#ratings`;
 }
 
+export function reviewPageUrl(productSlug: string): string {
+  return `/reviews/${productSlug}`;
+}
+
 export function categoryMethodologyUrl(categoryKey: string): string {
   return testCategoryUrl(categoryKey);
 }

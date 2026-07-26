@@ -15,6 +15,7 @@ import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipI
 import ReviewScrollRestore from '../../components/review/ReviewScrollRestore.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import { products, getProduct } from '../../data/products';
+import { getProductFeaturedIn } from '../../lib/content/store';
 
 export function getStaticPaths() {
   return products.map((product) => ({ params: { slug: product.slug } }));
@@ -26,6 +27,9 @@ const product = getProduct(slug!);
 if (!product) {
   return Astro.redirect('/404');
 }
+
+// Internal relationship links (DB-driven; empty until USE_DB_CONTENT is on)
+const featuredIn = await getProductFeaturedIn(product.slug);
 
 const tabs: Tab[] = [
   { id: 'overview', label: 'Overview' },
@@ -45,6 +49,19 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
   <Header />
   <main>
     <ReviewHero product={product} shareUrl={canonical} />
+    {featuredIn.length > 0 && (
+      <div class="mx-auto max-w-6xl px-4 pt-3 text-sm text-white/60">
+        Also featured in:{' '}
+        {featuredIn.map((f, i) => (
+          <>
+            <a href={`/best/${f.slug}`} class="text-white/80 underline decoration-dotted underline-offset-2 hover:text-white">
+              {f.title}{f.position ? ` (#${f.position})` : ''}
+            </a>
+            {i < featuredIn.length - 1 && ', '}
+          </>
+        ))}
+      </div>
+    )}
     <TabBar tabs={tabs} active="overview" />
 
     <div data-panels>

@@ -1,0 +1,108 @@
+---
+import type { TestCategoryNode } from '../../lib/test-framework';
+import type { TestMethodologyPageMeta } from '../../data/test-category-pages';
+import { getAuthor } from '../../data/authors';
+import { testHubUrl } from '../../lib/slugs';
+import AuthorBioPopover from '../review/AuthorBioPopover.astro';
+import MethodologyTooltip from '../review/tooltips/MethodologyTooltip.astro';
+import RatingsChangelogCompact from '../review/RatingsChangelogCompact.astro';
+import InfoIcon from '../ui/InfoIcon.astro';
+import VerifiedCheck from '../ui/VerifiedCheck.astro';
+import ShareMenu from '../ui/ShareMenu.astro';
+import RoundupHubNav from '../roundup/RoundupHubNav.astro';
+import Breadcrumbs from '../ui/Breadcrumbs.astro';
+
+interface Props {
+  category: TestCategoryNode;
+  meta: TestMethodologyPageMeta;
+  shareUrl?: string;
+}
+
+const { category, meta, shareUrl } = Astro.props;
+const shareTitle = `${category.name} Testing Methodology — AI Girlfriend Expert`;
+---
+
+<div class="roundup-hero-intro">
+  <Breadcrumbs
+    items={[
+      { label: 'Home', href: '/' },
+      { label: 'How We Test', href: testHubUrl() },
+      { label: category.name },
+    ]}
+  />
+
+  <div class="roundup-hero-intro__title-row">
+    <h1 class="roundup-hero-intro__title text-3xl md:text-4xl lg:text-5xl font-black text-on-surface tracking-tight mb-0">
+      <span class="roundup-hero-intro__title-main">{category.name}</span>
+      <span class="roundup-hero-intro__title-date font-serif italic font-normal">Testing methodology</span>
+    </h1>
+    <ShareMenu shareTitle={shareTitle} shareUrl={shareUrl} variant="title-mobile" />
+  </div>
+
+  {meta.changelog.length > 0 && <RatingsChangelogCompact entries={meta.changelog} />}
+
+  <div class="article-meta-row mb-5">
+    <span>Published {meta.reviewedDate}</span>
+    <span class="article-meta-row__sep" aria-hidden="true">·</span>
+    <span>Updated {meta.modifiedDate}</span>
+    <span class="article-meta-row__sep" aria-hidden="true">·</span>
+    <span class="article-meta-row__methodology">
+      {meta.methodology}
+      <MethodologyTooltip id={`test-category-methodology-${category.key}`}>
+        <InfoIcon size="xs" class="text-tertiary hover:text-accent" />
+      </MethodologyTooltip>
+    </span>
+    <span class="article-meta-row__sep article-meta-row__sep--before-share" aria-hidden="true">·</span>
+    <ShareMenu shareTitle={shareTitle} shareUrl={shareUrl} variant="inline" />
+  </div>
+
+  <div class="flex flex-wrap items-center gap-x-5 gap-y-3 pb-5">
+    {
+      meta.authors.map((author, i) => {
+        const profile = author.slug ? getAuthor(author.slug) : undefined;
+        return (
+          <>
+            {i > 0 && <div class="w-px h-10 bg-surface-variant hidden md:block" />}
+            <div class={`flex items-center gap-2.5 ${profile ? 'relative' : ''}`}>
+              <div class="w-9 h-9 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0 bg-white">
+                <img alt={author.name} class="w-full h-full object-contain p-0.5" src={author.avatar} />
+              </div>
+              <div class="flex flex-col">
+                {
+                  profile ? (
+                    <button
+                      type="button"
+                      class="flex items-center gap-1.5 text-left group overflow-visible"
+                      data-author-trigger={author.slug}
+                    >
+                      <span class="text-sm font-bold group-hover:underline cursor-pointer">{author.name}</span>
+                      {author.verified && <VerifiedCheck class="w-[16px] h-[16px] shrink-0" />}
+                    </button>
+                  ) : (
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-sm font-bold">{author.name}</span>
+                      {author.verified && <VerifiedCheck class="w-[16px] h-[16px] shrink-0" />}
+                    </div>
+                  )
+                }
+                <span class="text-[11px] text-tertiary font-medium">{author.role}</span>
+              </div>
+              {profile && <AuthorBioPopover author={profile} />}
+            </div>
+          </>
+        );
+      })
+    }
+  </div>
+</div>
+
+<RoundupHubNav active="how-we-test" />
+
+<div class="roundup-hero-intro__body">
+  <p class="text-[15px] md:text-base text-on-surface-variant leading-relaxed">
+    {category.description}
+  </p>
+  <p class="test-category-page__weight text-[15px] md:text-base text-on-surface-variant leading-relaxed mt-3">
+    {category.weight}% of overall performance score
+  </p>
+</div>

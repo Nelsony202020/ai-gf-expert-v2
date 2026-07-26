@@ -568,8 +568,8 @@ body.article-feedback-open {
   position: relative;
   z-index: 1;
   width: min(420px, 100%);
-  max-height: min(90vh, 640px);
-  overflow: auto;
+  max-height: min(calc(100vh - 32px), 720px);
+  overflow: hidden;
   border-radius: 16px;
   border: 2px solid rgb(219 39 119 / 35%);
   background: #fff;
@@ -613,7 +613,7 @@ body.article-feedback-open {
 }
 
 .article-feedback__body {
-  padding: 12px 18px 26px;
+  padding: 12px 18px 22px;
 }
 
 .article-feedback__desc {
@@ -738,7 +738,7 @@ body.article-feedback-open {
   gap: 10px;
   margin-top: 14px;
   padding-top: 12px;
-  padding-bottom: 8px;
+  padding-bottom: 2px;
   border-top: 1px solid var(--color-surface-variant);
   font-size: 12px;
   font-weight: 600;

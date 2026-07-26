@@ -661,6 +661,176 @@
   margin-top: 2rem;
 }
 
+/* Test category pages — roundup-style editorial shell */
+.test-category-page .test-page__section {
+  margin-top: 0;
+}
+
+.test-category-page__weight {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.test-category-sidebar__related {
+  margin-top: 0.75rem;
+}
+
+/* Test hub sidebar — collapsible category + related panels */
+.roundup-toc-panel {
+  margin-top: 0.75rem;
+}
+
+.roundup-toc-panel__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  list-style: none;
+  cursor: pointer;
+  padding: 0 0 0.5rem;
+  margin: 0;
+  border-bottom: 1px solid rgb(26 36 24 / 10%);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-on-surface);
+  user-select: none;
+}
+
+.roundup-toc-panel__toggle::-webkit-details-marker {
+  display: none;
+}
+
+.roundup-toc-panel__toggle::marker {
+  content: '';
+}
+
+.roundup-toc-panel__toggle:hover {
+  color: var(--color-accent);
+}
+
+.roundup-toc-panel__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.roundup-toc-panel__icon {
+  font-size: 0.9375rem;
+  color: var(--color-accent);
+  font-variation-settings: 'FILL' 1, 'wght' 500;
+}
+
+.roundup-toc-panel__chevron {
+  flex-shrink: 0;
+  font-size: 1.125rem;
+  color: var(--color-on-surface-variant);
+  transition: transform 0.2s ease;
+}
+
+.roundup-toc-panel[open] .roundup-toc-panel__chevron {
+  transform: rotate(180deg);
+}
+
+.roundup-toc-panel[open] .roundup-toc-panel__toggle {
+  color: var(--color-accent);
+  border-bottom-color: rgb(26 36 24 / 14%);
+}
+
+.roundup-toc-panel__list {
+  padding-top: 0.375rem;
+}
+
+.roundup-nav-sheet__toc-panel {
+  margin: 0.75rem 0 0;
+  padding: 0 0.25rem;
+  border-top: 1px solid rgb(26 36 24 / 10%);
+}
+
+.roundup-nav-sheet__toc-panel-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  list-style: none;
+  cursor: pointer;
+  padding: 0.75rem 0 0.5rem;
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-on-surface);
+  user-select: none;
+}
+
+.roundup-nav-sheet__toc-panel-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.roundup-nav-sheet__toc-panel-toggle::marker {
+  content: '';
+}
+
+.roundup-nav-sheet__toc-panel-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.roundup-nav-sheet__toc-panel-label .material-symbols-outlined {
+  font-size: 1rem;
+  color: var(--color-accent);
+  font-variation-settings: 'FILL' 1, 'wght' 500;
+}
+
+.roundup-nav-sheet__toc-panel-chevron {
+  font-size: 1.125rem;
+  color: var(--color-on-surface-variant);
+  transition: transform 0.2s ease;
+}
+
+.roundup-nav-sheet__toc-panel[open] .roundup-nav-sheet__toc-panel-chevron {
+  transform: rotate(180deg);
+}
+
+.roundup-nav-sheet__toc-panel-list {
+  padding-bottom: 0.25rem;
+}
+
+[data-theme='dark'] .roundup-toc-panel__toggle {
+  border-bottom-color: rgb(255 255 255 / 10%);
+}
+
+[data-theme='dark'] .roundup-nav-sheet__toc-panel {
+  border-top-color: rgb(255 255 255 / 10%);
+}
+
+/* Test hub TOC — H3 sublists collapsed until parent section is active */
+.test-hub-sidebar [data-toc-section] .roundup-toc__sublist,
+.test-hub-nav-sheet [data-toc-section] .roundup-nav-sheet__toc-sublist {
+  display: none;
+}
+
+.test-hub-sidebar [data-toc-section].is-expanded .roundup-toc__sublist,
+.test-hub-nav-sheet [data-toc-section].is-expanded .roundup-nav-sheet__toc-sublist {
+  display: block;
+}
+
+/* Buying guide TOC — same collapsed H3 behavior as test hub */
+.buying-guide-sidebar [data-toc-section] .roundup-toc__sublist,
+.buying-guide-nav-sheet [data-toc-section] .roundup-nav-sheet__toc-sublist {
+  display: none;
+}
+
+.buying-guide-sidebar [data-toc-section].is-expanded .roundup-toc__sublist,
+.buying-guide-nav-sheet [data-toc-section].is-expanded .roundup-nav-sheet__toc-sublist {
+  display: block;
+}
+
 .test-subscore-list {
   display: flex;
   flex-direction: column;
@@ -759,6 +929,14 @@
 }
 
 /* Hub layout */
+.test-hub-page {
+  padding-bottom: 0;
+}
+
+.test-hub-page .test-hub__main {
+  max-width: none;
+}
+
 .test-hub {
   padding-bottom: 4rem;
 }

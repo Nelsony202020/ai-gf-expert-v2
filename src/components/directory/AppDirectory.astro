@@ -14,10 +14,14 @@ import {
   explorerPopularMore,
   explorerPopularVisible,
   explorerPriorityOptions,
-  explorerQuickSortOptions,
 } from '../../data/homepage';
+import {
+  DEFAULT_RANKING_PRIORITIES,
+  DIRECTORY_SORT_OPTIONS,
+} from '../../lib/directory/meta';
 import { appsPageUrl, totalPages } from '../../lib/app-directory';
 import AppDirectoryCard from './AppDirectoryCard.astro';
+import DirectoryProductRow from './DirectoryProductRow.astro';
 import ExplorerFilterIcon from './ExplorerFilterIcon.astro';
 import PriorityPicker from './PriorityPicker.astro';
 import RatingsTooltipInit from '../review/tooltips/RatingsTooltipInit.astro';
@@ -27,22 +31,19 @@ interface Props {
   basePath?: string;
   title?: string;
   subtitle?: string;
-  showCardMetrics?: boolean;
   breadcrumbs?: BreadcrumbItem[];
 }
 
 const {
   apps,
-  basePath = '/apps',
+  basePath = '/ai-girlfriend-apps',
   title = 'Explore AI girlfriend apps',
-  subtitle = 'Find the best AI companion apps based on our hands-on testing of 24+ platforms.',
-  showCardMetrics = true,
+  subtitle = 'Browse every app we have tested and narrow the results by features, pricing, ratings, and payment options.',
   breadcrumbs,
 } = Astro.props;
 
 const histogram = buildExplorerPriceHistogram(apps);
 const moreFilterGroups = getExplorerCollapsedFilterGroups();
-const defaultPriorities = ['chat', 'images', 'video'] as const;
 const priorityByValue = Object.fromEntries(explorerPriorityOptions.map((opt) => [opt.value, opt]));
 const pageCount = totalPages(apps.length);
 const paginationPages = Array.from({ length: pageCount }, (_, i) => i + 1);
@@ -70,28 +71,70 @@ function formatReviewCount(count: number): string {
         <h1 id="app-directory-title" class="home-section__title">{title}</h1>
         <p class="home-explorer__subtitle">{subtitle}</p>
       </div>
-      <button
-        type="button"
-        class="home-explorer__saved-btn coming-soon-tip coming-soon-muted"
-        data-coming-soon="accounts"
-        data-coming-soon-tip="Save apps — coming soon"
-        aria-label="Saved apps — coming soon"
-      >
-        <span class="material-symbols-outlined text-[18px]" aria-hidden="true">bookmark</span>
-        Saved apps
-        <span class="coming-soon-badge">Coming soon</span>
-      </button>
     </div>
 
-    <button type="button" class="home-explorer__mobile-open" data-home-filters-open>
-      <span class="material-symbols-outlined text-[18px]" aria-hidden="true">tune</span>
-      Filters
-    </button>
+    <div class="dir-notice" data-home-prefs-notice hidden>
+      <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+      <span>Results personalized using your homepage selections.</span>
+      <button type="button" class="dir-notice__reset" data-home-prefs-reset>Reset preferences</button>
+    </div>
 
-    <div class="home-explorer" data-home-explorer>
+    <div class="dir-toolbar">
+      <p class="dir-toolbar__count" data-home-result-count aria-live="polite">{apps.length} tested apps</p>
+      <div class="dir-toolbar__controls">
+        <button type="button" class="dir-btn dir-btn--primary" data-home-filters-open>
+          <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+          Filters
+          <span class="dir-btn__count" data-home-filter-count hidden></span>
+        </button>
+
+        <button
+          type="button"
+          class="dir-btn"
+          data-home-customize-toggle
+          aria-expanded="false"
+          aria-controls="dir-customize-panel"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">emoji_events</span>
+          Customize ranking
+        </button>
+
+        <label class="dir-sort">
+          <span class="dir-sort__label">Sort</span>
+          <select class="dir-sort__select" data-home-sort aria-label="Sort results">
+            {DIRECTORY_SORT_OPTIONS.map((opt) => <option value={opt.id}>{opt.label}</option>)}
+          </select>
+        </label>
+
+        <div class="dir-view-switch" role="group" aria-label="Result layout">
+          <button type="button" class="dir-view-switch__btn" data-home-view="list" aria-pressed="false">
+            <span class="material-symbols-outlined" aria-hidden="true">view_list</span>
+            List
+          </button>
+          <button type="button" class="dir-view-switch__btn" data-home-view="cards" aria-pressed="true">
+            <span class="material-symbols-outlined" aria-hidden="true">grid_view</span>
+            Cards
+          </button>
+        </div>
+
+        <button type="button" class="dir-btn" data-home-saved-toggle aria-pressed="false">
+          <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+          Saved
+          <span class="dir-btn__count" data-home-saved-count hidden></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="home-explorer home-explorer--drawer" data-home-explorer>
       <div class="home-explorer__sheet-backdrop" data-home-filters-backdrop hidden></div>
 
-      <aside class="home-explorer__filters" data-home-filters-panel aria-label="Filter apps">
+      <aside
+        class="home-explorer__filters"
+        data-home-filters-panel
+        role="dialog"
+        aria-modal="true"
+        aria-label="Filter apps"
+      >
         <div class="home-explorer__filters-box">
           <div class="home-explorer__filters-head">
             <h2 class="home-explorer__filters-title">Filters</h2>
@@ -258,7 +301,7 @@ function formatReviewCount(count: number): string {
 
           <div class="home-explorer__filters-actions">
             <button type="button" class="home-explorer__apply-filters" data-home-apply-filters>
-              Show <span data-home-sheet-count>{apps.length}</span> apps
+              Show <span data-home-sheet-count>{apps.length}</span> matching apps
             </button>
             <button type="button" class="home-explorer__filters-reset" data-home-reset-filters>Reset</button>
           </div>
@@ -267,7 +310,7 @@ function formatReviewCount(count: number): string {
         <div class="home-explorer__sheet-footer" data-home-sheet-footer>
           <button type="button" class="home-explorer__sheet-clear" data-home-clear-filters-sheet>Clear all</button>
           <button type="button" class="home-explorer__sheet-apply" data-home-apply-filters-mobile>
-            Show <span data-home-sheet-count-mobile>{apps.length}</span> apps
+            Show <span data-home-sheet-count-mobile>{apps.length}</span> matching apps
           </button>
           <button type="button" class="home-explorer__sheet-reset" data-home-reset-filters>Reset</button>
         </div>
@@ -276,71 +319,74 @@ function formatReviewCount(count: number): string {
       <div class="home-explorer__main">
         <div class="home-explorer__active-filters" data-home-active-filters hidden></div>
 
-        <div class="home-explorer__customize" data-home-customize>
-          <div class="home-explorer__customize-head">
-            <div class="home-explorer__customize-title-wrap">
-              <span class="home-explorer__customize-icon material-symbols-outlined" aria-hidden="true">emoji_events</span>
-              <div>
-                <h2 class="home-explorer__customize-title">Customize your results</h2>
-                <p class="home-explorer__customize-copy">Rank up to 3 factors to personalize the order of results.</p>
+        <div class="dir-customize-wrap" id="dir-customize-panel" data-home-customize-panel hidden>
+          <div class="home-explorer__customize" data-home-customize>
+            <div class="home-explorer__customize-head">
+              <div class="home-explorer__customize-title-wrap">
+                <span class="home-explorer__customize-icon material-symbols-outlined" aria-hidden="true">emoji_events</span>
+                <div>
+                  <h2 class="home-explorer__customize-title">Customize your results</h2>
+                  <p class="home-explorer__customize-copy">Rank up to 3 factors to personalize the order of results. Your official scores never change.</p>
+                </div>
               </div>
+              <button type="button" class="home-explorer__customize-reset" data-home-priorities-reset>
+                <span class="material-symbols-outlined text-[16px]" aria-hidden="true">refresh</span>
+                Reset to default
+              </button>
             </div>
-            <button type="button" class="home-explorer__customize-reset" data-home-priorities-reset>
-              <span class="material-symbols-outlined text-[16px]" aria-hidden="true">refresh</span>
-              Reset to default
-            </button>
-          </div>
 
-          <div class="home-explorer__priority-list" data-home-priority-list>
-            {
-              defaultPriorities.map((value, index) => {
-                const option = priorityByValue[value];
-                return (
-                  <div class="home-explorer__priority-slot" data-home-priority-slot>
-                    <span class="home-explorer__priority-rank">{index + 1}</span>
-                    <span
-                      class="home-explorer__priority-icon"
-                      style={`background:${option?.color ?? '#db2777'}20;color:${option?.color ?? '#db2777'}`}
-                      data-home-priority-icon
-                    >
-                      <span class="material-symbols-outlined" aria-hidden="true">{option?.icon ?? 'star'}</span>
-                    </span>
-                    <PriorityPicker slotIndex={index} value={value} options={explorerPriorityOptions} />
-                  </div>
-                );
-              })
-            }
-          </div>
-
-          <div class="home-explorer__customize-status" data-home-customize-status hidden>
-            <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
-            <span>Results are now personalized based on your top priorities.</span>
-            <button type="button" class="home-explorer__customize-learn">Learn more</button>
-          </div>
-
-          <div class="home-explorer__quick-sort">
-            <p class="home-explorer__quick-sort-label">Quick sort</p>
-            <div class="home-explorer__quick-sort-pills" data-home-quick-sort>
+            <div class="home-explorer__priority-list" data-home-priority-list>
               {
-                explorerQuickSortOptions.map((opt, index) => (
-                  <button
-                    type="button"
-                    class="home-explorer__quick-sort-pill"
-                    data-home-quick-sort={opt.id}
-                    aria-pressed={index === 0 ? 'true' : 'false'}
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">{opt.icon}</span>
-                    {opt.label}
-                  </button>
-                ))
+                DEFAULT_RANKING_PRIORITIES.map((value, index) => {
+                  const option = priorityByValue[value];
+                  return (
+                    <div class="home-explorer__priority-slot" data-home-priority-slot>
+                      <span class="home-explorer__priority-rank">{index + 1}</span>
+                      <span
+                        class="home-explorer__priority-icon"
+                        style={`background:${option?.color ?? '#db2777'}20;color:${option?.color ?? '#db2777'}`}
+                        data-home-priority-icon
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">{option?.icon ?? 'star'}</span>
+                      </span>
+                      <PriorityPicker slotIndex={index} value={value} options={explorerPriorityOptions} />
+                    </div>
+                  );
+                })
               }
+            </div>
+
+            <div class="home-explorer__customize-status" data-home-customize-status hidden>
+              <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+              <span>Results are now personalized based on your top priorities.</span>
             </div>
           </div>
         </div>
 
-        <div class="home-explorer__grid" data-home-grid>
-          {apps.map((app) => <AppDirectoryCard app={app} formatReviewCount={formatReviewCount} showMetrics={showCardMetrics} />)}
-          <p class="home-explorer__empty" hidden data-home-empty>No apps match those filters. Try clearing a filter or two.</p>
+        <div class="home-explorer__grid" data-home-grid data-view="cards">
+          {
+            apps.map((app) => (
+              <div
+                class="dir-item"
+                data-home-app={app.id}
+                data-overall-score={app.overallScore}
+                data-price={app.priceMonthly}
+                data-review-count={app.reviewCount}
+                data-filters={app.filters.join(',')}
+                data-payments={app.payments.join(',')}
+                data-category-scores={JSON.stringify(Object.fromEntries(app.categoryScores.map((c) => [c.key, c.score])))}
+              >
+                <DirectoryProductRow app={app} formatReviewCount={formatReviewCount} />
+                <AppDirectoryCard app={app} formatReviewCount={formatReviewCount} />
+              </div>
+            ))
+          }
+          <div class="dir-empty" hidden data-home-empty>
+            <p class="dir-empty__title">No apps match all of your filters.</p>
+            <div class="dir-empty__actions">
+              <button type="button" class="dir-btn" data-home-clear-filters-empty>Clear all filters</button>
+            </div>
+          </div>
         </div>
 
         <div class="home-explorer__pagination-wrap">

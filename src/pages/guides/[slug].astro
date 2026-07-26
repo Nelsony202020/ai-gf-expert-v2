@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import GuideArticle from '../../components/guides/GuideArticle.astro';
+import { guides } from '../../data/guides';
+import { getGuide, extractGuideFaqs } from '../../lib/sanity/guides';
+
+export async function getStaticPaths() {
+  return guides.map((g) => ({ params: { slug: g.slug } }));
+}
+
+const { slug } = Astro.params;
+const guide = await getGuide(slug!);
+
+if (!guide) {
+  return Astro.redirect('/404');
+}
+
+const title = `${guide.seoTitle ?? guide.title} — AI Girlfriend Expert`;
+const description = guide.seoDescription ?? guide.excerpt ?? guide.title;
+const faqs = extractGuideFaqs(guide.body);
+
+const jsonLd: Record<string, unknown>[] = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: guide.title,
+    description,
+    datePublished: guide.publishedAt,
+    author: guide.author ? { '@type': 'Person', name: guide.author.name } : undefined,
+    image: guide.heroImageUrl,
+  },
+];
+if (faqs.length > 0) {
+  jsonLd.push({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
+    })),
+  });
+}
+---
+
+<BaseLayout title={title} description={description} image={guide.heroImageUrl}>
+  {guide.noindex && <meta name="robots" content="noindex, nofollow" slot="head" />}
+  <Header />
+  <main>
+    <GuideArticle guide={guide} />
+  </main>
+  <Footer />
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+</BaseLayout>

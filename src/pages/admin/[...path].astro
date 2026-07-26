@@ -1,0 +1,68 @@
+---
+// Admin panel shell. Server-rendered (never prerendered, never indexed).
+export const prerender = false;
+
+import '../../styles/admin.css';
+
+const appId = import.meta.env.PUBLIC_INSTANT_APP_ID as string | undefined;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin · AI Girlfriend Expert</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+    />
+  </head>
+  <body class="bg-slate-100 text-slate-900">
+    <script is:inline>
+      (function () {
+        var stored = localStorage.getItem('theme');
+        var dark =
+          stored === 'dark' ||
+          (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      })();
+    </script>
+
+    {
+      appId ? (
+        <div id="admin-root" data-app-id={appId}>
+          <div class="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-100 text-slate-600">
+            <div
+              class="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-pink-600"
+              aria-hidden="true"
+            />
+            <p class="text-sm font-medium">Loading admin panel…</p>
+          </div>
+        </div>
+      ) : (
+        <div class="mx-auto mt-16 max-w-xl rounded-lg border border-amber-300 bg-amber-50 p-6 font-sans leading-relaxed">
+          <h1 class="text-lg font-bold">Admin not configured</h1>
+          <p class="mt-2 text-sm">
+            Set <code>PUBLIC_INSTANT_APP_ID</code> and <code>INSTANT_APP_ADMIN_TOKEN</code> in
+            <code>.env</code> (see <code>.env.example</code>), then restart the dev server.
+          </p>
+        </div>
+      )
+    }
+
+    {appId && (
+      <>
+        <script>
+          import { injectIntoGlobalHook } from '/@react-refresh';
+          injectIntoGlobalHook(window);
+          window.$RefreshReg$ = () => {};
+          window.$RefreshSig$ = () => (type) => type;
+        </script>
+        <script>import '../../components/admin/admin-entry.tsx';</script>
+      </>
+    )}
+  </body>
+</html>

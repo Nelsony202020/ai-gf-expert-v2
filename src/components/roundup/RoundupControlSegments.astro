@@ -1,0 +1,243 @@
+---
+import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
+import {
+  ROUNDUP_READING_OPTIONS,
+  buildRoundupSortOptions,
+} from '../../lib/roundup-controls';
+
+interface Props {
+  picks: RoundupPick[];
+  /** sidebar = left nav; bar = horizontal strip in main column */
+  layout?: 'sidebar' | 'bar';
+}
+
+const { picks, layout = 'bar' } = Astro.props;
+const sortOptions = buildRoundupSortOptions(picks);
+const defaultSort = sortOptions[0];
+const defaultReading = ROUNDUP_READING_OPTIONS[0];
+---
+
+<div class={`roundup-controls roundup-controls--${layout}`} data-roundup-controls={layout}>
+  <div class="roundup-controls__group">
+    <p class="roundup-controls__label">Reading</p>
+    {
+      layout === 'bar' ? (
+        <div class="roundup-control-dropdown roundup-control-dropdown--wide" data-roundup-reading-dropdown>
+          <button
+            type="button"
+            class="roundup-control-dropdown__trigger"
+            data-reading-dropdown-trigger
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-label="Change reading length"
+          >
+            <span data-mobile-reading-value>{defaultReading.label}</span>
+            <span class="material-symbols-outlined roundup-control-dropdown__chevron" aria-hidden="true">
+              expand_more
+            </span>
+          </button>
+          <div
+            class="roundup-control-dropdown__menu hidden"
+            data-reading-dropdown-menu
+            role="listbox"
+            aria-label="Reading length"
+          >
+            {
+              ROUNDUP_READING_OPTIONS.map((opt, i) => (
+                <button
+                  type="button"
+                  class="roundup-control-dropdown__option roundup-control-dropdown__option--described"
+                  role="option"
+                  data-reading-value={opt.value}
+                  aria-selected={i === 0 ? 'true' : 'false'}
+                >
+                  <span class="roundup-control-dropdown__option-label">{opt.label}</span>
+                  <span class="roundup-control-dropdown__option-desc">{opt.description}</span>
+                </button>
+              ))
+            }
+          </div>
+        </div>
+      ) : (
+        <div class="roundup-segment" role="radiogroup" aria-label="Reading length">
+          {
+            ROUNDUP_READING_OPTIONS.map((opt, i) => (
+              <label class="roundup-segment__option">
+                <input type="radio" name="roundup-reading" value={opt.value} checked={i === 0} />
+                <span>{opt.label}</span>
+              </label>
+            ))
+          }
+        </div>
+      )
+    }
+  </div>
+
+  <div class="roundup-controls__group roundup-controls__group--sort">
+    <p class="roundup-controls__label">Rank by</p>
+    {
+      layout === 'bar' ? (
+        <div class="roundup-control-dropdown" data-roundup-sort-dropdown>
+          <button
+            type="button"
+            class="roundup-control-dropdown__trigger"
+            data-sort-dropdown-trigger
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-label="Change ranking sort"
+          >
+            <span data-mobile-sort-value>{defaultSort.shortLabel ?? defaultSort.label}</span>
+            <span class="material-symbols-outlined roundup-control-dropdown__chevron" aria-hidden="true">
+              expand_more
+            </span>
+          </button>
+          <div class="roundup-control-dropdown__menu hidden" data-sort-dropdown-menu role="listbox" aria-label="Sort rankings">
+            {
+              sortOptions.map((opt, i) => (
+                <button
+                  type="button"
+                  class="roundup-control-dropdown__option"
+                  role="option"
+                  data-sort-value={opt.value}
+                  aria-selected={i === 0 ? 'true' : 'false'}
+                >
+                  {opt.label}
+                </button>
+              ))
+            }
+          </div>
+        </div>
+      ) : (
+        <div class="roundup-segment roundup-segment--scroll" role="radiogroup" aria-label="Sort rankings">
+          {
+            sortOptions.map((opt, i) => (
+              <label class="roundup-segment__option">
+                <input type="radio" name="roundup-sort" value={opt.value} checked={i === 0} />
+                <span>{opt.shortLabel ?? opt.label}</span>
+              </label>
+            ))
+          }
+        </div>
+      )
+    }
+  </div>
+</div>
+
+<script>
+  function initRoundupControlDropdown(
+    root: HTMLElement,
+    config: {
+      triggerSel: string;
+      menuSel: string;
+      optionSel: string;
+      valueAttr: string;
+      inputName: string;
+      sheetSel: string;
+    },
+  ) {
+    if (root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const trigger = root.querySelector<HTMLButtonElement>(config.triggerSel);
+    const menu = root.querySelector<HTMLElement>(config.menuSel);
+    if (!trigger || !menu) return;
+
+    const options = Array.from(menu.querySelectorAll<HTMLButtonElement>(config.optionSel));
+
+    function closeMenu() {
+      menu!.classList.add('hidden');
+      trigger!.setAttribute('aria-expanded', 'false');
+    }
+
+    function openMenu() {
+      document.querySelectorAll<HTMLElement>('.roundup-control-dropdown__menu').forEach((otherMenu) => {
+        if (otherMenu === menu) return;
+        otherMenu.classList.add('hidden');
+        otherMenu
+          .closest('[data-roundup-reading-dropdown], [data-roundup-sort-dropdown]')
+          ?.querySelector<HTMLButtonElement>('[aria-expanded]')
+          ?.setAttribute('aria-expanded', 'false');
+      });
+      menu!.classList.remove('hidden');
+      trigger!.setAttribute('aria-expanded', 'true');
+    }
+
+    function syncSelected(value: string) {
+      options.forEach((opt) => {
+        const selected = opt.getAttribute(config.valueAttr) === value;
+        opt.setAttribute('aria-selected', selected ? 'true' : 'false');
+      });
+    }
+
+    function applyValue(value: string) {
+      const input = document.querySelector<HTMLInputElement>(
+        `${config.sheetSel} input[name="${config.inputName}"][value="${value}"]`,
+      );
+      if (!input) return;
+
+      if (!input.checked) {
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      } else {
+        syncSelected(value);
+      }
+    }
+
+    trigger.addEventListener('click', () => {
+      const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+      if (isOpen) closeMenu();
+      else openMenu();
+    });
+
+    options.forEach((opt) => {
+      opt.addEventListener('click', () => {
+        applyValue(opt.getAttribute(config.valueAttr)!);
+        closeMenu();
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!root.contains(e.target as Node)) closeMenu();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMenu();
+    });
+
+    document.querySelectorAll<HTMLInputElement>(`input[name="${config.inputName}"]`).forEach((input) => {
+      input.addEventListener('change', () => {
+        if (input.checked) syncSelected(input.value);
+      });
+    });
+
+    const checked = document.querySelector<HTMLInputElement>(`input[name="${config.inputName}"]:checked`);
+    if (checked) syncSelected(checked.value);
+  }
+
+  function initRoundupControlDropdowns() {
+    document.querySelectorAll<HTMLElement>('[data-roundup-reading-dropdown]').forEach((root) => {
+      initRoundupControlDropdown(root, {
+        triggerSel: '[data-reading-dropdown-trigger]',
+        menuSel: '[data-reading-dropdown-menu]',
+        optionSel: '[data-reading-value]',
+        valueAttr: 'data-reading-value',
+        inputName: 'roundup-reading',
+        sheetSel: '[data-reading-sheet]',
+      });
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-roundup-sort-dropdown]').forEach((root) => {
+      initRoundupControlDropdown(root, {
+        triggerSel: '[data-sort-dropdown-trigger]',
+        menuSel: '[data-sort-dropdown-menu]',
+        optionSel: '[data-sort-value]',
+        valueAttr: 'data-sort-value',
+        inputName: 'roundup-sort',
+        sheetSel: '[data-sort-sheet]',
+      });
+    });
+  }
+
+  initRoundupControlDropdowns();
+  document.addEventListener('astro:page-load', initRoundupControlDropdowns);
+</script>

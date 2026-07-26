@@ -1,0 +1,280 @@
+---
+import type { HomeExplorerApp } from '../../data/homepage';
+import {
+  DEFAULT_VISIBLE_SCORE_KEYS,
+  DIRECTORY_SCORE_META_BY_VALUE,
+  HOME_PRIORITY_CHOICES,
+  HOME_QUICK_CHOICES,
+} from '../../lib/directory/meta';
+import { fmtScore, getScoreVisual } from '../../lib/scores';
+import { reviewPageUrl } from '../../lib/slugs';
+import CmsField from '../cms/CmsField.astro';
+
+interface Props {
+  apps: HomeExplorerApp[];
+}
+
+const { apps } = Astro.props;
+
+// Server-rendered default: top apps by editorial overall score.
+const rankedApps = [...apps].sort((a, b) => b.overallScore - a.overallScore);
+const VISIBLE_COUNT = 3;
+
+function categoryScore(app: HomeExplorerApp, key: string): number {
+  return app.categoryScores.find((c) => c.key === key)?.score ?? app.overallScore;
+}
+---
+
+<section
+  id="explore-apps"
+  class="home-section home-section--muted scroll-mt-24 home-finder"
+  aria-labelledby="home-finder-title"
+  data-home-finder
+>
+  <div class="section-container px-4 md:px-8">
+    <div class="home-finder__head">
+      <h2 id="home-finder-title" class="home-section__title">Find an app that fits you</h2>
+      <p class="home-finder__subtitle">Choose what matters most and see a few apps that match your priorities.</p>
+    </div>
+
+    <div class="home-finder__controls">
+      <div class="home-finder__choices" role="group" aria-label="Quick choices">
+        {
+          HOME_QUICK_CHOICES.map((choice) => (
+            <button type="button" class="home-finder__choice" data-finder-choice={choice.id} aria-pressed="false">
+              <span class="material-symbols-outlined" aria-hidden="true">{choice.icon}</span>
+              {choice.label}
+            </button>
+          ))
+        }
+      </div>
+
+      <div class="home-finder__priority" role="group" aria-label="What matters most?">
+        <span class="home-finder__priority-label">What matters most?</span>
+        <div class="home-finder__priority-pills">
+          {
+            HOME_PRIORITY_CHOICES.map((priority) => (
+              <button type="button" class="home-finder__priority-pill" data-finder-priority={priority.id} aria-pressed="false">
+                {priority.label}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="home-finder__grid" data-finder-grid>
+      {
+        rankedApps.map((app, index) => {
+          const reviewHref = app.reviewUrl ?? reviewPageUrl(app.slug);
+          const overallVisual = getScoreVisual(app.overallScore);
+          return (
+            <article
+              class="home-finder-card"
+              data-finder-app={app.id}
+              data-filters={app.filters.join(',')}
+              data-overall-score={app.overallScore}
+              data-price={app.priceMonthly}
+              data-category-scores={JSON.stringify(Object.fromEntries(app.categoryScores.map((c) => [c.key, c.score])))}
+              hidden={index >= VISIBLE_COUNT}
+            >
+              <div class="home-finder-card__top">
+                <img class="home-finder-card__logo" src={app.logo} alt="" width="44" height="44" loading="lazy" />
+                <div class="home-finder-card__title-wrap">
+                  <h3 class="home-finder-card__name">
+                    <a href={reviewHref}>{app.name}</a>
+                  </h3>
+                  {app.roundupRibbonLabel && (
+                    <a class="home-finder-card__award" href={app.roundupHref}>
+                      <span class="material-symbols-outlined" aria-hidden="true">star</span>
+                      {app.roundupRibbonLabel}
+                    </a>
+                  )}
+                </div>
+                <div class="home-finder-card__overall">
+                  <span class={`home-finder-card__score ${overallVisual.bg}`}>{fmtScore(app.overallScore)}</span>
+                  <span class="home-finder-card__score-label">Overall</span>
+                </div>
+              </div>
+
+              <CmsField field="directoryDescription" as="p" class="home-finder-card__verdict">{app.directoryDescription}</CmsField>
+
+              <div class="home-finder-card__metrics">
+                {
+                  DEFAULT_VISIBLE_SCORE_KEYS.map((key) => (
+                    <span class="home-finder-card__metric" data-finder-score-slot>
+                      <span class="home-finder-card__metric-label" data-finder-score-label={key}>
+                        {DIRECTORY_SCORE_META_BY_VALUE[key]?.label ?? key}
+                      </span>
+                      <span class="home-finder-card__metric-value" data-finder-score-value>
+                        {fmtScore(categoryScore(app, key))}
+                      </span>
+                    </span>
+                  ))
+                }
+              </div>
+
+              <div class="home-finder-card__footer">
+                <span class="home-finder-card__price">{app.priceLabel}</span>
+                <a class="home-finder-card__cta" href={reviewHref}>
+                  Read review
+                  <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
+                </a>
+              </div>
+            </article>
+          );
+        })
+      }
+    </div>
+
+    <div class="home-finder__cta-row">
+      <a class="home-finder__cta" href="/ai-girlfriend-apps" data-finder-cta>
+        Explore all AI girlfriend apps
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+      </a>
+      <p class="home-finder__cta-note">{apps.length} tested apps in the full directory</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  import {
+    DIRECTORY_SCORE_META_BY_VALUE,
+    DEFAULT_VISIBLE_SCORE_KEYS,
+    DEFAULT_RANKING_PRIORITIES,
+    HOME_QUICK_CHOICES_BY_ID,
+  } from '../../lib/directory/meta';
+  import { saveDirectoryPreferences } from '../../lib/directory/preferences';
+
+  const VISIBLE_COUNT = 3;
+
+  function track(event: string, detail: Record<string, unknown> = {}) {
+    document.dispatchEvent(new CustomEvent('agfx:directory', { detail: { event, ...detail } }));
+  }
+
+  function initHomeQuickFinder() {
+    const root = document.querySelector<HTMLElement>('[data-home-finder]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const grid = root.querySelector<HTMLElement>('[data-finder-grid]');
+    const cards = [...root.querySelectorAll<HTMLElement>('[data-finder-app]')];
+    const choiceButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-finder-choice]')];
+    const priorityButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-finder-priority]')];
+    const cta = root.querySelector<HTMLAnchorElement>('[data-finder-cta]');
+    if (!grid) return;
+
+    let activeChoice: string | null = null;
+    let activePriority: string | null = null;
+
+    function categoryScores(card: HTMLElement): Record<string, number> {
+      try {
+        return JSON.parse(card.dataset.categoryScores ?? '{}');
+      } catch {
+        return {};
+      }
+    }
+
+    function sortValue(card: HTMLElement): number {
+      const overall = Number(card.dataset.overallScore ?? 0);
+      const choice = activeChoice ? HOME_QUICK_CHOICES_BY_ID[activeChoice] : null;
+      const key = activePriority && activePriority !== 'overall' ? activePriority : choice?.sortKey ?? null;
+      if (!key) return overall;
+      return categoryScores(card)[key] ?? overall;
+    }
+
+    function visibleScoreKeys(): string[] {
+      const choice = activeChoice ? HOME_QUICK_CHOICES_BY_ID[activeChoice] : null;
+      const keys: string[] = [];
+      if (activePriority && activePriority !== 'overall') keys.push(activePriority);
+      (choice?.scores ?? []).forEach((key) => {
+        if (keys.length < 3 && !keys.includes(key)) keys.push(key);
+      });
+      DEFAULT_VISIBLE_SCORE_KEYS.forEach((key) => {
+        if (keys.length < 3 && !keys.includes(key)) keys.push(key);
+      });
+      return keys.slice(0, 3);
+    }
+
+    function apply() {
+      const choice = activeChoice ? HOME_QUICK_CHOICES_BY_ID[activeChoice] : null;
+      const matched = cards.filter((card) => {
+        if (!choice?.filter) return true;
+        return (card.dataset.filters ?? '').split(',').includes(choice.filter);
+      });
+      matched.sort((a, b) => sortValue(b) - sortValue(a));
+
+      const scoreKeys = visibleScoreKeys();
+      matched.forEach((card) => grid!.appendChild(card));
+      cards.forEach((card) => {
+        card.hidden = true;
+      });
+      matched.slice(0, VISIBLE_COUNT).forEach((card) => {
+        card.hidden = false;
+        const scores = categoryScores(card);
+        const slots = [...card.querySelectorAll<HTMLElement>('[data-finder-score-slot]')];
+        slots.forEach((slot, index) => {
+          const key = scoreKeys[index];
+          if (!key) return;
+          const labelEl = slot.querySelector<HTMLElement>('[data-finder-score-label]');
+          const valueEl = slot.querySelector<HTMLElement>('[data-finder-score-value]');
+          if (labelEl) {
+            labelEl.textContent = DIRECTORY_SCORE_META_BY_VALUE[key]?.label ?? key;
+            labelEl.setAttribute('data-finder-score-label', key);
+          }
+          const value = scores[key] ?? Number(card.dataset.overallScore ?? 0);
+          if (valueEl) valueEl.textContent = value.toFixed(1);
+        });
+      });
+    }
+
+    choiceButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.finderChoice ?? '';
+        activeChoice = activeChoice === id ? null : id;
+        choiceButtons.forEach((other) => {
+          other.setAttribute('aria-pressed', other.dataset.finderChoice === activeChoice ? 'true' : 'false');
+        });
+        track('homepage_quick_choice_selected', { choice: activeChoice });
+        apply();
+      });
+    });
+
+    priorityButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.finderPriority ?? '';
+        activePriority = activePriority === id ? null : id;
+        priorityButtons.forEach((other) => {
+          other.setAttribute('aria-pressed', other.dataset.finderPriority === activePriority ? 'true' : 'false');
+        });
+        track('homepage_priority_selected', { priority: activePriority });
+        apply();
+      });
+    });
+
+    grid.addEventListener('click', (event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest('a')) {
+        track('homepage_product_clicked');
+      }
+    });
+
+    cta?.addEventListener('click', () => {
+      if (activeChoice || activePriority) {
+        const choice = activeChoice ? HOME_QUICK_CHOICES_BY_ID[activeChoice] : null;
+        saveDirectoryPreferences({
+          homepage: { choice: activeChoice, priority: activePriority },
+          filters: choice?.filter ? [choice.filter] : [],
+          priorities:
+            activePriority && activePriority !== 'overall'
+              ? [activePriority, ...DEFAULT_RANKING_PRIORITIES.filter((k) => k !== activePriority)].slice(0, 3)
+              : null,
+        });
+      }
+      track('full_directory_opened', { from: 'homepage_finder' });
+    });
+  }
+
+  initHomeQuickFinder();
+  document.addEventListener('astro:page-load', initHomeQuickFinder);
+</script>

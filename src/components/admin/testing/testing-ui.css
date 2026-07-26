@@ -1,0 +1,166 @@
+/* Testing workspace — pink brand (#db2777). */
+
+.testing-workspace {
+  --testing-accent: #db2777;
+  --testing-accent-soft: #fce7f3;
+  --testing-accent-border: #f9a8d4;
+  --testing-accent-muted: #be185d;
+  --testing-accent-hover: #be185d;
+  --testing-surface: #f9f9f9;
+  --testing-drawer: #f3f3f3;
+}
+
+.dark .testing-workspace {
+  --testing-accent: #f472b6;
+  --testing-accent-soft: rgb(219 39 119 / 14%);
+  --testing-accent-border: rgb(244 114 182 / 35%);
+  --testing-accent-muted: #f9a8d4;
+  --testing-accent-hover: #fbcfe8;
+  --testing-surface: rgb(15 23 42 / 0.5);
+  --testing-drawer: rgb(30 41 59 / 0.95);
+}
+
+.testing-session-intro {
+  border-left: 3px solid var(--testing-accent);
+  background: var(--testing-accent-soft);
+}
+
+.testing-suggest-banner {
+  border-color: var(--testing-accent-border);
+  background: var(--testing-accent-soft);
+}
+
+.testing-table {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.testing-table thead th {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(100 116 139);
+}
+
+.testing-table tbody tr:nth-child(even) {
+  background: rgb(249 249 249 / 0.8);
+}
+
+.dark .testing-table tbody tr:nth-child(even) {
+  background: rgb(30 41 59 / 0.35);
+}
+
+.testing-table tbody tr.is-active {
+  background: var(--testing-accent-soft);
+  box-shadow: inset 3px 0 0 var(--testing-accent);
+  position: relative;
+  z-index: 1;
+}
+
+.testing-question-long {
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+.testing-question-medium {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+.testing-status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.testing-status-dot--done {
+  background: #10b981;
+}
+
+.testing-status-dot--todo {
+  background: rgb(203 213 225);
+}
+
+.testing-status-dot--na {
+  background: rgb(148 163 184);
+}
+
+.testing-status-dot--unsaved {
+  background: var(--testing-accent);
+  box-shadow: 0 0 0 2px rgb(255 255 255), 0 0 0 3px var(--testing-accent);
+}
+
+.testing-proof-drawer {
+  background: var(--testing-drawer);
+}
+
+.testing-proof-zone {
+  border: 2px dashed rgb(203 213 225);
+  background: rgb(249 249 249 / 0.6);
+}
+
+.dark .testing-proof-zone {
+  border-color: rgb(71 85 105);
+  background: rgb(30 41 59 / 0.4);
+}
+
+.testing-proof-zone.is-dragging {
+  border-color: var(--testing-accent);
+  background: var(--testing-accent-soft);
+}
+
+.testing-step-pill {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--testing-accent-muted);
+}
+
+.testing-btn-primary {
+  background-color: var(--testing-accent) !important;
+}
+
+.testing-btn-primary:hover {
+  background-color: var(--testing-accent-hover) !important;
+}
+
+.testing-link {
+  color: var(--testing-accent);
+}
+
+.testing-link:hover {
+  color: var(--testing-accent-hover);
+}
+
+.testing-toggle-active {
+  background-color: var(--testing-accent);
+  color: white;
+}
+
+.testing-progress-bar {
+  background-color: var(--testing-accent);
+}
+
+.testing-icon-accent {
+  color: var(--testing-accent);
+}
+
+.testing-border-active {
+  border-color: var(--testing-accent-border);
+}
+
+.testing-bg-active {
+  background: var(--testing-accent-soft);
+}
+
+.testing-checkbox {
+  accent-color: var(--testing-accent);
+}
+
+.testing-input-wide {
+  width: 100%;
+  min-width: 12rem;
+}

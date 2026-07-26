@@ -7,6 +7,7 @@ import OverallScoreTooltip from '../review/tooltips/OverallScoreTooltip.astro';
 import InlineTestLink from '../review/tooltips/InlineTestLink.astro';
 import RatingHierarchyPipeline from '../review/tooltips/RatingHierarchyPipeline.astro';
 import InfoIcon from '../ui/InfoIcon.astro';
+import CmsField from '../cms/CmsField.astro';
 
 interface Props {
   app: HomeExplorerApp;
@@ -46,7 +47,9 @@ const avgScore = scorePoints.length
             <div class="ratings-tooltip-panel__header-grid">
               <div class="min-w-0">
                 <p class="ratings-tooltip-panel__section-title">What it is</p>
-                <p class="ratings-tooltip-panel__desc">{app.overallSummary}</p>
+                <p class="ratings-tooltip-panel__desc">
+                  <CmsField field="oneLineVerdict">{app.overallSummary}</CmsField>
+                </p>
               </div>
               <div class="ratings-tooltip-panel__score-block">
                 <div class="ratings-tooltip-panel__score-row">

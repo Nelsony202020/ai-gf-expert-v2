@@ -6,18 +6,36 @@ export const testHubTrustMetrics = [
   { value: 'Updated regularly', icon: 'update' },
 ];
 
-export const testHubTocSections = [
-  { id: 'how-scores-work', label: 'How our scores work' },
+export type TestHubTocSection = {
+  id: string;
+  label: string;
+  children?: { id: string; label: string }[];
+};
+
+export const testHubTocSections: TestHubTocSection[] = [
+  { id: 'how-scores-work', label: 'How our rating system works' },
   { id: 'overall-score', label: 'Overall performance score' },
   { id: 'category-scores', label: 'Category scores' },
-  { id: 'subscores', label: 'Subscores' },
+  {
+    id: 'subscores',
+    label: 'How subscores work',
+    children: [{ id: 'browse-all-subscores', label: 'Browse all subscores' }],
+  },
   { id: 'evidence', label: 'Evidence points' },
-  { id: 'full-framework', label: 'Our eight rating categories' },
-  { id: 'in-practice', label: 'How we test in practice' },
-  { id: 'across-site', label: 'Where scores appear' },
-  { id: 'beyond-the-score', label: 'Beyond the score' },
-  { id: 'consistency', label: 'Keeping scores fair' },
-  { id: 'updates', label: 'Updates and versions' },
+  { id: 'full-framework', label: 'Explore our full testing framework' },
+  { id: 'in-practice', label: 'How we test AI girlfriend apps in practice' },
+  {
+    id: 'across-site',
+    label: 'Where you will see our scores',
+    children: [{ id: 'tooltips-and-score-breakdowns', label: 'Tooltips and score breakdowns' }],
+  },
+  {
+    id: 'beyond-the-score',
+    label: 'Beyond the score',
+    children: [{ id: 'scored-vs-informational', label: 'Scored vs informational' }],
+  },
+  { id: 'consistency', label: 'How we keep scores consistent' },
+  { id: 'updates', label: 'Updates and methodology versions' },
   { id: 'faq', label: 'Frequently asked questions' },
 ];
 

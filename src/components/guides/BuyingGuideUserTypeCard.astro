@@ -1,0 +1,91 @@
+---
+import type { EnrichedBuyingGuideUserType } from '../../lib/buying-guide-apps';
+
+interface Props {
+  userType: EnrichedBuyingGuideUserType;
+}
+
+const { userType } = Astro.props;
+---
+
+<div id={userType.id} class="buying-guide-user-type">
+  <h3 class="test-hub__h3 buying-guide-user-type__title">{userType.title}</h3>
+
+  {
+    userType.intro.map((paragraph) => (
+      <p class="test-hub__lead">{paragraph}</p>
+    ))
+  }
+
+  <div class="buying-guide-user-type-card">
+    <div class="buying-guide-user-type-card__icon-wrap" aria-hidden="true">
+      <span class="material-symbols-outlined buying-guide-user-type-card__icon">{userType.icon}</span>
+    </div>
+
+    <div class="buying-guide-user-type-card__body">
+      <p class="buying-guide-user-type-card__tagline">{userType.tagline}</p>
+
+      <div class="buying-guide-user-type-card__columns">
+        <div class="buying-guide-user-type-card__column">
+          <p class="buying-guide-user-type-card__column-label">You probably want</p>
+          <ul class="buying-guide-user-type-card__list buying-guide-user-type-card__list--want">
+            {
+              userType.wantItems.map((item) => (
+                <li>
+                  <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                  <span>{item}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <div class="buying-guide-user-type-card__column">
+          <p class="buying-guide-user-type-card__column-label">You probably don't need</p>
+          <ul class="buying-guide-user-type-card__list buying-guide-user-type-card__list--dont">
+            {
+              userType.dontNeedItems.map((item) => (
+                <li>
+                  <span class="material-symbols-outlined" aria-hidden="true">cancel</span>
+                  <span>{item}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+
+      {userType.note && <p class="buying-guide-user-type-card__note">{userType.note}</p>}
+    </div>
+
+    <aside class="buying-guide-user-type-card__examples">
+      <p class="buying-guide-user-type-card__examples-label">
+        <span class="material-symbols-outlined" aria-hidden="true">star</span>
+        {userType.examplesLabel}
+      </p>
+      <ul class="buying-guide-user-type-card__examples-list">
+        {
+          userType.resolvedExamples.map((example) => (
+            <li>
+              <img
+                class="buying-guide-user-type-card__example-logo"
+                src={example.logo}
+                alt=""
+                width="28"
+                height="28"
+                loading="lazy"
+              />
+              <span>{example.name}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </aside>
+  </div>
+
+  {
+    userType.outro.map((paragraph) => (
+      <p class="test-hub__lead">{paragraph}</p>
+    ))
+  }
+</div>

@@ -1,8 +1,10 @@
 import type { HtmlSitemapFullPage, HtmlSitemapLink, HtmlSitemapSection, SitemapEntry } from '../types/sitemap';
 import { authors } from '../data/authors';
+import { guides } from '../data/guides';
 import { megaMenuColumns } from '../data/nav-mega-menu';
 import { products } from '../data/products';
 import { getTestCategories } from './test-framework';
+import { buyingGuideSlug } from '../data/buying-guide-content';
 import { testHubUrl } from './slugs';
 
 const HTML_PREVIEW_LIMIT = 5;
@@ -46,7 +48,7 @@ export function getAllSitemapEntries(): SitemapEntry[] {
 
   push({
     title: 'App Directory',
-    url: '/apps',
+    url: '/ai-girlfriend-apps',
     contentType: 'directory',
     sitemapSection: 'resources',
     showInHtmlSitemap: false,
@@ -93,6 +95,36 @@ export function getAllSitemapEntries(): SitemapEntry[] {
         sitemapSection: section,
         parentCategory: col.id,
         showInHtmlSitemap: false,
+      });
+    }
+  }
+
+  // Guides from Sanity (empty until the CMS has published guides)
+  push({
+    title: 'How to Choose an AI Girlfriend App',
+    url: `/guides/${buyingGuideSlug}`,
+    contentType: 'guide',
+    sitemapSection: 'guides',
+    parentCategory: 'guides',
+  });
+
+  if (guides.length > 0) {
+    push({
+      title: 'Guides',
+      url: '/guides',
+      contentType: 'guide',
+      sitemapSection: 'guides',
+      showInHtmlSitemap: false,
+    });
+    for (const guide of guides) {
+      push({
+        title: guide.title,
+        url: `/guides/${guide.slug}`,
+        contentType: 'guide',
+        sitemapSection: 'guides',
+        parentCategory: 'guides',
+        includeInXmlSitemap: !guide.noindex,
+        showInHtmlSitemap: !guide.noindex,
       });
     }
   }
@@ -149,15 +181,15 @@ export function getAllSitemapEntries(): SitemapEntry[] {
   });
 
   push({
-    title: 'Review Process',
-    url: '/review-process/',
+    title: 'Editorial Guidelines',
+    url: '/editorial-guidelines/',
     contentType: 'methodology',
-    sitemapSection: 'tests',
+    sitemapSection: 'resources',
   });
 
   push({
-    title: 'Editorial Guidelines',
-    url: '/editorial-guidelines/',
+    title: 'Editorial Process',
+    url: '/editorial-process/',
     contentType: 'methodology',
     sitemapSection: 'resources',
   });
@@ -171,9 +203,10 @@ export function getAllSitemapEntries(): SitemapEntry[] {
     });
   }
 
-  const resourcePages: { title: string; url: string }[] = [
-    { title: 'FAQ', url: '/faq' },
-    { title: 'Contact Us', url: '/contact' },
+  const resourcePages: { title: string; url: string; section: 'resources' | 'company' }[] = [
+    { title: 'FAQ', url: '/faq', section: 'resources' },
+    { title: 'About Us', url: '/about', section: 'company' },
+    { title: 'Contact Us', url: '/contact', section: 'company' },
   ];
 
   for (const page of resourcePages) {
@@ -181,13 +214,14 @@ export function getAllSitemapEntries(): SitemapEntry[] {
       title: page.title,
       url: page.url,
       contentType: 'company',
-      sitemapSection: page.title === 'FAQ' ? 'resources' : 'company',
+      sitemapSection: page.section,
     });
   }
 
   const legalPages: { title: string; url: string }[] = [
     { title: 'Privacy Policy', url: '/legal/privacy' },
     { title: 'Terms of Service', url: '/legal/terms' },
+    { title: 'Accessibility', url: '/legal/accessibility' },
     { title: 'Copyright Policy', url: '/legal/copyright' },
     { title: 'Disclaimer', url: '/legal/disclaimer' },
     { title: 'Affiliate Disclosure', url: '/legal/affiliate-disclosure' },
@@ -258,8 +292,8 @@ export const testMainMethodologyLinks: HtmlSitemapLink[] = [
 ];
 
 export const testSupportingLinks: HtmlSitemapLink[] = [
+  { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
   { label: 'Market Data Methodology', href: '/test/market-data/' },
-  { label: 'Review Process', href: '/review-process/' },
   { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
 ];
 
@@ -292,6 +326,7 @@ export function buildFullHtmlSitemapPage(): HtmlSitemapFullPage {
 
   const legal = dedupeLinks([
     ...entriesToLinks(all.filter((e) => e.sitemapSection === 'legal')),
+    { label: 'About Us', href: '/about' },
     { label: 'Contact Us', href: '/contact' },
   ]);
 
@@ -336,14 +371,13 @@ export function buildHtmlSitemapSections(): HtmlSitemapSection[] {
   const testLinks: HtmlSitemapSection['links'] = [
     { label: 'How We Test AI Girlfriend Apps', href: testHubUrl() },
     ...testCategories.map((cat) => ({ label: cat.name, href: cat.href })),
+    { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
     { label: 'Market Data Methodology', href: '/test/market-data/' },
-    { label: 'Review Process', href: '/review-process/' },
     { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
   ];
 
   const resourceLinks: HtmlSitemapSection['links'] = [
     { label: 'How We Test', href: testHubUrl() },
-    { label: 'Review Process', href: '/review-process/' },
     { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
     { label: 'Market Data Methodology', href: '/test/market-data/' },
     ...resources.map((e) => ({ label: e.title, href: e.url })),

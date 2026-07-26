@@ -7,8 +7,10 @@
 @import './roundup.css';
 @import './article-utilities.css';
 @import './homepage.css';
+@import './directory.css';
 @import './review-page.css';
 @import './breadcrumbs.css';
+@import './cms-fields.css';
 
 /* ===========================================================================
    Design tokens ported from the mockups' DESIGN.md ("Vibrant Editorial")
@@ -442,6 +444,8 @@ html.theme-transition *::after {
 .site-logo-link {
   display: inline-flex;
   align-items: center;
+  background: transparent;
+  box-shadow: none;
   transition: transform 0.2s ease;
 }
 
@@ -451,4 +455,13 @@ html.theme-transition *::after {
 
 .site-logo-link:active {
   transform: scale(1.02);
+}
+
+.site-logo-link:not(.site-header__logo-link):not(.site-footer__logo-link) img {
+  display: block;
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+  mix-blend-mode: normal;
+  object-fit: contain;
 }

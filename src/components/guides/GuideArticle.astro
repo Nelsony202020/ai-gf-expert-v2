@@ -1,0 +1,149 @@
+---
+// Shared guide article body — used by the prerendered page and draft preview.
+import type { Guide } from '../../lib/sanity/guides';
+import { renderGuideBody } from '../../lib/sanity/guides';
+import Breadcrumbs from '../ui/Breadcrumbs.astro';
+
+interface Props {
+  guide: Guide;
+}
+
+const { guide } = Astro.props;
+const bodyHtml = renderGuideBody(guide.body, guide.slug);
+const published = guide.publishedAt
+  ? new Date(guide.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  : null;
+---
+
+<article class="section-container px-4 md:px-8 py-14 md:py-16 max-w-3xl">
+  <Breadcrumbs
+    items={[{ label: 'Home', href: '/' }, { label: 'Guides', href: '/guides' }, { label: guide.title }]}
+  />
+  <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-3">{guide.title}</h1>
+  <div class="mb-8 flex items-center gap-3 text-sm text-on-surface-variant">
+    {guide.author?.avatarUrl && (
+      <img src={guide.author.avatarUrl} alt={guide.author.name} class="h-9 w-9 rounded-full object-cover" />
+    )}
+    {guide.author && <span class="font-semibold">{guide.author.name}</span>}
+    {published && <span>· {published}</span>}
+  </div>
+
+  {guide.heroImageUrl && (
+    <img
+      src={guide.heroImageUrl}
+      alt={guide.heroImageAlt ?? guide.title}
+      class="mb-8 w-full rounded-2xl object-cover"
+    />
+  )}
+
+  <div class="guide-prose legal-prose prose prose-neutral max-w-none text-on-surface-variant leading-relaxed space-y-4" set:html={bodyHtml} />
+</article>
+
+<style is:global>
+  .guide-prose h2 {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: var(--color-on-surface);
+  }
+
+  .guide-prose h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .guide-prose blockquote {
+    border-left: 3px solid var(--color-accent);
+    padding-left: 1rem;
+    font-style: italic;
+  }
+
+  .guide-prose a {
+    color: var(--color-accent);
+    font-weight: 700;
+  }
+
+  .guide-callout {
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    font-size: 0.925rem;
+    font-weight: 600;
+    border: 1px solid var(--color-outline-variant);
+  }
+
+  .guide-callout--tip {
+    border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  }
+
+  .guide-callout--warning {
+    border-color: #f59e0b66;
+  }
+
+  .guide-product-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid var(--color-outline-variant);
+    border-radius: 1rem;
+    padding: 1rem 1.25rem;
+  }
+
+  .guide-product-card__name {
+    font-weight: 900;
+    color: var(--color-on-surface);
+  }
+
+  .guide-product-card__tagline {
+    margin-top: 0.15rem;
+    font-size: 0.85rem;
+  }
+
+  .guide-product-card__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+  }
+
+  .guide-product-card__score {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--color-accent);
+  }
+
+  .guide-product-card__cta {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--color-accent);
+  }
+
+  .guide-faq__item {
+    border-bottom: 1px solid var(--color-outline-variant);
+    padding: 0.6rem 0;
+  }
+
+  .guide-faq__item summary {
+    cursor: pointer;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .guide-faq__item p {
+    margin-top: 0.5rem;
+  }
+
+  .guide-figure figcaption {
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--color-tertiary);
+  }
+
+  .guide-figure img {
+    border-radius: 1rem;
+  }
+</style>

@@ -1,0 +1,376 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
+
+const team = [
+  {
+    name: 'Herman Carter',
+    role: 'Founder & Editor-in-Chief',
+    href: '/author/herman-carter',
+    bio: 'Herman reviews AI girlfriend apps daily, sharing his honest takes and tips on his YouTube channel, AI Girlfriend Expert. With a background in AI Ethics & Society from Cambridge, he dives deep into the tech while keeping things fun and relatable. He loves chatting with users to find out what works, so you get the best advice possible.',
+  },
+  {
+    name: 'Evander Nelson',
+    role: 'Creative Director & Editor',
+    href: null,
+    bio: 'Evander is the CEO of DatingTools AI, the world’s first AI dating directory. He stays on top of the latest AI dating trends and discovers new apps. At AI Girlfriend Expert, he tests apps after Herman to offer a second opinion and ensure accurate, thorough reviews.',
+  },
+  {
+    name: 'Sean Russell',
+    role: 'Analyst & Writer',
+    href: null,
+    bio: 'Sean is a lifestyle and dating coach with over 700 blog posts on Menprovement.com. His experience in the dating world helps AI Girlfriend Expert highlight AI apps that are not only fun but also realistic and useful. His insights ensure that you’re always getting the best options.',
+  },
+  {
+    name: 'Ajit',
+    role: 'Developer & Team Leader',
+    href: '/author/ajit',
+    bio: 'Ajit is the main developer behind AI Girlfriend Expert, with a career focused on building top-notch websites. He ensures the site looks great and runs smoothly, always finding new ways to improve the user experience for readers.',
+  },
+];
+
+const timeline = [
+  { year: '2023', title: 'First reviews', text: 'Herman spots a gap in AI girlfriend reviews and writes his first comparisons and tips.' },
+  { year: '2024', title: 'YouTube launch', text: 'The @ai-girlfriend-expert YouTube channel launches to share hands-on testing publicly.' },
+  { year: 'Sep 2024', title: 'AI Girlfriend Expert', text: 'AI Girlfriend Expert is created as a dedicated review destination.' },
+  { year: '2025', title: 'Growing team', text: 'What started as a one-man project grows into a four-person team of AI enthusiasts.' },
+];
+---
+
+<BaseLayout
+  title="About Us — AI Girlfriend Expert"
+  description="At AI Girlfriend Expert, we test AI girlfriend apps to help you find the best virtual companions. Learn how we test, score, and stay independent."
+>
+  <Header />
+  <main class="about-page">
+    <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">
+      <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'About Us' }]} />
+
+      <p class="about-kicker">About us</p>
+      <h1 class="about-title">About AI Girlfriend Expert</h1>
+      <p class="about-updated">Updated on January 23, 2025</p>
+
+      <p class="about-lead">
+        At AI Girlfriend Expert, we test AI girlfriend apps to help you find the best virtual companions. Our reviews
+        focus on important factors like character options, customization, conversation quality, privacy, and overall
+        value.
+      </p>
+      <p class="about-copy">
+        Using a clear and fair process, we provide straightforward insights so you can easily choose the right AI
+        girlfriend app for you.
+      </p>
+
+      <section class="about-section">
+        <h2>How We Test AI Girlfriend Apps</h2>
+        <h3>Data-Driven Testing</h3>
+        <p class="about-copy">
+          We use a clear, data-driven process to review AI girlfriend apps. Our
+          <a href="/test/">AI girlfriend performance tests</a> cover key details like how fast images are generated, how
+          many messages the AI can remember, and the variety of characters, including anime and AI boyfriends.
+        </p>
+        <p class="about-copy">
+          We also check customization options like personality and clothing choices. For privacy, we look at whether chats
+          are monitored and how discreet billing is. This method helps us gather solid data to compare across apps, and
+          when we can’t use data, we apply consistent and fair subjective ratings.
+        </p>
+      </section>
+
+      <section class="about-section">
+        <h2>Transparent &amp; Fair Scoring</h2>
+        <p class="about-copy">
+          We clearly explain how we test and score each AI girlfriend app in our reviews and tooltips. Every
+          <a href="/best/ai-girlfriend">best AI girlfriend</a> list follows specific guidelines to ensure that our choices
+          are based on structured, consistent, and fair evaluations.
+        </p>
+        <p class="about-copy">
+          Unlike other review sites that might rank apps based on paid partnerships, we select winners solely on
+          performance, using our defined metrics to give you honest, unbiased recommendations.
+        </p>
+        <ul class="about-list">
+          <li>
+            Please note that AI girlfriend apps are emotional products, so our reviews naturally include the writer’s
+            personal experiences and opinions. We don’t influence or manipulate these reviews for financial gain, ensuring
+            that each app is fairly assessed without bias.
+          </li>
+        </ul>
+      </section>
+
+      <section class="about-section">
+        <h2>No Paid Content</h2>
+        <p class="about-copy">
+          We do not accept payments from AI girlfriend app brands to review or rank their apps. Our scores are based solely
+          on our objective testing and evaluation process. The apps with the highest scores earn our recommendations,
+          ensuring a fair and transparent system. You can learn more about how we make money and our
+          <a href="/editorial-process">editorial policies</a> here.
+        </p>
+      </section>
+
+      <section class="about-section">
+        <h2>Our Story</h2>
+        <p class="about-copy">
+          The story of AI Girlfriend Expert began when our founder,
+          <a href="/author/herman-carter">Herman</a>, noticed a growing trend in AI companionship apps.
+        </p>
+        <p class="about-copy">
+          Fascinated by the possibilities, he started testing various AI girlfriend apps and realized how hard it was to
+          find genuine, detailed reviews.
+        </p>
+        <p class="about-copy">
+          Herman started out sharing his experiences on a small blog, comparing popular AI girlfriend apps and giving users
+          helpful tips. What began as a casual hobby quickly took off, with readers asking for deeper reviews — not just on
+          AI girlfriend apps but also on adult AI tools and character directories.
+        </p>
+        <p class="about-copy">
+          Now, our team has tested over 220 adult AI tools, helping users worldwide make better choices in finding their
+          perfect AI tool for their needs.
+        </p>
+        <p class="about-copy">
+          What started as a one-man project has grown into a four-person team of AI enthusiasts. We’ve moved from a small
+          home setup to a dedicated space for testing and creating content. Over the years, we’ve reviewed dozens of AI
+          girlfriend apps, helping thousands of users find the best AI companions.
+        </p>
+
+        <ol class="about-timeline">
+          {
+            timeline.map((item) => (
+              <li>
+                <span class="about-timeline__year">{item.year}</span>
+                <div>
+                  <p class="about-timeline__title">{item.title}</p>
+                  <p class="about-timeline__text">{item.text}</p>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+
+      <section class="about-section">
+        <h2>Our Team</h2>
+        <div class="about-team">
+          {
+            team.map((member) => (
+              <article class="about-team__card">
+                <h3 class="about-team__name">
+                  {member.href ? <a href={member.href}>{member.name}</a> : member.name}
+                </h3>
+                <p class="about-team__role">{member.role}</p>
+                <p class="about-team__bio">{member.bio}</p>
+              </article>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="about-section about-cta">
+        <h2>Get In Touch</h2>
+        <p class="about-copy">
+          You can reach us via our <a href="/contact">contact form</a>.
+        </p>
+        <p class="about-copy">
+          <strong>Need help choosing an AI girlfriend?</strong> Personalized matching is coming soon. In the meantime,
+          browse our <a href="/best/ai-girlfriend">best AI girlfriend apps</a> roundup or email Herman for a personal
+          recommendation.
+        </p>
+        <div class="about-address">
+          <p class="about-address__label">Mailing Address</p>
+          <p>aigirlfriend.expert</p>
+          <p>2248 Broadway #1659</p>
+          <p>New York, NY 10024, United States</p>
+          <p class="mt-3">
+            Email:
+            <a href="mailto:herman@aigirlfriend.expert">herman@aigirlfriend.expert</a>
+          </p>
+        </div>
+      </section>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>
+
+<style>
+  .about-page {
+    background: var(--color-background);
+  }
+
+  .about-kicker {
+    margin: 0 0 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .about-title {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--color-on-surface);
+  }
+
+  .about-updated {
+    margin: 0.75rem 0 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-tertiary);
+  }
+
+  .about-lead {
+    margin: 0 0 1rem;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    color: var(--color-on-surface);
+    font-weight: 600;
+  }
+
+  .about-copy {
+    margin: 0 0 1rem;
+    font-size: 0.975rem;
+    line-height: 1.65;
+    color: var(--color-on-surface-variant);
+  }
+
+  .about-copy a,
+  .about-team__name a,
+  .about-address a {
+    color: var(--color-accent);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .about-copy a:hover,
+  .about-team__name a:hover,
+  .about-address a:hover {
+    text-decoration: underline;
+  }
+
+  .about-section {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-surface-variant);
+  }
+
+  .about-section h2 {
+    margin: 0 0 1rem;
+    font-size: 1.375rem;
+    font-weight: 900;
+    color: var(--color-on-surface);
+  }
+
+  .about-section h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .about-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--color-on-surface-variant);
+    line-height: 1.65;
+  }
+
+  .about-timeline {
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.875rem;
+  }
+
+  .about-timeline li {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 0.875rem;
+    background: #fff;
+  }
+
+  .about-timeline__year {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--color-accent);
+  }
+
+  .about-timeline__title {
+    margin: 0 0 0.25rem;
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .about-timeline__text {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-on-surface-variant);
+  }
+
+  .about-team {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .about-team__card {
+    padding: 1.125rem 1.25rem;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 1rem;
+    background: #fff;
+  }
+
+  .about-team__name {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 900;
+    color: var(--color-on-surface);
+  }
+
+  .about-team__role {
+    margin: 0.25rem 0 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+
+  .about-team__bio {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--color-on-surface-variant);
+  }
+
+  .about-address {
+    margin-top: 1.25rem;
+    padding: 1.125rem 1.25rem;
+    border-radius: 1rem;
+    background: var(--color-surface-container-low);
+    color: var(--color-on-surface-variant);
+    line-height: 1.55;
+  }
+
+  .about-address p {
+    margin: 0;
+  }
+
+  .about-address__label {
+    margin-bottom: 0.5rem !important;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+  }
+
+  [data-theme='dark'] .about-timeline li,
+  [data-theme='dark'] .about-team__card {
+    background: var(--color-surface-container);
+    border-color: rgb(255 255 255 / 8%);
+  }
+</style>

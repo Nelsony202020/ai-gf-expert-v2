@@ -2,8 +2,18 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
-import TestBreadcrumbs from '../../../components/test/TestBreadcrumbs.astro';
+import TestCategoryHero from '../../../components/test/TestCategoryHero.astro';
+import TestCategoryHeroIntro from '../../../components/test/TestCategoryHeroIntro.astro';
+import TestCategorySidebar from '../../../components/test/TestCategorySidebar.astro';
+import TestCategoryMobileNavSheet from '../../../components/test/TestCategoryMobileNavSheet.astro';
+import ArticleUtilityRail from '../../../components/article/ArticleUtilityRail.astro';
+import RatingsTooltipInit from '../../../components/review/tooltips/RatingsTooltipInit.astro';
 import { getTestCategories, getTestCategory } from '../../../lib/test-framework';
+import {
+  testCategoryFeaturedImage,
+  testCategoryFeaturedImageAlt,
+  testMethodologyPageMeta,
+} from '../../../data/test-category-pages';
 import { testHubUrl } from '../../../lib/slugs';
 import '../../../styles/test-hub.css';
 
@@ -21,63 +31,100 @@ if (!category) {
 }
 
 const pageTitle = `${category.name} Testing Methodology — AI Girlfriend Expert`;
+const featuredImage = testCategoryFeaturedImage(category.key);
+const featuredImageAlt = testCategoryFeaturedImageAlt(category.name);
+const canonical = new URL(category.href, Astro.site ?? Astro.url.origin).toString();
 ---
 
-<BaseLayout title={pageTitle} description={category.description}>
+<BaseLayout title={pageTitle} description={category.description} image={featuredImage}>
   <Header />
-  <main class="test-page">
-    <div class="section-container px-4 md:px-8 py-10 md:py-14">
-      <TestBreadcrumbs
-        items={[
-          { label: 'Home', href: '/' },
-          { label: 'How We Test', href: testHubUrl() },
-          { label: category.name },
-        ]}
-      />
+  <main class="roundup-page test-category-page" id="test-category-top" data-test-category-root>
+    <TestCategoryHero image={featuredImage} alt={featuredImageAlt} />
 
-      <header class="test-page__header">
-        <p class="test-page__eyebrow">Category methodology</p>
-        <h1 class="test-page__title">{category.name}</h1>
-        <p class="test-page__intro">{category.description}</p>
-        <p class="test-page__weight">{category.weight}% of overall performance score</p>
-      </header>
+    <div class="section-container px-4 md:px-8 pb-16 md:pb-24">
+      <div class="roundup-layout">
+        <TestCategorySidebar category={category} />
 
-      <section class="test-page__section">
-        <h2 class="test-page__h2">Subscores</h2>
-        <div class="test-subscore-list">
-          {
-            category.subscores.map((sub) => (
-              <article class="test-subscore-card">
-                <div class="test-subscore-card__head">
-                  <h3 class="test-subscore-card__title">
-                    <a href={sub.href}>{sub.name}</a>
-                  </h3>
-                  <a class="test-inline-link" href={sub.href}>
-                    View methodology
-                    <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-                  </a>
-                </div>
-                <p class="test-subscore-card__desc">{sub.description}</p>
-                <ul class="test-evidence-links">
-                  {
-                    sub.contributors.map((c) => (
-                      <li>
-                        <a href={c.href}>{c.label}</a>
-                      </li>
-                    ))
-                  }
-                </ul>
-              </article>
-            ))
-          }
+        <div class="roundup-main min-w-0">
+          <TestCategoryHeroIntro category={category} meta={testMethodologyPageMeta} shareUrl={canonical} />
+
+          <section id="category-subscores" class="test-page__section scroll-mt-24">
+            <h2 class="test-page__h2">Subscores</h2>
+            <div class="test-subscore-list">
+              {
+                category.subscores.map((sub) => (
+                  <article class="test-subscore-card scroll-mt-24" id={sub.slug}>
+                    <div class="test-subscore-card__head">
+                      <h3 class="test-subscore-card__title">
+                        <a href={sub.href}>{sub.name}</a>
+                      </h3>
+                      <a class="test-inline-link" href={sub.href}>
+                        View methodology
+                        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                      </a>
+                    </div>
+                    <p class="test-subscore-card__desc">{sub.description}</p>
+                    <ul class="test-evidence-links">
+                      {
+                        sub.contributors.map((c) => (
+                          <li>
+                            <a href={c.href}>{c.label}</a>
+                          </li>
+                        ))
+                      }
+                    </ul>
+                  </article>
+                ))
+              }
+            </div>
+          </section>
+
+          <a class="test-inline-link test-page__back" href={testHubUrl()}>
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+            Back to how we test
+          </a>
         </div>
-      </section>
-
-      <a class="test-inline-link test-page__back" href={testHubUrl()}>
-        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-        Back to how we test
-      </a>
+      </div>
     </div>
   </main>
   <Footer />
+  <TestCategoryMobileNavSheet category={category} active="how-we-test" />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
+  <RatingsTooltipInit />
 </BaseLayout>
+
+<script>
+  function initAuthorPopovers() {
+    document.querySelectorAll<HTMLElement>('[data-author-trigger]').forEach((trigger) => {
+      if (trigger.dataset.bound === 'true') return;
+      trigger.dataset.bound = 'true';
+
+      const slug = trigger.dataset.authorTrigger;
+      const popover = document.querySelector<HTMLElement>(`[data-author-bio-popover="${slug}"]`);
+      if (!popover) return;
+
+      let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+      const show = () => {
+        if (hideTimer) clearTimeout(hideTimer);
+        popover.hidden = false;
+      };
+
+      const hide = () => {
+        hideTimer = setTimeout(() => {
+          popover.hidden = true;
+        }, 120);
+      };
+
+      trigger.addEventListener('mouseenter', show);
+      trigger.addEventListener('focus', show);
+      trigger.addEventListener('mouseleave', hide);
+      trigger.addEventListener('blur', hide);
+      popover.addEventListener('mouseenter', show);
+      popover.addEventListener('mouseleave', hide);
+    });
+  }
+
+  initAuthorPopovers();
+  document.addEventListener('astro:page-load', initAuthorPopovers);
+</script>

@@ -40,7 +40,7 @@ const shareTitle = `${roundup.title} (${monthYear}) — AI Girlfriend Expert`;
   {roundup.changelog?.length > 0 && <RatingsChangelogCompact entries={roundup.changelog} />}
 
   <div class="article-meta-row mb-5">
-    <span>Reviewed {roundup.reviewedDate}</span>
+    <span>Published {roundup.reviewedDate}</span>
     <span class="article-meta-row__sep" aria-hidden="true">·</span>
     <span>Updated {roundup.modifiedDate}</span>
     <span class="article-meta-row__sep" aria-hidden="true">·</span>
@@ -103,7 +103,7 @@ const shareTitle = `${roundup.title} (${monthYear}) — AI Girlfriend Expert`;
 
   <button
     type="button"
-    class="roundup-reading-trigger lg:hidden"
+    class="roundup-reading-trigger roundup-mobile-only"
     data-reading-sheet-open
     aria-haspopup="dialog"
   >

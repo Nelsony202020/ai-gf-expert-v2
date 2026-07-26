@@ -1,0 +1,48 @@
+---
+// Server-rendered draft preview for Sanity's "Open preview" — requires the
+// shared secret and a viewer token; never indexed and never cached.
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import GuideArticle from '../../components/guides/GuideArticle.astro';
+import { getGuide } from '../../lib/sanity/guides';
+import { env } from '../../lib/env';
+
+const secret = env('SANITY_PREVIEW_SECRET');
+const providedSecret = Astro.url.searchParams.get('secret');
+const slug = Astro.url.searchParams.get('slug');
+
+if (!secret || providedSecret !== secret || !slug) {
+  return new Response('Not authorized', { status: 401 });
+}
+
+let guide = null;
+let error: string | null = null;
+try {
+  guide = await getGuide(slug, true);
+} catch (e) {
+  error = e instanceof Error ? e.message : String(e);
+}
+
+Astro.response.headers.set('Cache-Control', 'no-store');
+---
+
+<BaseLayout title={guide ? `[Draft] ${guide.title}` : 'Draft preview'} description="Draft preview">
+  <meta name="robots" content="noindex, nofollow" slot="head" />
+  <Header />
+  <main>
+    <div class="section-container max-w-3xl px-4 pt-6">
+      <div class="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm font-bold text-amber-600">
+        Draft preview — this is not the published version.
+      </div>
+    </div>
+    {error && <p class="section-container max-w-3xl px-4 py-10 text-red-500">{error}</p>}
+    {!error && !guide && (
+      <p class="section-container max-w-3xl px-4 py-10">No draft found for “{slug}”.</p>
+    )}
+    {guide && <GuideArticle guide={guide} />}
+  </main>
+  <Footer />
+</BaseLayout>

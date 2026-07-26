@@ -1,0 +1,60 @@
+---
+---
+
+<div class="buying-guide-quiz" data-buying-guide-quiz>
+  <div class="buying-guide-quiz__shell">
+    <div class="buying-guide-quiz__header">
+      <div>
+        <p class="buying-guide-quiz__eyebrow">Quick test</p>
+        <h3 class="buying-guide-quiz__title">What type of user are you?</h3>
+        <p class="buying-guide-quiz__intro">Answer five quick questions to find out whether you are chat-first, image and video-first, or balanced.</p>
+      </div>
+      <div class="buying-guide-quiz__progress-wrap">
+        <p class="buying-guide-quiz__progress" data-quiz-progress>Question 1 of 5</p>
+        <div class="buying-guide-quiz__dots" data-quiz-progress-dots aria-hidden="true">
+          <span class="buying-guide-quiz__dot is-active"></span>
+          <span class="buying-guide-quiz__dot"></span>
+          <span class="buying-guide-quiz__dot"></span>
+          <span class="buying-guide-quiz__dot"></span>
+          <span class="buying-guide-quiz__dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="buying-guide-quiz__body" data-quiz-panel>
+      <div class="buying-guide-quiz__main">
+        <p class="buying-guide-quiz__question" data-quiz-question></p>
+        <div class="buying-guide-quiz__answers" data-quiz-answers></div>
+        <div class="buying-guide-quiz__nav">
+          <button type="button" class="buying-guide-quiz__back" data-quiz-back disabled>← Previous</button>
+          <button type="button" class="buying-guide-quiz__next" data-quiz-next disabled>Continue →</button>
+        </div>
+      </div>
+
+      <aside class="buying-guide-quiz__aside" aria-live="polite">
+        <p class="buying-guide-quiz__aside-label">
+          <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+          Likely match
+        </p>
+        <p class="buying-guide-quiz__aside-copy">Based on your answers so far:</p>
+        <p class="buying-guide-quiz__match-preview" data-quiz-match-preview>Balanced</p>
+        <div class="buying-guide-quiz__match-tags" aria-hidden="true">
+          <span>Chat-first</span>
+          <span>Media-first</span>
+          <span>Balanced</span>
+        </div>
+      </aside>
+    </div>
+
+    <div class="buying-guide-quiz__result" data-quiz-result hidden></div>
+
+    <p class="buying-guide-quiz__privacy" data-quiz-shell-privacy>
+      <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+      Your answers are private and not stored.
+    </p>
+  </div>
+</div>
+
+<script>
+  import './buying-guide-quiz.client.ts';
+</script>

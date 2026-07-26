@@ -32,7 +32,7 @@ const supportCards = [
 const faqs = [
   {
     q: 'How quickly do you respond to messages?',
-    a: 'We aim to reply within 1–2 business days. Urgent correction requests are prioritized.',
+    a: 'Our support team strives to reply within 1 business day. Urgent correction requests are prioritized.',
   },
   {
     q: 'Can I request a review of a specific app?',
@@ -40,11 +40,11 @@ const faqs = [
   },
   {
     q: 'Do you accept sponsored reviews?',
-    a: 'No. All reviews are independent. We may use affiliate links, but scores and conclusions are never paid for.',
+    a: 'No. All reviews are independent. We may use affiliate links, but scores and conclusions are never paid for. See our editorial process for details.',
   },
   {
     q: 'How do I report outdated pricing or features?',
-    a: 'Use the correction form or email us with the product name, what changed, and a link if possible.',
+    a: 'Use the correction form or email us at herman@aigirlfriend.expert with the product name, what changed, and a link if possible.',
   },
   {
     q: 'Can brands submit products for review?',
@@ -53,7 +53,10 @@ const faqs = [
 ];
 ---
 
-<BaseLayout title="Contact Us — AI Girlfriend Expert" description="Get in touch with the AI Girlfriend Expert team for corrections, partnerships, press, or general questions.">
+<BaseLayout
+  title="Contact AI Girlfriend Expert"
+  description="We understand you might have questions, suggestions, or just want to chat with us. Our support team strives to reply within 1 business day."
+>
   <Header />
   <main class="contact-page">
     <div class="section-container px-4 md:px-8 py-10 md:py-14">
@@ -68,10 +71,11 @@ const faqs = [
         <div>
           <p class="contact-kicker">Contact us</p>
           <h1 class="contact-hero__title">
-            We'd love to <em>hear</em> from you
+            Contact <em>AI Girlfriend Expert</em>
           </h1>
           <p class="text-base text-on-surface-variant leading-relaxed mb-8 max-w-lg">
-            Questions about a review, spotted an error, or want to work together? Send us a message — real people read every note.
+            We understand you might have questions, suggestions, or just want to chat with us. Don’t hesitate to reach
+            out — our support team strives to reply within 1 business day.
           </p>
 
           <ul class="contact-values">
@@ -79,7 +83,7 @@ const faqs = [
               <span class="contact-values__icon"><span class="material-symbols-outlined">verified_user</span></span>
               <div>
                 <p class="font-bold text-on-surface text-sm">Independent &amp; transparent</p>
-                <p class="text-xs text-on-surface-variant mt-0.5">Scores are never sold. We disclose affiliate relationships clearly.</p>
+                <p class="text-xs text-on-surface-variant mt-0.5">We’re dedicated to transparent reviews and reliable information.</p>
               </div>
             </li>
             <li>
@@ -93,15 +97,33 @@ const faqs = [
               <span class="contact-values__icon"><span class="material-symbols-outlined">schedule</span></span>
               <div>
                 <p class="font-bold text-on-surface text-sm">Fast responses</p>
-                <p class="text-xs text-on-surface-variant mt-0.5">Most messages get a reply within 1–2 business days.</p>
+                <p class="text-xs text-on-surface-variant mt-0.5">We strive to reply within 1 business day.</p>
               </div>
             </li>
           </ul>
+
+          <div class="contact-details">
+            <p class="contact-details__label">Company headquarters</p>
+            <p>
+              <a
+                href="https://maps.google.com/?q=2248+Broadway+%231659,+New+York,+NY+10024,+United+States"
+                target="_blank"
+                rel="noopener noreferrer">2248 Broadway #1659, New York, NY 10024, United States</a
+              >
+            </p>
+            <p class="contact-details__label mt-4">Phone</p>
+            <p><a href="tel:+31652600545">+31 6 52 60 05 45</a></p>
+            <p class="contact-details__label mt-4">Email</p>
+            <p><a href="mailto:herman@aigirlfriend.expert">herman@aigirlfriend.expert</a></p>
+          </div>
         </div>
 
         <div class="contact-form-card">
-          <h2 class="text-lg font-black text-on-surface mb-5">Send us a message</h2>
-          <form class="contact-form" action="mailto:hello@lovelacereviews.com" method="post" enctype="text/plain">
+          <h2 class="text-lg font-black text-on-surface mb-5">How to contact us</h2>
+          <p class="text-sm text-on-surface-variant mb-5 leading-relaxed">
+            Reach out through our contact form for a quick response, or email / write us using the details on the left.
+          </p>
+          <form class="contact-form" action="mailto:herman@aigirlfriend.expert" method="post" enctype="text/plain">
             <div class="contact-form__row">
               <label class="contact-form__field">
                 <span>Name</span>
@@ -191,8 +213,8 @@ const faqs = [
           <p class="font-bold text-on-surface text-base md:text-lg">Thanks for helping us keep AI reviews honest</p>
           <p class="text-sm text-on-surface-variant mt-1">Your feedback shapes how we test, score, and update every review.</p>
         </div>
-        <a href="#" class="contact-banner__cta">
-          <span class="link-text">Read our editorial guidelines</span>
+        <a href="/editorial-process" class="contact-banner__cta">
+          <span class="link-text">Read our editorial process</span>
           <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
         </a>
       </section>
@@ -258,6 +280,38 @@ const faqs = [
 
   .contact-values__icon .material-symbols-outlined {
     font-size: 18px;
+  }
+
+  .contact-details {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-surface-variant);
+  }
+
+  .contact-details__label {
+    margin: 0 0 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+  }
+
+  .contact-details p {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-on-surface-variant);
+  }
+
+  .contact-details a {
+    color: var(--color-accent);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .contact-details a:hover {
+    text-decoration: underline;
   }
 
   .contact-form-card {

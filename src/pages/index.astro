@@ -5,14 +5,14 @@ import Footer from '../components/Footer.astro';
 import HomeHero from '../components/home/HomeHero.astro';
 import HomeTrustStrip from '../components/home/HomeTrustStrip.astro';
 import HomePicksAndCharacters from '../components/home/HomePicksAndCharacters.astro';
-import HomeAppExplorer from '../components/home/HomeAppExplorer.astro';
+import HomeQuickFinder from '../components/home/HomeQuickFinder.astro';
 import HomeFindMatch from '../components/home/HomeFindMatch.astro';
 import HomeRecentUpdates from '../components/home/HomeRecentUpdates.astro';
 import HomeHowWeTest from '../components/home/HomeHowWeTest.astro';
 import HomeGuides from '../components/home/HomeGuides.astro';
 import HomeFinalCta from '../components/home/HomeFinalCta.astro';
 import {
-  buildExplorerApps,
+  loadExplorerApps,
   featuredGuides,
   featuredCharactersShowcase,
   homeMeta,
@@ -20,7 +20,7 @@ import {
   topPicks,
 } from '../data/homepage';
 
-const apps = buildExplorerApps();
+const apps = await loadExplorerApps();
 ---
 
 <BaseLayout title={homeMeta.title} description={homeMeta.description} image={homeMeta.heroImage}>
@@ -29,7 +29,7 @@ const apps = buildExplorerApps();
     <HomeHero />
     <HomeTrustStrip />
     <HomePicksAndCharacters picks={topPicks} characters={featuredCharactersShowcase} />
-    <HomeAppExplorer apps={apps} />
+    <HomeQuickFinder apps={apps} />
 
     <section class="home-section section-container px-4 md:px-8">
       <div class="home-split">
