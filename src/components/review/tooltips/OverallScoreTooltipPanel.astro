@@ -22,11 +22,11 @@ const currentChip = getScoreChipClass(currentScore);
 
 const scorePoints = products
   .map((p) => ({ slug: p.slug, name: p.name, score: p.overallScore }))
-  .filter((x) => Number.isFinite(x.score));
+  .filter((x): x is { slug: string; name: string; score: number } => x.score != null && Number.isFinite(x.score));
 
 const avgScore = scorePoints.length
   ? scorePoints.reduce((s, x) => s + x.score, 0) / scorePoints.length
-  : currentScore;
+  : currentScore ?? 0;
 
 const panelClass = [
   'ratings-tooltip-panel',

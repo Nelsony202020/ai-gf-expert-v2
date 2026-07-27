@@ -1,10 +1,11 @@
 // Shared sticky header + tab navigation used by every product workspace tab.
 
-import { Link, NavLink, useParams } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { Badge, Button, Icon, statusTone } from '../ui';
 import { useCan } from '../context';
 import { useWorkspace } from './context';
 import { WORKSPACE_TABS, fmtRelativeTime, workspaceTabPath, type TabCompletion } from './completion';
+import { reviewPreviewPageUrl } from '../../../lib/slugs';
 
 function fmtMonthYear(ms?: number | null): string {
   if (!ms) return 'never';
@@ -27,13 +28,11 @@ function TabIndicator({ tab }: { tab: TabCompletion }) {
 export function ProductWorkspaceHeader() {
   const ws = useWorkspace();
   const can = useCan();
-  const { tab: activeTab } = useParams();
-  const onTestingTab = activeTab === 'testing';
   const { fields, links, related, completion } = ws;
 
   const logoUrl = links.logo ? related.mediaAll.find((m) => m.id === links.logo)?.url : null;
   const status = String(fields.status ?? 'draft');
-  const previewUrl = fields.slug ? `/reviews/${fields.slug}` : null;
+  const previewUrl = fields.slug ? reviewPreviewPageUrl(String(fields.slug)) : null;
   const overall = related.scoreHistory.find((h) => h.isCurrentPublished)?.overall ?? null;
   const requiredCount = completion.missingRequired.length;
 
@@ -71,42 +70,24 @@ export function ProductWorkspaceHeader() {
               )}
             </div>
             <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-500 dark:text-slate-400">
-              {onTestingTab ? (
-                <>
-                  <span title="Setup, verdict, SEO, and other tabs needed before the review page can go live">
-                    Review page checklist: {completion.overallPct}%
-                    {requiredCount > 0
-                      ? ` · ${requiredCount} item${requiredCount === 1 ? '' : 's'} left to publish`
-                      : ' · ready to publish'}
-                  </span>
-                  <span aria-hidden="true">·</span>
-                  <span>
-                    Last saved{' '}
-                    {ws.lastSavedAt ? fmtRelativeTime(ws.lastSavedAt) : fmtRelativeTime(fields.updatedAt)}
-                  </span>
-                </>
+              <span className="font-medium">{completion.overallPct}% complete</span>
+              <span aria-hidden="true">·</span>
+              {requiredCount > 0 ? (
+                <span className="font-medium text-amber-700 dark:text-amber-400">
+                  {requiredCount} required item{requiredCount === 1 ? '' : 's'} missing
+                </span>
               ) : (
-                <>
-                  <span className="font-medium">{completion.overallPct}% complete</span>
-                  <span aria-hidden="true">·</span>
-                  {requiredCount > 0 ? (
-                    <span className="font-medium text-amber-700 dark:text-amber-400">
-                      {requiredCount} required item{requiredCount === 1 ? '' : 's'} missing
-                    </span>
-                  ) : (
-                    <span className="font-medium text-green-700 dark:text-green-400">
-                      All required items complete
-                    </span>
-                  )}
-                  <span aria-hidden="true">·</span>
-                  <span>
-                    Last saved{' '}
-                    {ws.lastSavedAt ? fmtRelativeTime(ws.lastSavedAt) : fmtRelativeTime(fields.updatedAt)}
-                  </span>
-                  <span aria-hidden="true">·</span>
-                  <span>Last tested {fmtMonthYear(fields.lastTestedAt)}</span>
-                </>
+                <span className="font-medium text-green-700 dark:text-green-400">
+                  All required items complete
+                </span>
               )}
+              <span aria-hidden="true">·</span>
+              <span>
+                Last saved{' '}
+                {ws.lastSavedAt ? fmtRelativeTime(ws.lastSavedAt) : fmtRelativeTime(fields.updatedAt)}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>Last tested {fmtMonthYear(fields.lastTestedAt)}</span>
             </p>
           </div>
         </div>
@@ -138,22 +119,20 @@ export function ProductWorkspaceHeader() {
         </div>
       </div>
 
-      {/* Overall workflow completion bar — hidden on Testing tab (that tab has its own session progress). */}
-      {!onTestingTab && (
+      {/* Overall workflow completion bar */}
+      <div
+        className="h-1 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800"
+        role="progressbar"
+        aria-valuenow={completion.overallPct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Overall product completion"
+      >
         <div
-          className="h-1 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800"
-          role="progressbar"
-          aria-valuenow={completion.overallPct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Overall product completion"
-        >
-          <div
-            className="h-full rounded-full bg-pink-600 transition-all duration-300"
-            style={{ width: `${completion.overallPct}%` }}
-          />
-        </div>
-      )}
+          className="h-full rounded-full bg-pink-600 transition-all duration-300"
+          style={{ width: `${completion.overallPct}%` }}
+        />
+      </div>
 
       <nav className="flex gap-1 overflow-x-auto" aria-label="Product sections">
         {WORKSPACE_TABS.map((t) => {

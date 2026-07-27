@@ -9,7 +9,35 @@ export interface ShortQuestion {
 export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   "characters|amount": {
     "q": "Characters: how many total?",
-    "hint": "Count every ready-made character in the library."
+    "hint": "Legacy — use the category counts below instead."
+  },
+  "characters|female-count": {
+    "q": "Characters: how many female?",
+    "hint": "Count ready-made female characters in the library."
+  },
+  "characters|male-count": {
+    "q": "Characters: how many male?",
+    "hint": "Count ready-made male characters in the library."
+  },
+  "characters|anime-female-count": {
+    "q": "Characters: how many anime female?",
+    "hint": "Count anime-style female characters."
+  },
+  "characters|anime-male-count": {
+    "q": "Characters: how many anime male?",
+    "hint": "Count anime-style male characters."
+  },
+  "characters|transgender-count": {
+    "q": "Characters: how many transgender?",
+    "hint": "Count transgender characters if offered."
+  },
+  "characters|non-binary-count": {
+    "q": "Characters: how many non-binary?",
+    "hint": "Count non-binary characters if offered."
+  },
+  "characters|other-count": {
+    "q": "Characters: how many other?",
+    "hint": "Count any other gender/category bucket not listed above."
   },
   "characters|styles": {
     "q": "Characters: which art styles?",
@@ -49,31 +77,59 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "characters|duplicates": {
     "q": "Characters: any duplicates?",
-    "hint": "In 25 characters, count near-copy profiles."
+    "hint": "In your sample above, count near-copy profiles. Only enter the number found."
   },
   "characters|originality": {
     "q": "Characters: how unique?",
-    "hint": "In 25 characters, count that feel original."
+    "hint": "In your sample, count that feel original."
   },
   "characters|profile-quality": {
     "q": "Characters: good profiles?",
-    "hint": "In 25 profiles, count complete useful ones."
+    "hint": "In your sample, count complete useful profiles."
   },
   "characters|visual-quality": {
     "q": "Characters: good photos?",
-    "hint": "In 25 profile photos, count clear good ones."
+    "hint": "In your sample, count clear good profile photos."
   },
-  "customization|gender": {
-    "q": "Creator: gender options?",
-    "hint": "Count gender choices when making a new character."
+  "customization|ethnicity": {
+    "q": "Creator: ethnicity options?",
+    "hint": "Count ethnicity choices in the creator."
   },
   "customization|age": {
     "q": "Creator: age options?",
     "hint": "Count age choices (or min/max adult age)."
   },
-  "customization|ethnicity": {
-    "q": "Creator: ethnicity options?",
-    "hint": "Count ethnicity choices in the creator."
+  "customization|eye-color": {
+    "q": "Creator: eye color options?",
+    "hint": "Count eye color choices in the creator."
+  },
+  "customization|body-type": {
+    "q": "Creator: body type options?",
+    "hint": "Count body type presets and controls."
+  },
+  "customization|breast-size": {
+    "q": "Creator: breast size options?",
+    "hint": "Count breast size choices if offered."
+  },
+  "customization|hair-style": {
+    "q": "Creator: hair style options?",
+    "hint": "Count hairstyle choices."
+  },
+  "customization|hair-color": {
+    "q": "Creator: hair color options?",
+    "hint": "Count hair color choices."
+  },
+  "customization|outfits": {
+    "q": "Creator: outfit options?",
+    "hint": "Count clothing and outfit choices."
+  },
+  "customization|creator-personalities": {
+    "q": "Creator: personality options?",
+    "hint": "Count personality choices when creating a character."
+  },
+  "customization|gender": {
+    "q": "Creator: gender options?",
+    "hint": "Legacy — count gender choices when making a new character."
   },
   "customization|face": {
     "q": "Creator: face options?",
@@ -104,20 +160,24 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Count communication style choices."
   },
   "customization|relationship": {
-    "q": "Creator: relationship types?",
-    "hint": "Count relationship type options."
+    "q": "Creator: relationship / chat style?",
+    "hint": "Count relationship type and chat-style options combined."
+  },
+  "customization|kink-options": {
+    "q": "Creator: kink options?",
+    "hint": "Count kink or intimacy preference options if offered."
   },
   "customization|role": {
-    "q": "Creator: role options?",
-    "hint": "Count role/occupation options."
+    "q": "Creator: occupation options?",
+    "hint": "Count occupation or job/role options for characters."
   },
   "customization|voice": {
     "q": "Creator: voice options?",
     "hint": "Count voice choices for characters."
   },
   "customization|custom-prompts": {
-    "q": "Creator: custom text works?",
-    "hint": "Make 5 characters using your own written description. Count how many followed it."
+    "q": "Creator: custom character accurate?",
+    "hint": "Make 5 characters from your own written description. Count how many matched what you asked for."
   },
   "customization|editing": {
     "q": "Creator: edit after creating?",
@@ -236,12 +296,12 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Start three voice calls on three different days."
   },
   "chat-features|chat-modes": {
-    "q": "Chat: chat modes?",
-    "hint": "Count the selectable chat modes that visibly change how the chat works."
+    "q": "Chat: different chat modes?",
+    "hint": "Yes/No first. If yes, count how many modes exist, then test and rate two of them."
   },
   "chat-features|mode-types": {
-    "q": "Chat: mode types?",
-    "hint": "Open and test each available mode with five messages."
+    "q": "Chat: how well do modes work?",
+    "hint": "Filled automatically when you rate two modes above."
   },
   "chat-features|group-chat": {
     "q": "Chat: group chat?",
@@ -249,11 +309,11 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "chat-features|double-texting": {
     "q": "Chat: double texting?",
-    "hint": "Use 10 conversations containing 10 user messages each."
+    "hint": "Does the AI send multiple messages when replying, or put everything in one bubble?"
   },
   "chat-features|proactive-messages": {
-    "q": "Chat: proactive messages?",
-    "hint": "Keep three active chats open for seven days."
+    "q": "Chat: messages you first?",
+    "hint": "Leave chats idle a few days. Does the AI ever message you without you writing first?"
   },
   "chat-features|edit-messages": {
     "q": "Chat: edit messages?",
@@ -273,7 +333,7 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "chat-features|edit-memories": {
     "q": "Chat: edit memories?",
-    "hint": "Try to view, edit and delete three saved memories."
+    "hint": "Try to view, edit and delete saved memories. If save is unavailable, answer No."
   },
   "chat-features|reset-chat": {
     "q": "Chat: reset chat?",
@@ -284,44 +344,40 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Try to export three conversations."
   },
   "images|realism": {
-    "q": "Images: looks real?",
-    "hint": "Use the image table — realism checks per image."
+    "q": "Images: visual quality?",
+    "hint": "Rate each image 1–5 in the batch test worksheet."
   },
   "images|visual-errors": {
-    "q": "Images: visual errors?",
-    "hint": "Review all 20 images."
-  },
-  "images|detail": {
-    "q": "Images: detail?",
-    "hint": "Review all 20 images."
+    "q": "Images: defects?",
+    "hint": "Defect rate is calculated from your ratings and defect checklist."
   },
   "images|composition": {
     "q": "Images: composition?",
-    "hint": "Review all 20 images."
-  },
-  "images|resolution": {
-    "q": "Images: max resolution?",
-    "hint": "Biggest image size you can generate."
+    "hint": "Rate framing and subject placement 1–5 per image."
   },
   "images|prompt-accuracy": {
     "q": "Images: prompt accuracy?",
-    "hint": "Give every one of the 10 prompts five required elements."
+    "hint": "Rate how closely each image matched the prompt (1–5)."
+  },
+  "images|resolution": {
+    "q": "Images: max resolution?",
+    "hint": "Select the highest resolution you can generate (480p–4K)."
   },
   "images|character-consistency": {
-    "q": "Images: character consistency?",
-    "hint": "Generate 10 images of the same character."
+    "q": "Images: overall consistency?",
+    "hint": "Auto-calculated from face, body, and style ratings in the worksheet."
   },
   "images|face-consistency": {
-    "q": "Images: face consistency?",
-    "hint": "Review the same 10 character images."
+    "q": "Images: face match?",
+    "hint": "Compared to the reference image: Yes / Mostly / No."
   },
   "images|body-consistency": {
-    "q": "Images: body consistency?",
-    "hint": "Review the same 10 character images."
+    "q": "Images: body match?",
+    "hint": "Compared to the reference image: Yes / Mostly / No."
   },
   "images|style-consistency": {
-    "q": "Images: style consistency?",
-    "hint": "Use five visual styles."
+    "q": "Images: style match?",
+    "hint": "Compared to the reference image: Yes / Mostly / No."
   },
   "images|editing-accuracy": {
     "q": "Images: editing accuracy?",
@@ -381,31 +437,27 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "video|maximum-resolution": {
     "q": "Video: maximum resolution?",
-    "hint": "Download the highest-quality video."
-  },
-  "video|realism": {
-    "q": "Video: realism?",
-    "hint": "Review all 10 videos."
+    "hint": "Pick the highest resolution the app can output."
   },
   "video|motion": {
-    "q": "Video: motion?",
-    "hint": "Review all 10 videos."
+    "q": "Video: motion quality?",
+    "hint": "Rate natural movement 1–5 per video in the batch worksheet."
   },
   "video|accuracy": {
-    "q": "Video: accuracy?",
-    "hint": "Give every prompt five required elements."
+    "q": "Video: prompt accuracy?",
+    "hint": "Rate how closely each video matched the prompt (1–5)."
   },
   "video|character-consistency": {
     "q": "Video: character consistency?",
-    "hint": "Review all 10 videos."
+    "hint": "Rate whether face, body, and identity stayed consistent (1–5)."
   },
   "video|visual-errors": {
-    "q": "Video: visual errors?",
-    "hint": "Review all 10 videos."
+    "q": "Video: usable result?",
+    "hint": "Auto-calculated from ratings and defects."
   },
   "video|frame-consistency": {
-    "q": "Video: frame consistency?",
-    "hint": "Review all 10 videos from beginning to end."
+    "q": "Video: visual stability?",
+    "hint": "Rate flicker, warping, and frame problems (1–5)."
   },
   "video|speed": {
     "q": "Video: speed?",
@@ -417,7 +469,7 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "video|ease-of-use": {
     "q": "Video: ease of use?",
-    "hint": "Create three videos."
+    "hint": "How easy is it to create a video? Rate 1 (very hard) to 10 (very easy)."
   },
   "video|controls": {
     "q": "Video: controls?",
@@ -432,8 +484,8 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Add together all subscription, token and credit costs used for the 10-video test."
   },
   "privacy|training": {
-    "q": "Privacy: training?",
-    "hint": "Search the privacy policy, terms, help pages and settings for a clear statement about training."
+    "q": "Privacy: data used to train AI?",
+    "hint": "Does the company say your chats or photos are used to train their AI? Check the privacy policy and settings."
   },
   "privacy|human-review": {
     "q": "Privacy: human review?",
@@ -480,8 +532,8 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Count the separate privacy controls available in the account."
   },
   "privacy|encryption": {
-    "q": "Privacy: encryption?",
-    "hint": "Check whether the company clearly states that it uses:"
+    "q": "Privacy: end-to-end encryption?",
+    "hint": "Does the company clearly claim end-to-end encryption for chats or messages?"
   },
   "privacy|account-security": {
     "q": "Privacy: account security?",
@@ -500,8 +552,28 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Check the checkout page and payment help pages."
   },
   "privacy|security-incidents": {
-    "q": "Privacy: security incidents?",
-    "hint": "Search for confirmed security incidents from the previous five years."
+    "q": "Privacy: past security incidents?",
+    "hint": "Add links to news or official statements about breaches or leaks (past 5 years). Optional note."
+  },
+  "privacy|support-available": {
+    "q": "Support: offered?",
+    "hint": "Does the app offer any way to contact support? If yes, add email, contact page, Discord, Reddit, or Telegram links."
+  },
+  "privacy|support-reach": {
+    "q": "Support: easy to reach?",
+    "hint": "How easy is it for a paying user to contact support? Pick Poor → Excellent."
+  },
+  "privacy|support-speed": {
+    "q": "Support: response speed?",
+    "hint": "After sending a real support message, rate how fast they replied (overall impression, not seconds)."
+  },
+  "privacy|support-helpfulness": {
+    "q": "Support: helpfulness?",
+    "hint": "Did the reply solve or clearly progress your issue? Pick Poor → Excellent."
+  },
+  "chat-features|platform-extras-list": {
+    "q": "Bonus features?",
+    "hint": "AI Cam Models first, then Bonus features Yes/No. If yes, add More bonus features with name, description, and proof."
   },
   "pricing|monthly-price": {
     "q": "Pricing: monthly cost?",

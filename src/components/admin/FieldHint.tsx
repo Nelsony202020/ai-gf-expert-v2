@@ -1,13 +1,65 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon, Toggle } from './ui';
 
 export function FieldHint({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number; placeAbove: boolean } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const id = useId();
 
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    const placeAbove = rect.top > 120;
+    setCoords({
+      top: placeAbove ? rect.top - 8 : rect.bottom + 8,
+      left: rect.left + rect.width / 2,
+      placeAbove,
+    });
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function reposition() {
+      if (!btnRef.current) return;
+      const rect = btnRef.current.getBoundingClientRect();
+      const placeAbove = rect.top > 120;
+      setCoords({
+        top: placeAbove ? rect.top - 8 : rect.bottom + 8,
+        left: rect.left + rect.width / 2,
+        placeAbove,
+      });
+    }
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+    return () => {
+      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('resize', reposition);
+    };
+  }, [open]);
+
+  const tooltip =
+    open && coords
+      ? createPortal(
+          <span
+            id={id}
+            role="tooltip"
+            style={{ top: coords.top, left: coords.left }}
+            className={`pointer-events-none fixed z-[200] w-56 -translate-x-1/2 rounded-md border border-slate-200 bg-white px-2.5 py-2 text-xs font-normal normal-case leading-snug text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 ${
+              coords.placeAbove ? '-translate-y-full' : ''
+            }`}
+          >
+            {text}
+          </span>,
+          document.body,
+        )
+      : null;
+
   return (
-    <span className="relative inline-flex align-middle">
+    <>
       <button
+        ref={btnRef}
         type="button"
         aria-describedby={open ? id : undefined}
         aria-label="More information"
@@ -19,16 +71,8 @@ export function FieldHint({ text }: { text: string }) {
       >
         <Icon name="info" className="!text-[14px]" />
       </button>
-      {open && (
-        <span
-          id={id}
-          role="tooltip"
-          className="absolute bottom-full left-1/2 z-40 mb-1.5 w-56 -translate-x-1/2 rounded-md border border-slate-200 bg-white px-2.5 py-2 text-xs font-normal normal-case leading-snug text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-        >
-          {text}
-        </span>
-      )}
-    </span>
+      {tooltip}
+    </>
   );
 }
 

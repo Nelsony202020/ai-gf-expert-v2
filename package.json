@@ -12,11 +12,13 @@
     "seed": "tsx scripts/seed/run.ts",
     "seed:validate": "tsx scripts/seed/validate.ts",
     "admin:bootstrap": "tsx scripts/bootstrap-admin.ts",
-    "db:push": "npx instant-cli@latest push"
+    "db:push": "npx instant-cli@latest push",
+    "test:ai-verdict": "tsx scripts/test-ai-verdict-schema.ts"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.1",
     "@astrojs/vercel": "^11.0.3",
+    "@google/genai": "^1.52.0",
     "@instantdb/admin": "^1.0.52",
     "@instantdb/core": "^1.0.52",
     "@instantdb/react": "^1.0.52",
@@ -34,6 +36,7 @@
     "@tiptap/starter-kit": "^2.27.2",
     "@tiptap/suggestion": "^2.27.2",
     "astro": "^7.1.1",
+    "openai": "^4.104.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.1",

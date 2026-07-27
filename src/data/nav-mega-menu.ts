@@ -48,7 +48,7 @@ export const megaMenuColumns: MegaMenuColumn[] = [
     links: [
       { label: 'Aura AI Review', href: '/reviews/aura-ai' },
     ],
-    viewAll: { label: 'View all reviews', href: '/' },
+    viewAll: { label: 'View all reviews', href: '/reviews/' },
   },
   {
     id: 'best-picks',

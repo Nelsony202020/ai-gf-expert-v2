@@ -52,16 +52,9 @@ const { productSlug } = Astro.props;
       });
 
       if (state.detailLevel) {
-        const root = document.querySelector('[data-ratings-root]');
-        if (root) {
-          root.dataset.detailLevel = state.detailLevel;
-          document.querySelectorAll('input[name="detail-level"]').forEach((input) => {
-            input.checked = input.value === state.detailLevel;
-          });
-          document.dispatchEvent(
-            new CustomEvent('detail-level-change', { detail: { level: state.detailLevel } }),
-          );
-        }
+        document.dispatchEvent(
+          new CustomEvent('detail-level-set', { detail: { level: state.detailLevel } }),
+        );
       }
 
       if (state.categoryKey) {

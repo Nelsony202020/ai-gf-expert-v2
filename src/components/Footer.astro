@@ -1,37 +1,49 @@
 ---
 // NOTE: Site footer — dark brand background, social links, dark mode toggle.
 import { authors } from '../data/authors';
+import { products } from '../data/products';
+import { megaMenuColumns } from '../data/nav-mega-menu';
+import { legalPages } from '../data/legal-pages';
 import SocialTooltip from './ui/SocialTooltip.astro';
 import ThemeToggle from './ui/ThemeToggle.astro';
 
 const herman = authors['herman-carter'];
 const year = new Date().getFullYear();
 
+const roundupLinks = megaMenuColumns.find((col) => col.id === 'best-picks')?.links ?? [
+  { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend' },
+];
+
+const reviewLinks = products.map((product) => ({
+  label: `${product.name} Review`,
+  href: `/reviews/${product.slug}/`,
+}));
+
 const columns = [
   {
+    title: 'Roundups',
+    links: roundupLinks,
+  },
+  {
     title: 'Reviews',
-    links: [
-      { label: 'Aura AI Review', href: '/reviews/aura-ai' },
-      { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend' },
-      { label: 'App Directory', href: '/ai-girlfriend-apps' },
-    ],
+    links: reviewLinks,
+  },
+  {
+    title: 'Tools',
+    links: [{ label: 'AI Girlfriend App Directory', href: '/ai-girlfriend-apps/' }],
   },
   {
     title: 'Resources',
     links: [
       { label: 'Our Methodology', href: '/test/' },
       { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
-      { label: 'Editorial Process', href: '/editorial-process' },
-      { label: 'FAQ', href: '/faq' },
-      { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure' },
     ],
   },
   {
     title: 'Company',
     links: [
-      { label: 'About Us', href: '/about' },
-      { label: 'Contact', href: '/contact' },
-      { label: 'HTML Sitemap', href: '/sitemap' },
+      { label: 'About Us', href: '/about/' },
+      { label: 'Contact', href: '/contact/' },
     ],
   },
 ];
@@ -97,15 +109,12 @@ const columns = [
       <p>&copy; {year} Nelson Digital FZ LLC. All rights reserved.</p>
       <div class="site-footer__legal">
         <ThemeToggle variant="footer" />
-        <a href="/legal/privacy">Privacy</a>
-        <a href="/legal/terms">Terms</a>
-        <a href="/legal/accessibility">Accessibility</a>
-        <a href="/legal/affiliate-disclosure">Affiliate</a>
-        <a href="/legal/copyright">Copyright</a>
-        <a href="/legal/disclaimer">Disclaimer</a>
-        <a href="/faq">FAQ</a>
-        <a href="/contact">Contact</a>
-        <a href="/sitemap">Sitemap</a>
+        {
+          legalPages.map((page) => (
+            <a href={page.href}>{page.shortLabel ?? page.title}</a>
+          ))
+        }
+        <a href="/sitemap/">Sitemap</a>
       </div>
     </div>
   </div>
@@ -182,17 +191,23 @@ const columns = [
 
   .site-footer__main {
     display: grid;
-    grid-template-columns: 1.4fr repeat(3, 1fr);
-    gap: 2.5rem 2rem;
+    grid-template-columns: 1.2fr repeat(5, minmax(0, 1fr));
+    gap: 2rem 1.5rem;
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 1100px) {
     .site-footer__main {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
     }
 
     .site-footer__brand {
       grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .site-footer__main {
+      grid-template-columns: 1fr 1fr;
     }
   }
 

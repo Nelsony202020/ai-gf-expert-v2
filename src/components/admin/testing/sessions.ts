@@ -2,12 +2,10 @@
 // same piece of work (e.g. the same 50-character sample or the same 200-reply
 // chat test). Sessions are a presentation layer only — every evidence
 // definition still saves its own result and the scoring engine is untouched.
-//
-// Definitions are matched by category slug + evidence slug. Anything not
-// listed here falls into an automatic "Other tests" session for its category,
-// so new methodology definitions keep working without a code change.
 
 import type { EntityRow } from '../api';
+import { PRICING_AUTOFILL_SLUGS as PRICING_TAB_COVERED_SLUGS } from '../../../lib/testing/pricingEvidenceSlugs';
+import { SAMPLE } from './sampleSizes';
 
 export interface TestSessionDef {
   id: string;
@@ -17,6 +15,8 @@ export interface TestSessionDef {
   icon: string;
   /** Evidence definition slugs within this session's category. */
   slugs: string[];
+  /** Optional sample-size prompt shown once at the top (quality review sessions). */
+  sampleSizeField?: { label: string; default?: number };
 }
 
 export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
@@ -24,9 +24,21 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'library-tags',
       title: 'Library variety',
-      intro: 'Open the character library once. Count and tick what you see.',
+      intro: 'Open the character library once. Count characters in each category below.',
       icon: 'groups',
-      slugs: ['amount', 'styles', 'genders', 'ethnicities', 'personalities', 'scenarios'],
+      slugs: [
+        'female-count',
+        'male-count',
+        'anime-female-count',
+        'anime-male-count',
+        'transgender-count',
+        'non-binary-count',
+        'other-count',
+        'styles',
+        'ethnicities',
+        'personalities',
+        'scenarios',
+      ],
     },
     {
       id: 'finding-characters',
@@ -37,9 +49,10 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     },
     {
       id: 'character-sample-review',
-      title: '25-character check',
-      intro: 'Look at 25 characters once. Answer all four quality questions from that same group.',
+      title: 'Character quality check',
+      intro: 'Review one sample group of characters. Set the sample size once, then answer every question for that same group.',
       icon: 'fact_check',
+      sampleSizeField: { label: 'How many characters did you review?', default: 25 },
       slugs: ['duplicates', 'originality', 'profile-quality', 'visual-quality'],
     },
   ],
@@ -48,23 +61,33 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'appearance-options',
       title: 'Appearance options',
-      intro: 'Open the character creator once and count every appearance option.',
+      intro: 'Open the character creator once and count every appearance option in this order.',
       icon: 'face_retouching_natural',
-      slugs: ['gender', 'age', 'ethnicity', 'face', 'hair', 'body', 'clothing'],
+      slugs: [
+        'ethnicity',
+        'age',
+        'eye-color',
+        'body-type',
+        'breast-size',
+        'hair-style',
+        'hair-color',
+        'outfits',
+        'creator-personalities',
+      ],
     },
     {
       id: 'personality-options',
       title: 'Personality & voice options',
-      intro: 'Still in the character creator: count personality, relationship, role and voice options.',
+      intro: 'In the character creator: count personality, relationship/chat style, occupation, kink options, and voice options.',
       icon: 'psychology',
-      slugs: ['traits', 'interests', 'communication', 'relationship', 'role', 'voice'],
+      slugs: ['traits', 'interests', 'relationship', 'kink-options', 'role', 'voice'],
     },
     {
       id: 'creator-control',
       title: 'Creator control',
       intro: 'Make 5 test characters. Use them for every question in this section.',
       icon: 'tune',
-      slugs: ['custom-prompts', 'editing', 'detail-level', 'combinations', 'preview'],
+      slugs: ['custom-prompts', 'editing', 'preview'],
     },
   ],
 
@@ -72,14 +95,13 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'chat-understanding',
       title: 'Chat understanding',
-      intro: 'Read the pink step-by-step box below. Fill in the table — one row per chat.',
       icon: 'neurology',
       slugs: ['memory', 'relevance', 'context', 'instructions', 'roleplay-accuracy'],
     },
     {
       id: 'chat-realism',
       title: 'Chat quality',
-      intro: 'Use the same 10 chats as above. Read the steps in the pink box and fill in the table.',
+      intro: 'Use the same 5 chats as the understanding test. Fill in the table — one row per chat.',
       icon: 'forum',
       slugs: ['naturalness', 'personality', 'roleplay', 'initiative', 'emotion', 'style'],
     },
@@ -111,8 +133,7 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'chat-interaction',
       title: 'Interaction features',
-      intro:
-        'Voice calls, chat modes, group chats, double texting and the 7-day proactive-message test.',
+      intro: 'Voice calls, chat modes, group chats, double texting, and proactive messages.',
       icon: 'interactive_space',
       slugs: [
         'voice-calls',
@@ -138,33 +159,21 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
         'export-chat',
       ],
     },
+    {
+      id: 'platform-extras',
+      title: 'Platform extras',
+      intro:
+        'Does the app have bonus features beyond normal chat? If yes, note AI cam models and any other extras with proof.',
+      icon: 'stars',
+      slugs: ['platform-extras-list', 'live-cam'],
+    },
   ],
 
   images: [
     {
-      id: 'image-batch-review',
-      title: '20 images',
-      intro: 'Make 20 test images. Follow the pink step-by-step box and fill in the table.',
-      icon: 'photo_library',
-      slugs: ['realism', 'visual-errors', 'detail', 'composition', 'resolution', 'prompt-accuracy'],
-    },
-    {
-      id: 'image-consistency',
-      title: 'Same-character images',
-      intro: 'Make 10 images of one character. Follow the pink box below.',
-      icon: 'face_6',
-      slugs: [
-        'character-consistency',
-        'face-consistency',
-        'body-consistency',
-        'style-consistency',
-        'editing-accuracy',
-      ],
-    },
-    {
       id: 'image-experience',
       title: 'Generation experience & tools',
-      intro: 'Speed, failures, where generation is available, prompting, editing, NSFW rules and cost.',
+      intro: 'Speed, failures, where generation is available, prompting, editing, and NSFW rules.',
       icon: 'auto_fix_high',
       slugs: [
         'speed',
@@ -174,7 +183,31 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
         'custom-prompts',
         'image-editing',
         'nsfw-support',
-        'cost',
+        'resolution',
+      ],
+    },
+    {
+      id: 'image-editing-test',
+      title: 'Image editing accuracy',
+      intro: 'Try editing generated images and record how accurately edits are applied.',
+      icon: 'brush',
+      slugs: ['editing-accuracy'],
+    },
+    {
+      id: 'image-batch-review',
+      title: `${SAMPLE.imageBatch} images`,
+      icon: 'photo_library',
+      slugs: ['realism', 'visual-errors', 'composition', 'prompt-accuracy'],
+    },
+    {
+      id: 'image-consistency',
+      title: 'Character consistency',
+      icon: 'face_6',
+      slugs: [
+        'character-consistency',
+        'face-consistency',
+        'body-consistency',
+        'style-consistency',
       ],
     },
   ],
@@ -191,22 +224,20 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
         'chat-video',
         'audio',
         'maximum-length',
-        'maximum-resolution',
       ],
-    },
-    {
-      id: 'video-batch-review',
-      title: '5 videos',
-      intro: 'Make 10 test videos. Follow the pink step-by-step box and fill in the table.',
-      icon: 'video_library',
-      slugs: ['realism', 'motion', 'accuracy', 'character-consistency', 'visual-errors', 'frame-consistency'],
     },
     {
       id: 'video-experience',
       title: 'Generation experience',
-      intro: 'Speed, failures, ease of use, available controls, regeneration and cost.',
+      intro: 'Speed, failures, ease of use, and regeneration.',
       icon: 'smart_display',
-      slugs: ['speed', 'failures', 'ease-of-use', 'controls', 'regeneration', 'cost'],
+      slugs: ['speed', 'failures', 'ease-of-use', 'regeneration', 'maximum-resolution'],
+    },
+    {
+      id: 'video-batch-review',
+      title: `${SAMPLE.videoBatch} videos`,
+      icon: 'video_library',
+      slugs: ['motion', 'accuracy', 'character-consistency', 'visual-errors', 'frame-consistency'],
     },
   ],
 
@@ -214,8 +245,7 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'policy-review',
       title: 'Policy & data-use review',
-      intro:
-        'Read the privacy policy, terms and help pages once, then answer all of these. Record the source and date for each.',
+      intro: 'Read the privacy policy, terms and help pages once, then answer all of these.',
       icon: 'policy',
       slugs: ['training', 'human-review', 'data-sharing', 'advertising', 'retention', 'policy-clarity'],
     },
@@ -230,21 +260,32 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
         'delete-personal-data',
         'training-opt-out',
         'export-data',
-        'consent-controls',
       ],
     },
     {
       id: 'security-billing',
-      title: 'Security & billing privacy',
-      intro: 'Account protections, encryption statements, 2FA, and how the charge appears on a bank statement.',
+      title: 'Security & billing',
+      intro: 'Encryption, two-factor authentication, billing descriptor, and security incidents.',
       icon: 'lock',
       slugs: [
         'encryption',
-        'account-security',
         'two-factor-authentication',
-        'billing-privacy',
         'billing-descriptor',
         'security-incidents',
+      ],
+    },
+    {
+      id: 'customer-support',
+      title: 'Customer support',
+      intro:
+        'Contact support once with a real question. Rate how easy it was to reach them, how fast they replied, and how helpful the answer was — use your overall impression, not exact seconds.',
+      icon: 'support_agent',
+      slugs: [
+        'support-available',
+        'support-channels',
+        'support-reach',
+        'support-speed',
+        'support-helpfulness',
       ],
     },
   ],
@@ -252,51 +293,54 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
   pricing: [
     {
       id: 'subscription-basics',
-      title: 'Subscription basics',
-      intro: 'Record the public prices, trial, included credits, features and limits.',
+      title: 'Free plan & trial',
+      intro: 'Record whether a free plan and free trial exist. Plan prices live in the Pricing tab.',
       icon: 'payments',
-      slugs: [
-        'monthly-price',
-        'annual-price',
-        'free-plan',
-        'free-trial',
-        'included-credits',
-        'included-features',
-        'plan-limits',
-      ],
+      slugs: ['free-plan', 'free-trial', 'included-features'],
     },
     {
-      id: 'extra-costs',
-      title: 'Credits & extra costs',
-      intro: 'Per-image, per-video and voice costs, credit packages, expiry, paywalls and refunds.',
-      icon: 'toll',
-      slugs: [
-        'image-cost',
-        'video-cost',
-        'voice-cost',
-        'top-ups',
-        'credit-expiry',
-        'feature-paywalls',
-        'refunds',
-      ],
+      id: 'pricing-limits-policies',
+      title: 'Limits, paywalls & refunds',
+      intro:
+        'Record usage limits, credit expiry rules, feature paywalls, and refund policy. Dollar amounts for plans and packages come from the Pricing tab.',
+      icon: 'policy',
+      slugs: ['plan-limits', 'credit-expiry', 'feature-paywalls', 'refunds'],
+    },
+    {
+      id: 'pricing-value-breakdown',
+      title: 'Value breakdown',
+      intro: 'Compare value vs competitors and rate feature and usage value.',
+      icon: 'analytics',
+      slugs: ['category-comparison', 'feature-value', 'usage-value'],
     },
     {
       id: 'value',
       title: 'Value for money',
-      intro:
-        'Use the two standard usage examples (regular and heavy use) to calculate what a month really costs.',
+      intro: 'Pricing clarity and whether the product feels worth the money.',
       icon: 'monitoring',
-      slugs: [
-        'real-cost',
-        'heavy-use-cost',
-        'category-comparison',
-        'feature-value',
-        'usage-value',
-        'pricing-clarity',
-      ],
+      slugs: ['pricing-clarity'],
     },
   ],
 };
+
+/** @deprecated Use PRICING_AUTOFILL_SLUGS from lib — kept for existing imports. */
+export { PRICING_TAB_COVERED_SLUGS };
+
+/** Evidence slugs with no standalone row — saved via a combined control. */
+export const COMBINED_EVIDENCE_SLUGS = new Set([
+  'mode-types',
+  'live-cam',
+  'support-channels',
+]);
+
+/** Evidence slugs managed elsewhere in the UI — never show as standalone rows. */
+const HIDDEN_TESTING_SLUGS = new Set<string>([...COMBINED_EVIDENCE_SLUGS]);
+
+function isExcludedFromTesting(categorySlug: string, slug: string): boolean {
+  if (HIDDEN_TESTING_SLUGS.has(slug)) return true;
+  if (categorySlug === 'pricing' && PRICING_TAB_COVERED_SLUGS.has(slug)) return true;
+  return false;
+}
 
 export interface SessionGroup {
   session: TestSessionDef;
@@ -324,7 +368,9 @@ export function sessionsForCategory(categorySlug: string, defs: EntityRow[]): Se
     if (matched.length > 0) groups.push({ session, defs: matched });
   }
 
-  const leftover = defs.filter((d) => !used.has(d.id));
+  const leftover = defs.filter(
+    (d) => !used.has(d.id) && !isExcludedFromTesting(categorySlug, String(d.slug ?? '')),
+  );
   if (leftover.length > 0) {
     groups.push({
       session: {

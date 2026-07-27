@@ -1,0 +1,28 @@
+<script>
+  function externalizeLinks(root = document) {
+    root.querySelectorAll('a[href]').forEach((anchor) => {
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+      let external = false;
+      if (href.startsWith('//')) {
+        external = true;
+      } else if (/^https?:\/\//i.test(href)) {
+        try {
+          external = new URL(href).origin !== window.location.origin;
+        } catch {
+          return;
+        }
+      }
+      if (!external) return;
+      anchor.target = '_blank';
+      const rel = anchor.getAttribute('rel') ?? '';
+      const parts = new Set(rel.split(/\s+/).filter(Boolean));
+      parts.add('noopener');
+      parts.add('noreferrer');
+      anchor.rel = [...parts].join(' ');
+    });
+  }
+
+  externalizeLinks();
+  document.addEventListener('astro:page-load', () => externalizeLinks());
+</script>

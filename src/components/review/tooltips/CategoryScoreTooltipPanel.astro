@@ -21,13 +21,13 @@ const currentChip = getScoreChipClass(currentScore);
 const scorePoints = products
   .map((p) => {
     const cat = p.categories.find((c) => c.key === category.key);
-    return cat ? { slug: p.slug, name: p.name, score: cat.score } : null;
+    return cat && cat.score != null ? { slug: p.slug, name: p.name, score: cat.score } : null;
   })
   .filter((x): x is { slug: string; name: string; score: number } => !!x);
 
 const avgScore = scorePoints.length
   ? scorePoints.reduce((s, x) => s + x.score, 0) / scorePoints.length
-  : currentScore;
+  : currentScore ?? 0;
 
 const bins = buildAllScoreBins(scorePoints);
 const brandIcon = getCategoryBrandIcon(category.key);

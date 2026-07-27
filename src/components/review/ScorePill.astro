@@ -2,7 +2,7 @@
 import { getScoreVisual, fmtScore } from '../../lib/scores';
 
 interface Props {
-  score: number;
+  score: number | null;
   size?: 'sm' | 'md' | 'lg';
   variant?: 'solid' | 'outline';
   class?: string;

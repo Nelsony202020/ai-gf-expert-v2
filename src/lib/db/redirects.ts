@@ -96,9 +96,9 @@ const STATIC_PATHS = new Set(
     '/ai-girlfriend-apps',
     '/about',
     '/contact',
-    '/faq',
     '/sitemap',
-    '/editorial-process',
+    '/reviews',
+    '/legal',
     '/editorial-guidelines',
     '/test',
     '/test/all',
@@ -117,6 +117,7 @@ async function destinationExists(path: string): Promise<boolean> {
   const p = normalizePath(path);
   if (STATIC_PATHS.has(p)) return true;
   if (p.startsWith('/test/')) return true; // methodology tree is file-driven
+  if (p.startsWith('/legal/')) return true;
 
   const db = getDb();
   const reviewMatch = p.match(/^\/reviews\/([a-z0-9-]+)$/);

@@ -2,11 +2,13 @@
 // Data stays in separate entities behind the scenes — this shell loads the
 // product plus related records and routes between the nine workspace tabs.
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { AdminErrorBoundary } from '../ErrorBoundary';
 import { ErrorNote, Spinner } from '../ui';
-import { WorkspaceProvider, useProductWorkspaceState } from './context';
+import { useToast } from '../Toast';
+import { WorkspaceProvider, useProductWorkspaceState, useWorkspace } from './context';
+import { WorkflowMobileButton } from './CompletionSidebar';
 import { ProductWorkspaceHeader } from './ProductWorkspaceHeader';
 import { WORKSPACE_TABS, type WorkspaceTabId } from './completion';
 
@@ -45,23 +47,36 @@ function WorkspaceInner({ productId, tab }: { productId: string; tab: WorkspaceT
 
   return (
     <WorkspaceProvider value={ws}>
+      <WorkspaceSaveErrorToast />
       <div className="space-y-4">
         <ProductWorkspaceHeader />
-        {ws.saveError && <ErrorNote message={ws.saveError} />}
         <AdminErrorBoundary>
           <Suspense fallback={<Spinner />}>
             {tab === 'setup' && <SetupTab />}
+            {tab === 'pricing' && <PricingTab />}
             {tab === 'testing' && <TestingTab />}
             {tab === 'verdict' && <VerdictTab />}
             {tab === 'review' && <ReviewTab />}
             {tab === 'media' && <MediaTab />}
             {tab === 'characters' && <CharactersTab />}
-            {tab === 'pricing' && <PricingTab />}
             {tab === 'seo' && <SeoTab />}
             {tab === 'publish' && <PublishTab />}
           </Suspense>
         </AdminErrorBoundary>
+        <WorkflowMobileButton />
       </div>
     </WorkspaceProvider>
   );
+}
+
+function WorkspaceSaveErrorToast() {
+  const { saveError, clearSaveError } = useWorkspace();
+  const toast = useToast();
+  useEffect(() => {
+    if (saveError) {
+      toast.error(saveError);
+      clearSaveError();
+    }
+  }, [saveError, clearSaveError, toast]);
+  return null;
 }

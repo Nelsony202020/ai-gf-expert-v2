@@ -15,11 +15,16 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (refreshToken) headers.set('Authorization', `Bearer ${refreshToken}`);
   if (init.body && typeof init.body === 'string') headers.set('Content-Type', 'application/json');
-  const res = await fetch(path, { ...init, headers });
+  let res: Response;
+  try {
+    res = await fetch(path, { ...init, headers });
+  } catch {
+    throw new ApiError(0, 'Network error — check your connection and try again.');
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, (data as any).error ?? `Request failed (${res.status})`);
   return data as T;

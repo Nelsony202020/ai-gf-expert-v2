@@ -68,6 +68,7 @@ export interface ProductWorkspaceState {
   isDirty: boolean;
   saving: boolean;
   saveError: string | null;
+  clearSaveError: () => void;
   lastSavedAt: number | null;
   /** Saves ONLY the product record (each tab saves its own related entities). */
   save: () => Promise<boolean>;
@@ -95,10 +96,11 @@ export const WorkspaceProvider = WorkspaceContext.Provider;
 const EDITABLE_FIELDS = [
   'name', 'slug', 'status', 'tagline', 'websiteUrl', 'youtubeReviewUrl',
   'oneLineVerdict', 'ourTake', 'directoryDescription', 'mainStrength', 'mainLimitation',
-  'pros', 'cons', 'bestForLabel', 'verified', 'editorsPick', 'homepageFeatured',
+  'pros', 'cons', 'bestFor', 'notIdealFor', 'award', 'bestForLabel', 'verified', 'editorsPick', 'homepageFeatured',
   'displayOrder', 'revisionNotes', 'publishedInDirectory',
   'recommendedFor', 'notRecommendedFor', 'expertOpinion', 'categoryVerdicts',
   'minMonthlyPrice', 'typicalMonthlyCost', 'priceCurrency', 'scheduledAt',
+  'characterPlatformUrl', 'referralSuffix',
   'seoTitle', 'seoDescription', 'h1Override', 'canonicalUrl', 'noindex', 'nofollow',
   'ogTitle', 'ogDescription', 'ogImageUrl', 'socialImageUrl', 'breadcrumbLabel', 'searchExcerpt',
 ];
@@ -352,6 +354,7 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
     isDirty,
     saving,
     saveError,
+    clearSaveError: () => setSaveError(null),
     lastSavedAt,
     save,
     reloadProduct,

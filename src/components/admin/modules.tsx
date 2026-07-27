@@ -376,6 +376,8 @@ export const evidenceDefinitionsModule: ModuleConfig = {
         { value: 'checklist', label: 'Checklist — checks passed with auto %' },
         { value: 'rubric', label: 'Rubric — structured levels with descriptions' },
         { value: 'multi_select', label: 'Multiple selection' },
+        { value: 'yes_no', label: 'Yes / No only' },
+        { value: 'yes_no_unknown', label: 'Yes / No / Unknown' },
       ],
     },
     {

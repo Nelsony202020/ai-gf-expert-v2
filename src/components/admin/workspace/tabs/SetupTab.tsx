@@ -8,28 +8,22 @@ import { useCan } from '../../context';
 import { AuthorSelect } from '../../AuthorSelect';
 import { ProductFormSection } from '../../ProductFormSection';
 import { ProductMediaField } from '../../ProductMediaField';
-import {
-  SETUP_CHARACTER_CAPABILITIES,
-  SETUP_CHARACTER_GROUPS,
-  countSetupCharacterCapabilities,
-} from '../../productCapabilities';
 import { ToggleWithHint } from '../../FieldHint';
+import { useAsyncToast } from '../../Toast';
+import { DEFAULT_AFFILIATE_REL } from '../../../../lib/affiliate/rel';
 import {
   Badge,
   Button,
-  ErrorNote,
   Field,
   Icon,
   InputWithPrefix,
   InsetTextInput,
   Modal,
   Select,
-  TextArea,
   TextInput,
   Toggle,
   YouTubeIcon,
   fmtDate,
-  useAsync,
 } from '../../ui';
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
@@ -46,7 +40,7 @@ export function SetupTab() {
   const statusEditable = status === 'draft' || status === 'archived';
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_250px]">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
       <div className="space-y-4">
         {justCreated && (
           <div className="rounded-xl border border-green-200 bg-green-50/80 p-4 dark:border-green-900/50 dark:bg-green-950/30">
@@ -62,10 +56,10 @@ export function SetupTab() {
                   </p>
                   <div className="mt-2.5 flex flex-wrap gap-1.5">
                     <QuickAction label="Complete setup" icon="checklist" to={workspaceTabPath(ws.productId, 'setup')} />
+                    <QuickAction label="Add pricing" icon="payments" to={workspaceTabPath(ws.productId, 'pricing')} />
                     <QuickAction label="Start testing" icon="science" to={workspaceTabPath(ws.productId, 'testing')} />
                     <QuickAction label="Write verdict" icon="gavel" to={workspaceTabPath(ws.productId, 'verdict')} />
                     <QuickAction label="Write full review" icon="article" to={workspaceTabPath(ws.productId, 'review')} />
-                    <QuickAction label="Add pricing" icon="payments" to={workspaceTabPath(ws.productId, 'pricing')} />
                     <QuickAction label="Add characters" icon="group" to={workspaceTabPath(ws.productId, 'characters')} />
                   </div>
                 </div>
@@ -166,28 +160,40 @@ export function SetupTab() {
                 />
               </Field>
             </div>
-            <div className="mt-3">
-              <Field label="Revision notes" hint="Internal notes about the latest changes to this review.">
-                <TextArea
-                  rows={2}
-                  value={fields.revisionNotes ?? ''}
-                  onChange={(e) => set('revisionNotes', e.target.value)}
-                />
-              </Field>
-            </div>
           </ProductFormSection>
 
           <ProductFormSection num={2} title="Links" divider>
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Official website URL" required>
-                  <InputWithPrefix prefix={<Icon name="language" className="!text-[18px]" />}>
-                    <InsetTextInput
-                      value={fields.websiteUrl ?? ''}
-                      onChange={(e) => set('websiteUrl', e.target.value)}
-                      placeholder="https://example.com"
-                    />
-                  </InputWithPrefix>
+                <div>
+                  <Field label="Official website URL" required>
+                    <InputWithPrefix prefix={<Icon name="language" className="!text-[18px]" />}>
+                      <InsetTextInput
+                        value={fields.websiteUrl ?? ''}
+                        onChange={(e) => {
+                          const url = e.target.value;
+                          set('websiteUrl', url);
+                          set('characterPlatformUrl', url);
+                        }}
+                        placeholder="https://example.com"
+                      />
+                    </InputWithPrefix>
+                  </Field>
+                  {(fields.websiteUrl ?? '').trim() && (
+                    <p className="mt-1 break-all text-[11px] leading-snug text-slate-400">
+                      Character platform URL: {(fields.websiteUrl ?? '').trim()}
+                    </p>
+                  )}
+                </div>
+                <Field
+                  label="Referral suffix"
+                  hint="Appended to every character destination URL — e.g. ?ref=yourcode or &via=affiliate"
+                >
+                  <TextInput
+                    value={fields.referralSuffix ?? ''}
+                    onChange={(e) => set('referralSuffix', e.target.value)}
+                    placeholder="?ref=your-affiliate-code"
+                  />
                 </Field>
               </div>
               <AffiliateLinksPanel />
@@ -245,7 +251,7 @@ export function SetupTab() {
           </ProductFormSection>
 
           <ProductFormSection num={4} title="Visibility" divider>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-4">
               <ToggleWithHint
                 checked={fields.verified}
                 onChange={(v) => set('verified', v)}
@@ -272,10 +278,6 @@ export function SetupTab() {
               />
             </div>
           </ProductFormSection>
-
-          <ProductFormSection num={5} title="Character options" divider>
-            <CapabilitiesEditor />
-          </ProductFormSection>
         </div>
       </div>
 
@@ -292,68 +294,6 @@ function QuickAction({ label, icon, to }: { label: string; icon: string; to: str
     >
       <Icon name={icon} className="!text-[14px]" /> {label}
     </Link>
-  );
-}
-
-function CapabilitiesEditor() {
-  const ws = useWorkspace();
-  const { fields, set, setMany } = ws;
-  const counts = countSetupCharacterCapabilities(fields);
-
-  const capByName = Object.fromEntries(SETUP_CHARACTER_CAPABILITIES.map((c) => [c.name, c]));
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          <span className="font-semibold text-slate-800 dark:text-slate-200">
-            {counts.enabled} of {counts.total}
-          </span>{' '}
-          selected · used for directory filters and comparisons.
-        </p>
-        <div className="flex gap-1.5">
-          <Button
-            variant="ghost"
-            className="text-xs"
-            onClick={() =>
-              setMany(Object.fromEntries(SETUP_CHARACTER_CAPABILITIES.map((c) => [c.name, true])))
-            }
-          >
-            Select all
-          </Button>
-          <Button
-            variant="ghost"
-            className="text-xs"
-            onClick={() =>
-              setMany(Object.fromEntries(SETUP_CHARACTER_CAPABILITIES.map((c) => [c.name, false])))
-            }
-          >
-            Clear all
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-x-12 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
-        {SETUP_CHARACTER_GROUPS.map((group) => (
-          <ul key={group.id} className="space-y-3">
-            {group.caps.map((name) => {
-              const cap = capByName[name];
-              if (!cap) return null;
-              return (
-                <li key={cap.name} className="flex items-center gap-3">
-                  <Toggle
-                    checked={fields[cap.name]}
-                    onChange={(v) => set(cap.name, v)}
-                    aria-label={cap.label}
-                  />
-                  <span className="min-w-0 text-sm text-slate-700 dark:text-slate-300">{cap.label}</span>
-                </li>
-              );
-            })}
-          </ul>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -398,8 +338,9 @@ function AffiliateLinksPanel() {
                 </Badge>
               )}
               <span className="min-w-0 flex-1 truncate text-xs text-slate-400">{link.destinationUrl}</span>
+              <span className="font-mono text-[10px] text-slate-400">{link.relTags ?? DEFAULT_AFFILIATE_REL}</span>
               <span className="text-xs text-slate-400">
-                Checked {link.lastCheckedAt ? fmtDate(link.lastCheckedAt) : 'never'}
+                Checked {link.lastVerifiedAt ? fmtDate(link.lastVerifiedAt) : 'never'}
               </span>
               {canEdit && (
                 <Button variant="ghost" className="text-xs" onClick={() => setEditing(link)}>
@@ -439,8 +380,9 @@ export function AffiliateLinkModal({
   const [destinationUrl, setDestinationUrl] = useState(String(link?.destinationUrl ?? ''));
   const [cloakedSlug, setCloakedSlug] = useState(String(link?.cloakedSlug ?? ''));
   const [campaign, setCampaign] = useState(String(link?.campaign ?? ''));
+  const [relTags, setRelTags] = useState(String(link?.relTags ?? DEFAULT_AFFILIATE_REL));
   const [active, setActive] = useState(link ? Boolean(link.active) : true);
-  const { busy, error, run } = useAsync();
+  const { busy, run } = useAsyncToast();
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -451,6 +393,7 @@ export function AffiliateLinkModal({
       linkType: 'product',
     };
     if (campaign.trim()) fields.campaign = campaign.trim();
+    fields.relTags = relTags.trim() || DEFAULT_AFFILIATE_REL;
     const done = await run(async () => {
       if (link) await dataApi.update('affiliateLinks', link.id, fields);
       else await dataApi.create('affiliateLinks', fields, { product: productId });
@@ -462,7 +405,6 @@ export function AffiliateLinkModal({
   return (
     <Modal title={link ? 'Edit affiliate link' : 'New affiliate link'} onClose={onClose}>
       <form onSubmit={save} className="space-y-3">
-        {error && <ErrorNote message={error} />}
         <Field label="Destination URL" required help="The tracking URL from the affiliate network.">
           <TextInput
             value={destinationUrl}
@@ -483,6 +425,16 @@ export function AffiliateLinkModal({
         </Field>
         <Field label="Campaign (optional)">
           <TextInput value={campaign} onChange={(e) => setCampaign(e.target.value)} placeholder="e.g. summer-2026" />
+        </Field>
+        <Field
+          label="Link rel tags"
+          hint="Applied to every public CTA using this cloaked link. Default: nofollow sponsored noopener (Google affiliate disclosure)."
+        >
+          <TextInput
+            value={relTags}
+            onChange={(e) => setRelTags(e.target.value)}
+            placeholder={DEFAULT_AFFILIATE_REL}
+          />
         </Field>
         <Toggle checked={active} onChange={setActive} label="Active" />
         <div className="flex justify-end gap-2 pt-2">

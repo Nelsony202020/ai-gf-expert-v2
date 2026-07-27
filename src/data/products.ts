@@ -31,7 +31,7 @@ export interface DataRow {
 
 export interface Subscore {
   name: string;
-  score: number;
+  score: number | null;
   /** weight within the category, as a percentage (sums to 100 per category) */
   weight: number;
   description: string;
@@ -49,7 +49,7 @@ export interface ProofItem {
 export interface RatingCategory {
   key: string;
   name: string;
-  score: number;
+  score: number | null;
   /** weight within the overall score, as a percentage (sums to 100) */
   weight: number;
   description: string;
@@ -82,6 +82,8 @@ export interface OverviewCharacter {
   storySlides: string[];
   /** Placeholder profile URL — edit when character pages exist */
   profileUrl?: string;
+  /** rel tokens for profileUrl when it is an outbound affiliate link */
+  profileRel?: string;
 }
 
 export type StoryHighlightCharacter = OverviewCharacter & { platform?: string };
@@ -163,8 +165,12 @@ export interface Product {
   authors: Author[];
   websiteUrl: string;
   affiliateUrl: string;
+  /** Space-separated rel tokens on outbound affiliate CTAs. */
+  affiliateRel: string;
+  /** Hero image on the review page; falls back to gallery[0] when unset. */
+  featuredImage?: GalleryImage;
   gallery: GalleryImage[];
-  overallScore: number;
+  overallScore: number | null;
   overallSummary: string;
   ourTake: string;
   safetyAudit: SafetyItem[];
@@ -203,6 +209,7 @@ const auraAi: Product = {
   ],
   websiteUrl: 'https://example.com/aura-ai',
   affiliateUrl: 'https://example.com/go/aura-ai',
+  affiliateRel: 'nofollow sponsored noopener',
   gallery: [
     { full: img('aura-hero', 1280, 720), thumb: img('aura-hero', 320, 200), alt: 'Aura AI interface' },
     { full: img('aura-2', 1280, 720), thumb: img('aura-2', 320, 200), alt: 'Aura AI character gallery' },

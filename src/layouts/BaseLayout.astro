@@ -2,18 +2,21 @@
 import '../styles/global.css';
 import ImageLightbox from '../components/ui/ImageLightbox.astro';
 import ThemeToggleInit from '../components/ui/ThemeToggleInit.astro';
+import ExternalLinksInit from '../components/ui/ExternalLinksInit.astro';
 import ComingSoonLayer from '../components/ui/ComingSoonLayer.astro';
 
 interface Props {
   title?: string;
   description?: string;
   image?: string;
+  robots?: string;
 }
 
 const {
   title = 'Lovelace Reviews — In-depth AI Companion Reviews',
   description = 'Independent, data-driven reviews of AI girlfriend and AI companion apps. Deep scoring, safety audits, and side-by-side specs.',
   image,
+  robots,
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
@@ -29,6 +32,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).to
 
     <title>{title}</title>
     <meta name="description" content={description} />
+    {robots && <meta name="robots" content={robots} />}
     <link rel="canonical" href={canonical} />
 
     <!-- Open Graph -->
@@ -84,5 +88,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).to
     <ImageLightbox />
     <ThemeToggleInit />
     <ComingSoonLayer />
+    <ExternalLinksInit />
   </body>
 </html>

@@ -54,6 +54,22 @@ export function getAllSitemapEntries(): SitemapEntry[] {
     showInHtmlSitemap: false,
   });
 
+  push({
+    title: 'Reviews',
+    url: '/reviews/',
+    contentType: 'hub',
+    sitemapSection: 'reviews',
+    showInHtmlSitemap: false,
+  });
+
+  push({
+    title: 'Legal',
+    url: '/legal/',
+    contentType: 'hub',
+    sitemapSection: 'legal',
+    showInHtmlSitemap: false,
+  });
+
   for (const product of products) {
     push({
       title: `${product.name} Review`,
@@ -187,13 +203,6 @@ export function getAllSitemapEntries(): SitemapEntry[] {
     sitemapSection: 'resources',
   });
 
-  push({
-    title: 'Editorial Process',
-    url: '/editorial-process/',
-    contentType: 'methodology',
-    sitemapSection: 'resources',
-  });
-
   for (const author of Object.values(authors)) {
     push({
       title: author.name,
@@ -204,7 +213,6 @@ export function getAllSitemapEntries(): SitemapEntry[] {
   }
 
   const resourcePages: { title: string; url: string; section: 'resources' | 'company' }[] = [
-    { title: 'FAQ', url: '/faq', section: 'resources' },
     { title: 'About Us', url: '/about', section: 'company' },
     { title: 'Contact Us', url: '/contact', section: 'company' },
   ];
@@ -312,8 +320,8 @@ export function buildFullHtmlSitemapPage(): HtmlSitemapFullPage {
   const authors = dedupeLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'authors')));
 
   const resources = dedupeLinks([
-    { label: 'FAQ', href: '/faq' },
-    { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure' },
+    { label: 'How We Test', href: testHubUrl() },
+    { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
     ...entriesToLinks(
       all.filter(
         (e) =>
@@ -394,7 +402,7 @@ export function buildHtmlSitemapSections(): HtmlSitemapSection[] {
       tone: 'amber',
       links: uniqueReviews.slice(0, HTML_PREVIEW_LIMIT).map((e) => ({ label: e.title, href: e.url })),
       viewAll: uniqueReviews.length > HTML_PREVIEW_LIMIT
-        ? { label: 'View all reviews', href: '/' }
+        ? { label: 'View all reviews', href: '/reviews/' }
         : null,
     },
     {
@@ -446,7 +454,7 @@ export function buildHtmlSitemapSections(): HtmlSitemapSection[] {
       icon: 'folder',
       tone: 'lime',
       links: uniqueResourceLinks,
-      viewAll: { label: 'View all resources', href: '/faq' },
+      viewAll: { label: 'View all resources', href: testHubUrl() },
     },
     {
       id: 'legal',
@@ -455,8 +463,8 @@ export function buildHtmlSitemapSections(): HtmlSitemapSection[] {
       icon: 'shield',
       tone: 'lime',
       links: legal.slice(0, 8).map((e) => ({ label: e.title, href: e.url })),
-      viewAll: legal.length > 8
-        ? { label: 'View all legal & info', href: '/legal/privacy' }
+      viewAll: legal.length > 0
+        ? { label: 'View all legal pages', href: '/legal/' }
         : null,
     },
     {

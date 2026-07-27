@@ -1,96 +1,101 @@
-// Right-hand workspace sidebar: product summary + per-tab completion status
-// (from the shared completion service) with direct links to each section.
+// Compact product workspace sidebar — workflow list + required-task count only.
 
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Icon, statusTone } from '../ui';
+import { Icon } from '../ui';
 import { useWorkspace } from './context';
-import { fmtRelativeTime, workspaceTabPath, type TabCompletion } from './completion';
+import { workspaceTabPath } from './completion';
+import { statusTone, type SidebarContext, workflowStatusLabel } from './sidebar/nextActions';
 
-function tabStatusLabel(tab: TabCompletion): { text: string; className: string } {
-  if (tab.id === 'publish') {
-    if (tab.pct === 100) return { text: 'Published', className: 'text-green-700 dark:text-green-400' };
-    if (tab.blocked) return { text: 'Blocked', className: 'text-red-600 dark:text-red-400' };
-    return { text: 'Ready', className: 'text-green-700 dark:text-green-400' };
-  }
-  if (tab.pct === null) return { text: 'Optional', className: 'text-slate-400' };
-  if (tab.pct === 100) return { text: '100%', className: 'text-green-700 dark:text-green-400' };
-  if (tab.missingRequired.length > 0)
-    return { text: `${tab.pct}%`, className: 'text-amber-700 dark:text-amber-400' };
-  return { text: `${tab.pct}%`, className: 'text-slate-600 dark:text-slate-300' };
+function WorkflowList({ onNavigate }: { onNavigate?: () => void }) {
+  const ws = useWorkspace();
+  const { fields, related, completion } = ws;
+  const requiredCount = completion.missingRequired.length;
+
+  const ctx: SidebarContext = useMemo(
+    () => ({
+      completion,
+      fields,
+      characters: related.characters,
+      media: related.media,
+      plans: related.plans,
+      pricingSnapshots: related.pricingSnapshots,
+      review: related.review,
+      status: String(fields.status ?? 'draft'),
+    }),
+    [completion, fields, related],
+  );
+
+  return (
+    <div className="w-[200px] shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-2 dark:border-slate-800 dark:bg-slate-900">
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Workflow</p>
+      <ul className="space-y-0.5">
+        {completion.tabs.map((tab) => {
+          const label = workflowStatusLabel(tab, ctx);
+          return (
+            <li key={tab.id}>
+              <Link
+                to={workspaceTabPath(ws.productId, tab.id)}
+                onClick={onNavigate}
+                className="flex items-baseline justify-between gap-3 rounded px-1 py-0.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/70"
+              >
+                <span className="font-medium text-slate-800 dark:text-slate-200">{tab.label}</span>
+                <span className={`shrink-0 text-right ${statusTone(tab, label)}`}>{label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+      {requiredCount > 0 && (
+        <p className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-amber-700 dark:border-slate-800 dark:text-amber-400">
+          {requiredCount} required task{requiredCount === 1 ? '' : 's'} remain
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function CompletionSidebar() {
+  return (
+    <div className="hidden shrink-0 xl:sticky xl:top-40 xl:block xl:self-start">
+      <WorkflowList />
+    </div>
+  );
+}
+
+export function WorkflowMobileButton() {
   const ws = useWorkspace();
-  const { fields, completion } = ws;
+  const requiredCount = ws.completion.missingRequired.length;
+  const [open, setOpen] = useState(false);
 
   return (
-    <aside className="space-y-3 xl:sticky xl:top-40 xl:self-start">
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Product summary</h3>
-        <dl className="mt-3 space-y-2.5 text-sm">
-          <div className="flex justify-between gap-2">
-            <dt className="text-slate-500">Status</dt>
-            <dd>
-              <Badge tone={statusTone(String(fields.status ?? 'draft'))}>
-                {String(fields.status ?? 'draft').replace('_', ' ')}
-              </Badge>
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-slate-500">URL</dt>
-            <dd className="truncate font-mono text-xs text-slate-800 dark:text-slate-200">
-              {fields.slug ? `/reviews/${fields.slug}` : '—'}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-slate-500">Updated</dt>
-            <dd className="text-slate-800 dark:text-slate-200">{fmtRelativeTime(fields.updatedAt)}</dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-slate-500">Created</dt>
-            <dd className="text-slate-800 dark:text-slate-200">{fmtRelativeTime(fields.createdAt)}</dd>
-          </div>
-        </dl>
+    <>
+      <div className="fixed bottom-4 right-4 z-40 xl:hidden">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium shadow-lg dark:border-slate-700 dark:bg-slate-900"
+        >
+          <Icon name="checklist" className="!text-[16px] text-pink-600" />
+          Workflow
+          {requiredCount > 0 && (
+            <span className="rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white">{requiredCount}</span>
+          )}
+        </button>
       </div>
-
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Workflow</h3>
-          <span className="text-xs font-semibold text-pink-600 dark:text-pink-400">
-            {completion.overallPct}%
-          </span>
-        </div>
-        <ul className="mt-3 space-y-1">
-          {completion.tabs.map((tab) => {
-            const status = tabStatusLabel(tab);
-            return (
-              <li key={tab.id}>
-                <Link
-                  to={workspaceTabPath(ws.productId, tab.id)}
-                  className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/70"
-                >
-                  <span className="flex items-center gap-1.5">
-                    {tab.pct === 100 || (tab.id === 'publish' && tab.pct === 100) ? (
-                      <Icon name="check_circle" className="!text-[15px] text-green-600" />
-                    ) : (
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          tab.missingRequired.length > 0 || tab.blocked
-                            ? 'bg-amber-500'
-                            : 'bg-slate-300 dark:bg-slate-600'
-                        }`}
-                        aria-hidden="true"
-                      />
-                    )}
-                    {tab.label}
-                  </span>
-                  <span className={`text-xs font-medium ${status.className}`}>{status.text}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    </aside>
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-label="Close"
+            className="fixed inset-0 z-[55] bg-slate-900/40 xl:hidden"
+            onClick={() => setOpen(false)}
+          />
+          <div className="fixed bottom-16 right-4 z-[56] xl:hidden">
+            <WorkflowList onNavigate={() => setOpen(false)} />
+          </div>
+        </>
+      )}
+    </>
   );
 }

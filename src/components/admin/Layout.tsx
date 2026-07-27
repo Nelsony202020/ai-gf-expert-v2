@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useMe, useCan } from './context';
+import { getAuthor } from '../../data/authors';
+import { useMe, useCan, type Me } from './context';
 import { AdminLogo } from './AdminLogo';
 import { NotificationBell } from './Notifications';
 import { Icon } from './ui';
@@ -52,6 +53,17 @@ const AuditPage = lazy(() => import('./pages/Audit').then((m) => ({ default: m.A
 const RolesPage = lazy(() => import('./pages/Roles').then((m) => ({ default: m.RolesPage })));
 const ComingSoon = lazy(() => import('./pages/ComingSoon').then((m) => ({ default: m.ComingSoon })));
 
+const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
+const SIDEBAR_EXPANDED_W = '15rem'; // w-60
+const SIDEBAR_COLLAPSED_W = '5rem';
+
+function loadSidebarCollapsed(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 interface NavItem {
   to: string;
   label: string;
@@ -147,11 +159,40 @@ function groupForPath(pathname: string): string {
   return map[seg] ?? 'Dashboard';
 }
 
+function adminAvatarUrl(me: Me): string | null {
+  const email = me.email.toLowerCase();
+  const herman = getAuthor('herman-carter');
+  if (!herman) return null;
+  if (email === herman.email.toLowerCase() || email.includes('herman')) {
+    return herman.avatar;
+  }
+  return null;
+}
+
+function AdminUserAvatar({ me }: { me: Me }) {
+  const avatarUrl = adminAvatarUrl(me);
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt=""
+        className="h-8 w-8 shrink-0 rounded-full bg-pink-100 object-cover dark:bg-pink-950"
+      />
+    );
+  }
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pink-100 text-sm font-bold text-pink-700 dark:bg-pink-950 dark:text-pink-300">
+      {me.email?.[0]?.toUpperCase() ?? '?'}
+    </span>
+  );
+}
+
 export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
   const me = useMe();
   const can = useCan();
   const location = useLocation();
   const activeGroup = useMemo(() => groupForPath(location.pathname), [location.pathname]);
+  const [collapsed, setCollapsed] = useState(loadSidebarCollapsed);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(NAV.map((g) => [g.label, g.label === activeGroup])),
   );
@@ -173,25 +214,106 @@ export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
     setOpenGroups((prev) => ({ ...prev, [activeGroup]: true }));
   }, [activeGroup]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+    } catch {
+      // ignore
+    }
+  }, [collapsed]);
+
   function toggleGroup(label: string) {
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
   }
 
+  function toggleCollapsed() {
+    setCollapsed((c) => !c);
+  }
+
+  function expandSidebar(groupLabel?: string) {
+    setCollapsed(false);
+    if (groupLabel) {
+      setOpenGroups((prev) => ({ ...prev, [groupLabel]: true }));
+    }
+  }
+
+  const sidebarW = collapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W;
+
   return (
     <div className="flex min-h-screen bg-slate-100 dark:bg-slate-950">
-      <aside className="fixed inset-y-0 left-0 z-30 flex w-60 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex h-14 shrink-0 items-center border-b border-slate-100 px-4 dark:border-slate-800">
-          <AdminLogo variant="sidebar" />
+      <aside
+        style={{ width: sidebarW }}
+        className="fixed inset-y-0 left-0 z-30 flex flex-col border-r border-slate-200 bg-white transition-[width] duration-200 dark:border-slate-800 dark:bg-slate-900"
+      >
+        <div className="flex h-14 shrink-0 items-center gap-1.5 border-b border-slate-100 px-2 dark:border-slate-800">
+          <div className={collapsed ? 'shrink-0' : 'min-w-0 flex-1'}>
+            <AdminLogo variant="sidebar" compact={collapsed} />
+          </div>
+          <button
+            type="button"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            onClick={toggleCollapsed}
+            className="shrink-0 cursor-pointer rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+          >
+            <Icon
+              name={collapsed ? 'right_panel_open' : 'left_panel_close'}
+              className="!text-[20px]"
+            />
+          </button>
         </div>
 
-        <div className="shrink-0 border-b border-slate-100 px-2 py-2 dark:border-slate-800">
-          <NotificationBell />
+        <div className={`shrink-0 border-b border-slate-100 dark:border-slate-800 ${collapsed ? 'px-1 py-2' : 'px-2 py-2'}`}>
+          <NotificationBell compact={collapsed} />
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-2 py-3">
+        <nav className={`flex-1 overflow-y-auto py-3 ${collapsed ? 'px-1' : 'px-2'}`}>
           {visibleNav.map((group) => {
             const isOpen = openGroups[group.label] ?? false;
             const isSingle = group.items.length === 1 && group.label === 'Dashboard';
+            const groupActive = activeGroup === group.label;
+
+            if (collapsed) {
+              if (isSingle) {
+                const item = group.items[0];
+                return (
+                  <NavLink
+                    key={group.label}
+                    to={item.to}
+                    end
+                    title={group.label}
+                    onClick={() => expandSidebar(group.label)}
+                    className={({ isActive }) =>
+                      `mb-2 flex justify-center rounded-lg p-2 transition-colors ${
+                        isActive
+                          ? 'bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300'
+                          : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+                      }`
+                    }
+                  >
+                    <Icon name={group.icon} className="!text-[20px]" />
+                  </NavLink>
+                );
+              }
+
+              return (
+                <div key={group.label} className="relative mb-1" data-sidebar-group>
+                  <button
+                    type="button"
+                    title={group.label}
+                    onClick={() => expandSidebar(group.label)}
+                    className={`flex w-full justify-center rounded-lg p-2 transition-colors ${
+                      groupActive
+                        ? 'bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300'
+                        : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <Icon name={group.icon} className="!text-[20px]" />
+                  </button>
+                </div>
+              );
+            }
+
             if (isSingle) {
               const item = group.items[0];
               return (
@@ -218,7 +340,7 @@ export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
                   type="button"
                   onClick={() => toggleGroup(group.label)}
                   className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-semibold transition-colors ${
-                    activeGroup === group.label
+                    groupActive
                       ? 'text-slate-900 dark:text-slate-100'
                       : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                   }`}
@@ -255,28 +377,48 @@ export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
           })}
         </nav>
 
-        <div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800">
-          <div className="flex items-center gap-2.5 rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-slate-800/60">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pink-100 text-sm font-bold text-pink-700 dark:bg-pink-950 dark:text-pink-300">
-              {me.email?.[0]?.toUpperCase() ?? '?'}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
-                {me.name || me.email?.split('@')[0]}
-              </p>
-              <p className="truncate text-xs capitalize text-slate-400">{me.role}</p>
-            </div>
-          </div>
-          <button
-            className="mt-2 w-full text-left text-xs font-medium text-pink-600 hover:underline dark:text-pink-400"
-            onClick={onSignOut}
-          >
-            Sign out
-          </button>
+        <div className={`border-t border-slate-100 dark:border-slate-800 ${collapsed ? 'px-1 py-2' : 'px-3 py-3'}`}>
+          {collapsed ? (
+            <>
+              <div className="flex justify-center py-1" title={me.name || me.email}>
+                <AdminUserAvatar me={me} />
+              </div>
+              <button
+                type="button"
+                aria-label="Sign out"
+                title="Sign out"
+                onClick={onSignOut}
+                className="mt-1 flex w-full justify-center rounded-lg p-2 text-pink-600 transition-colors hover:bg-pink-50 dark:text-pink-400 dark:hover:bg-pink-950/30"
+              >
+                <Icon name="logout" className="!text-[18px]" />
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2.5 rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-slate-800/60">
+                <AdminUserAvatar me={me} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                    {me.name || me.email?.split('@')[0]}
+                  </p>
+                  <p className="truncate text-xs capitalize text-slate-400">{me.role}</p>
+                </div>
+              </div>
+              <button
+                className="mt-2 w-full text-left text-xs font-medium text-pink-600 hover:underline dark:text-pink-400"
+                onClick={onSignOut}
+              >
+                Sign out
+              </button>
+            </>
+          )}
         </div>
       </aside>
 
-      <main className="ml-60 min-w-0 flex-1 p-4 md:p-6">
+      <main
+        style={{ marginLeft: sidebarW }}
+        className="min-w-0 flex-1 p-4 transition-[margin] duration-200 md:p-6"
+      >
         <AdminErrorBoundary>
           <Suspense fallback={<Spinner />}>
             <Routes>
@@ -288,7 +430,7 @@ export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
           <Route path="/products/pricing" element={<Navigate to="/products" replace />} />
           <Route path="/products/characters" element={<Navigate to="/products" replace />} />
           <Route path="/products/media" element={<Navigate to="/products" replace />} />
-          {/* Product workspace: /products/{id}/{setup|testing|verdict|review|media|characters|pricing|seo|publish} */}
+          {/* Product workspace: /products/{id}/{setup|pricing|testing|verdict|review|media|characters|seo|publish} */}
           <Route path="/products/:id" element={<ProductWorkspace />} />
           <Route path="/products/:id/:tab" element={<ProductWorkspace />} />
 

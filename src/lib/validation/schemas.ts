@@ -142,6 +142,8 @@ export const productSchema = z.object({
   minMonthlyPrice: z.number().nonnegative().optional(),
   typicalMonthlyCost: z.number().nonnegative().optional(),
   priceCurrency: z.string().length(3).optional(),
+  characterPlatformUrl: z.string().max(500).optional(),
+  referralSuffix: z.string().max(200).optional(),
 });
 
 /**
@@ -232,7 +234,10 @@ export const mediaSchema = z.object({
     })
     .optional(),
   sortOrder: z.number().int().optional(),
-  role: z.enum(['gallery', 'logo', 'featured', 'proof', 'character', 'hero']).optional(),
+  role: z
+    .enum(['gallery', 'logo', 'featured', 'proof', 'character', 'hero', 'chat', 'image_generator'])
+    .optional(),
+  testCategory: z.string().max(80).optional(),
   approved: z.boolean().optional(),
 });
 
@@ -322,20 +327,24 @@ export const creditPackageSchema = z
     evidenceMediaIds: z.array(z.string()).optional(),
   });
 
-export const creditCurrencySchema = z.object({
-  displayName: z.string().max(60).optional(), // e.g. "Gems"
-  singular: z.string().max(60).optional(),
-  plural: z.string().max(60).optional(),
-  icon: z.string().max(60).optional(),
-  resetsMonthly: z.boolean().optional(),
-  rollsOver: z.boolean().optional(),
-  expires: z.boolean().optional(),
-  expirationPeriod: z.string().max(120).optional(),
-  expirationNotes: z.string().max(300).optional(),
-  purchasable: z.boolean().optional(),
-  earnable: z.boolean().optional(),
-  freeCreditNotes: z.string().max(300).optional(),
-});
+import { withDefaultTokenExpiration } from '../pricing/credit-currency';
+
+export const creditCurrencySchema = z
+  .object({
+    displayName: z.string().max(60).optional(), // e.g. "Gems"
+    singular: z.string().max(60).optional(),
+    plural: z.string().max(60).optional(),
+    icon: z.string().max(60).optional(),
+    resetsMonthly: z.boolean().optional(),
+    rollsOver: z.boolean().optional(),
+    expires: z.boolean().optional(),
+    expirationPeriod: z.string().max(120).optional(),
+    expirationNotes: z.string().max(300).optional(),
+    purchasable: z.boolean().optional(),
+    earnable: z.boolean().optional(),
+    freeCreditNotes: z.string().max(300).optional(),
+  })
+  .transform(withDefaultTokenExpiration);
 export type CreditCurrency = z.infer<typeof creditCurrencySchema>;
 
 export const PRICING_MODELS = [
@@ -497,6 +506,7 @@ export const characterSchema = z.object({
   featuredStartAt: dateMs.optional(),
   featuredEndAt: dateMs.optional(),
   homepageOrder: z.number().int().optional(),
+  destinationUrl: z.string().max(500).optional(),
 });
 
 export const characterStorySlideSchema = z.object({
@@ -518,6 +528,7 @@ export const affiliateLinkSchema = z.object({
   endAt: dateMs.optional(),
   lastVerifiedAt: dateMs.optional(),
   notes: z.string().optional(),
+  relTags: z.string().max(120).optional(),
 });
 
 export const methodologyVersionSchema = z.object({
@@ -598,7 +609,7 @@ export const evidenceDefinitionSchema = z.object({
   shortDescription: z.string().max(500).optional(),
   whyItMatters: z.string().max(1000).optional(),
   testInstructions: z.string().optional(),
-  inputType: z.enum(['', 'ratio', 'checklist', 'rubric', 'multi_select']).optional(),
+  inputType: z.enum(['', 'ratio', 'checklist', 'rubric', 'multi_select', 'yes_no', 'yes_no_unknown']).optional(),
   options: z
     .array(
       z.object({

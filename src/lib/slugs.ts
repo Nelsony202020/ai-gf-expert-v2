@@ -37,6 +37,11 @@ export function reviewPageUrl(productSlug: string): string {
   return `/reviews/${productSlug}`;
 }
 
+/** Admin draft preview — server-rendered, works before publish or static build. */
+export function reviewPreviewPageUrl(productSlug: string): string {
+  return `/reviews/preview/${productSlug}`;
+}
+
 export function categoryMethodologyUrl(categoryKey: string): string {
   return testCategoryUrl(categoryKey);
 }

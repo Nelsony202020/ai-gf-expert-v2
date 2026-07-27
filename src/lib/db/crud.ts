@@ -6,6 +6,11 @@ import { HttpError, type AdminIdentity } from './auth';
 import { auditTx, diffRecords } from './audit';
 import { getEntityConfig, type EntityConfig } from './registry';
 import { deleteAffiliateLinkCascade, deleteProductCascade } from './cascade-delete';
+import {
+  onHomepageSlotRemoved,
+  syncCharacterHomepageSlot,
+  syncHomepageSlotToCharacter,
+} from '../homepage/featuredCharacters';
 
 export interface WritePayload {
   fields: Record<string, unknown>;
@@ -98,6 +103,22 @@ function applyTimestampFields(
   }
 }
 
+async function transact(chunks: unknown[]) {
+  const db = getDb();
+  try {
+    await db.transact(chunks as any);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('missing in your schema')) {
+      throw new HttpError(
+        400,
+        'Database schema is out of date. Run `npm run db:push` in the project root, confirm the push, then try again.',
+      );
+    }
+    throw e;
+  }
+}
+
 export async function createEntity(
   entity: string,
   payload: WritePayload,
@@ -123,7 +144,7 @@ export async function createEntity(
   }
   if (Object.keys(linkMap).length > 0) chunk = chunk.link(linkMap);
 
-  await db.transact([
+  await transact([
     chunk,
     auditTx({
       actorEmail: identity.email,
@@ -133,6 +154,23 @@ export async function createEntity(
       newValue: fields,
     }),
   ]);
+
+  if (entity === 'characters' && fields.featured === true) {
+    await syncCharacterHomepageSlot(
+      recordId,
+      true,
+      typeof fields.homepageOrder === 'number' ? fields.homepageOrder : null,
+    );
+  }
+  if (entity === 'homepageSlots' && fields.kind === 'featured_character' && payload.links?.character) {
+    await syncHomepageSlotToCharacter(
+      recordId,
+      'featured_character',
+      fields.active !== false,
+      payload.links.character,
+    );
+  }
+
   return { id: recordId };
 }
 
@@ -174,7 +212,7 @@ export async function updateEntity(
 
   const { oldValue, newValue } = diffRecords(existing, fields);
 
-  await db.transact([
+  await transact([
     chunk,
     auditTx({
       actorEmail: identity.email,
@@ -185,6 +223,26 @@ export async function updateEntity(
       newValue,
     }),
   ]);
+
+  if (entity === 'characters' && 'featured' in fields) {
+    await syncCharacterHomepageSlot(
+      recordId,
+      Boolean(fields.featured),
+      typeof fields.homepageOrder === 'number' ? fields.homepageOrder : null,
+    );
+  }
+  if (entity === 'homepageSlots') {
+    const kind = String(fields.kind ?? existing.kind ?? '');
+    const characterId =
+      payload.links?.character ??
+      existing.character?.id ??
+      null;
+    const active =
+      'active' in fields ? fields.active !== false : existing.active !== false;
+    if (kind === 'featured_character' && characterId) {
+      await syncHomepageSlotToCharacter(recordId, kind, active, characterId);
+    }
+  }
 }
 
 export async function deleteEntity(
@@ -205,6 +263,14 @@ export async function deleteEntity(
   const cfg = config(entity);
   const existing = await getEntity(entity, recordId);
   const db = getDb();
+
+  if (entity === 'characters') {
+    await syncCharacterHomepageSlot(recordId, false);
+  }
+
+  if (entity === 'homepageSlots') {
+    await onHomepageSlotRemoved(existing);
+  }
 
   if (cfg.softDelete && !opts.permanent) {
     await db.transact([

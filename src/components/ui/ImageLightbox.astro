@@ -1,6 +1,6 @@
 <div
   data-image-lightbox
-  class="hidden fixed inset-0 z-[200] bg-black/92 items-center justify-center p-4 md:p-8"
+  class="image-lightbox hidden fixed inset-0 z-[200] bg-black/92 items-center justify-center p-4 md:p-8"
   role="dialog"
   aria-modal="true"
   aria-label="Image preview"
@@ -8,57 +8,312 @@
   <button
     type="button"
     data-lightbox-close
-    class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+    class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
     aria-label="Close"
   >
     <span class="material-symbols-outlined">close</span>
   </button>
-  <img data-lightbox-img class="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" alt="" />
-  <p data-lightbox-caption class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium text-center max-w-lg"></p>
+
+  <button
+    type="button"
+    data-lightbox-prev
+    class="image-lightbox__nav image-lightbox__nav--prev hidden"
+    aria-label="Previous image"
+  >
+    <span class="material-symbols-outlined">chevron_left</span>
+  </button>
+
+  <button
+    type="button"
+    data-lightbox-next
+    class="image-lightbox__nav image-lightbox__nav--next hidden"
+    aria-label="Next image"
+  >
+    <span class="material-symbols-outlined">chevron_right</span>
+  </button>
+
+  <div class="image-lightbox__stage" data-lightbox-stage>
+    <img data-lightbox-img class="image-lightbox__img max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" alt="" />
+  </div>
+
+  <p data-lightbox-caption class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium text-center max-w-lg pointer-events-none"></p>
+  <p data-lightbox-counter class="absolute bottom-12 left-1/2 -translate-x-1/2 text-white/55 text-xs font-semibold tabular-nums pointer-events-none hidden"></p>
 </div>
 
+<style is:global>
+  .image-lightbox.flex {
+    display: flex;
+  }
+
+  .image-lightbox__stage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: min(100%, 1200px);
+    max-height: 90vh;
+  }
+
+  .image-lightbox__img {
+    transition:
+      opacity 0.28s ease,
+      transform 0.28s ease;
+  }
+
+  .image-lightbox__img.is-changing {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
+  .image-lightbox__img.from-left {
+    transform: translateX(-12px);
+  }
+
+  .image-lightbox__img.from-right {
+    transform: translateX(12px);
+  }
+
+  .image-lightbox__nav {
+    position: absolute;
+    top: 50%;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-top: -22px;
+    border: 1px solid rgb(255 255 255 / 22%);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 12%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: rgb(255 255 255 / 92%);
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgb(0 0 0 / 28%);
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      transform 0.15s ease,
+      opacity 0.15s ease;
+  }
+
+  .image-lightbox__nav:hover {
+    background: rgb(255 255 255 / 20%);
+    border-color: rgb(255 255 255 / 35%);
+    transform: scale(1.05);
+  }
+
+  .image-lightbox__nav--prev {
+    left: 1rem;
+  }
+
+  .image-lightbox__nav--next {
+    right: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .image-lightbox__nav {
+      width: 48px;
+      height: 48px;
+      margin-top: -24px;
+    }
+
+    .image-lightbox__nav--prev {
+      left: 1.5rem;
+    }
+
+    .image-lightbox__nav--next {
+      right: 1.5rem;
+    }
+  }
+</style>
+
 <script>
+  interface LightboxItem {
+    src: string;
+    alt?: string;
+    caption?: string;
+  }
+
   function initImageLightbox() {
     const lightbox = document.querySelector<HTMLElement>('[data-image-lightbox]');
     const img = document.querySelector<HTMLImageElement>('[data-lightbox-img]');
     const caption = document.querySelector<HTMLElement>('[data-lightbox-caption]');
+    const counter = document.querySelector<HTMLElement>('[data-lightbox-counter]');
     const closeBtn = document.querySelector<HTMLButtonElement>('[data-lightbox-close]');
-    if (!lightbox || !img || lightbox.dataset.bound === 'true') return;
-    lightbox.dataset.bound = 'true';
+    const prevBtn = document.querySelector<HTMLButtonElement>('[data-lightbox-prev]');
+    const nextBtn = document.querySelector<HTMLButtonElement>('[data-lightbox-next]');
+    if (!lightbox || !img) return;
 
-    function open(src: string, alt = '', cap = '') {
-      img!.src = src;
-      img!.alt = alt;
-      if (caption) caption.textContent = cap;
+    const html = document.documentElement;
+    if (html.dataset.imageLightboxBound === 'true') return;
+    html.dataset.imageLightboxBound = 'true';
+
+    let items: LightboxItem[] = [];
+    let index = 0;
+    let isOpen = false;
+
+    function updateNavUi() {
+      const hasMultiple = items.length > 1;
+      prevBtn?.classList.toggle('hidden', !hasMultiple);
+      nextBtn?.classList.toggle('hidden', !hasMultiple);
+
+      if (counter) {
+        if (hasMultiple) {
+          counter.textContent = `${index + 1} / ${items.length}`;
+          counter.classList.remove('hidden');
+        } else {
+          counter.classList.add('hidden');
+          counter.textContent = '';
+        }
+      }
+    }
+
+    function renderItem(direction: 'left' | 'right' | 'none' = 'none') {
+      const item = items[index];
+      if (!item) return;
+
+      if (direction !== 'none') {
+        img.classList.add('is-changing', direction === 'left' ? 'from-left' : 'from-right');
+        window.setTimeout(() => {
+          img.src = item.src;
+          img.alt = item.alt ?? '';
+          if (caption) caption.textContent = item.caption ?? item.alt ?? '';
+          img.classList.remove('from-left', 'from-right');
+          void img.offsetWidth;
+          img.classList.remove('is-changing');
+        }, 140);
+        return;
+      }
+
+      img.classList.remove('is-changing', 'from-left', 'from-right');
+      img.src = item.src;
+      img.alt = item.alt ?? '';
+      if (caption) caption.textContent = item.caption ?? item.alt ?? '';
+      updateNavUi();
+    }
+
+    function open(itemsList: LightboxItem[], startIndex = 0) {
+      items = itemsList.filter((item) => item.src);
+      index = Math.min(Math.max(startIndex, 0), Math.max(items.length - 1, 0));
+      isOpen = true;
       lightbox!.classList.remove('hidden');
       lightbox!.classList.add('flex');
       document.body.style.overflow = 'hidden';
+      renderItem('none');
+      updateNavUi();
     }
 
     function close() {
+      isOpen = false;
       lightbox!.classList.add('hidden');
       lightbox!.classList.remove('flex');
-      img!.src = '';
+      img.src = '';
+      items = [];
+      index = 0;
       document.body.style.overflow = '';
+      updateNavUi();
+    }
+
+    function step(delta: number) {
+      if (items.length <= 1) return;
+      index = (index + delta + items.length) % items.length;
+      renderItem(delta < 0 ? 'left' : 'right');
+      updateNavUi();
+    }
+
+    function collectGalleryItems(trigger: HTMLElement): { items: LightboxItem[]; index: number } | null {
+      const gallery = trigger.closest<HTMLElement>('[data-gallery]');
+      if (!gallery) return null;
+
+      let parsed: LightboxItem[] = [];
+      const raw = gallery.dataset.galleryImages;
+      if (raw) {
+        try {
+          parsed = JSON.parse(raw) as LightboxItem[];
+        } catch {
+          parsed = [];
+        }
+      }
+
+      if (!parsed.length) {
+        parsed = Array.from(gallery.querySelectorAll<HTMLElement>('[data-thumb]')).map((btn) => ({
+          src: btn.dataset.full ?? '',
+          alt: btn.dataset.alt ?? '',
+          caption: btn.dataset.alt ?? '',
+        }));
+      }
+
+      const src = trigger.dataset.lightboxOpen ?? '';
+      const foundIndex = parsed.findIndex((item) => item.src === src);
+      return { items: parsed, index: foundIndex >= 0 ? foundIndex : 0 };
     }
 
     document.addEventListener('click', (e) => {
       const trigger = (e.target as HTMLElement).closest<HTMLElement>('[data-lightbox-open]');
-      if (trigger) {
-        e.preventDefault();
-        open(trigger.dataset.lightboxOpen ?? '', trigger.dataset.lightboxAlt, trigger.dataset.lightboxCaption);
+      if (!trigger) return;
+      e.preventDefault();
+
+      const galleryData = collectGalleryItems(trigger);
+      if (galleryData && galleryData.items.length > 0) {
+        open(galleryData.items, galleryData.index);
+        return;
       }
+
+      open([
+        {
+          src: trigger.dataset.lightboxOpen ?? '',
+          alt: trigger.dataset.lightboxAlt,
+          caption: trigger.dataset.lightboxCaption ?? trigger.dataset.lightboxAlt,
+        },
+      ]);
     });
 
     closeBtn?.addEventListener('click', close);
+    prevBtn?.addEventListener('click', () => step(-1));
+    nextBtn?.addEventListener('click', () => step(1));
+
     lightbox.addEventListener('click', (e) => {
       if (e.target === lightbox) close();
     });
+
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !lightbox.classList.contains('hidden')) close();
+      if (!isOpen) return;
+      if (e.key === 'Escape') {
+        close();
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        step(-1);
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        step(1);
+      }
     });
 
-    (window as unknown as { openImageLightbox?: typeof open }).openImageLightbox = open;
+    document.addEventListener(
+      'auxclick',
+      (e) => {
+        if (!isOpen) return;
+        if (e.button === 3) {
+          e.preventDefault();
+          step(-1);
+        } else if (e.button === 4) {
+          e.preventDefault();
+          step(1);
+        }
+      },
+      true,
+    );
+
+    (window as unknown as { openImageLightbox?: (items: LightboxItem[], index?: number) => void }).openImageLightbox = (
+      itemsList,
+      startIndex = 0,
+    ) => open(itemsList, startIndex);
   }
 
   initImageLightbox();

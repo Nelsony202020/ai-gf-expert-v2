@@ -1,11 +1,3 @@
-export const testHubTrustMetrics = [
-  { value: '24+ apps tested', icon: 'apps' },
-  { value: '100% paid accounts', icon: 'payments' },
-  { value: '30+ days of testing', icon: 'calendar_today' },
-  { value: '8 rating categories', icon: 'category' },
-  { value: 'Updated regularly', icon: 'update' },
-];
-
 export type TestHubTocSection = {
   id: string;
   label: string;

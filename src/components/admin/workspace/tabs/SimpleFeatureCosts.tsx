@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { dataApi, type EntityRow } from '../../api';
-import { ErrorNote, Select, TextInput, useAsync } from '../../ui';
+import { useAsyncToast } from '../../Toast';
+import { Select, TextInput } from '../../ui';
 import { useWorkspace } from '../context';
 import { featureCostRange } from '../../../../lib/pricing/calc';
 
@@ -51,14 +52,17 @@ export function SimpleFeatureCosts({
   snapshotId,
   creditLabel,
   canEdit,
+  embedded = false,
 }: {
   costs: EntityRow[];
   snapshotId: string;
   creditLabel: string;
   canEdit: boolean;
+  /** Render without the outer card chrome (when nested inside another card). */
+  embedded?: boolean;
 }) {
   const ws = useWorkspace();
-  const { error, setError } = useAsync();
+  const { error, setError } = useAsyncToast();
   const [bootstrapping, setBootstrapping] = useState(false);
 
   const rows = useMemo(
@@ -107,19 +111,8 @@ export function SimpleFeatureCosts({
     };
   }, [canEdit, bootstrapping, rows, snapshotId, ws, setError]);
 
-  return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-          What does each feature cost in {creditLabel}?
-        </h3>
-        <p className="text-xs text-slate-400">Fill in the credit cost for each feature type.</p>
-      </div>
-      {error && (
-        <div className="px-4 pt-3">
-          <ErrorNote message={error} />
-        </div>
-      )}
+  const body = (
+    <>
       <div className="divide-y divide-slate-100 dark:divide-slate-800">
         {rows.map(({ def, cost }) => (
           <FeatureCostField
@@ -133,6 +126,31 @@ export function SimpleFeatureCosts({
           />
         ))}
       </div>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div>
+        <div className="px-4 pt-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Feature costs in {creditLabel}
+          </h4>
+        </div>
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          What does each feature cost in {creditLabel}?
+        </h3>
+        <p className="text-xs text-slate-400">Fill in the credit cost for each feature type.</p>
+      </div>
+      {body}
     </section>
   );
 }
@@ -156,7 +174,7 @@ function FeatureCostField({
   const range = cost ? featureCostRange(cost as any) : null;
   const [credits, setCredits] = useState(range ? String(range.min) : '');
   const [unit, setUnit] = useState(String(cost?.unit ?? def.defaultUnit));
-  const { error, run } = useAsync();
+  const { run } = useAsyncToast();
 
   useEffect(() => {
     const next = cost ? featureCostRange(cost as any) : null;
@@ -192,11 +210,6 @@ function FeatureCostField({
 
   return (
     <div className="grid items-end gap-3 px-4 py-3 sm:grid-cols-[1.4fr_1fr_1fr]">
-      {error && (
-        <div className="sm:col-span-3">
-          <ErrorNote message={error} />
-        </div>
-      )}
       <div>
         <label className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{def.label}</label>
         {loading ? (

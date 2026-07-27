@@ -10,12 +10,12 @@ import { SETUP_CHARACTER_CAPABILITIES } from '../productCapabilities';
 
 export const WORKSPACE_TABS = [
   { id: 'setup', label: 'Setup' },
+  { id: 'pricing', label: 'Pricing' },
   { id: 'testing', label: 'Testing' },
   { id: 'verdict', label: 'Verdict' },
   { id: 'review', label: 'Review' },
   { id: 'media', label: 'Media' },
   { id: 'characters', label: 'Characters' },
-  { id: 'pricing', label: 'Pricing' },
   { id: 'seo', label: 'SEO' },
   { id: 'publish', label: 'Publish' },
 ] as const;

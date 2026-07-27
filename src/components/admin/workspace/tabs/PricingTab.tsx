@@ -4,7 +4,7 @@
 // pricingSnapshots; plan tiers hold monthly + annual as nested billing
 // options with a legacy-field fallback for pre-tier records.
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, dataApi, type EntityRow } from '../../api';
 import { useCan, useMe } from '../../context';
 import { MediaPickerModal } from '../../MediaPicker';
@@ -22,31 +22,35 @@ import {
   type BillingOption,
 } from '../../../../lib/pricing/calc';
 import {
+  DEFAULT_TOKEN_EXPIRATION_PERIOD,
+  withDefaultTokenExpiration,
+  type CreditCurrencyLike,
+} from '../../../../lib/pricing/credit-currency';
+import { useAsyncToast, useToastError } from '../../Toast';
+import {
   Badge,
   Button,
-  ErrorNote,
   Field,
   Icon,
   Modal,
-  Select,
-  TextArea,
   TextInput,
   Toggle,
   fmtDate,
-  useAsync,
 } from '../../ui';
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
 import { SimpleFeatureCosts } from './SimpleFeatureCosts';
+import { PricingImportCard } from '../../ai-pricing/PricingImportCard';
+import { PricingReviewModal, type PricingDraftClient } from '../../ai-pricing/PricingReviewModal';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-const PRICING_MODEL_OPTIONS: { value: string; label: string; description: string }[] = [
-  { value: 'subscription_only', label: 'Subscription', description: 'Paid plans only — no token system' },
-  { value: 'subscription_credits', label: 'Subscription + tokens', description: 'Plans plus a token/credit system' },
-  { value: 'free_plus_credits', label: 'Free', description: 'Free to use — tokens unlock premium features' },
+const PRICING_MODEL_OPTIONS: { value: string; label: string }[] = [
+  { value: 'subscription_only', label: 'Subscription' },
+  { value: 'subscription_credits', label: 'Subscription + tokens' },
+  { value: 'free_plus_credits', label: 'Free' },
 ];
 
 export const FEATURE_TYPE_LABELS: Record<string, string> = {
@@ -71,18 +75,7 @@ export const FEATURE_TYPE_LABELS: Record<string, string> = {
   custom: 'Custom feature',
 };
 
-interface CreditCurrencyConfig {
-  displayName?: string;
-  singular?: string;
-  plural?: string;
-  resetsMonthly?: boolean;
-  rollsOver?: boolean;
-  expires?: boolean;
-  expirationPeriod?: string;
-  purchasable?: boolean;
-  earnable?: boolean;
-  freeCreditNotes?: string;
-}
+interface CreditCurrencyConfig extends CreditCurrencyLike {}
 
 function creditPlural(currency: CreditCurrencyConfig | undefined): string {
   return currency?.plural?.trim() || currency?.displayName?.trim() || 'credits';
@@ -139,7 +132,8 @@ export function PricingTab() {
   const { fields, set, related } = ws;
   const [editingPackage, setEditingPackage] = useState<EntityRow | 'new' | null>(null);
   const [editingPayments, setEditingPayments] = useState(false);
-  const { error, setError } = useAsync();
+  const [aiDraft, setAiDraft] = useState<PricingDraftClient | null>(null);
+  const { error, setError } = useAsyncToast();
 
   const snapshots = related.pricingSnapshots;
   const snapshot =
@@ -148,7 +142,7 @@ export function PricingTab() {
     snapshots.find((s) => s.status === 'pending_review') ??
     snapshots[0] ??
     null;
-  const currency = (snapshot?.creditCurrency ?? {}) as CreditCurrencyConfig;
+  const currency = withDefaultTokenExpiration((snapshot?.creditCurrency ?? {}) as CreditCurrencyConfig);
   const model = String(snapshot?.pricingModel ?? '');
 
   const tiers = useMemo(
@@ -185,10 +179,8 @@ export function PricingTab() {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_250px]">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
       <div className="space-y-4">
-        {error && <ErrorNote message={error} />}
-
         {/* 1. Pricing status / snapshot header */}
         {snapshot ? (
           <PricingHeader snapshot={snapshot} canEdit={canEdit} onPatch={patchSnapshot} />
@@ -198,47 +190,42 @@ export function PricingTab() {
 
         {snapshot && (
           <>
-            <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                How does this app charge users?
-              </h3>
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                {PRICING_MODEL_OPTIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 text-sm transition-colors ${
-                      model === opt.value
-                        ? 'border-pink-400 bg-pink-50/60 dark:border-pink-600 dark:bg-pink-950/30'
-                        : 'border-slate-200 hover:border-slate-300 dark:border-slate-700'
-                    } ${!canEdit ? 'pointer-events-none opacity-70' : ''}`}
-                  >
-                    <input
-                      type="radio"
-                      name="pricingModel"
-                      className="mt-0.5 h-4 w-4 text-pink-600 focus:ring-pink-500"
-                      checked={model === opt.value}
-                      onChange={() => void patchSnapshot({ pricingModel: opt.value })}
-                      disabled={!canEdit}
-                    />
-                    <span>
-                      <span className="block font-medium text-slate-800 dark:text-slate-200">{opt.label}</span>
-                      <span className="block text-xs text-slate-400">{opt.description}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-              {model === '' && (
-                <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">Pick one to show the right fields below.</p>
-              )}
-            </section>
+            {canEdit && <PricingImportCard productId={ws.productId} onDraft={setAiDraft} />}
 
-            {usesCredits && (
-              <CreditsOptionsCard
-                currency={currency}
-                canEdit={canEdit}
-                onSave={(c) => void patchSnapshot({ creditCurrency: c })}
-              />
-            )}
+            {/* Compact pricing-model selector */}
+            <section className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  How does this app charge users?
+                </span>
+                <div
+                  role="radiogroup"
+                  aria-label="Pricing model"
+                  className="flex flex-wrap gap-1.5"
+                >
+                  {PRICING_MODEL_OPTIONS.map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                        model === opt.value
+                          ? 'border-pink-400 bg-pink-50 text-pink-700 dark:border-pink-600 dark:bg-pink-950/40 dark:text-pink-300'
+                          : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-400'
+                      } ${!canEdit ? 'pointer-events-none opacity-70' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="pricingModel"
+                        className="sr-only"
+                        checked={model === opt.value}
+                        onChange={() => void patchSnapshot({ pricingModel: opt.value })}
+                        disabled={!canEdit}
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </section>
 
             {showPlans && (
               <TierTable
@@ -252,12 +239,51 @@ export function PricingTab() {
             )}
 
             {usesCredits && (
-              <SimpleFeatureCosts
-                costs={featureCosts}
-                snapshotId={snapshot.id}
-                creditLabel={creditPlural(currency)}
-                canEdit={canEdit}
-              />
+              <section className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Tokens</h3>
+                    <TokenNameInline
+                      currency={currency}
+                      canEdit={canEdit}
+                      onSave={(c) => void patchSnapshot({ creditCurrency: withDefaultTokenExpiration(c) })}
+                    />
+                  </div>
+                  {canEdit && (
+                    <Button variant="secondary" className="text-xs" onClick={() => setEditingPackage('new')}>
+                      <Icon name="add" className="!text-[14px]" /> Add package
+                    </Button>
+                  )}
+                </div>
+                {packages.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-slate-400">
+                    No {creditPlural(currency)} packages recorded yet.
+                  </p>
+                ) : (
+                  <PackageTable
+                    packages={packages}
+                    creditLabel={creditPlural(currency)}
+                    canEdit={canEdit}
+                    onEdit={setEditingPackage}
+                  />
+                )}
+                <div className="border-t border-slate-100 dark:border-slate-800">
+                  <SimpleFeatureCosts
+                    costs={featureCosts}
+                    snapshotId={snapshot.id}
+                    creditLabel={creditPlural(currency)}
+                    canEdit={canEdit}
+                    embedded
+                  />
+                </div>
+                <p className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400 dark:border-slate-800">
+                  All tokens expire after {DEFAULT_TOKEN_EXPIRATION_PERIOD}.
+                </p>
+              </section>
+            )}
+
+            {related.pricingPromotions.length > 0 && (
+              <PromotionsList promotions={related.pricingPromotions} canEdit={canEdit} />
             )}
 
             <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -281,32 +307,6 @@ export function PricingTab() {
               )}
             </section>
           </>
-        )}
-
-        {/* 5. Credit packages (inline redesign lands in Phase 2) */}
-        {usesCredits && (
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Token top-up packages</h3>
-              {canEdit && (
-                <Button variant="secondary" className="text-xs" onClick={() => setEditingPackage('new')}>
-                  <Icon name="add" className="!text-[14px]" /> Add package
-                </Button>
-              )}
-            </div>
-            {packages.length === 0 ? (
-              <p className="px-4 py-4 text-sm text-slate-400">
-                No {creditPlural(currency)} packages recorded yet. Add them when the product sells top-ups.
-              </p>
-            ) : (
-              <PackageTable
-                packages={packages}
-                creditLabel={creditPlural(currency)}
-                canEdit={canEdit}
-                onEdit={setEditingPackage}
-              />
-            )}
-          </section>
         )}
 
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -378,12 +378,92 @@ export function PricingTab() {
           }}
         />
       )}
+      {aiDraft && snapshot && (
+        <PricingReviewModal
+          draft={aiDraft}
+          productId={ws.productId}
+          snapshot={snapshot}
+          existingPlans={tiers}
+          existingPackages={packages}
+          existingFeatureCosts={featureCosts}
+          existingPromotions={related.pricingPromotions}
+          defaultCurrency={String(fields.priceCurrency ?? 'USD')}
+          onClose={() => setAiDraft(null)}
+          onApplied={() => {
+            setAiDraft(null);
+            void ws.refreshRelated();
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+const PROMOTION_TYPE_LABELS: Record<string, string> = {
+  plan_discount: 'Plan discount',
+  package_discount: 'Package discount',
+  bonus_credits: 'Bonus credits',
+  free_trial: 'Free trial',
+  holiday: 'Holiday deal',
+  coupon: 'Coupon',
+  custom: 'Custom',
+};
+
+function PromotionsList({ promotions, canEdit }: { promotions: EntityRow[]; canEdit: boolean }) {
+  const ws = useWorkspace();
+  const { error, setError } = useAsyncToast();
+
+  async function remove(row: EntityRow) {
+    if (!confirm(`Delete promotion "${row.name}"?`)) return;
+    try {
+      await dataApi.remove('pricingPromotions', row.id);
+      await ws.refreshRelated();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
   return (
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Promotions</h3>
+      </div>
+      <div className="divide-y divide-slate-100 dark:divide-slate-800">
+        {promotions.map((promo) => (
+          <div key={promo.id} className="flex flex-wrap items-center gap-2 px-4 py-2.5 text-sm">
+            <span className="font-medium text-slate-800 dark:text-slate-200">{String(promo.name ?? '')}</span>
+            <Badge tone="blue">{PROMOTION_TYPE_LABELS[String(promo.promotionType ?? '')] ?? String(promo.promotionType ?? '')}</Badge>
+            {promo.discountPercent != null && <Badge tone="green">-{Number(promo.discountPercent)}%</Badge>}
+            {promo.bonusCredits != null && <Badge tone="green">+{Number(promo.bonusCredits)} bonus</Badge>}
+            {promo.couponCode ? (
+              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                {String(promo.couponCode)}
+              </code>
+            ) : null}
+            <span className="text-xs text-slate-400">
+              {promo.startAt ? fmtDate(promo.startAt) : ''}
+              {promo.startAt && promo.endAt ? ' – ' : ''}
+              {promo.endAt ? fmtDate(promo.endAt) : ''}
+            </span>
+            <span className="flex-1" />
+            {canEdit && (
+              <button
+                type="button"
+                className="text-slate-300 transition-colors hover:text-red-500"
+                title="Delete promotion"
+                onClick={() => void remove(promo)}
+              >
+                <Icon name="delete" className="!text-[16px]" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {  return (
     <div>
       <p className="text-xs text-slate-400" title={hint}>
         {label}
@@ -401,7 +481,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
 function SnapshotSetupCard({ canEdit }: { canEdit: boolean }) {
   const ws = useWorkspace();
   const me = useMe();
-  const { busy, error, run } = useAsync();
+  const { busy, error, run } = useAsyncToast();
 
   async function createSnapshot() {
     await run(async () => {
@@ -428,7 +508,6 @@ function SnapshotSetupCard({ canEdit }: { canEdit: boolean }) {
         Enter plan prices, token costs, and top-up packages manually.
         {ws.related.plans.length > 0 ? ' Existing plans will be linked automatically.' : ''}
       </p>
-      {error && <ErrorNote message={error} />}
       {canEdit && (
         <Button className="mt-4" disabled={busy} onClick={() => void createSnapshot()}>
           {busy ? 'Starting…' : 'Start pricing'}
@@ -490,7 +569,7 @@ function PricingHeader({
   );
 }
 
-function CreditsOptionsCard({
+function TokenNameInline({
   currency,
   canEdit,
   onSave,
@@ -499,43 +578,33 @@ function CreditsOptionsCard({
   canEdit: boolean;
   onSave: (c: CreditCurrencyConfig) => void;
 }) {
-  const [c, setC] = useState<CreditCurrencyConfig>(currency);
-  const commit = (patch: Partial<CreditCurrencyConfig>) => {
-    const next = { ...c, ...patch, rollsOver: false, resetsMonthly: false };
-    setC(next);
-    onSave(next);
-  };
-  const draft = (patch: Partial<CreditCurrencyConfig>) => setC((prev) => ({ ...prev, ...patch }));
+  const [name, setName] = useState(() => currency.displayName ?? '');
+  useEffect(() => {
+    setName(currency.displayName ?? '');
+  }, [currency.displayName]);
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Token settings</h3>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <Field label="Token name (optional)" hint="What the app calls them — e.g. Gems, Coins">
-          <TextInput
-            value={c.displayName ?? ''}
-            disabled={!canEdit}
-            onChange={(e) => draft({ displayName: e.target.value, plural: e.target.value || undefined })}
-            onBlur={() => commit({})}
-            placeholder="tokens"
-          />
-        </Field>
-        <div className="flex flex-wrap items-center gap-3 pt-6">
-          <Toggle checked={Boolean(c.expires)} onChange={(v) => commit({ expires: v })} label="Tokens expire" disabled={!canEdit} />
-          {c.expires && (
-            <TextInput
-              value={c.expirationPeriod ?? ''}
-              disabled={!canEdit}
-              onChange={(e) => draft({ expirationPeriod: e.target.value })}
-              onBlur={() => commit({})}
-              placeholder="e.g. 30 days"
-              className="w-36"
-              aria-label="Expiration period"
-            />
-          )}
-        </div>
-      </div>
-    </section>
+    <label className="flex items-center gap-1.5 text-xs text-slate-400">
+      Token name
+      <TextInput
+        value={name}
+        disabled={!canEdit}
+        className="!w-auto max-w-[200px] !py-1 text-xs"
+        onChange={(e) => setName(e.target.value)}
+        onBlur={() => {
+          const trimmed = name.trim();
+          if (trimmed === (currency.displayName ?? '')) return;
+          onSave(
+            withDefaultTokenExpiration({
+              ...currency,
+              displayName: trimmed || undefined,
+              plural: trimmed || undefined,
+            }),
+          );
+        }}
+        placeholder="tokens"
+      />
+    </label>
   );
 }
 
@@ -560,7 +629,7 @@ function TierTable({
 }) {
   const ws = useWorkspace();
   const [adding, setAdding] = useState(false);
-  const { error, setError } = useAsync();
+  const { error, setError } = useAsyncToast();
 
   async function move(row: EntityRow, dir: -1 | 1) {
     const idx = tiers.findIndex((t) => t.id === row.id);
@@ -624,11 +693,6 @@ function TierTable({
           </Button>
         )}
       </div>
-      {error && (
-        <div className="px-4 pt-3">
-          <ErrorNote message={error} />
-        </div>
-      )}
       {tiers.length === 0 && !adding ? (
         <p className="px-4 py-4 text-sm text-slate-400">
           No plan tiers yet. Add Basic, Premium… with their monthly and annual prices.
@@ -739,7 +803,7 @@ function TierRow({
   );
   const [active, setActive] = useState(tier ? Boolean(tier.active) : true);
   const [dirty, setDirty] = useState(tier === null);
-  const { busy, error, run } = useAsync();
+  const { busy, error, run } = useAsyncToast();
 
   const touch = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);
@@ -836,7 +900,6 @@ function TierRow({
 
   return (
     <div className={`px-4 py-3 ${active ? '' : 'opacity-60'}`}>
-      {error && <ErrorNote message={error} />}
       <div className={`grid items-start gap-2 ${showIncludedCredits ? 'sm:grid-cols-[1.4fr_1fr_1.2fr_1fr_auto]' : 'sm:grid-cols-[1.4fr_1fr_1.2fr_auto]'}`}>
         <div>
           <label className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Tier</label>
@@ -966,7 +1029,7 @@ function PackageTable({
   onEdit: (pkg: EntityRow) => void;
 }) {
   const ws = useWorkspace();
-  const { setError } = useAsync();
+  const { setError } = useAsyncToast();
 
   async function toggleActive(row: EntityRow, v: boolean) {
     try {
@@ -1079,6 +1142,7 @@ function PricingEvidence({
   const [showPicker, setShowPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useToastError(error, () => setError(null));
   const fileInput = useRef<HTMLInputElement>(null);
   const ids: string[] = Array.isArray(row.evidenceMediaIds) ? row.evidenceMediaIds : [];
   const mediaById = new Map(ws.related.mediaAll.map((m) => [m.id, m]));
@@ -1115,7 +1179,6 @@ function PricingEvidence({
 
   return (
     <div className={compact ? 'mt-1.5' : 'mt-2'}>
-      {error && <p className="mb-1 text-xs text-red-600">{error}</p>}
       <div className="flex flex-wrap items-center gap-1.5">
         {!compact && <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Evidence</span>}
         {ids.map((id) => {
@@ -1207,7 +1270,7 @@ function PackageModal({ pkg, onClose, onSaved }: { pkg: EntityRow | null; onClos
     active: pkg ? Boolean(pkg.active) : true,
     lastVerifiedAt: toDateInput(pkg?.lastVerifiedAt),
   });
-  const { busy, error, run } = useAsync();
+  const { busy, error, run } = useAsyncToast();
   const setField = (k: string, v: unknown) => setF((p) => ({ ...p, [k]: v }));
 
   const total = (numOrUndef(f.baseCredits) ?? 0) + (numOrUndef(f.bonusCredits) ?? 0);
@@ -1242,7 +1305,6 @@ function PackageModal({ pkg, onClose, onSaved }: { pkg: EntityRow | null; onClos
   return (
     <Modal title={pkg ? `Edit package: ${pkg.name}` : 'New credit package'} onClose={onClose} wide>
       <form onSubmit={save} className="space-y-3">
-        {error && <ErrorNote message={error} />}
         <div className="grid gap-3 sm:grid-cols-3">
           <Field label="Package name" required>
             <TextInput value={f.name} onChange={(e) => setField('name', e.target.value)} required />
@@ -1295,6 +1357,17 @@ function PackageModal({ pkg, onClose, onSaved }: { pkg: EntityRow | null; onClos
   );
 }
 
+const PAYMENT_METHODS = [
+  { key: 'card', label: 'Card', icon: 'credit_card' },
+  { key: 'paypal', label: 'PayPal', icon: 'account_balance_wallet' },
+  { key: 'crypto', label: 'Crypto', icon: 'currency_bitcoin' },
+  { key: 'applePay', label: 'Apple Pay', icon: 'phone_iphone' },
+  { key: 'googlePay', label: 'Google Pay', icon: 'wallet' },
+  { key: 'bankTransfer', label: 'Bank transfer', icon: 'account_balance' },
+] as const;
+
+type PaymentMethodKey = (typeof PAYMENT_METHODS)[number]['key'];
+
 function PaymentProfileModal({
   profile,
   onClose,
@@ -1305,44 +1378,46 @@ function PaymentProfileModal({
   onSaved: () => void;
 }) {
   const ws = useWorkspace();
-  const [f, setF] = useState<Record<string, any>>({
-    creditCard: Boolean(profile?.creditCard),
-    debitCard: Boolean(profile?.debitCard),
-    paypal: Boolean(profile?.paypal),
-    crypto: Boolean(profile?.crypto),
-    cryptoOnly: Boolean(profile?.cryptoOnly),
-    applePay: Boolean(profile?.applePay),
-    googlePay: Boolean(profile?.googlePay),
-    bankTransfer: Boolean(profile?.bankTransfer),
-    discreetBilling: Boolean(profile?.discreetBilling),
-    billingDescriptor: profile?.billingDescriptor ?? '',
-    refundPolicy: profile?.refundPolicy ?? '',
-    cancellationMethod: profile?.cancellationMethod ?? '',
-    cancellationDifficulty: profile?.cancellationDifficulty ?? '',
-    notes: profile?.notes ?? '',
-    lastVerifiedAt: toDateInput(profile?.lastVerifiedAt),
+  const [methods, setMethods] = useState<Set<PaymentMethodKey>>(() => {
+    const initial = new Set<PaymentMethodKey>();
+    if (profile?.creditCard || profile?.debitCard) initial.add('card');
+    if (profile?.paypal) initial.add('paypal');
+    if (profile?.crypto) initial.add('crypto');
+    if (profile?.applePay) initial.add('applePay');
+    if (profile?.googlePay) initial.add('googlePay');
+    if (profile?.bankTransfer) initial.add('bankTransfer');
+    return initial;
   });
-  const { busy, error, run } = useAsync();
-  const setField = (k: string, v: unknown) => setF((p) => ({ ...p, [k]: v }));
+  const [cryptoOnly, setCryptoOnly] = useState(Boolean(profile?.cryptoOnly));
+  const [discreetBilling, setDiscreetBilling] = useState(Boolean(profile?.discreetBilling));
+  const [billingDescriptor, setBillingDescriptor] = useState(String(profile?.billingDescriptor ?? ''));
+  const { busy, error, run } = useAsyncToast();
+
+  function toggleMethod(key: PaymentMethodKey) {
+    setMethods((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    // Refunds, cancellation, and notes are filled in from the testing screen —
+    // this modal only manages payment methods, so those fields stay untouched.
     const fields: Record<string, unknown> = {
-      creditCard: f.creditCard,
-      debitCard: f.debitCard,
-      paypal: f.paypal,
-      crypto: f.crypto,
-      cryptoOnly: f.cryptoOnly,
-      applePay: f.applePay,
-      googlePay: f.googlePay,
-      bankTransfer: f.bankTransfer,
-      discreetBilling: f.discreetBilling,
-      billingDescriptor: f.billingDescriptor || undefined,
-      refundPolicy: f.refundPolicy || undefined,
-      cancellationMethod: f.cancellationMethod || undefined,
-      cancellationDifficulty: f.cancellationDifficulty || undefined,
-      notes: f.notes || undefined,
-      lastVerifiedAt: fromDateInput(f.lastVerifiedAt),
+      creditCard: methods.has('card'),
+      debitCard: methods.has('card'),
+      paypal: methods.has('paypal'),
+      crypto: methods.has('crypto'),
+      applePay: methods.has('applePay'),
+      googlePay: methods.has('googlePay'),
+      bankTransfer: methods.has('bankTransfer'),
+      cryptoOnly,
+      discreetBilling,
+      billingDescriptor: discreetBilling ? billingDescriptor.trim() || undefined : undefined,
+      lastVerifiedAt: Date.now(),
     };
     const done = await run(async () => {
       if (profile) await dataApi.update('paymentProfiles', profile.id, fields);
@@ -1353,56 +1428,68 @@ function PaymentProfileModal({
   }
 
   return (
-    <Modal title="Payment and billing" onClose={onClose}>
-      <form onSubmit={save} className="space-y-3">
-        {error && <ErrorNote message={error} />}
-        <div className="grid grid-cols-2 gap-2">
-          <Toggle checked={f.creditCard} onChange={(v) => setField('creditCard', v)} label="Credit card" />
-          <Toggle checked={f.debitCard} onChange={(v) => setField('debitCard', v)} label="Debit card" />
-          <Toggle checked={f.paypal} onChange={(v) => setField('paypal', v)} label="PayPal" />
-          <Toggle checked={f.crypto} onChange={(v) => setField('crypto', v)} label="Cryptocurrency" />
-          <Toggle checked={f.applePay} onChange={(v) => setField('applePay', v)} label="Apple Pay" />
-          <Toggle checked={f.googlePay} onChange={(v) => setField('googlePay', v)} label="Google Pay" />
-          <Toggle checked={f.bankTransfer} onChange={(v) => setField('bankTransfer', v)} label="Bank transfer" />
+    <Modal title="Payment methods" onClose={onClose}>
+      <form onSubmit={save} className="space-y-4">
+        <div className="grid grid-cols-3 gap-2">
+          {PAYMENT_METHODS.map((m) => {
+            const selected = methods.has(m.key);
+            return (
+              <button
+                key={m.key}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => toggleMethod(m.key)}
+                className={`relative flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border p-3 transition-colors ${
+                  selected
+                    ? 'border-pink-400 bg-pink-50 text-pink-700 dark:border-pink-700 dark:bg-pink-950/40 dark:text-pink-300'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-pink-200 hover:bg-pink-50/40 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-pink-900'
+                }`}
+              >
+                {selected && (
+                  <Icon
+                    name="check_circle"
+                    className="absolute right-1.5 top-1.5 !text-[14px] text-pink-500"
+                  />
+                )}
+                <Icon name={m.icon} className="!text-[22px]" />
+                <span className="text-xs font-medium">{m.label}</span>
+              </button>
+            );
+          })}
         </div>
+
         <div className="rounded-md border border-amber-100 bg-amber-50/60 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
-          <Toggle checked={f.cryptoOnly} onChange={(v) => setField('cryptoOnly', v)} label="Crypto ONLY (restriction)" />
+          <Toggle
+            checked={cryptoOnly}
+            onChange={setCryptoOnly}
+            label="Cryptocurrency is the only available payment"
+          />
           <p className="mt-1 pl-11 text-xs text-amber-800 dark:text-amber-300">
-            Not the same as “accepts crypto” — shown as a warning on the public review page.
+            Shown as a warning on the public review page.
           </p>
         </div>
-        <Toggle checked={f.discreetBilling} onChange={(v) => setField('discreetBilling', v)} label="Discreet billing" />
-        <Field label="Billing descriptor" hint="How charges appear on statements.">
-          <TextInput value={f.billingDescriptor} onChange={(e) => setField('billingDescriptor', e.target.value)} />
-        </Field>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Refund policy">
-            <TextInput value={f.refundPolicy} onChange={(e) => setField('refundPolicy', e.target.value)} placeholder="e.g. no refunds on used credits" />
-          </Field>
-          <Field label="Cancellation difficulty">
-            <Select value={f.cancellationDifficulty} onChange={(e) => setField('cancellationDifficulty', e.target.value)}>
-              <option value="">— not assessed —</option>
-              <option value="easy">Easy (in-app, instant)</option>
-              <option value="moderate">Moderate</option>
-              <option value="difficult">Difficult (support ticket, retention flow)</option>
-            </Select>
-          </Field>
+
+        <div>
+          <Toggle checked={discreetBilling} onChange={setDiscreetBilling} label="Discreet billing" />
+          {discreetBilling && (
+            <div className="mt-2 pl-11">
+              <Field label="How does it show up on the bank statement?">
+                <TextInput
+                  value={billingDescriptor}
+                  onChange={(e) => setBillingDescriptor(e.target.value)}
+                  placeholder="e.g. TXM MEDIA LLC"
+                />
+              </Field>
+            </div>
+          )}
         </div>
-        <Field label="Cancellation method">
-          <TextInput value={f.cancellationMethod} onChange={(e) => setField('cancellationMethod', e.target.value)} placeholder="e.g. Settings → Subscription → Cancel" />
-        </Field>
-        <Field label="Notes">
-          <TextArea rows={2} value={f.notes} onChange={(e) => setField('notes', e.target.value)} />
-        </Field>
-        <Field label="Last verified">
-          <TextInput type="date" value={f.lastVerifiedAt} onChange={(e) => setField('lastVerifiedAt', e.target.value)} />
-        </Field>
+
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit" disabled={busy}>
-            {busy ? 'Saving…' : 'Save payment profile'}
+            {busy ? 'Saving…' : 'Save payment methods'}
           </Button>
         </div>
       </form>

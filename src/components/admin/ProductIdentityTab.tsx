@@ -310,7 +310,7 @@ export function ProductIdentityTab({
               </p>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
-              <a href="/editorial-process" target="_blank" rel="noreferrer">
+              <a href="/editorial-guidelines/" target="_blank" rel="noreferrer">
                 <Button variant="secondary" className="text-xs">
                   View docs
                 </Button>

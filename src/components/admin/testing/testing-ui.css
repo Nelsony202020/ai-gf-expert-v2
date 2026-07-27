@@ -92,8 +92,17 @@
   box-shadow: 0 0 0 2px rgb(255 255 255), 0 0 0 3px var(--testing-accent);
 }
 
+.testing-table tbody tr.is-drop-target {
+  background: var(--testing-accent-soft);
+  box-shadow: inset 0 0 0 2px var(--testing-accent);
+}
+
 .testing-proof-drawer {
-  background: var(--testing-drawer);
+  background: var(--testing-drawer, #ffffff);
+}
+
+.dark .testing-proof-drawer {
+  background: var(--testing-drawer, rgb(15 23 42));
 }
 
 .testing-proof-zone {
@@ -142,6 +151,37 @@
 
 .testing-progress-bar {
   background-color: var(--testing-accent);
+}
+
+.testing-segment--current {
+  box-shadow: 0 0 0 1px rgb(219 39 119 / 25%);
+}
+
+.testing-segment-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -4px;
+  border: 4px solid transparent;
+  border-top-color: rgb(226 232 240);
+}
+
+.dark .testing-segment-tooltip::after {
+  border-top-color: rgb(71 85 105);
+}
+
+/* Arrow flips when the tooltip opens below the segment. */
+.testing-segment-tooltip--below::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: rgb(226 232 240);
+}
+
+.dark .testing-segment-tooltip--below::after {
+  border-top-color: transparent;
+  border-bottom-color: rgb(71 85 105);
 }
 
 .testing-icon-accent {

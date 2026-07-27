@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from './api';
+import { useToastInbox } from './Toast';
 import { Badge, Button, Icon } from './ui';
 
 interface NotificationRow {
@@ -46,15 +47,17 @@ function timeAgo(ms: number): string {
   return new Date(ms).toLocaleDateString();
 }
 
-export function NotificationBell() {
+export function NotificationBell({ compact = false }: { compact?: boolean }) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [serverUnread, setServerUnread] = useState(0);
+  const { unreadInboxCount } = useToastInbox();
+  const unreadCount = serverUnread + unreadInboxCount;
 
   const refreshCount = useCallback(async () => {
     try {
       const data = await api.get<{ unreadCount: number }>('/api/admin/notifications?filter=unread');
-      setUnreadCount(data.unreadCount);
+      setServerUnread(data.unreadCount);
     } catch {
       // Silent: the bell must never break the admin shell.
     }
@@ -84,13 +87,22 @@ export function NotificationBell() {
       <button
         type="button"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
-        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+        title={compact ? 'Notifications' : undefined}
+        className={`relative flex items-center rounded-lg text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 ${
+          compact ? 'mx-auto justify-center p-2' : 'w-full gap-2 px-2.5 py-2'
+        }`}
         onClick={openDrawer}
       >
         <Icon name="notifications" className="!text-[18px]" />
-        <span className="flex-1 text-left">Notifications</span>
+        {!compact && <span className="flex-1 text-left">Notifications</span>}
         {unreadCount > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-pink-600 px-1.5 text-[11px] font-bold text-white">
+          <span
+            className={`flex items-center justify-center rounded-full bg-pink-600 text-[11px] font-bold text-white ${
+              compact
+                ? 'absolute -right-0.5 -top-0.5 h-4 min-w-4 px-0.5'
+                : 'h-5 min-w-5 px-1.5'
+            }`}
+          >
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -102,6 +114,7 @@ export function NotificationBell() {
 
 function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const navigate = useNavigate();
+  const { inbox, markInboxRead, markAllInboxRead, dismissInbox } = useToastInbox();
   const [rows, setRows] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -151,6 +164,7 @@ function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: (
     try {
       await api.post('/api/admin/notifications', { action: 'readAll' });
       setRows((prev) => prev.map((r) => ({ ...r, read: true })));
+      markAllInboxRead();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -227,6 +241,62 @@ function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: (
 
         <div className="flex-1 overflow-y-auto">
           {error && <p className="px-4 py-3 text-sm text-red-600">{error}</p>}
+          {inbox.length > 0 && (
+            <ul className="divide-y divide-slate-100 border-b border-slate-100 dark:divide-slate-800 dark:border-slate-800">
+              {inbox.map((n) => {
+                const meta = SEVERITY_META[n.severity] ?? SEVERITY_META.info;
+                return (
+                  <li key={n.id} className={n.read ? 'opacity-70' : ''}>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="flex w-full cursor-pointer items-start gap-2.5 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      onClick={() => {
+                        markInboxRead(n.id);
+                        if (n.actionUrl) {
+                          onClose();
+                          navigate(n.actionUrl);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          markInboxRead(n.id);
+                          if (n.actionUrl) {
+                            onClose();
+                            navigate(n.actionUrl);
+                          }
+                        }
+                      }}
+                    >
+                      <Icon name={meta.icon} className={`mt-0.5 !text-[18px] ${meta.className}`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{n.title}</p>
+                        {n.message && <p className="mt-0.5 text-xs text-slate-500">{n.message}</p>}
+                        <p className="mt-1 flex items-center gap-2 text-[11px] text-slate-400">
+                          <Badge tone="gray">recent</Badge>
+                          {timeAgo(n.createdAt)}
+                          {!n.read && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-pink-600" aria-label="unread" />
+                          )}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label="Dismiss notification"
+                        className="rounded p-1 text-slate-300 hover:text-slate-500 dark:hover:text-slate-400"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          dismissInbox(n.id);
+                        }}
+                      >
+                        <Icon name="close" className="!text-[14px]" />
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
           {loading ? (
             <p className="px-4 py-6 text-sm text-slate-400">Loading…</p>
           ) : rows.length === 0 ? (

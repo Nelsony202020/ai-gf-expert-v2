@@ -4,17 +4,23 @@
 
 import type { EntityRow } from '../api';
 import { Select, TextArea, TextInput } from '../ui';
+import { filterFeatureChecklistItems, privacyAllowsUnknown } from './capabilityGating';
+import {
+  pctFromRatio,
+  ratioNumeratorLabel,
+} from './sampleRatio';
 import {
   checklistConfig,
   controlKind,
   defOptions,
   ratioConfig,
   unitLabel,
+  allowsUnableToVerify,
 } from './presentation';
 
 export type RawValue =
   | { value: number; detail?: Record<string, unknown> }
-  | { status: string }
+  | { status: string; detail?: Record<string, unknown> }
   | { text: string; detail?: Record<string, unknown> }
   | { structured: Record<string, unknown> };
 
@@ -52,6 +58,9 @@ export function EvidenceInput({
   onChange,
   disabled,
   compact = false,
+  productFields,
+  categorySlug,
+  fixedDenominator,
 }: {
   def: EntityRow;
   value: RawValue | undefined;
@@ -59,24 +68,120 @@ export function EvidenceInput({
   disabled?: boolean;
   /** Tighter layout for table rows — dropdowns, wider fields. */
   compact?: boolean;
+  productFields?: Record<string, unknown>;
+  categorySlug?: string;
+  /** When set, denominator is hidden and filled automatically (session sample size). */
+  fixedDenominator?: number;
 }) {
   const kind = controlKind(def);
   const wide = compact ? 'testing-input-wide w-full min-w-[14rem]' : '';
+  const slug = String(def.slug ?? '');
+
+  const resolutionOptions = [
+    { value: '480p', label: '480p' },
+    { value: '720p', label: '720p' },
+    { value: '1080p', label: '1080p' },
+    { value: '4k', label: '4K' },
+  ];
+
+  if (slug === 'maximum-resolution' || slug === 'resolution') {
+    const current = value && 'text' in value ? value.text : '';
+    return (
+      <StatusSelect
+        options={resolutionOptions}
+        value={current}
+        disabled={disabled}
+        className={wide}
+        placeholder="Select max resolution…"
+        onChange={(v) => (v ? onChange({ text: v }) : onChange(undefined))}
+      />
+    );
+  }
+
+  if (slug === 'ease-of-use') {
+    const current = value && 'value' in value ? value.value : 5;
+    return (
+      <div className={`space-y-1 ${compact ? 'w-full min-w-[14rem]' : 'max-w-xs'}`}>
+        <input
+          type="range"
+          min={1}
+          max={10}
+          step={1}
+          disabled={disabled}
+          value={current}
+          className="w-full accent-pink-500"
+          onChange={(e) => onChange({ value: Number(e.target.value) })}
+        />
+        <p className="text-center text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+          {current}/10
+        </p>
+      </div>
+    );
+  }
+
+  if (slug === 'security-incidents') {
+    const detail = (value && 'detail' in value ? value.detail : undefined) ?? {};
+    const url = typeof detail.url === 'string' ? detail.url : value && 'text' in value ? value.text : '';
+    const note = typeof detail.note === 'string' ? detail.note : '';
+    return (
+      <div className={`space-y-2 ${wide}`}>
+        <TextInput
+          type="url"
+          value={url}
+          disabled={disabled}
+          placeholder="Link to news article or official statement (optional)"
+          onChange={(e) =>
+            onChange({
+              text: e.target.value,
+              detail: { ...detail, url: e.target.value, note },
+            })
+          }
+        />
+        <TextArea
+          rows={2}
+          value={note}
+          disabled={disabled}
+          placeholder="Optional note about what happened"
+          onChange={(e) =>
+            onChange({
+              text: url,
+              detail: { ...detail, url, note: e.target.value },
+            })
+          }
+        />
+      </div>
+    );
+  }
 
   switch (kind) {
     case 'boolean':
     case 'ynl': {
+      const variant = typeof def.inputType === 'string' ? def.inputType : '';
       const options =
-        kind === 'boolean'
+        variant === 'yes_no' || kind === 'boolean'
           ? [
               { value: 'yes', label: 'Yes' },
               { value: 'no', label: 'No' },
             ]
-          : [
-              { value: 'yes', label: 'Yes' },
-              { value: 'limited', label: 'Limited' },
-              { value: 'no', label: 'No' },
-            ];
+          : variant === 'yes_no_unknown'
+            ? [
+                { value: 'yes', label: 'Yes' },
+                { value: 'no', label: 'No' },
+                { value: 'unknown', label: 'Unknown' },
+              ]
+            : [
+                { value: 'yes', label: 'Yes' },
+                { value: 'limited', label: 'Limited' },
+                { value: 'no', label: 'No' },
+              ];
+      if (
+        kind === 'ynl' &&
+        variant !== 'yes_no' &&
+        variant !== 'yes_no_unknown' &&
+        (allowsUnableToVerify(def) || privacyAllowsUnknown(categorySlug, slug))
+      ) {
+        options.push({ value: 'unknown', label: 'Unknown' });
+      }
       const current = value && 'status' in value ? value.status : '';
       return (
         <StatusSelect
@@ -114,13 +219,70 @@ export function EvidenceInput({
     case 'ratio': {
       const cfg = ratioConfig(def)!;
       const detail = (value && 'detail' in value ? value.detail : undefined) ?? {};
+      const effectiveDen =
+        fixedDenominator ??
+        (detail.denominator !== undefined ? Number(detail.denominator) : undefined);
       const numerator = detail.numerator !== undefined ? String(detail.numerator) : '';
-      const denominator = detail.denominator !== undefined ? String(detail.denominator) : '';
       const num = numerator === '' ? null : Number(numerator);
-      const den = denominator === '' ? null : Number(denominator);
       const pct =
-        num !== null && den !== null && den > 0 ? Math.round((num / den) * 1000) / 10 : null;
+        num !== null && effectiveDen !== undefined && effectiveDen > 0
+          ? pctFromRatio(num, effectiveDen)
+          : null;
 
+      function updateNumerator(nextNum: string) {
+        const n = nextNum === '' || nextNum === '-' ? null : nonNegative(nextNum) ?? null;
+        const d =
+          fixedDenominator ??
+          (detail.denominator !== undefined ? Number(detail.denominator) : null);
+        if (n === null && d === null) {
+          onChange(undefined);
+          return;
+        }
+        const computed = n !== null && d !== null && d > 0 ? pctFromRatio(n, d) : null;
+        onChange({
+          value: computed ?? 0,
+          detail: {
+            ...(n !== null ? { numerator: n } : {}),
+            ...(d !== null ? { denominator: d } : {}),
+            ...(computed === null ? { incomplete: true } : {}),
+          },
+        });
+      }
+
+      const singleField = fixedDenominator !== undefined;
+
+      if (singleField) {
+        const numLabel = ratioNumeratorLabel(slug, def);
+        return (
+          <div className={`flex flex-wrap items-center gap-3 ${compact ? 'w-full min-w-[12rem]' : ''}`}>
+            <label className="min-w-[6rem] flex-1">
+              <span className="mb-0.5 block text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                {numLabel}
+              </span>
+              <TextInput
+                type="number"
+                min={0}
+                max={fixedDenominator}
+                step="any"
+                className="w-full"
+                value={numerator}
+                disabled={disabled}
+                onChange={(e) => updateNumerator(e.target.value)}
+              />
+            </label>
+            <div className="shrink-0 text-right">
+              <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                Result
+              </span>
+              <span className="text-base font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                {pct !== null ? `${pct}%` : '—'}
+              </span>
+            </div>
+          </div>
+        );
+      }
+
+      const denominator = detail.denominator !== undefined ? String(detail.denominator) : '';
       function update(nextNum: string, nextDen: string) {
         const n = nextNum === '' || nextNum === '-' ? null : nonNegative(nextNum) ?? null;
         const d = nextDen === '' || nextDen === '-' ? null : nonNegative(nextDen) ?? null;
@@ -128,7 +290,7 @@ export function EvidenceInput({
           onChange(undefined);
           return;
         }
-        const computed = n !== null && d !== null && d > 0 ? Math.round((n / d) * 1000) / 10 : null;
+        const computed = n !== null && d !== null && d > 0 ? pctFromRatio(n, d) : null;
         onChange({
           value: computed ?? 0,
           detail: {
@@ -188,25 +350,28 @@ export function EvidenceInput({
 
     case 'checklist': {
       const cfg = checklistConfig(def)!;
+      const items = productFields
+        ? filterFeatureChecklistItems(cfg.items, productFields)
+        : cfg.items;
       const detail = (value && 'detail' in value ? value.detail : undefined) ?? {};
       const checked = new Set(Array.isArray(detail.checked) ? (detail.checked as string[]) : []);
-      const total = cfg.items.length;
+      const total = items.length;
 
       function toggle(item: string) {
         const next = new Set(checked);
         if (next.has(item)) next.delete(item);
         else next.add(item);
-        const nextPassed = cfg.items.filter((i) => next.has(i)).length;
+        const nextPassed = items.filter((i) => next.has(i)).length;
         onChange({
-          value: Math.round((nextPassed / total) * 1000) / 10,
-          detail: { checked: cfg.items.filter((i) => next.has(i)), total },
+          value: total > 0 ? Math.round((nextPassed / total) * 1000) / 10 : 0,
+          detail: { checked: items.filter((i) => next.has(i)), total },
         });
       }
 
       return (
         <div className={compact ? 'w-full min-w-[18rem]' : 'space-y-2'}>
           <ul className={`grid gap-x-3 gap-y-1 ${compact ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
-            {cfg.items.map((item) => (
+            {items.map((item) => (
               <li key={item}>
                 <label className="flex cursor-pointer items-start gap-1.5 text-xs text-slate-700 dark:text-slate-300">
                   <input

@@ -3,30 +3,20 @@
 // validation (source of truth) — publishing only happens through the server
 // endpoint, never a status dropdown.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, dataApi } from '../../api';
 import { useCan } from '../../context';
-import { Badge, Button, ErrorNote, Icon, TextInput, statusTone } from '../../ui';
+import { useToast } from '../../Toast';
+import { Badge, Button, Icon, TextInput, statusTone } from '../../ui';
 import { useWorkspace } from '../context';
-import { workspaceTabPath, type MissingItem, type WorkspaceTabId } from '../completion';
+import { workspaceTabPath, type MissingItem } from '../completion';
+import { tabForServerMessage } from '../sidebar/publishMessages';
 import { CompletionSidebar } from '../CompletionSidebar';
 
 interface ServerValidation {
   errors: string[];
   warnings: string[];
-}
-
-/** Best-effort mapping of a server validation message to a workspace tab. */
-function tabForServerMessage(msg: string): WorkspaceTabId {
-  const m = msg.toLowerCase();
-  if (m.includes('test run')) return 'testing';
-  if (m.includes('seo') || m.includes('meta description')) return 'seo';
-  if (m.includes('plan') || m.includes('price') || m.includes('payment')) return 'pricing';
-  if (m.includes('media') || m.includes('alt text')) return 'media';
-  if (m.includes('affiliate')) return 'setup';
-  if (m.includes('verdict') || m.includes('our take') || m.includes('pro ') || m.includes('con ') || m.includes('pros') || m.includes('cons') || m.includes('directory description')) return 'verdict';
-  return 'setup';
 }
 
 export function PublishTab() {
@@ -42,6 +32,13 @@ export function PublishTab() {
   const [checking, setChecking] = useState(false);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const toast = useToast();
+  useEffect(() => {
+    if (actionError) {
+      toast.error(actionError);
+      setActionError(null);
+    }
+  }, [actionError, toast]);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [scheduleDate, setScheduleDate] = useState('');
 
@@ -124,9 +121,8 @@ export function PublishTab() {
   const blocked = required.length > 0 || (serverCheck?.errors.length ?? 0) > 0;
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_250px]">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
       <div className="space-y-4">
-        {actionError && <ErrorNote message={actionError} />}
         {actionNotice && (
           <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
             <Icon name="check_circle" className="!text-[16px]" /> {actionNotice}

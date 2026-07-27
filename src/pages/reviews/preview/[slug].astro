@@ -1,0 +1,265 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import ReviewHero from '../../../components/review/ReviewHero.astro';
+import TabBar from '../../../components/review/TabBar.astro';
+import type { Tab } from '../../../components/review/TabBar.astro';
+import OverviewTab from '../../../components/review/tabs/OverviewTab.astro';
+import ReviewArticleTab from '../../../components/review/tabs/ReviewArticleTab.astro';
+import MarketDataTab from '../../../components/review/tabs/MarketDataTab.astro';
+import RatingsSpecsTab from '../../../components/review/tabs/RatingsSpecsTab.astro';
+import PlaceholderTab from '../../../components/review/tabs/PlaceholderTab.astro';
+import PhotosVideosTab from '../../../components/review/tabs/PhotosVideosTab.astro';
+import RatingsTooltipInit from '../../../components/review/tooltips/RatingsTooltipInit.astro';
+import ReviewScrollRestore from '../../../components/review/ReviewScrollRestore.astro';
+import ArticleUtilityRail from '../../../components/article/ArticleUtilityRail.astro';
+import RoundupAffiliateFineprint from '../../../components/roundup/RoundupAffiliateFineprint.astro';
+import { getProductFeaturedIn, loadProductPreviewBySlug } from '../../../lib/content/store';
+
+const { slug } = Astro.params;
+const product = slug ? await loadProductPreviewBySlug(slug) : null;
+
+if (!product) {
+  return new Response('Review preview not found — check the product slug in admin.', {
+    status: 404,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  });
+}
+
+const featuredIn = await getProductFeaturedIn(product.slug);
+
+const tabs: Tab[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'ratings', label: 'Ratings & Specs' },
+  { id: 'review', label: 'Review' },
+  { id: 'photos', label: 'Photos & Videos' },
+  { id: 'pricing', label: 'Pricing' },
+  { id: 'market-data', label: 'Market Data' },
+];
+
+const title = `[Preview] ${product.name} Review — Lovelace Reviews`;
+const description = product.tagline;
+const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.origin).toString();
+---
+
+<BaseLayout title={title} description={description} image={product.featuredImage?.full ?? product.gallery[0]?.full} robots="noindex, nofollow">
+  <Header />
+  <div
+    class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200"
+    role="status"
+  >
+    Draft preview — this page is only visible to editors. Not indexed. Publish the product for the live URL at
+    <a href={`/reviews/${product.slug}`} class="font-medium underline underline-offset-2">/reviews/{product.slug}</a>.
+  </div>
+  <main>
+    <div class="roundup-affiliate-bar">
+      <div class="section-container px-4 md:px-8">
+        <RoundupAffiliateFineprint />
+      </div>
+    </div>
+    <ReviewHero product={product} shareUrl={canonical} />
+    {featuredIn.length > 0 && (
+      <div class="mx-auto max-w-6xl px-4 pt-3 text-sm text-white/60">
+        Also featured in:{' '}
+        {featuredIn.map((f, i) => (
+          <>
+            <a href={`/best/${f.slug}`} class="text-white/80 underline decoration-dotted underline-offset-2 hover:text-white">
+              {f.title}{f.position ? ` (#${f.position})` : ''}
+            </a>
+            {i < featuredIn.length - 1 && ', '}
+          </>
+        ))}
+      </div>
+    )}
+    <TabBar tabs={tabs} active="overview" />
+
+    <div data-panels>
+      <div data-tab-panel="overview">
+        <OverviewTab product={product} />
+      </div>
+      <div data-tab-panel="ratings" class="hidden">
+        <RatingsSpecsTab product={product} />
+      </div>
+      <div data-tab-panel="review" class="hidden">
+        <ReviewArticleTab product={product} />
+      </div>
+      <div data-tab-panel="photos" class="hidden">
+        <PhotosVideosTab product={product} />
+      </div>
+      <div data-tab-panel="pricing" class="hidden">
+        <PlaceholderTab
+          title="Pricing & Plans"
+          icon="sell"
+          description="A detailed breakdown of every plan, what each tier unlocks, and how the value compares to competitors is coming soon."
+        />
+      </div>
+      <div data-tab-panel="market-data" class="hidden">
+        <MarketDataTab product={product} />
+      </div>
+    </div>
+  </main>
+  <Footer />
+  <ArticleUtilityRail pageTitle={title} pageUrl={canonical} />
+  <RatingsTooltipInit />
+  <ReviewScrollRestore productSlug={product.slug} />
+</BaseLayout>
+
+<script>
+  const TABBAR_OFFSET = 52;
+
+  function getScrollOffset() {
+    const tabbar = document.querySelector<HTMLElement>('[data-tabbar]');
+    return tabbar?.offsetHeight ?? TABBAR_OFFSET;
+  }
+
+  function initReview() {
+    const panelsWrap = document.querySelector<HTMLElement>('[data-panels]');
+    if (!panelsWrap || panelsWrap.dataset.reviewInit === 'true') return;
+    panelsWrap.dataset.reviewInit = 'true';
+
+    const tabButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tabbar] [data-tab]'));
+    const tabTriggers = Array.from(document.querySelectorAll<HTMLElement>('[data-tab]'));
+    const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-tab-panel]'));
+
+    function setActiveTab(id: string, scroll = true) {
+      let matched = false;
+      panels.forEach((panel) => {
+        const isMatch = panel.dataset.tabPanel === id;
+        panel.classList.toggle('hidden', !isMatch);
+        if (isMatch) matched = true;
+      });
+      if (!matched) return;
+      tabButtons.forEach((btn) => btn.setAttribute('aria-current', btn.dataset.tab === id ? 'true' : 'false'));
+      if (history.replaceState) history.replaceState(null, '', `#${id}`);
+      if (scroll) {
+        const y = panelsWrap.getBoundingClientRect().top + window.scrollY - getScrollOffset();
+        window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
+      }
+    }
+
+    tabTriggers.forEach((trigger) => {
+      trigger.addEventListener('click', () => {
+        const id = trigger.dataset.tab;
+        if (id) setActiveTab(id);
+      });
+    });
+
+    function toggleAccordion(toggle: HTMLElement, force?: boolean) {
+      const wrapper = toggle.closest('[data-category]');
+      const content = wrapper?.querySelector<HTMLElement>('[data-accordion-content]');
+      if (!content) return;
+
+      const willOpen = force ?? content.classList.contains('hidden');
+
+      if (willOpen) {
+        document.querySelectorAll<HTMLElement>('[data-accordion-group] [data-category]').forEach((cat) => {
+          if (cat === wrapper) return;
+          const otherContent = cat.querySelector<HTMLElement>('[data-accordion-content]');
+          const otherToggle = cat.querySelector<HTMLElement>('[data-accordion-toggle]');
+          if (otherContent) otherContent.classList.add('hidden');
+          if (otherToggle) otherToggle.setAttribute('aria-expanded', 'false');
+        });
+      }
+
+      content.classList.toggle('hidden', !willOpen);
+      wrapper?.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((el) => {
+        el.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
+    }
+
+    document.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((toggle) => {
+      toggle.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.rt-tooltip-trigger')) return;
+        toggleAccordion(toggle);
+      });
+      toggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleAccordion(toggle);
+        }
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      const viewBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-view-results]');
+      if (viewBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const categoryKey = viewBtn.dataset.category;
+        const subscoreName = viewBtn.dataset.subscore;
+        const contributor = viewBtn.dataset.contributor;
+        if (!categoryKey) return;
+
+        setActiveTab('ratings', false);
+
+        const ratingsRoot = document.querySelector<HTMLElement>('[data-ratings-root]');
+        if (ratingsRoot && ratingsRoot.dataset.detailLevel !== 'all-in') {
+          ratingsRoot.dataset.detailLevel = 'all-in';
+          document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
+            input.checked = input.value === 'all-in';
+          });
+          document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level: 'all-in' } }));
+        }
+
+        const categoryEl = document.querySelector<HTMLElement>(`[data-category="${categoryKey}"]`);
+        const toggle = categoryEl?.querySelector<HTMLElement>('[data-accordion-toggle]');
+        if (toggle) toggleAccordion(toggle, true);
+
+        let highlightEl: HTMLElement | null = null;
+
+        if (subscoreName && categoryEl) {
+          const cards = Array.from(categoryEl.querySelectorAll<HTMLElement>('[data-subscore-select]'));
+          const match = cards.find((c) => {
+            const label = c.querySelector('[data-subscore-label]')?.textContent?.trim();
+            return label?.toLowerCase() === subscoreName.toLowerCase();
+          });
+          const index = match?.dataset.subscoreIndex ?? '0';
+          (categoryEl as HTMLElement & { selectSubscore?: (i: string, scroll?: boolean) => void }).selectSubscore?.(index, true);
+
+          if (contributor && match) {
+            const panel = categoryEl.querySelector<HTMLElement>(`[data-subscore-panel][data-subscore-index="${index}"]`);
+            const rows = Array.from(panel?.querySelectorAll<HTMLElement>('.evidence-table__row') ?? []);
+            highlightEl = rows.find((r) => r.textContent?.includes(contributor)) ?? panel;
+          } else {
+            highlightEl = match ?? categoryEl;
+          }
+        } else {
+          highlightEl = categoryEl;
+        }
+
+        if (highlightEl) {
+          highlightEl.classList.add('results-highlight');
+          const y = highlightEl.getBoundingClientRect().top + window.scrollY - getScrollOffset() - 12;
+          window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
+          setTimeout(() => highlightEl?.classList.remove('results-highlight'), 2400);
+        }
+        return;
+      }
+
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-goto-category]');
+      if (!btn) return;
+      e.preventDefault();
+      const key = btn.dataset.gotoCategory;
+      if (!key) return;
+      setActiveTab('ratings', false);
+      const target = document.querySelector<HTMLElement>(`[data-category="${key}"]`);
+      const toggle = target?.querySelector<HTMLElement>('[data-accordion-toggle]');
+      if (toggle) toggleAccordion(toggle, true);
+      if (target) {
+        const y = target.getBoundingClientRect().top + window.scrollY - getScrollOffset();
+        window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
+      }
+    });
+
+    const hash = window.location.hash.replace('#', '');
+    if (hash && panels.some((p) => p.dataset.tabPanel === hash)) {
+      setActiveTab(hash, false);
+    }
+  }
+
+  initReview();
+  document.addEventListener('astro:page-load', initReview);
+</script>

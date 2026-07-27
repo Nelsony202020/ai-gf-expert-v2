@@ -1,33 +1,35 @@
-// Verdict tab: structured editorial workspace mirroring the public "Our
-// Verdict" section — overall summary, decision lists, pros/cons, expert
-// opinion, optional award, and per-category verdicts. Stored on the product
-// record; scores always come from published test runs, never from here.
+// Verdict tab: guided 5-step editorial workspace mirroring the public "Our
+// Verdict" section. Scores always come from test runs, never from here.
 
-import { useState } from 'react';
-import { ProductFormSection } from '../../ProductFormSection';
-import { Field, Icon, Select, StringListEditor, TextArea, TextInput } from '../../ui';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { AiNotesDrawer } from '../../ai-verdict/AiNotesDrawer';
+import { AiNotesSectionButton } from '../../ai-verdict/AiNotesSectionButton';
+import { AiFieldAssist } from '../../ai-verdict/AiFieldAssist';
+import { useAiVerdictNotes } from '../../ai-verdict/useAiVerdictNotes';
+import {
+  categorySectionKey,
+  normalizeListField,
+  sectionConfig,
+  verdictStepSectionKey,
+} from '../../../../lib/ai-verdict/notesSchema';
+import { Field, Select, StringListEditor, TextArea, TextInput } from '../../ui';
+import { useToast } from '../../Toast';
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
-
-interface CategoryVerdict {
-  headline?: string;
-  verdict?: string;
-  mainStrength?: string;
-  mainWeakness?: string;
-  pros?: string[];
-  cons?: string[];
-  expertOpinion?: string;
-  evidenceRefs?: string[];
-}
-
-interface Award {
-  kind: string;
-  customLabel?: string;
-  active?: boolean;
-  startAt?: number;
-  endAt?: number;
-  reason?: string;
-}
+import { CategoryVerdictDrawer } from '../verdict/CategoryVerdictDrawer';
+import { CategoryVerdictOverview } from '../verdict/CategoryVerdictOverview';
+import { VerdictProgressHeader } from '../verdict/VerdictProgressHeader';
+import { VerdictStepFooter } from '../verdict/VerdictStepFooter';
+import { VerdictStepNav } from '../verdict/VerdictStepNav';
+import { VerdictTestingSummary } from '../verdict/VerdictTestingSummary';
+import type { Award, CategoryVerdict, VerdictStepId } from '../verdict/types';
+import {
+  computeVerdictProgress,
+  VERDICT_STEPS,
+} from '../verdict/verdictSteps';
+import { useVerdictTestingSummary, countCategoryRemainingRequired } from '../verdict/useVerdictTestingSummary';
+import { workspaceTabPath } from '../completion';
 
 const AWARD_OPTIONS: { value: string; label: string }[] = [
   { value: 'none', label: 'No award' },
@@ -43,7 +45,6 @@ const AWARD_OPTIONS: { value: string; label: string }[] = [
   { value: 'custom', label: 'Custom award' },
 ];
 
-/** Split legacy newline/sentence text into list items. */
 function splitLegacy(text: unknown): string[] {
   if (typeof text !== 'string' || !text.trim()) return [];
   return text
@@ -67,20 +68,31 @@ function CharCount({ value, ideal }: { value: string; ideal?: string }) {
 
 export function VerdictTab() {
   const ws = useWorkspace();
-  const { fields, set, related } = ws;
-  const [openCat, setOpenCat] = useState<string | null>(null);
+  const toast = useToast();
+  const { fields, set, setMany, related, productId, saving } = ws;
+  const [activeStep, setActiveStep] = useState<VerdictStepId>('overall');
+  const [categoryDrawerSlug, setCategoryDrawerSlug] = useState<string | null>(null);
+  const [notesDrawerOpen, setNotesDrawerOpen] = useState(false);
+  const [notesSectionKey, setNotesSectionKey] = useState<string | null>(null);
+  const [aiAssistedFields, setAiAssistedFields] = useState<Set<string>>(new Set());
+
+  const testing = useVerdictTestingSummary(related.testRuns);
+  const aiNotes = useAiVerdictNotes(productId, testing.currentRun?.id);
 
   const categoryVerdicts = (fields.categoryVerdicts ?? {}) as Record<string, CategoryVerdict>;
 
-  // Structured lists with safe fallback from the legacy newline fields —
-  // editing writes the structured field; legacy values are never deleted here.
-  const bestFor: string[] = Array.isArray(fields.bestFor)
-    ? fields.bestFor
-    : splitLegacy(fields.recommendedFor);
+  const bestFor: string[] = useMemo(
+    () => normalizeListField(Array.isArray(fields.bestFor) ? fields.bestFor : splitLegacy(fields.recommendedFor)),
+    [fields.bestFor, fields.recommendedFor],
+  );
   const bestForIsLegacy = !Array.isArray(fields.bestFor) && bestFor.length > 0;
-  const notIdealFor: string[] = Array.isArray(fields.notIdealFor)
-    ? fields.notIdealFor
-    : splitLegacy(fields.notRecommendedFor);
+  const notIdealFor: string[] = useMemo(
+    () =>
+      normalizeListField(
+        Array.isArray(fields.notIdealFor) ? fields.notIdealFor : splitLegacy(fields.notRecommendedFor),
+      ),
+    [fields.notIdealFor, fields.notRecommendedFor],
+  );
   const notIdealIsLegacy = !Array.isArray(fields.notIdealFor) && notIdealFor.length > 0;
 
   const award: Award = (fields.award as Award | undefined) ??
@@ -88,6 +100,71 @@ export function VerdictTab() {
       ? { kind: 'custom', customLabel: String(fields.bestForLabel), active: true }
       : { kind: 'none' });
   const awardIsLegacy = !fields.award && Boolean(fields.bestForLabel);
+
+  const pros: string[] = useMemo(() => normalizeListField(fields.pros), [fields.pros]);
+  const cons: string[] = useMemo(() => normalizeListField(fields.cons), [fields.cons]);
+  const expertWords = wordCount(String(fields.expertOpinion ?? ''));
+
+  const categorySlugs = useMemo(
+    () => related.categories.map((c) => String(c.slug)),
+    [related.categories],
+  );
+
+  const progress = useMemo(
+    () =>
+      computeVerdictProgress({
+        oneLineVerdict: String(fields.oneLineVerdict ?? ''),
+        ourTake: String(fields.ourTake ?? ''),
+        bestFor,
+        notIdealFor,
+        pros,
+        cons,
+        expertOpinion: String(fields.expertOpinion ?? ''),
+        categoryVerdicts,
+        categorySlugs,
+      }),
+    [
+      fields.oneLineVerdict,
+      fields.ourTake,
+      fields.expertOpinion,
+      bestFor,
+      notIdealFor,
+      pros,
+      cons,
+      categoryVerdicts,
+      categorySlugs,
+    ],
+  );
+
+  useEffect(() => {
+    if (progress.nextIncomplete) setActiveStep(progress.nextIncomplete);
+    // Only on first mount — intentional single run
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const publishedScores = useMemo(() => {
+    const live = related.scoreHistory.find((h) => h.isCurrentPublished);
+    return live ? new Map(live.categories.map((c) => [c.slug, c.value])) : null;
+  }, [related.scoreHistory]);
+
+  const categoryScores = useMemo(() => {
+    const map = new Map<string, number | null>();
+    for (const cat of related.categories) {
+      const slug = String(cat.slug);
+      const preview = testing.categoryScores.get(slug);
+      map.set(slug, preview ?? publishedScores?.get(slug) ?? null);
+    }
+    return map;
+  }, [related.categories, testing.categoryScores, publishedScores]);
+
+  const drawerCategory = categoryDrawerSlug
+    ? related.categories.find((c) => String(c.slug) === categoryDrawerSlug)
+    : undefined;
+
+  const categoryRemainingTests = useMemo(() => {
+    if (!categoryDrawerSlug || !testing.tree) return null;
+    return countCategoryRemainingRequired(testing.tree, categoryDrawerSlug);
+  }, [categoryDrawerSlug, testing.tree]);
 
   function setAward(patch: Partial<Award>) {
     set('award', { ...award, ...patch });
@@ -100,135 +177,290 @@ export function VerdictTab() {
     });
   }
 
-  function verdictFilledCount(v: CategoryVerdict | undefined): number {
-    if (!v) return 0;
-    let n = 0;
-    if (v.headline?.trim()) n++;
-    if (v.verdict?.trim()) n++;
-    if (v.mainStrength?.trim()) n++;
-    if (v.mainWeakness?.trim()) n++;
-    if (v.pros?.length) n++;
-    if (v.cons?.length) n++;
-    if (v.expertOpinion?.trim()) n++;
-    return n;
+  function markAiAssisted(keys: string[]) {
+    setAiAssistedFields((prev) => new Set([...prev, ...keys]));
   }
 
-  const publishedScores = (() => {
-    const live = related.scoreHistory.find((h) => h.isCurrentPublished);
-    return live ? new Map(live.categories.map((c) => [c.slug, c.value])) : null;
-  })();
+  function AiAssistBadge({ fieldKey }: { fieldKey: string }) {
+    if (!aiAssistedFields.has(fieldKey)) return null;
+    return (
+      <span className="ml-1.5 rounded bg-pink-100 px-1.5 py-0.5 text-[10px] font-medium text-pink-700 dark:bg-pink-950/40 dark:text-pink-300">
+        AI-assisted
+      </span>
+    );
+  }
 
-  const pros: string[] = Array.isArray(fields.pros) ? fields.pros : [];
-  const cons: string[] = Array.isArray(fields.cons) ? fields.cons : [];
-  const expertWords = wordCount(String(fields.expertOpinion ?? ''));
-  const catsComplete = related.categories.filter(
-    (c) => verdictFilledCount(categoryVerdicts[String(c.slug)]) >= 2,
-  ).length;
+  const testRunId = testing.currentRun?.id;
 
-  const completionRows: { label: string; value: string; ok: boolean }[] = [
-    {
-      label: 'Overall summary',
-      value:
-        fields.oneLineVerdict?.trim() && fields.ourTake?.trim() ? 'Complete' : 'Missing fields',
-      ok: Boolean(fields.oneLineVerdict?.trim() && fields.ourTake?.trim()),
+  function currentNotesSectionKey(): string {
+    if (categoryDrawerSlug) return categorySectionKey(categoryDrawerSlug);
+    return verdictStepSectionKey(activeStep);
+  }
+
+  function notesContextForSection() {
+    const key = currentNotesSectionKey();
+    return aiNotes.sectionKey === key ? aiNotes.notes?.keyFindings : undefined;
+  }
+
+  function renderAssist(opts: {
+    fieldKey: string;
+    targetField: string;
+    categorySlug?: string;
+    hasText: boolean;
+    list?: boolean;
+    currentText?: string;
+    onText?: (text: string) => void;
+    onItems?: (items: string[]) => void;
+  }) {
+    if (!testRunId) return null;
+    return (
+      <AiFieldAssist
+        productId={productId}
+        testRunId={testRunId}
+        targetField={opts.targetField}
+        categorySlug={opts.categorySlug}
+        currentText={opts.currentText}
+        notesContext={notesContextForSection()}
+        hasText={opts.hasText}
+        list={opts.list}
+        onText={(t) => {
+          opts.onText?.(t);
+          markAiAssisted([opts.fieldKey]);
+        }}
+        onItems={(items) => {
+          opts.onItems?.(items);
+          markAiAssisted([opts.fieldKey]);
+        }}
+      />
+    );
+  }
+
+  const openNotesDrawer = useCallback(
+    async (sectionKey: string) => {
+      if (!testing.currentRun) {
+        toast.warning('No test run', { message: 'Start a test run on the Testing tab first.' });
+        return;
+      }
+      setNotesSectionKey(sectionKey);
+      setNotesDrawerOpen(true);
+      await aiNotes.load(sectionKey);
     },
-    {
-      label: 'Decision summary',
-      value: `${bestFor.length} best for · ${notIdealFor.length} not ideal`,
-      ok: bestFor.length > 0,
+    [aiNotes, testing.currentRun, toast],
+  );
+
+  async function handleGenerateNotes() {
+    if (!notesSectionKey) return;
+    await aiNotes.generate(notesSectionKey, false);
+  }
+
+  async function handleRegenerateNotes() {
+    if (!notesSectionKey) return;
+    await aiNotes.generate(notesSectionKey, true);
+  }
+
+  function getNotesFieldValue(fieldKey: string): string | string[] {
+    if (notesSectionKey?.startsWith('category:')) {
+      const slug = notesSectionKey.slice(9);
+      const cv = categoryVerdicts[slug] ?? {};
+      const val = (cv as Record<string, unknown>)[fieldKey];
+      if (Array.isArray(val)) return val as string[];
+      return String(val ?? '');
+    }
+    const val = (fields as Record<string, unknown>)[fieldKey];
+    if (Array.isArray(val)) return val as string[];
+    return String(val ?? '');
+  }
+
+  function handleNotesInsertField(fieldKey: string, value: string) {
+    if (notesSectionKey?.startsWith('category:')) {
+      const slug = notesSectionKey.slice(9);
+      setCategoryVerdict(slug, { [fieldKey]: value });
+      markAiAssisted([`categoryVerdicts.${slug}.${fieldKey}`]);
+      return;
+    }
+    set(fieldKey, value);
+    markAiAssisted([fieldKey]);
+  }
+
+  function handleNotesInsertListField(fieldKey: string, items: string[]) {
+    const normalized = normalizeListField(items);
+    if (notesSectionKey?.startsWith('category:')) {
+      const slug = notesSectionKey.slice(9);
+      setCategoryVerdict(slug, { [fieldKey]: normalized });
+      markAiAssisted([`categoryVerdicts.${slug}.${fieldKey}`]);
+      return;
+    }
+    set(fieldKey, normalized);
+    markAiAssisted([fieldKey]);
+  }
+
+  async function handleSaveSection() {
+    const ok = await ws.save();
+    if (ok) toast.success('Section saved');
+  }
+
+  async function saveCategoryDraft(slug: string, draft: CategoryVerdict): Promise<boolean> {
+    const next = {
+      ...categoryVerdicts,
+      [slug]: { ...categoryVerdicts[slug], ...draft },
+    };
+    flushSync(() => setMany({ categoryVerdicts: next }));
+    const ok = await ws.save();
+    if (ok) toast.success('Category verdict saved');
+    return ok;
+  }
+
+  const openCategoryNotes = useCallback(
+    async (slug: string) => {
+      await openNotesDrawer(categorySectionKey(slug));
     },
-    {
-      label: 'Pros and cons',
-      value: `${pros.length} pros · ${cons.length} cons`,
-      ok: pros.length > 0 && cons.length > 0,
-    },
-    {
-      label: 'Expert opinion',
-      value: expertWords > 0 ? `${expertWords} words` : 'Missing',
-      ok: expertWords > 0,
-    },
-    {
-      label: 'Award',
-      value: award.kind === 'none' ? 'Optional' : AWARD_OPTIONS.find((o) => o.value === award.kind)?.label ?? 'Set',
-      ok: true,
-    },
-    {
-      label: 'Category verdicts',
-      value: `${catsComplete} of ${related.categories.length} complete`,
-      ok: catsComplete === related.categories.length && related.categories.length > 0,
-    },
-  ];
+    [openNotesDrawer],
+  );
+
+  const activeStepLabel = VERDICT_STEPS.find((s) => s.id === activeStep)?.label ?? '';
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_250px]">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
       <div className="space-y-4">
-        {/* Verdict completion summary */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Verdict completion
-          </h3>
-          <ul className="mt-2 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-            {completionRows.map((row) => (
-              <li key={row.label} className="flex items-center justify-between gap-2">
-                <span className="text-slate-500">{row.label}</span>
-                <span
-                  className={`flex items-center gap-1 text-xs font-medium ${
-                    row.ok ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'
-                  }`}
-                >
-                  {row.ok && <Icon name="check_circle" className="!text-[13px]" />}
-                  {row.value}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <VerdictProgressHeader
+          completed={progress.completed}
+          total={progress.total}
+          onContinue={() => {
+            if (progress.nextIncomplete) setActiveStep(progress.nextIncomplete);
+          }}
+        />
+
+        <VerdictStepNav
+          steps={progress.steps}
+          activeStep={activeStep}
+          onSelect={setActiveStep}
+        />
+
+        <VerdictTestingSummary
+          previewScore={testing.previewScore}
+          topCategories={testing.topCategories}
+          remainingRequired={testing.remainingRequired}
+          loading={testing.loading}
+          calcError={testing.calcError}
+          isPreview={testing.isPreview}
+          runName={testing.currentRun?.name}
+        />
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-6">
-          {/* 1. Overall summary */}
-          <ProductFormSection num={1} title="Overall summary">
-            <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+              {activeStepLabel}
+            </h2>
+            <AiNotesSectionButton
+              disabled={!testRunId || (activeStep === 'categories' && !categoryDrawerSlug)}
+              onClick={() => void openNotesDrawer(currentNotesSectionKey())}
+            />
+          </div>
+          {activeStep === 'categories' && !categoryDrawerSlug && testRunId && (
+            <p className="mt-1 text-[11px] text-slate-500">
+              Open a category below to use AI notes for that category.
+            </p>
+          )}
+          {!testRunId && (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+              Start a test run on the Testing tab to enable AI suggestions.
+            </p>
+          )}
+
+          {activeStep === 'overall' && (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs text-slate-500">
+                Scores from {testing.isPreview ? 'current draft' : 'published'} test run
+                {testing.currentRun ? `: ${testing.currentRun.name}` : ' (none yet)'}.
+              </p>
               <Field
-                label="Verdict headline"
+                label={
+                  <span>
+                    Verdict headline
+                    <AiAssistBadge fieldKey="oneLineVerdict" />
+                  </span>
+                }
                 required
-                hint="Short label shown beside the overall score on the public review, e.g. “Top-tier companion platform”."
+                hint="Short label beside the overall score, e.g. “Top-tier companion platform”."
               >
                 <TextInput
                   value={fields.oneLineVerdict ?? ''}
                   onChange={(e) => set('oneLineVerdict', e.target.value)}
                   placeholder="Top-tier companion platform"
                 />
-                <CharCount value={String(fields.oneLineVerdict ?? '')} ideal="30–70" />
+                <div className="flex items-center justify-between">
+                  {renderAssist({
+                    fieldKey: 'oneLineVerdict',
+                    targetField:
+                      'oneLineVerdict — a short verdict headline shown beside the overall score, 30–70 characters',
+                    hasText: Boolean(String(fields.oneLineVerdict ?? '').trim()),
+                    onText: (t) => set('oneLineVerdict', t),
+                  })}
+                  <CharCount value={String(fields.oneLineVerdict ?? '')} ideal="30–70" />
+                </div>
               </Field>
               <Field
-                label="Overall verdict"
+                label={
+                  <span>
+                    Overall verdict
+                    <AiAssistBadge fieldKey="ourTake" />
+                  </span>
+                }
                 required
-                hint="The main paragraph of the public “Our Verdict” section. Summarize the strongest areas, who it suits, and the most important limitations in 3–5 sentences."
+                hint="Main paragraph of the public “Our Verdict” section — 3–5 sentences."
               >
                 <TextArea
                   rows={5}
                   value={fields.ourTake ?? ''}
                   onChange={(e) => set('ourTake', e.target.value)}
                 />
-                <p className="mt-1 text-right text-[11px] text-slate-400">
-                  {wordCount(String(fields.ourTake ?? ''))} words ·{' '}
-                  {String(fields.ourTake ?? '').length} characters
-                </p>
+                <div className="flex items-center justify-between">
+                  {renderAssist({
+                    fieldKey: 'ourTake',
+                    targetField:
+                      'ourTake — the main overall verdict paragraph: strongest areas, who it suits, most important limitations, 3–5 sentences',
+                    hasText: Boolean(String(fields.ourTake ?? '').trim()),
+                    onText: (t) => set('ourTake', t),
+                  })}
+                  <p className="mt-1 text-right text-[11px] text-slate-400">
+                    {wordCount(String(fields.ourTake ?? ''))} words ·{' '}
+                    {String(fields.ourTake ?? '').length} characters
+                  </p>
+                </div>
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field
-                  label="Primary strength"
-                  hint="Concise phrase, not a full sentence — e.g. “Highly realistic conversations”."
+                  label={
+                    <span>
+                      Primary strength
+                      <AiAssistBadge fieldKey="mainStrength" />
+                    </span>
+                  }
+                  hint="Concise phrase — e.g. “Highly realistic conversations”."
                 >
                   <TextInput
                     value={fields.mainStrength ?? ''}
                     onChange={(e) => set('mainStrength', e.target.value)}
                     placeholder="Highly realistic conversations"
                   />
-                  <CharCount value={String(fields.mainStrength ?? '')} ideal="under 60" />
+                  <div className="flex items-center justify-between">
+                    {renderAssist({
+                      fieldKey: 'mainStrength',
+                      targetField:
+                        'mainStrength — concise phrase (not a full sentence) naming the product’s single biggest strength, under 60 characters',
+                      hasText: Boolean(String(fields.mainStrength ?? '').trim()),
+                      onText: (t) => set('mainStrength', t),
+                    })}
+                    <CharCount value={String(fields.mainStrength ?? '')} ideal="under 60" />
+                  </div>
                 </Field>
                 <Field
-                  label="Primary limitation"
+                  label={
+                    <span>
+                      Primary limitation
+                      <AiAssistBadge fieldKey="mainLimitation" />
+                    </span>
+                  }
                   hint="Concise phrase — e.g. “Slow image generation”."
                 >
                   <TextInput
@@ -236,66 +468,117 @@ export function VerdictTab() {
                     onChange={(e) => set('mainLimitation', e.target.value)}
                     placeholder="Slow image generation"
                   />
-                  <CharCount value={String(fields.mainLimitation ?? '')} ideal="under 60" />
-                </Field>
-                <Field
-                  label="Short directory description"
-                  hint="Brief description shown in listings and previews."
-                >
-                  <TextArea
-                    rows={3}
-                    value={fields.directoryDescription ?? ''}
-                    onChange={(e) => set('directoryDescription', e.target.value)}
-                  />
+                  <div className="flex items-center justify-between">
+                    {renderAssist({
+                      fieldKey: 'mainLimitation',
+                      targetField:
+                        'mainLimitation — concise phrase naming the product’s single biggest limitation, under 60 characters',
+                      hasText: Boolean(String(fields.mainLimitation ?? '').trim()),
+                      onText: (t) => set('mainLimitation', t),
+                    })}
+                    <CharCount value={String(fields.mainLimitation ?? '')} ideal="under 60" />
+                  </div>
                 </Field>
               </div>
+              <Field
+                label={
+                  <span>
+                    Directory description
+                    <AiAssistBadge fieldKey="directoryDescription" />
+                  </span>
+                }
+                hint="Brief description shown in listings and previews."
+              >
+                <TextArea
+                  rows={3}
+                  value={fields.directoryDescription ?? ''}
+                  onChange={(e) => set('directoryDescription', e.target.value)}
+                />
+                <div className="mt-1">
+                  {renderAssist({
+                    fieldKey: 'directoryDescription',
+                    targetField:
+                      'directoryDescription — brief 1–2 sentence description of the product for directory listings and previews',
+                    hasText: Boolean(String(fields.directoryDescription ?? '').trim()),
+                    onText: (t) => set('directoryDescription', t),
+                  })}
+                </div>
+              </Field>
             </div>
-          </ProductFormSection>
+          )}
 
-          {/* 2. Decision summary */}
-          <ProductFormSection num={2} title="Decision summary" divider>
-            <p className="mb-3 text-xs text-slate-500">
-              Rendered as separate rows in the public “Best for / Not ideal for” lists.
-            </p>
-            {(bestForIsLegacy || notIdealIsLegacy) && (
-              <p className="mb-3 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
-                These items were imported from the old free-text fields. Saving stores them as a
-                structured list; the original text is preserved.
+          {activeStep === 'decision' && (
+            <div className="mt-4 space-y-4">
+              <p className="text-xs text-slate-500">
+                Rendered as separate rows in the public “Best for / Not ideal for” lists.
               </p>
-            )}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">Best for</p>
-                <StringListEditor
-                  value={bestFor}
-                  onChange={(items) => set('bestFor', items)}
-                  addLabel="Add “Best for” item"
-                  placeholder="Users who want deep, realistic conversations"
-                  emptyHint="Who should choose this product? Aim for 3–4 short items."
-                  maxRecommended={4}
-                  maxItemLength={90}
-                />
-              </div>
-              <div>
-                <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">Not ideal for</p>
-                <StringListEditor
-                  value={notIdealFor}
-                  onChange={(items) => set('notIdealFor', items)}
-                  addLabel="Add “Not ideal for” item"
-                  placeholder="Users who need instant image generation"
-                  emptyHint="Who should look elsewhere? Aim for 2–4 short items."
-                  maxRecommended={4}
-                  maxItemLength={90}
-                />
+              {(bestForIsLegacy || notIdealIsLegacy) && (
+                <p className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
+                  Imported from legacy free-text fields. Saving stores them as structured lists.
+                </p>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                    Best for
+                    <AiAssistBadge fieldKey="bestFor" />
+                  </p>
+                  <StringListEditor
+                    value={bestFor}
+                    onChange={(items) => set('bestFor', items)}
+                    addLabel="Add “Best for” item"
+                    placeholder="Users who want deep, realistic conversations"
+                    emptyHint="Who should choose this product? Aim for 3–4 short items."
+                    maxRecommended={4}
+                    maxItemLength={90}
+                  />
+                  <div className="mt-1">
+                    {renderAssist({
+                      fieldKey: 'bestFor',
+                      targetField:
+                        'bestFor — 3–4 short items describing who this product is best for, each under 90 characters',
+                      hasText: bestFor.length > 0,
+                      list: true,
+                      onItems: (items) => set('bestFor', items),
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                    Not ideal for
+                    <AiAssistBadge fieldKey="notIdealFor" />
+                  </p>
+                  <StringListEditor
+                    value={notIdealFor}
+                    onChange={(items) => set('notIdealFor', items)}
+                    emptyHint="Who should look elsewhere? Aim for 2–4 short items."
+                    addLabel="Add “Not ideal for” item"
+                    placeholder="Users who need instant image generation"
+                    maxRecommended={4}
+                    maxItemLength={90}
+                  />
+                  <div className="mt-1">
+                    {renderAssist({
+                      fieldKey: 'notIdealFor',
+                      targetField:
+                        'notIdealFor — 2–4 short items describing who this product is not ideal for, each under 90 characters',
+                      hasText: notIdealFor.length > 0,
+                      list: true,
+                      onItems: (items) => set('notIdealFor', items),
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
-          </ProductFormSection>
+          )}
 
-          {/* 3. Pros and cons */}
-          <ProductFormSection num={3} title="Pros and cons" divider>
-            <div className="grid gap-4 sm:grid-cols-2">
+          {activeStep === 'pros-cons' && (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">Pros</p>
+                <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                  Pros
+                  <AiAssistBadge fieldKey="pros" />
+                </p>
                 <StringListEditor
                   value={pros}
                   onChange={(items) => set('pros', items)}
@@ -304,9 +587,22 @@ export function VerdictTab() {
                   emptyHint="What genuinely stood out in testing?"
                   maxItemLength={120}
                 />
+                <div className="mt-1">
+                  {renderAssist({
+                    fieldKey: 'pros',
+                    targetField:
+                      'pros — 3–5 specific pros based on test results, each under 120 characters',
+                    hasText: pros.length > 0,
+                    list: true,
+                    onItems: (items) => set('pros', items),
+                  })}
+                </div>
               </div>
               <div>
-                <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">Cons</p>
+                <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                  Cons
+                  <AiAssistBadge fieldKey="cons" />
+                </p>
                 <StringListEditor
                   value={cons}
                   onChange={(items) => set('cons', items)}
@@ -315,45 +611,93 @@ export function VerdictTab() {
                   emptyHint="What are the honest drawbacks?"
                   maxItemLength={120}
                 />
+                <div className="mt-1">
+                  {renderAssist({
+                    fieldKey: 'cons',
+                    targetField:
+                      'cons — 2–4 honest cons based on test results, each under 120 characters',
+                    hasText: cons.length > 0,
+                    list: true,
+                    onItems: (items) => set('cons', items),
+                  })}
+                </div>
               </div>
             </div>
-          </ProductFormSection>
+          )}
 
-          {/* 4. Expert opinion */}
-          <ProductFormSection num={4} title="Expert opinion" divider>
-            <Field
-              label="Expert opinion"
-              hint="Write a first-person conclusion based on hands-on testing: what stood out, who you would recommend it to, and whether you would keep using it. Shown as the expert card with the author byline."
-            >
-              <TextArea
-                rows={5}
-                value={fields.expertOpinion ?? ''}
-                onChange={(e) => set('expertOpinion', e.target.value)}
-                placeholder="After three weeks of daily testing, what stood out most was…"
-              />
-              <p className="mt-1 text-right text-[11px] text-slate-400">
-                {expertWords} words · recommended 100–250
-                {expertWords > 0 && expertWords < 100 ? ' · a bit short' : ''}
-                {expertWords > 250 ? ' · consider trimming' : ''}
-              </p>
-            </Field>
-            {!related.review?.author && (
-              <p className="mt-1 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                No review author is set — the public expert card needs an author byline (Review tab
-                → author).
-              </p>
-            )}
-          </ProductFormSection>
+          {activeStep === 'expert' && (
+            <div className="mt-4">
+              <Field
+                label={
+                  <span>
+                    Expert opinion
+                    <AiAssistBadge fieldKey="expertOpinion" />
+                  </span>
+                }
+                hint="First-person conclusion based on hands-on testing — shown with the author byline."
+              >
+                <TextArea
+                  rows={6}
+                  value={fields.expertOpinion ?? ''}
+                  onChange={(e) => set('expertOpinion', e.target.value)}
+                  placeholder="After three weeks of daily testing, what stood out most was…"
+                />
+                <div className="flex items-center justify-between">
+                  {renderAssist({
+                    fieldKey: 'expertOpinion',
+                    targetField:
+                      'expertOpinion — a first-person expert conclusion (100–250 words) based on hands-on testing: what stood out, who it is recommended for, and whether the tester would keep using it',
+                    hasText: expertWords > 0,
+                    currentText: String(fields.expertOpinion ?? ''),
+                    onText: (t) => set('expertOpinion', t),
+                  })}
+                  <p className="mt-1 text-right text-[11px] text-slate-400">
+                    {expertWords} words · recommended 100–250
+                    {expertWords > 0 && expertWords < 100 ? ' · a bit short' : ''}
+                    {expertWords > 250 ? ' · consider trimming' : ''}
+                  </p>
+                </div>
+              </Field>
+              {!related.review?.author && (
+                <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                  No review author is set — the public expert card needs an author byline (Review tab
+                  → author).
+                </p>
+              )}
+            </div>
+          )}
 
-          {/* 5. Optional award */}
-          <ProductFormSection num={5} title="Award (optional)" divider>
-            <p className="mb-3 text-xs text-slate-500">
-              Awards are never required. Only set one when this product genuinely earns it.
-            </p>
+          {activeStep === 'categories' && (
+            <CategoryVerdictOverview
+              categories={related.categories.map((c) => ({
+                slug: String(c.slug),
+                name: String(c.name),
+              }))}
+              categoryVerdicts={categoryVerdicts}
+              categoryScores={categoryScores}
+              remainingRequiredTests={testing.remainingRequired}
+              onOpen={(slug) => setCategoryDrawerSlug(slug)}
+              onContinueNext={(slug) => setCategoryDrawerSlug(slug)}
+            />
+          )}
+
+          <VerdictStepFooter
+            onSuggest={() => void openNotesDrawer(currentNotesSectionKey())}
+            onSave={() => void handleSaveSection()}
+            saving={saving}
+            suggestDisabled={!testing.currentRun || (activeStep === 'categories' && !categoryDrawerSlug)}
+          />
+        </div>
+
+        {/* Optional award — excluded from step progress */}
+        <details className="rounded-xl border border-dashed border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-400">
+            Award (optional)
+          </summary>
+          <div className="space-y-3 border-t border-slate-100 px-4 py-4 dark:border-slate-800">
             {awardIsLegacy && (
-              <p className="mb-3 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
-                Imported from the old free-text award label — saving stores it as a structured
-                award.
+              <p className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
+                Imported from legacy award label — saving stores it as a structured award.
               </p>
             )}
             <div className="grid gap-3 sm:grid-cols-2">
@@ -386,190 +730,76 @@ export function VerdictTab() {
                       <option value="no">Inactive</option>
                     </Select>
                   </Field>
-                  <Field label="Internal reason" hint="Why this product earned the award (internal only).">
+                  <Field label="Internal reason">
                     <TextInput
                       value={award.reason ?? ''}
                       onChange={(e) => setAward({ reason: e.target.value })}
                     />
                   </Field>
-                  <Field label="Start date (optional)">
-                    <TextInput
-                      type="date"
-                      value={award.startAt ? new Date(award.startAt).toISOString().slice(0, 10) : ''}
-                      onChange={(e) =>
-                        setAward({ startAt: e.target.value ? new Date(e.target.value).getTime() : undefined })
-                      }
-                    />
-                  </Field>
-                  <Field label="Expiration date (optional)">
-                    <TextInput
-                      type="date"
-                      value={award.endAt ? new Date(award.endAt).toISOString().slice(0, 10) : ''}
-                      onChange={(e) =>
-                        setAward({ endAt: e.target.value ? new Date(e.target.value).getTime() : undefined })
-                      }
-                    />
-                  </Field>
                 </>
               )}
             </div>
-            {award.startAt && award.endAt && award.endAt <= award.startAt && (
-              <p className="mt-2 text-xs text-red-600">
-                The expiration date must be after the start date.
-              </p>
-            )}
-          </ProductFormSection>
-
-          {/* 6. Category verdicts */}
-          <ProductFormSection num={6} title="Category verdicts" divider>
-            <p className="mb-3 text-xs text-slate-500">
-              Structured editorial copy for each rating category — shown in the category verdict
-              areas of the public review page. Scores themselves come from the published test run.
-            </p>
-            <div className="space-y-2">
-              {related.categories.map((cat) => {
-                const slug = String(cat.slug);
-                const v = categoryVerdicts[slug];
-                const isOpen = openCat === slug;
-                const filled = verdictFilledCount(v);
-                const score = publishedScores?.get(slug) ?? null;
-                return (
-                  <div
-                    key={cat.id}
-                    className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700"
-                  >
-                    <button
-                      type="button"
-                      aria-expanded={isOpen}
-                      onClick={() => setOpenCat(isOpen ? null : slug)}
-                      className="flex w-full items-center gap-2 bg-slate-50 px-3 py-2 text-left hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800"
-                    >
-                      <span className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-200">
-                        {cat.name}
-                      </span>
-                      {score !== null && (
-                        <span className="text-xs text-slate-500">Score {score}</span>
-                      )}
-                      {filled >= 2 ? (
-                        <span className="flex items-center gap-1 text-xs text-green-700 dark:text-green-400">
-                          <Icon name="check_circle" className="!text-[14px]" /> {filled} of 7 fields
-                        </span>
-                      ) : filled > 0 ? (
-                        <span className="text-xs text-amber-700 dark:text-amber-400">
-                          {7 - filled} fields missing
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-400">empty</span>
-                      )}
-                      <Icon
-                        name="expand_more"
-                        className={`!text-[18px] text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                      />
-                    </button>
-                    {isOpen && (
-                      <div className="space-y-3 border-t border-slate-100 p-3 dark:border-slate-800">
-                        <Field
-                          label="Category verdict headline"
-                          hint="Short phrase summarizing the category, e.g. “Large and varied character library”."
-                        >
-                          <TextInput
-                            value={v?.headline ?? ''}
-                            onChange={(e) => setCategoryVerdict(slug, { headline: e.target.value })}
-                            placeholder="Large and varied character library"
-                          />
-                        </Field>
-                        <Field
-                          label="Category verdict paragraph"
-                          hint="Explain the strongest result, important limitations, and what this means for the user."
-                        >
-                          <TextArea
-                            rows={3}
-                            value={v?.verdict ?? ''}
-                            onChange={(e) => setCategoryVerdict(slug, { verdict: e.target.value })}
-                            placeholder={`How does ${fields.name || 'this product'} perform on ${cat.name}?`}
-                          />
-                        </Field>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <Field label="Primary category strength">
-                            <TextInput
-                              value={v?.mainStrength ?? ''}
-                              onChange={(e) => setCategoryVerdict(slug, { mainStrength: e.target.value })}
-                            />
-                          </Field>
-                          <Field label="Primary category limitation">
-                            <TextInput
-                              value={v?.mainWeakness ?? ''}
-                              onChange={(e) => setCategoryVerdict(slug, { mainWeakness: e.target.value })}
-                            />
-                          </Field>
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div>
-                            <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-                              Category pros
-                            </p>
-                            <StringListEditor
-                              value={v?.pros}
-                              onChange={(items) => setCategoryVerdict(slug, { pros: items })}
-                              addLabel="Add pro"
-                              maxItemLength={120}
-                            />
-                          </div>
-                          <div>
-                            <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-                              Category cons
-                            </p>
-                            <StringListEditor
-                              value={v?.cons}
-                              onChange={(items) => setCategoryVerdict(slug, { cons: items })}
-                              addLabel="Add con"
-                              maxItemLength={120}
-                            />
-                          </div>
-                        </div>
-                        <Field
-                          label="Expert note"
-                          hint="Optional short first-person observation for this category."
-                        >
-                          <TextArea
-                            rows={2}
-                            value={v?.expertOpinion ?? ''}
-                            onChange={(e) => setCategoryVerdict(slug, { expertOpinion: e.target.value })}
-                          />
-                        </Field>
-                        <Field
-                          label="Linked evidence references (optional)"
-                          hint="Comma-separated evidence slugs to cite under this verdict, e.g. reply-speed, long-term-memory-test."
-                        >
-                          <TextInput
-                            value={(v?.evidenceRefs ?? []).join(', ')}
-                            onChange={(e) =>
-                              setCategoryVerdict(slug, {
-                                evidenceRefs: e.target.value
-                                  .split(',')
-                                  .map((s) => s.trim())
-                                  .filter(Boolean),
-                              })
-                            }
-                            placeholder="e.g. reply-speed, long-term-memory-test"
-                          />
-                        </Field>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {related.categories.length === 0 && (
-                <p className="text-sm text-slate-400">
-                  No active rating categories found — configure them under Testing → Categories.
-                </p>
-              )}
-            </div>
-          </ProductFormSection>
-        </div>
+          </div>
+        </details>
       </div>
 
       <CompletionSidebar />
+
+      {categoryDrawerSlug && (
+        <CategoryVerdictDrawer
+          slug={categoryDrawerSlug}
+          categoryName={
+            String(related.categories.find((c) => String(c.slug) === categoryDrawerSlug)?.name ?? categoryDrawerSlug)
+          }
+          categoryId={drawerCategory?.id}
+          score={categoryScores.get(categoryDrawerSlug) ?? null}
+          categories={related.categories.map((c) => ({
+            slug: String(c.slug),
+            name: String(c.name),
+          }))}
+          saved={categoryVerdicts[categoryDrawerSlug]}
+          saving={saving}
+          remainingRequiredTests={testing.remainingRequired}
+          categoryRemainingTests={categoryRemainingTests}
+          isPreview={testing.isPreview}
+          testRunId={testing.currentRun?.id}
+          testingHref={`${workspaceTabPath(productId, 'testing')}?category=${encodeURIComponent(categoryDrawerSlug)}`}
+          aiAssisted={aiAssistedFields.has(`categoryVerdicts.${categoryDrawerSlug}`)}
+          onClose={() => setCategoryDrawerSlug(null)}
+          onSave={saveCategoryDraft}
+          onOpenNotes={() => void openCategoryNotes(categoryDrawerSlug)}
+          onNavigate={(slug) => setCategoryDrawerSlug(slug)}
+          onContinueNext={(slug) => setCategoryDrawerSlug(slug)}
+        />
+      )}
+
+      <AiNotesDrawer
+        open={notesDrawerOpen}
+        sectionLabel={
+          notesSectionKey
+            ? sectionConfig(
+                notesSectionKey,
+                related.categories.find(
+                  (c) => notesSectionKey === categorySectionKey(String(c.slug)),
+                )?.name as string | undefined,
+              ).label
+            : 'Verdict section'
+        }
+        productName={String(fields.name ?? 'Product')}
+        testRunName={testing.currentRun?.name}
+        notes={aiNotes.notes}
+        loading={aiNotes.loading}
+        generating={aiNotes.generating}
+        error={aiNotes.error}
+        onClose={() => {
+          setNotesDrawerOpen(false);
+        }}
+        onGenerate={() => void handleGenerateNotes()}
+        onRegenerate={() => void handleRegenerateNotes()}
+        getFieldValue={getNotesFieldValue}
+        onInsertField={handleNotesInsertField}
+        onInsertListField={handleNotesInsertListField}
+      />
     </div>
   );
 }

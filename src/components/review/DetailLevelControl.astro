@@ -99,7 +99,9 @@ const options = [
 </style>
 
 <script>
-  function syncAccordionVisibility(level: string) {
+  type DetailLevel = 'skim' | 'medium' | 'all-in';
+
+  function syncAccordionVisibility(level: DetailLevel) {
     const root = document.querySelector<HTMLElement>('[data-ratings-root]');
     if (!root) return;
 
@@ -114,29 +116,24 @@ const options = [
         return;
       }
 
-      const isOpen = toggle.getAttribute('aria-expanded') === 'true';
-      content.classList.toggle('hidden', !isOpen);
+      toggle.setAttribute('aria-expanded', 'true');
+      content.classList.remove('hidden');
     });
   }
 
-  function applyDetailLevel(level: string, options: { syncAccordions?: boolean } = {}) {
+  function applyDetailLevel(level: string) {
     const root = document.querySelector<HTMLElement>('[data-ratings-root]');
     if (!root) return;
 
-    const prev = root.dataset.detailLevel || 'skim';
-    root.dataset.detailLevel = level;
+    const normalized = (level === 'medium' || level === 'all-in' ? level : 'skim') as DetailLevel;
+    root.dataset.detailLevel = normalized;
 
     document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
-      input.checked = input.value === level;
+      input.checked = input.value === normalized;
     });
 
-    if (options.syncAccordions !== false && level === 'skim' && prev !== 'skim') {
-      syncAccordionVisibility(level);
-    } else if (options.syncAccordions !== false && prev === 'skim' && level !== 'skim') {
-      syncAccordionVisibility(level);
-    }
-
-    document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level } }));
+    syncAccordionVisibility(normalized);
+    document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level: normalized } }));
   }
 
   function initDetailLevel() {
@@ -158,18 +155,27 @@ const options = [
         if (!label || !label.closest('[data-detail-level-control]')) return;
         const input = label.querySelector<HTMLInputElement>('input[name="detail-level"]');
         if (!input) return;
-        window.requestAnimationFrame(() => {
-          if (input.checked) applyDetailLevel(input.value);
-        });
+        applyDetailLevel(input.value);
       });
+
+      document.addEventListener('detail-level-set', ((event: CustomEvent<{ level: string }>) => {
+        if (event.detail?.level) applyDetailLevel(event.detail.level);
+      }) as EventListener);
     }
 
     const level = root.dataset.detailLevel || 'skim';
     document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
       input.checked = input.value === level;
     });
+
+    if (root.dataset.detailLevelInitialized !== 'true') {
+      root.dataset.detailLevelInitialized = 'true';
+      applyDetailLevel(level);
+    }
   }
 
   initDetailLevel();
   document.addEventListener('astro:page-load', initDetailLevel);
+
+  (window as Window & { applyDetailLevel?: (level: string) => void }).applyDetailLevel = applyDetailLevel;
 </script>

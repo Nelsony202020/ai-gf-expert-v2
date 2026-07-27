@@ -84,7 +84,7 @@ export function ProductSummarySidebar({
         <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Need help?</p>
         <p className="mt-1 text-xs text-slate-500">See how product records connect to reviews, tests, and publishing.</p>
         <a
-          href="/editorial-process"
+          href="/editorial-guidelines/"
           target="_blank"
           rel="noreferrer"
           className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-pink-600 hover:underline dark:text-pink-400"

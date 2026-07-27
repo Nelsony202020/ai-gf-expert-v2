@@ -8,11 +8,11 @@ export const SAMPLE = {
   /** Target AI replies per chat in the standard chat test. */
   chatRepliesPerChat: 20,
   /** Images in the batch review worksheet. */
-  imageBatch: 20,
+  imageBatch: 10,
   /** Same-character consistency images. */
   imageConsistency: 5,
   /** Videos in the batch review worksheet. */
-  videoBatch: 5,
+  videoBatch: 3,
   /** Refusal-test prompts (reliability session). */
   refusalPrompts: 25,
   /** Replies timed for speed test. */

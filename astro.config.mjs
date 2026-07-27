@@ -21,6 +21,13 @@ export default defineConfig({
       SANITY_API_READ_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
       SANITY_PREVIEW_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
       SANITY_WEBHOOK_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
+      OPENAI_API_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
+      OPENAI_VERDICT_MODEL: envField.string({ context: 'server', access: 'secret', optional: true }),
+      OPENAI_PRICING_MODEL: envField.string({ context: 'server', access: 'secret', optional: true }),
+      OPENAI_ALT_TEXT_MODEL: envField.string({ context: 'server', access: 'secret', optional: true }),
+      AI_VERDICT_ENABLED: envField.string({ context: 'server', access: 'secret', optional: true }),
+      AI_PRICING_ENABLED: envField.string({ context: 'server', access: 'secret', optional: true }),
+      AI_ALT_TEXT_ENABLED: envField.string({ context: 'server', access: 'secret', optional: true }),
     },
   },
   // Public pages stay prerendered (static HTML for SEO). Server routes
@@ -36,6 +43,8 @@ export default defineConfig({
     '/terms-of-service/affiliate-disclosure': '/legal/affiliate-disclosure',
     '/terms-of-service/accessibility': '/legal/accessibility',
     '/guides/how-to-choos-an-ai-girlfriend-app': '/guides/how-to-choose-an-ai-girlfriend-app',
+    '/faq': '/',
+    '/editorial-process': '/editorial-guidelines',
   },
   vite: {
     plugins: [astroScriptTsPlugin(), tailwindcss(), react()],

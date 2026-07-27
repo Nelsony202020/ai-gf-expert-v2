@@ -19,6 +19,7 @@ import TestHubSubscoreBrowse from '../../components/test/TestHubSubscoreBrowse.a
 import TestHubSubscoreExample from '../../components/test/TestHubSubscoreExample.astro';
 import RoundupFaq from '../../components/roundup/RoundupFaq.astro';
 import { getTestCategories } from '../../lib/test-framework';
+import { loadTestHubMetrics } from '../../lib/test-hub-stats';
 import {
   testHubFaq,
   testHubProcessSteps,
@@ -34,6 +35,7 @@ import '../../styles/test-hub.css';
 import '../../styles/ratings-tooltips.css';
 
 const categories = getTestCategories();
+const trustMetrics = await loadTestHubMetrics();
 const chatCategory = categories.find((c) => c.key === 'chat');
 const testFaqItems = testHubFaq.map((item) => ({
   question: item.q,
@@ -57,7 +59,7 @@ const canonical = new URL('/test/', Astro.site ?? Astro.url.origin).toString();
         <TestHubRoundupSidebar categories={categories} />
 
         <div class="roundup-main min-w-0">
-          <TestHubHeroIntro meta={testMethodologyPageMeta} shareUrl={canonical} />
+          <TestHubHeroIntro meta={testMethodologyPageMeta} metrics={trustMetrics} shareUrl={canonical} />
 
           <article class="test-hub__main">
           <section id="how-scores-work" class="test-hub__section">

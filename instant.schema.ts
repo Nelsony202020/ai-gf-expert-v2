@@ -154,6 +154,10 @@ const _schema = i.schema({
       minMonthlyPrice: i.number().optional(),
       typicalMonthlyCost: i.number().optional(),
       priceCurrency: i.string().optional(),
+
+      // Character platform links (Candy AI etc.) — referral suffix appended to every character destination URL.
+      characterPlatformUrl: i.string().optional(),
+      referralSuffix: i.string().optional(),
     }),
 
     // One canonical review page per product (/reviews/[slug]).
@@ -192,8 +196,10 @@ const _schema = i.schema({
       focalPoint: i.json().optional(), // { x: 0-1, y: 0-1 }
       crop: i.json().optional(), // { x, y, width, height } in source pixels
       sortOrder: i.number().optional(),
-      // e.g. gallery | logo | featured | proof | character | hero
+      // e.g. gallery | logo | featured | proof | character | hero | chat | image_generator
       role: i.string().optional().indexed(),
+      // For testing-evidence media: rating category slug (characters, chat…)
+      testCategory: i.string().optional(),
       uploadedBy: i.string().optional(),
       approved: i.boolean().optional(),
       createdAt: i.date(),
@@ -408,6 +414,8 @@ const _schema = i.schema({
       featuredStartAt: i.date().optional(),
       featuredEndAt: i.date().optional(),
       homepageOrder: i.number().optional(),
+      // Direct outbound URL for this character (referral suffix from product is appended at render time).
+      destinationUrl: i.string().optional(),
       createdAt: i.date(),
       updatedAt: i.date(),
       deletedAt: i.date().optional(),
@@ -442,6 +450,8 @@ const _schema = i.schema({
       lastCheckStatus: i.string().optional(), // ok | broken | redirect | unchecked
       notes: i.string().optional(),
       clickCount: i.number().optional(),
+      /** Space-separated rel tokens on public CTAs — default applied when empty. */
+      relTags: i.string().optional(),
       createdAt: i.date(),
     }),
 
@@ -573,6 +583,52 @@ const _schema = i.schema({
       methodologyVersion: i.string(),
       detail: i.json().optional(),
       createdAt: i.date(),
+    }),
+
+    // AI editorial suggestions — stored separately from published verdict copy.
+    aiEditorialSuggestions: i.entity({
+      scope: i.string().indexed(), // overall | category | field | outline
+      categorySlug: i.string().optional(),
+      targetField: i.string().optional(),
+      promptVersion: i.string(),
+      model: i.string(),
+      modelSnapshot: i.string().optional(),
+      evidenceIds: i.json().optional(), // string[]
+      inputHash: i.string().indexed(),
+      structuredOutput: i.json().optional(),
+      keyFindings: i.json().optional(),
+      // generated | partially_inserted | inserted | edited | rejected | failed | stale
+      status: i.string().indexed(),
+      error: i.string().optional(),
+      tokenUsage: i.json().optional(),
+      openaiRequestId: i.string().optional(),
+      generatedBy: i.string().optional(),
+      generatedAt: i.date(),
+      insertedAt: i.date().optional(),
+      insertedBy: i.string().optional(),
+      rejectedAt: i.date().optional(),
+      rejectedBy: i.string().optional(),
+      finalEditedValue: i.string().optional(),
+    }),
+
+    // Saved AI notes & suggestions per verdict section (reopenable, not regenerated on open).
+    aiVerdictNotes: i.entity({
+      sectionKey: i.string().indexed(), // step:overall | step:decision | category:chat-features
+      scope: i.string().indexed(), // overall | category | outline
+      categorySlug: i.string().optional(),
+      promptVersion: i.string(),
+      model: i.string(),
+      evidenceIds: i.json().optional(), // string[]
+      inputHash: i.string().indexed(),
+      keyFindings: i.json().optional(),
+      fieldSuggestions: i.json().optional(), // section-scoped field suggestions
+      // generated | stale
+      status: i.string().indexed(),
+      tokenUsage: i.json().optional(),
+      openaiRequestId: i.string().optional(),
+      generatedBy: i.string().optional(),
+      generatedAt: i.date(),
+      updatedAt: i.date(),
     }),
 
     // ------------------------------------------------------------------
@@ -813,6 +869,22 @@ const _schema = i.schema({
     snapshotProduct: {
       forward: { on: 'scoreSnapshots', has: 'one', label: 'product' },
       reverse: { on: 'products', has: 'many', label: 'scoreSnapshots' },
+    },
+    aiSuggestionProduct: {
+      forward: { on: 'aiEditorialSuggestions', has: 'one', label: 'product' },
+      reverse: { on: 'products', has: 'many', label: 'aiEditorialSuggestions' },
+    },
+    aiSuggestionTestRun: {
+      forward: { on: 'aiEditorialSuggestions', has: 'one', label: 'testRun' },
+      reverse: { on: 'testRuns', has: 'many', label: 'aiEditorialSuggestions' },
+    },
+    aiVerdictNotesProduct: {
+      forward: { on: 'aiVerdictNotes', has: 'one', label: 'product' },
+      reverse: { on: 'products', has: 'many', label: 'aiVerdictNotes' },
+    },
+    aiVerdictNotesTestRun: {
+      forward: { on: 'aiVerdictNotes', has: 'one', label: 'testRun' },
+      reverse: { on: 'testRuns', has: 'many', label: 'aiVerdictNotes' },
     },
 
     // Roundups

@@ -20,6 +20,7 @@ import {
   fmtDate,
   Icon,
 } from '../ui';
+import { DEFAULT_AFFILIATE_REL } from '../../../lib/affiliate/rel';
 
 export function AffiliateLinksPage() {
   const canDelete = useCan('records.delete');
@@ -122,6 +123,7 @@ export function AffiliateLinksPage() {
                 <th className="px-2 py-2">Cloaked URL</th>
                 <th className="px-2 py-2">Product</th>
                 <th className="px-2 py-2">Destination</th>
+                <th className="px-2 py-2">Rel tags</th>
                 <th className="px-2 py-2">Status</th>
                 <th className="px-2 py-2">Clicks</th>
                 <th className="px-2 py-2">Verified</th>
@@ -137,6 +139,9 @@ export function AffiliateLinksPage() {
                     <td className="px-2 py-2">{link.product?.name ?? '—'}</td>
                     <td className="max-w-56 truncate px-2 py-2 text-xs text-slate-500">
                       {link.destinationUrl}
+                    </td>
+                    <td className="max-w-40 truncate px-2 py-2 font-mono text-[10px] text-slate-500">
+                      {link.relTags ?? DEFAULT_AFFILIATE_REL}
                     </td>
                     <td className="px-2 py-2">
                       {!link.active ? (
@@ -223,6 +228,7 @@ function LinkModal({
     campaign: link?.campaign ?? '',
     active: link ? Boolean(link.active) : true,
     notes: link?.notes ?? '',
+    relTags: link?.relTags ?? DEFAULT_AFFILIATE_REL,
     startAt: link?.startAt ? new Date(link.startAt).toISOString().slice(0, 10) : '',
     endAt: link?.endAt ? new Date(link.endAt).toISOString().slice(0, 10) : '',
   });
@@ -241,6 +247,7 @@ function LinkModal({
       campaign: fields.campaign || undefined,
       active: fields.active,
       notes: fields.notes || undefined,
+      relTags: String(fields.relTags || '').trim() || DEFAULT_AFFILIATE_REL,
       startAt: fields.startAt ? new Date(fields.startAt).getTime() : undefined,
       endAt: fields.endAt ? new Date(fields.endAt).getTime() : undefined,
     };
@@ -313,6 +320,16 @@ function LinkModal({
         </div>
         <Field label="Notes (terms, contact, payout)">
           <TextInput value={fields.notes} onChange={(e) => setFields({ ...fields, notes: e.target.value })} />
+        </Field>
+        <Field
+          label="Link rel tags"
+          help="Space-separated tokens on every public CTA for this cloaked link. Default: nofollow sponsored noopener."
+        >
+          <TextInput
+            value={fields.relTags}
+            onChange={(e) => setFields({ ...fields, relTags: e.target.value })}
+            placeholder={DEFAULT_AFFILIATE_REL}
+          />
         </Field>
         <Toggle checked={fields.active} onChange={(v) => setFields({ ...fields, active: v })} label="Active" />
         <div className="flex justify-end gap-2 pt-2">

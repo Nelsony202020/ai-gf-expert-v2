@@ -693,10 +693,16 @@ const fileFeaturedCharacters: HomeFeaturedCharacter[] = [
   charactersOfWeek[5], // Maya
 ];
 
-const { overlayFeaturedCharactersWithDb } = await import('../lib/content/store');
+/** Featured homepage carousel — loaded from admin homepage slots when DB is configured. */
+export async function loadFeaturedCharactersShowcase(): Promise<HomeFeaturedCharacter[]> {
+  const { loadFeaturedCharactersFromDb } = await import('../lib/homepage/featuredCharacters');
+  const dbCharacters = await loadFeaturedCharactersFromDb();
+  if (dbCharacters && dbCharacters.length > 0) return dbCharacters;
+  return fileFeaturedCharacters;
+}
 
-export const featuredCharactersShowcase: HomeFeaturedCharacter[] =
-  await overlayFeaturedCharactersWithDb(fileFeaturedCharacters);
+/** @deprecated Use loadFeaturedCharactersShowcase() — static file fallback only. */
+export const featuredCharactersShowcase: HomeFeaturedCharacter[] = fileFeaturedCharacters;
 
 export const recentUpdates: HomeRecentUpdate[] = [
   {

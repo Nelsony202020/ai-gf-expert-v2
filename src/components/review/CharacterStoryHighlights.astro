@@ -41,21 +41,6 @@ const displayChars = characters.slice(0, maxDisplay);
 const carouselChars = manualDrag || !staticCarousel ? [...displayChars, ...displayChars] : displayChars;
 const dataId = `char-stories-${productName.replace(/\s+/g, '-').toLowerCase()}`;
 const headingText = heading ?? `Meet some of ${productName}'s characters`;
-
-function segmentPath(index: number, total: number, radius = 46): string {
-  const gapDegrees = total > 1 ? 12 : 0;
-  const segmentDegrees = (360 - gapDegrees * total) / total;
-  const startAngle = -90 + index * (segmentDegrees + gapDegrees);
-  const endAngle = startAngle + segmentDegrees;
-  const startRad = (startAngle * Math.PI) / 180;
-  const endRad = (endAngle * Math.PI) / 180;
-  const x1 = 50 + radius * Math.cos(startRad);
-  const y1 = 50 + radius * Math.sin(startRad);
-  const x2 = 50 + radius * Math.cos(endRad);
-  const y2 = 50 + radius * Math.sin(endRad);
-  const largeArc = segmentDegrees > 180 ? 1 : 0;
-  return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`;
-}
 ---
 
 <section
@@ -89,30 +74,31 @@ function segmentPath(index: number, total: number, radius = 46): string {
           carouselChars.map((char, i) => {
             const origIndex = i % displayChars.length;
             const slideCount = char.storySlides.length;
-            const thumb = char.storySlides[char.storySlides.length - 1] ?? char.avatar;
+            const hasStory = slideCount > 0;
+            const thumb = hasStory ? char.storySlides[char.storySlides.length - 1] : char.avatar;
+            const ItemTag = hasStory ? 'button' : 'div';
             return (
-              <button
-                type="button"
-                class="char-stories__item"
-                data-story-open={origIndex}
-                aria-label={`View ${char.name}'s story`}
+              <ItemTag
+                class:list={['char-stories__item', !hasStory && 'char-stories__item--no-story']}
+                {...hasStory ? { type: 'button', 'data-story-open': origIndex } : {}}
+                aria-label={hasStory ? `View ${char.name}'s story` : undefined}
               >
                 <div class="char-stories__ring-wrap">
-                  <svg class="char-stories__ring" viewBox="0 0 100 100" aria-hidden="true">
-                    {
-                      Array.from({ length: slideCount }).map((_, seg) => (
-                        <path
-                          d={segmentPath(seg, slideCount)}
+                  {
+                    hasStory && (
+                      <svg class="char-stories__ring" viewBox="0 0 100 100" aria-hidden="true">
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="46"
                           fill="none"
-                          stroke-width="5"
-                          stroke-linecap="round"
-                          class="char-stories__segment"
-                          data-segment={seg}
+                          stroke-width="4"
+                          class="char-stories__ring-circle"
                         />
-                      ))
-                    }
-                  </svg>
-                  <div class="char-stories__avatar-wrap">
+                      </svg>
+                    )
+                  }
+                  <div class:list={['char-stories__avatar-wrap', !hasStory && 'char-stories__avatar-wrap--plain']}>
                     <img src={thumb} alt={char.name} class="char-stories__avatar" loading="lazy" width="64" height="64" />
                   </div>
                 </div>
@@ -123,7 +109,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
                   </span>
                   {showPlatform && char.platform && <span class="char-stories__platform">{char.platform}</span>}
                 </span>
-              </button>
+              </ItemTag>
             );
           })
         }
@@ -348,6 +334,14 @@ function segmentPath(index: number, total: number, radius = 46): string {
       if (nameLinkEl) {
         nameLinkEl.textContent = char.name;
         nameLinkEl.href = char.profileUrl || '#';
+        const outbound = char.profileUrl && (char.profileUrl.startsWith('http') || char.profileUrl.startsWith('/go/'));
+        if (outbound) {
+          nameLinkEl.rel = char.profileRel || 'nofollow sponsored noopener';
+          nameLinkEl.target = '_blank';
+        } else {
+          nameLinkEl.removeAttribute('rel');
+          nameLinkEl.removeAttribute('target');
+        }
       }
       if (typeEl) typeEl.textContent = char.archetype;
       if (avatarEl) { avatarEl.src = char.avatar; avatarEl.alt = char.name; }
@@ -462,7 +456,12 @@ function segmentPath(index: number, total: number, radius = 46): string {
     }
 
     root.querySelectorAll('[data-story-open]').forEach((btn) => {
-      btn.addEventListener('click', () => openViewer(Number(btn.getAttribute('data-story-open'))));
+      btn.addEventListener('click', () => {
+        const i = Number(btn.getAttribute('data-story-open'));
+        const char = characters[i];
+        if (!char?.storySlides?.length) return;
+        openViewer(i);
+      });
     });
     root.querySelectorAll('[data-story-close]').forEach((el) => el.addEventListener('click', closeViewer));
     root.querySelector('[data-story-next]')?.addEventListener('click', (e) => {
@@ -496,7 +495,11 @@ function segmentPath(index: number, total: number, radius = 46): string {
     chatInput?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        chatInput.value = '';
+        const char = characters[charIndex];
+        const url = char?.profileUrl;
+        if (url && url !== '#') {
+          window.location.href = url;
+        }
       }
     });
 
@@ -650,6 +653,7 @@ function segmentPath(index: number, total: number, radius = 46): string {
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
     gap: 6px; width: 72px; padding: 0; border: none; background: none; cursor: inherit;
   }
+  .char-stories__item--no-story { cursor: default; pointer-events: none; }
   .char-stories--with-platform .char-stories__item { width: 92px; }
   .char-stories__label-stack {
     display: flex;
@@ -672,9 +676,14 @@ function segmentPath(index: number, total: number, radius = 46): string {
   }
   .char-stories__ring-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
   .char-stories__ring { position: absolute; inset: 0; width: 64px; height: 64px; }
-  .char-stories__segment { stroke: #db2777; }
+  .char-stories__ring-circle { stroke: #db2777; }
   .char-stories__avatar-wrap {
     position: absolute; inset: 5px; border-radius: 999px; background: #fff; padding: 2px;
+  }
+  .char-stories__avatar-wrap--plain {
+    inset: 0;
+    background: transparent;
+    padding: 0;
   }
   .char-stories__avatar { width: 100%; height: 100%; border-radius: 999px; object-fit: cover; display: block; }
   .char-stories__name-row {
@@ -770,18 +779,23 @@ function segmentPath(index: number, total: number, radius = 46): string {
     z-index: 6;
     width: 36px;
     height: 36px;
-    border: none;
+    border: 1px solid rgb(255 255 255 / 28%);
     border-radius: 999px;
-    background: rgb(255 255 255 / 92%);
-    color: #172218;
+    background: rgb(255 255 255 / 16%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: rgb(255 255 255 / 92%);
     cursor: pointer;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 10px rgb(0 0 0 / 18%);
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
+    transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
   }
   .char-stories__nav-arrow .material-symbols-outlined { font-size: 22px; }
-  .char-stories__nav-arrow:hover { transform: translateY(-50%) scale(1.06); }
+  .char-stories__nav-arrow:hover {
+    transform: translateY(-50%) scale(1.05);
+    background: rgb(255 255 255 / 24%);
+  }
   .char-stories__nav-arrow--prev { left: 10px; opacity: 0; pointer-events: none; }
   .char-stories__nav-arrow--prev.is-visible { opacity: 1; pointer-events: auto; }
   .char-stories__nav-arrow--next { right: 10px; }

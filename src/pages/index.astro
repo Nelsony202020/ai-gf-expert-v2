@@ -13,14 +13,18 @@ import HomeGuides from '../components/home/HomeGuides.astro';
 import HomeFinalCta from '../components/home/HomeFinalCta.astro';
 import {
   loadExplorerApps,
+  loadFeaturedCharactersShowcase,
   featuredGuides,
-  featuredCharactersShowcase,
   homeMeta,
   recentUpdates,
   topPicks,
 } from '../data/homepage';
 
+// SSR so admin homepage slots appear without a full rebuild.
+export const prerender = false;
+
 const apps = await loadExplorerApps();
+const featuredCharactersShowcase = await loadFeaturedCharactersShowcase();
 ---
 
 <BaseLayout title={homeMeta.title} description={homeMeta.description} image={homeMeta.heroImage}>

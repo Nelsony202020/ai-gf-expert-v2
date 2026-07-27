@@ -1,0 +1,161 @@
+// Dropzone for AI pricing import: the editor drops any mix of pricing
+// screenshots (plans, token packages, feature costs, promotions), we upload
+// them as proof media, then one AI call classifies + extracts everything.
+
+import { useRef, useState } from 'react';
+import { api } from '../api';
+import { Button, ErrorNote, Icon } from '../ui';
+import type { PricingDraftClient } from './PricingReviewModal';
+
+interface UploadedShot {
+  mediaId: string;
+  url: string;
+  name: string;
+}
+
+export function PricingImportCard({
+  productId,
+  onDraft,
+}: {
+  productId: string;
+  onDraft: (draft: PricingDraftClient) => void;
+}) {
+  const [shots, setShots] = useState<UploadedShot[]>([]);
+  const [uploading, setUploading] = useState(0);
+  const [extracting, setExtracting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  async function addFiles(files: File[]) {
+    const images = files.filter((f) => f.type.startsWith('image/'));
+    if (images.length === 0) return;
+    setError(null);
+    setUploading((n) => n + images.length);
+    for (const file of images) {
+      try {
+        const form = new FormData();
+        form.set('file', file);
+        form.set('adult', '0');
+        form.set('role', 'proof');
+        form.set('altText', 'Pricing screenshot');
+        form.set('productId', productId);
+        const created = await api.upload<{ id: string; url?: string }>('/api/admin/media/upload', form);
+        setShots((prev) => [
+          ...prev,
+          { mediaId: created.id, url: created.url ?? URL.createObjectURL(file), name: file.name },
+        ]);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Upload failed');
+      } finally {
+        setUploading((n) => n - 1);
+      }
+    }
+  }
+
+  async function extract() {
+    if (shots.length === 0) return;
+    setError(null);
+    setExtracting(true);
+    try {
+      const { draft } = await api.post<{ draft: PricingDraftClient }>('/api/admin/ai-pricing/extract', {
+        productId,
+        mediaIds: shots.map((s) => s.mediaId),
+      });
+      onDraft(draft);
+      setShots([]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Extraction failed');
+    } finally {
+      setExtracting(false);
+    }
+  }
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      {error && (
+        <div className="mb-2">
+          <ErrorNote message={error} />
+        </div>
+      )}
+      <div
+        className={`rounded-lg border-2 border-dashed px-4 py-4 text-center transition-colors ${
+          dragOver
+            ? 'border-pink-400 bg-pink-50/60 dark:border-pink-600 dark:bg-pink-950/30'
+            : 'border-slate-200 dark:border-slate-700'
+        }`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          void addFiles(Array.from(e.dataTransfer.files));
+        }}
+      >
+        <Icon name="auto_awesome" className="!text-[22px] text-pink-400" />
+        <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-200">
+          Drop pricing screenshots here
+        </p>
+        <p className="mt-0.5 text-xs text-slate-400">
+          Plans, token packages, feature costs, promotions — AI sorts it out. Or{' '}
+          <button
+            type="button"
+            className="font-medium text-pink-600 hover:underline"
+            onClick={() => fileInput.current?.click()}
+          >
+            browse files
+          </button>
+          .
+        </p>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files) void addFiles(Array.from(e.target.files));
+            e.target.value = '';
+          }}
+        />
+      </div>
+
+      {(shots.length > 0 || uploading > 0) && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {shots.map((s) => (
+            <span
+              key={s.mediaId}
+              className="group relative inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
+              title={s.name}
+            >
+              <img src={s.url} alt={s.name} className="h-full w-full object-cover" />
+              <button
+                type="button"
+                aria-label="Remove screenshot"
+                className="absolute inset-0 hidden items-center justify-center bg-black/50 text-white group-hover:flex"
+                onClick={() => setShots((prev) => prev.filter((x) => x.mediaId !== s.mediaId))}
+              >
+                <Icon name="close" className="!text-[14px]" />
+              </button>
+            </span>
+          ))}
+          {uploading > 0 && (
+            <span className="inline-flex h-12 w-12 animate-pulse items-center justify-center rounded border border-dashed border-slate-300 dark:border-slate-600">
+              <Icon name="hourglass_empty" className="!text-[16px] text-slate-400" />
+            </span>
+          )}
+          <span className="flex-1" />
+          <Button disabled={extracting || uploading > 0 || shots.length === 0} onClick={() => void extract()}>
+            <Icon name="auto_awesome" className="!text-[14px]" />
+            {extracting
+              ? `Reading ${shots.length} screenshot${shots.length === 1 ? '' : 's'}…`
+              : 'Extract with AI'}
+          </Button>
+        </div>
+      )}
+    </section>
+  );
+}

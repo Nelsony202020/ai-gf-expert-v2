@@ -2,7 +2,24 @@
 
 type AdminLogoVariant = 'sidebar' | 'login';
 
-export function AdminLogo({ variant = 'sidebar' }: { variant?: AdminLogoVariant }) {
+export function AdminLogo({
+  variant = 'sidebar',
+  compact = false,
+}: {
+  variant?: AdminLogoVariant;
+  /** Icon-only mark for collapsed sidebar. */
+  compact?: boolean;
+}) {
+  if (compact) {
+    return (
+      <img
+        src="/brand/ai-gf-logo-green.png"
+        alt="AI Girlfriend Expert"
+        className="h-7 w-7 shrink-0 object-contain"
+        decoding="async"
+      />
+    );
+  }
   return (
     <span className={`admin-logo admin-logo--${variant}`}>
       <img

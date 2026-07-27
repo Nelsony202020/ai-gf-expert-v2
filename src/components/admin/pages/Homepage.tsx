@@ -2,7 +2,8 @@
 // Drag to reorder locally, then save — max 3 brands, 12 characters, 12 topics.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { dataApi, type EntityRow } from '../api';
+import { createPortal } from 'react-dom';
+import { api, dataApi, type EntityRow } from '../api';
 import { useCan } from '../context';
 import {
   Button,
@@ -68,7 +69,10 @@ function SearchablePicker({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [panelStyle, setPanelStyle] = useState<React.CSSProperties | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const selected = options.find((o) => o.id === value) ?? null;
 
   const filtered = useMemo(() => {
@@ -83,9 +87,46 @@ function SearchablePicker({
       .slice(0, 50);
   }, [options, query]);
 
+  const reposition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const gap = 4;
+    const estimatedPanel = 280;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openAbove = spaceBelow < estimatedPanel && rect.top > spaceBelow;
+
+    setPanelStyle({
+      position: 'fixed',
+      top: openAbove ? rect.top - gap : rect.bottom + gap,
+      left: rect.left,
+      width: rect.width,
+      zIndex: 100,
+      transform: openAbove ? 'translateY(-100%)' : undefined,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    reposition();
+    function onMove() {
+      reposition();
+    }
+    window.addEventListener('scroll', onMove, true);
+    window.addEventListener('resize', onMove);
+    return () => {
+      window.removeEventListener('scroll', onMove, true);
+      window.removeEventListener('resize', onMove);
+    };
+  }, [open, reposition]);
+
   useEffect(() => {
     function onDoc(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (wrapRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
     }
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -94,8 +135,15 @@ function SearchablePicker({
   return (
     <div ref={wrapRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((current) => {
+            const next = !current;
+            if (next) requestAnimationFrame(reposition);
+            return next;
+          });
+        }}
         className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left text-sm dark:border-slate-700 dark:bg-slate-900"
       >
         {selected && renderValue ? (
@@ -107,42 +155,49 @@ function SearchablePicker({
         )}
         <Icon name="expand_more" className="ml-auto !text-[20px] text-slate-400" />
       </button>
-      {open && (
-        <div className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-          <div className="border-b border-slate-100 p-2 dark:border-slate-800">
-            <TextInput
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search…"
-              className="!py-1.5 text-sm"
-            />
-          </div>
-          <ul className="max-h-56 overflow-y-auto py-1">
-            {filtered.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-slate-400">No matches</li>
-            ) : (
-              filtered.map((row) => (
-                <li key={row.id}>
-                  <button
-                    type="button"
-                    className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-pink-50 dark:hover:bg-pink-950/30 ${
-                      row.id === value ? 'bg-pink-50 dark:bg-pink-950/20' : ''
-                    }`}
-                    onClick={() => {
-                      onChange(row.id);
-                      setOpen(false);
-                      setQuery('');
-                    }}
-                  >
-                    {renderOption(row)}
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-      )}
+      {open &&
+        panelStyle &&
+        createPortal(
+          <div
+            ref={panelRef}
+            style={panelStyle}
+            className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900"
+          >
+            <div className="border-b border-slate-100 p-2 dark:border-slate-800">
+              <TextInput
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search…"
+                className="!py-1.5 text-sm"
+              />
+            </div>
+            <ul className="max-h-56 overflow-y-auto overscroll-contain py-1">
+              {filtered.length === 0 ? (
+                <li className="px-3 py-2 text-sm text-slate-400">No matches</li>
+              ) : (
+                filtered.map((row) => (
+                  <li key={row.id}>
+                    <button
+                      type="button"
+                      className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-pink-50 dark:hover:bg-pink-950/30 ${
+                        row.id === value ? 'bg-pink-50 dark:bg-pink-950/20' : ''
+                      }`}
+                      onClick={() => {
+                        onChange(row.id);
+                        setOpen(false);
+                        setQuery('');
+                      }}
+                    >
+                      {renderOption(row)}
+                    </button>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -604,7 +659,10 @@ export function HomepagePage() {
 
   useEffect(() => {
     reload();
-  }, [reload]);
+    if (canEdit) {
+      void api.post('/api/admin/homepage/sync-featured-characters').then(() => reload()).catch(() => {});
+    }
+  }, [reload, canEdit]);
 
   const picks = useMemo(() => (slots ?? []).filter((s) => s.kind === 'top_pick'), [slots]);
   const featured = useMemo(

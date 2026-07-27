@@ -48,12 +48,24 @@ export interface DefOption {
   description?: string;
 }
 
+/** Strip redundant "Category: " prefix when the session header already names the category. */
+function stripCategoryPrefix(q: string, categorySlug?: string): string {
+  if (!categorySlug || !q.includes(':')) return q;
+  const stripped = q.replace(/^[^:]+:\s*/, '').trim();
+  if (!stripped) return q;
+  return stripped.charAt(0).toUpperCase() + stripped.slice(1);
+}
+
 /** Short question label for testers. Prefers the generated short map, then DB label. */
 export function testerQuestion(def: EntityRow, categorySlug?: string): string {
   const key = shortQuestionKey(categorySlug, def);
-  if (key && SHORT_QUESTIONS[key]?.q) return SHORT_QUESTIONS[key].q;
-  const q = typeof def.questionLabel === 'string' ? def.questionLabel.trim() : '';
-  return q || String(def.name ?? '');
+  let q: string;
+  if (key && SHORT_QUESTIONS[key]?.q) q = SHORT_QUESTIONS[key].q;
+  else {
+    const label = typeof def.questionLabel === 'string' ? def.questionLabel.trim() : '';
+    q = label || String(def.name ?? '');
+  }
+  return stripCategoryPrefix(q, categorySlug);
 }
 
 /** Plain-English hint for the ? tooltip next to each question. */

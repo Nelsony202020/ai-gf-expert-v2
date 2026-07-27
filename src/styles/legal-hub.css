@@ -1,0 +1,130 @@
+.legal-hub-page {
+  --roundup-sidebar-width: 12.5rem;
+  --roundup-layout-gap: 2rem;
+}
+
+.legal-hub-page .legal-sidebar {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .legal-hub-page .legal-sidebar {
+    display: block;
+    position: sticky;
+    top: 5rem;
+    align-self: start;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    padding-right: 0.25rem;
+  }
+}
+
+.legal-hub-page .roundup-main {
+  min-width: 0;
+}
+
+.legal-hub-page__intro {
+  margin: 0 0 1.5rem;
+  max-width: 42rem;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--color-on-surface-variant);
+}
+
+.legal-hub-cards {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .legal-hub-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.legal-hub-card {
+  display: block;
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--color-surface-variant);
+  border-radius: 0.75rem;
+  background: var(--color-surface-container-lowest);
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.legal-hub-card:hover {
+  border-color: rgb(219 39 119 / 35%);
+  box-shadow: 0 4px 18px rgb(0 0 0 / 6%);
+}
+
+.legal-hub-card__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--color-on-surface);
+}
+
+.legal-hub-card__desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-on-surface-variant);
+}
+
+.category-hub-cards {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .category-hub-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.category-hub-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--color-surface-variant);
+  border-radius: 0.75rem;
+  background: var(--color-surface-container-lowest);
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.category-hub-card:hover {
+  border-color: rgb(219 39 119 / 35%);
+  box-shadow: 0 4px 18px rgb(0 0 0 / 6%);
+}
+
+.category-hub-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: rgb(219 39 119 / 10%);
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.category-hub-card__icon .material-symbols-outlined {
+  font-size: 1.125rem;
+}
+
+.category-hub-card__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--color-on-surface);
+}
+
+.category-hub-card__desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-on-surface-variant);
+}

@@ -1,5 +1,6 @@
 ---
 import type { Product } from '../../data/products';
+import { affiliateRel } from '../../lib/affiliate/rel';
 import { getScoreVisual, fmtScore } from '../../lib/scores';
 import ScorePill from './ScorePill.astro';
 import OverallScoreTooltip from './tooltips/OverallScoreTooltip.astro';
@@ -13,6 +14,7 @@ interface Props {
 
 const { product } = Astro.props;
 const overall = getScoreVisual(product.overallScore);
+const ctaRel = affiliateRel(product.affiliateRel);
 ---
 
 <div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm sticky top-4">
@@ -60,16 +62,16 @@ const overall = getScoreVisual(product.overallScore);
       <a
         href={product.affiliateUrl}
         target="_blank"
-        rel="nofollow sponsored noopener"
+        rel={ctaRel}
         class="block w-full bg-brand-cta text-center py-4 rounded-xl font-black text-xl hover:opacity-90 transition shadow-lg mb-2"
       >
         Visit {product.name}
       </a>
       <p class="text-center text-[10px] text-tertiary uppercase font-bold">
-        <a href="/legal/affiliate-disclosure" class="inline-flex items-center justify-center gap-1 hover:text-accent transition-colors">
+        <span class="inline-flex items-center justify-center gap-1">
           <span class="material-symbols-outlined text-[12px]">verified_user</span>
           Affiliate Link · Secure Site
-        </a>
+        </span>
       </p>
     </div>
   </div>

@@ -208,16 +208,6 @@ const evidenceBySubscore = category.subscores.map((sub) => {
 </style>
 
 <script>
-  function switchToAllIn() {
-    const root = document.querySelector<HTMLElement>('[data-ratings-root]');
-    if (!root || root.dataset.detailLevel === 'all-in') return;
-    root.dataset.detailLevel = 'all-in';
-    document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
-      input.checked = input.value === 'all-in';
-    });
-    document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level: 'all-in' } }));
-  }
-
   function initSubscoreSelect() {
     document.querySelectorAll<HTMLElement>('[data-category]').forEach((categoryEl) => {
       if (categoryEl.dataset.subscoreBound === 'true') return;
@@ -276,12 +266,15 @@ const evidenceBySubscore = category.subscores.map((sub) => {
           if (index === undefined) return;
 
           const root = document.querySelector<HTMLElement>('[data-ratings-root]');
-          const isMedium = root?.dataset.detailLevel === 'medium';
-          if (isMedium) {
-            switchToAllIn();
-            selectSubscore(index, true);
+          const level = root?.dataset.detailLevel ?? 'skim';
+          if (level === 'medium') {
+            const isActive = card.getAttribute('aria-selected') === 'true';
+            if (isActive) clearSubscoreSelection();
+            else selectSubscore(index);
             return;
           }
+
+          if (level === 'skim') return;
 
           const isActive = card.getAttribute('aria-selected') === 'true';
           if (isActive) return;

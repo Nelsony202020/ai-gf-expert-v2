@@ -43,6 +43,8 @@ export interface EvidenceInput {
   isUnknown?: boolean;
   manualOverrideScore?: number;
   manualOverrideReason?: string;
+  /** Sibling answers for conditional scoring (e.g. chat-modes count gates mode-types). */
+  relatedAnswers?: Record<string, RawValue | undefined>;
 }
 
 export interface SubscoreInput {
@@ -96,6 +98,43 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const clamp10 = (n: number) => Math.max(0, Math.min(10, n));
 
+const RESOLUTION_SCORES: Record<string, number> = {
+  '480p': 4,
+  '720p': 6,
+  '1080p': 8,
+  '4k': 10,
+};
+
+const MODE_RATING_SCORES: Record<string, number> = {
+  good: 10,
+  partial: 5,
+  poor: 0,
+};
+
+/** Absent = excluded from score; present = bonus points (live cam only). */
+export const BONUS_ONLY_SLUGS = new Set(['live-cam']);
+
+const EDITORIAL_SLUGS = new Set(['platform-extras-list', 'support-channels', 'support-available']);
+
+const SUPPORT_RATING_SLUGS = new Set(['support-reach', 'support-speed', 'support-helpfulness']);
+
+function supportOffered(related?: Record<string, RawValue | undefined>): boolean | null {
+  const raw = related?.['support-available'];
+  if (!raw || typeof raw !== 'object' || !('status' in raw)) return null;
+  if (raw.status === 'yes') return true;
+  if (raw.status === 'no') return false;
+  return null;
+}
+
+function chatModesCount(related?: Record<string, RawValue | undefined>): number | null {
+  const chatRaw = related?.['chat-modes'];
+  if (!chatRaw || typeof chatRaw !== 'object' || !('status' in chatRaw)) return null;
+  if (chatRaw.status === 'no') return 0;
+  if (chatRaw.status !== 'yes') return null;
+  const detail = 'detail' in chatRaw ? (chatRaw.detail as Record<string, unknown> | undefined) : undefined;
+  return typeof detail?.count === 'number' ? detail.count : null;
+}
+
 /** Normalize one evidence value to 0-10 (null = cannot score). */
 export function normalizeEvidence(input: EvidenceInput): {
   score: number | null;
@@ -115,15 +154,166 @@ export function normalizeEvidence(input: EvidenceInput): {
     return { score: null, status: 'na', detail: 'Not applicable — removed, weights re-scaled' };
   }
 
+  if (input.slug === 'edit-memories') {
+    const saveRaw = input.relatedAnswers?.['save-memories'];
+    if (saveRaw && 'status' in saveRaw && saveRaw.status === 'no') {
+      return {
+        score: 0,
+        status: 'scored',
+        detail: 'Save memories unavailable — edit memories scored 0/10',
+      };
+    }
+  }
+
+  if (EDITORIAL_SLUGS.has(input.slug)) {
+    if (!input.rawValue) {
+      if (input.slug === 'support-available') {
+        return { score: null, status: 'missing', detail: 'Support availability required' };
+      }
+      return { score: null, status: 'na', detail: 'Optional notes — excluded from score' };
+    }
+    if (input.slug === 'support-available' && 'status' in input.rawValue) {
+      const st = input.rawValue.status;
+      return {
+        score: null,
+        status: 'na',
+        detail: st === 'yes' ? 'Support available — rated separately' : 'No support offered',
+      };
+    }
+    return { score: null, status: 'na', detail: 'Reference notes — excluded from score' };
+  }
+
+  if (SUPPORT_RATING_SLUGS.has(input.slug)) {
+    const offered = supportOffered(input.relatedAnswers);
+    if (offered === false) {
+      return { score: null, status: 'na', detail: 'No support — excluded from score' };
+    }
+  }
+
+  if (input.slug === 'mode-types') {
+    const modeCount = chatModesCount(input.relatedAnswers);
+    if (modeCount !== null && modeCount <= 1) {
+      return {
+        score: null,
+        status: 'na',
+        detail:
+          modeCount === 0
+            ? 'No chat modes — mode quality excluded from score'
+            : 'Only one chat mode — mode quality excluded (requires 2+ modes)',
+      };
+    }
+  }
+
   if (!input.rawValue) {
+    if (input.slug === 'mode-types') {
+      const modeCount = chatModesCount(input.relatedAnswers);
+      if (modeCount !== null && modeCount > 1) {
+        return { score: null, status: 'missing', detail: 'Rate two chat modes when 2+ modes exist' };
+      }
+    }
     return { score: null, status: 'missing', detail: 'No result entered' };
   }
 
+  const raw = input.rawValue;
   const rule = input.scoringRule;
 
+  if (
+    'text' in raw &&
+    typeof raw.text === 'string' &&
+    (input.slug === 'resolution' || input.slug === 'maximum-resolution')
+  ) {
+    const score = RESOLUTION_SCORES[raw.text.trim().toLowerCase()];
+    if (score === undefined) {
+      return { score: null, status: 'missing', detail: `Unknown resolution "${raw.text}"` };
+    }
+    return { score: clamp10(score), status: 'scored', detail: `${raw.text} -> ${score}/10` };
+  }
+
+  if (input.slug === 'mode-types') {
+    const modeCount = chatModesCount(input.relatedAnswers);
+    if (modeCount === null) {
+      return { score: null, status: 'missing', detail: 'Chat mode count required before rating modes' };
+    }
+    if (!('structured' in raw)) {
+      return { score: null, status: 'missing', detail: 'Rate two chat modes when 2+ modes exist' };
+    }
+    const modes = (raw.structured as { modes?: Array<{ rating?: string }> }).modes;
+    if (!Array.isArray(modes) || modes.length === 0) {
+      return { score: null, status: 'missing', detail: 'Mode ratings incomplete' };
+    }
+    const scores = modes
+      .map((m) => MODE_RATING_SCORES[String(m.rating ?? '').toLowerCase()])
+      .filter((n) => n !== undefined);
+    if (scores.length === 0) {
+      return { score: null, status: 'missing', detail: 'Mode ratings incomplete' };
+    }
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    return {
+      score: clamp10(round1(avg)),
+      status: 'scored',
+      detail: `${modes.length} mode(s) rated (${modeCount} available) -> avg ${round1(avg)}/10`,
+    };
+  }
+
+  if (input.slug === 'chat-modes' && 'status' in raw && raw.status === 'no') {
+    return { score: 0, status: 'scored', detail: 'No chat modes -> 0/10' };
+  }
+
+  if (input.slug === 'chat-modes' && 'status' in raw && raw.status === 'yes') {
+    const detail = 'detail' in raw ? (raw.detail as Record<string, unknown> | undefined) : undefined;
+    const count = typeof detail?.count === 'number' ? detail.count : null;
+    if (count === null || rule.kind !== 'bands') {
+      return { score: null, status: 'missing', detail: 'Chat mode count required when Yes' };
+    }
+    const sorted = [...rule.bands].sort((a, b) => a.upTo - b.upTo);
+    const band = sorted.find((b) => count <= b.upTo) ?? sorted[sorted.length - 1];
+    return {
+      score: clamp10(band.score),
+      status: 'scored',
+      detail: `${count} mode(s) -> ${band.score}/10`,
+    };
+  }
+
   // Yes/Limited/No/Unknown statuses
-  if ('status' in input.rawValue) {
-    const status = input.rawValue.status;
+  if ('status' in raw) {
+    const status = raw.status;
+
+    if (input.slug === 'free-plan') {
+      if (status === 'no') {
+        return {
+          score: null,
+          status: 'na',
+          detail: 'No free plan — neutral, excluded from score (no penalty)',
+        };
+      }
+      if (status === 'yes') {
+        return { score: 10, status: 'scored', detail: 'Free plan available — bonus 10/10' };
+      }
+      if (status === 'limited') {
+        return { score: 7, status: 'scored', detail: 'Limited free plan — bonus 7/10' };
+      }
+    }
+
+    if (BONUS_ONLY_SLUGS.has(input.slug)) {
+      if (status === 'no') {
+        return {
+          score: null,
+          status: 'na',
+          detail: 'Not offered — excluded from score (no penalty)',
+        };
+      }
+      if (status === 'yes') {
+        return { score: 10, status: 'scored', detail: 'Available — bonus 10/10' };
+      }
+      if (status === 'limited') {
+        return { score: 6, status: 'scored', detail: 'Limited availability — bonus 6/10' };
+      }
+    }
+
+    if (input.slug === 'free-trial' && status === 'no') {
+      return { score: 0, status: 'scored', detail: 'No free trial — 0/10 (major gap vs industry standard)' };
+    }
+
     if (rule.kind === 'ynl') {
       const map: Record<string, number> = {
         yes: rule.yes,
@@ -131,6 +321,9 @@ export function normalizeEvidence(input: EvidenceInput): {
         no: rule.no,
         unknown: rule.unknown,
       };
+      if (status === 'unknown' && input.categorySlug === 'privacy') {
+        return { score: null, status: 'unknown', detail: 'Unknown — excluded from score' };
+      }
       const score = map[status];
       if (score === undefined) return { score: null, status: 'missing', detail: `Unmapped status "${status}"` };
       return {
@@ -143,31 +336,39 @@ export function normalizeEvidence(input: EvidenceInput): {
     if (status === 'unknown') {
       return { score: 0, status: 'unknown', detail: 'Unknown — scored 0 (never treated as Yes)' };
     }
+    // Boolean yes/no stored as status when scoring rule was not migrated yet.
+    if (
+      (input.measurementType === 'boolean' || input.slug === 'encryption') &&
+      (status === 'yes' || status === 'no')
+    ) {
+      const score = status === 'yes' ? 10 : 0;
+      return { score, status: 'scored', detail: `${status} -> ${score}/10 (boolean)` };
+    }
     return { score: null, status: 'missing', detail: `Status "${status}" needs a ynl scoring rule` };
   }
 
-  if ('value' in input.rawValue) {
-    const raw = input.rawValue.value;
-    if (typeof raw !== 'number' || Number.isNaN(raw)) {
+  if ('value' in raw) {
+    const num = raw.value;
+    if (typeof num !== 'number' || Number.isNaN(num)) {
       return { score: null, status: 'missing', detail: 'Raw value is not a number' };
     }
     switch (rule.kind) {
       case 'linear': {
         const { min, max, invert } = rule;
         if (max === min) return { score: null, status: 'missing', detail: 'Invalid linear rule (min == max)' };
-        let t = (raw - min) / (max - min);
+        let t = (num - min) / (max - min);
         t = Math.max(0, Math.min(1, t));
         if (invert) t = 1 - t;
         const score = round2(t * 10);
-        return { score, status: 'scored', detail: `linear(${min}..${max}${invert ? ', inverted' : ''}): ${raw} -> ${score}` };
+        return { score, status: 'scored', detail: `linear(${min}..${max}${invert ? ', inverted' : ''}): ${num} -> ${score}` };
       }
       case 'bands': {
         const sorted = [...rule.bands].sort((a, b) => a.upTo - b.upTo);
-        const band = sorted.find((b) => raw <= b.upTo) ?? sorted[sorted.length - 1];
+        const band = sorted.find((b) => num <= b.upTo) ?? sorted[sorted.length - 1];
         return {
           score: clamp10(band.score),
           status: 'scored',
-          detail: `bands: ${raw} -> ${band.score} (band ≤ ${band.upTo})`,
+          detail: `bands: ${num} -> ${band.score} (band ≤ ${band.upTo})`,
         };
       }
       case 'manual':
@@ -213,16 +414,39 @@ export function computeScores(
     };
   });
 
-  // Blocking: required evidence missing or needing manual scores
-  const missingRequired = evidenceComputed.filter(
-    (e) => e.required && (e.status === 'missing' || e.status === 'needs_manual'),
-  );
+  function hasRecordedAnswer(input: EvidenceInput): boolean {
+    if (input.notApplicable) return true;
+    return input.rawValue !== undefined && input.rawValue !== null;
+  }
+
+  // Block only when required evidence has no recorded answer. Manual-scoring
+  // items with an answer count as complete for publish — they may still need a
+  // 0–10 override before they contribute to the calculated score.
+  const missingRequired = evidenceComputed.filter((e, i) => {
+    if (!e.required) return false;
+    const input = evidence[i];
+    if (e.status === 'missing') return true;
+    if (e.status === 'needs_manual' && !hasRecordedAnswer(input)) return true;
+    return false;
+  });
   if (missingRequired.length > 0) {
     blockingErrors.push(
       `Cannot publish: ${missingRequired.length} required question${missingRequired.length === 1 ? '' : 's'} still unanswered (${missingRequired
         .slice(0, 6)
         .map((e) => e.name)
         .join(', ')}${missingRequired.length > 6 ? '…' : ''}).`,
+    );
+  }
+
+  const pendingManualScores = evidenceComputed.filter(
+    (e, i) => e.required && e.status === 'needs_manual' && hasRecordedAnswer(evidence[i]),
+  );
+  if (pendingManualScores.length > 0) {
+    warnings.push(
+      `${pendingManualScores.length} answer${pendingManualScores.length === 1 ? '' : 's'} recorded but not yet scored (manual review): ${pendingManualScores
+        .slice(0, 4)
+        .map((e) => e.name)
+        .join(', ')}${pendingManualScores.length > 4 ? '…' : ''}.`,
     );
   }
 

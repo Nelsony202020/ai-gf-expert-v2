@@ -28,6 +28,8 @@ import { getDb, isDbConfigured } from '../db/server';
 import { env } from '../env';
 import { lowestMonthlyPrice, lowestPlainMonthlyPrice } from '../pricing/calc';
 import { formatAudienceList, splitLegacyLines } from '../cms/format';
+import { appendReferralSuffix } from '../characters/destinationUrl';
+import { affiliateRel, DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
 
 export function useDbContent(): boolean {
   const flag = env('USE_DB_CONTENT') ?? '';
@@ -52,19 +54,29 @@ function mapAuthor(a: any): Author {
 }
 
 /** Map one DB product (with links + snapshots) onto the site's Product shape. */
-function mapProduct(dbProduct: any, fileFallback: Product | undefined): Product | null {
-  const snapshots: any[] = (dbProduct.scoreSnapshots ?? []).filter(
-    (s: any) => s.testRun?.isCurrentPublished,
-  );
-  const overall = snapshots.find((s) => s.kind === 'overall')?.score;
+function mapProduct(
+  dbProduct: any,
+  fileFallback: Product | undefined,
+  opts?: { preview?: boolean },
+): Product | null {
+  const preview = opts?.preview ?? false;
+  const allSnapshots: any[] = dbProduct.scoreSnapshots ?? [];
+  const publishedSnapshots = allSnapshots.filter((s: any) => s.testRun?.isCurrentPublished);
+  const snapshots = preview && publishedSnapshots.length === 0 ? allSnapshots : publishedSnapshots;
 
-  // A DB product only replaces file content once it has published scores.
-  if (overall === undefined || overall === null) return fileFallback ?? null;
+  let overall = snapshots.find((s: any) => s.kind === 'overall')?.score ?? null;
+  const hasCalculatedScores = overall != null && !Number.isNaN(overall);
+
+  // Live pages require a published score; preview can show unscored placeholders.
+  if (!preview && !hasCalculatedScores) return fileFallback ?? null;
 
   const review = dbProduct.review;
-  const evidenceResults: any[] = (dbProduct.evidenceResults ?? []).filter(
-    (r: any) => r.testRun?.isCurrentPublished,
-  );
+  const allEvidence: any[] = dbProduct.evidenceResults ?? [];
+  const evidenceResults = preview
+    ? allEvidence.filter((r: any) => r.testRun?.isCurrentPublished).length > 0
+      ? allEvidence.filter((r: any) => r.testRun?.isCurrentPublished)
+      : allEvidence
+    : allEvidence.filter((r: any) => r.testRun?.isCurrentPublished);
 
   // Categories from snapshots; descriptions/weights come with the snapshot
   // detail, contributor rows from evidence results.
@@ -99,7 +111,7 @@ function mapProduct(dbProduct: any, fileFallback: Product | undefined): Product 
       score: cat.score,
       weight: cat.weight ?? 10,
       description: fileCat?.description ?? '',
-      subscores: subs.length > 0 ? subs : fileCat?.subscores ?? [],
+      subscores: subs.length > 0 ? subs : [],
       evidence: fileCat?.evidence ?? [],
       proof: fileCat?.proof ?? [],
       whatThisMeans: fileCat?.whatThisMeans ?? '',
@@ -107,9 +119,21 @@ function mapProduct(dbProduct: any, fileFallback: Product | undefined): Product 
   });
 
   const gallery: GalleryImage[] = (dbProduct.media ?? [])
-    .filter((m: any) => m.approved && !m.deletedAt && m.mediaType === 'image' && m.role === 'gallery' && m.url)
+    .filter(
+      (m: any) =>
+        m.approved &&
+        !m.deletedAt &&
+        m.mediaType === 'image' &&
+        ['gallery', 'character', 'hero', 'chat', 'image_generator'].includes(m.role ?? 'gallery') &&
+        m.url,
+    )
     .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     .map((m: any) => ({ full: m.url, thumb: m.url, alt: m.altText ?? '' }));
+
+  const featuredMedia = dbProduct.featuredImage;
+  const featuredImage: GalleryImage | undefined = featuredMedia?.url
+    ? { full: featuredMedia.url, thumb: featuredMedia.url, alt: featuredMedia.altText ?? '' }
+    : fileFallback?.featuredImage ?? fileFallback?.gallery?.[0];
 
   const activeLink = (dbProduct.affiliateLinks ?? []).find((l: any) => l.active);
   const plans = (dbProduct.subscriptionPlans ?? []).filter((p: any) => p.active);
@@ -158,7 +182,7 @@ function mapProduct(dbProduct: any, fileFallback: Product | undefined): Product 
         summary: v.verdict ?? '',
         pros: Array.isArray(v.pros) ? v.pros : [],
         cons: Array.isArray(v.cons) ? v.cons : [],
-        score: cat.score,
+        score: cat.score ?? undefined,
       };
     })
     .filter((v): v is VerdictItem => v !== null);
@@ -186,15 +210,22 @@ function mapProduct(dbProduct: any, fileFallback: Product | undefined): Product 
     affiliateUrl: activeLink
       ? `/go/${activeLink.cloakedSlug}`
       : dbProduct.websiteUrl ?? fileFallback?.affiliateUrl ?? '',
+    affiliateRel: affiliateRel(activeLink?.relTags),
+    featuredImage,
     gallery: gallery.length > 0 ? gallery : fileFallback?.gallery ?? [],
-    overallScore: overall,
+    overallScore: hasCalculatedScores ? overall : null,
     overallSummary: dbProduct.oneLineVerdict ?? fileFallback?.overallSummary ?? '',
     ourTake: review?.ourTake ?? dbProduct.ourTake ?? fileFallback?.ourTake ?? '',
     safetyAudit,
     featureSpecs,
     overview: mergeOverview(fileFallback?.overview, deriveOverview(dbProduct, monthlyPriceLabel)),
     ratingChangelog: changelog,
-    categories: categories.length > 0 ? categories : fileFallback?.categories ?? [],
+    categories:
+      categories.length > 0
+        ? categories
+        : fileFallback?.categories
+          ? stripCategoryScores(fileFallback.categories)
+          : [],
     verdicts,
     expertOpinion: dbProduct.expertOpinion ?? review?.intro ?? fileFallback?.expertOpinion ?? '',
     pricingDisplay: {
@@ -215,6 +246,15 @@ function titleCase(slug: string): string {
     .split('-')
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
+}
+
+/** Keep category structure for display but drop placeholder scores. */
+function stripCategoryScores(categories: RatingCategory[]): RatingCategory[] {
+  return categories.map((category) => ({
+    ...category,
+    score: null,
+    subscores: category.subscores.map((sub) => ({ ...sub, score: null })),
+  }));
 }
 
 function yn(v: boolean | undefined, yes: string, no: string, unknown = 'Unknown'): string {
@@ -291,17 +331,23 @@ function deriveOverview(p: any, monthlyPriceLabel: string | null): Product['over
           .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
           .map((s: any) => s.media.url);
         const activeProductLink = (p.affiliateLinks ?? []).find((l: any) => l.active);
-        const cta = c.affiliateLink?.active
-          ? `/go/${c.affiliateLink.cloakedSlug}`
-          : activeProductLink
-            ? `/go/${activeProductLink.cloakedSlug}`
-            : undefined;
+        const destinationWithSuffix = c.destinationUrl
+          ? appendReferralSuffix(c.destinationUrl, p.referralSuffix)
+          : '';
+        const cta = destinationWithSuffix
+          ? destinationWithSuffix
+          : c.affiliateLink?.active
+            ? `/go/${c.affiliateLink.cloakedSlug}`
+            : activeProductLink
+              ? `/go/${activeProductLink.cloakedSlug}`
+              : undefined;
         return {
           name: c.name,
           archetype: (c.personalityTags ?? [])[0] ?? '',
           avatar: c.image?.url ?? '',
           storySlides: slides,
           profileUrl: cta,
+          profileRel: DEFAULT_AFFILIATE_REL,
         };
       }),
     featureCards: [],
@@ -437,44 +483,6 @@ export async function overlayRoundupWithDb<T extends {
 }
 
 /**
- * Order homepage featured characters by active DB slots when enabled.
- * Falls back to the file list untouched.
- */
-export async function overlayFeaturedCharactersWithDb<T extends { name: string }>(
-  fileCharacters: T[],
-): Promise<T[]> {
-  if (!useDbContent()) return fileCharacters;
-  try {
-    const db = getDb();
-    const { homepageSlots } = await (db.query as any)({
-      homepageSlots: {
-        $: { where: { kind: 'featured_character', active: true } },
-        character: {},
-      },
-    });
-    const nowMs = Date.now();
-    const live = (homepageSlots as any[])
-      .filter(
-        (s) =>
-          (!s.startAt || Number(s.startAt) <= nowMs) && (!s.endAt || Number(s.endAt) >= nowMs),
-      )
-      .sort((a, b) => a.position - b.position);
-    if (live.length === 0) return fileCharacters;
-
-    const byName = new Map(fileCharacters.map((c) => [c.name.toLowerCase(), c]));
-    const ordered: T[] = [];
-    for (const slot of live) {
-      const match = byName.get(String(slot.character?.name ?? '').toLowerCase());
-      if (match) ordered.push(match);
-    }
-    return ordered.length > 0 ? ordered : fileCharacters;
-  } catch (error) {
-    console.error('[content] homepage overlay failed — using file data', error);
-    return fileCharacters;
-  }
-}
-
-/**
  * Load products: file data by default; DB-published products mapped over it
  * when USE_DB_CONTENT is enabled.
  */
@@ -490,6 +498,7 @@ export async function loadProductsWithDb(fileProducts: Product[]): Promise<Produ
         factChecker: {},
         media: {},
         logo: {},
+        featuredImage: {},
         subscriptionPlans: {},
         affiliateLinks: {},
         characters: { image: {}, affiliateLink: {}, storySlides: { media: {} } },
@@ -625,4 +634,156 @@ export async function overlayExplorerAppsWithDb<
     console.error('[content] explorer apps overlay failed — using file data', error);
     return apps;
   }
+}
+
+const PREVIEW_PRODUCT_QUERY = {
+  review: { author: {}, factChecker: {} },
+  author: {},
+  factChecker: {},
+  media: {},
+  logo: {},
+  featuredImage: {},
+  subscriptionPlans: {},
+  affiliateLinks: {},
+  characters: { image: {}, affiliateLink: {}, storySlides: { media: {} } },
+  scoreSnapshots: { testRun: {} },
+  evidenceResults: { testRun: {}, evidenceDefinition: {} },
+};
+
+/** Build a minimal review Product from a roundup pick (placeholder content). */
+function productFromRoundupPick(pick: {
+  slug: string;
+  name: string;
+  intro: string;
+  overallScore: number;
+  overallSummary: string;
+  ourTake: string;
+  gallery: GalleryImage[];
+  categoryScores: { key: string; name: string; score: number; description: string; subscores?: { name: string; score: number }[] }[];
+  specs: { label: string; value: string }[];
+  pros: string[];
+  cons: string[];
+  affiliateUrl?: string;
+}): Product {
+  const categories: RatingCategory[] = pick.categoryScores.map((c) => ({
+    key: c.key,
+    name: c.name,
+    score: c.score,
+    weight: Math.round(100 / pick.categoryScores.length),
+    description: c.description,
+    subscores: (c.subscores ?? []).map((s) => ({
+      name: s.name,
+      score: s.score,
+      weight: 100,
+      description: '',
+      contributors: [],
+    })),
+    evidence: [],
+    proof: [],
+    whatThisMeans: '',
+  }));
+
+  const priceSpec = pick.specs.find((s) => s.label.toLowerCase().includes('price'));
+
+  return {
+    slug: pick.slug,
+    name: pick.name,
+    tagline: pick.intro,
+    reviewedDate: '',
+    modifiedDate: '',
+    methodology: 'Methodology v3.1',
+    authors: [
+      {
+        name: 'Herman Carter',
+        role: 'Lead Reviewer',
+        avatar: '/brand/herman-main-icon.svg',
+        verified: true,
+        slug: 'herman-carter',
+      },
+    ],
+    websiteUrl: '',
+    affiliateUrl: pick.affiliateUrl ?? '#',
+    affiliateRel: DEFAULT_AFFILIATE_REL,
+    gallery: pick.gallery,
+    overallScore: pick.overallScore,
+    overallSummary: pick.overallSummary,
+    ourTake: pick.ourTake,
+    safetyAudit: [],
+    featureSpecs: [],
+    overview: {
+      highlights: {
+        bestFor: pick.pros[0] ?? '',
+        standout: pick.pros[1] ?? '',
+        drawback: pick.cons[0] ?? '',
+        startingPrice: priceSpec?.value ?? '—',
+      },
+      characters: [],
+      featureCards: [],
+      comparisonMetrics: [],
+      searchTrends: {
+        productName: pick.name,
+        currentInterest: 0,
+        peakInterest: 0,
+        changePercent: 0,
+        changeDirection: 'up',
+        popularityRank: 0,
+        totalReviewed: 0,
+      },
+      bestForList: pick.pros,
+      notIdealList: pick.cons,
+    },
+    ratingChangelog: [],
+    categories,
+    verdicts: [],
+    expertOpinion: pick.ourTake,
+    pricingDisplay: {
+      monthly: priceSpec?.value ?? '—',
+      storeLabel: 'Visit site',
+    },
+  };
+}
+
+async function roundupProductFallbackAsync(slug: string): Promise<Product | null> {
+  try {
+    const { aiGirlfriendRoundup } = await import('../../data/roundups/ai-girlfriend');
+    const pick = aiGirlfriendRoundup.picks.find((p) => p.slug === slug);
+    return pick ? productFromRoundupPick(pick) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Load a product for the admin preview route — any status, unpublished scores OK.
+ * Falls back to static file data, then roundup placeholder content.
+ */
+export async function loadProductPreviewBySlug(slug: string): Promise<Product | null> {
+  const { getProduct } = await import('../../data/products');
+  const fileProduct = getProduct(slug);
+  const roundupFallback = await roundupProductFallbackAsync(slug);
+
+  if (!isDbConfigured()) {
+    return fileProduct ?? roundupFallback;
+  }
+
+  try {
+    const db = getDb();
+    const { products: rows } = await (db.query as any)({
+      products: {
+        $: { where: { slug } },
+        ...PREVIEW_PRODUCT_QUERY,
+      },
+    });
+    const dbProduct = (rows as any[])?.find((p) => !p.deletedAt);
+    if (dbProduct) {
+      const mapped = mapProduct(dbProduct, fileProduct ?? roundupFallback ?? undefined, {
+        preview: true,
+      });
+      if (mapped) return mapped;
+    }
+  } catch (error) {
+    console.error('[content] preview load failed — using fallbacks', error);
+  }
+
+  return fileProduct ?? roundupFallback;
 }

@@ -8,7 +8,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { dataApi } from '../../api';
 import { useCan, useMe } from '../../context';
-import { Button, ErrorNote, Icon, Spinner, fmtDate } from '../../ui';
+import { useToastError } from '../../Toast';
+import { Button, Icon, Spinner, fmtDate } from '../../ui';
 import {
   analyzeDoc,
   blocksToDoc,
@@ -69,6 +70,7 @@ export function ReviewTab() {
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useToastError(error, () => setError(null));
   const savedDocJson = useRef('');
 
   const canEdit = can('content.edit');
@@ -220,10 +222,8 @@ export function ReviewTab() {
   ) : undefined;
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_250px]">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
       <div className="space-y-4">
-        {error && <ErrorNote message={error} />}
-
         {/* Document meta row (the editor renders its own sticky toolbar) */}
         <div className="flex flex-wrap items-center justify-between gap-2 px-1">
           <div className="flex items-center gap-2 text-xs text-slate-500">

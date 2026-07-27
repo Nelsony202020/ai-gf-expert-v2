@@ -1,5 +1,6 @@
 import { products } from './products';
 import { megaMenuColumns } from './nav-mega-menu';
+import { legalPages } from './legal-pages';
 
 export type SearchResultType = 'review' | 'roundup' | 'guide' | 'page';
 
@@ -14,8 +15,9 @@ const staticPages: SearchResult[] = [
   { label: 'About Us', href: '/about', type: 'page', meta: 'Company' },
   { label: 'Contact Us', href: '/contact', type: 'page', meta: 'Company' },
   { label: 'HTML Sitemap', href: '/sitemap', type: 'page', meta: 'Company' },
-  { label: 'FAQ', href: '/faq', type: 'page', meta: 'Resources' },
-  { label: 'App Directory', href: '/ai-girlfriend-apps', type: 'page', meta: 'Resources' },
+  { label: 'Reviews Hub', href: '/reviews/', type: 'page', meta: 'Reviews' },
+  { label: 'Legal Hub', href: '/legal/', type: 'page', meta: 'Legal' },
+  { label: 'App Directory', href: '/ai-girlfriend-apps', type: 'page', meta: 'Tools' },
   { label: 'How We Test', href: '/test/', type: 'page', meta: 'Resources' },
   { label: 'How Score Tooltips Work', href: '/test/tooltips/', type: 'page', meta: 'Resources' },
   {
@@ -24,11 +26,12 @@ const staticPages: SearchResult[] = [
     type: 'guide',
     meta: 'Guides',
   },
-  { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure', type: 'page', meta: 'Legal' },
-  { label: 'Privacy Policy', href: '/legal/privacy', type: 'page', meta: 'Legal' },
-  { label: 'Terms of Service', href: '/legal/terms', type: 'page', meta: 'Legal' },
-  { label: 'Accessibility', href: '/legal/accessibility', type: 'page', meta: 'Legal' },
-  { label: 'Editorial Process', href: '/editorial-process', type: 'page', meta: 'Resources' },
+  ...legalPages.map((page) => ({
+    label: page.title,
+    href: page.href,
+    type: 'page' as const,
+    meta: 'Legal',
+  })),
   { label: 'Herman Carter', href: '/author/herman-carter', type: 'page', meta: 'Author' },
   { label: 'Ajit', href: '/author/ajit', type: 'page', meta: 'Author' },
 ];

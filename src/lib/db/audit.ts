@@ -15,7 +15,13 @@ export interface AuditEntry {
     | 'slug_change'
     | 'login'
     | 'upload'
-    | 'recalculate';
+    | 'recalculate'
+    | 'ai_suggest_requested'
+    | 'ai_suggest_generated'
+    | 'ai_suggest_failed'
+    | 'ai_suggest_inserted'
+    | 'ai_suggest_rejected'
+    | 'ai_suggest_regenerated';
   recordType: string;
   recordId: string;
   oldValue?: unknown;

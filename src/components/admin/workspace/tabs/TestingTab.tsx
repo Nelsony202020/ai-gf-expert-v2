@@ -12,17 +12,25 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, dataApi, type EntityRow } from '../../api';
 import { useCan, useMe } from '../../context';
-import { TestingHint } from '../../testing/TestingHint';
+import { useAsyncToast, useToast } from '../../Toast';
+import { reviewPageUrl } from '../../../../lib/slugs';
 import { GuidedTestingMode, type GuidedSession } from '../../testing/GuidedTestingMode';
+import { filterApplicableItems, isSessionApplicable } from '../../testing/capabilityGating';
 import { computePricingSuggestions, type AutofillSuggestion } from '../../testing/pricingAutofill';
-import { sessionComplete, sessionInputCount } from '../../testing/progress';
+import {
+  computeRunProgress,
+  lastEditedFromResults,
+  sessionRequiredComplete,
+  sessionRequiredProgress,
+  type ProgressContext,
+} from '../../testing/progress';
+import { TestingRunProgressSummary } from '../../testing/TestingProgressHeader';
+import { readSkippedSessions } from '../../testing/sessionProgressStorage';
 import { type SessionItem } from '../../testing/sessionUi';
 import { sessionsForCategory } from '../../testing/sessions';
-import { testerQuestion } from '../../testing/presentation';
 import {
   Badge,
   Button,
-  ErrorNote,
   Field,
   Icon,
   Modal,
@@ -31,7 +39,6 @@ import {
   TextInput,
   fmtDate,
   statusTone,
-  useAsync,
 } from '../../ui';
 import { useWorkspace } from '../context';
 
@@ -81,61 +88,50 @@ function resultState(r: EntityRow | undefined): ResultState {
   return 'none';
 }
 
-/** One obvious next step — secondary actions live in a small link row. */
+/** One obvious primary action — secondary actions live in the ⋮ menu. */
 function runPrimaryAction(opts: {
   isPublished: boolean;
+  hasCalculationError: boolean;
+  remainingRequired: number;
   canEnterResults: boolean;
-  canTest: boolean;
-  canReview: boolean;
   canPublish: boolean;
-  status: string;
-  sessionsComplete: boolean;
-  enteredCount: number;
-  onContinue: () => void;
-  onSubmitReview: () => void;
-  onApprove: () => void;
+  onResume: () => void;
   onPublish: () => void;
-}): { label: string; onClick: () => void } | null {
-  const {
-    isPublished,
-    canEnterResults,
-    canTest,
-    canReview,
-    canPublish,
-    status,
-    sessionsComplete,
-    enteredCount,
-    onContinue,
-    onSubmitReview,
-    onApprove,
-    onPublish,
-  } = opts;
-  if (isPublished) return null;
-  if (canEnterResults && !sessionsComplete) {
+  onRetryCalculation: () => void;
+  onViewLive: () => void;
+  onTestingCompleteNoPermission: () => void;
+}): { label: string; icon: string; onClick: () => void } {
+  if (opts.hasCalculationError) {
+    return { label: 'Retry calculation', icon: 'refresh', onClick: opts.onRetryCalculation };
+  }
+  if (opts.isPublished) {
+    return { label: 'View live score', icon: 'open_in_new', onClick: opts.onViewLive };
+  }
+  const testingComplete = opts.remainingRequired === 0;
+  if (testingComplete && opts.canPublish) {
+    return { label: 'Review and publish', icon: 'publish', onClick: opts.onPublish };
+  }
+  if (testingComplete) {
     return {
-      label: enteredCount > 0 ? 'Continue testing' : 'Start testing',
-      onClick: onContinue,
+      label: 'Testing complete',
+      icon: 'check_circle',
+      onClick: opts.onTestingCompleteNoPermission,
     };
   }
-  if (canTest && status === 'in_progress' && sessionsComplete) {
-    return { label: 'Submit for review', onClick: onSubmitReview };
-  }
-  if (status === 'ready_for_review' && canReview) {
-    return { label: 'Approve test run', onClick: onApprove };
-  }
-  if (canPublish && (status === 'approved' || status === 'ready_for_review')) {
-    return { label: 'Publish score to site', onClick: onPublish };
-  }
-  if (canEnterResults && sessionsComplete) {
-    return { label: 'Review answers', onClick: onContinue };
-  }
-  return null;
+  const suffix =
+    opts.remainingRequired > 0 ? ` (${opts.remainingRequired} required left)` : '';
+  return {
+    label: `Resume testing${suffix}`,
+    icon: 'play_arrow',
+    onClick: opts.canEnterResults ? opts.onResume : opts.onTestingCompleteNoPermission,
+  };
 }
 
 export function TestingTab() {
   const ws = useWorkspace();
   const can = useCan();
   const me = useMe();
+  const toast = useToast();
   const showRunEditor = me.role === 'owner' || me.role === 'admin';
   const [searchParams, setSearchParams] = useSearchParams();
   const runs = ws.related.testRuns;
@@ -149,8 +145,9 @@ export function TestingTab() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
   const [guidedStart, setGuidedStart] = useState<number | null>(null);
   const [showNewRun, setShowNewRun] = useState(false);
-  const [publishNote, setPublishNote] = useState<string | null>(null);
-  const { busy, error, setError, run: exec } = useAsync();
+  const [showDeleteRun, setShowDeleteRun] = useState(false);
+  const [calcError, setCalcError] = useState(false);
+  const { busy, setError, run: exec } = useAsyncToast();
 
   const canTest = can('testing.edit');
 
@@ -184,19 +181,27 @@ export function TestingTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRun?.id]);
 
-  async function calculate() {
+  async function calculate(notifyOnError = false) {
     if (!currentRun) return;
-    const res = await exec(() =>
-      api.get<{ tree: ScoreTreeDto }>(`/api/admin/test-runs/${currentRun.id}/calculate`),
-    );
-    if (res) setTree(res.tree);
+    setCalcError(false);
+    try {
+      const res = await api.get<{ tree: ScoreTreeDto }>(`/api/admin/test-runs/${currentRun.id}/calculate`);
+      setTree(res.tree);
+    } catch (e) {
+      setCalcError(true);
+      if (notifyOnError) {
+        toast.error('Score calculation failed', {
+          message: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
   }
 
-  // Auto-calculate a preview when a run with results is opened.
+  // Keep preview score up to date whenever answers change (no toast on failure).
   useEffect(() => {
-    if (currentRun && !structureLoading && results.length > 0 && !tree) void calculate();
+    if (currentRun && !structureLoading) void calculate(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentRun?.id, structureLoading]);
+  }, [currentRun?.id, structureLoading, results]);
 
   async function publishRun() {
     if (!currentRun) return;
@@ -213,21 +218,24 @@ export function TestingTab() {
     );
     if (res) {
       setTree(res.tree);
-      setPublishNote(
-        res.affectedRoundups.length > 0
-          ? `Published. Affected roundups (recalculate rankings): ${res.affectedRoundups.join(', ')}`
-          : 'Published — this run is now the live score source.',
-      );
+      toast.success('Published — this run is now the live score source.', {
+        message:
+          res.affectedRoundups.length > 0
+            ? `Affected roundups: ${res.affectedRoundups.join(', ')}`
+            : undefined,
+      });
       await ws.refreshRelated();
     }
   }
 
-  async function setRunStatus(status: string) {
+  async function deleteRun() {
     if (!currentRun) return;
     await exec(async () => {
-      await dataApi.update('testRuns', currentRun.id, { status });
+      await dataApi.remove('testRuns', currentRun.id);
       return true;
     });
+    setShowDeleteRun(false);
+    toast.success('Test run deleted');
     await ws.refreshRelated();
   }
 
@@ -243,6 +251,35 @@ export function TestingTab() {
     for (const r of results) if (r.evidenceDefinition?.id) map.set(r.evidenceDefinition.id, r);
     return map;
   }, [results]);
+
+  const attachmentCountByDef = useMemo(() => {
+    const resultIdToDef = new Map<string, string>();
+    for (const [defId, row] of resultByDef) resultIdToDef.set(row.id, defId);
+    const map = new Map<string, number>();
+    for (const m of ws.related.media) {
+      if (m.deletedAt) continue;
+      const erId = m.evidenceResult?.id;
+      if (!erId) continue;
+      const defId = resultIdToDef.get(erId);
+      if (defId) map.set(defId, (map.get(defId) ?? 0) + 1);
+    }
+    return map;
+  }, [resultByDef, ws.related.media]);
+
+  const skippedSessions = useMemo(
+    () => (currentRun ? readSkippedSessions(currentRun.id) : new Set<string>()),
+    [currentRun?.id],
+  );
+
+  const progressCtx: ProgressContext = useMemo(
+    () => ({
+      hasValue: (defId) => resultState(resultByDef.get(defId)) !== 'none',
+      getResult: (defId) => resultByDef.get(defId),
+      attachmentCount: (defId) => attachmentCountByDef.get(defId) ?? 0,
+      isSkipped: (key) => skippedSessions.has(key),
+    }),
+    [resultByDef, attachmentCountByDef, skippedSessions],
+  );
 
   /** A test only counts as done when it has a value / unable-to-verify / N.A. —
    * not when a draft record exists just to hold uploads. */
@@ -281,15 +318,25 @@ export function TestingTab() {
       }
       map.set(
         cat.id,
-        sessionsForCategory(String(cat.slug), defs).map(({ session, defs: sessionDefs }) => ({
-          cat,
-          session,
-          items: sessionDefs.map((def): SessionItem => ({ def, sub: subByDefId.get(def.id)! })),
-        })),
+        sessionsForCategory(String(cat.slug), defs)
+          .map(({ session, defs: sessionDefs }) => ({
+            cat,
+            session,
+            items: filterApplicableItems(
+              String(cat.slug),
+              sessionDefs.map((def): SessionItem => ({ def, sub: subByDefId.get(def.id)! })),
+              ws.fields,
+            ),
+          }))
+          .filter(
+            (s) =>
+              s.items.length > 0 &&
+              isSessionApplicable(String(s.cat.slug), s.session.id, resultByDef, defs),
+          ),
       );
     }
     return map;
-  }, [ws.related.categories, structureByCategory]);
+  }, [ws.related.categories, structureByCategory, resultByDef, ws.fields]);
 
   // Suggested answers computed from the Pricing tab data (plan prices, credit
   // packages, feature costs), keyed by evidence-definition id.
@@ -317,6 +364,7 @@ export function TestingTab() {
     ws.related.featureCosts,
     ws.related.categories,
     structureByCategory,
+    ws.fields,
   ]);
 
   const orderedSessions: GuidedSession[] = useMemo(() => {
@@ -325,18 +373,17 @@ export function TestingTab() {
     return list;
   }, [ws.related.categories, sessionsByCategory]);
 
-  /** Resume point: first session with an incomplete required test, else first
-   * session with any incomplete test. */
-  const resumeIndex = useMemo(() => {
-    const required = orderedSessions.findIndex((s) =>
-      s.items.some(({ def }) => def.required && resultState(resultByDef.get(def.id)) === 'none'),
-    );
-    if (required >= 0) return required;
-    const any = orderedSessions.findIndex((s) =>
-      s.items.some(({ def }) => resultState(resultByDef.get(def.id)) === 'none'),
-    );
-    return any >= 0 ? any : 0;
-  }, [orderedSessions, resultByDef]);
+  const runProgress = useMemo(
+    () =>
+      computeRunProgress(
+        orderedSessions,
+        progressCtx,
+        lastEditedFromResults(results, currentRun?.updatedAt),
+      ),
+    [orderedSessions, progressCtx, results, currentRun?.updatedAt],
+  );
+
+  const resumeIndex = runProgress.resumeIndex;
 
   const publishedScores = useMemo(() => {
     const live = ws.related.scoreHistory.find((h) => h.isCurrentPublished);
@@ -380,40 +427,59 @@ export function TestingTab() {
     );
   }
 
-  const enteredCount = definitions.filter((d) => d.active && hasValue(d.id)).length;
-  const totalSessions = orderedSessions.length;
-  const completedSessions = orderedSessions.filter((s) =>
-    sessionComplete(s.items, hasValue),
-  ).length;
-  const completionPct =
-    totalSessions === 0 ? 0 : Math.round((completedSessions / totalSessions) * 100);
-  const missingRequired = definitions.filter(
-    (d) => d.active && d.required && !hasValue(d.id),
-  );
   const isPublished = currentRun.status === 'published';
   const canEnterResults = canTest && !isPublished;
-  const sessionsComplete = totalSessions > 0 && completedSessions >= totalSessions;
-  const showPublishBlockers = sessionsComplete && missingRequired.length > 0;
+  const testingComplete = runProgress.remainingRequired === 0;
+
+  async function attemptPublish() {
+    if (runProgress.remainingRequired > 0) {
+      const labels = runProgress.sessions.flatMap((s) => s.missingRequiredLabels);
+      const preview = labels.slice(0, 6).join(', ');
+      toast.warning("Can't publish yet", {
+        message:
+          labels.length > 0
+            ? `${runProgress.remainingRequired} required question${runProgress.remainingRequired === 1 ? '' : 's'} still unanswered (${preview}${labels.length > 6 ? '…' : ''})`
+            : `${runProgress.remainingRequired} required question${runProgress.remainingRequired === 1 ? '' : 's'} still unanswered`,
+      });
+      return;
+    }
+    if (tree && tree.blockingErrors.length > 0) {
+      toast.error("Can't publish yet", {
+        message: tree.blockingErrors.slice(0, 3).join(' · '),
+      });
+      return;
+    }
+    await publishRun();
+  }
+
   const primary = runPrimaryAction({
     isPublished,
+    hasCalculationError: calcError,
+    remainingRequired: runProgress.remainingRequired,
     canEnterResults: canEnterResults && orderedSessions.length > 0,
-    canTest,
-    canReview: can('testing.review'),
-    canPublish: can('content.publish'),
-    status: String(currentRun.status),
-    sessionsComplete,
-    enteredCount,
-    onContinue: () => startGuidedAt(),
-    onSubmitReview: () => void setRunStatus('ready_for_review'),
-    onApprove: () => void setRunStatus('approved'),
-    onPublish: () => void publishRun(),
+    canPublish: can('content.publish') && !isPublished,
+    onResume: () => startGuidedAt(),
+    onPublish: () => void attemptPublish(),
+    onRetryCalculation: () => void calculate(true),
+    onViewLive: () => {
+      const slug = String(ws.fields.slug ?? '');
+      if (slug) window.open(reviewPageUrl(slug), '_blank', 'noopener,noreferrer');
+    },
+    onTestingCompleteNoPermission: () => {
+      toast.info('Testing is complete', {
+        message: can('content.publish')
+          ? 'Use Review and publish to make this run live.'
+          : 'Ask an admin with publish permission to publish this test run, then publish the product on the Publish tab.',
+      });
+    },
   });
 
   const selectedCat = selectedCategory
     ? ws.related.categories.find((c) => c.slug === selectedCategory) ?? null
     : null;
   const selectedSessions = selectedCat ? sessionsByCategory.get(selectedCat.id) ?? [] : [];
-  const nextIncompleteSession = orderedSessions[resumeIndex];
+  const resumeSessionSnapshot =
+    runProgress.sessions[resumeIndex] ?? runProgress.sessions[0] ?? null;
 
   function startGuidedAt(defId?: string) {
     if (defId) {
@@ -422,6 +488,10 @@ export function TestingTab() {
     } else {
       setGuidedStart(resumeIndex);
     }
+  }
+
+  function startGuidedAtIndex(idx: number) {
+    setGuidedStart(Math.min(Math.max(idx, 0), orderedSessions.length - 1));
   }
 
   function startGuidedAtSession(sessionId: string, categorySlug: string) {
@@ -433,60 +503,33 @@ export function TestingTab() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
-      {error && <ErrorNote message={error} />}
-      {publishNote && (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
-          {publishNote}
-        </div>
-      )}
-
       {/* Test run — one card, one progress story */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                {currentRun.name}
-              </h3>
-              <Badge tone={statusTone(String(currentRun.status))}>
-                {String(currentRun.status).replace(/_/g, ' ')}
-              </Badge>
-              {currentRun.isCurrentPublished && <Badge tone="green">live on site</Badge>}
-            </div>
-            <p className="mt-1 text-xs text-slate-500">
-              Methodology {currentRun.methodologyVersion?.version ?? '—'}
-              {currentRun.testerEmail ? ` · tested by ${currentRun.testerEmail}` : ''}
-            </p>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+              {currentRun.name}
+            </h3>
+            <Badge tone={statusTone(String(currentRun.status))}>
+              {String(currentRun.status).replace(/_/g, ' ')}
+            </Badge>
+            {currentRun.isCurrentPublished && <Badge tone="green">live on site</Badge>}
           </div>
-          {primary && (
-            <Button onClick={primary.onClick} disabled={busy} className="shrink-0">
-              <Icon name="play_arrow" />
-              {primary.label}
-            </Button>
-          )}
+          <p className="mt-1 text-xs text-slate-500">
+            Methodology {currentRun.methodologyVersion?.version ?? '—'}
+            {currentRun.testerEmail ? ` · tested by ${currentRun.testerEmail}` : ''}
+          </p>
         </div>
 
         <div className="mt-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-slate-500">This test run</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                {completedSessions} of {totalSessions} sessions complete
-              </p>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                <div
-                  className="h-full rounded-full bg-pink-600 transition-all duration-300"
-                  style={{ width: `${completionPct}%` }}
-                />
-              </div>
-              {!sessionsComplete && nextIncompleteSession && (
-                <p className="mt-2 text-xs text-slate-500">
-                  Up next:{' '}
-                  <span className="font-medium text-slate-700 dark:text-slate-300">
-                    {nextIncompleteSession.cat.name} → {nextIncompleteSession.session.title}
-                  </span>
-                </p>
-              )}
+              <TestingRunProgressSummary
+                runProgress={runProgress}
+                currentSession={resumeSessionSnapshot}
+                onResume={() => startGuidedAt()}
+                onSelectSession={startGuidedAtIndex}
+              />
             </div>
             {(tree?.overall != null || publishedScores?.overall != null) && (
               <div className="text-right">
@@ -499,93 +542,26 @@ export function TestingTab() {
           </div>
         </div>
 
-        {showPublishBlockers && (
-          <details className="mt-3 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 dark:border-amber-900/50 dark:bg-amber-950/30">
-            <summary className="cursor-pointer text-xs font-medium text-amber-800 dark:text-amber-300">
-              {missingRequired.length} required question{missingRequired.length === 1 ? '' : 's'} still
-              unanswered before you can publish
-            </summary>
-            <ul className="mt-2 space-y-0.5 text-xs text-amber-900/80 dark:text-amber-200/80">
-              {missingRequired.slice(0, 10).map((d) => (
-                <li key={d.id} className="truncate">
-                  • {testerQuestion(d)}
-                </li>
-              ))}
-              {missingRequired.length > 10 && (
-                <li>… and {missingRequired.length - 10} more (use guided testing to fill them)</li>
-              )}
-            </ul>
-          </details>
+        {testingComplete && !isPublished && (
+          <p className="mt-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800 dark:border-green-900/50 dark:bg-green-950/30 dark:text-green-300">
+            All required testing is complete. Click <strong>Review and publish</strong> to make this
+            run the live score, then open the <strong>Publish</strong> tab to publish the product.
+          </p>
         )}
 
-        {tree && tree.blockingErrors.length > 0 && (
-          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-900/50 dark:bg-red-950/30">
-            <p className="text-xs font-medium text-red-700 dark:text-red-300">Can&apos;t publish yet</p>
-            <ul className="mt-1 space-y-0.5 text-xs text-red-600/90 dark:text-red-400">
-              {tree.blockingErrors.map((e, i) => (
-                <li key={i}>• {e}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-100 pt-3 text-xs dark:border-slate-800">
-          <button
-            type="button"
-            className="font-medium text-slate-500 hover:text-pink-600 dark:text-slate-400"
-            onClick={() => void calculate()}
-            disabled={busy}
-          >
-            Refresh preview score
-          </button>
-          {canTest && currentRun.status === 'in_progress' && sessionsComplete && (
-            <button
-              type="button"
-              className="font-medium text-slate-500 hover:text-pink-600 dark:text-slate-400"
-              onClick={() => void setRunStatus('ready_for_review')}
-              disabled={busy}
-            >
-              Submit for review
-            </button>
-          )}
-          {currentRun.status === 'ready_for_review' && can('testing.review') && (
-            <button
-              type="button"
-              className="font-medium text-slate-500 hover:text-pink-600 dark:text-slate-400"
-              onClick={() => void setRunStatus('approved')}
-              disabled={busy}
-            >
-              Approve
-            </button>
-          )}
-          {can('content.publish') && !isPublished && (
-            <button
-              type="button"
-              className="font-medium text-slate-500 hover:text-pink-600 dark:text-slate-400"
-              onClick={() => void publishRun()}
-              disabled={busy}
-            >
-              Publish score
-            </button>
-          )}
-          {canTest && (
-            <button
-              type="button"
-              className="font-medium text-slate-500 hover:text-pink-600 dark:text-slate-400"
-              onClick={() => setShowNewRun(true)}
-              disabled={busy}
-            >
-              Start new test run
-            </button>
-          )}
-          {showRunEditor && (
-            <Link
-              to={`/testing/runs/${currentRun.id}`}
-              className="font-medium text-slate-400 hover:text-pink-600"
-            >
-              Advanced editor
-            </Link>
-          )}
+        <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+          <Button onClick={primary.onClick} disabled={busy} className="shrink-0">
+            <Icon name={primary.icon} />
+            {primary.label}
+          </Button>
+          <RunActionsMenu
+            canTest={canTest}
+            showRunEditor={showRunEditor}
+            runId={currentRun.id}
+            isPublished={isPublished}
+            onNewRun={() => setShowNewRun(true)}
+            onDelete={() => setShowDeleteRun(true)}
+          />
         </div>
       </div>
 
@@ -594,26 +570,6 @@ export function TestingTab() {
           This run is live on the site — answers can&apos;t be changed. Start a new test run to
           retest.
         </p>
-      )}
-
-      {tree && tree.categories.some((c) => c.score != null) && (
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-xs font-medium text-slate-500">Score by category</p>
-          <ul className="mt-2 grid gap-1 sm:grid-cols-2">
-            {tree.categories.map((c) => (
-              <li key={c.slug} className="flex items-center justify-between text-sm">
-                <button
-                  type="button"
-                  className="truncate text-slate-700 hover:text-pink-600 dark:text-slate-300"
-                  onClick={() => selectCategory(c.slug)}
-                >
-                  {c.name}
-                </button>
-                <span className="ml-2 shrink-0 font-semibold tabular-nums">{c.score ?? '—'}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
 
       {/* Categories → sessions */}
@@ -626,14 +582,14 @@ export function TestingTab() {
               <button
                 type="button"
                 onClick={() => selectCategory(null)}
-                className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-pink-600"
+                className="mb-1 flex cursor-pointer items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-pink-600"
               >
                 <Icon name="arrow_back" className="!text-[14px]" /> All categories
               </button>
               {ws.related.categories.map((cat) => {
                 const catSessions = sessionsByCategory.get(cat.id) ?? [];
                 const sessionsDone = catSessions.filter((s) =>
-                  sessionComplete(s.items, hasValue),
+                  sessionRequiredComplete(s.session.id, s.items, progressCtx),
                 ).length;
                 const isActive = cat.id === selectedCat.id;
                 return (
@@ -642,10 +598,10 @@ export function TestingTab() {
                     type="button"
                     onClick={() => selectCategory(cat.slug)}
                     aria-current={isActive ? 'true' : undefined}
-                    className={`flex w-full items-center justify-between rounded-md px-3 py-1.5 text-sm transition-colors ${
+                    className={`flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-1.5 text-sm transition-all duration-150 ${
                       isActive
                         ? 'bg-pink-50 font-medium text-pink-700 dark:bg-pink-950/30 dark:text-pink-300'
-                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                        : 'text-slate-600 hover:translate-x-0.5 hover:bg-pink-50/70 hover:text-pink-700 dark:text-slate-300 dark:hover:bg-pink-950/30 dark:hover:text-pink-300'
                     }`}
                   >
                     <span className="truncate">{cat.name}</span>
@@ -676,10 +632,9 @@ export function TestingTab() {
               </div>
 
               <div className="space-y-2">
-                {selectedSessions.map(({ session, items }) => {
-                  const entered = items.filter(({ def }) => hasValue(def.id)).length;
-                  const inputCount = sessionInputCount(session.id, items.length);
-                  const complete = sessionComplete(items, hasValue);
+                {selectedSessions.map(({ session, items, cat }) => {
+                  const prog = sessionRequiredProgress(session.id, items, progressCtx);
+                  const complete = sessionRequiredComplete(session.id, items, progressCtx);
                   return (
                     <div
                       key={session.id}
@@ -689,12 +644,13 @@ export function TestingTab() {
                       <div className="min-w-0 flex-1">
                         <p className="inline-flex items-center gap-0.5 text-sm font-medium text-slate-800 dark:text-slate-200">
                           {session.title}
-                          {session.intro ? <TestingHint text={session.intro} /> : null}
                         </p>
                         <p className="text-xs text-slate-500">
                           {complete
-                            ? `Done · ${inputCount} input${inputCount === 1 ? '' : 's'}`
-                            : `${entered}/${items.length} answered`}
+                            ? `Done · ${prog.total} required attempt${prog.total === 1 ? '' : 's'}`
+                            : prog.total > 0
+                              ? `${prog.complete} of ${prog.total} attempts complete`
+                              : 'No required inputs'}
                         </p>
                       </div>
                       {complete && <Badge tone="green">done</Badge>}
@@ -702,9 +658,9 @@ export function TestingTab() {
                         <Button
                           variant={complete ? 'secondary' : 'primary'}
                           className="!py-1.5 text-xs"
-                          onClick={() => startGuidedAtSession(session.id, String(selectedCat.slug))}
+                          onClick={() => startGuidedAtSession(session.id, String(cat.slug))}
                         >
-                          {complete ? 'Open' : entered > 0 ? 'Continue' : 'Start'}
+                          {complete ? 'Open' : prog.complete > 0 ? 'Continue' : 'Start'}
                         </Button>
                       )}
                     </div>
@@ -725,7 +681,7 @@ export function TestingTab() {
               {ws.related.categories.map((cat) => {
                 const catSessions = sessionsByCategory.get(cat.id) ?? [];
                 const sessionsDone = catSessions.filter((s) =>
-                  sessionComplete(s.items, hasValue),
+                  sessionRequiredComplete(s.session.id, s.items, progressCtx),
                 ).length;
                 const treeCat = tree?.categories.find((c) => c.slug === cat.slug);
                 const score = treeCat?.score ?? publishedScores?.byCategory.get(cat.slug) ?? null;
@@ -771,10 +727,16 @@ export function TestingTab() {
           runName={String(currentRun.name ?? '')}
           runId={currentRun.id}
           productId={ws.productId}
+          productFields={ws.fields}
+          productSlug={String(ws.fields.slug ?? '')}
           sessions={orderedSessions}
           results={resultByDef}
+          resultRows={results}
+          media={ws.related.media}
+          runUpdatedAt={currentRun.updatedAt}
           startIndex={guidedStart}
           suggestions={suggestionByDef}
+          evidenceDefs={definitions}
           onClose={async () => {
             setGuidedStart(null);
             await calculate();
@@ -793,7 +755,149 @@ export function TestingTab() {
           }}
         />
       )}
+      {showDeleteRun && currentRun && (
+        <DeleteRunModal
+          runName={String(currentRun.name ?? 'this test run')}
+          isPublished={isPublished}
+          busy={busy}
+          onClose={() => setShowDeleteRun(false)}
+          onConfirm={() => void deleteRun()}
+        />
+      )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Run actions ⋮ menu
+// ---------------------------------------------------------------------------
+
+function RunActionsMenu({
+  canTest,
+  showRunEditor,
+  runId,
+  isPublished,
+  onNewRun,
+  onDelete,
+}: {
+  canTest: boolean;
+  showRunEditor: boolean;
+  runId: string;
+  isPublished: boolean;
+  onNewRun: () => void;
+  onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (!(e.target as Element).closest?.('[data-run-actions-menu]')) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  return (
+    <div className="relative" data-run-actions-menu>
+      <button
+        type="button"
+        aria-label="More actions"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+      >
+        <Icon name="more_vert" className="!text-[20px]" />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1 min-w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+          {canTest && (
+            <button
+              type="button"
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+              onClick={() => {
+                setOpen(false);
+                onNewRun();
+              }}
+            >
+              <Icon name="add" className="!text-[16px] text-slate-400" />
+              Start new test run
+            </button>
+          )}
+          {showRunEditor && (
+            <Link
+              to={`/testing/runs/${runId}`}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+              onClick={() => setOpen(false)}
+            >
+              <Icon name="tune" className="!text-[16px] text-slate-400" />
+              Advanced editor
+            </Link>
+          )}
+          {canTest && (
+            <button
+              type="button"
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+              onClick={() => {
+                setOpen(false);
+                onDelete();
+              }}
+            >
+              <Icon name="delete" className="!text-[16px]" />
+              Delete test run
+              {isPublished && <span className="text-[10px] text-red-400">(live)</span>}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DeleteRunModal({
+  runName,
+  isPublished,
+  busy,
+  onClose,
+  onConfirm,
+}: {
+  runName: string;
+  isPublished: boolean;
+  busy: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal title="Delete test run?" onClose={onClose} wide>
+      <div className="space-y-4 py-2">
+        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/30">
+          <Icon name="warning" className="!text-[28px] shrink-0 text-red-500" />
+          <div>
+            <p className="text-base font-semibold text-red-900 dark:text-red-200">
+              Are you sure you want to delete &ldquo;{runName}&rdquo;?
+            </p>
+            <p className="mt-2 text-sm text-red-800/90 dark:text-red-300/90">
+              This permanently removes the test run and all recorded answers. This action cannot be
+              undone.
+            </p>
+            {isPublished && (
+              <p className="mt-2 text-sm font-medium text-red-700 dark:text-red-300">
+                This run is currently live on the site — deleting it will remove the published score
+                source.
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={onConfirm} disabled={busy}>
+            {busy ? 'Deleting…' : 'Yes, delete test run'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -813,7 +917,7 @@ function NewRunModal({
   const [versions, setVersions] = useState<EntityRow[]>([]);
   const [versionId, setVersionId] = useState('');
   const [name, setName] = useState('');
-  const { busy, error, run } = useAsync();
+  const { busy, run } = useAsyncToast();
 
   useEffect(() => {
     dataApi
@@ -846,7 +950,6 @@ function NewRunModal({
   return (
     <Modal title="New test run" onClose={onClose}>
       <form onSubmit={create} className="space-y-3">
-        {error && <ErrorNote message={error} />}
         <Field label="Methodology version" required>
           <Select value={versionId} onChange={(e) => setVersionId(e.target.value)} required>
             <option value="">— select —</option>

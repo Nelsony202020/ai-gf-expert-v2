@@ -2,30 +2,43 @@
 import BaseLayout from './BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import LegalSidebar from '../components/legal/LegalSidebar.astro';
 import Breadcrumbs, { type BreadcrumbItem } from '../components/ui/Breadcrumbs.astro';
+import '../styles/roundup.css';
+import '../styles/legal-hub.css';
 
 interface Props {
   title: string;
   description?: string;
+  legalSlug?: string;
   breadcrumbs?: BreadcrumbItem[];
 }
 
-const { title, description = '', breadcrumbs } = Astro.props;
+const { title, description = '', legalSlug, breadcrumbs } = Astro.props;
 const trail =
   breadcrumbs ??
   [
     { label: 'Home', href: '/' },
+    { label: 'Legal', href: '/legal/' },
     { label: title },
   ];
 ---
 
 <BaseLayout title={`${title} — AI Girlfriend Expert`} description={description || title}>
   <Header />
-  <main class="section-container px-4 md:px-8 py-14 md:py-16 max-w-3xl">
-    <Breadcrumbs items={trail} />
-    <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-6">{title}</h1>
-    <div class="legal-prose prose prose-neutral max-w-none text-on-surface-variant leading-relaxed space-y-4">
-      <slot />
+  <main class="legal-hub-page">
+    <div class="section-container px-4 md:px-8 py-10 md:py-14 pb-16 md:pb-24">
+      <div class="roundup-layout">
+        <LegalSidebar currentSlug={legalSlug} />
+
+        <article class="roundup-main max-w-3xl">
+          <Breadcrumbs items={trail} />
+          <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-6 mt-1">{title}</h1>
+          <div class="legal-prose prose prose-neutral max-w-none text-on-surface-variant leading-relaxed space-y-4">
+            <slot />
+          </div>
+        </article>
+      </div>
     </div>
   </main>
   <Footer />

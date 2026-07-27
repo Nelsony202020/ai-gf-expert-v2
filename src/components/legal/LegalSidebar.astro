@@ -1,0 +1,37 @@
+---
+import { legalPages } from '../../data/legal-pages';
+
+interface Props {
+  currentSlug?: string;
+}
+
+const { currentSlug } = Astro.props;
+---
+
+<aside class="roundup-sidebar legal-sidebar" aria-label="Legal navigation">
+  <nav class="roundup-toc" aria-label="Legal pages">
+    <p class="roundup-toc__title">Legal</p>
+    <ul class="roundup-toc__list">
+      <li>
+        <a
+          class:list={['roundup-toc__link', !currentSlug && 'is-active']}
+          href="/legal/"
+        >
+          Overview
+        </a>
+      </li>
+      {
+        legalPages.map((page) => (
+          <li>
+            <a
+              class:list={['roundup-toc__link', currentSlug === page.slug && 'is-active']}
+              href={page.href}
+            >
+              {page.title}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</aside>

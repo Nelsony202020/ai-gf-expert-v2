@@ -14,6 +14,7 @@ import PhotosVideosTab from '../../components/review/tabs/PhotosVideosTab.astro'
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
 import ReviewScrollRestore from '../../components/review/ReviewScrollRestore.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
+import RoundupAffiliateFineprint from '../../components/roundup/RoundupAffiliateFineprint.astro';
 import { products, getProduct } from '../../data/products';
 import { getProductFeaturedIn } from '../../lib/content/store';
 
@@ -45,9 +46,14 @@ const description = product.tagline;
 const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.origin).toString();
 ---
 
-<BaseLayout title={title} description={description} image={product.gallery[0]?.full}>
+<BaseLayout title={title} description={description} image={product.featuredImage?.full ?? product.gallery[0]?.full}>
   <Header />
   <main>
+    <div class="roundup-affiliate-bar">
+      <div class="section-container px-4 md:px-8">
+        <RoundupAffiliateFineprint />
+      </div>
+    </div>
     <ReviewHero product={product} shareUrl={canonical} />
     {featuredIn.length > 0 && (
       <div class="mx-auto max-w-6xl px-4 pt-3 text-sm text-white/60">
@@ -190,11 +196,7 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
 
         const ratingsRoot = document.querySelector<HTMLElement>('[data-ratings-root]');
         if (ratingsRoot && ratingsRoot.dataset.detailLevel !== 'all-in') {
-          ratingsRoot.dataset.detailLevel = 'all-in';
-          document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
-            input.checked = input.value === 'all-in';
-          });
-          document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level: 'all-in' } }));
+          document.dispatchEvent(new CustomEvent('detail-level-set', { detail: { level: 'all-in' } }));
         }
 
         const categoryEl = document.querySelector<HTMLElement>(`[data-category="${categoryKey}"]`);

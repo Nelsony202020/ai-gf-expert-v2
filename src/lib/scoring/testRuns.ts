@@ -11,6 +11,17 @@ import {
   type EvidenceInput,
 } from './engine';
 import { triggerRebuild } from '../db/publish';
+import { isEvidenceApplicable } from '../testing/capabilityGating';
+import { computePricingSuggestions } from '../testing/pricingAutofill';
+import { PRICING_AUTOFILL_SLUGS } from '../testing/pricingEvidenceSlugs';
+
+function isEditingAccuracyScoredForRun(resultBySlug: Map<string, { notApplicable?: boolean; rawValue?: unknown }>): boolean {
+  const imageEdit = resultBySlug.get('image-editing');
+  const raw = imageEdit?.rawValue as { status?: string } | undefined;
+  if (imageEdit?.notApplicable || raw?.status === 'na') return false;
+  if (raw?.status === 'no') return false;
+  return true;
+}
 
 export async function loadRunContext(testRunId: string) {
   const db = getDb();
@@ -29,12 +40,103 @@ export async function loadRunContext(testRunId: string) {
   return run;
 }
 
+async function loadProductPricing(productId: string) {
+  const db = getDb();
+  const { products } = await db.query({
+    products: {
+      $: { where: { id: productId } },
+      subscriptionPlans: {},
+      creditPackages: {},
+      featureCosts: {},
+    },
+  });
+  const product = products[0];
+  if (!product) return { plans: [], packages: [], featureCosts: [] };
+  return {
+    plans: (product.subscriptionPlans ?? []) as Record<string, unknown>[],
+    packages: (product.creditPackages ?? []) as Record<string, unknown>[],
+    featureCosts: (product.featureCosts ?? []) as Record<string, unknown>[],
+  };
+}
+
+/** Write pricing-tab-derived answers into evidence results when missing. */
+async function syncPricingEvidence(
+  testRunId: string,
+  productId: string,
+  mv: { categories?: any[] },
+  resultByDef: Map<string, any>,
+) {
+  const pricing = await loadProductPricing(productId);
+  const suggestions = computePricingSuggestions(pricing);
+  if (suggestions.size === 0) return;
+
+  const db = getDb();
+  const now = Date.now();
+  const writes: unknown[] = [];
+
+  for (const cat of mv.categories ?? []) {
+    if (String(cat.slug) !== 'pricing' && !['images', 'video'].includes(String(cat.slug))) continue;
+    for (const sub of cat.subscores ?? []) {
+      for (const def of sub.evidenceDefinitions ?? []) {
+        if (!def.active || !PRICING_AUTOFILL_SLUGS.has(String(def.slug))) continue;
+        const key = `${cat.slug}/${def.slug}`;
+        const suggestion = suggestions.get(key);
+        if (!suggestion) continue;
+        const existing = resultByDef.get(def.id);
+        if (existing?.rawValue) continue;
+
+        if (existing) {
+          writes.push(
+            db.tx.evidenceResults[existing.id].update({
+              rawValue: suggestion.raw,
+              notApplicable: false,
+              isUnknown: false,
+              testDate: now,
+              updatedAt: now,
+            }),
+          );
+          resultByDef.set(existing.id, { ...existing, rawValue: suggestion.raw, notApplicable: false });
+        } else {
+          const rid = newId();
+          writes.push(
+            db.tx.evidenceResults[rid]
+              .update({
+                rawValue: suggestion.raw,
+                notApplicable: false,
+                isUnknown: false,
+                testDate: now,
+                createdAt: now,
+                updatedAt: now,
+              })
+              .link({ testRun: testRunId, evidenceDefinition: def.id, product: productId }),
+          );
+          resultByDef.set(def.id, { id: rid, rawValue: suggestion.raw, evidenceDefinition: def });
+        }
+      }
+    }
+  }
+
+  if (writes.length > 0) await db.transact(writes);
+}
+
 export async function calculateRun(testRunId: string): Promise<{
   tree: ScoreTree;
   run: Awaited<ReturnType<typeof loadRunContext>>;
 }> {
   const run = await loadRunContext(testRunId);
   const mv = run.methodologyVersion!;
+  const productId = run.product!.id;
+
+  const resultByDef = new Map<string, any>();
+  const resultBySlug = new Map<string, any>();
+  for (const r of run.evidenceResults ?? []) {
+    if (r.evidenceDefinition?.id) {
+      resultByDef.set(r.evidenceDefinition.id, r);
+      if (r.evidenceDefinition.slug) resultBySlug.set(String(r.evidenceDefinition.slug), r);
+    }
+  }
+
+  await syncPricingEvidence(testRunId, productId, mv, resultByDef);
 
   const categories = (mv.categories ?? [])
     .filter((c: any) => c.active)
@@ -52,10 +154,7 @@ export async function calculateRun(testRunId: string): Promise<{
       })),
   );
 
-  const resultByDef = new Map<string, any>();
-  for (const r of run.evidenceResults ?? []) {
-    if (r.evidenceDefinition?.id) resultByDef.set(r.evidenceDefinition.id, r);
-  }
+  const productFields = (run.product ?? {}) as Record<string, unknown>;
 
   const evidence: EvidenceInput[] = (mv.categories ?? []).flatMap((c: any) =>
     (c.subscores ?? []).flatMap((s: any) =>
@@ -63,6 +162,7 @@ export async function calculateRun(testRunId: string): Promise<{
         .filter((d: any) => d.active)
         .map((d: any) => {
           const result = resultByDef.get(d.id);
+          const capabilityGated = !isEvidenceApplicable(c.slug, d, productFields);
           return {
             definitionId: d.id,
             slug: d.slug,
@@ -75,10 +175,20 @@ export async function calculateRun(testRunId: string): Promise<{
             scoringRule: d.scoringRule,
             resultId: result?.id,
             rawValue: result?.rawValue,
-            notApplicable: result?.notApplicable,
+            notApplicable:
+              result?.notApplicable ||
+              capabilityGated ||
+              (c.slug === 'images' &&
+                d.slug === 'editing-accuracy' &&
+                !isEditingAccuracyScoredForRun(resultBySlug)),
             isUnknown: result?.isUnknown,
             manualOverrideScore: result?.manualOverrideScore ?? undefined,
             manualOverrideReason: result?.manualOverrideReason ?? undefined,
+            relatedAnswers: Object.fromEntries(
+              (s.evidenceDefinitions ?? [])
+                .filter((d: any) => d.active)
+                .map((d: any) => [d.slug, resultByDef.get(d.id)?.rawValue]),
+            ),
           } satisfies EvidenceInput;
         }),
     ),

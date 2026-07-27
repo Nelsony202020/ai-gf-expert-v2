@@ -9,6 +9,7 @@ import { Login } from './Login';
 import { AdminLayout } from './Layout';
 import { AdminErrorBoundary } from './ErrorBoundary';
 import { MeContext, type Me } from './context';
+import { ToastProvider } from './Toast';
 import { Spinner, ErrorNote } from './ui';
 
 export default function AdminApp({ appId }: { appId: string }) {
@@ -81,9 +82,11 @@ export default function AdminApp({ appId }: { appId: string }) {
   return (
     <AdminErrorBoundary>
       <MeContext.Provider value={me}>
-        <BrowserRouter basename="/admin">
-          <AdminLayout onSignOut={() => db.auth.signOut()} />
-        </BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter basename="/admin">
+            <AdminLayout onSignOut={() => db.auth.signOut()} />
+          </BrowserRouter>
+        </ToastProvider>
       </MeContext.Provider>
     </AdminErrorBoundary>
   );

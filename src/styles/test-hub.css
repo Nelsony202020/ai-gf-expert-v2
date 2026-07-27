@@ -965,6 +965,25 @@
   color: var(--color-on-surface);
 }
 
+.test-hub__metric-dynamic {
+  color: #9333ea;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.test-hub__metric-label {
+  color: var(--color-on-surface-variant);
+  font-weight: 600;
+}
+
+[data-theme='dark'] .test-hub__metric-dynamic {
+  color: #c084fc;
+}
+
+[data-theme='dark'] .test-hub__metric-label {
+  color: var(--color-tertiary);
+}
+
 .test-hub__metric .material-symbols-outlined {
   font-size: 1rem;
   color: var(--color-accent);

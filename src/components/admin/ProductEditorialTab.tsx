@@ -25,7 +25,6 @@ export const EDITORIAL_PROGRESS_FIELDS = [
   'factChecker',
   'bestForLabel',
   'displayOrder',
-  'revisionNotes',
 ] as const;
 
 function isFilled(fields: Record<string, unknown>, links: Record<string, string | null>, key: string): boolean {
@@ -208,19 +207,12 @@ export function ProductEditorialTab({
                   />
                 </Field>
               </div>
-              <Field label="Revision notes">
-                <TextArea
-                  rows={2}
-                  value={fields.revisionNotes ?? ''}
-                  onChange={(e) => set('revisionNotes', e.target.value)}
-                />
-              </Field>
 
               <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/40">
                 <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Feature flags & visibility
                 </h4>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="mt-4 flex flex-col items-start gap-4">
                   <ToggleWithHint
                     checked={fields.verified}
                     onChange={(v) => set('verified', v)}

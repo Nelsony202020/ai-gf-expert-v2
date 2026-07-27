@@ -14,7 +14,7 @@ interface Props {
 
 const { product } = Astro.props;
 
-function resolveScore(verdict: VerdictItem): number {
+function resolveScore(verdict: VerdictItem): number | null {
   if (verdict.score != null) return verdict.score;
   if (verdict.id === 'overall') return product.overallScore;
   return product.categories.find((c) => c.key === verdict.id)?.score ?? product.overallScore;

@@ -5,6 +5,7 @@ import { handler, json } from '../../../../lib/api';
 import { requireIdentity, roleHas, HttpError } from '../../../../lib/db/auth';
 import { getDb, id as newId } from '../../../../lib/db/server';
 import { auditTx } from '../../../../lib/db/audit';
+import { inferImageMimeType } from '../../../../lib/media/mime';
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
 const ALLOWED_TYPES = new Set([
@@ -39,7 +40,10 @@ export const POST: APIRoute = handler(async ({ request }) => {
   const file = form.get('file');
   if (!(file instanceof File)) throw new HttpError(400, 'Missing "file"');
   if (file.size > MAX_BYTES) throw new HttpError(413, 'File exceeds 50 MB limit');
-  if (!ALLOWED_TYPES.has(file.type)) throw new HttpError(415, `Unsupported type: ${file.type}`);
+  const contentType = inferImageMimeType(file);
+  if (!contentType || !ALLOWED_TYPES.has(contentType)) {
+    throw new HttpError(415, `Unsupported type: ${file.type || file.name.split('.').pop() || 'unknown'}`);
+  }
 
   const adultRaw = form.get('adult');
   if (adultRaw !== '0' && adultRaw !== '1') {
@@ -51,7 +55,7 @@ export const POST: APIRoute = handler(async ({ request }) => {
   const path = `media/${Date.now()}-${safeName}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const uploaded = await db.storage.uploadFile(path, buffer, { contentType: file.type });
+  const uploaded = await db.storage.uploadFile(path, buffer, { contentType });
 
   // Resolve the stored file's URL for caching on the media record.
   const { $files } = await db.query({
@@ -63,7 +67,7 @@ export const POST: APIRoute = handler(async ({ request }) => {
   let chunk = db.tx.media[mediaId]
     .update({
       url: fileUrl,
-      mediaType: file.type.startsWith('video/') ? 'video' : 'image',
+      mediaType: contentType.startsWith('video/') ? 'video' : 'image',
       fileSize: file.size,
       altText: (form.get('altText') as string) || undefined,
       caption: (form.get('caption') as string) || undefined,
@@ -91,7 +95,7 @@ export const POST: APIRoute = handler(async ({ request }) => {
       action: 'upload',
       recordType: 'media',
       recordId: mediaId,
-      newValue: { path, size: file.size, type: file.type },
+      newValue: { path, size: file.size, type: contentType },
     }),
   ]);
 

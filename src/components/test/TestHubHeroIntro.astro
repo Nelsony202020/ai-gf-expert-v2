@@ -1,6 +1,6 @@
 ---
 import type { TestMethodologyPageMeta } from '../../data/test-category-pages';
-import { testHubTrustMetrics } from '../../data/test-hub-content';
+import type { TestHubMetric } from '../../lib/test-hub-stats';
 import { getAuthor } from '../../data/authors';
 import AuthorBioPopover from '../review/AuthorBioPopover.astro';
 import MethodologyTooltip from '../review/tooltips/MethodologyTooltip.astro';
@@ -13,10 +13,11 @@ import Breadcrumbs from '../ui/Breadcrumbs.astro';
 
 interface Props {
   meta: TestMethodologyPageMeta;
+  metrics: TestHubMetric[];
   shareUrl?: string;
 }
 
-const { meta, shareUrl } = Astro.props;
+const { meta, metrics, shareUrl } = Astro.props;
 const shareTitle = 'How We Test AI Girlfriend Apps — AI Girlfriend Expert';
 ---
 
@@ -107,10 +108,19 @@ const shareTitle = 'How We Test AI Girlfriend Apps — AI Girlfriend Expert';
   </p>
   <ul class="test-hub__metrics mt-4">
     {
-      testHubTrustMetrics.map((m) => (
+      metrics.map((metric) => (
         <li class="test-hub__metric">
-          <span class="material-symbols-outlined" aria-hidden="true">{m.icon}</span>
-          {m.value}
+          <span class="material-symbols-outlined" aria-hidden="true">{metric.icon}</span>
+          {
+            metric.dynamic ? (
+              <>
+                <span class="test-hub__metric-dynamic">{metric.value}</span>
+                <span class="test-hub__metric-label">{metric.label}</span>
+              </>
+            ) : (
+              <span>{metric.text}</span>
+            )
+          }
         </li>
       ))
     }

@@ -62,7 +62,7 @@ export function SeoTab() {
     related.testRuns.some((r) => r.isCurrentPublished);
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_250px]">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
       <div className="space-y-4">
         {/* Missing-field warnings from the shared completion service */}
         {missing.length > 0 && (
