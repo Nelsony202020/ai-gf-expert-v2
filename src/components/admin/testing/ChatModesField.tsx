@@ -56,9 +56,7 @@ export function chatModesToRaw(
   if (hasModes === 'no') return { status: 'no' };
   if (hasModes !== 'yes') return undefined;
   const n = count.trim() === '' ? undefined : Math.max(0, Number(count));
-  if (n === undefined || Number.isNaN(n)) {
-    return { status: 'yes', detail: {} };
-  }
+  if (n === undefined || Number.isNaN(n)) return undefined;
   return { status: 'yes', detail: { count: n } };
 }
 

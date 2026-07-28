@@ -39,6 +39,12 @@ export function PublishTab() {
       setActionError(null);
     }
   }, [actionError, toast]);
+
+  useEffect(() => {
+    void runChecks();
+    // Run server validation once when opening Publish tab.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ws.productId]);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [scheduleDate, setScheduleDate] = useState('');
 
@@ -119,6 +125,9 @@ export function PublishTab() {
   const required = completion.missingRequired;
   const recommended = completion.missingRecommended;
   const blocked = required.length > 0 || (serverCheck?.errors.length ?? 0) > 0;
+  const hasPublishedTestRun = ws.related.testRuns.some((r) => r.isCurrentPublished);
+  const readyToPublish =
+    status !== 'published' && status !== 'archived' && hasPublishedTestRun && !blocked;
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
@@ -126,6 +135,38 @@ export function PublishTab() {
         {actionNotice && (
           <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
             <Icon name="check_circle" className="!text-[16px]" /> {actionNotice}
+          </div>
+        )}
+
+        {readyToPublish && canPublish && (
+          <div className="rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm dark:border-green-900/50 dark:bg-green-950/30">
+            <p className="text-sm font-semibold text-green-900 dark:text-green-200">
+              Ready to publish
+            </p>
+            <p className="mt-1 text-xs text-green-800 dark:text-green-300">
+              Test run is live and required checks pass. Publish to make the review page public.
+            </p>
+            <Button className="mt-3" onClick={() => void publish()} disabled={actionBusy !== null}>
+              <Icon name="rocket_launch" />
+              {actionBusy === 'publish' ? 'Publishing…' : 'Publish now'}
+            </Button>
+          </div>
+        )}
+
+        {!hasPublishedTestRun && status !== 'published' && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/30">
+            <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+              Publish the test run first
+            </p>
+            <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+              Go to Testing, finish required questions, then click <strong>Review and publish</strong>.
+            </p>
+            <Link
+              to={workspaceTabPath(ws.productId, 'testing')}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-pink-600 hover:underline dark:text-pink-400"
+            >
+              Open Testing tab
+            </Link>
           </div>
         )}
 

@@ -14,6 +14,7 @@ import { triggerRebuild } from '../db/publish';
 import { isEvidenceApplicable } from '../testing/capabilityGating';
 import { computePricingSuggestions } from '../testing/pricingAutofill';
 import { PRICING_AUTOFILL_SLUGS } from '../testing/pricingEvidenceSlugs';
+import { repairChatModesRaw } from '../testing/evidenceComplete';
 
 function isEditingAccuracyScoredForRun(resultBySlug: Map<string, { notApplicable?: boolean; rawValue?: unknown }>): boolean {
   const imageEdit = resultBySlug.get('image-editing');
@@ -119,6 +120,26 @@ async function syncPricingEvidence(
   if (writes.length > 0) await db.transact(writes);
 }
 
+async function repairChatModesEvidence(
+  resultByDef: Map<string, any>,
+  resultBySlug: Map<string, any>,
+) {
+  const chat = resultBySlug.get('chat-modes');
+  if (!chat?.id) return;
+
+  const modeTypes = resultBySlug.get('mode-types');
+  const repaired = repairChatModesRaw(chat.rawValue, modeTypes?.rawValue);
+  if (!repaired || JSON.stringify(repaired) === JSON.stringify(chat.rawValue)) return;
+
+  const db = getDb();
+  const now = Date.now();
+  await db.transact([db.tx.evidenceResults[chat.id].update({ rawValue: repaired, updatedAt: now })]);
+
+  const updated = { ...chat, rawValue: repaired };
+  resultBySlug.set('chat-modes', updated);
+  if (chat.evidenceDefinition?.id) resultByDef.set(chat.evidenceDefinition.id, updated);
+}
+
 export async function calculateRun(testRunId: string): Promise<{
   tree: ScoreTree;
   run: Awaited<ReturnType<typeof loadRunContext>>;
@@ -136,6 +157,7 @@ export async function calculateRun(testRunId: string): Promise<{
     }
   }
 
+  await repairChatModesEvidence(resultByDef, resultBySlug);
   await syncPricingEvidence(testRunId, productId, mv, resultByDef);
 
   const categories = (mv.categories ?? [])

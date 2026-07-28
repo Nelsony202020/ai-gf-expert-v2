@@ -9,7 +9,7 @@
 // (one session at a time).
 
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, dataApi, type EntityRow } from '../../api';
 import { useCan, useMe } from '../../context';
 import { useAsyncToast, useToast } from '../../Toast';
@@ -17,6 +17,11 @@ import { reviewPageUrl } from '../../../../lib/slugs';
 import { GuidedTestingMode, type GuidedSession } from '../../testing/GuidedTestingMode';
 import { filterApplicableItems, isSessionApplicable } from '../../testing/capabilityGating';
 import { computePricingSuggestions, type AutofillSuggestion } from '../../testing/pricingAutofill';
+import {
+  isEvidenceAnswerComplete,
+  repairChatModesRaw,
+  supplementalRequiredMissing,
+} from '../../../../lib/testing/evidenceComplete';
 import {
   computeRunProgress,
   lastEditedFromResults,
@@ -41,6 +46,7 @@ import {
   statusTone,
 } from '../../ui';
 import { useWorkspace } from '../context';
+import { workspaceTabPath } from '../completion';
 
 interface ScoreTreeDto {
   overall: number | null;
@@ -76,16 +82,6 @@ function pickCurrentRun(runs: EntityRow[]): EntityRow | null {
     .sort((a, b) => (b.startedAt ?? b.createdAt ?? 0) - (a.startedAt ?? a.createdAt ?? 0));
   if (active.length > 0) return active[0];
   return runs.find((r) => r.isCurrentPublished) ?? null;
-}
-
-type ResultState = 'none' | 'complete' | 'unknown' | 'na';
-
-function resultState(r: EntityRow | undefined): ResultState {
-  if (!r) return 'none';
-  if (r.notApplicable) return 'na';
-  if (r.isUnknown) return 'unknown';
-  if (r.rawValue) return 'complete';
-  return 'none';
 }
 
 /** One obvious primary action — secondary actions live in the ⋮ menu. */
@@ -129,6 +125,7 @@ function runPrimaryAction(opts: {
 
 export function TestingTab() {
   const ws = useWorkspace();
+  const navigate = useNavigate();
   const can = useCan();
   const me = useMe();
   const toast = useToast();
@@ -181,12 +178,14 @@ export function TestingTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRun?.id]);
 
-  async function calculate(notifyOnError = false) {
-    if (!currentRun) return;
+  async function calculate(notifyOnError = false): Promise<ScoreTreeDto | null> {
+    if (!currentRun) return null;
     setCalcError(false);
     try {
       const res = await api.get<{ tree: ScoreTreeDto }>(`/api/admin/test-runs/${currentRun.id}/calculate`);
       setTree(res.tree);
+      await reloadResults();
+      return res.tree;
     } catch (e) {
       setCalcError(true);
       if (notifyOnError) {
@@ -194,6 +193,7 @@ export function TestingTab() {
           message: e instanceof Error ? e.message : String(e),
         });
       }
+      return null;
     }
   }
 
@@ -218,13 +218,12 @@ export function TestingTab() {
     );
     if (res) {
       setTree(res.tree);
-      toast.success('Published — this run is now the live score source.', {
-        message:
-          res.affectedRoundups.length > 0
-            ? `Affected roundups: ${res.affectedRoundups.join(', ')}`
-            : undefined,
+      toast.success('Test run published — scores are now live.', {
+        message: 'Next: publish the product on the Publish tab.',
+        durationMs: 8000,
       });
       await ws.refreshRelated();
+      navigate(workspaceTabPath(ws.productId, 'publish'));
     }
   }
 
@@ -270,20 +269,6 @@ export function TestingTab() {
     () => (currentRun ? readSkippedSessions(currentRun.id) : new Set<string>()),
     [currentRun?.id],
   );
-
-  const progressCtx: ProgressContext = useMemo(
-    () => ({
-      hasValue: (defId) => resultState(resultByDef.get(defId)) !== 'none',
-      getResult: (defId) => resultByDef.get(defId),
-      attachmentCount: (defId) => attachmentCountByDef.get(defId) ?? 0,
-      isSkipped: (key) => skippedSessions.has(key),
-    }),
-    [resultByDef, attachmentCountByDef, skippedSessions],
-  );
-
-  /** A test only counts as done when it has a value / unable-to-verify / N.A. —
-   * not when a draft record exists just to hold uploads. */
-  const hasValue = (defId: string) => resultState(resultByDef.get(defId)) !== 'none';
 
   // categoryId -> { sub, defs }[] (active only, in display order)
   const structureByCategory = useMemo(() => {
@@ -367,6 +352,49 @@ export function TestingTab() {
     ws.fields,
   ]);
 
+  const defById = useMemo(() => new Map(definitions.map((d) => [d.id, d])), [definitions]);
+
+  const relatedAnswersBySlug = useMemo(() => {
+    const out: Record<string, unknown> = {};
+    for (const [defId, row] of resultByDef) {
+      const slug = defById.get(defId)?.slug;
+      if (slug && row.rawValue) out[String(slug)] = row.rawValue;
+    }
+    if (out['chat-modes'] != null || out['mode-types'] != null) {
+      out['chat-modes'] = repairChatModesRaw(out['chat-modes'], out['mode-types']);
+    }
+    return out;
+  }, [resultByDef, defById]);
+
+  const progressCtx: ProgressContext = useMemo(
+    () => ({
+      hasValue: (defId: string) => {
+        const row = resultByDef.get(defId);
+        const def = defById.get(defId);
+        if (!def) return false;
+        return isEvidenceAnswerComplete({
+          slug: String(def.slug),
+          rawValue: row?.rawValue,
+          notApplicable: row?.notApplicable,
+          isUnknown: row?.isUnknown,
+          relatedAnswers: relatedAnswersBySlug,
+          hasAutofillSuggestion: suggestionByDef.has(defId),
+        });
+      },
+      getResult: (defId) => resultByDef.get(defId),
+      attachmentCount: (defId) => attachmentCountByDef.get(defId) ?? 0,
+      isSkipped: (key) => skippedSessions.has(key),
+    }),
+    [
+      resultByDef,
+      defById,
+      relatedAnswersBySlug,
+      suggestionByDef,
+      attachmentCountByDef,
+      skippedSessions,
+    ],
+  );
+
   const orderedSessions: GuidedSession[] = useMemo(() => {
     const list: GuidedSession[] = [];
     for (const cat of ws.related.categories) list.push(...(sessionsByCategory.get(cat.id) ?? []));
@@ -383,7 +411,31 @@ export function TestingTab() {
     [orderedSessions, progressCtx, results, currentRun?.updatedAt],
   );
 
-  const resumeIndex = runProgress.resumeIndex;
+  const sessionDefIds = useMemo(
+    () => new Set(orderedSessions.flatMap((s) => s.items.map(({ def }) => def.id))),
+    [orderedSessions],
+  );
+
+  const supplementalMissing = useMemo(
+    () => supplementalRequiredMissing(definitions, sessionDefIds, progressCtx.hasValue),
+    [definitions, sessionDefIds, progressCtx],
+  );
+
+  const effectiveRunProgress = useMemo(() => {
+    const totalRequired = runProgress.totalRequired + supplementalMissing.count;
+    const remainingRequired = runProgress.remainingRequired + supplementalMissing.count;
+    const completedRequired = totalRequired - remainingRequired;
+    return {
+      ...runProgress,
+      totalRequired,
+      remainingRequired,
+      completedRequired,
+      completionPct:
+        totalRequired === 0 ? 0 : Math.round((completedRequired / totalRequired) * 100),
+    };
+  }, [runProgress, supplementalMissing]);
+
+  const resumeIndex = effectiveRunProgress.resumeIndex;
 
   const publishedScores = useMemo(() => {
     const live = ws.related.scoreHistory.find((h) => h.isCurrentPublished);
@@ -429,23 +481,35 @@ export function TestingTab() {
 
   const isPublished = currentRun.status === 'published';
   const canEnterResults = canTest && !isPublished;
-  const testingComplete = runProgress.remainingRequired === 0;
+  const testingComplete = effectiveRunProgress.remainingRequired === 0;
+
+  const productStatus = String(ws.fields.status ?? 'draft');
+  const productPublished = productStatus === 'published';
 
   async function attemptPublish() {
-    if (runProgress.remainingRequired > 0) {
-      const labels = runProgress.sessions.flatMap((s) => s.missingRequiredLabels);
+    if (effectiveRunProgress.remainingRequired > 0) {
+      const labels = [
+        ...effectiveRunProgress.sessions.flatMap((s) => s.missingRequiredLabels),
+        ...supplementalMissing.labels,
+      ];
       const preview = labels.slice(0, 6).join(', ');
+      const needsPricingTab = supplementalMissing.labels.some((label) =>
+        ['Monthly Price', 'Annual Price', 'Included Credits', 'Voice Cost', 'Top-Ups', 'Image Cost', 'Video Cost'].includes(
+          label,
+        ),
+      );
       toast.warning("Can't publish yet", {
         message:
           labels.length > 0
-            ? `${runProgress.remainingRequired} required question${runProgress.remainingRequired === 1 ? '' : 's'} still unanswered (${preview}${labels.length > 6 ? '…' : ''})`
-            : `${runProgress.remainingRequired} required question${runProgress.remainingRequired === 1 ? '' : 's'} still unanswered`,
+            ? `${effectiveRunProgress.remainingRequired} required question${effectiveRunProgress.remainingRequired === 1 ? '' : 's'} still unanswered (${preview}${labels.length > 6 ? '…' : ''}).${needsPricingTab ? ' Fill in plan prices, packages, and feature costs on the Pricing tab.' : ''}`
+            : `${effectiveRunProgress.remainingRequired} required question${effectiveRunProgress.remainingRequired === 1 ? '' : 's'} still unanswered`,
       });
       return;
     }
-    if (tree && tree.blockingErrors.length > 0) {
+    const freshTree = await calculate(false);
+    if (freshTree && freshTree.blockingErrors.length > 0) {
       toast.error("Can't publish yet", {
-        message: tree.blockingErrors.slice(0, 3).join(' · '),
+        message: freshTree.blockingErrors.slice(0, 3).join(' · '),
       });
       return;
     }
@@ -455,7 +519,7 @@ export function TestingTab() {
   const primary = runPrimaryAction({
     isPublished,
     hasCalculationError: calcError,
-    remainingRequired: runProgress.remainingRequired,
+    remainingRequired: effectiveRunProgress.remainingRequired,
     canEnterResults: canEnterResults && orderedSessions.length > 0,
     canPublish: can('content.publish') && !isPublished,
     onResume: () => startGuidedAt(),
@@ -479,7 +543,7 @@ export function TestingTab() {
     : null;
   const selectedSessions = selectedCat ? sessionsByCategory.get(selectedCat.id) ?? [] : [];
   const resumeSessionSnapshot =
-    runProgress.sessions[resumeIndex] ?? runProgress.sessions[0] ?? null;
+    effectiveRunProgress.sessions[resumeIndex] ?? effectiveRunProgress.sessions[0] ?? null;
 
   function startGuidedAt(defId?: string) {
     if (defId) {
@@ -525,7 +589,7 @@ export function TestingTab() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0 flex-1">
               <TestingRunProgressSummary
-                runProgress={runProgress}
+                runProgress={effectiveRunProgress}
                 currentSession={resumeSessionSnapshot}
                 onResume={() => startGuidedAt()}
                 onSelectSession={startGuidedAtIndex}
@@ -549,6 +613,26 @@ export function TestingTab() {
           </p>
         )}
 
+        {!isPublished && supplementalMissing.count > 0 && suggestionByDef.size === 0 && (
+          <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+            <p className="font-medium">
+              {supplementalMissing.count} pricing test answer
+              {supplementalMissing.count === 1 ? '' : 's'} still need data from the Pricing tab
+            </p>
+            <p className="mt-1 text-amber-800 dark:text-amber-300">
+              Monthly/annual prices, included credits, credit packages, and voice costs are
+              auto-filled from <strong>Pricing</strong> — they are not entered in the testing
+              sessions. Add plan tiers, packages, and feature costs there first.
+            </p>
+            <Link
+              to={workspaceTabPath(ws.productId, 'pricing')}
+              className="mt-2 inline-flex items-center gap-1 font-medium text-pink-700 hover:underline dark:text-pink-400"
+            >
+              Open Pricing tab
+            </Link>
+          </div>
+        )}
+
         <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
           <Button onClick={primary.onClick} disabled={busy} className="shrink-0">
             <Icon name={primary.icon} />
@@ -565,7 +649,26 @@ export function TestingTab() {
         </div>
       </div>
 
-      {isPublished && (
+      {isPublished && !productPublished && (
+        <div className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/50 dark:bg-green-950/30">
+          <p className="text-sm font-medium text-green-900 dark:text-green-200">
+            Test run is live — ready for product publish
+          </p>
+          <p className="mt-1 text-xs text-green-800 dark:text-green-300">
+            Scores are on the site. Open the Publish tab to run final checks and publish the review
+            page.
+          </p>
+          <Link
+            to={workspaceTabPath(ws.productId, 'publish')}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-green-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-800"
+          >
+            <Icon name="rocket_launch" className="!text-[16px]" />
+            Go to Publish tab
+          </Link>
+        </div>
+      )}
+
+      {isPublished && productPublished && (
         <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
           This run is live on the site — answers can&apos;t be changed. Start a new test run to
           retest.
