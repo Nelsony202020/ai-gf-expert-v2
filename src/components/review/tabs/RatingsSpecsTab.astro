@@ -1,14 +1,80 @@
 ---
 import type { Product } from '../../../data/products';
+import type { DraftCategory, DraftRatingsViewModel } from '../../../lib/draft-ratings/types';
 import RatingCategory from './RatingCategory.astro';
 import DetailLevelControl from '../DetailLevelControl.astro';
 import RatingsChangelogCompact from '../RatingsChangelogCompact.astro';
+import TestingCredentialsCard from '../TestingCredentialsCard.astro';
+import RatingsEvidenceDrawer from '../RatingsEvidenceDrawer.astro';
+import { loadDraftRatingsViewModel } from '../../../lib/draft-ratings/loadDraftRatingsData';
+import {
+  buildSubscoreCalcHeadline,
+  buildSubscoreCalcScope,
+  buildSubscoreKeyTakeaways,
+} from '../../../lib/draft-ratings/evidenceDrawerContent';
+import { getSubscoreDescription } from '../../../data/subscore-descriptions';
+import { equalWeights, weightedValue } from '../../../lib/scores';
+import { buildDrawerNavChain } from '../../../lib/draft-ratings/drawerNav';
+import '../testing-credentials.css';
+import '../ratings-evidence.css';
 
 interface Props {
   product: Product;
+  preview?: boolean;
+  /** Pre-loaded model — skips a duplicate DB fetch when the page already loaded it. */
+  ratingsModel?: DraftRatingsViewModel;
 }
 
-const { product } = Astro.props;
+const { product, preview = false, ratingsModel: ratingsModelProp } = Astro.props;
+const ratingsModel =
+  ratingsModelProp ?? (await loadDraftRatingsViewModel(product, { preview }));
+
+const enrichedByKey = new Map(ratingsModel.categories.map((c) => [c.slug, c]));
+
+const drawerNavById = buildDrawerNavChain(ratingsModel.categories);
+
+const allEvidenceCategories = ratingsModel.categories.flatMap((c) =>
+  c.subscores.flatMap((s) => s.evidenceCategories),
+);
+
+const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
+  cat.subscores.map((sub) => {
+    const weights = equalWeights(sub.evidenceCategories.length || sub.testGroups.length || 1);
+    const productCat = product.categories.find((c) => c.key === cat.slug);
+    const productSub = productCat?.subscores.find((s) => s.name === sub.name);
+    const iconByName = new Map(
+      (productSub?.contributors ?? []).map((c) => [c.label, c.icon ?? 'analytics']),
+    );
+    const items = sub.evidenceCategories.map((ec, i) => ({
+      name: ec.name,
+      score: ec.score,
+      weight: weights[i] ?? 0,
+      icon: iconByName.get(ec.name) ?? 'analytics',
+      contribution: ec.score != null ? weightedValue(ec.score, weights[i] ?? 0) : null,
+    }));
+    const scopeSource =
+      sub.scopeDescription ||
+      productSub?.description ||
+      getSubscoreDescription(cat.slug, sub.name);
+    const calcId = `subscore-calc-${cat.slug}-${sub.slug}`;
+    const nav = drawerNavById.get(calcId) ?? {};
+    return {
+      drawerId: calcId,
+      categoryName: cat.name,
+      subscoreName: sub.name,
+      subscoreScore: sub.score,
+      scopeDescription: buildSubscoreCalcScope(product.name, sub.name, scopeSource),
+      headlineConclusion: buildSubscoreCalcHeadline(sub.name, items),
+      keyTakeaways: buildSubscoreKeyTakeaways(
+        product.name,
+        items,
+        sub.explanation || sub.finding || productSub?.description,
+      ),
+      items,
+      ...nav,
+    };
+  }),
+);
 ---
 
 <section class="bg-white py-12 md:py-14" data-ratings-root data-detail-level="skim">
@@ -19,12 +85,34 @@ const { product } = Astro.props;
 
     <RatingsChangelogCompact entries={product.ratingChangelog} />
 
+    <div class="mb-6 md:mb-8">
+      <TestingCredentialsCard overview={ratingsModel.overview} />
+    </div>
+
     <DetailLevelControl />
 
-    <div class="space-y-5 md:space-y-6" data-accordion-group>
-      {product.categories.map((category, i) => (
-        <RatingCategory category={category} productName={product.name} open={false} />
-      ))}
+    <div class="ratings-accordion" data-accordion-group>
+      {
+        product.categories.map((category, index) => (
+          <RatingCategory
+            category={category}
+            enrichedCategory={enrichedByKey.get(category.key)}
+            productName={product.name}
+            open={false}
+            isFirst={index === 0}
+            isLast={index === product.categories.length - 1}
+          />
+        ))
+      }
     </div>
   </div>
+
+  <RatingsEvidenceDrawer
+    evidenceCategories={allEvidenceCategories}
+    subscoreCalcs={subscoreCalcs}
+    drawerNavById={Object.fromEntries(drawerNavById)}
+    productName={product.name}
+    lastTested={ratingsModel.overview.lastTested}
+    methodologyVersion={ratingsModel.overview.methodologyVersion}
+  />
 </section>

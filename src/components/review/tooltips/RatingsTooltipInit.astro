@@ -52,12 +52,17 @@
       ? 420
       : panel.classList.contains('ratings-tooltip-panel--category')
       ? 420
+      : panel.classList.contains('ratings-tooltip-panel--split')
+      ? 420
       : panel.classList.contains('ratings-tooltip-panel--wide')
       ? 380
       : panel.classList.contains('ratings-tooltip-panel--compact')
-        ? panel.classList.contains('ratings-tooltip-panel--pipeline')
-          ? 280
-          : 260
+        ? panel.classList.contains('ratings-tooltip-panel--split') ||
+          panel.classList.contains('ratings-tooltip-panel--category')
+          ? 420
+          : panel.classList.contains('ratings-tooltip-panel--pipeline')
+            ? 280
+            : 260
       : panel.classList.contains('ratings-tooltip-panel--methodology')
         ? 340
         : panel.classList.contains('ratings-tooltip-panel--help')

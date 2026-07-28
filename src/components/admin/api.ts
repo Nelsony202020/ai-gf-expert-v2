@@ -38,6 +38,34 @@ export const api = {
     request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   upload: <T>(path: string, form: FormData) => request<T>(path, { method: 'POST', body: form }),
+  /** Download a binary export (CSV, PDF, etc.) and trigger a browser save. */
+  download: async (path: string): Promise<void> => {
+    const headers = new Headers();
+    if (refreshToken) headers.set('Authorization', `Bearer ${refreshToken}`);
+    let res: Response;
+    try {
+      res = await fetch(path, { headers });
+    } catch {
+      throw new ApiError(0, 'Network error — check your connection and try again.');
+    }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, (data as any).error ?? `Download failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const cd = res.headers.get('Content-Disposition') ?? '';
+    const match = /filename="([^"]+)"/i.exec(cd);
+    const filename = match?.[1] ?? 'download';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
 };
 
 // ---- Typed convenience wrappers for the generic CRUD API -------------------

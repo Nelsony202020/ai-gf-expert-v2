@@ -139,7 +139,7 @@ export async function collectPricingStats(): Promise<IndustryPricingStats> {
     });
 
   const monthlyPrices = stats
-    .map((s) => s.lowestMonthlyEquivalent)
+    .map((s) => s.lowestMonthly)
     .filter((v): v is number => v !== null);
   const discounts = stats.map((s) => s.maxAnnualDiscount).filter((v): v is number => v !== null);
   const creditRates = stats

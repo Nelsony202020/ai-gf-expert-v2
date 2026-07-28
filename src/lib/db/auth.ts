@@ -81,6 +81,10 @@ export function permissionsForRole(role: Role): Permission[] {
   return ROLE_PERMISSIONS[role] ?? [];
 }
 
+function isNetworkError(message: string): boolean {
+  return /ENOTFOUND|ECONNREFUSED|fetch failed|network|getaddrinfo/i.test(message);
+}
+
 /**
  * Resolve the caller's identity from an InstantDB refresh token
  * (sent by the admin panel as `Authorization: Bearer <token>`).
@@ -93,33 +97,64 @@ export async function resolveIdentity(request: Request): Promise<AdminIdentity |
   const token = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
   if (!token) return null;
 
-  const db = getDb();
+  let db;
+  try {
+    db = getDb();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'InstantDB is not configured';
+    throw new HttpError(
+      503,
+      `${message}. Set PUBLIC_INSTANT_APP_ID and INSTANT_APP_ADMIN_TOKEN in .env, then restart the dev server.`,
+    );
+  }
+
   let user: { id?: string; email?: string } | null = null;
+  let authError: string | null = null;
   try {
     user = await db.auth.verifyToken(token);
-  } catch {
+  } catch (err) {
+    authError = err instanceof Error ? err.message : 'verifyToken failed';
     user = null;
   }
   if (!user?.email) {
     try {
-      user = await db.auth.getUser({ refresh_token: token });
-    } catch {
+      const byRefresh = await db.auth.getUser({ refresh_token: token });
+      if (byRefresh?.email) user = byRefresh;
+    } catch (err) {
+      authError = err instanceof Error ? err.message : authError ?? 'getUser failed';
       user = null;
     }
   }
-  if (!user?.email) return null;
+  if (!user?.email) {
+    if (authError && isNetworkError(authError)) {
+      throw new HttpError(
+        503,
+        'Cannot reach InstantDB from the dev server. Check your internet connection and restart `npm run dev`.',
+      );
+    }
+    return null;
+  }
   const email = user.email.toLowerCase();
 
-  // Query all admin users and match in memory — InstantDB `where` on email
-  // can miss records depending on index state after fresh schema pushes.
-  let adminUsers: any[] = [];
-  try {
-    const res = await (db.query as any)({ adminUsers: {} });
-    adminUsers = res.adminUsers ?? [];
-  } catch {
-    adminUsers = [];
+  async function findAdminByEmail(): Promise<any | null> {
+    try {
+      const res = await (db.query as any)({ adminUsers: {} });
+      const list = (res.adminUsers ?? []) as any[];
+      return list.find((u) => String(u.email ?? '').toLowerCase() === email) ?? null;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'adminUsers query failed';
+      if (isNetworkError(message)) {
+        throw new HttpError(
+          503,
+          'Cannot reach InstantDB from the dev server. Check your internet connection and restart `npm run dev`.',
+        );
+      }
+      console.warn('[auth] adminUsers query failed:', err);
+      return null;
+    }
   }
-  let admin = (adminUsers as any[]).find((u) => String(u.email ?? '').toLowerCase() === email);
+
+  let admin = await findAdminByEmail();
 
   if (!admin) {
     const ownerEmail = (env('ADMIN_OWNER_EMAIL') ?? '').trim().toLowerCase();
@@ -138,17 +173,27 @@ export async function resolveIdentity(request: Request): Promise<AdminIdentity |
             .link({ user: user.id }),
         );
       } catch {
-        await db.transact(
-          db.tx.adminUsers[newId].update({
-            email,
-            name: email.split('@')[0],
-            role: 'owner',
-            active: true,
-            createdAt: Date.now(),
-          }),
-        );
+        try {
+          await db.transact(
+            db.tx.adminUsers[newId].update({
+              email,
+              name: email.split('@')[0],
+              role: 'owner',
+              active: true,
+              createdAt: Date.now(),
+            }),
+          );
+        } catch {
+          /* may already exist — re-query below */
+        }
       }
-      admin = { id: newId, email, name: email.split('@')[0], role: 'owner', active: true } as any;
+      admin = (await findAdminByEmail()) ?? {
+        id: newId,
+        email,
+        name: email.split('@')[0],
+        role: 'owner',
+        active: true,
+      };
     } else {
       return null;
     }

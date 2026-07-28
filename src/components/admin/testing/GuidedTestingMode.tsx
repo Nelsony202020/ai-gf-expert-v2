@@ -7,6 +7,10 @@ import { Button, Icon } from '../ui';
 import { STEP_DEFAULT_SESSIONS } from './capabilityGating';
 import type { AutofillSuggestion } from './pricingAutofill';
 import {
+  isEvidenceAnswerComplete,
+  repairChatModesRaw,
+} from '../../../lib/testing/evidenceComplete';
+import {
   computeRunProgress,
   lastEditedFromResults,
   sessionRequiredComplete,
@@ -43,12 +47,38 @@ function buildProgressContext(
   results: Map<string, EntityRow>,
   attachmentCountByDef: Map<string, number>,
   skipped: Set<string>,
+  evidenceDefs?: EntityRow[],
+  suggestions?: Map<string, AutofillSuggestion>,
 ): ProgressContext {
+  const defById = new Map((evidenceDefs ?? []).map((d) => [d.id, d]));
+  const relatedAnswersBySlug: Record<string, unknown> = {};
+  for (const [defId, row] of results) {
+    const slug = defById.get(defId)?.slug;
+    if (slug && row.rawValue) relatedAnswersBySlug[String(slug)] = row.rawValue;
+  }
+  if (relatedAnswersBySlug['chat-modes'] != null || relatedAnswersBySlug['mode-types'] != null) {
+    relatedAnswersBySlug['chat-modes'] = repairChatModesRaw(
+      relatedAnswersBySlug['chat-modes'],
+      relatedAnswersBySlug['mode-types'],
+    );
+  }
+
   const hasValue = (defId: string) => {
     const r = results.get(defId);
-    if (!r) return false;
-    if (r.notApplicable || r.isUnknown) return true;
-    return Boolean(r.rawValue);
+    const def = defById.get(defId);
+    if (!def) {
+      if (!r) return false;
+      if (r.notApplicable || r.isUnknown) return true;
+      return Boolean(r.rawValue);
+    }
+    return isEvidenceAnswerComplete({
+      slug: String(def.slug),
+      rawValue: r?.rawValue,
+      notApplicable: r?.notApplicable,
+      isUnknown: r?.isUnknown,
+      relatedAnswers: relatedAnswersBySlug,
+      hasAutofillSuggestion: suggestions?.has(defId),
+    });
   };
   return {
     hasValue,
@@ -71,6 +101,8 @@ export function GuidedTestingMode({
   media,
   runUpdatedAt,
   startIndex,
+  focusDefId: initialFocusDefId,
+  focusNonce: externalFocusNonce = 0,
   suggestions,
   evidenceDefs,
   onClose,
@@ -89,6 +121,9 @@ export function GuidedTestingMode({
   media: EntityRow[];
   runUpdatedAt?: number | null;
   startIndex: number;
+  /** Jump to and highlight this evidence definition when its session opens. */
+  focusDefId?: string | null;
+  focusNonce?: number;
   suggestions?: Map<string, AutofillSuggestion>;
   /** All evidence definitions (for cross-session slug lookups). */
   evidenceDefs?: EntityRow[];
@@ -96,6 +131,8 @@ export function GuidedTestingMode({
   onResultSaved: () => Promise<void> | void;
 }) {
   const [index, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(sessions.length - 1, 0)));
+  const [focusDefId, setFocusDefId] = useState<string | null>(initialFocusDefId ?? null);
+  const [focusNonce, setFocusNonce] = useState(0);
   const [finished, setFinished] = useState(false);
   const [activeCheckpoint, setActiveCheckpoint] = useState<ReturnType<typeof checkpointAfterSession>>(null);
   const [saving, setSaving] = useState(false);
@@ -128,8 +165,8 @@ export function GuidedTestingMode({
   }, [media, results]);
 
   const progressCtx = useMemo(
-    () => buildProgressContext(results, attachmentCountByDef, skippedSessions),
-    [results, attachmentCountByDef, skippedSessions],
+    () => buildProgressContext(results, attachmentCountByDef, skippedSessions, evidenceDefs, suggestions),
+    [results, attachmentCountByDef, skippedSessions, evidenceDefs, suggestions],
   );
 
   const runProgress = useMemo(
@@ -174,8 +211,36 @@ export function GuidedTestingMode({
   }, [index, sessions]);
 
   useEffect(() => {
+    if (initialFocusDefId) setFocusDefId(initialFocusDefId);
+  }, [initialFocusDefId]);
+
+  useEffect(() => {
+    if (externalFocusNonce > 0) setFocusNonce(externalFocusNonce);
+  }, [externalFocusNonce]);
+
+  useEffect(() => {
+    setIndex(Math.min(Math.max(startIndex, 0), Math.max(sessions.length - 1, 0)));
+  }, [startIndex, sessions.length]);
+
+  useEffect(() => {
     setSessionDirty(false);
   }, [index]);
+
+  function resumeToNextIncomplete() {
+    const snap = runProgress.sessions[runProgress.resumeIndex];
+    const nextDef = snap?.missingRequiredItems[0]?.defId ?? null;
+    setFocusDefId(nextDef);
+    setFocusNonce((n) => n + 1);
+    if (runProgress.resumeIndex === index) return;
+    requestGoToSession(runProgress.resumeIndex);
+  }
+
+  function jumpToMissingInSession(sessionIndex: number, defId: string) {
+    setFocusDefId(defId);
+    setFocusNonce((n) => n + 1);
+    if (sessionIndex === index) return;
+    requestGoToSession(sessionIndex);
+  }
 
   function requestLeave(next: NonNullable<typeof leaveConfirm>) {
     if (sessionDirty && !saving) {
@@ -290,6 +355,7 @@ export function GuidedTestingMode({
             currentSessionProgress={currentSnapshot}
             currentSessionIndex={index}
             onSelectSession={requestGoToSession}
+            onJumpToMissing={jumpToMissingInSession}
             checkpointAfterIndices={checkpointAfterIndices}
             trailing={
               <div className="flex shrink-0 items-center gap-2">
@@ -333,7 +399,7 @@ export function GuidedTestingMode({
           />
 
           {showResumeBanner && (
-            <TestingResumeRow onResume={() => requestGoToSession(runProgress.resumeIndex)} />
+            <TestingResumeRow onResume={resumeToNextIncomplete} />
           )}
 
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
@@ -353,7 +419,7 @@ export function GuidedTestingMode({
                   {runProgress.remainingRequired > 0 && (
                     <Button
                       variant="secondary"
-                      onClick={() => requestGoToSession(runProgress.resumeIndex)}
+                      onClick={resumeToNextIncomplete}
                     >
                       Resume next incomplete
                     </Button>
@@ -382,6 +448,12 @@ export function GuidedTestingMode({
                 productFields={productFields}
                 productSlug={productSlug}
                 suggestions={suggestions}
+                initialFocusDefId={
+                  focusDefId && current.items.some(({ def }) => def.id === focusDefId)
+                    ? focusDefId
+                    : null
+                }
+                focusNonce={focusNonce}
                 layout={hasWorksheet && current.session.id === 'chat-understanding' ? 'batch' : layout}
                 submitLabel={isLast ? 'Save and finish' : 'Save and continue →'}
                 onBusyChange={setSaving}

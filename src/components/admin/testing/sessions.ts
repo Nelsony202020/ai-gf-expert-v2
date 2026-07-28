@@ -247,7 +247,7 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
       title: 'Policy & data-use review',
       intro: 'Read the privacy policy, terms and help pages once, then answer all of these.',
       icon: 'policy',
-      slugs: ['training', 'human-review', 'data-sharing', 'advertising', 'retention', 'policy-clarity'],
+      slugs: ['human-review', 'data-sharing', 'advertising', 'retention', 'policy-clarity'],
     },
     {
       id: 'data-controls',
@@ -309,7 +309,8 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'pricing-value-breakdown',
       title: 'Value breakdown',
-      intro: 'Compare value vs competitors and rate feature and usage value.',
+      intro:
+        'Compare value vs competitors. Real-world spend estimates are configured on the Pricing tab under “Real-world spend”.',
       icon: 'analytics',
       slugs: ['category-comparison', 'feature-value', 'usage-value'],
     },

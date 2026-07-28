@@ -5,6 +5,7 @@ import { getDb, id as newId } from './server';
 import { HttpError, type AdminIdentity } from './auth';
 import { auditTx, diffRecords } from './audit';
 import { getEntityConfig, type EntityConfig } from './registry';
+import { schemaForPartialUpdate } from '../validation/partialUpdate';
 import { deleteAffiliateLinkCascade, deleteProductCascade } from './cascade-delete';
 import {
   onHomepageSlotRemoved,
@@ -181,9 +182,7 @@ export async function updateEntity(
   identity: AdminIdentity,
 ): Promise<void> {
   const cfg = config(entity);
-  const partialSchema = (cfg.schema as any).partial
-    ? (cfg.schema as any).partial()
-    : cfg.schema;
+  const partialSchema = schemaForPartialUpdate(cfg.schema);
   const parsed = partialSchema.safeParse(payload.fields);
   if (!parsed.success) {
     throw new HttpError(400, `Validation failed: ${parsed.error.message}`);

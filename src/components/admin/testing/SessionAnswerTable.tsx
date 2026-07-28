@@ -22,6 +22,8 @@ interface Draft {
   raw: RawValue | undefined;
   na: boolean;
   dirty: boolean;
+  internalNotes: string;
+  notesDirty: boolean;
 }
 
 export function SessionAnswerTable({
@@ -31,10 +33,12 @@ export function SessionAnswerTable({
   resultByDef,
   proofCounts,
   activeDefId,
+  highlightDefId,
   dropTargetDefId,
   busy,
   onPatch,
   onOpenProof,
+  onOpenNote,
   onFocusRow,
   onDragOverRow,
   onDragLeaveTable,
@@ -59,6 +63,7 @@ export function SessionAnswerTable({
   resultByDef: Map<string, EntityRow>;
   proofCounts: Map<string, number>;
   activeDefId: string | null;
+  highlightDefId?: string | null;
   dropTargetDefId?: string | null;
   busy?: boolean;
   productFields?: Record<string, unknown>;
@@ -76,6 +81,7 @@ export function SessionAnswerTable({
   editMemoriesBlocked?: boolean;
   onPatch: (defId: string, patch: Partial<Draft>) => void;
   onOpenProof: (defId: string) => void;
+  onOpenNote?: (defId: string) => void;
   onFocusRow: (defId: string | null) => void;
   onDragOverRow?: (defId: string) => void;
   onDragLeaveTable?: () => void;
@@ -116,7 +122,13 @@ export function SessionAnswerTable({
           }}
         >
           {items.map(({ def }) => {
-            const draft = drafts[def.id] ?? { raw: undefined, na: false, dirty: false };
+            const draft = drafts[def.id] ?? {
+              raw: undefined,
+              na: false,
+              dirty: false,
+              internalNotes: '',
+              notesDirty: false,
+            };
             const result = resultByDef.get(def.id);
             const state = rowState(def, draft, result);
             const summary =
@@ -147,6 +159,7 @@ export function SessionAnswerTable({
                       })()
                     : formatAnswerSummary(def, draft.raw, draft.na);
             const isActive = activeDefId === def.id;
+            const isHighlighted = highlightDefId === def.id;
             const isDropTarget = dropTargetDefId === def.id;
             const proofN = result?.id ? (proofCounts.get(result.id) ?? 0) : 0;
 
@@ -156,7 +169,9 @@ export function SessionAnswerTable({
                 data-session-row={def.id}
                 className={`border-b border-slate-100 last:border-0 dark:border-slate-800 cursor-pointer transition-colors ${
                   isActive ? 'is-active' : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/40'
-                } ${isDropTarget ? 'is-drop-target' : ''}`}
+                } ${isDropTarget ? 'is-drop-target' : ''} ${
+                  isHighlighted ? 'bg-amber-50 ring-2 ring-inset ring-amber-400 dark:bg-amber-950/30' : ''
+                }`}
                 onClick={() => onFocusRow(def.id)}
                 onDragEnter={(e) => {
                   if (!e.dataTransfer.types.includes('Files')) return;
@@ -324,19 +339,35 @@ export function SessionAnswerTable({
                   />
                 </td>
                 <td className="px-1 py-2 text-center align-top" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    className={`inline-flex cursor-pointer items-center gap-0.5 rounded-md px-1 py-1 text-xs font-medium ${
-                      proofN > 0
-                        ? 'testing-link hover:bg-[var(--testing-accent-soft)]'
-                        : 'text-slate-400 hover:bg-slate-100 hover:text-pink-500 dark:hover:bg-slate-800'
-                    }`}
-                    onClick={() => onOpenProof(def.id)}
-                    title="Upload proof"
-                  >
-                    <Icon name="attach_file" className="!text-[15px]" />
-                    {proofN > 0 ? proofN : ''}
-                  </button>
+                  <div className="inline-flex items-center justify-center gap-0.5">
+                    {onOpenNote && (
+                      <button
+                        type="button"
+                        className={`inline-flex cursor-pointer items-center rounded-md px-1 py-1 text-xs ${
+                          draft.internalNotes.trim()
+                            ? 'testing-link hover:bg-[var(--testing-accent-soft)]'
+                            : 'text-slate-400 hover:bg-slate-100 hover:text-pink-500 dark:hover:bg-slate-800'
+                        }`}
+                        onClick={() => onOpenNote(def.id)}
+                        title="Add internal note"
+                      >
+                        <Icon name="sticky_note_2" className="!text-[15px]" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className={`inline-flex cursor-pointer items-center gap-0.5 rounded-md px-1 py-1 text-xs font-medium ${
+                        proofN > 0
+                          ? 'testing-link hover:bg-[var(--testing-accent-soft)]'
+                          : 'text-slate-400 hover:bg-slate-100 hover:text-pink-500 dark:hover:bg-slate-800'
+                      }`}
+                      onClick={() => onOpenProof(def.id)}
+                      title="Upload proof"
+                    >
+                      <Icon name="attach_file" className="!text-[15px]" />
+                      {proofN > 0 ? proofN : ''}
+                    </button>
+                  </div>
                 </td>
               </tr>
             );

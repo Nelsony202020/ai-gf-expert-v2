@@ -1,0 +1,44 @@
+---
+import { fmtScore } from '../../../lib/scores';
+import { getDraftScoreVisual } from '../../../lib/draft-ratings/scoreBands';
+
+interface Props {
+  score: number | null;
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'solid' | 'outline';
+  /** Rectangular badge (overall score style) vs padded pill vs less-rounded badge */
+  shape?: 'pill' | 'rect' | 'badge';
+  class?: string;
+}
+
+const { score, size = 'md', variant = 'solid', shape = 'pill', class: className = '' } = Astro.props;
+const visual = getDraftScoreVisual(score);
+
+const pillSizes: Record<NonNullable<Props['size']>, string> = {
+  sm: 'min-w-[2.75rem] px-2.5 py-1 text-sm rounded-md tabular-nums',
+  md: 'min-w-[3rem] px-3 py-1 text-base rounded-lg tabular-nums',
+  lg: 'min-w-[3.5rem] px-3 py-1.5 text-2xl rounded-lg tabular-nums',
+};
+
+const rectSizes: Record<NonNullable<Props['size']>, string> = {
+  sm: 'w-9 h-7 text-sm rounded tabular-nums',
+  md: 'w-12 h-10 text-lg rounded-lg tabular-nums',
+  lg: 'px-3 py-1 text-4xl rounded-lg min-w-[4.5rem] tabular-nums',
+};
+
+const badgeSizes: Record<NonNullable<Props['size']>, string> = {
+  sm: 'min-w-[2.75rem] px-2.5 py-1 text-sm rounded tabular-nums',
+  md: 'min-w-[3rem] px-3 py-1 text-base rounded tabular-nums',
+  lg: 'min-w-[3.5rem] px-3 py-1.5 text-2xl rounded tabular-nums',
+};
+
+const sizes = shape === 'rect' ? rectSizes : shape === 'badge' ? badgeSizes : pillSizes;
+
+const base = 'inline-flex items-center justify-center font-black leading-none';
+const styles =
+  variant === 'solid'
+    ? `${visual.bg}`
+    : `border-2 ${visual.border} text-on-surface bg-transparent`;
+---
+
+<span class={`${base} ${sizes[size]} ${styles} ${className}`}>{fmtScore(score)}</span>

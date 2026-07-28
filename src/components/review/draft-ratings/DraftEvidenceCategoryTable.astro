@@ -1,0 +1,59 @@
+---
+import type { DraftEvidenceCategory } from '../../../lib/draft-ratings/types';
+import ScorePill from '../ScorePill.astro';
+
+interface Props {
+  categories: DraftEvidenceCategory[];
+  subscoreSlug: string;
+  categorySlug: string;
+}
+
+const { categories, subscoreSlug, categorySlug } = Astro.props;
+---
+
+<div
+  class="draft-evidence-categories"
+  data-draft-evidence-table={categorySlug}
+  data-draft-evidence-subscore={subscoreSlug}
+>
+  <h5 class="draft-evidence-categories__label">Evidence categories</h5>
+  <div class="draft-evidence-categories__table-wrap">
+    <table class="draft-evidence-categories__table">
+      <thead>
+        <tr>
+          <th scope="col">Evidence category</th>
+          <th scope="col" class="draft-evidence-categories__num">Score</th>
+          <th scope="col">Summary</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          categories.map((item, index) => (
+            <tr>
+              <td colspan="3" class="draft-evidence-categories__row-cell">
+                <button
+                  type="button"
+                  class:list={[
+                    'draft-evidence-categories__row',
+                    index === 0 && 'draft-evidence-categories__row--active',
+                  ]}
+                  data-draft-evidence-category-tab={item.slug}
+                  data-draft-evidence-category-subscore={subscoreSlug}
+                  data-draft-evidence-category-area={categorySlug}
+                  aria-selected={index === 0 ? 'true' : 'false'}
+                  tabindex={index === 0 ? 0 : -1}
+                >
+                  <span class="draft-evidence-categories__name">{item.name}</span>
+                  <span class="draft-evidence-categories__score">
+                    <ScorePill score={item.score} size="sm" variant="outline" />
+                  </span>
+                  <span class="draft-evidence-categories__summary">{item.summary}</span>
+                </button>
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -33,6 +33,8 @@ export interface SessionProgressSnapshot {
   requiredComplete: number;
   requiredRemaining: number;
   missingRequiredLabels: string[];
+  /** Required inputs still incomplete — used for jump-to-item navigation. */
+  missingRequiredItems: { defId: string; label: string }[];
 }
 
 export interface RunProgressSnapshot {
@@ -179,7 +181,13 @@ export function deriveSessionStatus(
   sessionKey: string,
 ): SessionStatus {
   const { total, complete } = sessionRequiredProgress(sessionId, items, ctx);
-  if (total === 0) return 'not_started';
+  if (total === 0) {
+    if (items.length === 0) return 'not_started';
+    const answered = items.filter(({ def }) => ctx.hasValue(def.id)).length;
+    if (answered === 0) return 'not_started';
+    if (answered >= items.length) return 'complete';
+    return 'in_progress';
+  }
 
   if (complete >= total) {
     if (sessionHasUnknownRequired(items, ctx)) return 'needs_review';
@@ -228,15 +236,19 @@ export function computeRunProgress(
     totalRequired += prog.total;
     completedRequired += prog.complete;
 
-    const missingRequiredLabels = prog.units
+    const missingRequiredItems = prog.units
       .filter((u) => !unitCompleteWithItems(u, s.items, ctx))
       .flatMap((u) =>
         u.defIds.map((id) => {
           const item = s.items.find(({ def }) => def.id === id);
-          return item ? String(item.def.questionLabel ?? item.def.name) : id;
+          return {
+            defId: id,
+            label: item ? String(item.def.questionLabel ?? item.def.name) : id,
+          };
         }),
-      )
-      .slice(0, 6);
+      );
+
+    const missingRequiredLabels = missingRequiredItems.map((m) => m.label).slice(0, 6);
 
     snapshots.push({
       sessionIndex,
@@ -248,6 +260,7 @@ export function computeRunProgress(
       requiredComplete: prog.complete,
       requiredRemaining: prog.remaining,
       missingRequiredLabels,
+      missingRequiredItems,
     });
   });
 

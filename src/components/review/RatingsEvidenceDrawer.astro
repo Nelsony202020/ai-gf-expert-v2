@@ -1,0 +1,517 @@
+---
+import type { DraftEvidenceCategory } from '../../lib/draft-ratings/types';
+import { proofShortCaption } from '../../lib/draft-ratings/evidenceDrawerContent';
+import { fmtScore } from '../../lib/scores';
+import { getDraftScoreChipClass } from '../../lib/draft-ratings/scoreBands';
+import DraftScorePill from './draft-ratings/DraftScorePill.astro';
+import DrawerNavFooter from './DrawerNavFooter.astro';
+import type { DrawerNav } from '../../lib/draft-ratings/drawerNav';
+
+interface SubscoreCalcItem {
+  name: string;
+  score: number | null;
+  weight: number;
+  icon: string;
+  contribution: number | null;
+}
+
+interface SubscoreCalc {
+  drawerId: string;
+  categoryName: string;
+  subscoreName: string;
+  subscoreScore: number | null;
+  scopeDescription: string;
+  headlineConclusion: string;
+  keyTakeaways: string;
+  items: SubscoreCalcItem[];
+  prevDrawerId?: string;
+  prevLabel?: string;
+  nextDrawerId?: string;
+  nextLabel?: string;
+}
+
+interface Props {
+  evidenceCategories: DraftEvidenceCategory[];
+  subscoreCalcs: SubscoreCalc[];
+  drawerNavById: Record<string, DrawerNav>;
+  productName: string;
+  lastTested?: string;
+  methodologyVersion?: string;
+}
+
+const { evidenceCategories, subscoreCalcs, drawerNavById } = Astro.props;
+
+function relatedMeasurement(ec: DraftEvidenceCategory, proofCaption?: string) {
+  if (!proofCaption) return ec.testResults[0];
+  const lower = proofCaption.toLowerCase();
+  return (
+    ec.testResults.find(
+      (m) => lower.includes(m.label.toLowerCase()) || lower.includes(m.slug.replace(/-/g, ' ')),
+    ) ?? ec.testResults[0]
+  );
+}
+
+function interpClass(tone?: string): string {
+  if (tone === 'good') return 'ratings-drawer-interp-text ratings-drawer-interp-text--good';
+  if (tone === 'fair') return 'ratings-drawer-interp-text ratings-drawer-interp-text--fair';
+  if (tone === 'poor') return 'ratings-drawer-interp-text ratings-drawer-interp-text--poor';
+  return 'ratings-drawer-interp-text';
+}
+
+function isPlatformExtras(ec: DraftEvidenceCategory): boolean {
+  return (
+    ec.slug === 'platform-extras-list' ||
+    ec.slug === 'platform-extras' ||
+    ec.testResults.some((m) => m.slug === 'platform-extras-list')
+  );
+}
+
+function breadcrumbParts(breadcrumb: string): string[] {
+  return breadcrumb.split(/\s*[›>]\s*/).filter(Boolean);
+}
+---
+
+<div data-ratings-drawer-root hidden>
+  <div class="ratings-drawer-backdrop" data-ratings-drawer-backdrop aria-hidden="true"></div>
+
+  {
+    evidenceCategories.map((ec) => {
+      const proofItems = ec.selectedProof
+        .filter((p) => p.kind === 'image' || p.kind === 'video')
+        .map((proof) => {
+          const related = relatedMeasurement(ec, proof.caption);
+          return {
+            src: proof.fullUrl ?? proof.thumbUrl,
+            alt: proofShortCaption(proof, related),
+            caption: proofShortCaption(proof, related),
+            proof,
+          };
+        });
+      const proofGalleryJson = JSON.stringify(
+        proofItems.map((item) => ({
+          src: item.src,
+          alt: item.alt,
+          caption: item.caption,
+        })),
+      );
+      const showResultsTable = ec.testResults.length > 0 && !isPlatformExtras(ec);
+      const nav = drawerNavById[ec.drawerId] ?? {};
+
+      return (
+        <aside
+          class="ratings-drawer-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={`ratings-drawer-title-${ec.drawerId}`}
+          data-ratings-drawer-panel={ec.drawerId}
+          hidden
+        >
+          <div class="ratings-drawer-panel__header">
+            <button
+              type="button"
+              class="ratings-drawer-panel__close"
+              data-ratings-close-drawer
+              aria-label="Close evidence details"
+            >
+              <span class="material-symbols-outlined text-xl">close</span>
+            </button>
+          </div>
+
+          <div class="ratings-drawer-panel__body">
+            <header class="ratings-drawer-hero">
+              <h3 id={`ratings-drawer-title-${ec.drawerId}`} class="ratings-drawer-hero__title">
+                {ec.name}
+              </h3>
+              {ec.breadcrumb && (
+                <p class="ratings-drawer-breadcrumb">
+                  {
+                    breadcrumbParts(ec.breadcrumb).map((part, index, parts) => (
+                      <>
+                        <span
+                          class={
+                            index === parts.length - 1
+                              ? 'ratings-drawer-breadcrumb__current'
+                              : 'ratings-drawer-breadcrumb__parent'
+                          }
+                        >
+                          {part}
+                        </span>
+                        {
+                          index < parts.length - 1 && (
+                            <span
+                              class="material-symbols-outlined ratings-drawer-breadcrumb__sep"
+                              aria-hidden="true"
+                            >
+                              chevron_right
+                            </span>
+                          )
+                        }
+                      </>
+                    ))
+                  }
+                </p>
+              )}
+              <div class="ratings-drawer-hero__banner">
+                <DraftScorePill
+                  score={ec.score}
+                  size="md"
+                  variant="outline"
+                  shape="badge"
+                  class="ratings-drawer-hero__score-pill"
+                />
+                <div class="ratings-drawer-hero__copy">
+                  <p class="ratings-drawer-hero__score-label">Evidence score</p>
+                  {ec.headlineConclusion && (
+                    <p class="ratings-drawer-hero__conclusion">{ec.headlineConclusion}</p>
+                  )}
+                </div>
+              </div>
+            </header>
+
+            <hr class="ratings-drawer-divider" />
+
+            {(ec.scopeDescription || ec.whatThisMeans) && (
+              <div class="ratings-drawer-dual-cards">
+                {ec.scopeDescription && (
+                  <section class="ratings-drawer-card ratings-drawer-card--measures">
+                    <h4 class="ratings-drawer-card__label">
+                      <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
+                        lightbulb
+                      </span>
+                      What this measures
+                    </h4>
+                    <p class="ratings-drawer-card__text">{ec.scopeDescription}</p>
+                  </section>
+                )}
+                {ec.whatThisMeans && (
+                  <section class="ratings-drawer-card ratings-drawer-card--finding">
+                    <h4 class="ratings-drawer-card__label">
+                      <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
+                        star
+                      </span>
+                      What this means
+                    </h4>
+                    <p class="ratings-drawer-card__text">{ec.whatThisMeans}</p>
+                  </section>
+                )}
+              </div>
+            )}
+
+            {ec.bonusExtras && ec.bonusExtras.length > 0 && (
+              <section class="ratings-drawer-section">
+                <h4 class="ratings-drawer-section__label">Bonus features found</h4>
+                <ul class="ratings-bonus-extras-list">
+                  {ec.bonusExtras.map((extra) => (
+                    <li class="ratings-bonus-extras-list__item">
+                      <span class="ratings-bonus-extras-list__name">{extra.name}</span>
+                      {extra.note && (
+                        <span class="ratings-bonus-extras-list__note">{extra.note}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {showResultsTable && (
+              <section class="ratings-drawer-section">
+                <h4 class="ratings-drawer-section__label">Test results</h4>
+                <table class="ratings-drawer-results">
+                  <thead>
+                    <tr>
+                      <th scope="col">{ec.slug === 'amount' ? 'Character group' : 'Test'}</th>
+                      <th scope="col" class="ratings-drawer-results__num">
+                        {ec.slug === 'amount' ? 'Count' : 'Measured result'}
+                      </th>
+                      <th scope="col">Interpretation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ec.testResults.map((m) => (
+                      <tr>
+                        <td>{m.label}</td>
+                        <td class="ratings-drawer-results__num tabular-nums">{m.value}</td>
+                        <td>
+                          <span class={interpClass(m.interpretationTone)}>
+                            {m.interpretation ?? '—'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
+            )}
+
+            {ec.howWeTested && (
+              <section class="ratings-drawer-section">
+                <h4 class="ratings-drawer-section__label">How we tested</h4>
+                <p class="ratings-drawer-section__text">{ec.howWeTested}</p>
+                {ec.methodologyUrl && (
+                  <a href={ec.methodologyUrl} class="ratings-drawer-method-link">
+                    View full {ec.name} methodology
+                    <span class="material-symbols-outlined text-base" aria-hidden="true">arrow_forward</span>
+                  </a>
+                )}
+              </section>
+            )}
+
+            {proofItems.length > 0 && (
+              <>
+                <hr class="ratings-drawer-divider" />
+                <section class="ratings-drawer-section">
+                  <h4 class="ratings-drawer-section__label">
+                    Proof ({ec.proofCount} {ec.proofCount === 1 ? 'file' : 'files'})
+                  </h4>
+                  <div
+                    class="ratings-proof-gallery"
+                    data-gallery
+                    data-gallery-images={proofGalleryJson}
+                  >
+                    {proofItems.map((item) => (
+                      <button
+                        type="button"
+                        class="ratings-proof-thumb-btn"
+                        data-lightbox-open={item.src}
+                        data-lightbox-alt={item.alt}
+                        data-lightbox-caption={item.caption}
+                      >
+                        <span class="ratings-proof-thumb-btn__frame">
+                          <img
+                            class="ratings-proof-thumb"
+                            src={item.proof.thumbUrl || item.proof.fullUrl}
+                            alt={item.alt}
+                            loading="lazy"
+                          />
+                          <span class="ratings-proof-thumb-btn__zoom" aria-hidden="true">
+                            <span class="material-symbols-outlined">zoom_in</span>
+                          </span>
+                        </span>
+                        <span class="ratings-proof-thumb-btn__label">{item.caption}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              </>
+            )}
+
+            {ec.calculation && (
+              <details class="ratings-drawer-collapsible ratings-drawer-collapsible--calc">
+                <summary class="ratings-drawer-collapsible__summary">
+                  How the {ec.name} score was calculated
+                  <span class="material-symbols-outlined ratings-drawer-collapsible__chevron" aria-hidden="true">
+                    expand_more
+                  </span>
+                </summary>
+                <div class="ratings-drawer-collapsible__body">
+                  {ec.calculation.rows.length > 0 && (
+                    <div class="ratings-drawer-table-wrap">
+                      <table class="ratings-drawer-results ratings-drawer-results--calc">
+                        <thead>
+                          <tr>
+                            <th scope="col">Test result</th>
+                            <th scope="col">Measured value</th>
+                            <th scope="col" class="ratings-drawer-results__num">Score (0–10)</th>
+                            {ec.calculation.method !== 'single' && (
+                              <>
+                                <th scope="col" class="ratings-drawer-results__num">Weight</th>
+                                <th scope="col" class="ratings-drawer-results__num">Contribution</th>
+                              </>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ec.calculation.rows.map((row) => (
+                            <tr>
+                              <td>{row.label}</td>
+                              <td class="tabular-nums">{row.measuredValue}</td>
+                              <td class="ratings-drawer-results__num">
+                                <span
+                                  class={`rt-score-chip rt-score-chip--outline ${getDraftScoreChipClass(row.internalScore)}`}
+                                >
+                                  {fmtScore(row.internalScore)}
+                                </span>
+                              </td>
+                              {ec.calculation!.method !== 'single' && (
+                                <>
+                                  <td class="ratings-drawer-results__num tabular-nums">
+                                    {row.weight != null ? `${row.weight}%` : '—'}
+                                  </td>
+                                  <td class="ratings-drawer-results__num tabular-nums">
+                                    {row.contribution != null ? row.contribution.toFixed(2) : '—'}
+                                  </td>
+                                </>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {ec.calculation.method !== 'single' && ec.calculation.formulaParts.length > 0 && (
+                    <p class="ratings-calc-formula">
+                      {ec.calculation.formulaParts.join(' + ')} ={' '}
+                      <span
+                        class={`rt-score-chip rt-score-chip--outline ratings-calc-formula__total ${getDraftScoreChipClass(ec.calculation.finalScore ?? ec.calculation.formulaTotal)}`}
+                      >
+                        {ec.calculation.formulaTotal?.toFixed(2)}
+                      </span>
+                    </p>
+                  )}
+
+                </div>
+              </details>
+            )}
+
+            <DrawerNavFooter {...nav} />
+          </div>
+        </aside>
+      );
+    })
+  }
+
+  {
+    subscoreCalcs.map((calc) => {
+      const parts = calc.items
+        .filter((i) => i.contribution != null)
+        .map((i) => i.contribution!.toFixed(2));
+      const rawTotal = calc.items
+        .filter((i) => i.contribution != null)
+        .reduce((sum, i) => sum + i.contribution!, 0);
+      return (
+        <aside
+          class="ratings-drawer-panel ratings-drawer-panel--calc"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={`ratings-calc-title-${calc.drawerId}`}
+          data-ratings-drawer-panel={calc.drawerId}
+          hidden
+        >
+          <div class="ratings-drawer-panel__body ratings-drawer-panel__body--calc">
+            <button
+              type="button"
+              class="ratings-drawer-calc__close"
+              data-ratings-close-drawer
+              aria-label="Close score calculation"
+            >
+              <span aria-hidden="true">✕</span> Close
+            </button>
+
+            <h3 id={`ratings-calc-title-${calc.drawerId}`} class="ratings-drawer-calc__title">
+              How the {calc.subscoreName} score was calculated
+            </h3>
+            <p class="ratings-drawer-breadcrumb">
+              <span class="ratings-drawer-breadcrumb__parent">{calc.categoryName}</span>
+              <span class="material-symbols-outlined ratings-drawer-breadcrumb__sep" aria-hidden="true">
+                chevron_right
+              </span>
+              <span class="ratings-drawer-breadcrumb__current">{calc.subscoreName}</span>
+            </p>
+
+            <div class="ratings-drawer-calc__hero">
+              <DraftScorePill
+                score={calc.subscoreScore}
+                size="md"
+                variant="outline"
+                shape="badge"
+                class="ratings-drawer-calc__score"
+              />
+              <div class="ratings-drawer-calc__hero-copy">
+                <p class="ratings-drawer-calc__score-label">Final {calc.subscoreName} score</p>
+                <p class="ratings-drawer-calc__conclusion">{calc.headlineConclusion}</p>
+              </div>
+            </div>
+
+            <div class="ratings-drawer-dual-cards">
+              <section class="ratings-drawer-card ratings-drawer-card--measures">
+                <h4 class="ratings-drawer-card__label">
+                  <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
+                    lightbulb
+                  </span>
+                  What this measures
+                </h4>
+                <p class="ratings-drawer-card__text">{calc.scopeDescription}</p>
+              </section>
+              <section class="ratings-drawer-card ratings-drawer-card--finding">
+                <h4 class="ratings-drawer-card__label">
+                  <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
+                    star
+                  </span>
+                  Key takeaways
+                </h4>
+                <p class="ratings-drawer-card__text">{calc.keyTakeaways}</p>
+              </section>
+            </div>
+
+            <section class="ratings-drawer-section ratings-drawer-section--calc">
+              <h4 class="ratings-drawer-section__label">Breakdown</h4>
+              <div class="ratings-drawer-table-wrap">
+                <table class="ratings-drawer-results ratings-drawer-results--calc">
+                  <thead>
+                    <tr>
+                      <th scope="col">Evidence category</th>
+                      <th scope="col" class="ratings-drawer-results__num">Score (0–10)</th>
+                      <th scope="col" class="ratings-drawer-results__num">Weight</th>
+                      <th scope="col" class="ratings-drawer-results__num">Contribution</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {calc.items.map((item) => (
+                      <tr>
+                        <td>
+                          <span class="ratings-drawer-calc__evidence-name">
+                            <span class="material-symbols-outlined ratings-drawer-calc__evidence-icon" aria-hidden="true">
+                              {item.icon}
+                            </span>
+                            {item.name}
+                          </span>
+                        </td>
+                        <td class="ratings-drawer-results__num">
+                          <span
+                            class={`rt-score-chip rt-score-chip--outline ${getDraftScoreChipClass(item.score)}`}
+                          >
+                            {fmtScore(item.score)}
+                          </span>
+                        </td>
+                        <td class="ratings-drawer-results__num tabular-nums">{item.weight}%</td>
+                        <td class="ratings-drawer-results__num tabular-nums">
+                          {item.contribution != null ? item.contribution.toFixed(2) : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {parts.length > 0 && (
+                <div class="ratings-drawer-calc__total">
+                  <span class="ratings-drawer-calc__total-label">Total</span>
+                  <span class="ratings-drawer-calc__total-formula tabular-nums">
+                    {parts.join(' + ')} = {rawTotal.toFixed(2)} →{' '}
+                    <strong>{fmtScore(calc.subscoreScore)}</strong>
+                  </span>
+                </div>
+              )}
+            </section>
+
+            <section class="ratings-drawer-section ratings-drawer-section--calc-footer">
+              <h4 class="ratings-drawer-section__label">About the calculation</h4>
+              <p class="ratings-drawer-section__text">
+                Each evidence category is scored on a 0–10 scale, weighted, and combined for the
+                final {calc.subscoreName} score.
+              </p>
+            </section>
+
+            <DrawerNavFooter
+              prevDrawerId={calc.prevDrawerId}
+              prevLabel={calc.prevLabel}
+              nextDrawerId={calc.nextDrawerId}
+              nextLabel={calc.nextLabel}
+            />
+          </div>
+        </aside>
+      );
+    })
+  }
+</div>
+
+<script src="./ratings-drawer.client.ts"></script>

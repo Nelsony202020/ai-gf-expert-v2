@@ -1,0 +1,47 @@
+---
+interface Props {
+  prevDrawerId?: string;
+  prevLabel?: string;
+  nextDrawerId?: string;
+  nextLabel?: string;
+}
+
+const { prevDrawerId, prevLabel, nextDrawerId, nextLabel } = Astro.props;
+const hasPrev = Boolean(prevDrawerId && prevLabel);
+const hasNext = Boolean(nextDrawerId && nextLabel);
+---
+
+{
+  (hasPrev || hasNext) && (
+    <footer
+      class:list={[
+        'ratings-drawer-calc__footer',
+        {
+          'ratings-drawer-calc__footer--both': hasPrev && hasNext,
+          'ratings-drawer-calc__footer--prev-only': hasPrev && !hasNext,
+        },
+      ]}
+    >
+      {hasPrev && (
+        <button
+          type="button"
+          class="ratings-drawer-calc__nav-btn ratings-drawer-calc__nav-btn--back"
+          data-ratings-open-drawer={prevDrawerId}
+          data-ratings-drawer-nav="back"
+        >
+          ← Back: {prevLabel}
+        </button>
+      )}
+      {hasNext && (
+        <button
+          type="button"
+          class="ratings-drawer-calc__nav-btn ratings-drawer-calc__nav-btn--next"
+          data-ratings-open-drawer={nextDrawerId}
+          data-ratings-drawer-nav="next"
+        >
+          Next: {nextLabel} →
+        </button>
+      )}
+    </footer>
+  )
+}

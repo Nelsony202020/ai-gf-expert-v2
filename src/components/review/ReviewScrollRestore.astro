@@ -38,6 +38,11 @@ const { productSlug } = Astro.props;
   }
 
   function restoreReviewScroll() {
+    const hashTab = window.location.hash.replace('#', '');
+    if (hashTab && document.querySelector(`[data-tab-panel="${hashTab}"]`)) {
+      return;
+    }
+
     const state = readState();
     if (!state || state.slug !== productSlug) return;
     sessionStorage.removeItem(STORAGE_KEY);

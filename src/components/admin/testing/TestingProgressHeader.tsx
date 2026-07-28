@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { Button, Icon } from '../ui';
 import type { RunProgressSnapshot, SessionProgressSnapshot } from './progress';
 import { SessionProgressNavigator } from './SessionProgressNavigator';
+import {
+  TestingMissingRequiredPanel,
+  type MissingRequiredRow,
+} from './TestingMissingRequiredPanel';
 
 export function TestingProgressHeader({
   productName,
@@ -16,6 +20,7 @@ export function TestingProgressHeader({
   onResumeNext,
   onViewAllSessions,
   onSelectSession,
+  onJumpToMissing,
   currentSessionIndex,
   checkpointAfterIndices,
   trailing,
@@ -32,6 +37,7 @@ export function TestingProgressHeader({
   onResumeNext?: () => void;
   onViewAllSessions?: () => void;
   onSelectSession: (index: number) => void;
+  onJumpToMissing?: (sessionIndex: number, defId: string) => void;
   currentSessionIndex: number;
   checkpointAfterIndices?: number[];
   trailing?: React.ReactNode;
@@ -63,6 +69,7 @@ export function TestingProgressHeader({
           sessions={runProgress.sessions}
           currentIndex={currentSessionIndex}
           onSelect={onSelectSession}
+          onJumpToMissing={onJumpToMissing}
           checkpointAfterIndices={checkpointAfterIndices}
         />
       </div>
@@ -146,18 +153,32 @@ export function TestingRunProgressSummary({
   onResume,
   onSelectSession,
   onViewAll,
+  missingRows,
+  onJumpToMissing,
+  pricingTabHref,
 }: {
   runProgress: RunProgressSnapshot;
   currentSession: SessionProgressSnapshot | null;
   onResume: () => void;
   onSelectSession?: (index: number) => void;
   onViewAll?: () => void;
+  missingRows?: MissingRequiredRow[];
+  onJumpToMissing?: (sessionIndex: number, defId: string) => void;
+  pricingTabHref?: string;
 }) {
   const [allOpen, setAllOpen] = useState(false);
   const hasIncomplete = runProgress.remainingRequired > 0;
 
   return (
     <div className="space-y-2">
+      {missingRows && missingRows.length > 0 && onJumpToMissing && (
+        <TestingMissingRequiredPanel
+          items={missingRows}
+          onJumpToSession={onJumpToMissing}
+          pricingTabHref={pricingTabHref}
+        />
+      )}
+
       <div>
         {currentSession && hasIncomplete && (
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -186,6 +207,7 @@ export function TestingRunProgressSummary({
         sessions={runProgress.sessions}
         currentIndex={currentSession?.sessionIndex ?? runProgress.resumeIndex}
         onSelect={(idx) => (onSelectSession ? onSelectSession(idx) : onResume())}
+        onJumpToMissing={onJumpToMissing}
         compact
       />
 

@@ -1,0 +1,99 @@
+---
+import type { DraftCategory } from '../../../lib/draft-ratings/types';
+import DraftScorePill from './DraftScorePill.astro';
+import DraftSubscoreSelector from './DraftSubscoreSelector.astro';
+import DraftSubscorePanel from './DraftSubscorePanel.astro';
+import DraftEvidenceCategoryCard from './DraftEvidenceCategoryCard.astro';
+
+interface Props {
+  category: DraftCategory;
+}
+
+const { category } = Astro.props;
+const defaultSubscore = category.subscores[0];
+---
+
+<section
+  class="draft-category-block"
+  id={category.anchor}
+  data-draft-category={category.slug}
+  data-draft-category-anchor={category.anchor}
+  data-draft-selected-subscore={defaultSubscore?.slug ?? ''}
+>
+  <header class="draft-category-header">
+    <div class="draft-category-header__main">
+      <div class="draft-category-header__score-row">
+        <DraftScorePill score={category.score} size="lg" />
+        <div class="min-w-0">
+          <h3 class="draft-category-header__title">{category.name}</h3>
+        </div>
+      </div>
+
+      {category.categoryVerdict && (
+        <p class="draft-category-header__verdict">{category.categoryVerdict}</p>
+      )}
+    </div>
+
+    <p class="draft-category-credibility" aria-label="Testing credibility summary">
+      <span>Weight {category.weight}%</span>
+      <span class="draft-category-credibility__sep" aria-hidden="true">·</span>
+      <span>{category.publicTestCount} tests run</span>
+      <span class="draft-category-credibility__sep" aria-hidden="true">·</span>
+      <span>{category.recordedResultCount} checks recorded</span>
+      <span class="draft-category-credibility__sep" aria-hidden="true">·</span>
+      <span>{category.proofFileCount} proof files</span>
+    </p>
+  </header>
+
+  <div class="draft-category-body">
+    {category.keyFindings.length > 0 && (
+      <section class="draft-key-findings" aria-labelledby={`at-a-glance-${category.slug}`}>
+        <h4 id={`at-a-glance-${category.slug}`} class="draft-section-label">At a glance</h4>
+        <div class="draft-key-findings__grid">
+          {category.keyFindings.map((finding) => (
+            <div class="draft-key-finding">
+              <div class="draft-key-finding__value">{finding.value}</div>
+              <div class="draft-key-finding__label">{finding.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {category.subscores.length > 0 && (
+      <section class="draft-subscore-section" aria-labelledby={`areas-${category.slug}`}>
+        <h4 id={`areas-${category.slug}`} class="draft-section-label">Areas</h4>
+        <DraftSubscoreSelector subscores={category.subscores} categorySlug={category.slug} />
+        <div class="draft-subscore-panels">
+          {category.subscores.map((sub, index) => (
+            <DraftSubscorePanel
+              subscore={sub}
+              categorySlug={category.slug}
+              isDefault={index === 0}
+            />
+          ))}
+        </div>
+
+        {category.subscores.map((sub, subIndex) => (
+          <div
+            class="draft-evidence-cards-section"
+            data-draft-evidence-subscore={sub.slug}
+            data-draft-evidence-area={category.slug}
+            hidden={subIndex !== 0}
+          >
+            {sub.evidenceCategories.length > 0 && (
+              <>
+                <h5 class="draft-evidence-cards__label">Evidence categories in this area</h5>
+                <div class="draft-evidence-cards">
+                  {sub.evidenceCategories.map((ec) => (
+                    <DraftEvidenceCategoryCard category={ec} />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </section>
+    )}
+  </div>
+</section>

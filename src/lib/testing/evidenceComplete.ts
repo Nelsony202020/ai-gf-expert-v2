@@ -88,13 +88,13 @@ export function supplementalRequiredMissing(
   definitions: { id: string; active?: boolean; required?: boolean; name?: unknown; questionLabel?: unknown }[],
   sessionDefIds: Set<string>,
   hasValue: (defId: string) => boolean,
-): { count: number; labels: string[] } {
-  const labels: string[] = [];
+): { count: number; labels: string[]; items: { defId: string; label: string }[] } {
+  const items: { defId: string; label: string }[] = [];
   for (const def of definitions) {
     if (def.active === false || !def.required) continue;
     if (sessionDefIds.has(def.id)) continue;
     if (hasValue(def.id)) continue;
-    labels.push(String(def.questionLabel ?? def.name ?? def.id));
+    items.push({ defId: def.id, label: String(def.questionLabel ?? def.name ?? def.id) });
   }
-  return { count: labels.length, labels };
+  return { count: items.length, labels: items.map((i) => i.label), items };
 }

@@ -490,7 +490,7 @@ export function TestRunDetail() {
                                   {result.publicResult ?? JSON.stringify(result.rawValue)}
                                 </span>
                                 {result.normalizedScore !== undefined && result.normalizedScore !== null && (
-                                  <Badge tone={result.normalizedScore >= 7.6 ? 'green' : result.normalizedScore >= 5.1 ? 'amber' : 'red'}>
+                                  <Badge tone={result.normalizedScore >= 6.5 ? 'green' : result.normalizedScore >= 5.5 ? 'amber' : 'red'}>
                                     {result.normalizedScore}
                                   </Badge>
                                 )}

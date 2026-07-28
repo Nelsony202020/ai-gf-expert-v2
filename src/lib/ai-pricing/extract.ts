@@ -30,6 +30,8 @@ const nullableNumber = z.number().nonnegative().nullish();
 const extractedPlanSchema = z.object({
   name: z.string().min(1).max(120),
   monthlyPrice: nullableNumber,
+  /** Total charged every 3 months, if shown. */
+  quarterlyTotalPrice: nullableNumber,
   /** Per-month price when billed annually (e.g. "$5.99/mo billed yearly"). */
   annualMonthlyPrice: nullableNumber,
   /** Total charged per year, if shown. */
@@ -79,7 +81,7 @@ const extractedFeatureCostSchema = z.object({
   featureType: z.enum(EXTRACT_FEATURE_TYPES),
   customLabel: z.string().max(120).nullish(),
   tokenCost: z.number().nonnegative(),
-  unit: z.enum(EXTRACT_UNITS),
+  unit: z.enum(EXTRACT_UNITS).default('per_generation'),
 });
 
 const extractedPromotionSchema = z.object({
@@ -147,9 +149,9 @@ For EACH image (in the order provided, 1-based index) classify it as one of:
 - "unknown": not pricing related
 
 Then extract, merging data across images and de-duplicating:
-- plans: each subscription tier with name, monthlyPrice (price per month when billed monthly), annualMonthlyPrice (per-month price when billed annually), annualTotalPrice (total charged per year), currency (ISO code like USD), includedTokensPerMonth, freeTrial, trialLength
+- plans: each subscription tier with name, monthlyPrice (price per month when billed monthly), quarterlyTotalPrice (total charged every 3 months), annualMonthlyPrice (per-month price when billed annually), annualTotalPrice (total charged per year), currency (ISO code like USD), includedTokensPerMonth, freeTrial, trialLength. One tier per subscription level — billing intervals are fields on the same plan, not separate plan names like "3 months".
 - packages: each token top-up package with name (if any), price, currency, baseCredits (tokens included before bonus), bonusCredits (extra/bonus tokens)
-- featureCosts: token cost per feature. featureType must be one of: ${EXTRACT_FEATURE_TYPES.join(', ')}. unit must be one of: ${EXTRACT_UNITS.join(', ')}. Use "custom" with customLabel when nothing fits.
+- featureCosts: token cost per feature. Each entry MUST include tokenCost as a number (the tokens/credits charged — e.g. "5 gems per image" → tokenCost: 5). featureType must be one of: ${EXTRACT_FEATURE_TYPES.join(', ')}. unit must be one of: ${EXTRACT_UNITS.join(', ')}. Use "custom" with customLabel when nothing fits. Omit entries where the cost number is not visible.
 - promotions: name, promotionType (plan_discount | package_discount | bonus_credits | free_trial | holiday | coupon | custom), discountPercent, couponCode, startAt/endAt as YYYY-MM-DD only if dates are visible, publicNote (short description)
 - usesTokens: true if the app clearly has a token/credit system
 - tokenName: what the app calls tokens (e.g. "Gems", "Tokens", "Coins") if visible
@@ -161,9 +163,65 @@ Prices: numbers only, no currency symbols (e.g. 9.99). Respond with a single JSO
 // Extraction
 // ---------------------------------------------------------------------------
 
+function parseCostNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return value;
+  if (typeof value === 'string') {
+    const n = Number(value.replace(/[^\d.]/g, ''));
+    if (Number.isFinite(n) && n >= 0) return n;
+  }
+  return undefined;
+}
+
+/** Map common AI field aliases and drop feature rows without a usable cost. */
+function normalizeExtractionPayload(parsed: unknown): unknown {
+  if (!parsed || typeof parsed !== 'object') return parsed;
+  const root = parsed as Record<string, unknown>;
+  if (!Array.isArray(root.featureCosts)) return parsed;
+
+  root.featureCosts = root.featureCosts
+    .map((row) => {
+      if (!row || typeof row !== 'object') return null;
+      const item = { ...(row as Record<string, unknown>) };
+      if (item.tokenCost == null) {
+        const alt =
+          item.cost ??
+          item.credits ??
+          item.creditCost ??
+          item.tokens ??
+          item.price ??
+          item.amount ??
+          item.value;
+        const n = parseCostNumber(alt);
+        if (n != null) item.tokenCost = n;
+      } else {
+        const n = parseCostNumber(item.tokenCost);
+        if (n != null) item.tokenCost = n;
+        else delete item.tokenCost;
+      }
+      if (item.unit == null || item.unit === '') item.unit = 'per_generation';
+      return item;
+    })
+    .filter((row) => {
+      if (!row || typeof row !== 'object') return false;
+      return parseCostNumber((row as Record<string, unknown>).tokenCost) != null;
+    });
+
+  return root;
+}
+
 interface MediaImage {
   id: string;
   url: string;
+}
+
+async function imageUrlToDataUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new HttpError(502, `Failed to download image (${res.status})`);
+  }
+  const contentType = res.headers.get('content-type')?.split(';')[0]?.trim() || 'image/jpeg';
+  const buffer = Buffer.from(await res.arrayBuffer());
+  return `data:${contentType};base64,${buffer.toString('base64')}`;
 }
 
 async function loadImages(productId: string, mediaIds: string[]): Promise<MediaImage[]> {
@@ -208,6 +266,7 @@ export async function extractPricingFromScreenshots(
   assertRateLimit(identity.email, `pricing:${body.productId}`);
 
   const images = await loadImages(body.productId, body.mediaIds);
+  const dataUrls = await Promise.all(images.map((img) => imageUrlToDataUrl(img.url)));
 
   const client = getOpenAIClient();
   const userContent: Array<
@@ -221,7 +280,7 @@ export async function extractPricingFromScreenshots(
   ];
   images.forEach((img, i) => {
     userContent.push({ type: 'text', text: `Image ${i + 1}:` });
-    userContent.push({ type: 'image_url', image_url: { url: img.url, detail: 'high' } });
+    userContent.push({ type: 'image_url', image_url: { url: dataUrls[i], detail: 'high' } });
   });
 
   let completion;
@@ -250,7 +309,7 @@ export async function extractPricingFromScreenshots(
     throw new HttpError(502, 'AI returned invalid JSON');
   }
 
-  const result = aiPricingExtractionSchema.safeParse(parsed);
+  const result = aiPricingExtractionSchema.safeParse(normalizeExtractionPayload(parsed));
   if (!result.success) {
     const issues = result.error.issues.slice(0, 3).map((i) => `${i.path.join('.')}: ${i.message}`);
     throw new HttpError(422, `AI output failed validation: ${issues.join('; ')}`);

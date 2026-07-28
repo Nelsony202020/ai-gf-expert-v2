@@ -14,6 +14,7 @@ export interface PricingDraftClient {
   plans: Array<{
     name: string;
     monthlyPrice?: number | null;
+    quarterlyTotalPrice?: number | null;
     annualMonthlyPrice?: number | null;
     annualTotalPrice?: number | null;
     currency?: string | null;
@@ -57,6 +58,7 @@ interface PlanRow {
   key: number;
   name: string;
   monthlyPrice: string;
+  quarterlyTotalPrice: string;
   annualMonthlyPrice: string;
   annualTotalPrice: string;
   currency: string;
@@ -165,6 +167,7 @@ export function PricingReviewModal({
       key: keyCounter++,
       name: p.name,
       monthlyPrice: p.monthlyPrice != null ? String(p.monthlyPrice) : '',
+      quarterlyTotalPrice: p.quarterlyTotalPrice != null ? String(p.quarterlyTotalPrice) : '',
       annualMonthlyPrice: p.annualMonthlyPrice != null ? String(p.annualMonthlyPrice) : '',
       annualTotalPrice: p.annualTotalPrice != null ? String(p.annualTotalPrice) : '',
       currency: normCurrency(p.currency, fallbackCurrency),
@@ -193,7 +196,7 @@ export function PricingReviewModal({
       key: keyCounter++,
       featureType: c.featureType,
       customLabel: c.customLabel ?? '',
-      tokenCost: String(c.tokenCost),
+      tokenCost: c.tokenCost != null ? String(c.tokenCost) : '',
       unit: c.unit,
       matchId:
         existingFeatureCosts.find((r) => String(r.featureType ?? '') === c.featureType)?.id ?? null,
@@ -237,6 +240,7 @@ export function PricingReviewModal({
         const existing = byId(existingPlans, row.matchId);
         const currency = normCurrency(row.currency, fallbackCurrency);
         const monthly = num(row.monthlyPrice);
+        const quarterlyTotal = num(row.quarterlyTotalPrice);
         const annualTotal =
           num(row.annualTotalPrice) ??
           (num(row.annualMonthlyPrice) != null
@@ -247,9 +251,15 @@ export function PricingReviewModal({
           ? [...(existing!.billingOptions as any[])]
           : [];
         const options = prevOptions.filter(
-          (o) => !(o.interval === 'monthly' && monthly != null) && !(o.interval === 'yearly' && annualTotal != null),
+          (o) =>
+            !(o.interval === 'monthly' && monthly != null) &&
+            !(o.interval === 'quarterly' && quarterlyTotal != null) &&
+            !(o.interval === 'yearly' && annualTotal != null),
         );
         if (monthly != null) options.push({ interval: 'monthly', price: monthly, currency, active: true });
+        if (quarterlyTotal != null) {
+          options.push({ interval: 'quarterly', price: quarterlyTotal, currency, active: true });
+        }
         if (annualTotal != null) options.push({ interval: 'yearly', price: annualTotal, currency, active: true });
         if (options.length === 0) continue;
 
@@ -381,8 +391,11 @@ export function PricingReviewModal({
 
         {plans.length > 0 && (
           <ReviewSection title="Subscription plans">
-            <div className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_0.7fr_0.8fr_auto_auto] items-center gap-x-2 gap-y-1.5">
-              <HeaderCells labels={['Name', 'Monthly $', 'Annual $/mo', 'Annual total', 'Currency', 'Tokens/mo']} />
+            <p className="mb-2 text-[11px] text-slate-400">
+              One row = one subscription tier. Enter monthly, 3-month total, and annual total — not separate tiers per interval.
+            </p>
+            <div className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_0.8fr_0.7fr_0.8fr_auto_auto] items-center gap-x-2 gap-y-1.5">
+              <HeaderCells labels={['Name', 'Monthly $', '3-mo total', 'Annual $/mo', 'Annual total', 'Currency', 'Tokens/mo']} />
               {plans.map((row) => (
                 <RowCells
                   key={row.key}
@@ -391,6 +404,7 @@ export function PricingReviewModal({
                 >
                   <TextInput className={inputCls} value={row.name} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, name: e.target.value, matchId: matchByName(existingPlans, e.target.value)?.id ?? null } : r)))} />
                   <TextInput className={inputCls} inputMode="decimal" value={row.monthlyPrice} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, monthlyPrice: e.target.value } : r)))} />
+                  <TextInput className={inputCls} inputMode="decimal" value={row.quarterlyTotalPrice} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, quarterlyTotalPrice: e.target.value } : r)))} />
                   <TextInput className={inputCls} inputMode="decimal" value={row.annualMonthlyPrice} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, annualMonthlyPrice: e.target.value } : r)))} />
                   <TextInput className={inputCls} inputMode="decimal" value={row.annualTotalPrice} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, annualTotalPrice: e.target.value } : r)))} />
                   <TextInput className={inputCls} value={row.currency} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, currency: e.target.value.toUpperCase() } : r)))} />

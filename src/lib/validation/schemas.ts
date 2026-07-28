@@ -380,6 +380,19 @@ export const pricingSnapshotSchema = z.object({
   previousSnapshotId: z.string().optional(),
   frozenData: z.unknown().optional(),
   evidenceMediaIds: z.array(z.string()).optional(),
+  usageScenarios: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string().max(120),
+        description: z.string().max(400),
+        messagesPerDay: z.number().nonnegative(),
+        imagesPerDay: z.number().nonnegative(),
+        videosPerDay: z.number().nonnegative(),
+        voiceMinutesPerDay: z.number().nonnegative(),
+      }),
+    )
+    .optional(),
 });
 
 export const FEATURE_TYPES = [
@@ -657,11 +670,11 @@ export const testRunSchema = z.object({
 });
 
 export const evidenceRawValueSchema = z.union([
-  // `detail` keeps the raw inputs behind a derived value (ratio numerator /
-  // denominator, checklist selections, rubric choice). The scoring engine
-  // only reads `value`.
   z.object({ value: z.number(), detail: z.record(z.string(), z.unknown()).optional() }),
-  z.object({ status: z.enum(['yes', 'limited', 'no', 'unknown', 'na']) }),
+  z.object({
+    status: z.enum(['yes', 'limited', 'optional', 'no', 'unknown', 'na']),
+    detail: z.record(z.string(), z.unknown()).optional(),
+  }),
   z.object({ text: z.string(), detail: z.record(z.string(), z.unknown()).optional() }),
   z.object({ structured: z.record(z.string(), z.unknown()) }),
 ]);

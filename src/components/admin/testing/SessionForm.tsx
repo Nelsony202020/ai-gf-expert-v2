@@ -14,6 +14,7 @@ import type { AutofillSuggestion } from './pricingAutofill';
 import { SessionAnswerTable } from './SessionAnswerTable';
 import { SessionProofZone } from './SessionProofZone';
 import { ProofDrawer } from './ProofDrawer';
+import { NoteDrawer } from './NoteDrawer';
 import {
   formatAnswerSummary,
   rowState,
@@ -43,6 +44,8 @@ interface Draft {
   raw: RawValue | undefined;
   na: boolean;
   dirty: boolean;
+  internalNotes: string;
+  notesDirty: boolean;
 }
 
 function initialDraft(result: EntityRow | undefined): Draft {
@@ -50,6 +53,8 @@ function initialDraft(result: EntityRow | undefined): Draft {
     raw: (result?.rawValue as RawValue | undefined) ?? undefined,
     na: Boolean(result?.notApplicable),
     dirty: false,
+    internalNotes: String(result?.internalNotes ?? ''),
+    notesDirty: false,
   };
 }
 
@@ -76,6 +81,10 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   onDirtyChange?: (dirty: boolean) => void;
   productFields?: Record<string, unknown>;
   productSlug?: string;
+  /** Scroll to and highlight this row when the form opens. */
+  initialFocusDefId?: string | null;
+  /** Bumps when the same row should be re-focused without changing sessions. */
+  focusNonce?: number;
 }>(function SessionForm(
   {
     session,
@@ -95,6 +104,8 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     onDirtyChange,
     productFields,
     productSlug,
+    initialFocusDefId,
+    focusNonce = 0,
   },
   ref,
 ) {
@@ -104,7 +115,9 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     return map;
   });
   const [drawerDefId, setDrawerDefId] = useState<string | null>(null);
+  const [noteDefId, setNoteDefId] = useState<string | null>(null);
   const [activeDefId, setActiveDefId] = useState<string | null>(null);
+  const [highlightDefId, setHighlightDefId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [proofCounts, setProofCounts] = useState<Map<string, number>>(new Map());
   const [dropTargetDefId, setDropTargetDefId] = useState<string | null>(null);
@@ -186,7 +199,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   }, [resultByDef]);
 
   const dirtyCount = useMemo(
-    () => items.filter(({ def }) => drafts[def.id]?.dirty).length,
+    () => items.filter(({ def }) => drafts[def.id]?.dirty || drafts[def.id]?.notesDirty).length,
     [items, drafts],
   );
 
@@ -305,6 +318,29 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   useEffect(() => {
     if (layout === 'step' && currentStep) setActiveDefId(currentStep.def.id);
   }, [layout, stepIndex, currentStep?.def.id]);
+
+  useEffect(() => {
+    if (!initialFocusDefId) return;
+    const inSession = items.some(({ def }) => def.id === initialFocusDefId);
+    if (!inSession) return;
+
+    if (layout === 'step') {
+      const idx = stepItems.findIndex(({ def }) => def.id === initialFocusDefId);
+      if (idx >= 0) setStepIndex(idx);
+    }
+    setActiveDefId(initialFocusDefId);
+    setHighlightDefId(initialFocusDefId);
+    requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-session-row="${initialFocusDefId}"]`)
+        ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      document
+        .querySelector(`[data-testing-def="${initialFocusDefId}"]`)
+        ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+    const timer = window.setTimeout(() => setHighlightDefId(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [initialFocusDefId, focusNonce, layout, stepItems, items]);
 
   useEffect(() => {
     if (useTable && !activeDefId && standaloneItems[0]) {
@@ -436,7 +472,22 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   function patchDraft(defId: string, patch: Partial<Draft>) {
     setDrafts((prev) => ({
       ...prev,
-      [defId]: { ...(prev[defId] ?? { raw: undefined, na: false, dirty: false }), ...patch, dirty: true },
+      [defId]: {
+        ...(prev[defId] ?? initialDraft(resultByDef.get(defId))),
+        ...patch,
+        dirty: true,
+      },
+    }));
+  }
+
+  function patchNotes(defId: string, internalNotes: string) {
+    setDrafts((prev) => ({
+      ...prev,
+      [defId]: {
+        ...(prev[defId] ?? initialDraft(resultByDef.get(defId))),
+        internalNotes,
+        notesDirty: true,
+      },
     }));
   }
 
@@ -561,7 +612,9 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     setSaving(true);
     onBusyChange?.(true);
     try {
-      const changed = items.filter(({ def }) => drafts[def.id]?.dirty);
+      const changed = items.filter(
+        ({ def }) => drafts[def.id]?.dirty || drafts[def.id]?.notesDirty,
+      );
       if (changed.length === 0) return true;
       const ok = await run(async () => {
         await Promise.all(
@@ -602,6 +655,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
               notApplicable: draft.na,
               isUnknown,
               testDate: Date.now(),
+              internalNotes: draft.internalNotes.trim() || undefined,
               ...(publicResult !== undefined ? { publicResult } : {}),
             };
 
@@ -621,7 +675,9 @@ export const SessionForm = forwardRef<SessionFormHandle, {
       if (ok) {
         setDrafts((prev) => {
           const next = { ...prev };
-          for (const id of Object.keys(next)) next[id] = { ...next[id], dirty: false };
+          for (const id of Object.keys(next)) {
+            next[id] = { ...next[id], dirty: false, notesDirty: false };
+          }
           return next;
         });
         await onRowSaved?.();
@@ -994,6 +1050,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
           resultByDef={resultByDef}
           proofCounts={proofCounts}
           activeDefId={activeDefId}
+          highlightDefId={highlightDefId}
           dropTargetDefId={dropTargetDefId}
           busy={isBlocked}
           productFields={productFields}
@@ -1011,6 +1068,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
           onPatch={patchDraftWithCascade}
           editMemoriesBlocked={isEditMemoriesBlocked()}
           onOpenProof={setDrawerDefId}
+          onOpenNote={setNoteDefId}
           onFocusRow={setActiveDefId}
           onDragOverRow={setDropTargetDefId}
           onDragLeaveTable={() => setDropTargetDefId(null)}
@@ -1053,12 +1111,19 @@ export const SessionForm = forwardRef<SessionFormHandle, {
               const proofN = result?.id ? (proofCounts.get(result.id) ?? 0) : 0;
               const suggestion = suggestions?.get(def.id);
 
+            const isHighlighted = highlightDefId === def.id;
+
               if (!isActive && visibleStandaloneItems.length > 1) {
                 return (
                   <button
                     key={def.id}
+                    data-testing-def={def.id}
                     type="button"
-                    className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-left hover:border-[var(--testing-accent-border)] hover:bg-[var(--testing-accent-soft)] dark:border-slate-700"
+                    className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left hover:border-[var(--testing-accent-border)] hover:bg-[var(--testing-accent-soft)] dark:border-slate-700 ${
+                      isHighlighted
+                        ? 'border-amber-400 bg-amber-50 ring-2 ring-amber-400 dark:border-amber-600 dark:bg-amber-950/30'
+                        : 'border-slate-200'
+                    }`}
                     onClick={() => setActiveDefId(def.id)}
                   >
                     <span className={statusDotClass(state)} />
@@ -1074,7 +1139,12 @@ export const SessionForm = forwardRef<SessionFormHandle, {
               return (
                 <div
                   key={def.id}
-                  className="rounded-lg border border-[var(--testing-accent-border)]/80 bg-white p-3 shadow-sm dark:border-[var(--testing-accent-border)]/40 dark:bg-slate-900/40"
+                  data-testing-def={def.id}
+                  className={`rounded-lg border bg-white p-3 shadow-sm dark:bg-slate-900/40 ${
+                    isHighlighted
+                      ? 'border-amber-400 ring-2 ring-amber-400 dark:border-amber-600'
+                      : 'border-[var(--testing-accent-border)]/80 dark:border-[var(--testing-accent-border)]/40'
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
@@ -1182,6 +1252,21 @@ export const SessionForm = forwardRef<SessionFormHandle, {
           }}
         />
       )}
+
+      {noteDefId && (() => {
+        const noteDef = items.find(({ def }) => def.id === noteDefId)?.def;
+        if (!noteDef) return null;
+        const noteDraft = drafts[noteDef.id] ?? initialDraft(resultByDef.get(noteDef.id));
+        return (
+          <NoteDrawer
+            def={noteDef}
+            categorySlug={categorySlug}
+            notes={noteDraft.internalNotes}
+            onClose={() => setNoteDefId(null)}
+            onSave={(notes) => patchNotes(noteDef.id, notes)}
+          />
+        );
+      })()}
     </div>
   );
 });

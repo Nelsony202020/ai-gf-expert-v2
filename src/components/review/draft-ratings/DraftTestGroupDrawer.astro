@@ -1,0 +1,373 @@
+---
+import type { DraftTestGroup, DraftEvidenceCategory } from '../../../lib/draft-ratings/types';
+import { fmtScore } from '../../../lib/scores';
+
+interface Props {
+  groups: DraftTestGroup[];
+  evidenceCategories?: DraftEvidenceCategory[];
+}
+
+const { groups, evidenceCategories = [] } = Astro.props;
+
+const statusClass = (status: string) => `draft-status-${status.replace(/_/g, '-')}`;
+---
+
+<div data-draft-drawer-root hidden>
+  <div class="draft-drawer-backdrop" data-draft-drawer-backdrop aria-hidden="true"></div>
+
+  {groups.map((group) => {
+    const sections = group.drawerSections;
+    return (
+      <aside
+        class="draft-drawer-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`draft-drawer-title-${group.id}`}
+        data-draft-drawer-panel={group.id}
+        hidden
+      >
+        <div class="draft-drawer-panel__header">
+          <div>
+            <p class="draft-drawer-panel__category">{group.categoryName}</p>
+            <h3 id={`draft-drawer-title-${group.id}`} class="draft-drawer-panel__title">
+              {group.publicName}
+            </h3>
+          </div>
+          <button
+            type="button"
+            class="draft-drawer-panel__close"
+            data-draft-close-drawer
+            aria-label="Close test details"
+          >
+            <span class="material-symbols-outlined text-xl">close</span>
+          </button>
+        </div>
+
+        <div class="draft-drawer-panel__body">
+          {sections.mainResult && (
+            <section class="draft-drawer-section draft-drawer-section--hero">
+              <h4 class="draft-drawer-section__label">Main result</h4>
+              <p class="draft-drawer-section__hero-value">{sections.mainResult}</p>
+            </section>
+          )}
+
+          {sections.whyItMatters && (
+            <section class="draft-drawer-section">
+              <h4 class="draft-drawer-section__label">Why it matters</h4>
+              <p class="draft-drawer-section__text">{sections.whyItMatters}</p>
+            </section>
+          )}
+
+          {sections.whatWeTested && (
+            <section class="draft-drawer-section">
+              <h4 class="draft-drawer-section__label">What we tested</h4>
+              <p class="draft-drawer-section__text">{sections.whatWeTested}</p>
+            </section>
+          )}
+
+          {sections.howWeTested && (
+            <section class="draft-drawer-section">
+              <h4 class="draft-drawer-section__label">How we tested</h4>
+              <p class="draft-drawer-section__text">{sections.howWeTested}</p>
+            </section>
+          )}
+
+          {sections.whatWeFound && (
+            <section class="draft-drawer-section">
+              <h4 class="draft-drawer-section__label">What we found</h4>
+              <p class="draft-drawer-section__text">{sections.whatWeFound}</p>
+            </section>
+          )}
+
+          {group.measurements.length > 0 && (
+            <section class="draft-drawer-section">
+              <h4 class="draft-drawer-section__label">Results</h4>
+              <ul class="draft-drawer-measurements">
+                {group.measurements.map((m) => (
+                  <li class="draft-drawer-measurement">
+                    <div class="draft-drawer-measurement__row">
+                      <span class="draft-drawer-measurement__label">{m.label}</span>
+                      <span class={`draft-drawer-measurement__value tabular-nums ${statusClass(m.status)}`}>
+                        {m.value}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {group.selectedProof.length > 0 && (
+            <section class="draft-drawer-section">
+              <h4 class="draft-drawer-section__label">Proof</h4>
+              <div class="draft-proof-grid">
+                {group.selectedProof.map((proof) => (
+                  <figure>
+                    {proof.kind === 'video' ? (
+                      <video
+                        class="draft-proof-thumb"
+                        src={proof.fullUrl ?? proof.thumbUrl}
+                        poster={proof.posterUrl}
+                        controls
+                        preload="metadata"
+                      />
+                    ) : (
+                      <a href={proof.fullUrl ?? proof.thumbUrl} target="_blank" rel="noopener noreferrer">
+                        <img
+                          class="draft-proof-thumb"
+                          src={proof.thumbUrl}
+                          alt={proof.alt ?? proof.caption ?? 'Test proof'}
+                          loading="lazy"
+                        />
+                      </a>
+                    )}
+                    {proof.caption && (
+                      <figcaption class="draft-proof-caption">{proof.caption}</figcaption>
+                    )}
+                  </figure>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {sections.scoreCalculation && (
+            <details class="draft-drawer-collapsible">
+              <summary class="draft-drawer-collapsible__summary">Score calculation</summary>
+              <pre class="draft-drawer-collapsible__body">{sections.scoreCalculation}</pre>
+            </details>
+          )}
+
+          {sections.technicalDetails && (
+            <details class="draft-drawer-collapsible">
+              <summary class="draft-drawer-collapsible__summary">Technical details</summary>
+              <pre class="draft-drawer-collapsible__body">{sections.technicalDetails}</pre>
+            </details>
+          )}
+        </div>
+      </aside>
+    );
+  })}
+
+  {
+    evidenceCategories.map((ec) => (
+      <aside
+        class="draft-drawer-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`draft-evidence-drawer-title-${ec.drawerId}`}
+        data-draft-drawer-panel={ec.drawerId}
+        hidden
+      >
+        <div class="draft-drawer-panel__header">
+          <div>
+            <p class="draft-drawer-panel__category">{ec.name}</p>
+            <h3 id={`draft-evidence-drawer-title-${ec.drawerId}`} class="draft-drawer-panel__title">
+              {ec.mainResult ?? ec.summary}
+            </h3>
+            <p class="draft-drawer-panel__meta">
+              {ec.testResults.length} check{ec.testResults.length !== 1 ? 's' : ''}
+              {ec.proofLabel && (
+                <>
+                  <span aria-hidden="true"> · </span>
+                  {ec.proofLabel}
+                </>
+              )}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="draft-drawer-panel__close"
+            data-draft-close-drawer
+            aria-label="Close test details"
+          >
+            <span class="material-symbols-outlined text-xl">close</span>
+          </button>
+        </div>
+
+        <div class="draft-drawer-panel__body">
+          {ec.whyItMatters && (
+            <section class="draft-drawer-section">
+              <h4 class="draft-drawer-section__label">Why it matters</h4>
+              <p class="draft-drawer-section__text">{ec.whyItMatters}</p>
+            </section>
+          )}
+
+          {ec.whatWeTested && (
+            <section class="draft-drawer-section">
+              <h4 class="draft-drawer-section__label">What we tested</h4>
+              <p class="draft-drawer-section__text">{ec.whatWeTested}</p>
+            </section>
+          )}
+
+          {ec.testResults.length > 0 && (
+            <section class="draft-drawer-section">
+              <h4 class="draft-drawer-section__label">Results</h4>
+              <ul class="draft-drawer-measurements">
+                {ec.testResults.map((m) => (
+                  <li class="draft-drawer-measurement">
+                    <div class="draft-drawer-measurement__row">
+                      <span class="draft-drawer-measurement__label">{m.label}</span>
+                      <span class="draft-drawer-measurement__value tabular-nums">{m.value}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {ec.selectedProof.length > 0 && (
+            <section class="draft-drawer-section">
+              <h4 class="draft-drawer-section__label">Proof</h4>
+              <div class="draft-proof-grid">
+                {ec.selectedProof.map((proof) => (
+                  <figure>
+                    {proof.kind === 'video' ? (
+                      <video
+                        class="draft-proof-thumb"
+                        src={proof.fullUrl ?? proof.thumbUrl}
+                        poster={proof.posterUrl}
+                        controls
+                        preload="metadata"
+                      />
+                    ) : (
+                      <a href={proof.fullUrl ?? proof.thumbUrl} target="_blank" rel="noopener noreferrer">
+                        <img
+                          class="draft-proof-thumb"
+                          src={proof.thumbUrl}
+                          alt={proof.alt ?? proof.caption ?? 'Test proof'}
+                          loading="lazy"
+                        />
+                      </a>
+                    )}
+                    {proof.caption && (
+                      <figcaption class="draft-proof-caption">{proof.caption}</figcaption>
+                    )}
+                  </figure>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {ec.scoreCalculation && (
+            <details class="draft-drawer-collapsible">
+              <summary class="draft-drawer-collapsible__summary">
+                Score calculation
+                {ec.score != null && (
+                  <span class="draft-drawer-collapsible__hint"> ({fmtScore(ec.score)})</span>
+                )}
+              </summary>
+              <pre class="draft-drawer-collapsible__body">{ec.scoreCalculation}</pre>
+            </details>
+          )}
+
+          {ec.technicalDetails && (
+            <details class="draft-drawer-collapsible">
+              <summary class="draft-drawer-collapsible__summary">Technical details</summary>
+              <pre class="draft-drawer-collapsible__body">{ec.technicalDetails}</pre>
+            </details>
+          )}
+        </div>
+      </aside>
+    ))
+  }
+</div>
+
+<script>
+  function trapFocus(panel: HTMLElement) {
+    const focusable = panel.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeDrawer();
+        return;
+      }
+      if (e.key !== 'Tab' || focusable.length === 0) return;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
+
+    panel.addEventListener('keydown', onKeyDown);
+    return () => panel.removeEventListener('keydown', onKeyDown);
+  }
+
+  let releaseFocus: (() => void) | null = null;
+  let lastTrigger: HTMLElement | null = null;
+
+  function closeDrawer() {
+    const root = document.querySelector<HTMLElement>('[data-draft-drawer-root]');
+    const backdrop = document.querySelector<HTMLElement>('[data-draft-drawer-backdrop]');
+    const panels = document.querySelectorAll<HTMLElement>('[data-draft-drawer-panel]');
+
+    panels.forEach((panel) => {
+      panel.dataset.open = 'false';
+      panel.hidden = true;
+    });
+    if (backdrop) backdrop.dataset.open = 'false';
+    if (root) root.hidden = true;
+    document.body.style.overflow = '';
+    releaseFocus?.();
+    releaseFocus = null;
+    lastTrigger?.focus();
+    lastTrigger = null;
+  }
+
+  function openDrawer(groupId: string, trigger?: HTMLElement) {
+    const root = document.querySelector<HTMLElement>('[data-draft-drawer-root]');
+    const backdrop = document.querySelector<HTMLElement>('[data-draft-drawer-backdrop]');
+    const panel = document.querySelector<HTMLElement>(`[data-draft-drawer-panel="${groupId}"]`);
+    if (!root || !backdrop || !panel) return;
+
+    document.querySelectorAll<HTMLElement>('[data-draft-drawer-panel]').forEach((p) => {
+      p.hidden = p !== panel;
+      p.dataset.open = 'false';
+    });
+
+    lastTrigger = trigger ?? null;
+    root.hidden = false;
+    backdrop.dataset.open = 'true';
+    panel.hidden = false;
+    requestAnimationFrame(() => {
+      panel.dataset.open = 'true';
+    });
+    document.body.style.overflow = 'hidden';
+    releaseFocus?.();
+    releaseFocus = trapFocus(panel);
+    const closeBtn = panel.querySelector<HTMLElement>('[data-draft-close-drawer]');
+    closeBtn?.focus();
+  }
+
+  function bindDrawer() {
+    const root = document.querySelector<HTMLElement>('[data-draft-ratings-root]');
+    if (!root || root.dataset.drawerBound === 'true') return;
+    root.dataset.drawerBound = 'true';
+
+    root.addEventListener('click', (e) => {
+      const openBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-draft-open-drawer]');
+      if (openBtn) {
+        const id = openBtn.dataset.draftOpenDrawer;
+        if (id) openDrawer(id, openBtn);
+        return;
+      }
+      const closeBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-draft-close-drawer]');
+      if (closeBtn) closeDrawer();
+    });
+
+    document.querySelector('[data-draft-drawer-backdrop]')?.addEventListener('click', closeDrawer);
+  }
+
+  bindDrawer();
+  document.addEventListener('astro:page-load', bindDrawer);
+
+  (window as Window & { draftRatingsCloseDrawer?: () => void }).draftRatingsCloseDrawer = closeDrawer;
+  (window as Window & { draftRatingsOpenDrawer?: (id: string, trigger?: HTMLElement) => void }).draftRatingsOpenDrawer =
+    openDrawer;
+</script>

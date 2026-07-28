@@ -310,6 +310,8 @@ const _schema = i.schema({
       // the snapshot is superseded — live rows always reflect current pricing.
       frozenData: i.json().optional(),
       evidenceMediaIds: i.json().optional(), // pricing-page / checkout screenshots
+      // Editor-defined usage personas for real-world spend estimates
+      usageScenarios: i.json().optional(),
       createdAt: i.date(),
       updatedAt: i.date(),
       deletedAt: i.date().optional(),

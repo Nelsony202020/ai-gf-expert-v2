@@ -3,6 +3,7 @@
 import type { HomeFeaturedCharacter } from '../../data/homepage';
 import { DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
 import { appendReferralSuffix } from '../characters/destinationUrl';
+import { resolveMediaUrl } from '../media/url';
 import { getDb, id as newId, isDbConfigured } from '../db/server';
 import { HttpError } from '../db/auth';
 
@@ -10,8 +11,8 @@ export const MAX_HOMEPAGE_FEATURED_CHARACTERS = 12;
 
 const CHARACTER_QUERY = {
   product: { affiliateLinks: {} },
-  image: {},
-  storySlides: { media: {} },
+  image: { file: {} },
+  storySlides: { media: { file: {} } },
   affiliateLink: {},
   homepageSlots: {},
 } as const;
@@ -25,9 +26,10 @@ export function mapCharacterToHomeFeatured(character: any): HomeFeaturedCharacte
     : [];
 
   const storySlides: string[] = (character.storySlides ?? [])
-    .filter((s: any) => s.active !== false && !s.deletedAt && s.media?.url)
+    .filter((s: any) => s.active !== false && !s.deletedAt)
     .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .map((s: any) => String(s.media.url));
+    .map((s: any) => resolveMediaUrl(s.media))
+    .filter(Boolean);
 
   const activeProductLink = (product?.affiliateLinks ?? []).find((l: any) => l.active);
   const destinationWithSuffix = character.destinationUrl
@@ -46,7 +48,7 @@ export function mapCharacterToHomeFeatured(character: any): HomeFeaturedCharacte
     name: String(character.name ?? ''),
     archetype: tags[0] ?? character.characterStyle ?? 'Featured',
     platform: product?.name ? String(product.name) : undefined,
-    avatar: character.image?.url ? String(character.image.url) : '',
+    avatar: resolveMediaUrl(character.image) || storySlides[0] || '',
     storySlides,
     profileUrl,
     profileRel: DEFAULT_AFFILIATE_REL,

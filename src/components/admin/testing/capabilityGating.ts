@@ -9,9 +9,11 @@ import {
 
 export { FEATURE_ITEM_CAP, filterApplicableItems, isEvidenceApplicable };
 
+/** Privacy policy questions where the middle option is Optional (opt-out available). */
+export const PRIVACY_OPTIONAL_SLUGS = new Set(['data-sharing', 'advertising', 'retention']);
+
 /** Privacy policy questions where Unknown excludes the answer from scoring. */
 export const PRIVACY_UNKNOWN_SLUGS = new Set([
-  'training',
   'human-review',
   'data-sharing',
   'advertising',

@@ -60,9 +60,12 @@ export default function AdminApp({ appId }: { appId: string }) {
       <div className="mx-auto mt-16 max-w-md space-y-4 p-4">
         <ErrorNote
           message={
-            meError?.includes('Not authenticated') || meError?.includes('403')
-              ? 'This account does not have admin access.'
-              : meError ?? 'This account does not have admin access.'
+            meError?.includes('Cannot reach InstantDB') ||
+            meError?.includes('InstantDB is not configured')
+              ? meError
+              : meError?.includes('Not authenticated') || meError?.includes('403')
+                ? 'This account does not have admin access.'
+                : meError ?? 'This account does not have admin access.'
           }
         />
         <p className="text-sm text-slate-500">

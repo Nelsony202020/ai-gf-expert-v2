@@ -109,6 +109,14 @@ const sections = [
 
         <section id="pricing-in-real-use" class="review-section">
           <h3>Pricing in Real Use</h3>
+          {
+            product.pricingDisplay.typicalMonthly && (
+              <p class="review-pricing-callout">
+                <strong>Typical monthly spend:</strong> {product.pricingDisplay.typicalMonthly} for a regular user
+                (subscription plus any extra tokens needed). Sticker price starts at {product.pricingDisplay.monthly}.
+              </p>
+            )
+          }
           <p>
             On paper, {product.name} sits in the mid-premium tier. In practice, the free tier is usable enough to
             understand the product, but the meaningful features — better models, faster media, deeper memory — sit
@@ -348,6 +356,14 @@ const sections = [
 
   .review-section p:last-child {
     margin-bottom: 0;
+  }
+
+  .review-pricing-callout {
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgb(219 39 119 / 20%);
+    background: rgb(219 39 119 / 6%);
+    color: var(--color-on-surface);
   }
 
   [data-theme='dark'] .review-toc__toggle {

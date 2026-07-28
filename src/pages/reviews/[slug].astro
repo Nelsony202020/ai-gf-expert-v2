@@ -9,6 +9,7 @@ import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
 import ReviewArticleTab from '../../components/review/tabs/ReviewArticleTab.astro';
 import MarketDataTab from '../../components/review/tabs/MarketDataTab.astro';
 import RatingsSpecsTab from '../../components/review/tabs/RatingsSpecsTab.astro';
+import DraftRatingsSpecsTab from '../../components/review/draft-ratings/DraftRatingsSpecsTab.astro';
 import PlaceholderTab from '../../components/review/tabs/PlaceholderTab.astro';
 import PhotosVideosTab from '../../components/review/tabs/PhotosVideosTab.astro';
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
@@ -17,6 +18,8 @@ import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astr
 import RoundupAffiliateFineprint from '../../components/roundup/RoundupAffiliateFineprint.astro';
 import { products, getProduct } from '../../data/products';
 import { getProductFeaturedIn } from '../../lib/content/store';
+import { isDraftRatingsSpecsEnabled } from '../../lib/draft-ratings/flags';
+import { loadDraftRatingsViewModel } from '../../lib/draft-ratings/loadDraftRatingsData';
 
 export function getStaticPaths() {
   return products.map((product) => ({ params: { slug: product.slug } }));
@@ -32,9 +35,13 @@ if (!product) {
 // Internal relationship links (DB-driven; empty until USE_DB_CONTENT is on)
 const featuredIn = await getProductFeaturedIn(product.slug);
 
+const draftRatingsEnabled = isDraftRatingsSpecsEnabled();
+const draftRatingsModel = draftRatingsEnabled ? await loadDraftRatingsViewModel(product) : null;
+
 const tabs: Tab[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'ratings', label: 'Ratings & Specs' },
+  ...(draftRatingsEnabled ? [{ id: 'draft-ratings', label: 'Draft Ratings & Specs' }] : []),
   { id: 'review', label: 'Review' },
   { id: 'photos', label: 'Photos & Videos' },
   { id: 'pricing', label: 'Pricing' },
@@ -77,6 +84,11 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
       <div data-tab-panel="ratings" class="hidden">
         <RatingsSpecsTab product={product} />
       </div>
+      {draftRatingsEnabled && draftRatingsModel && (
+        <div data-tab-panel="draft-ratings" class="hidden">
+          <DraftRatingsSpecsTab model={draftRatingsModel} />
+        </div>
+      )}
       <div data-tab-panel="review" class="hidden">
         <ReviewArticleTab product={product} />
       </div>
@@ -216,7 +228,7 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
 
           if (contributor && match) {
             const panel = categoryEl.querySelector<HTMLElement>(`[data-subscore-panel][data-subscore-index="${index}"]`);
-            const rows = Array.from(panel?.querySelectorAll<HTMLElement>('.evidence-table__row') ?? []);
+            const rows = Array.from(panel?.querySelectorAll<HTMLElement>('.evidence-cat-table__row') ?? []);
             highlightEl = rows.find((r) => r.textContent?.includes(contributor)) ?? panel;
           } else {
             highlightEl = match ?? categoryEl;

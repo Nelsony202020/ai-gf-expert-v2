@@ -21,7 +21,7 @@ const base = 'inline-flex items-center justify-center font-black leading-none';
 const styles =
   variant === 'solid'
     ? `${visual.bg}`
-    : `border-2 ${visual.border} ${visual.text} bg-transparent`;
+    : `border-2 ${visual.border} text-on-surface bg-transparent`;
 ---
 
 <span class={`${base} ${sizes[size]} ${styles} ${className}`}>{fmtScore(score)}</span>

@@ -1,0 +1,161 @@
+---
+import type { DraftTestGroup } from '../../../lib/draft-ratings/types';
+import { fmtScore, getScoreVisual, isScoreCalculated } from '../../../lib/scores';
+import ScorePill from '../ScorePill.astro';
+
+interface Props {
+  group: DraftTestGroup;
+  showOpenButton?: boolean;
+  showStatusBadge?: boolean;
+  hidden?: boolean;
+}
+
+const { group, showOpenButton = true, showStatusBadge = true, hidden = false } = Astro.props;
+
+const statusLabel =
+  group.status === 'complete' ? 'Complete' : group.status === 'partial' ? 'Partial' : 'No data';
+const statusColor =
+  group.status === 'complete'
+    ? 'draft-test-card__badge--complete'
+    : group.status === 'partial'
+      ? 'draft-test-card__badge--partial'
+      : 'draft-test-card__badge--empty';
+
+const resultMetrics = group.measurements.filter(
+  (m) => m.status === 'verified' && m.value && m.value !== '—',
+);
+const scoredMetrics = resultMetrics.filter((m) => isScoreCalculated(m.normalizedScore));
+---
+
+<article
+  class="draft-test-card"
+  id={group.anchor}
+  data-draft-test-group={group.id}
+  data-draft-test-subscore={group.subscoreSlug}
+  hidden={hidden}
+>
+  <div class="draft-test-card__header">
+    <div class="min-w-0 flex-1">
+      <h5 class="draft-test-card__title">{group.publicName}</h5>
+      {group.publicDescription && (
+        <p class="draft-test-card__description">{group.publicDescription}</p>
+      )}
+    </div>
+    {showStatusBadge && group.status !== 'complete' && (
+      <span class={`draft-test-card__badge ${statusColor}`}>{statusLabel}</span>
+    )}
+  </div>
+
+  {resultMetrics.length > 0 && (
+    <div class="draft-test-card__results">
+      <p class="draft-test-card__results-label">Result summary</p>
+      <p class="draft-test-card__results-explainer">
+        Each row is one evidence point. The score shows how strongly that evidence performed on our
+        0–10 scale.
+      </p>
+
+      <div class="draft-test-card__table-wrap" data-draft-detail-tier="summary">
+        <table class="draft-evidence-table">
+          <thead>
+            <tr>
+              <th scope="col">Metric</th>
+              <th scope="col" class="draft-evidence-table__num">Result</th>
+              <th scope="col" class="draft-evidence-table__num">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {resultMetrics.slice(0, 6).map((m) => {
+              const visual = getScoreVisual(m.normalizedScore);
+              return (
+                <tr>
+                  <td>{m.label}</td>
+                  <td class="draft-evidence-table__num">{m.value}</td>
+                  <td class={`draft-evidence-table__num draft-evidence-table__score ${visual.text}`}>
+                    {isScoreCalculated(m.normalizedScore) ? fmtScore(m.normalizedScore) : '—'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {resultMetrics.length > 6 && (
+        <div class="draft-test-card__table-wrap" data-draft-detail-tier="detailed">
+          <table class="draft-evidence-table">
+            <thead>
+              <tr>
+                <th scope="col">Metric</th>
+                <th scope="col" class="draft-evidence-table__num">Result</th>
+                <th scope="col" class="draft-evidence-table__num">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resultMetrics.map((m) => {
+                const visual = getScoreVisual(m.normalizedScore);
+                return (
+                  <tr>
+                    <td>{m.label}</td>
+                    <td class="draft-evidence-table__num">{m.value}</td>
+                    <td class={`draft-evidence-table__num draft-evidence-table__score ${visual.text}`}>
+                      {isScoreCalculated(m.normalizedScore) ? fmtScore(m.normalizedScore) : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )}
+
+  {group.whatThisMeans && (
+    <div class="draft-test-card__takeaway">
+      <p class="draft-test-card__takeaway-label">What this means</p>
+      <p class="draft-test-card__takeaway-text">{group.whatThisMeans}</p>
+    </div>
+  )}
+
+  {isScoreCalculated(group.subscoreScore) && scoredMetrics.length > 0 && (
+    <div class="draft-test-card__score-summary">
+      <p class="draft-test-card__score-summary-label">Score summary</p>
+      <div class="draft-test-card__score-summary-row">
+        <span class="draft-test-card__score-summary-name">{group.subscoreName} score:</span>
+        <ScorePill score={group.subscoreScore} size="sm" />
+      </div>
+      <p class="draft-test-card__score-summary-detail">
+        Based on {scoredMetrics.length} evidence score{scoredMetrics.length !== 1 ? 's' : ''} from
+        this test.
+      </p>
+    </div>
+  )}
+
+  <footer class="draft-test-card__footer">
+    <div class="draft-test-card__footer-meta">
+      <span>{group.checkCount} metric{group.checkCount !== 1 ? 's' : ''}</span>
+      {group.proofLabel && (
+        <>
+          <span class="draft-test-card__footer-sep" aria-hidden="true">·</span>
+          <span class="draft-test-card__footer-proof">
+            <span class="material-symbols-outlined draft-test-card__proof-icon" aria-hidden="true">
+              attach_file
+            </span>
+            {group.proofLabel}
+          </span>
+        </>
+      )}
+    </div>
+    {showOpenButton && (
+      <button
+        type="button"
+        class="draft-test-card__action"
+        data-draft-open-drawer={group.id}
+        aria-haspopup="dialog"
+      >
+        Open full test
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+      </button>
+    )}
+  </footer>
+</article>

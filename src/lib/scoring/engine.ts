@@ -22,7 +22,7 @@ export type ScoringRule =
 
 export type RawValue =
   | { value: number }
-  | { status: 'yes' | 'limited' | 'no' | 'unknown' | 'na' }
+  | { status: 'yes' | 'limited' | 'optional' | 'no' | 'unknown' | 'na' }
   | { text: string }
   | { structured: Record<string, unknown> };
 
@@ -317,6 +317,7 @@ export function normalizeEvidence(input: EvidenceInput): {
     if (rule.kind === 'ynl') {
       const map: Record<string, number> = {
         yes: rule.yes,
+        optional: rule.yes,
         limited: rule.limited,
         no: rule.no,
         unknown: rule.unknown,

@@ -43,10 +43,12 @@ function SegmentTooltip({
   snapshot,
   isCurrent,
   below,
+  onJumpToMissing,
 }: {
   snapshot: SessionProgressSnapshot;
   isCurrent: boolean;
   below: boolean;
+  onJumpToMissing?: (sessionIndex: number, defId: string) => void;
 }) {
   return (
     <div
@@ -71,13 +73,23 @@ function SegmentTooltip({
       ) : (
         <p className="mt-1 text-xs text-slate-500">No required inputs</p>
       )}
-      {snapshot.missingRequiredLabels.length > 0 && snapshot.status !== 'complete' && (
+      {snapshot.missingRequiredItems.length > 0 && snapshot.status !== 'complete' && (
         <div className="mt-1.5 border-t border-slate-100 pt-1.5 dark:border-slate-700">
           <p className="text-[10px] font-medium uppercase text-slate-400">Missing</p>
           <ul className="mt-0.5 space-y-0.5 text-xs text-slate-600 dark:text-slate-400">
-            {snapshot.missingRequiredLabels.map((label) => (
-              <li key={label} className="truncate">
-                • {label}
+            {snapshot.missingRequiredItems.map((item) => (
+              <li key={item.defId} className="truncate">
+                {onJumpToMissing ? (
+                  <button
+                    type="button"
+                    className="w-full truncate text-left text-pink-600 hover:underline dark:text-pink-400"
+                    onClick={() => onJumpToMissing(snapshot.sessionIndex, item.defId)}
+                  >
+                    • {item.label}
+                  </button>
+                ) : (
+                  <>• {item.label}</>
+                )}
               </li>
             ))}
           </ul>
@@ -91,12 +103,14 @@ export function SessionProgressNavigator({
   sessions,
   currentIndex,
   onSelect,
+  onJumpToMissing,
   compact = false,
   checkpointAfterIndices = [],
 }: {
   sessions: SessionProgressSnapshot[];
   currentIndex: number;
   onSelect: (index: number) => void;
+  onJumpToMissing?: (sessionIndex: number, defId: string) => void;
   compact?: boolean;
   /** Session indices after which a category checkpoint divider is shown. */
   checkpointAfterIndices?: number[];
@@ -279,6 +293,7 @@ export function SessionProgressNavigator({
                 snapshot={snapshot}
                 isCurrent={snapshot.sessionIndex === currentIndex}
                 below={tipPos.below}
+                onJumpToMissing={onJumpToMissing}
               />
             </div>,
             document.body,

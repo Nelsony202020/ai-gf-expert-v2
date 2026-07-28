@@ -30,6 +30,7 @@ import {
   type ProgressContext,
 } from '../../testing/progress';
 import { TestingRunProgressSummary } from '../../testing/TestingProgressHeader';
+import type { MissingRequiredRow } from '../../testing/TestingMissingRequiredPanel';
 import { readSkippedSessions } from '../../testing/sessionProgressStorage';
 import { type SessionItem } from '../../testing/sessionUi';
 import { sessionsForCategory } from '../../testing/sessions';
@@ -87,6 +88,7 @@ function pickCurrentRun(runs: EntityRow[]): EntityRow | null {
 /** One obvious primary action — secondary actions live in the ⋮ menu. */
 function runPrimaryAction(opts: {
   isPublished: boolean;
+  isLiveRun: boolean;
   hasCalculationError: boolean;
   remainingRequired: number;
   canEnterResults: boolean;
@@ -100,12 +102,19 @@ function runPrimaryAction(opts: {
   if (opts.hasCalculationError) {
     return { label: 'Retry calculation', icon: 'refresh', onClick: opts.onRetryCalculation };
   }
+  if (opts.isPublished && opts.canEnterResults) {
+    return { label: 'Edit results', icon: 'edit', onClick: opts.onResume };
+  }
   if (opts.isPublished) {
     return { label: 'View live score', icon: 'open_in_new', onClick: opts.onViewLive };
   }
   const testingComplete = opts.remainingRequired === 0;
   if (testingComplete && opts.canPublish) {
-    return { label: 'Review and publish', icon: 'publish', onClick: opts.onPublish };
+    return {
+      label: opts.isLiveRun ? 'Republish changes' : 'Review and publish',
+      icon: 'publish',
+      onClick: opts.onPublish,
+    };
   }
   if (testingComplete) {
     return {
@@ -141,12 +150,15 @@ export function TestingTab() {
   const [tree, setTree] = useState<ScoreTreeDto | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
   const [guidedStart, setGuidedStart] = useState<number | null>(null);
+  const [guidedFocusDefId, setGuidedFocusDefId] = useState<string | null>(null);
+  const [guidedFocusNonce, setGuidedFocusNonce] = useState(0);
   const [showNewRun, setShowNewRun] = useState(false);
   const [showDeleteRun, setShowDeleteRun] = useState(false);
   const [calcError, setCalcError] = useState(false);
   const { busy, setError, run: exec } = useAsyncToast();
 
   const canTest = can('testing.edit');
+  const canExportEvidence = can('content.view') || can('testing.edit');
 
   async function loadStructure() {
     setStructureLoading(true);
@@ -205,9 +217,12 @@ export function TestingTab() {
 
   async function publishRun() {
     if (!currentRun) return;
+    const republish = Boolean(currentRun.isCurrentPublished);
     if (
       !confirm(
-        'Publish this test run? It becomes the live score source and supersedes the previous published run. Published snapshots are immutable.',
+        republish
+          ? 'Republish this test run? Live scores on the site will update to match your latest answers.'
+          : 'Publish this test run? It becomes the live score source and supersedes the previous published run.',
       )
     )
       return;
@@ -437,6 +452,30 @@ export function TestingTab() {
 
   const resumeIndex = effectiveRunProgress.resumeIndex;
 
+  const missingRequiredRows = useMemo((): MissingRequiredRow[] => {
+    const rows: MissingRequiredRow[] = [];
+    for (const s of effectiveRunProgress.sessions) {
+      for (const item of s.missingRequiredItems) {
+        rows.push({
+          defId: item.defId,
+          label: item.label,
+          sessionIndex: s.sessionIndex,
+          sessionTitle: s.sessionTitle,
+          categoryName: s.categoryName,
+          source: 'session',
+        });
+      }
+    }
+    for (const item of supplementalMissing.items) {
+      rows.push({
+        defId: item.defId,
+        label: item.label,
+        source: 'pricing',
+      });
+    }
+    return rows;
+  }, [effectiveRunProgress.sessions, supplementalMissing.items]);
+
   const publishedScores = useMemo(() => {
     const live = ws.related.scoreHistory.find((h) => h.isCurrentPublished);
     if (!live) return null;
@@ -480,7 +519,9 @@ export function TestingTab() {
   }
 
   const isPublished = currentRun.status === 'published';
-  const canEnterResults = canTest && !isPublished;
+  const isSuperseded = currentRun.status === 'superseded';
+  const isLiveRun = Boolean(currentRun.isCurrentPublished);
+  const canEnterResults = canTest && !isSuperseded;
   const testingComplete = effectiveRunProgress.remainingRequired === 0;
 
   const productStatus = String(ws.fields.status ?? 'draft');
@@ -504,6 +545,12 @@ export function TestingTab() {
             ? `${effectiveRunProgress.remainingRequired} required question${effectiveRunProgress.remainingRequired === 1 ? '' : 's'} still unanswered (${preview}${labels.length > 6 ? '…' : ''}).${needsPricingTab ? ' Fill in plan prices, packages, and feature costs on the Pricing tab.' : ''}`
             : `${effectiveRunProgress.remainingRequired} required question${effectiveRunProgress.remainingRequired === 1 ? '' : 's'} still unanswered`,
       });
+      const firstSessionMissing = missingRequiredRows.find(
+        (r) => r.source === 'session' && r.sessionIndex != null && r.defId,
+      );
+      if (firstSessionMissing?.sessionIndex != null && firstSessionMissing.defId) {
+        jumpToMissingItem(firstSessionMissing.sessionIndex, firstSessionMissing.defId);
+      }
       return;
     }
     const freshTree = await calculate(false);
@@ -518,10 +565,11 @@ export function TestingTab() {
 
   const primary = runPrimaryAction({
     isPublished,
+    isLiveRun,
     hasCalculationError: calcError,
     remainingRequired: effectiveRunProgress.remainingRequired,
     canEnterResults: canEnterResults && orderedSessions.length > 0,
-    canPublish: can('content.publish') && !isPublished,
+    canPublish: can('content.publish') && !isSuperseded,
     onResume: () => startGuidedAt(),
     onPublish: () => void attemptPublish(),
     onRetryCalculation: () => void calculate(true),
@@ -545,24 +593,50 @@ export function TestingTab() {
   const resumeSessionSnapshot =
     effectiveRunProgress.sessions[resumeIndex] ?? effectiveRunProgress.sessions[0] ?? null;
 
+  function jumpToMissingItem(sessionIndex: number, defId: string) {
+    setGuidedFocusDefId(defId);
+    setGuidedFocusNonce((n) => n + 1);
+    setGuidedStart(sessionIndex);
+  }
+
+  async function ensureRunEditable() {
+    if (!currentRun || currentRun.status !== 'published') return;
+    await dataApi.update('testRuns', currentRun.id, { status: 'in_progress' });
+    await ws.refreshRelated();
+  }
+
   function startGuidedAt(defId?: string) {
-    if (defId) {
-      const idx = orderedSessions.findIndex((s) => s.items.some(({ def }) => def.id === defId));
-      setGuidedStart(idx >= 0 ? idx : resumeIndex);
-    } else {
+    void ensureRunEditable().then(() => {
+      if (defId) {
+        const idx = orderedSessions.findIndex((s) => s.items.some(({ def }) => def.id === defId));
+        jumpToMissingItem(idx >= 0 ? idx : resumeIndex, defId);
+        return;
+      }
+      const firstSessionMissing = missingRequiredRows.find(
+        (r) => r.source === 'session' && r.sessionIndex != null && r.defId,
+      );
+      if (firstSessionMissing?.sessionIndex != null && firstSessionMissing.defId) {
+        jumpToMissingItem(firstSessionMissing.sessionIndex, firstSessionMissing.defId);
+        return;
+      }
+      setGuidedFocusDefId(null);
       setGuidedStart(resumeIndex);
-    }
+    });
   }
 
   function startGuidedAtIndex(idx: number) {
-    setGuidedStart(Math.min(Math.max(idx, 0), orderedSessions.length - 1));
+    void ensureRunEditable().then(() => {
+      setGuidedStart(Math.min(Math.max(idx, 0), orderedSessions.length - 1));
+    });
   }
 
   function startGuidedAtSession(sessionId: string, categorySlug: string) {
-    const idx = orderedSessions.findIndex(
-      (s) => s.session.id === sessionId && String(s.cat.slug) === categorySlug,
-    );
-    setGuidedStart(idx >= 0 ? idx : resumeIndex);
+    void ensureRunEditable().then(() => {
+      const idx = orderedSessions.findIndex(
+        (s) => s.session.id === sessionId && String(s.cat.slug) === categorySlug,
+      );
+      setGuidedStart(idx >= 0 ? idx : resumeIndex);
+    });
   }
 
   return (
@@ -593,6 +667,9 @@ export function TestingTab() {
                 currentSession={resumeSessionSnapshot}
                 onResume={() => startGuidedAt()}
                 onSelectSession={startGuidedAtIndex}
+                missingRows={missingRequiredRows}
+                onJumpToMissing={jumpToMissingItem}
+                pricingTabHref={workspaceTabPath(ws.productId, 'pricing')}
               />
             </div>
             {(tree?.overall != null || publishedScores?.overall != null) && (
@@ -613,7 +690,7 @@ export function TestingTab() {
           </p>
         )}
 
-        {!isPublished && supplementalMissing.count > 0 && suggestionByDef.size === 0 && (
+        {!isPublished && supplementalMissing.count > 0 && suggestionByDef.size === 0 && missingRequiredRows.length === 0 && (
           <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
             <p className="font-medium">
               {supplementalMissing.count} pricing test answer
@@ -633,7 +710,7 @@ export function TestingTab() {
           </div>
         )}
 
-        <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
           <Button onClick={primary.onClick} disabled={busy} className="shrink-0">
             <Icon name={primary.icon} />
             {primary.label}
@@ -643,6 +720,8 @@ export function TestingTab() {
             showRunEditor={showRunEditor}
             runId={currentRun.id}
             isPublished={isPublished}
+            canExportEvidence={canExportEvidence}
+            exportDisabled={busy}
             onNewRun={() => setShowNewRun(true)}
             onDelete={() => setShowDeleteRun(true)}
           />
@@ -668,10 +747,16 @@ export function TestingTab() {
         </div>
       )}
 
+      {isLiveRun && !isPublished && (
+        <p className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
+          Editing the live run — the site keeps the current scores until you republish.
+        </p>
+      )}
+
       {isPublished && productPublished && (
         <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-          This run is live on the site — answers can&apos;t be changed. Start a new test run to
-          retest.
+          This run is live on the site. Click <strong>Edit results</strong> to change answers, then
+          republish when done.
         </p>
       )}
 
@@ -838,10 +923,13 @@ export function TestingTab() {
           media={ws.related.media}
           runUpdatedAt={currentRun.updatedAt}
           startIndex={guidedStart}
+          focusDefId={guidedFocusDefId}
+          focusNonce={guidedFocusNonce}
           suggestions={suggestionByDef}
           evidenceDefs={definitions}
           onClose={async () => {
             setGuidedStart(null);
+            setGuidedFocusDefId(null);
             await calculate();
           }}
           onResultSaved={reloadResults}
@@ -880,6 +968,8 @@ function RunActionsMenu({
   showRunEditor,
   runId,
   isPublished,
+  canExportEvidence,
+  exportDisabled,
   onNewRun,
   onDelete,
 }: {
@@ -887,10 +977,14 @@ function RunActionsMenu({
   showRunEditor: boolean;
   runId: string;
   isPublished: boolean;
+  canExportEvidence?: boolean;
+  exportDisabled?: boolean;
   onNewRun: () => void;
   onDelete: () => void;
 }) {
+  const toast = useToast();
   const [open, setOpen] = useState(false);
+  const [exportBusy, setExportBusy] = useState<'csv' | 'pdf-reader' | 'pdf-full' | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -900,6 +994,27 @@ function RunActionsMenu({
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
+
+  async function downloadExport(format: 'csv' | 'pdf', type: 'reader' | 'full' = 'reader') {
+    const key = format === 'csv' ? 'csv' : type === 'full' ? 'pdf-full' : 'pdf-reader';
+    setExportBusy(key);
+    try {
+      const qs = format === 'pdf' ? `?format=pdf&type=${type}` : '?format=csv';
+      await api.download(`/api/admin/test-runs/${runId}/export${qs}`);
+      toast.success(
+        format === 'csv' ? 'Evidence exported as CSV' : `Report exported (${type})`,
+      );
+      setOpen(false);
+    } catch (e) {
+      toast.error('Export failed', {
+        message: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setExportBusy(null);
+    }
+  }
+
+  const busy = exportDisabled || exportBusy !== null;
 
   return (
     <div className="relative" data-run-actions-menu>
@@ -936,6 +1051,38 @@ function RunActionsMenu({
               <Icon name="tune" className="!text-[16px] text-slate-400" />
               Advanced editor
             </Link>
+          )}
+          {canExportEvidence && (
+            <>
+              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+              <button
+                type="button"
+                className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                disabled={busy}
+                onClick={() => void downloadExport('pdf', 'reader')}
+              >
+                <Icon name="picture_as_pdf" className="!text-[16px] text-slate-400" />
+                {exportBusy === 'pdf-reader' ? 'Exporting…' : 'Download test report (PDF)'}
+              </button>
+              <button
+                type="button"
+                className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                disabled={busy}
+                onClick={() => void downloadExport('pdf', 'full')}
+              >
+                <Icon name="description" className="!text-[16px] text-slate-400" />
+                {exportBusy === 'pdf-full' ? 'Exporting…' : 'Full evidence report (PDF)'}
+              </button>
+              <button
+                type="button"
+                className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                disabled={busy}
+                onClick={() => void downloadExport('csv')}
+              >
+                <Icon name="table" className="!text-[16px] text-slate-400" />
+                {exportBusy === 'csv' ? 'Exporting…' : 'Export spreadsheet (CSV)'}
+              </button>
+            </>
           )}
           {canTest && (
             <button

@@ -271,13 +271,132 @@ export interface UsageScenario {
 }
 
 export interface ScenarioResult {
-  /** Base subscription cost (cheapest tier that exists, monthly-equivalent). */
+  /** Subscription price for the billing period (e.g. $13.99 for monthly). */
   planCost: number;
+  /** Same as planCost when billed monthly; monthly-equivalent for longer intervals. */
+  planCostPerMonth: number;
+  billingInterval: BillingInterval;
+  billingPeriodMonths: number;
   /** Credits needed beyond the plan's included credits. */
   creditShortfall: number;
   /** Money for the shortfall at the best top-up rate (null if not purchasable). */
   topUpCost: number | null;
   totalMonthly: number | null;
+}
+
+export interface BillingPlanEstimate {
+  key: 'monthly' | 'quarterly' | 'yearly';
+  label: string;
+  available: boolean;
+  /** Price charged each billing period. */
+  planPrice: number | null;
+  periodMonths: number;
+  /** Subscription cost normalized to one month. */
+  planPerMonth: number | null;
+  topUpPerMonth: number | null;
+  totalPerMonth: number | null;
+}
+
+/** Tier with the lowest active plain-monthly option. */
+export function cheapestMonthlyTier(tiers: PlanTierLike[]): PlanTierLike | null {
+  let best: PlanTierLike | null = null;
+  let bestPrice = Infinity;
+  for (const tier of tiers) {
+    if (tier.active === false) continue;
+    for (const opt of tierBillingOptions(tier)) {
+      if (opt.active === false || opt.interval !== 'monthly') continue;
+      if (opt.price < bestPrice) {
+        bestPrice = opt.price;
+        best = tier;
+      }
+    }
+  }
+  return best;
+}
+
+function creditsNeededForUsage(
+  usage: Record<string, number>,
+  featureCosts: FeatureCostLike[],
+): number {
+  let creditsNeeded = 0;
+  for (const [featureType, count] of Object.entries(usage)) {
+    const cost = featureCosts.find((c) => c.featureType === featureType && c.active !== false);
+    const range = cost ? featureCostRange(cost) : null;
+    if (range) creditsNeeded += range.max * count;
+  }
+  return creditsNeeded;
+}
+
+function topUpCostForShortfall(shortfall: number, packages: CreditPackageLike[]): number | null {
+  if (shortfall <= 0) return 0;
+  const rate = bestValuePackage(packages);
+  const perCredit = rate ? pricePerCredit(rate) : null;
+  return perCredit !== null ? round2(shortfall * perCredit) : null;
+}
+
+/** Monthly top-up + three billing cadence estimates (best price per interval across tiers). */
+export function estimateBillingPlans(
+  scenario: UsageScenario,
+  tiers: PlanTierLike[],
+  featureCosts: FeatureCostLike[],
+  packages: CreditPackageLike[],
+): BillingPlanEstimate[] {
+  const activeTiers = tiers.filter((t) => t.active !== false);
+  if (activeTiers.length === 0) return [];
+
+  const specs: { key: BillingPlanEstimate['key']; label: string; interval: BillingInterval }[] = [
+    { key: 'monthly', label: 'Pay monthly', interval: 'monthly' },
+    { key: 'quarterly', label: '3-month plan', interval: 'quarterly' },
+    { key: 'yearly', label: '12-month plan', interval: 'yearly' },
+  ];
+
+  return specs.map(({ key, label, interval }) => {
+    let best: { tier: PlanTierLike; opt: BillingOption; planPerMonth: number } | null = null;
+    for (const tier of activeTiers) {
+      for (const opt of tierBillingOptions(tier)) {
+        if (opt.active === false || opt.interval !== interval) continue;
+        const months = MONTHS_PER_INTERVAL[interval];
+        if (months == null || months <= 0) continue;
+        const planPerMonth = round2(opt.price / months);
+        if (!best || planPerMonth < best.planPerMonth) {
+          best = { tier, opt, planPerMonth };
+        }
+      }
+    }
+
+    if (!best) {
+      return {
+        key,
+        label,
+        available: false,
+        planPrice: null,
+        periodMonths: key === 'monthly' ? 1 : key === 'quarterly' ? 3 : 12,
+        planPerMonth: null,
+        topUpPerMonth: null,
+        totalPerMonth: null,
+      };
+    }
+
+    const includedCredits = numOrNull(best.tier.includedTokens) ?? 0;
+    const creditsNeeded = creditsNeededForUsage(scenario.usage, featureCosts);
+    const shortfall = Math.max(0, creditsNeeded - includedCredits);
+    const topUpPerMonth = topUpCostForShortfall(shortfall, packages);
+    const months = MONTHS_PER_INTERVAL[interval] ?? 1;
+    const planPerMonth = round2(best.opt.price / months);
+    const totalPerMonth =
+      topUpPerMonth === null ? null : round2(planPerMonth + topUpPerMonth);
+
+    return {
+      key,
+      label,
+      available: true,
+      planPrice: best.opt.price,
+      periodMonths: months,
+      planPerMonth,
+      topUpPerMonth,
+      totalPerMonth,
+    };
+  });
 }
 
 /**
@@ -291,42 +410,25 @@ export function scenarioMonthlyCost(
   featureCosts: FeatureCostLike[],
   packages: CreditPackageLike[],
 ): ScenarioResult | null {
-  const planCost = lowestMonthlyPrice(tiers);
-  if (planCost === null) return null;
+  const tier = cheapestMonthlyTier(tiers);
+  if (!tier) return null;
+  const opt = tierBillingOptions(tier).find((o) => o.active !== false && o.interval === 'monthly');
+  if (!opt) return null;
 
-  // Included credits on the cheapest tier (by monthly equivalent)
-  let cheapest: PlanTierLike | null = null;
-  let cheapestPrice = Infinity;
-  for (const tier of tiers) {
-    if (tier.active === false) continue;
-    for (const opt of tierBillingOptions(tier)) {
-      if (opt.active === false) continue;
-      const eq = monthlyEquivalent(opt);
-      if (eq !== null && eq < cheapestPrice) {
-        cheapestPrice = eq;
-        cheapest = tier;
-      }
-    }
-  }
-  const includedCredits = numOrNull(cheapest?.includedTokens) ?? 0;
-
-  let creditsNeeded = 0;
-  for (const [featureType, count] of Object.entries(scenario.usage)) {
-    const cost = featureCosts.find((c) => c.featureType === featureType && c.active !== false);
-    const range = cost ? featureCostRange(cost) : null;
-    if (range) creditsNeeded += range.max * count;
-  }
-
+  const includedCredits = numOrNull(tier.includedTokens) ?? 0;
+  const creditsNeeded = creditsNeededForUsage(scenario.usage, featureCosts);
   const shortfall = Math.max(0, creditsNeeded - includedCredits);
-  const rate = bestValuePackage(packages);
-  const perCredit = rate ? pricePerCredit(rate) : null;
-  const topUpCost = shortfall === 0 ? 0 : perCredit !== null ? round2(shortfall * perCredit) : null;
+  const topUpCost = topUpCostForShortfall(shortfall, packages);
+  const months = MONTHS_PER_INTERVAL.monthly;
 
   return {
-    planCost,
+    planCost: opt.price,
+    planCostPerMonth: round2(opt.price / months),
+    billingInterval: 'monthly',
+    billingPeriodMonths: months,
     creditShortfall: shortfall,
     topUpCost,
-    totalMonthly: topUpCost === null ? null : round2(planCost + topUpCost),
+    totalMonthly: topUpCost === null ? null : round2(opt.price / months + topUpCost),
   };
 }
 

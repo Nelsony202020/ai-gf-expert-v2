@@ -4,7 +4,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { Badge, Button, Icon, statusTone } from '../ui';
 import { useCan } from '../context';
 import { useWorkspace } from './context';
-import { WORKSPACE_TABS, fmtRelativeTime, workspaceTabPath, type TabCompletion } from './completion';
+import { WORKSPACE_TABS, fmtRelativeTime, workspaceTabPath, tabVisualStatus, type TabCompletion } from './completion';
 import { reviewPreviewPageUrl } from '../../../lib/slugs';
 
 function fmtMonthYear(ms?: number | null): string {
@@ -13,16 +13,17 @@ function fmtMonthYear(ms?: number | null): string {
 }
 
 function TabIndicator({ tab }: { tab: TabCompletion }) {
-  if (tab.id === 'publish') {
-    if (tab.pct === 100) return <Icon name="check_circle" className="!text-[14px] text-green-600" />;
-    if (tab.blocked) return <span className="h-1.5 w-1.5 rounded-full bg-red-400" aria-hidden="true" />;
-    return <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600" aria-hidden="true" />;
+  const status = tabVisualStatus(tab);
+  if (status === 'complete') {
+    return <Icon name="check_circle" className="!text-[14px] text-green-600" aria-label="Complete" />;
   }
-  if (tab.pct === null) return null; // optional tab
-  if (tab.pct === 100) return <Icon name="check_circle" className="!text-[14px] text-green-600" />;
-  if (tab.missingRequired.length > 0)
-    return <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />;
-  return <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600" aria-hidden="true" />;
+  if (status === 'attention') {
+    return <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" title="Needs attention" />;
+  }
+  if (status === 'blocked') {
+    return <span className="h-1.5 w-1.5 rounded-full bg-red-400" aria-hidden="true" title="Blocked" />;
+  }
+  return <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600" aria-hidden="true" title="Not started" />;
 }
 
 export function ProductWorkspaceHeader() {

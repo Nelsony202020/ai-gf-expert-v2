@@ -2,9 +2,11 @@
 import type { Product } from '../../../data/products';
 import { products } from '../../../data/products';
 import { getScoreChipClass, fmtScore } from '../../../lib/scores';
+import { buildAllScoreBins } from '../../../lib/score-distribution';
 import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
 import TooltipActionLinks from './TooltipActionLinks.astro';
 import InlineTestLink from './InlineTestLink.astro';
+import ScoreDistributionChart from './ScoreDistributionChart.astro';
 import CmsField from '../../cms/CmsField.astro';
 
 interface Props {
@@ -27,6 +29,8 @@ const scorePoints = products
 const avgScore = scorePoints.length
   ? scorePoints.reduce((s, x) => s + x.score, 0) / scorePoints.length
   : currentScore ?? 0;
+
+const bins = buildAllScoreBins(scorePoints);
 
 const panelClass = [
   'ratings-tooltip-panel',
@@ -113,6 +117,10 @@ const panelClass = [
           }
         </div>
       </div>
+    </div>
+    <div class="ratings-tooltip-panel__distribution">
+      <p class="ratings-tooltip-panel__section-title">Score distribution</p>
+      <ScoreDistributionChart bins={bins} />
     </div>
   </div>
 </div>

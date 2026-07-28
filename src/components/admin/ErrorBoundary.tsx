@@ -28,7 +28,12 @@ export class AdminErrorBoundary extends Component<Props, State> {
           <p className="text-sm text-slate-500">
             This can happen after a code update during development. Reload the page to recover.
           </p>
-          <Button onClick={() => window.location.reload()}>Reload admin</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => this.setState({ error: null })}>
+              Try again
+            </Button>
+            <Button onClick={() => window.location.reload()}>Reload admin</Button>
+          </div>
         </div>
       );
     }

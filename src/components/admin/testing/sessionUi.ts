@@ -19,6 +19,7 @@ export function formatAnswerSummary(def: EntityRow, raw: RawValue | undefined, n
     if (raw.status === 'yes') return 'Yes';
     if (raw.status === 'no') return 'No';
     if (raw.status === 'limited') return 'Limited';
+    if (raw.status === 'optional') return 'Optional';
     if (raw.status === 'unknown') return 'Unknown';
     return String(raw.status);
   }

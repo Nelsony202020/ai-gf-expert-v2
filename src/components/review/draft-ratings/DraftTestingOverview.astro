@@ -1,0 +1,12 @@
+---
+import type { DraftTestingOverview } from '../../../lib/draft-ratings/types';
+import TestingCredentialsCard from '../TestingCredentialsCard.astro';
+
+interface Props {
+  overview: DraftTestingOverview;
+}
+
+const { overview } = Astro.props;
+---
+
+<TestingCredentialsCard overview={overview} />

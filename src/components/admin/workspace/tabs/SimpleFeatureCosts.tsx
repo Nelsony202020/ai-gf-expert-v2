@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { dataApi, type EntityRow } from '../../api';
 import { useAsyncToast } from '../../Toast';
-import { Select, TextInput } from '../../ui';
+import { Button, Field, Modal, Select, TextInput } from '../../ui';
 import { useWorkspace } from '../context';
 import { featureCostRange } from '../../../../lib/pricing/calc';
 
@@ -58,12 +58,14 @@ export function SimpleFeatureCosts({
   snapshotId: string;
   creditLabel: string;
   canEdit: boolean;
-  /** Render without the outer card chrome (when nested inside another card). */
   embedded?: boolean;
 }) {
   const ws = useWorkspace();
-  const { error, setError } = useAsyncToast();
+  const { setError } = useAsyncToast();
   const [bootstrapping, setBootstrapping] = useState(false);
+  const [editing, setEditing] = useState<{ def: (typeof PREDEFINED_FEATURE_COSTS)[number]; cost: EntityRow } | null>(
+    null,
+  );
 
   const rows = useMemo(
     () =>
@@ -111,21 +113,65 @@ export function SimpleFeatureCosts({
     };
   }, [canEdit, bootstrapping, rows, snapshotId, ws, setError]);
 
+  const table = (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b border-slate-100 text-left text-xs uppercase text-slate-400 dark:border-slate-800">
+          <th className="px-4 py-2">Feature</th>
+          <th className="px-2 py-2">{creditLabel.replace(/^\w/, (c) => c.toUpperCase())}</th>
+          <th className="px-2 py-2">Unit</th>
+          <th className="px-2 py-2" />
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(({ def, cost }) => {
+          const range = cost ? featureCostRange(cost as any) : null;
+          const loading = !cost && bootstrapping;
+          return (
+            <tr key={def.featureType} className="border-b border-slate-50 dark:border-slate-800/60">
+              <td className="px-4 py-2 font-medium text-slate-800 dark:text-slate-200">{def.label}</td>
+              <td className="px-2 py-2">
+                {loading ? (
+                  <span className="text-slate-400">…</span>
+                ) : range ? (
+                  range.min
+                ) : (
+                  <span className="text-slate-400">—</span>
+                )}
+              </td>
+              <td className="px-2 py-2 text-slate-600 dark:text-slate-300">
+                {UNIT_LABELS[String(cost?.unit ?? def.defaultUnit)] ?? String(cost?.unit ?? def.defaultUnit)}
+              </td>
+              <td className="px-2 py-2 text-right">
+                {canEdit && cost && !loading && (
+                  <Button variant="ghost" className="text-xs" onClick={() => setEditing({ def, cost })}>
+                    Edit
+                  </Button>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+
   const body = (
     <>
-      <div className="divide-y divide-slate-100 dark:divide-slate-800">
-        {rows.map(({ def, cost }) => (
-          <FeatureCostField
-            key={def.featureType}
-            def={def}
-            cost={cost ?? null}
-            snapshotId={snapshotId}
-            creditLabel={creditLabel}
-            canEdit={canEdit}
-            loading={!cost && bootstrapping}
-          />
-        ))}
-      </div>
+      {table}
+      {editing && (
+        <FeatureCostModal
+          def={editing.def}
+          cost={editing.cost}
+          snapshotId={snapshotId}
+          creditLabel={creditLabel}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            void ws.refreshRelated();
+          }}
+        />
+      )}
     </>
   );
 
@@ -148,46 +194,38 @@ export function SimpleFeatureCosts({
         <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
           What does each feature cost in {creditLabel}?
         </h3>
-        <p className="text-xs text-slate-400">Fill in the credit cost for each feature type.</p>
+        <p className="text-xs text-slate-400">Credit cost for each feature type.</p>
       </div>
       {body}
     </section>
   );
 }
 
-function FeatureCostField({
+function FeatureCostModal({
   def,
   cost,
   snapshotId,
   creditLabel,
-  canEdit,
-  loading,
+  onClose,
+  onSaved,
 }: {
   def: (typeof PREDEFINED_FEATURE_COSTS)[number];
-  cost: EntityRow | null;
+  cost: EntityRow;
   snapshotId: string;
   creditLabel: string;
-  canEdit: boolean;
-  loading: boolean;
+  onClose: () => void;
+  onSaved: () => void;
 }) {
-  const ws = useWorkspace();
-  const range = cost ? featureCostRange(cost as any) : null;
+  const range = featureCostRange(cost as any);
   const [credits, setCredits] = useState(range ? String(range.min) : '');
-  const [unit, setUnit] = useState(String(cost?.unit ?? def.defaultUnit));
-  const { run } = useAsyncToast();
+  const [unit, setUnit] = useState(String(cost.unit ?? def.defaultUnit));
+  const { busy, error, run } = useAsyncToast();
+  const hasUnitChoice = def.unitOptions.length > 1;
 
-  useEffect(() => {
-    const next = cost ? featureCostRange(cost as any) : null;
-    setCredits(next ? String(next.min) : '');
-    setUnit(String(cost?.unit ?? def.defaultUnit));
-  }, [cost, def.defaultUnit]);
-
-  async function save(patch: { credits?: string; unit?: string }) {
-    if (!cost || !canEdit) return;
-    const nextCredits = patch.credits ?? credits;
-    const nextUnit = patch.unit ?? unit;
-    const value = nextCredits !== '' ? Number(nextCredits) : undefined;
-    await run(async () => {
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const value = credits !== '' ? Number(credits) : undefined;
+    const done = await run(async () => {
       await dataApi.update(
         'featureCosts',
         cost.id,
@@ -197,64 +235,50 @@ function FeatureCostField({
           minCost: undefined,
           maxCost: undefined,
           costType: 'fixed',
-          unit: nextUnit,
+          unit,
           active: true,
         },
         { snapshot: snapshotId },
       );
-      await ws.refreshRelated();
+      return true;
     });
+    if (done) onSaved();
   }
 
-  const hasUnitChoice = def.unitOptions.length > 1;
-
   return (
-    <div className="grid items-end gap-3 px-4 py-3 sm:grid-cols-[1.4fr_1fr_1fr]">
-      <div>
-        <label className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{def.label}</label>
-        {loading ? (
-          <p className="mt-1 text-sm text-slate-400">Loading…</p>
-        ) : (
-          <p className="mt-0.5 text-xs text-slate-400">
-            {hasUnitChoice ? 'Pick how the app displays call pricing.' : `Cost in ${creditLabel}.`}
-          </p>
-        )}
-      </div>
-      <div>
-        <label className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-          {creditLabel.replace(/^\w/, (c) => c.toUpperCase())}
-        </label>
-        <TextInput
-          inputMode="decimal"
-          value={credits}
-          disabled={!canEdit || loading || !cost}
-          onChange={(e) => setCredits(e.target.value.replace(/[^\d.]/g, ''))}
-          onBlur={() => void save({})}
-          placeholder="e.g. 5"
-        />
-      </div>
-      <div>
-        <label className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Unit</label>
-        {hasUnitChoice ? (
-          <Select
-            value={unit}
-            disabled={!canEdit || loading || !cost}
-            onChange={(e) => {
-              const next = e.target.value;
-              setUnit(next);
-              void save({ unit: next });
-            }}
-          >
-            {def.unitOptions.map((u) => (
-              <option key={u} value={u}>
-                {UNIT_LABELS[u] ?? u}
-              </option>
-            ))}
-          </Select>
-        ) : (
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{UNIT_LABELS[def.defaultUnit]}</p>
-        )}
-      </div>
-    </div>
+    <Modal title={`Edit: ${def.label}`} onClose={onClose}>
+      <form onSubmit={save} className="space-y-3">
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <Field label={`Cost in ${creditLabel}`}>
+          <TextInput
+            inputMode="decimal"
+            value={credits}
+            onChange={(e) => setCredits(e.target.value.replace(/[^\d.]/g, ''))}
+            placeholder="e.g. 5"
+          />
+        </Field>
+        <Field label="Unit">
+          {hasUnitChoice ? (
+            <Select value={unit} onChange={(e) => setUnit(e.target.value)}>
+              {def.unitOptions.map((u) => (
+                <option key={u} value={u}>
+                  {UNIT_LABELS[u] ?? u}
+                </option>
+              ))}
+            </Select>
+          ) : (
+            <p className="text-sm text-slate-600 dark:text-slate-300">{UNIT_LABELS[def.defaultUnit]}</p>
+          )}
+        </Field>
+        <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+          <Button variant="secondary" type="button" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={busy}>
+            {busy ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

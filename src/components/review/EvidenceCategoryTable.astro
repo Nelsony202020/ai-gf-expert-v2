@@ -1,0 +1,52 @@
+---
+import type { DraftEvidenceCategory } from '../../lib/draft-ratings/types';
+import { fmtScore } from '../../lib/scores';
+import { getDraftScoreChipClass } from '../../lib/draft-ratings/scoreBands';
+
+interface Props {
+  tableId: string;
+  items: DraftEvidenceCategory[];
+}
+
+const { tableId, items } = Astro.props;
+---
+
+<div class="evidence-cat-table-wrap">
+  <div class="evidence-cat-table" role="table" aria-labelledby={`${tableId}-label`}>
+    <p id={`${tableId}-label`} class="evidence-cat-table__sr-only">Evidence categories</p>
+    <div class="evidence-cat-table__head" role="row">
+      <span role="columnheader" class="evidence-cat-table__score-col">Score</span>
+      <span role="columnheader">Evidence category</span>
+      <span role="columnheader">Summary</span>
+      <span role="columnheader" class="evidence-cat-table__proof-col">Proof</span>
+    </div>
+
+    {
+      items.map((item) => {
+        const chip = getDraftScoreChipClass(item.score);
+        const summary = item.cardTeaser || item.summary;
+        return (
+          <button
+            type="button"
+            class="evidence-cat-table__row"
+            role="row"
+            data-ratings-open-drawer={item.drawerId}
+            aria-haspopup="dialog"
+          >
+            <span class="evidence-cat-table__score" role="cell">
+              <span class={`rt-score-chip rt-score-chip--outline ${chip}`}>{fmtScore(item.score)}</span>
+            </span>
+            <span class="evidence-cat-table__name" role="cell">{item.name}</span>
+            <span class="evidence-cat-table__summary" role="cell">{summary}</span>
+            <span class="evidence-cat-table__proof" role="cell">
+              <span class="evidence-cat-table__proof-link" aria-hidden="true">
+                <span class="material-symbols-outlined">attach_file</span>
+                {item.proofCount > 0 ? item.proofCount : null}
+              </span>
+            </span>
+          </button>
+        );
+      })
+    }
+  </div>
+</div>

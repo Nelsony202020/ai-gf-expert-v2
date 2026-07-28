@@ -11,8 +11,7 @@ import { MediaPickerModal } from '../../MediaPicker';
 import {
   bestValuePackage,
   intervalDiscount,
-  intervalSaving,
-  lowestMonthlyPrice,
+  lowestPlainMonthlyPrice,
   monthlyEquivalent,
   packageTotalCredits,
   pricePer100Credits,
@@ -40,6 +39,7 @@ import {
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
 import { SimpleFeatureCosts } from './SimpleFeatureCosts';
+import { UsageScenariosPanel } from './UsageScenariosPanel';
 import { PricingImportCard } from '../../ai-pricing/PricingImportCard';
 import { PricingReviewModal, type PricingDraftClient } from '../../ai-pricing/PricingReviewModal';
 
@@ -131,6 +131,7 @@ export function PricingTab() {
   const canEdit = can('content.edit');
   const { fields, set, related } = ws;
   const [editingPackage, setEditingPackage] = useState<EntityRow | 'new' | null>(null);
+  const [editingTier, setEditingTier] = useState<EntityRow | 'new' | null>(null);
   const [editingPayments, setEditingPayments] = useState(false);
   const [aiDraft, setAiDraft] = useState<PricingDraftClient | null>(null);
   const { error, setError } = useAsyncToast();
@@ -160,7 +161,7 @@ export function PricingTab() {
   const profile = related.paymentProfile;
 
   const activeTiers = tiers.filter((t) => t.active);
-  const derivedMinMonthly = lowestMonthlyPrice(activeTiers as any);
+  const derivedMinMonthly = lowestPlainMonthlyPrice(activeTiers as any);
   const cachedMin = fields.minMonthlyPrice != null ? Number(fields.minMonthlyPrice) : null;
   const cacheOutOfSync = derivedMinMonthly !== null && cachedMin !== derivedMinMonthly;
 
@@ -190,7 +191,13 @@ export function PricingTab() {
 
         {snapshot && (
           <>
-            {canEdit && <PricingImportCard productId={ws.productId} onDraft={setAiDraft} />}
+            {canEdit && (
+              <PricingImportCard
+                productId={ws.productId}
+                onDraft={setAiDraft}
+                onGalleryUpdated={() => void ws.refreshRelated()}
+              />
+            )}
 
             {/* Compact pricing-model selector */}
             <section className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -230,11 +237,10 @@ export function PricingTab() {
             {showPlans && (
               <TierTable
                 tiers={tiers}
-                snapshotId={snapshot.id}
-                creditLabel={creditPlural(currency)}
                 defaultCurrency={String(fields.priceCurrency ?? 'USD')}
                 showIncludedCredits={showIncludedCredits}
                 canEdit={canEdit}
+                onEdit={setEditingTier}
               />
             )}
 
@@ -286,11 +292,21 @@ export function PricingTab() {
               <PromotionsList promotions={related.pricingPromotions} canEdit={canEdit} />
             )}
 
+            <UsageScenariosPanel
+              snapshot={snapshot}
+              tiers={tiers}
+              featureCosts={featureCosts}
+              packages={packages}
+              currency={String(fields.priceCurrency ?? 'USD')}
+              canEdit={canEdit}
+              onPatchSnapshot={patchSnapshot}
+            />
+
             <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Quick summary</h3>
               <div className="mt-3 flex flex-wrap items-end gap-4">
                 <Stat
-                  label="Lowest monthly price"
+                  label="Lowest 1-month price"
                   value={fmtMoney(derivedMinMonthly, fields.priceCurrency ?? 'USD')}
                 />
                 {cacheOutOfSync && canEdit && (
@@ -358,6 +374,21 @@ export function PricingTab() {
 
       <CompletionSidebar />
 
+      {editingTier && snapshot && (
+        <TierPlanModal
+          tier={editingTier === 'new' ? null : editingTier}
+          snapshotId={snapshot.id}
+          creditLabel={creditPlural(currency)}
+          defaultCurrency={String(fields.priceCurrency ?? 'USD')}
+          showIncludedCredits={showIncludedCredits}
+          sortOrder={editingTier === 'new' ? tiers.length : undefined}
+          onClose={() => setEditingTier(null)}
+          onSaved={() => {
+            setEditingTier(null);
+            void ws.refreshRelated();
+          }}
+        />
+      )}
       {editingPackage && (
         <PackageModal
           pkg={editingPackage === 'new' ? null : editingPackage}
@@ -609,61 +640,79 @@ function TokenNameInline({
 }
 
 // ---------------------------------------------------------------------------
-// Plan tiers: inline table with nested billing options
+// Plan tiers: read-only table + edit modal (matches package pattern)
 // ---------------------------------------------------------------------------
+
+function tierOptionPrice(tier: EntityRow, interval: BillingInterval): BillingOption | null {
+  const opt = tierBillingOptions(tier as any).find((o) => o.interval === interval && o.active !== false);
+  return opt ?? null;
+}
+
+/** Detect tiers named after billing cadences (common mis-entry pattern). */
+function looksLikeIntervalSplitTiers(tiers: EntityRow[]): boolean {
+  if (tiers.length < 2) return false;
+  const intervalName = /\b(\d+\s*)?(month|year|annual|quarter|weekly)\b/i;
+  const named = tiers.filter((t) => intervalName.test(String(t.name ?? '')));
+  return named.length >= 2 && named.length >= tiers.length * 0.6;
+}
+
+/** One billing cadence cell: marketing $/mo first, actual charge second. */
+function BillingCadenceCell({
+  option,
+  currency,
+  interval,
+}: {
+  option: BillingOption | null;
+  currency: string;
+  interval: BillingInterval;
+}) {
+  if (!option) return <span className="text-slate-300">—</span>;
+
+  const eq = monthlyEquivalent(option);
+  const cur = option.currency ?? currency;
+  const billed =
+    interval === 'monthly'
+      ? `${fmtMoney(option.price, cur)}/mo`
+      : interval === 'quarterly'
+        ? `${fmtMoney(option.price, cur)} every 3 mo`
+        : `${fmtMoney(option.price, cur)}/yr`;
+
+  return (
+    <div>
+      <p className="font-medium text-slate-800 dark:text-slate-200">
+        {eq != null ? (
+          <>
+            {fmtMoney(eq, cur)}
+            <span className="text-xs font-normal text-slate-500">/mo</span>
+          </>
+        ) : (
+          fmtMoney(option.price, cur)
+        )}
+      </p>
+      <p className="text-[10px] text-slate-400">Billed {billed}</p>
+    </div>
+  );
+}
 
 function TierTable({
   tiers,
-  snapshotId,
-  creditLabel,
   defaultCurrency,
   showIncludedCredits,
   canEdit,
+  onEdit,
 }: {
   tiers: EntityRow[];
-  snapshotId: string;
-  creditLabel: string;
   defaultCurrency: string;
   showIncludedCredits: boolean;
   canEdit: boolean;
+  onEdit: (tier: EntityRow | 'new') => void;
 }) {
   const ws = useWorkspace();
-  const [adding, setAdding] = useState(false);
-  const { error, setError } = useAsyncToast();
+  const { setError } = useAsyncToast();
 
-  async function move(row: EntityRow, dir: -1 | 1) {
-    const idx = tiers.findIndex((t) => t.id === row.id);
-    const other = tiers[idx + dir];
-    if (!other) return;
+  async function toggleActive(row: EntityRow, v: boolean) {
     try {
-      await Promise.all(
-        tiers.map((t, i) => {
-          let order = i;
-          if (t.id === row.id) order = idx + dir;
-          else if (t.id === other.id) order = idx;
-          return dataApi.update('subscriptionPlans', t.id, { sortOrder: order });
-        }),
-      );
-      await ws.refreshRelated();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  async function duplicate(row: EntityRow) {
-    try {
-      const { id: _id, product: _p, snapshot: _s, ...rest } = row;
-      await dataApi.create(
-        'subscriptionPlans',
-        {
-          ...rest,
-          name: `${row.name} copy`,
-          sortOrder: tiers.length,
-          lastVerifiedAt: undefined,
-          evidenceMediaIds: undefined,
-        },
-        { product: ws.productId, snapshot: snapshotId },
-      );
+      await dataApi.update('subscriptionPlans', row.id, { active: v });
       await ws.refreshRelated();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -671,7 +720,7 @@ function TierTable({
   }
 
   async function remove(row: EntityRow) {
-    if (!confirm(`Delete tier "${row.name}"? This removes all its billing options.`)) return;
+    if (!confirm(`Delete tier "${row.name}"?`)) return;
     try {
       await dataApi.remove('subscriptionPlans', row.id);
       await ws.refreshRelated();
@@ -680,200 +729,238 @@ function TierTable({
     }
   }
 
+  async function verifyAll() {
+    if (tiers.length === 0) return;
+    try {
+      const now = Date.now();
+      await Promise.all(tiers.map((t) => dataApi.update('subscriptionPlans', t.id, { lastVerifiedAt: now })));
+      await ws.refreshRelated();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  const verifyStatus = (() => {
+    if (tiers.length === 0) return null;
+    const verified = tiers.filter((t) => t.lastVerifiedAt);
+    if (verified.length === 0) return { text: 'Never verified', partial: true };
+    const latest = Math.max(...verified.map((t) => Number(t.lastVerifiedAt)));
+    if (verified.length < tiers.length) {
+      return { text: `${verified.length}/${tiers.length} verified · latest ${fmtDate(latest)}`, partial: true };
+    }
+    return { text: `Verified ${fmtDate(latest)}`, partial: false };
+  })();
+
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Subscription plans</h3>
-          <p className="text-xs text-slate-400">Name, monthly price, and annual price for each tier.</p>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5 dark:border-slate-800">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Subscription</h3>
+            {verifyStatus && (
+              <span className={`text-xs ${verifyStatus.partial ? 'text-amber-600' : 'text-slate-400'}`}>
+                {verifyStatus.text}
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            One subscription per row — users pick how often they pay (monthly, every 3 months, or yearly).
+          </p>
         </div>
-        {canEdit && !adding && (
-          <Button variant="secondary" className="text-xs" onClick={() => setAdding(true)}>
-            <Icon name="add" className="!text-[14px]" /> Add tier
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canEdit && tiers.length > 0 && (
+            <Button variant="ghost" className="!py-1 text-xs" onClick={() => void verifyAll()}>
+              Verify all
+            </Button>
+          )}
+          {canEdit && (
+            <Button variant="secondary" className="!py-1 text-xs" onClick={() => onEdit('new')}>
+              <Icon name="add" className="!text-[14px]" /> Add plan
+            </Button>
+          )}
+        </div>
       </div>
-      {tiers.length === 0 && !adding ? (
-        <p className="px-4 py-4 text-sm text-slate-400">
-          No plan tiers yet. Add Basic, Premium… with their monthly and annual prices.
+      {looksLikeIntervalSplitTiers(tiers) && (
+        <p className="mx-4 mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+          These rows look like billing intervals entered as separate plans. Edit one plan and add all interval prices there, then delete the extras.
+        </p>
+      )}
+      {tiers.length === 0 ? (
+        <p className="px-4 py-3 text-sm text-slate-400">
+          No subscription yet. Add one plan and set what is charged monthly, every 3 months, and annually.
         </p>
       ) : (
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {tiers.map((tier, idx) => (
-            <TierRow
-              key={`${tier.id}:${tier.updatedAt ?? ''}`}
-              tier={tier}
-              index={idx}
-              count={tiers.length}
-              snapshotId={snapshotId}
-              creditLabel={creditLabel}
-              defaultCurrency={defaultCurrency}
-              showIncludedCredits={showIncludedCredits}
-              canEdit={canEdit}
-              onMove={(dir) => void move(tier, dir)}
-              onDuplicate={() => void duplicate(tier)}
-              onRemove={() => void remove(tier)}
-            />
-          ))}
-        </div>
-      )}
-      {adding && (
-        <div className="border-t border-slate-100 dark:border-slate-800">
-          <TierRow
-            tier={null}
-            index={tiers.length}
-            count={tiers.length + 1}
-            snapshotId={snapshotId}
-            creditLabel={creditLabel}
-            defaultCurrency={defaultCurrency}
-            showIncludedCredits={showIncludedCredits}
-            canEdit={canEdit}
-            onCancelNew={() => setAdding(false)}
-            onSavedNew={() => setAdding(false)}
-          />
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 text-left text-xs uppercase text-slate-400 dark:border-slate-800">
+                <th className="px-4 py-2">Plan</th>
+                <th className="px-2 py-2">Pay monthly</th>
+                <th className="px-2 py-2">Pay every 3 mo</th>
+                <th className="px-2 py-2">Pay annually</th>
+                {showIncludedCredits && <th className="px-2 py-2">Included</th>}
+                <th className="px-2 py-2">Verified</th>
+                <th className="px-2 py-2">Active</th>
+                <th className="px-2 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {tiers.map((tier) => {
+                const monthly = tierOptionPrice(tier, 'monthly');
+                const quarterly = tierOptionPrice(tier, 'quarterly');
+                const yearly = tierOptionPrice(tier, 'yearly');
+                const currency = monthly?.currency ?? quarterly?.currency ?? yearly?.currency ?? defaultCurrency;
+                return (
+                  <tr
+                    key={tier.id}
+                    className={`border-b border-slate-50 dark:border-slate-800/60 ${tier.active ? '' : 'opacity-60'}`}
+                  >
+                    <td className="px-4 py-2 font-medium text-slate-800 dark:text-slate-200">{tier.name}</td>
+                    <td className="px-2 py-2">
+                      <BillingCadenceCell option={monthly} currency={currency} interval="monthly" />
+                    </td>
+                    <td className="px-2 py-2">
+                      <BillingCadenceCell option={quarterly} currency={currency} interval="quarterly" />
+                    </td>
+                    <td className="px-2 py-2">
+                      <BillingCadenceCell option={yearly} currency={currency} interval="yearly" />
+                    </td>
+                    {showIncludedCredits && (
+                      <td className="px-2 py-2">{tier.includedTokens ?? '—'}</td>
+                    )}
+                    <td className="px-2 py-2 text-xs">
+                      {tier.lastVerifiedAt ? fmtDate(tier.lastVerifiedAt) : (
+                        <span className="text-amber-600">never</span>
+                      )}
+                    </td>
+                    <td className="px-2 py-2">
+                      {canEdit ? (
+                        <Toggle
+                          checked={Boolean(tier.active)}
+                          onChange={(v) => void toggleActive(tier, v)}
+                          aria-label="Tier active"
+                        />
+                      ) : (
+                        <Badge tone={tier.active ? 'green' : 'gray'}>{tier.active ? 'active' : 'inactive'}</Badge>
+                      )}
+                    </td>
+                    <td className="px-2 py-2 text-right">
+                      {canEdit && (
+                        <>
+                          <Button variant="ghost" className="text-xs" onClick={() => onEdit(tier)}>
+                            Edit
+                          </Button>
+                          <Button variant="ghost" className="text-xs text-red-600" onClick={() => void remove(tier)}>
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </section>
   );
 }
 
-interface OptionDraft {
-  interval: BillingInterval;
-  price: string;
-  introPrice: string;
-  freeTrial: boolean;
-  trialLength: string;
-  active: boolean;
-}
-
-function optionsToDrafts(options: BillingOption[]): OptionDraft[] {
-  return options.map((o) => ({
-    interval: o.interval,
-    price: String(o.price ?? ''),
-    introPrice: o.introPrice != null ? String(o.introPrice) : '',
-    freeTrial: Boolean(o.freeTrial),
-    trialLength: o.trialLength ?? '',
-    active: o.active !== false,
-  }));
-}
-
-function TierRow({
+function TierPlanModal({
   tier,
-  index,
-  count,
   snapshotId,
   creditLabel,
   defaultCurrency,
   showIncludedCredits,
-  canEdit,
-  onMove,
-  onDuplicate,
-  onRemove,
-  onCancelNew,
-  onSavedNew,
+  sortOrder,
+  onClose,
+  onSaved,
 }: {
   tier: EntityRow | null;
-  index: number;
-  count: number;
   snapshotId: string;
   creditLabel: string;
   defaultCurrency: string;
   showIncludedCredits: boolean;
-  canEdit: boolean;
-  onMove?: (dir: -1 | 1) => void;
-  onDuplicate?: () => void;
-  onRemove?: () => void;
-  onCancelNew?: () => void;
-  onSavedNew?: () => void;
+  sortOrder?: number;
+  onClose: () => void;
+  onSaved: () => void;
 }) {
   const ws = useWorkspace();
   const existingOptions = tier ? tierBillingOptions(tier as any) : [];
-  const usesLegacyFallback =
-    tier != null && (!Array.isArray(tier.billingOptions) || tier.billingOptions.length === 0) && existingOptions.length > 0;
-
   const [name, setName] = useState(String(tier?.name ?? ''));
   const [currency, setCurrency] = useState(String(existingOptions[0]?.currency ?? tier?.currency ?? defaultCurrency));
-  const [options, setOptions] = useState<OptionDraft[]>(
-    optionsToDrafts(existingOptions).length > 0
-      ? optionsToDrafts(existingOptions)
-      : [{ interval: 'monthly', price: '', introPrice: '', freeTrial: false, trialLength: '', active: true }],
-  );
+  const [monthlyPrice, setMonthlyPrice] = useState(() => {
+    const m = existingOptions.find((o) => o.interval === 'monthly');
+    return m ? String(m.price) : '';
+  });
+  const [quarterlyPrice, setQuarterlyPrice] = useState(() => {
+    const q = existingOptions.find((o) => o.interval === 'quarterly');
+    return q ? String(q.price) : '';
+  });
+  const [yearlyPrice, setYearlyPrice] = useState(() => {
+    const y = existingOptions.find((o) => o.interval === 'yearly');
+    return y ? String(y.price) : '';
+  });
   const [includedCredits, setIncludedCredits] = useState(
     tier?.includedTokens != null ? String(tier.includedTokens) : '',
   );
   const [active, setActive] = useState(tier ? Boolean(tier.active) : true);
-  const [dirty, setDirty] = useState(tier === null);
   const { busy, error, run } = useAsyncToast();
 
-  const touch = <T,>(setter: (v: T) => void) => (v: T) => {
-    setter(v);
-    setDirty(true);
-  };
-
-  function setOption(i: number, patch: Partial<OptionDraft>) {
-    setOptions((prev) => prev.map((o, j) => (j === i ? { ...o, ...patch } : o)));
-    setDirty(true);
-  }
-
-  function optionFor(interval: BillingInterval): { idx: number; draft: OptionDraft | null } {
-    const idx = options.findIndex((o) => o.interval === interval);
-    return { idx, draft: idx >= 0 ? options[idx] : null };
-  }
-
-  /** Main-table quick edit for the monthly / annual price cells. */
-  function setIntervalPrice(interval: BillingInterval, raw: string) {
-    const clean = raw.replace(/[^\d.]/g, '');
-    const { idx } = optionFor(interval);
-    if (idx >= 0) {
-      if (clean === '') {
-        setOptions((prev) => prev.filter((_, j) => j !== idx));
-      } else {
-        setOption(idx, { price: clean });
-        return;
-      }
-    } else if (clean !== '') {
-      setOptions((prev) => [
-        ...prev,
-        { interval, price: clean, introPrice: '', freeTrial: false, trialLength: '', active: true },
-      ]);
-    }
-    setDirty(true);
-  }
-
-  const monthlyDraft = optionFor('monthly').draft;
-  const yearlyDraft = optionFor('yearly').draft;
-  const monthlyPrice = monthlyDraft && monthlyDraft.price !== '' ? Number(monthlyDraft.price) : null;
-  const yearlyPrice = yearlyDraft && yearlyDraft.price !== '' ? Number(yearlyDraft.price) : null;
-
   const yearlyOption: BillingOption | null =
-    yearlyPrice !== null ? { interval: 'yearly', price: yearlyPrice, currency, active: true } : null;
+    yearlyPrice !== '' ? { interval: 'yearly', price: Number(yearlyPrice), currency, active: true } : null;
+  const quarterlyOption: BillingOption | null =
+    quarterlyPrice !== ''
+      ? { interval: 'quarterly', price: Number(quarterlyPrice), currency, active: true }
+      : null;
+  const monthlyNum = monthlyPrice !== '' ? Number(monthlyPrice) : null;
   const yearlyEq = yearlyOption ? monthlyEquivalent(yearlyOption) : null;
-  const discount = yearlyOption && monthlyPrice ? intervalDiscount(monthlyPrice, yearlyOption) : null;
-  const saving = yearlyOption && monthlyPrice ? intervalSaving(monthlyPrice, yearlyOption) : null;
+  const quarterlyEq = quarterlyOption ? monthlyEquivalent(quarterlyOption) : null;
+  const discount = yearlyOption && monthlyNum ? intervalDiscount(monthlyNum, yearlyOption) : null;
+  const quarterlyDiscount =
+    quarterlyOption && monthlyNum ? intervalDiscount(monthlyNum, quarterlyOption) : null;
 
-  async function save() {
-    const parsed: BillingOption[] = options
-      .filter((o) => o.price !== '')
-      .map((o) => ({
-        interval: o.interval,
-        price: Number(o.price),
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const preserved = existingOptions.filter(
+      (o) => !['monthly', 'quarterly', 'yearly'].includes(o.interval),
+    );
+    const options: BillingOption[] = [...preserved];
+    if (monthlyPrice !== '') {
+      options.push({
+        interval: 'monthly',
+        price: Number(monthlyPrice),
         currency: currency.toUpperCase() || 'USD',
-        introPrice: o.introPrice !== '' ? Number(o.introPrice) : undefined,
-        freeTrial: o.freeTrial || undefined,
-        trialLength: o.trialLength || undefined,
-        active: o.active,
-      }));
-    const mirror = legacyMirror(parsed);
+        active: true,
+      });
+    }
+    if (quarterlyPrice !== '') {
+      options.push({
+        interval: 'quarterly',
+        price: Number(quarterlyPrice),
+        currency: currency.toUpperCase() || 'USD',
+        active: true,
+      });
+    }
+    if (yearlyPrice !== '') {
+      options.push({
+        interval: 'yearly',
+        price: Number(yearlyPrice),
+        currency: currency.toUpperCase() || 'USD',
+        active: true,
+      });
+    }
+    const mirror = legacyMirror(options);
     const fields: Record<string, unknown> = {
       name: name.trim(),
-      billingOptions: parsed,
-      // Legacy mirror keeps the public store + dashboards working pre-migration
+      billingOptions: options,
       billingInterval: mirror?.billingInterval ?? 'monthly',
       price: mirror?.price ?? 0,
       currency: mirror?.currency ?? currency.toUpperCase() ?? 'USD',
       includedTokens: showIncludedCredits ? numOrUndef(includedCredits) : undefined,
       active,
-      sortOrder: tier?.sortOrder ?? index,
+      sortOrder: tier?.sortOrder ?? sortOrder ?? 0,
     };
     const done = await run(async () => {
       if (tier) {
@@ -881,135 +968,102 @@ function TierRow({
       } else {
         await dataApi.create('subscriptionPlans', fields, { product: ws.productId, snapshot: snapshotId });
       }
-      await ws.refreshRelated();
       return true;
     });
-    if (done) {
-      setDirty(false);
-      onSavedNew?.();
-    }
+    if (done) onSaved();
   }
 
-  async function markVerified() {
-    if (!tier) return;
-    await dataApi.update('subscriptionPlans', tier.id, { lastVerifiedAt: Date.now() });
-    await ws.refreshRelated();
-  }
-
-  const canSave = name.trim() !== '' && options.some((o) => o.price !== '');
+  const canSave =
+    name.trim() !== '' && (monthlyPrice !== '' || quarterlyPrice !== '' || yearlyPrice !== '');
 
   return (
-    <div className={`px-4 py-3 ${active ? '' : 'opacity-60'}`}>
-      <div className={`grid items-start gap-2 ${showIncludedCredits ? 'sm:grid-cols-[1.4fr_1fr_1.2fr_1fr_auto]' : 'sm:grid-cols-[1.4fr_1fr_1.2fr_auto]'}`}>
-        <div>
-          <label className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Tier</label>
-          <TextInput
-            value={name}
-            disabled={!canEdit}
-            onChange={(e) => touch(setName)(e.target.value)}
-            placeholder="Basic"
-          />
-          {usesLegacyFallback && (
-            <p className="mt-0.5 text-[11px] text-amber-600">
-              Legacy single-price record — saving converts it to billing options.
-            </p>
-          )}
-        </div>
-        <div>
-          <label className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Monthly</label>
-          <TextInput
-            inputMode="decimal"
-            value={monthlyDraft?.price ?? ''}
-            disabled={!canEdit}
-            onChange={(e) => setIntervalPrice('monthly', e.target.value)}
-            placeholder="12.99"
-          />
-        </div>
-        <div>
-          <label className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Annual</label>
-          <TextInput
-            inputMode="decimal"
-            value={yearlyDraft?.price ?? ''}
-            disabled={!canEdit}
-            onChange={(e) => setIntervalPrice('yearly', e.target.value)}
-            placeholder="79.99"
-          />
-          {yearlyEq !== null && (
-            <p
-              className="mt-0.5 text-[11px] text-slate-400"
-              title="Monthly equivalent = annual price ÷ 12. Discount = 1 − annual ÷ (monthly × 12)."
-            >
-              = {fmtMoney(yearlyEq, currency)}/mo
-              {discount !== null && discount > 0 && (
-                <span className="ml-1 text-green-600 dark:text-green-400">
-                  −{discount}% ({fmtMoney(saving, currency)} saved)
-                </span>
-              )}
-            </p>
-          )}
-        </div>
-        {showIncludedCredits && (
-          <div>
-            <label className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-              Included {creditLabel}
-            </label>
-            <TextInput
-              type="number"
-              value={includedCredits}
-              disabled={!canEdit}
-              onChange={(e) => touch(setIncludedCredits)(e.target.value)}
-              placeholder="100"
-            />
+    <Modal title={tier ? `Edit subscription: ${tier.name}` : 'New subscription plan'} onClose={onClose} wide>
+      <form onSubmit={save} className="space-y-3">
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          One subscription tier — users pick how often they pay. Enter the amount charged per billing period (not always the monthly sticker price).
+        </p>
+        <Field label="Plan name" required>
+          <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Premium" required />
+        </Field>
+        <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800/40">
+          <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Billing options</p>
+          <p className="mt-0.5 text-[11px] text-slate-400">
+            Leave blank if the app does not offer that interval. Monthly equivalent is calculated automatically.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <Field label="Pay monthly" hint="Charged every month">
+              <TextInput
+                inputMode="decimal"
+                value={monthlyPrice}
+                onChange={(e) => setMonthlyPrice(e.target.value.replace(/[^\d.]/g, ''))}
+                placeholder="13.99"
+              />
+            </Field>
+            <Field label="Pay every 3 months" hint="Total for 3 months">
+              <TextInput
+                inputMode="decimal"
+                value={quarterlyPrice}
+                onChange={(e) => setQuarterlyPrice(e.target.value.replace(/[^\d.]/g, ''))}
+                placeholder="26.97"
+              />
+            </Field>
+            <Field label="Pay annually" hint="Total for 12 months">
+              <TextInput
+                inputMode="decimal"
+                value={yearlyPrice}
+                onChange={(e) => setYearlyPrice(e.target.value.replace(/[^\d.]/g, ''))}
+                placeholder="47.88"
+              />
+            </Field>
           </div>
-        )}
-        <div className="flex items-center gap-1 pt-5">
-          <Toggle checked={active} onChange={touch(setActive)} aria-label="Tier active" disabled={!canEdit} />
         </div>
-      </div>
-
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
-        {tier &&
-          (tier.lastVerifiedAt ? (
-            <span>verified {fmtDate(tier.lastVerifiedAt)}</span>
-          ) : (
-            <span className="text-amber-600">never verified</span>
-          ))}
-        {tier && canEdit && (
-          <button type="button" className="text-pink-600 hover:underline" onClick={() => void markVerified()}>
-            verify now
-          </button>
-        )}
-        <span className="flex-1" />
-        {canEdit && tier && (
-          <>
-            <button type="button" className="hover:text-slate-600" disabled={index === 0} onClick={() => onMove?.(-1)}>
-              ↑ up
-            </button>
-            <button type="button" className="hover:text-slate-600" disabled={index === count - 1} onClick={() => onMove?.(1)}>
-              ↓ down
-            </button>
-            <button type="button" className="hover:text-slate-600" onClick={onDuplicate}>
-              duplicate
-            </button>
-            <button type="button" className="text-red-500 hover:text-red-700" onClick={onRemove}>
-              delete
-            </button>
-          </>
-        )}
-        {canEdit && (dirty || tier === null) && (
-          <>
-            {tier === null && (
-              <Button variant="ghost" className="!py-1 text-xs" onClick={onCancelNew}>
-                Cancel
-              </Button>
+        {quarterlyEq != null && (
+          <p className="text-xs text-slate-500">
+            3-month plan works out to {fmtMoney(quarterlyEq, currency)}/mo
+            {quarterlyDiscount != null && quarterlyDiscount > 0 && (
+              <span className="text-green-600 dark:text-green-400">
+                {' '}
+                (−{quarterlyDiscount}% vs paying monthly)
+              </span>
             )}
-            <Button className="!py-1 text-xs" disabled={busy || !canSave} onClick={() => void save()}>
-              {busy ? 'Saving…' : tier ? 'Save tier' : 'Create tier'}
-            </Button>
-          </>
+          </p>
         )}
-      </div>
-    </div>
+        {yearlyEq != null && (
+          <p className="text-xs text-slate-500">
+            Annual works out to {fmtMoney(yearlyEq, currency)}/mo equivalent
+            {discount != null && discount > 0 && (
+              <span className="text-green-600 dark:text-green-400"> (−{discount}% vs paying monthly)</span>
+            )}
+            . Public listings still use the true 1-month price only.
+          </p>
+        )}
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Currency">
+            <TextInput value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} placeholder="USD" />
+          </Field>
+          {showIncludedCredits && (
+            <Field label={`Included ${creditLabel}`}>
+              <TextInput type="number" value={includedCredits} onChange={(e) => setIncludedCredits(e.target.value)} />
+            </Field>
+          )}
+          <div className="flex items-end pb-1">
+            <Toggle checked={active} onChange={setActive} label="Active" />
+          </div>
+        </div>
+        {tier && (
+          <PricingEvidence entity="subscriptionPlans" row={tier} canEdit altText={`Pricing evidence: ${tier.name}`} />
+        )}
+        <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+          <Button variant="secondary" type="button" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={busy || !canSave}>
+            {busy ? 'Saving…' : tier ? 'Save plan' : 'Create plan'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -1141,6 +1195,7 @@ function PricingEvidence({
   const ws = useWorkspace();
   const [showPicker, setShowPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useToastError(error, () => setError(null));
   const fileInput = useRef<HTMLInputElement>(null);
@@ -1157,18 +1212,24 @@ function PricingEvidence({
     }
   }
 
-  async function handleFile(file: File) {
+  async function handleFiles(files: FileList | File[]) {
+    const images = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    if (images.length === 0) return;
     setError(null);
     setUploading(true);
     try {
-      const form = new FormData();
-      form.set('file', file);
-      form.set('adult', '0');
-      form.set('role', 'proof');
-      form.set('altText', altText);
-      form.set('productId', ws.productId);
-      const created = await api.upload<{ id: string }>('/api/admin/media/upload', form);
-      await patch([...ids, created.id]);
+      const newIds = [...ids];
+      for (const file of images) {
+        const form = new FormData();
+        form.set('file', file);
+        form.set('adult', '0');
+        form.set('role', 'proof');
+        form.set('altText', altText);
+        form.set('productId', ws.productId);
+        const created = await api.upload<{ id: string }>('/api/admin/media/upload', form);
+        newIds.push(created.id);
+      }
+      await patch(newIds);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
@@ -1177,9 +1238,34 @@ function PricingEvidence({
     }
   }
 
+  function onDropFiles(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    if (!canEdit || uploading) return;
+    if (e.dataTransfer.files.length > 0) void handleFiles(e.dataTransfer.files);
+  }
+
   return (
     <div className={compact ? 'mt-1.5' : 'mt-2'}>
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div
+        className={`flex flex-wrap items-center gap-1.5 rounded-lg border border-dashed px-2 py-2 transition-colors ${
+          dragOver
+            ? 'border-pink-400 bg-pink-50/60 dark:border-pink-700 dark:bg-pink-950/20'
+            : 'border-transparent'
+        }`}
+        onDragOver={(e) => {
+          if (!canEdit) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setDragOver(true);
+        }}
+        onDragLeave={(e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+          setDragOver(false);
+        }}
+        onDrop={onDropFiles}
+      >
         {!compact && <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Evidence</span>}
         {ids.map((id) => {
           const m = mediaById.get(id);
@@ -1216,7 +1302,7 @@ function PricingEvidence({
               onClick={() => fileInput.current?.click()}
             >
               <Icon name="add_photo_alternate" className="!text-[14px]" />
-              {uploading ? 'Uploading…' : ids.length > 0 ? 'Add' : 'Add proof screenshot'}
+              {uploading ? 'Uploading…' : ids.length > 0 ? 'Add' : 'Drop or add screenshot'}
             </button>
             <button
               type="button"
@@ -1229,14 +1315,16 @@ function PricingEvidence({
         )}
         {!canEdit && ids.length === 0 && <span className="text-xs text-slate-400">none</span>}
       </div>
+      {error && <p className="mt-1 text-[10px] text-red-500">{error}</p>}
       <input
         ref={fileInput}
         type="file"
         accept="image/*"
+        multiple
         className="hidden"
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) void handleFile(f);
+          const files = e.target.files;
+          if (files?.length) void handleFiles(files);
         }}
       />
       {showPicker && (

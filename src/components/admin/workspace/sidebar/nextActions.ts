@@ -2,6 +2,7 @@
 
 import type { EntityRow } from '../../api';
 import type { ProductCompletion, TabCompletion, WorkspaceTabId } from '../completion';
+import { tabVisualStatus } from '../completion';
 
 export interface SidebarContext {
   completion: ProductCompletion;
@@ -99,8 +100,13 @@ export function workflowStatusLabel(tab: TabCompletion, ctx: SidebarContext): st
 }
 
 export function statusTone(tab: TabCompletion, label: string): string {
-  if (tab.id === 'publish' && label === 'Blocked') return 'text-red-600 dark:text-red-400';
-  if (label === 'Complete' || label === 'Published' || label === 'Ready') return 'text-green-700 dark:text-green-400';
-  if (label === 'Missing' || label === 'Missing fields') return 'text-amber-700 dark:text-amber-400';
+  const visual = tabVisualStatus(tab);
+  if (visual === 'blocked' || label === 'Blocked') return 'text-red-600 dark:text-red-400';
+  if (visual === 'complete' || label === 'Complete' || label === 'Published' || label === 'Ready') {
+    return 'text-green-700 dark:text-green-400';
+  }
+  if (visual === 'attention' || label === 'Missing' || label === 'Missing fields') {
+    return 'text-amber-700 dark:text-amber-400';
+  }
   return 'text-slate-500 dark:text-slate-400';
 }

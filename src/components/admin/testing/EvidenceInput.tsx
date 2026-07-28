@@ -4,7 +4,7 @@
 
 import type { EntityRow } from '../api';
 import { Select, TextArea, TextInput } from '../ui';
-import { filterFeatureChecklistItems, privacyAllowsUnknown } from './capabilityGating';
+import { filterFeatureChecklistItems, privacyAllowsUnknown, PRIVACY_OPTIONAL_SLUGS } from './capabilityGating';
 import {
   pctFromRatio,
   ratioNumeratorLabel,
@@ -171,7 +171,9 @@ export function EvidenceInput({
               ]
             : [
                 { value: 'yes', label: 'Yes' },
-                { value: 'limited', label: 'Limited' },
+                PRIVACY_OPTIONAL_SLUGS.has(slug)
+                  ? { value: 'optional', label: 'Optional' }
+                  : { value: 'limited', label: 'Limited' },
                 { value: 'no', label: 'No' },
               ];
       if (

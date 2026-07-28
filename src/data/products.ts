@@ -180,7 +180,7 @@ export interface Product {
   categories: RatingCategory[];
   verdicts: VerdictItem[];
   expertOpinion: string;
-  pricingDisplay: { monthly: string; storeLabel: string };
+  pricingDisplay: { monthly: string; typicalMonthly?: string | null; storeLabel: string };
   videoReview?: VideoReview;
 }
 

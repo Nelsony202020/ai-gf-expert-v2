@@ -3,7 +3,7 @@
 // them as proof media, then one AI call classifies + extracts everything.
 
 import { useRef, useState } from 'react';
-import { api } from '../api';
+import { api, dataApi } from '../api';
 import { Button, ErrorNote, Icon } from '../ui';
 import type { PricingDraftClient } from './PricingReviewModal';
 
@@ -16,15 +16,19 @@ interface UploadedShot {
 export function PricingImportCard({
   productId,
   onDraft,
+  onGalleryUpdated,
 }: {
   productId: string;
   onDraft: (draft: PricingDraftClient) => void;
+  /** Called after screenshots are approved into the public gallery. */
+  onGalleryUpdated?: () => void;
 }) {
   const [shots, setShots] = useState<UploadedShot[]>([]);
   const [uploading, setUploading] = useState(0);
   const [extracting, setExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [addToGallery, setAddToGallery] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   async function addFiles(files: File[]) {
@@ -37,10 +41,19 @@ export function PricingImportCard({
         const form = new FormData();
         form.set('file', file);
         form.set('adult', '0');
-        form.set('role', 'proof');
+        form.set('role', addToGallery ? 'gallery' : 'proof');
         form.set('altText', 'Pricing screenshot');
+        form.set('caption', 'Pricing proof');
         form.set('productId', productId);
         const created = await api.upload<{ id: string; url?: string }>('/api/admin/media/upload', form);
+        if (addToGallery) {
+          await dataApi.update('media', created.id, {
+            approved: true,
+            role: 'gallery',
+            caption: 'Pricing proof',
+          });
+          onGalleryUpdated?.();
+        }
         setShots((prev) => [
           ...prev,
           { mediaId: created.id, url: created.url ?? URL.createObjectURL(file), name: file.name },
@@ -110,6 +123,15 @@ export function PricingImportCard({
           </button>
           .
         </p>
+        <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+          <input
+            type="checkbox"
+            checked={addToGallery}
+            onChange={(e) => setAddToGallery(e.target.checked)}
+            className="rounded border-slate-300"
+          />
+          Also add screenshots to the media gallery as pricing proof
+        </label>
         <input
           ref={fileInput}
           type="file"

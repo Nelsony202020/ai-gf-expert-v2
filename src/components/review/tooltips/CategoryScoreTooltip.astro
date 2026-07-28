@@ -5,6 +5,7 @@ import { getScoreChipClass, fmtScore } from '../../../lib/scores';
 import { buildAllScoreBins } from '../../../lib/score-distribution';
 import TooltipActionLinks from './TooltipActionLinks.astro';
 import InlineTestLink from './InlineTestLink.astro';
+import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
 import { getCategoryBrandIcon, getCategoryBrandIconLight } from '../../../lib/category-brand-icons';
 import BrandIcon from '../../ui/BrandIcon.astro';
@@ -12,6 +13,7 @@ import InfoIcon from '../../ui/InfoIcon.astro';
 
 interface Props {
   category: RatingCategory;
+  brandName?: string;
   compact?: boolean;
   methodologyOnly?: boolean;
   /** Roundup compare table — site category average only, no single-app score */
@@ -26,6 +28,7 @@ interface Props {
 
 const {
   category,
+  brandName,
   compact = false,
   methodologyOnly = false,
   compareAverageOnly = false,
@@ -72,7 +75,7 @@ const useDarkBrandIconOnly = category.key === 'customization' || category.key ==
 
 <template id={`tooltip-${tooltipId}`}>
   <div class={`ratings-tooltip-panel ${compact ? 'ratings-tooltip-panel--compact ratings-tooltip-panel--category' : ''}${compareAverageOnly || compareTableOnly ? ' ratings-tooltip-panel--compare-avg' : ''}`}>
-    <div class="ratings-tooltip-panel__header">
+    <div class={`ratings-tooltip-panel__header${compact ? ' ratings-tooltip-panel__header--compact' : ''}`}>
       <div class="ratings-tooltip-panel__header-grid">
         <div class="ratings-tooltip-panel__what-block min-w-0">
           <p class="ratings-tooltip-panel__section-title">What it is</p>
@@ -150,7 +153,79 @@ const useDarkBrandIconOnly = category.key === 'customization' || category.key ==
     </div>
 
     {
-      !compareTableOnly && (
+      !compareTableOnly && compact && !compareAverageOnly && (
+        <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
+          <div class="ratings-tooltip-panel__split">
+            <div class="ratings-tooltip-panel__split-col">
+              <p class="ratings-tooltip-panel__section-title">Where this sits</p>
+              <RatingHierarchyPipeline
+                highlight="category"
+                brandName={brandName}
+                categoryName={category.name}
+                showTitle={false}
+              />
+            </div>
+            <div class="ratings-tooltip-panel__split-col">
+              <p class="ratings-tooltip-panel__section-title">Subscores</p>
+              <div class="rt-comp-list rt-comp-list--dense">
+                {
+                  category.subscores.map((sub) => {
+                    const chip = getScoreChipClass(sub.score);
+                    return (
+                      <div class="rt-comp-row rt-comp-row--inline">
+                        <div class="rt-comp-row__main">
+                          <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(sub.score)}</span>
+                          {
+                            inlineTestLinks ? (
+                              <InlineTestLink
+                                categoryKey={category.key}
+                                subscoreName={sub.name}
+                                class="rt-comp-name rt-comp-name--truncate"
+                              >
+                                {sub.name}
+                              </InlineTestLink>
+                            ) : (
+                              <>
+                                <InlineTestLink
+                                  categoryKey={category.key}
+                                  subscoreName={sub.name}
+                                  class="rt-comp-name rt-comp-name--truncate"
+                                >
+                                  {sub.name}
+                                </InlineTestLink>
+                                {
+                                  !linksMethodologyOnly && (
+                                    <TooltipActionLinks
+                                      categoryKey={category.key}
+                                      subscoreName={sub.name}
+                                      compact
+                                      resultsOnly
+                                    />
+                                  )
+                                }
+                              </>
+                            )
+                          }
+                        </div>
+                      </div>
+                    );
+                  })
+                }
+              </div>
+            </div>
+          </div>
+          {!compareAverageOnly && (
+            <div class="ratings-tooltip-panel__distribution">
+              <p class="ratings-tooltip-panel__section-title">Score distribution</p>
+              <ScoreDistributionChart bins={bins} />
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    {
+      !compareTableOnly && !compact && (
         <div class="ratings-tooltip-panel__body">
           {
             !compareAverageOnly && (

@@ -106,7 +106,6 @@ async function syncPricingEvidence(
                 notApplicable: false,
                 isUnknown: false,
                 testDate: now,
-                createdAt: now,
                 updatedAt: now,
               })
               .link({ testRun: testRunId, evidenceDefinition: def.id, product: productId }),
@@ -168,6 +167,7 @@ export async function calculateRun(testRunId: string): Promise<{
   const subscores = (mv.categories ?? []).flatMap((c: any) =>
     (c.subscores ?? [])
       .filter((s: any) => s.active)
+      .sort((a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
       .map((s: any) => ({
         slug: s.slug,
         name: s.name,
@@ -178,43 +178,49 @@ export async function calculateRun(testRunId: string): Promise<{
 
   const productFields = (run.product ?? {}) as Record<string, unknown>;
 
-  const evidence: EvidenceInput[] = (mv.categories ?? []).flatMap((c: any) =>
-    (c.subscores ?? []).flatMap((s: any) =>
-      (s.evidenceDefinitions ?? [])
-        .filter((d: any) => d.active)
-        .map((d: any) => {
-          const result = resultByDef.get(d.id);
-          const capabilityGated = !isEvidenceApplicable(c.slug, d, productFields);
-          return {
-            definitionId: d.id,
-            slug: d.slug,
-            name: d.name,
-            subscoreSlug: s.slug,
-            categorySlug: c.slug,
-            weight: d.weight,
-            required: d.required,
-            measurementType: d.measurementType,
-            scoringRule: d.scoringRule,
-            resultId: result?.id,
-            rawValue: result?.rawValue,
-            notApplicable:
-              result?.notApplicable ||
-              capabilityGated ||
-              (c.slug === 'images' &&
-                d.slug === 'editing-accuracy' &&
-                !isEditingAccuracyScoredForRun(resultBySlug)),
-            isUnknown: result?.isUnknown,
-            manualOverrideScore: result?.manualOverrideScore ?? undefined,
-            manualOverrideReason: result?.manualOverrideReason ?? undefined,
-            relatedAnswers: Object.fromEntries(
-              (s.evidenceDefinitions ?? [])
-                .filter((d: any) => d.active)
-                .map((d: any) => [d.slug, resultByDef.get(d.id)?.rawValue]),
-            ),
-          } satisfies EvidenceInput;
-        }),
-    ),
-  );
+  const evidence: EvidenceInput[] = (mv.categories ?? [])
+    .sort((a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+    .flatMap((c: any) =>
+      (c.subscores ?? [])
+        .filter((s: any) => s.active)
+        .sort((a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+        .flatMap((s: any) =>
+          (s.evidenceDefinitions ?? [])
+            .filter((d: any) => d.active)
+            .sort((a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+            .map((d: any) => {
+              const result = resultByDef.get(d.id);
+              const capabilityGated = !isEvidenceApplicable(c.slug, d, productFields);
+              return {
+                definitionId: d.id,
+                slug: d.slug,
+                name: d.name,
+                subscoreSlug: s.slug,
+                categorySlug: c.slug,
+                weight: d.weight,
+                required: d.required,
+                measurementType: d.measurementType,
+                scoringRule: d.scoringRule,
+                resultId: result?.id,
+                rawValue: result?.rawValue,
+                notApplicable:
+                  result?.notApplicable ||
+                  capabilityGated ||
+                  (c.slug === 'images' &&
+                    d.slug === 'editing-accuracy' &&
+                    !isEditingAccuracyScoredForRun(resultBySlug)),
+                isUnknown: result?.isUnknown,
+                manualOverrideScore: result?.manualOverrideScore ?? undefined,
+                manualOverrideReason: result?.manualOverrideReason ?? undefined,
+                relatedAnswers: Object.fromEntries(
+                  (s.evidenceDefinitions ?? [])
+                    .filter((d: any) => d.active)
+                    .map((d: any) => [d.slug, resultByDef.get(d.id)?.rawValue]),
+                ),
+              } satisfies EvidenceInput;
+            }),
+        ),
+    );
 
   const tree = computeScores(categories, subscores, evidence);
 
@@ -262,7 +268,19 @@ export async function publishRun(testRunId: string, identity: AdminIdentity) {
   const db = getDb();
   const productId = run.product!.id;
   const mvVersion = run.methodologyVersion!.version;
+  const mv = run.methodologyVersion!;
   const now = Date.now();
+
+  const catOrder = new Map<string, number>();
+  const subOrder = new Map<string, number>();
+  const subNames = new Map<string, string>();
+  for (const c of mv.categories ?? []) {
+    catOrder.set(String(c.slug), Number(c.displayOrder ?? 0));
+    for (const s of c.subscores ?? []) {
+      subOrder.set(String(s.slug), Number(s.displayOrder ?? 0));
+      subNames.set(String(s.slug), String(s.name ?? s.slug));
+    }
+  }
 
   // Find currently published run for this product (to supersede).
   const { testRuns: published } = await db.query({
@@ -276,6 +294,14 @@ export async function publishRun(testRunId: string, identity: AdminIdentity) {
   );
 
   const chunks: any[] = [];
+
+  // Republish-safe: replace prior snapshots for this run.
+  const { scoreSnapshots: existingSnaps } = await db.query({
+    scoreSnapshots: { $: { where: { 'testRun.id': testRunId } } },
+  });
+  for (const s of existingSnaps) {
+    chunks.push(db.tx.scoreSnapshots[s.id].delete());
+  }
 
   // Snapshots
   const snapshotIds: string[] = [];
@@ -301,10 +327,16 @@ export async function publishRun(testRunId: string, identity: AdminIdentity) {
 
   snapshot('overall', 'overall', tree.overall);
   for (const cat of tree.categories) {
-    if (cat.score !== null) snapshot('category', cat.slug, cat.score, cat.weight);
+    if (cat.score !== null) {
+      snapshot('category', cat.slug, cat.score, cat.weight, undefined, {
+        displayOrder: catOrder.get(cat.slug) ?? 0,
+      });
+    }
     for (const sub of cat.subscores) {
       if (sub.score !== null) {
         snapshot('subscore', sub.slug, sub.score, sub.weight, cat.slug, {
+          displayOrder: subOrder.get(sub.slug) ?? 0,
+          name: subNames.get(sub.slug) ?? sub.name,
           evidence: sub.evidence.map((e) => ({
             slug: e.slug,
             score: e.normalizedScore,

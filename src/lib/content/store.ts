@@ -24,12 +24,34 @@ import type {
   RatingChangelogEntry,
   VerdictItem,
 } from '../../data/products';
+import { getSubscoreDescription } from '../../data/subscore-descriptions';
 import { getDb, isDbConfigured } from '../db/server';
 import { env } from '../env';
-import { lowestMonthlyPrice, lowestPlainMonthlyPrice } from '../pricing/calc';
+import { lowestPlainMonthlyPrice } from '../pricing/calc';
+import { resolveMediaUrl } from '../media/url';
+
+/** Fixed public category order — matches methodology template. */
+const CATEGORY_DISPLAY_ORDER = [
+  'characters',
+  'customization',
+  'chat',
+  'chat-features',
+  'images',
+  'video',
+  'privacy',
+  'pricing',
+] as const;
+
+function categorySortKey(slug: string, detail?: { displayOrder?: number }): number {
+  const fromDetail = detail?.displayOrder;
+  if (fromDetail != null && !Number.isNaN(fromDetail)) return fromDetail;
+  const idx = CATEGORY_DISPLAY_ORDER.indexOf(slug as (typeof CATEGORY_DISPLAY_ORDER)[number]);
+  return idx >= 0 ? idx : 999;
+}
 import { formatAudienceList, splitLegacyLines } from '../cms/format';
 import { appendReferralSuffix } from '../characters/destinationUrl';
 import { affiliateRel, DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
+import { buildGroupedContributors } from '../ratings/groupContributors';
 
 export function useDbContent(): boolean {
   const flag = env('USE_DB_CONTENT') ?? '';
@@ -80,31 +102,51 @@ function mapProduct(
 
   // Categories from snapshots; descriptions/weights come with the snapshot
   // detail, contributor rows from evidence results.
-  const catSnapshots = snapshots.filter((s) => s.kind === 'category');
+  const catSnapshots = snapshots
+    .filter((s) => s.kind === 'category')
+    .sort(
+      (a, b) =>
+        categorySortKey(String(a.refSlug), a.detail) - categorySortKey(String(b.refSlug), b.detail),
+    );
   const subSnapshots = snapshots.filter((s) => s.kind === 'subscore');
 
   const categories: RatingCategory[] = catSnapshots.map((cat) => {
+    const fileCat = fileFallback?.categories.find((c) => c.key === cat.refSlug);
     const subs: Subscore[] = subSnapshots
       .filter((s) => s.parentSlug === cat.refSlug)
+      .sort(
+        (a, b) =>
+          Number(a.detail?.displayOrder ?? 999) - Number(b.detail?.displayOrder ?? 999),
+      )
       .map((sub) => {
         const contributorSlugs: string[] = (sub.detail?.evidence ?? []).map((e: any) => e.slug);
-        const contributors: DataRow[] = evidenceResults
-          .filter((r) => contributorSlugs.includes(r.evidenceDefinition?.slug))
-          .map((r) => ({
-            label: r.evidenceDefinition?.name ?? r.evidenceDefinition?.slug ?? '',
-            value: r.publicResult ?? '—',
-            internalScore: r.normalizedScore ?? undefined,
-          }));
+        const resultBySlug = new Map<string, any>();
+        for (const r of evidenceResults) {
+          const slug = r.evidenceDefinition?.slug;
+          if (slug) resultBySlug.set(String(slug), r);
+        }
+        const subName = sub.detail?.name ?? titleCase(sub.refSlug);
+        const fileSub = fileCat?.subscores.find(
+          (s) => s.name === subName,
+        );
+        const contributors = buildGroupedContributors(
+          String(cat.refSlug),
+          String(sub.refSlug),
+          contributorSlugs,
+          resultBySlug,
+          fileSub?.contributors ?? [],
+        );
         return {
-          name: titleCase(sub.refSlug),
+          name: subName,
           score: sub.score,
           weight: sub.weight ?? 33,
-          description: '',
+          description:
+            fileSub?.description ||
+            getSubscoreDescription(String(cat.refSlug), subName),
           contributors,
         };
       });
 
-    const fileCat = fileFallback?.categories.find((c) => c.key === cat.refSlug);
     return {
       key: cat.refSlug,
       name: fileCat?.name ?? titleCase(cat.refSlug),
@@ -137,17 +179,14 @@ function mapProduct(
 
   const activeLink = (dbProduct.affiliateLinks ?? []).find((l: any) => l.active);
   const plans = (dbProduct.subscriptionPlans ?? []).filter((p: any) => p.active);
-  // Cheapest plain-monthly billing option across tiers (billingOptions-aware
-  // with legacy flat-field fallback); yearly-only catalogs fall back to the
-  // monthly equivalent so they are no longer invisible.
+  // Cheapest true 1-month billing option across tiers (never annual÷12).
   const plainMonthly = lowestPlainMonthlyPrice(plans);
-  const monthlyEquiv = lowestMonthlyPrice(plans);
   const monthlyPriceLabel =
-    plainMonthly !== null
-      ? `$${plainMonthly.toFixed(2)}/mo`
-      : monthlyEquiv !== null
-        ? `$${monthlyEquiv.toFixed(2)}/mo eq.`
-        : null;
+    plainMonthly !== null ? `$${plainMonthly.toFixed(2)}/mo` : null;
+  const typicalMonthly =
+    dbProduct.typicalMonthlyCost != null && Number.isFinite(Number(dbProduct.typicalMonthlyCost))
+      ? `$${Number(dbProduct.typicalMonthlyCost).toFixed(2)}/mo`
+      : null;
 
   const safetyAudit: SafetyItem[] = fileFallback?.safetyAudit ?? deriveSafetyAudit(dbProduct);
   const featureSpecs: FeatureSpec[] =
@@ -230,6 +269,7 @@ function mapProduct(
     expertOpinion: dbProduct.expertOpinion ?? review?.intro ?? fileFallback?.expertOpinion ?? '',
     pricingDisplay: {
       monthly: monthlyPriceLabel ?? fileFallback?.pricingDisplay.monthly ?? '—',
+      typicalMonthly: typicalMonthly ?? fileFallback?.pricingDisplay.typicalMonthly ?? null,
       storeLabel: fileFallback?.pricingDisplay.storeLabel ?? 'Visit site',
     },
     videoReview: dbProduct.youtubeReviewUrl
@@ -327,9 +367,10 @@ function deriveOverview(p: any, monthlyPriceLabel: string | null): Product['over
         // Ordered active story slides from the structured entity; the ring
         // stays empty (viewer disabled) until slides exist.
         const slides: string[] = (c.storySlides ?? [])
-          .filter((s: any) => s.active && !s.deletedAt && s.media?.url)
+          .filter((s: any) => s.active && !s.deletedAt)
           .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-          .map((s: any) => s.media.url);
+          .map((s: any) => resolveMediaUrl(s.media))
+          .filter(Boolean);
         const activeProductLink = (p.affiliateLinks ?? []).find((l: any) => l.active);
         const destinationWithSuffix = c.destinationUrl
           ? appendReferralSuffix(c.destinationUrl, p.referralSuffix)
@@ -344,7 +385,7 @@ function deriveOverview(p: any, monthlyPriceLabel: string | null): Product['over
         return {
           name: c.name,
           archetype: (c.personalityTags ?? [])[0] ?? '',
-          avatar: c.image?.url ?? '',
+          avatar: resolveMediaUrl(c.image) || slides[0] || '',
           storySlides: slides,
           profileUrl: cta,
           profileRel: DEFAULT_AFFILIATE_REL,
@@ -501,7 +542,7 @@ export async function loadProductsWithDb(fileProducts: Product[]): Promise<Produ
         featuredImage: {},
         subscriptionPlans: {},
         affiliateLinks: {},
-        characters: { image: {}, affiliateLink: {}, storySlides: { media: {} } },
+        characters: { image: { file: {} }, affiliateLink: {}, storySlides: { media: { file: {} } } },
         scoreSnapshots: { testRun: {} },
         evidenceResults: { testRun: {}, evidenceDefinition: {} },
       },
@@ -605,13 +646,10 @@ export async function overlayExplorerAppsWithDb<
 
       const plans = (dbProduct.subscriptionPlans ?? []).filter((plan: any) => plan.active);
       const plainMonthly = lowestPlainMonthlyPrice(plans);
-      const monthlyEquiv = lowestMonthlyPrice(plans);
       const priceLabel =
         plainMonthly !== null
           ? `From $${plainMonthly.toFixed(2)} / month`
-          : monthlyEquiv !== null
-            ? `From $${monthlyEquiv.toFixed(2)} / month eq.`
-            : app.priceLabel;
+          : app.priceLabel;
 
       const lastVerifiedMs = plans.reduce((latest: number, plan: any) => {
         const ms = Number(plan.lastVerifiedAt ?? 0);
@@ -645,7 +683,7 @@ const PREVIEW_PRODUCT_QUERY = {
   featuredImage: {},
   subscriptionPlans: {},
   affiliateLinks: {},
-  characters: { image: {}, affiliateLink: {}, storySlides: { media: {} } },
+  characters: { image: { file: {} }, affiliateLink: {}, storySlides: { media: { file: {} } } },
   scoreSnapshots: { testRun: {} },
   evidenceResults: { testRun: {}, evidenceDefinition: {} },
 };
@@ -675,7 +713,7 @@ function productFromRoundupPick(pick: {
       name: s.name,
       score: s.score,
       weight: 100,
-      description: '',
+      description: getSubscoreDescription(c.key, s.name),
       contributors: [],
     })),
     evidence: [],

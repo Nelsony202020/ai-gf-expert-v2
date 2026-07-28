@@ -55,6 +55,32 @@ export interface TabCompletion {
   blocked?: boolean;
 }
 
+/** Visual status for tab nav indicators (header + sidebar). */
+export type TabVisualStatus = 'complete' | 'attention' | 'not_started' | 'blocked';
+
+/** Tabs where recommended checks still matter for the yellow indicator. */
+const RECOMMENDED_TRACKED_TABS = new Set<WorkspaceTabId>(['pricing', 'media', 'review', 'seo']);
+
+export function tabVisualStatus(tab: TabCompletion): TabVisualStatus {
+  if (tab.id === 'publish') {
+    if (tab.pct === 100) return 'complete';
+    if (tab.blocked) return 'blocked';
+    return 'not_started';
+  }
+  if (tab.pct === null) return 'not_started';
+  if (tab.pct === 100) return 'complete';
+  if (tab.missingRequired.length > 0) return 'attention';
+  if (tab.filled === 0) {
+    if (tab.id === 'pricing') return 'attention';
+    return 'not_started';
+  }
+  if (RECOMMENDED_TRACKED_TABS.has(tab.id) && tab.missingRecommended.length > 0) {
+    return 'attention';
+  }
+  // Required complete — green even when optional/recommended items remain (setup, verdict, …).
+  return 'complete';
+}
+
 export interface ProductCompletion {
   overallPct: number;
   missingRequired: MissingItem[];
