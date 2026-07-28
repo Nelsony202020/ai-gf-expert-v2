@@ -1024,6 +1024,14 @@
   transform: translateX(0);
 }
 
+@media (max-width: 640px) {
+  .draft-drawer-panel {
+    width: 100%;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+}
+
 .draft-drawer-panel__header {
   display: flex;
   align-items: flex-start;

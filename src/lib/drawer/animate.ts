@@ -32,7 +32,8 @@ export function closeAnimatedDrawer(options: AnimatedDrawerCloseOptions): void {
   const openPanels = panelList.filter((panel) => !panel.hidden && panel.dataset.open === 'true');
   const backdropOpen = backdrop?.dataset.open === 'true';
 
-  if (openPanels.length === 0 && !backdropOpen && root?.hidden !== false) {
+  if (openPanels.length === 0 && !backdropOpen) {
+    if (root && !root.hidden) root.hidden = true;
     onComplete();
     return;
   }

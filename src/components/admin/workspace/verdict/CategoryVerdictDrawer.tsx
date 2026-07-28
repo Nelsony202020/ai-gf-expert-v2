@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { DRAWER_UNMOUNT_MS } from '../../../../lib/drawer/animate';
 import { ConfirmDialog } from '../../ConfirmDialog';
 import { Button, Field, Icon, TextArea, TextInput } from '../../ui';
 import { CategoryEvidenceList, CategoryEvidencePicker } from './CategoryEvidencePicker';
@@ -173,7 +174,7 @@ export function CategoryVerdictDrawer({
       onClose();
       const row = document.querySelector<HTMLElement>(`[data-category-slug="${returnFocusSlug.current}"]`);
       row?.focus();
-    }, 220);
+    }, DRAWER_UNMOUNT_MS);
   }
 
   async function saveDraft(): Promise<boolean> {

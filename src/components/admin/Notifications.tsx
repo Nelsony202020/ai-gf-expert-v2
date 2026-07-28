@@ -3,6 +3,7 @@
 // read/dismiss state is per-admin. Clicking a notification marks it read and
 // deep-links to the screen where the issue can be fixed.
 
+import { DRAWER_UNMOUNT_MS } from '../../lib/drawer/animate';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from './api';
@@ -79,7 +80,7 @@ export function NotificationBell({ compact = false }: { compact?: boolean }) {
     window.setTimeout(() => {
       setMounted(false);
       void refreshCount();
-    }, 280);
+    }, DRAWER_UNMOUNT_MS);
   }
 
   return (
@@ -195,7 +196,7 @@ function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: (
         onClick={onClose}
       />
       <aside
-        className={`absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-xl transition-transform duration-300 ease-out dark:border-slate-800 dark:bg-slate-900 ${
+        className={`absolute inset-y-0 right-0 flex w-full max-w-md flex-col overflow-hidden rounded-l-[10px] border-l border-slate-200 bg-white shadow-xl transition-transform duration-300 ease-out dark:border-slate-800 dark:bg-slate-900 ${
           visible ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

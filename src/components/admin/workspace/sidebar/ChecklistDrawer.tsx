@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { DRAWER_UNMOUNT_MS } from '../../../../lib/drawer/animate';
 import { api } from '../../api';
 import { Button, Icon } from '../../ui';
 import {
@@ -147,7 +148,7 @@ export function ChecklistDrawer({
 
   function handleClose() {
     setOpen(false);
-    window.setTimeout(onClose, 220);
+    window.setTimeout(onClose, DRAWER_UNMOUNT_MS);
   }
 
   const blockers = [
@@ -326,7 +327,7 @@ export function BlockersDrawer({
 
   function handleClose() {
     setOpen(false);
-    window.setTimeout(onClose, 220);
+    window.setTimeout(onClose, DRAWER_UNMOUNT_MS);
   }
 
   const blockers = [

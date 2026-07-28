@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { EntityRow } from '../api';
 import { Button, Icon, TextArea } from '../ui';
 import { DRAWER_UNMOUNT_MS } from '../../../lib/drawer/animate';
+import { QuestionLabel } from './QuestionLabel';
 
 export function NoteDrawer({
   def,

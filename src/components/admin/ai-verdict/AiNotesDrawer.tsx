@@ -4,6 +4,7 @@ import { useToast } from '../Toast';
 import type { AiVerdictNotesDto } from '../../../lib/ai-verdict/notesSchema';
 import { FIELD_LABELS, normalizeListField, normalizeScalarField } from '../../../lib/ai-verdict/notesSchema';
 import type { KeyFinding } from '../../../lib/ai-verdict/suggestionSchema';
+import { DRAWER_UNMOUNT_MS } from '../../../lib/drawer/animate';
 import {
   applyListInsert,
   applyTextInsert,
