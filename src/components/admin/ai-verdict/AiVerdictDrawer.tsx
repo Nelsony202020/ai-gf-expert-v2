@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button, ErrorNote, Icon, Spinner } from '../ui';
 import type { AiVerdictScope } from '../../../lib/ai-verdict/config';
 import type { AiSuggestionOutput } from '../../../lib/ai-verdict/suggestionSchema';
+import { DRAWER_UNMOUNT_MS } from '../../../lib/drawer/animate';
 import { AiKeyFindingsList } from './AiKeyFindingsList';
 import {
   AiSuggestionField,
@@ -58,7 +59,7 @@ export function AiVerdictDrawer({
       return () => cancelAnimationFrame(t);
     }
     setAnimOpen(false);
-    const t = window.setTimeout(() => setVisible(false), 220);
+    const t = window.setTimeout(() => setVisible(false), DRAWER_UNMOUNT_MS);
     return () => window.clearTimeout(t);
   }, [open]);
 
@@ -72,7 +73,7 @@ export function AiVerdictDrawer({
 
   function handleClose() {
     setAnimOpen(false);
-    window.setTimeout(onClose, 220);
+    window.setTimeout(onClose, DRAWER_UNMOUNT_MS);
   }
 
   if (!visible) return null;

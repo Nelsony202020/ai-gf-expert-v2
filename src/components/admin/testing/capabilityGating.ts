@@ -14,6 +14,7 @@ export const PRIVACY_OPTIONAL_SLUGS = new Set(['data-sharing', 'advertising', 'r
 
 /** Privacy policy questions where Unknown excludes the answer from scoring. */
 export const PRIVACY_UNKNOWN_SLUGS = new Set([
+  'training',
   'human-review',
   'data-sharing',
   'advertising',

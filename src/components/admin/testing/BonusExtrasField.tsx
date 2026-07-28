@@ -1,10 +1,7 @@
-// Bonus features: AI Cam Models + bonus gate + more bonus features with proof.
+// Bonus features: AI Cam Models + bonus gate + more bonus features (proof via paperclip drawer).
 
-import type { EntityRow } from '../api';
-import { TextInput } from '../ui';
+import { Icon, TextInput } from '../ui';
 import type { RawValue } from './EvidenceInput';
-import { EvidenceAttachments } from './EvidenceAttachments';
-import { bonusExtraCaption, LIVE_CAM_PROOF_TAG } from './proofTags';
 
 export type BonusExtraRow = { id: string; name: string; note: string };
 
@@ -143,32 +140,20 @@ function YesNoToggle({
 
 export function BonusFeaturesField({
   disabled,
-  def,
-  liveCamDef,
   listRaw,
   liveRaw,
-  listResultId,
-  liveCamResultId,
-  productId,
-  ensureListResultId,
-  ensureLiveCamResultId,
   onListChange,
   onLiveChange,
-  onUploaded,
+  onOpenProof,
+  rowProofCounts,
 }: {
   disabled?: boolean;
-  def: EntityRow;
-  liveCamDef?: EntityRow;
   listRaw: RawValue | undefined;
   liveRaw: RawValue | undefined;
-  listResultId?: string;
-  liveCamResultId?: string;
-  productId?: string;
-  ensureListResultId: () => Promise<string>;
-  ensureLiveCamResultId: () => Promise<string>;
   onListChange: (v: RawValue | undefined) => void;
   onLiveChange: (v: RawValue | undefined) => void;
-  onUploaded?: () => void;
+  onOpenProof?: () => void;
+  rowProofCounts?: Map<string, number>;
 }) {
   const parsed = parseBonusFeaturesDraft(listRaw, liveRaw);
 
@@ -203,103 +188,86 @@ export function BonusFeaturesField({
   const rows = showMore ? (parsed.extras.length > 0 ? parsed.extras : [emptyRow()]) : [];
 
   return (
-    <div className="testing-input-wide w-full min-w-0 max-w-3xl space-y-5">
-      <section className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-700 dark:bg-slate-900/30">
-        <YesNoToggle
-          name="ai-cam-models"
-          label="AI Cam Models"
-          value={parsed.aiCamModels}
-          disabled={disabled}
-          onChange={setAiCamModels}
-        />
-        {liveCamDef && (
-          <EvidenceAttachments
-            def={liveCamDef}
-            resultId={liveCamResultId ?? null}
-            productId={productId}
-            ensureResultId={ensureLiveCamResultId}
-            disabled={disabled}
-            captionTag={LIVE_CAM_PROOF_TAG}
-            altTextPrefix="AI Cam Models"
-            embedded
-            onUploaded={onUploaded}
-          />
-        )}
-      </section>
+    <div className="testing-input-wide w-full min-w-0 max-w-3xl space-y-4">
+      <YesNoToggle
+        name="ai-cam-models"
+        label="AI Cam Models"
+        value={parsed.aiCamModels}
+        disabled={disabled}
+        onChange={setAiCamModels}
+      />
 
-      <section className="space-y-3">
-        <YesNoToggle
-          name="bonus-features"
-          label="Bonus features"
-          value={parsed.hasBonus}
-          disabled={disabled}
-          onChange={setHasBonus}
-        />
+      <YesNoToggle
+        name="bonus-features"
+        label="Bonus features"
+        value={parsed.hasBonus}
+        disabled={disabled}
+        onChange={setHasBonus}
+      />
 
-        {showMore && (
-          <div className="space-y-3 border-t border-slate-200 pt-3 dark:border-slate-700">
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">More bonus features</p>
+      {showMore && (
+        <div className="space-y-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+          <p className="text-xs font-medium text-slate-600 dark:text-slate-300">More bonus features</p>
 
-            {rows.map((row, idx) => (
+          {rows.map((row, idx) => {
+            const proofN = rowProofCounts?.get(row.id) ?? 0;
+            return (
               <div
                 key={row.id}
-                className="space-y-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/40"
+                className="flex flex-wrap items-start gap-2 rounded-md border border-slate-200 bg-white px-2 py-2 dark:border-slate-700 dark:bg-slate-900/40"
               >
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">
-                    Name
-                    <TextInput
-                      disabled={disabled}
-                      placeholder="Feature name"
-                      value={row.name}
-                      className="mt-1 text-sm"
-                      onChange={(e) => patchRow(idx, { name: e.target.value })}
-                      onClick={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => e.stopPropagation()}
-                    />
-                  </label>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">
-                    Description
-                    <TextInput
-                      disabled={disabled}
-                      placeholder="What does this feature do?"
-                      value={row.note}
-                      className="mt-1 text-sm"
-                      onChange={(e) => patchRow(idx, { note: e.target.value })}
-                      onClick={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => e.stopPropagation()}
-                    />
-                  </label>
-                </div>
-
-                <EvidenceAttachments
-                  def={def}
-                  resultId={listResultId ?? null}
-                  productId={productId}
-                  ensureResultId={ensureListResultId}
+                <TextInput
                   disabled={disabled}
-                  captionTag={bonusExtraCaption(row.id)}
-                  altTextPrefix={row.name.trim() || `Bonus feature ${idx + 1}`}
-                  embedded
-                  onUploaded={onUploaded}
+                  placeholder="Feature name"
+                  value={row.name}
+                  className="min-w-[8rem] flex-1 text-sm"
+                  onChange={(e) => patchRow(idx, { name: e.target.value })}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
                 />
+                <TextInput
+                  disabled={disabled}
+                  placeholder="Description"
+                  value={row.note}
+                  className="min-w-[10rem] flex-[2] text-sm"
+                  onChange={(e) => patchRow(idx, { note: e.target.value })}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                />
+                <button
+                  type="button"
+                  className={`inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-1 text-xs font-medium ${
+                    proofN > 0
+                      ? 'testing-link hover:bg-[var(--testing-accent-soft)]'
+                      : 'text-slate-400 hover:bg-slate-100 hover:text-pink-500 dark:hover:bg-slate-800'
+                  }`}
+                  disabled={disabled}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenProof?.();
+                  }}
+                  title="Upload proof"
+                >
+                  <Icon name="attach_file" className="!text-[15px]" />
+                  {proofN > 0 ? proofN : ''}
+                </button>
               </div>
-            ))}
+            );
+          })}
 
-            <button
-              type="button"
-              disabled={disabled}
-              className="testing-link text-xs font-medium"
-              onClick={(e) => {
-                e.stopPropagation();
-                addRow();
-              }}
-            >
-              + Add more
-            </button>
-          </div>
-        )}
-      </section>
+          <button
+            type="button"
+            disabled={disabled}
+            className="testing-link text-xs font-medium"
+            onClick={(e) => {
+              e.stopPropagation();
+              addRow();
+            }}
+          >
+            + Add feature
+          </button>
+        </div>
+      )}
     </div>
   );
 }

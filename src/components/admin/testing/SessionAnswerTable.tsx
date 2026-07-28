@@ -161,7 +161,14 @@ export function SessionAnswerTable({
             const isActive = activeDefId === def.id;
             const isHighlighted = highlightDefId === def.id;
             const isDropTarget = dropTargetDefId === def.id;
-            const proofN = result?.id ? (proofCounts.get(result.id) ?? 0) : 0;
+            const proofN = (() => {
+              let n = result?.id ? (proofCounts.get(result.id) ?? 0) : 0;
+              if (String(def.slug) === 'platform-extras-list' && liveCamDef) {
+                const liveResult = resultByDef.get(liveCamDef.id);
+                if (liveResult?.id) n += proofCounts.get(liveResult.id) ?? 0;
+              }
+              return n;
+            })();
 
             return (
               <tr
@@ -192,7 +199,11 @@ export function SessionAnswerTable({
                 }}
               >
                 <td className="px-2 py-2 align-top">
-                  <span className={statusDotClass(state)} title={stateLabel(state)} />
+                  {String(def.slug) !== 'platform-extras-list' ? (
+                    <span className={statusDotClass(state)} title={stateLabel(state)} />
+                  ) : (
+                    <span className="sr-only">{stateLabel(state)}</span>
+                  )}
                 </td>
                 <td className="px-3 py-2 align-top">
                   <QuestionLabel def={def} categorySlug={categorySlug} required={Boolean(def.required)} />
@@ -248,23 +259,14 @@ export function SessionAnswerTable({
                           liveDraft.raw && 'status' in liveDraft.raw && liveDraft.raw.status === 'na'
                             ? undefined
                             : liveDraft.raw;
-                        const result = resultByDef.get(def.id);
-                        const liveCamResult = resultByDef.get(liveCamDef.id);
                         return (
                           <BonusFeaturesField
                             disabled={busy}
-                            def={def}
-                            liveCamDef={liveCamDef}
                             listRaw={listRaw}
                             liveRaw={liveRaw}
-                            listResultId={result?.id}
-                            liveCamResultId={liveCamResult?.id}
-                            productId={productId}
-                            ensureListResultId={() => ensureResultForDef(def.id)}
-                            ensureLiveCamResultId={() => ensureResultForDef(liveCamDef.id)}
                             onListChange={(v) => onPatch(def.id, { raw: v })}
                             onLiveChange={onPatchLiveCam}
-                            onUploaded={onProofUploaded}
+                            onOpenProof={() => onOpenProof(def.id)}
                           />
                         );
                       })()
@@ -349,9 +351,12 @@ export function SessionAnswerTable({
                             : 'text-slate-400 hover:bg-slate-100 hover:text-pink-500 dark:hover:bg-slate-800'
                         }`}
                         onClick={() => onOpenNote(def.id)}
-                        title="Add internal note"
+                        title={draft.internalNotes.trim() ? 'Edit internal note' : 'Add internal note'}
                       >
-                        <Icon name="sticky_note_2" className="!text-[15px]" />
+                        <Icon
+                          name="sticky_note_2"
+                          className={`!text-[15px] ${draft.internalNotes.trim() ? 'testing-icon-accent' : ''}`}
+                        />
                       </button>
                     )}
                     <button

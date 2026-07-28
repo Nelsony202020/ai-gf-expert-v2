@@ -1,9 +1,9 @@
 // Right-side drawer for internal tester notes on an evidence row.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { EntityRow } from '../api';
 import { Button, Icon, TextArea } from '../ui';
-import { QuestionLabel } from './QuestionLabel';
+import { DRAWER_UNMOUNT_MS } from '../../../lib/drawer/animate';
 
 export function NoteDrawer({
   def,
@@ -16,10 +16,17 @@ export function NoteDrawer({
   categorySlug?: string;
   notes: string;
   onClose: () => void;
-  onSave: (notes: string) => void;
+  onSave: (notes: string) => void | Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(notes);
+  const [saving, setSaving] = useState(false);
+  const savedRef = useRef(false);
+  const draftRef = useRef(draft);
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
 
   useEffect(() => {
     const t = requestAnimationFrame(() => setOpen(true));
@@ -28,32 +35,54 @@ export function NoteDrawer({
 
   useEffect(() => {
     setDraft(notes);
+    savedRef.current = false;
   }, [notes, def.id]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') handleClose();
+      if (e.key === 'Escape') void persistAndClose();
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  function handleClose() {
+  async function persistAndClose() {
+    const trimmed = draftRef.current.trim();
+    const original = notes.trim();
+    const unchanged = trimmed === original;
+
+    if (savedRef.current || unchanged) {
+      setOpen(false);
+      window.setTimeout(onClose, DRAWER_UNMOUNT_MS);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await onSave(trimmed);
+      savedRef.current = true;
+    } finally {
+      setSaving(false);
+    }
     setOpen(false);
-    window.setTimeout(onClose, 220);
+    window.setTimeout(onClose, DRAWER_UNMOUNT_MS);
+  }
+
+  function handleClose() {
+    void persistAndClose();
   }
 
   return (
     <>
       <button
         type="button"
-        className="fixed inset-0 z-40 bg-black/20 transition-opacity"
+        className="fixed inset-0 z-40 bg-black/20 transition-opacity duration-300 ease-out"
         style={{ opacity: open ? 1 : 0 }}
         aria-label="Close note drawer"
         onClick={handleClose}
       />
       <aside
-        className={`fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-xl transition-transform dark:border-slate-700 dark:bg-slate-900 ${
+        className={`testing-proof-drawer fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-xl transition-transform duration-300 ease-out dark:border-slate-700 dark:bg-slate-900 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -78,19 +107,14 @@ export function NoteDrawer({
             placeholder="Tester notes (internal only — not shown on public pages)"
             onChange={(e) => setDraft(e.target.value)}
           />
-          <p className="text-xs text-slate-400">Saved with “Save all results” on this session.</p>
+          <p className="text-xs text-slate-400">Notes save automatically when you close this panel.</p>
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-200 px-4 py-3 dark:border-slate-700">
-          <Button variant="secondary" onClick={handleClose}>
-            Cancel
+          <Button variant="secondary" onClick={handleClose} disabled={saving}>
+            Close
           </Button>
-          <Button
-            onClick={() => {
-              onSave(draft.trim());
-              handleClose();
-            }}
-          >
-            Done
+          <Button onClick={handleClose} disabled={saving}>
+            {saving ? 'Saving…' : 'Done'}
           </Button>
         </div>
       </aside>

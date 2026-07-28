@@ -693,6 +693,14 @@ export const evidenceResultSchema = z.object({
   isUnknown: z.boolean().optional(),
   manualOverrideScore: z.number().min(0).max(10).optional(),
   manualOverrideReason: z.string().optional(),
+  proofLinks: z
+    .array(
+      z.object({
+        url: z.string().url().max(500),
+        label: z.string().max(200).optional(),
+      }),
+    )
+    .optional(),
 });
 
 export const rankingMetricSchema = z.object({

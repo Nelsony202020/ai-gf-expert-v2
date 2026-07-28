@@ -1,8 +1,10 @@
-// Proof-only panel: instructions + attachments. Uploads save immediately.
+// Proof-only panel: instructions + attachments + optional reference links. Uploads save immediately.
 
 import type { EntityRow } from '../api';
 import { EvidenceAttachments } from './EvidenceAttachments';
+import { EvidenceLinks } from './EvidenceLinks';
 import { testerHelpTooltip, testerInstructions } from './presentation';
+import { parseProofLinks } from './proofLinks';
 
 export function ProofPanel({
   def,
@@ -11,6 +13,9 @@ export function ProofPanel({
   ensureResultId,
   resultId,
   disabled,
+  showLinks,
+  proofLinks,
+  onUploaded,
 }: {
   def: EntityRow;
   categorySlug?: string;
@@ -18,6 +23,9 @@ export function ProofPanel({
   ensureResultId: () => Promise<string>;
   resultId: string | null;
   disabled?: boolean;
+  showLinks?: boolean;
+  proofLinks?: unknown;
+  onUploaded?: () => void;
 }) {
   const steps = testerInstructions(def);
   const hint = testerHelpTooltip(def, categorySlug);
@@ -43,7 +51,18 @@ export function ProofPanel({
         productId={productId}
         ensureResultId={ensureResultId}
         disabled={disabled}
+        onUploaded={onUploaded}
       />
+
+      {showLinks && (
+        <EvidenceLinks
+          resultId={resultId}
+          proofLinks={parseProofLinks(proofLinks)}
+          ensureResultId={ensureResultId}
+          disabled={disabled}
+          onChanged={onUploaded}
+        />
+      )}
     </div>
   );
 }

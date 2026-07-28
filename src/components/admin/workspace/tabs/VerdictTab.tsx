@@ -53,6 +53,13 @@ function splitLegacy(text: unknown): string[] {
     .filter(Boolean);
 }
 
+/** Raw list for editors — preserves in-progress empty rows and trailing spaces while typing. */
+function editorListField(value: unknown, legacy?: unknown): string[] {
+  if (Array.isArray(value)) return value.map((item) => String(item ?? ''));
+  if (legacy != null) return splitLegacy(legacy);
+  return [];
+}
+
 function wordCount(text: string): number {
   const t = text.trim();
   return t === '' ? 0 : t.split(/\s+/).length;
@@ -81,18 +88,17 @@ export function VerdictTab() {
 
   const categoryVerdicts = (fields.categoryVerdicts ?? {}) as Record<string, CategoryVerdict>;
 
-  const bestFor: string[] = useMemo(
-    () => normalizeListField(Array.isArray(fields.bestFor) ? fields.bestFor : splitLegacy(fields.recommendedFor)),
-    [fields.bestFor, fields.recommendedFor],
+  const bestForEditor = editorListField(
+    fields.bestFor,
+    !Array.isArray(fields.bestFor) ? fields.recommendedFor : undefined,
   );
+  const bestFor = useMemo(() => normalizeListField(bestForEditor), [bestForEditor]);
   const bestForIsLegacy = !Array.isArray(fields.bestFor) && bestFor.length > 0;
-  const notIdealFor: string[] = useMemo(
-    () =>
-      normalizeListField(
-        Array.isArray(fields.notIdealFor) ? fields.notIdealFor : splitLegacy(fields.notRecommendedFor),
-      ),
-    [fields.notIdealFor, fields.notRecommendedFor],
+  const notIdealEditor = editorListField(
+    fields.notIdealFor,
+    !Array.isArray(fields.notIdealFor) ? fields.notRecommendedFor : undefined,
   );
+  const notIdealFor = useMemo(() => normalizeListField(notIdealEditor), [notIdealEditor]);
   const notIdealIsLegacy = !Array.isArray(fields.notIdealFor) && notIdealFor.length > 0;
 
   const award: Award = (fields.award as Award | undefined) ??
@@ -101,8 +107,10 @@ export function VerdictTab() {
       : { kind: 'none' });
   const awardIsLegacy = !fields.award && Boolean(fields.bestForLabel);
 
-  const pros: string[] = useMemo(() => normalizeListField(fields.pros), [fields.pros]);
-  const cons: string[] = useMemo(() => normalizeListField(fields.cons), [fields.cons]);
+  const prosEditor = editorListField(fields.pros);
+  const consEditor = editorListField(fields.cons);
+  const pros = useMemo(() => normalizeListField(prosEditor), [prosEditor]);
+  const cons = useMemo(() => normalizeListField(consEditor), [consEditor]);
   const expertWords = wordCount(String(fields.expertOpinion ?? ''));
 
   const categorySlugs = useMemo(
@@ -524,7 +532,7 @@ export function VerdictTab() {
                     <AiAssistBadge fieldKey="bestFor" />
                   </p>
                   <StringListEditor
-                    value={bestFor}
+                    value={bestForEditor}
                     onChange={(items) => set('bestFor', items)}
                     addLabel="Add “Best for” item"
                     placeholder="Users who want deep, realistic conversations"
@@ -549,7 +557,7 @@ export function VerdictTab() {
                     <AiAssistBadge fieldKey="notIdealFor" />
                   </p>
                   <StringListEditor
-                    value={notIdealFor}
+                    value={notIdealEditor}
                     onChange={(items) => set('notIdealFor', items)}
                     emptyHint="Who should look elsewhere? Aim for 2–4 short items."
                     addLabel="Add “Not ideal for” item"
@@ -580,7 +588,7 @@ export function VerdictTab() {
                   <AiAssistBadge fieldKey="pros" />
                 </p>
                 <StringListEditor
-                  value={pros}
+                  value={prosEditor}
                   onChange={(items) => set('pros', items)}
                   addLabel="Add pro"
                   placeholder="Fantastic character variety with 2,450+ presets"
@@ -604,7 +612,7 @@ export function VerdictTab() {
                   <AiAssistBadge fieldKey="cons" />
                 </p>
                 <StringListEditor
-                  value={cons}
+                  value={consEditor}
                   onChange={(items) => set('cons', items)}
                   addLabel="Add con"
                   placeholder="Image generation is slower than competing platforms"

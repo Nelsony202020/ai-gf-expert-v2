@@ -73,7 +73,7 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "characters|browsing": {
     "q": "Characters: easy to browse?",
-    "hint": "Do 10 browsing tasks. Count the easy ones."
+    "hint": "Do 10 browsing tasks. Answer Yes if browsing is easy overall, No if not. Add task details in the note."
   },
   "characters|duplicates": {
     "q": "Characters: any duplicates?",

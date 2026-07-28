@@ -570,6 +570,8 @@ const _schema = i.schema({
       // Restricted manual override (audited, reason required)
       manualOverrideScore: i.number().optional(),
       manualOverrideReason: i.string().optional(),
+      // Reference URLs attached alongside screenshot proof (policy pages, settings links).
+      proofLinks: i.json().optional(),
       updatedAt: i.date(),
     }),
 

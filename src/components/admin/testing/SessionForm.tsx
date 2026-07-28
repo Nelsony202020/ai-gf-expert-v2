@@ -23,7 +23,9 @@ import {
 } from './sessionUi';
 import { ChatModesField, parseChatModesDraft } from './ChatModesField';
 import { BonusFeaturesField, formatBonusFeaturesSummary } from './BonusExtrasField';
+import { migrateBrowsingDraft } from './browsingMigration';
 import { SupportContactField, parseSupportContactDraft } from './SupportContactField';
+import { parseProofLinks } from './proofLinks';
 import { COMBINED_EVIDENCE_SLUGS, type TestSessionDef } from './sessions';
 import { readImageEditingStatus } from './capabilityGating';
 import './testing-ui.css';
@@ -48,14 +50,16 @@ interface Draft {
   notesDirty: boolean;
 }
 
-function initialDraft(result: EntityRow | undefined): Draft {
-  return {
+function initialDraft(result: EntityRow | undefined, def?: EntityRow): Draft {
+  const base: Draft = {
     raw: (result?.rawValue as RawValue | undefined) ?? undefined,
     na: Boolean(result?.notApplicable),
     dirty: false,
     internalNotes: String(result?.internalNotes ?? ''),
     notesDirty: false,
   };
+  const migrated = migrateBrowsingDraft(def, base);
+  return { ...base, ...migrated };
 }
 
 export type SessionFormHandle = {
@@ -111,7 +115,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
 ) {
   const [drafts, setDrafts] = useState<Record<string, Draft>>(() => {
     const map: Record<string, Draft> = {};
-    for (const { def } of items) map[def.id] = initialDraft(resultByDef.get(def.id));
+    for (const { def } of items) map[def.id] = initialDraft(resultByDef.get(def.id), def);
     return map;
   });
   const [drawerDefId, setDrawerDefId] = useState<string | null>(null);
@@ -173,7 +177,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     setDrafts((prev) => {
       const next = { ...prev };
       for (const { def } of items) {
-        if (!next[def.id]?.dirty) next[def.id] = initialDraft(resultByDef.get(def.id));
+        if (!next[def.id]?.dirty) next[def.id] = initialDraft(resultByDef.get(def.id), def);
       }
       return next;
     });
@@ -187,6 +191,13 @@ export const SessionForm = forwardRef<SessionFormHandle, {
       for (const m of res.rows) {
         const rid = m.evidenceResult?.id;
         if (rid && !m.deletedAt) counts.set(rid, (counts.get(rid) ?? 0) + 1);
+      }
+      for (const result of resultByDef.values()) {
+        if (!result?.id) continue;
+        const linkCount = parseProofLinks(result.proofLinks).length;
+        if (linkCount > 0) {
+          counts.set(result.id, (counts.get(result.id) ?? 0) + linkCount);
+        }
       }
       setProofCounts(counts);
     } catch {
@@ -473,7 +484,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     setDrafts((prev) => ({
       ...prev,
       [defId]: {
-        ...(prev[defId] ?? initialDraft(resultByDef.get(defId))),
+        ...(prev[defId] ?? initialDraft(resultByDef.get(defId), items.find(({ def }) => def.id === defId)?.def)),
         ...patch,
         dirty: true,
       },
@@ -484,11 +495,39 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     setDrafts((prev) => ({
       ...prev,
       [defId]: {
-        ...(prev[defId] ?? initialDraft(resultByDef.get(defId))),
+        ...(prev[defId] ?? initialDraft(resultByDef.get(defId), items.find(({ def }) => def.id === defId)?.def)),
         internalNotes,
         notesDirty: true,
       },
     }));
+  }
+
+  async function persistNotes(defId: string, internalNotes: string): Promise<void> {
+    const trimmed = internalNotes.trim();
+    patchNotes(defId, trimmed);
+    const existing = resultByDef.get(defId);
+    const fields = {
+      internalNotes: trimmed || undefined,
+      testDate: Date.now(),
+    };
+    if (existing) {
+      await dataApi.update('evidenceResults', existing.id, fields);
+    } else if (trimmed) {
+      await dataApi.create('evidenceResults', fields, {
+        testRun: runId,
+        evidenceDefinition: defId,
+        product: productId ?? null,
+      });
+    }
+    setDrafts((prev) => ({
+      ...prev,
+      [defId]: {
+        ...(prev[defId] ?? initialDraft(resultByDef.get(defId), items.find(({ def }) => def.id === defId)?.def)),
+        internalNotes: trimmed,
+        notesDirty: false,
+      },
+    }));
+    await onRowSaved?.();
   }
 
   function patchDraftWithCascade(defId: string, patch: Partial<Draft>) {
@@ -758,29 +797,19 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     if (String(def.slug) === 'platform-extras-list' && liveCamDef) {
       const listRaw =
         draft.raw && 'status' in draft.raw && draft.raw.status === 'na' ? undefined : draft.raw;
-      const liveDraft =
-        drafts[liveCamDef.id] ?? initialDraft(resultByDef.get(liveCamDef.id));
+      const liveDraft = drafts[liveCamDef.id] ?? initialDraft(resultByDef.get(liveCamDef.id));
       const liveRaw =
         liveDraft.raw && 'status' in liveDraft.raw && liveDraft.raw.status === 'na'
           ? undefined
           : liveDraft.raw;
-      const result = resultByDef.get(def.id);
-      const liveCamResult = liveCamDef ? resultByDef.get(liveCamDef.id) : undefined;
       return (
         <BonusFeaturesField
           disabled={isBlocked}
-          def={def}
-          liveCamDef={liveCamDef}
           listRaw={listRaw}
           liveRaw={liveRaw}
-          listResultId={result?.id}
-          liveCamResultId={liveCamResult?.id}
-          productId={productId}
-          ensureListResultId={() => ensureResultForDef(def.id)}
-          ensureLiveCamResultId={() => ensureResultForDef(liveCamDef.id)}
           onListChange={(v) => patchDraftWithCascade(def.id, { raw: v })}
           onLiveChange={patchLiveCam}
-          onUploaded={() => void reloadProofCounts()}
+          onOpenProof={() => setDrawerDefId(def.id)}
         />
       );
     }
@@ -832,7 +861,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
             Question {stepIndex + 1} of {stepItems.length}
           </p>
           <div className="flex items-center gap-2">
-            {state === 'done' && !draft.na && (
+            {state === 'done' && !draft.na && String(def.slug) !== 'platform-extras-list' && (
               <button
                 type="button"
                 className="text-[11px] font-medium text-slate-400 hover:text-pink-600 dark:hover:text-pink-400"
@@ -842,7 +871,12 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                 Mark undone
               </button>
             )}
-            <span className={statusDotClass(state)} title={state} />
+            <span
+              className={
+                String(def.slug) === 'platform-extras-list' ? 'sr-only' : statusDotClass(state)
+              }
+              title={state}
+            />
           </div>
         </div>
         <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
@@ -1108,7 +1142,14 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                 }
                 return formatAnswerSummary(def, draft.raw, draft.na);
               })();
-              const proofN = result?.id ? (proofCounts.get(result.id) ?? 0) : 0;
+              const proofN = (() => {
+                let n = result?.id ? (proofCounts.get(result.id) ?? 0) : 0;
+                if (String(def.slug) === 'platform-extras-list' && liveCamDef) {
+                  const liveResult = resultByDef.get(liveCamDef.id);
+                  if (liveResult?.id) n += proofCounts.get(liveResult.id) ?? 0;
+                }
+                return n;
+              })();
               const suggestion = suggestions?.get(def.id);
 
             const isHighlighted = highlightDefId === def.id;
@@ -1126,7 +1167,11 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                     }`}
                     onClick={() => setActiveDefId(def.id)}
                   >
-                    <span className={statusDotClass(state)} />
+                    {String(def.slug) !== 'platform-extras-list' ? (
+                      <span className={statusDotClass(state)} />
+                    ) : (
+                      <span className="sr-only">{state}</span>
+                    )}
                     <span className="min-w-0 flex-1 truncate text-sm text-slate-700 dark:text-slate-200">
                       <QuestionLabel def={def} categorySlug={categorySlug} className="truncate" />{' '}
                       <span className="text-slate-500">— {summary}</span>
@@ -1150,7 +1195,11 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
                       <QuestionLabel def={def} categorySlug={categorySlug} required={Boolean(def.required)} />
                     </p>
-                    <span className={statusDotClass(state)} />
+                    {String(def.slug) !== 'platform-extras-list' ? (
+                      <span className={statusDotClass(state)} />
+                    ) : (
+                      <span className="sr-only">{state}</span>
+                    )}
                   </div>
                   {!draft.na && <div className="mt-2">{renderEvidenceControl(def, draft)}</div>}
                   {suggestion && (
@@ -1177,7 +1226,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                     >
                       Proof &amp; notes{proofN > 0 ? ` (${proofN})` : ''}
                     </button>
-                    {state === 'done' && !draft.na && (
+                    {state === 'done' && !draft.na && String(def.slug) !== 'platform-extras-list' && (
                       <button
                         type="button"
                         className="text-xs text-slate-400 hover:text-pink-600"
@@ -1242,9 +1291,22 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         <ProofDrawer
           def={drawerDef}
           categorySlug={categorySlug}
+          sessionId={session.id}
           runId={runId}
           productId={productId}
           existing={resultByDef.get(drawerDef.id) ?? null}
+          liveCamDef={liveCamDef}
+          liveCamExisting={liveCamDef ? resultByDef.get(liveCamDef.id) ?? null : null}
+          listRaw={
+            String(drawerDef.slug) === 'platform-extras-list'
+              ? drafts[drawerDef.id]?.raw
+              : undefined
+          }
+          liveRaw={
+            String(drawerDef.slug) === 'platform-extras-list' && liveCamDef
+              ? drafts[liveCamDef.id]?.raw
+              : undefined
+          }
           onClose={() => setDrawerDefId(null)}
           onSaved={async () => {
             await reloadProofCounts();
@@ -1263,7 +1325,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
             categorySlug={categorySlug}
             notes={noteDraft.internalNotes}
             onClose={() => setNoteDefId(null)}
-            onSave={(notes) => patchNotes(noteDef.id, notes)}
+            onSave={(notes) => persistNotes(noteDef.id, notes)}
           />
         );
       })()}

@@ -118,7 +118,7 @@ function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: (
   const [rows, setRows] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [filter, setFilter] = useState<'all' | 'unread'>('unread');
   const [category, setCategory] = useState<string>('');
 
   const load = useCallback(async () => {
@@ -153,8 +153,13 @@ function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: (
   async function act(id: string, action: 'read' | 'unread' | 'dismiss') {
     try {
       await api.post('/api/admin/notifications', { action, id });
-      if (action === 'dismiss') setRows((prev) => prev.filter((r) => r.id !== id));
-      else setRows((prev) => prev.map((r) => (r.id === id ? { ...r, read: action === 'read' } : r)));
+      if (action === 'dismiss' || (action === 'read' && filter === 'unread')) {
+        setRows((prev) => prev.filter((r) => r.id !== id));
+      } else if (action === 'read') {
+        setRows((prev) => prev.map((r) => (r.id === id ? { ...r, read: true } : r)));
+      } else if (action === 'unread') {
+        setRows((prev) => prev.map((r) => (r.id === id ? { ...r, read: false } : r)));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -163,7 +168,8 @@ function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: (
   async function readAll() {
     try {
       await api.post('/api/admin/notifications', { action: 'readAll' });
-      setRows((prev) => prev.map((r) => ({ ...r, read: true })));
+      if (filter === 'unread') setRows([]);
+      else setRows((prev) => prev.map((r) => ({ ...r, read: true })));
       markAllInboxRead();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -177,6 +183,8 @@ function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: (
       navigate(n.actionUrl);
     }
   }
+
+  const visibleInbox = filter === 'unread' ? inbox.filter((n) => !n.read) : inbox;
 
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Notifications">
@@ -241,9 +249,9 @@ function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: (
 
         <div className="flex-1 overflow-y-auto">
           {error && <p className="px-4 py-3 text-sm text-red-600">{error}</p>}
-          {inbox.length > 0 && (
+          {visibleInbox.length > 0 && (
             <ul className="divide-y divide-slate-100 border-b border-slate-100 dark:divide-slate-800 dark:border-slate-800">
-              {inbox.map((n) => {
+              {visibleInbox.map((n) => {
                 const meta = SEVERITY_META[n.severity] ?? SEVERITY_META.info;
                 return (
                   <li key={n.id} className={n.read ? 'opacity-70' : ''}>
@@ -299,14 +307,14 @@ function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: (
           )}
           {loading ? (
             <p className="px-4 py-6 text-sm text-slate-400">Loading…</p>
-          ) : rows.length === 0 ? (
+          ) : rows.length === 0 && visibleInbox.length === 0 ? (
             <div className="px-4 py-10 text-center">
               <Icon name="notifications_off" className="!text-[28px] text-slate-300" />
               <p className="mt-2 text-sm text-slate-400">
                 {filter === 'unread' ? 'No unread notifications.' : 'Nothing needs your attention.'}
               </p>
             </div>
-          ) : (
+          ) : rows.length > 0 ? (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {rows.map((n) => {
                 const meta = SEVERITY_META[n.severity] ?? SEVERITY_META.info;
@@ -348,7 +356,7 @@ function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: (
                 );
               })}
             </ul>
-          )}
+          ) : null}
         </div>
 
         <p className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400 dark:border-slate-800">

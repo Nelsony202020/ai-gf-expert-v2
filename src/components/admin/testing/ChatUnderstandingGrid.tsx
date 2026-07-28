@@ -67,6 +67,7 @@ export function ChatUnderstandingGrid({
     return base;
   });
   const [copied, setCopied] = useState(false);
+  const [noteRow, setNoteRow] = useState<number | null>(null);
 
   if (columns.length === 0) return null;
 
@@ -127,69 +128,93 @@ export function ChatUnderstandingGrid({
                   </span>
                 </th>
               ))}
-              <th className="px-2 py-2 text-left font-medium text-slate-500">Note / proof</th>
+              <th className="px-2 py-2 text-center font-medium text-slate-500">Note</th>
+              <th className="px-2 py-2 text-center font-medium text-slate-500">Proof</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => (
-              <Fragment key={i}>
-                <tr className="border-b border-slate-50 dark:border-slate-800/50">
-                  <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-600 dark:text-slate-300">
-                    {i + 1}
-                  </td>
-                  {columns.map((col) => (
-                    <td key={col.defSlug} className="px-2 py-1.5 text-center">
-                      {col.kind === 'pass' ? (
-                        <input
-                          type="checkbox"
-                          className="testing-checkbox h-4 w-4 rounded border-slate-300"
-                          checked={Boolean(row[col.defSlug])}
-                          disabled={disabled}
-                          onChange={(e) => setCell(i, col.defSlug, e.target.checked)}
-                        />
-                      ) : (
-                        <input
-                          type="number"
-                          min={0}
-                          max={col.max}
-                          className="w-14 rounded-md border border-slate-200 bg-white px-1.5 py-1 text-center text-xs focus:border-pink-400 focus:outline-none dark:border-slate-700 dark:bg-slate-900"
-                          value={row[col.defSlug] === undefined ? '' : String(row[col.defSlug])}
-                          disabled={disabled}
-                          onChange={(e) => {
-                            const n = clampCount(e.target.value, col.max);
-                            setCell(i, col.defSlug, n);
-                          }}
-                        />
-                      )}
+            {rows.map((row, i) => {
+              const rowNote = typeof row._note === 'string' ? row._note : '';
+              const noteOpen = noteRow === i || Boolean(rowNote.trim());
+              return (
+                <Fragment key={i}>
+                  <tr className="border-b border-slate-50 dark:border-slate-800/50">
+                    <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-600 dark:text-slate-300">
+                      {i + 1}
                     </td>
-                  ))}
-                  <td className="px-2 py-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
+                    {columns.map((col) => (
+                      <td key={col.defSlug} className="px-2 py-1.5 text-center">
+                        {col.kind === 'pass' ? (
+                          <input
+                            type="checkbox"
+                            className="testing-checkbox h-4 w-4 rounded border-slate-300"
+                            checked={Boolean(row[col.defSlug])}
+                            disabled={disabled}
+                            onChange={(e) => setCell(i, col.defSlug, e.target.checked)}
+                          />
+                        ) : (
+                          <input
+                            type="number"
+                            min={0}
+                            max={col.max}
+                            className="w-14 rounded-md border border-slate-200 bg-white px-1.5 py-1 text-center text-xs focus:border-pink-400 focus:outline-none dark:border-slate-700 dark:bg-slate-900"
+                            value={row[col.defSlug] === undefined ? '' : String(row[col.defSlug])}
+                            disabled={disabled}
+                            onChange={(e) => {
+                              const n = clampCount(e.target.value, col.max);
+                              setCell(i, col.defSlug, n);
+                            }}
+                          />
+                        )}
+                      </td>
+                    ))}
+                    <td className="px-1 py-1.5 text-center">
                       <button
                         type="button"
-                        className="testing-link text-[11px] font-medium"
+                        className={`inline-flex cursor-pointer items-center rounded-md px-1 py-1 text-xs ${
+                          rowNote.trim()
+                            ? 'testing-link hover:bg-[var(--testing-accent-soft)]'
+                            : 'text-slate-400 hover:bg-slate-100 hover:text-pink-500 dark:hover:bg-slate-800'
+                        }`}
+                        disabled={disabled}
+                        onClick={() => setNoteRow((cur) => (cur === i ? null : i))}
+                        title={rowNote.trim() ? 'Edit note' : 'Add note'}
+                      >
+                        <Icon
+                          name="sticky_note_2"
+                          className={`!text-[15px] ${rowNote.trim() ? 'testing-icon-accent' : ''}`}
+                        />
+                      </button>
+                    </td>
+                    <td className="px-1 py-1.5 text-center">
+                      <button
+                        type="button"
+                        className="inline-flex cursor-pointer items-center rounded-md px-1 py-1 text-xs text-slate-400 hover:bg-slate-100 hover:text-pink-500 dark:hover:bg-slate-800"
                         disabled={disabled}
                         onClick={() => onRowProof?.(i)}
+                        title="Upload proof"
                       >
-                        Upload evidence
+                        <Icon name="attach_file" className="!text-[15px]" />
                       </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr className="border-b border-slate-50 dark:border-slate-800/50">
-                  <td colSpan={columns.length + 2} className="px-3 pb-2 pt-0">
-                    <input
-                      type="text"
-                      className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-                      placeholder="Optional note for this chat"
-                      value={typeof row._note === 'string' ? row._note : ''}
-                      disabled={disabled}
-                      onChange={(e) => setNote(i, e.target.value)}
-                    />
-                  </td>
-                </tr>
-              </Fragment>
-            ))}
+                    </td>
+                  </tr>
+                  {noteOpen && (
+                    <tr className="border-b border-slate-50 dark:border-slate-800/50">
+                      <td colSpan={columns.length + 3} className="px-3 pb-2 pt-0">
+                        <input
+                          type="text"
+                          className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                          placeholder="Optional note for this chat"
+                          value={rowNote}
+                          disabled={disabled}
+                          onChange={(e) => setNote(i, e.target.value)}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -157,7 +157,7 @@ export function AiNotesDrawer({
       return () => cancelAnimationFrame(t);
     }
     setAnimOpen(false);
-    const t = window.setTimeout(() => setVisible(false), 220);
+    const t = window.setTimeout(() => setVisible(false), DRAWER_UNMOUNT_MS);
     return () => window.clearTimeout(t);
   }, [open]);
 
@@ -172,7 +172,7 @@ export function AiNotesDrawer({
   function handleClose() {
     setAnimOpen(false);
     setRegenConfirm(false);
-    window.setTimeout(onClose, 220);
+    window.setTimeout(onClose, DRAWER_UNMOUNT_MS);
   }
 
   async function handleCopy(text: string, label?: string) {

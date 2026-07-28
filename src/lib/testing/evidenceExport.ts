@@ -272,10 +272,23 @@ export async function buildEvidenceExportReport(testRunId: string): Promise<Evid
         const proofUrls = attachments
           .map((m: any) => String(m.url ?? '').trim())
           .filter(Boolean);
+        const linkUrls = Array.isArray(result?.proofLinks)
+          ? (result.proofLinks as Array<{ url?: string }>)
+              .map((l) => String(l?.url ?? '').trim())
+              .filter(Boolean)
+          : [];
+        const allProofUrls = [...proofUrls, ...linkUrls];
         const proofCaptions = attachments.map((m: any) => {
           const parts = [m.altText, m.caption].filter(Boolean);
           return parts.join(' — ') || m.url || 'attachment';
         });
+        if (Array.isArray(result?.proofLinks)) {
+          for (const link of result.proofLinks as Array<{ url?: string; label?: string }>) {
+            const url = String(link?.url ?? '').trim();
+            if (!url) continue;
+            proofCaptions.push(link.label ? `${link.label} — ${url}` : url);
+          }
+        }
 
         rows.push({
           product_name: String(product.name ?? ''),
@@ -305,8 +318,8 @@ export async function buildEvidenceExportReport(testRunId: string): Promise<Evid
           answer_detail_readable: formatEvidenceDetailReadable(result?.rawValue),
           public_result: String(result?.publicResult ?? ''),
           internal_notes: String(result?.internalNotes ?? ''),
-          proof_count: attachments.length,
-          proof_urls: proofUrls.join('; '),
+          proof_count: attachments.length + linkUrls.length,
+          proof_urls: allProofUrls.join('; '),
           proof_captions: proofCaptions.join('; '),
           not_applicable: Boolean(result?.notApplicable),
           is_unknown: Boolean(result?.isUnknown),

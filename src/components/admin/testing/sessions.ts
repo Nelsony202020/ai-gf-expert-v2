@@ -258,6 +258,7 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
         'delete-chats',
         'delete-account',
         'delete-personal-data',
+        'training',
         'training-opt-out',
         'export-data',
       ],

@@ -1,3 +1,5 @@
+import { closeAnimatedDrawer } from '../../lib/drawer/animate';
+
 function trapFocus(panel: HTMLElement) {
   const focusable = panel.querySelectorAll<HTMLElement>(
     'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
@@ -28,19 +30,23 @@ let releaseFocus: (() => void) | null = null;
 let lastTrigger: HTMLElement | null = null;
 
 function closeDrawer() {
-  document.querySelectorAll<HTMLElement>('[data-ratings-drawer-panel]').forEach((panel) => {
-    panel.dataset.open = 'false';
-    panel.hidden = true;
-  });
   const root = document.querySelector<HTMLElement>('[data-ratings-drawer-root]');
   const backdrop = document.querySelector<HTMLElement>('[data-ratings-drawer-backdrop]');
-  if (backdrop) backdrop.dataset.open = 'false';
-  if (root) root.hidden = true;
-  document.body.style.overflow = '';
-  releaseFocus?.();
-  releaseFocus = null;
-  lastTrigger?.focus();
-  lastTrigger = null;
+  const panels = document.querySelectorAll<HTMLElement>('[data-ratings-drawer-panel]');
+
+  closeAnimatedDrawer({
+    root,
+    backdrop,
+    panels,
+    instantClass: 'ratings-drawer-panel--instant',
+    onComplete: () => {
+      document.body.style.overflow = '';
+      releaseFocus?.();
+      releaseFocus = null;
+      lastTrigger?.focus();
+      lastTrigger = null;
+    },
+  });
 }
 
 function openDrawer(id: string, trigger?: HTMLElement) {
@@ -57,6 +63,7 @@ function openDrawer(id: string, trigger?: HTMLElement) {
     if (p !== panel) {
       p.hidden = true;
       p.dataset.open = 'false';
+      p.classList.remove('ratings-drawer-panel--instant');
     }
   });
 
@@ -64,14 +71,22 @@ function openDrawer(id: string, trigger?: HTMLElement) {
     lastTrigger = trigger ?? null;
   }
   root.hidden = false;
+  delete root.dataset.drawerClosing;
   backdrop.dataset.open = 'true';
   panel.hidden = false;
-  requestAnimationFrame(() => {
+
+  if (isDrawerNav) {
+    panel.classList.add('ratings-drawer-panel--instant');
     panel.dataset.open = 'true';
-    if (isDrawerNav) {
-      panel.querySelector<HTMLElement>('.ratings-drawer-panel__body')?.scrollTo({ top: 0 });
-    }
-  });
+    panel.querySelector<HTMLElement>('.ratings-drawer-panel__body')?.scrollTo({ top: 0 });
+  } else {
+    panel.classList.remove('ratings-drawer-panel--instant');
+    panel.dataset.open = 'false';
+    requestAnimationFrame(() => {
+      panel.dataset.open = 'true';
+    });
+  }
+
   document.body.style.overflow = 'hidden';
   releaseFocus?.();
   releaseFocus = trapFocus(panel);

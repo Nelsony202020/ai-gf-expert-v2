@@ -120,6 +120,8 @@ export function unitCompleteWithItems(
     if (!ctx.hasValue(defId)) return false;
     const def = defById.get(defId);
     if (!def?.required) return true;
+    const result = ctx.getResult(defId);
+    if (result?.notApplicable) return true;
     return hasRequiredEvidence(def, ctx.attachmentCount(defId));
   });
 }
@@ -135,6 +137,8 @@ export function sessionHasUnknownRequired(items: SessionItem[], ctx: ProgressCon
 export function sessionHasBlockedRequired(items: SessionItem[], ctx: ProgressContext): boolean {
   return items.some(({ def }) => {
     if (!def.required) return false;
+    const result = ctx.getResult(def.id);
+    if (result?.notApplicable) return false;
     if (!ctx.hasValue(def.id)) return false;
     return !hasRequiredEvidence(def, ctx.attachmentCount(def.id));
   });
