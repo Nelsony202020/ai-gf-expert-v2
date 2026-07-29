@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @import './header.css';
+@import './footer.css';
 @import './coming-soon.css';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 @import './ratings-tooltips.css';
 @import './market-data.css';
 @import './video-review-modal.css';
@@ -11,6 +14,7 @@
 @import './review-page.css';
 @import './breadcrumbs.css';
 @import './cms-fields.css';
+@import './dark-mode.css';
 
 /* ===========================================================================
    Design tokens ported from the mockups' DESIGN.md ("Vibrant Editorial")
@@ -197,52 +201,67 @@ html.theme-transition *,
 html.theme-transition *::before,
 html.theme-transition *::after {
   transition:
-    background-color 0.3s ease,
-    color 0.25s ease,
-    border-color 0.3s ease,
-    fill 0.25s ease,
-    box-shadow 0.3s ease !important;
+    background-color 0.12s ease,
+    color 0.1s ease,
+    border-color 0.12s ease,
+    fill 0.1s ease,
+    box-shadow 0.12s ease !important;
 }
 
-/* Dark mode */
+/* Dark mode — slate-blue palette (matches admin dashboard) */
 [data-theme='dark'] {
-  --color-background: #121612;
-  --color-on-background: #ececec;
-  --color-surface: #121612;
-  --color-surface-variant: #2a3328;
-  --color-surface-container-lowest: #1a1f18;
-  --color-surface-container-low: #1a2418;
-  --color-surface-container: #1f2a1d;
-  --color-surface-container-high: #2a3328;
-  --color-surface-container-highest: #323d30;
-  --color-on-surface: #ececec;
-  --color-on-surface-variant: #b8c4b2;
-  --color-tertiary: #9cab96;
+  --color-background: #020617;
+  --color-on-background: #f1f5f9;
+  --color-surface: #020617;
+  --color-surface-variant: #1e293b;
+  --color-surface-container-lowest: #0f172a;
+  --color-surface-container-low: #0f172a;
+  --color-surface-container: #1e293b;
+  --color-surface-container-high: #334155;
+  --color-surface-container-highest: #475569;
+  --color-on-surface: #f1f5f9;
+  --color-on-surface-variant: #94a3b8;
+  --color-tertiary: #94a3b8;
   --color-accent-soft: rgb(219 39 119 / 14%);
+  --color-footer: #0f172a;
+  --color-footer-muted: #94a3b8;
+  --dark-elevated: #0f172a;
+  --dark-raised: #1e293b;
+  --dark-border: #334155;
+  --dark-border-subtle: #1e293b;
+  --dark-muted: #94a3b8;
+  --dark-hover: rgb(219 39 119 / 12%);
+  --dark-hover-strong: rgb(219 39 119 / 18%);
+  --dark-accent-text: #f472b6;
+  --color-brand-lime: #db2777;
+  --color-brand-lime-dark: #be185d;
+  --color-on-brand-lime: #ffffff;
+  --color-primary-container: #db2777;
+  --color-on-primary-container: #ffffff;
 }
 
 [data-theme='dark'] body {
-  background-color: #121612;
+  background-color: #020617;
   color: var(--color-on-surface);
 }
 
 [data-theme='dark'] .bg-white {
-  background-color: #1a1f18 !important;
+  background-color: #0f172a !important;
 }
 
 [data-theme='dark'] .dark-section {
-  background-color: #121612 !important;
+  background-color: #020617 !important;
 }
 
 [data-theme='dark'] .review-toc__toggle,
 [data-theme='dark'] .review-toc__panel {
-  background: #1a1f18;
-  border-color: #2a3328;
-  color: #ececec;
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f1f5f9;
 }
 
 [data-theme='dark'] .review-toc__link {
-  color: #b8c4b2;
+  color: #94a3b8;
 }
 
 [data-theme='dark'] .review-toc__link:hover,
@@ -255,32 +274,32 @@ html.theme-transition *::after {
 [data-theme='dark'] .ratings-tooltip-panel,
 [data-theme='dark'] .ratings-tooltip-panel__header,
 [data-theme='dark'] .ratings-tooltip-panel__body {
-  background: #1f2a1d !important;
-  border-color: #2a3328 !important;
-  color: #ececec !important;
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f1f5f9 !important;
 }
 
 [data-theme='dark'] .ratings-tooltip-panel--open::before {
-  background: #1f2a1d !important;
-  border-color: #2a3328 !important;
+  background: #0f172a !important;
+  border-color: #1e293b !important;
 }
 
 [data-theme='dark'] .st-card,
 [data-theme='dark'] .st-modal__panel {
-  background: #1f2a1d !important;
-  border-color: #2a3328 !important;
-  color: #ececec;
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f1f5f9;
 }
 
 [data-theme='dark'] .overview-sidebar-box {
-  background: rgb(26 36 24 / 80%) !important;
+  background: rgb(15 23 42 / 80%) !important;
   border-color: rgb(219 39 119 / 25%) !important;
 }
 
 [data-theme='dark'] .author-bio-popover {
-  background: #1f2a1d !important;
-  border-color: #2a3328 !important;
-  color: #ececec;
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f1f5f9;
 }
 
 [data-theme='dark'] .evidence-table__row:hover {
@@ -288,17 +307,17 @@ html.theme-transition *::after {
 }
 
 [data-theme='dark'] .evidence-table__head {
-  background: #1a2418 !important;
-  border-color: #2a3328 !important;
+  background: #1e293b !important;
+  border-color: #334155 !important;
 }
 
 [data-theme='dark'] .evidence-table-wrap {
-  border-color: #2a3328 !important;
+  border-color: #1e293b !important;
 }
 
 [data-theme='dark'] .rt-dist-chart {
-  background: rgb(26 36 24 / 60%) !important;
-  border-color: #2a3328 !important;
+  background: rgb(15 23 42 / 60%) !important;
+  border-color: #1e293b !important;
 }
 
 [data-theme='dark'] .rt-comp-row--link:hover {
@@ -306,7 +325,7 @@ html.theme-transition *::after {
 }
 
 [data-theme='dark'] [data-category] [data-accordion-content] {
-  background: #1a1f18 !important;
+  background: #0f172a !important;
 }
 
 [data-theme='dark'] [data-category] .subscore-card:hover,
@@ -324,24 +343,24 @@ html.theme-transition *::after {
 }
 
 [data-theme='dark'] [data-category] .bg-white {
-  background: #1a1f18 !important;
+  background: #0f172a !important;
 }
 
 [data-theme='dark'] .st-card__title,
 [data-theme='dark'] .st-card__score,
 [data-theme='dark'] .st-card__rank-num {
-  color: #ececec;
+  color: #f1f5f9;
 }
 
 [data-theme='dark'] .st-card__label,
 [data-theme='dark'] .st-card__rank-label,
 [data-theme='dark'] .st-card__rank-sub,
 [data-theme='dark'] .st-card__source {
-  color: #9cab96;
+  color: #94a3b8;
 }
 
 [data-theme='dark'] .overview-sidebar-box .text-on-surface-variant {
-  color: #b8c4b2;
+  color: #94a3b8;
 }
 
 @utility no-scrollbar {

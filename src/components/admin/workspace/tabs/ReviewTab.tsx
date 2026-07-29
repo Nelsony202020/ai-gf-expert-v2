@@ -18,6 +18,8 @@ import {
   type ConversionContext,
   type JSONDoc,
 } from '../../review/blockConversion';
+import { ImageInspectorPanel } from '../../review/ImageInspectorPanel';
+import type { ImageInspectorTarget, ReviewEditorUI } from '../../review/reviewEditorContext';
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
 import { makeBlock, type ReviewBlock } from '../reviewBlocks';
@@ -70,6 +72,8 @@ export function ReviewTab() {
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageInspector, setImageInspector] = useState<ImageInspectorTarget | null>(null);
+  const editorUiRef = useRef<ReviewEditorUI | null>(null);
   useToastError(error, () => setError(null));
   const savedDocJson = useRef('');
 
@@ -296,6 +300,10 @@ export function ReviewTab() {
             productId={ws.productId}
             onChange={handleChange}
             toolbarExtra={saveControls}
+            onImageInspectorChange={setImageInspector}
+            onRegisterUi={(ui) => {
+              editorUiRef.current = ui;
+            }}
           />
         </Suspense>
       </div>
@@ -343,6 +351,14 @@ export function ReviewTab() {
         </aside>
 
         <CompletionSidebar />
+
+        {imageInspector && canEdit && editorUiRef.current && (
+          <ImageInspectorPanel
+            target={imageInspector}
+            onClose={() => setImageInspector(null)}
+            openImagePicker={editorUiRef.current.openImagePicker}
+          />
+        )}
       </div>
     </div>
   );

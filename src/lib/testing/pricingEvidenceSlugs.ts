@@ -2,11 +2,13 @@
 export const PRICING_AUTOFILL_SLUGS = new Set([
   'monthly-price',
   'annual-price',
+  'annual-discount',
   'included-credits',
   'voice-cost',
-  'top-ups',
+  'call-cost',
+  'top-up-value',
   'image-cost',
   'video-cost',
-  'real-cost',
-  'heavy-use-cost',
+  'monthly-spend',
+  'payment-privacy',
 ]);

@@ -57,7 +57,7 @@ function WorkflowList({ onNavigate }: { onNavigate?: () => void }) {
 
 export function CompletionSidebar() {
   return (
-    <div className="hidden shrink-0 xl:sticky xl:top-40 xl:block xl:self-start">
+    <div className="hidden shrink-0 xl:block xl:self-start">
       <WorkflowList />
     </div>
   );

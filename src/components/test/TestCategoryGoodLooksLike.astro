@@ -1,0 +1,82 @@
+---
+import type { ResolvedBenchmarkPanel } from '../../lib/test-category-benchmarks/types';
+
+interface Props {
+  panel: ResolvedBenchmarkPanel;
+}
+
+const { panel } = Astro.props;
+
+const isPrivacy = panel.tierVariant === 'privacy';
+const midTierClass = isPrivacy ? 'test-category-benchmarks__cell--caution' : 'test-category-benchmarks__cell--typical';
+const weakTierClass = isPrivacy ? 'test-category-benchmarks__cell--poor' : 'test-category-benchmarks__cell--high';
+const midLegendClass = isPrivacy ? 'test-category-benchmarks__market__legend--caution' : 'test-category-benchmarks__market__legend--typical';
+const weakLegendClass = isPrivacy ? 'test-category-benchmarks__market__legend--poor' : 'test-category-benchmarks__market__legend--high';
+---
+
+<aside class="test-category-benchmarks" aria-labelledby={`${panel.categoryKey}-benchmarks-title`}>
+  <h2 id={`${panel.categoryKey}-benchmarks-title`} class="test-category-section-label">{panel.title}</h2>
+  <p class="test-category-benchmarks__note">{panel.intro}</p>
+
+  <div class="test-category-benchmarks__panel">
+    <section class="test-category-benchmarks__section" aria-labelledby={`${panel.categoryKey}-main-benchmarks`}>
+      <h3 id={`${panel.categoryKey}-main-benchmarks`} class="test-category-benchmarks__heading">
+        {panel.mainSectionTitle}
+      </h3>
+
+      <div class="test-category-benchmarks__market">
+        <div class="test-category-benchmarks__market__legend-spacer" aria-hidden="true"></div>
+        <span class="test-category-benchmarks__market__legend test-category-benchmarks__market__legend--low">{panel.tierLabels.good}</span>
+        <span class={`test-category-benchmarks__market__legend ${midLegendClass}`}>{panel.tierLabels.typical}</span>
+        <span class={`test-category-benchmarks__market__legend ${weakLegendClass}`}>{panel.tierLabels.weak}</span>
+
+        {
+          panel.mainRows.map((row) => (
+            <>
+              <p class="test-category-benchmarks__market__label">{row.label}</p>
+              <div class="test-category-benchmarks__market__cells">
+                <span class="test-category-benchmarks__cell test-category-benchmarks__cell--low">{row.good}</span>
+                <span class={`test-category-benchmarks__cell ${midTierClass}`}>{row.typical}</span>
+                <span class={`test-category-benchmarks__cell ${weakTierClass}`}>{row.weak}</span>
+              </div>
+            </>
+          ))
+        }
+      </div>
+    </section>
+
+    <div class="test-category-benchmarks__divider" aria-hidden="true"></div>
+
+    <section class="test-category-benchmarks__section" aria-labelledby={`${panel.categoryKey}-minimums`}>
+      <h3 id={`${panel.categoryKey}-minimums`} class="test-category-benchmarks__heading">{panel.minimumSectionTitle}</h3>
+      <dl class="test-category-benchmarks__minimums">
+        {
+          panel.minimums.map((item) => (
+            <div class="test-category-benchmarks__minimum-row">
+              <dt>{item.label}</dt>
+              <dd>{item.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <div class="test-category-benchmarks__divider" aria-hidden="true"></div>
+
+    <section class="test-category-benchmarks__section" aria-labelledby={`${panel.categoryKey}-red-flags`}>
+      <h3 id={`${panel.categoryKey}-red-flags`} class="test-category-benchmarks__heading">Common red flags</h3>
+      <div class="test-category-benchmarks__flags-box">
+        <ul class="test-category-benchmarks__flags">
+          {panel.redFlags.map((flag) => <li>{flag}</li>)}
+        </ul>
+      </div>
+    </section>
+
+    <p class="test-category-benchmarks__footer">
+      <span class="material-symbols-outlined test-category-benchmarks__footer-icon" aria-hidden="true">
+        {panel.footerIcon}
+      </span>
+      {panel.footerText}
+    </p>
+  </div>
+</aside>

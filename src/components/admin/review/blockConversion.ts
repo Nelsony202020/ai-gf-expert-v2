@@ -237,7 +237,31 @@ export function blocksToDoc(blocks: ReviewBlock[], ctx?: ConversionContext): JSO
         if (d.divider === true) {
           content.push({ type: 'horizontalRule', attrs: { blockId } });
         } else {
-          content.push(paragraphNode(dataToInline(d), blockId));
+          const layoutRow = d.layoutRow as { columns?: { items?: unknown[] }[] } | undefined;
+          const legacyRow = d.imageRow as { items?: unknown[] } | undefined;
+          const layoutItems =
+            layoutRow?.columns?.flatMap((col) => (Array.isArray(col.items) ? col.items : [])) ??
+            legacyRow?.items ??
+            [];
+          if (layoutItems.length > 0) {
+            for (const raw of layoutItems) {
+              const item = raw as Record<string, unknown>;
+              content.push({
+                type: 'image',
+                attrs: {
+                  blockId: newBlockId(),
+                  src: String(item.src ?? ''),
+                  alt: String(item.alt ?? ''),
+                  caption: String(item.caption ?? ''),
+                  mediaId: item.mediaId ? String(item.mediaId) : null,
+                  widthPercent: Number(item.widthPercent ?? 100),
+                  borderRadiusPercent: Number(item.borderRadiusPercent ?? 0),
+                },
+              });
+            }
+          } else {
+            content.push(paragraphNode(dataToInline(d), blockId));
+          }
         }
         break;
       }
@@ -270,6 +294,8 @@ export function blocksToDoc(blocks: ReviewBlock[], ctx?: ConversionContext): JSO
             alt: String(d.alt ?? media?.altText ?? ''),
             caption: String(d.caption ?? ''),
             mediaId,
+            widthPercent: Number(d.widthPercent ?? 100),
+            borderRadiusPercent: Number(d.borderRadiusPercent ?? 0),
             blockId,
           },
         });
@@ -379,7 +405,32 @@ export function docToBlocks(doc: JSONDoc | null | undefined): ReviewBlock[] {
   for (const node of doc?.content ?? []) {
     switch (node.type) {
       case 'paragraph': {
-        blocks.push({ id: takeId(node, seen), type: 'paragraph', data: inlineToData(node.content) });
+        const data = inlineToData(node.content);
+        if (!inlineToText(node.content).trim() && node.content?.length === 0) {
+          // empty paragraph — may be a divider placeholder from horizontalRule
+        }
+        blocks.push({ id: takeId(node, seen), type: 'paragraph', data });
+        break;
+      }
+      case 'layoutRow':
+      case 'imageRow': {
+        const rawColumns = node.attrs?.columns as { items?: unknown[] }[] | undefined;
+        const legacyItems = node.attrs?.items as unknown[] | undefined;
+        const items = rawColumns?.flatMap((col) => (Array.isArray(col.items) ? col.items : [])) ?? legacyItems ?? [];
+        for (const raw of items) {
+          const item = raw as Record<string, unknown>;
+          const data: Record<string, unknown> = {
+            caption: String(item.caption ?? ''),
+          };
+          if (item.mediaId) data.mediaId = String(item.mediaId);
+          if (item.src) data.src = String(item.src);
+          if (item.alt) data.alt = String(item.alt);
+          const width = Number(item.widthPercent ?? 100);
+          if (width !== 100) data.widthPercent = width;
+          const radius = Number(item.borderRadiusPercent ?? 0);
+          if (radius > 0) data.borderRadiusPercent = radius;
+          blocks.push({ id: newBlockId(), type: 'image', data });
+        }
         break;
       }
       case 'heading': {
@@ -409,6 +460,10 @@ export function docToBlocks(doc: JSONDoc | null | undefined): ReviewBlock[] {
         if (node.attrs?.mediaId) data.mediaId = String(node.attrs.mediaId);
         if (node.attrs?.src) data.src = String(node.attrs.src);
         if (node.attrs?.alt) data.alt = String(node.attrs.alt);
+        const width = Number(node.attrs?.widthPercent ?? 100);
+        if (width !== 100) data.widthPercent = width;
+        const radius = Number(node.attrs?.borderRadiusPercent ?? 0);
+        if (radius > 0) data.borderRadiusPercent = radius;
         blocks.push({ id: takeId(node, seen), type: 'image', data });
         break;
       }

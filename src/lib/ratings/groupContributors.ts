@@ -3,6 +3,7 @@ import {
   evidenceGroupsForSubscore,
   iconForContributor,
 } from './evidenceCategoryMapping';
+import { deferPayAsYouGoScores, iconForEvidenceDef } from './evidenceIcons';
 
 type StoredEvidenceResult = {
   publicResult?: string | null;
@@ -80,9 +81,12 @@ export function buildGroupedContributors(
   contributorSlugs: string[],
   resultBySlug: Map<string, StoredEvidenceResult>,
   fileContributors: DataRow[] = [],
+  productSlug?: string,
 ): DataRow[] {
   const groups = evidenceGroupsForSubscore(categorySlug, subscoreSlug);
   const fileByLabel = new Map(fileContributors.map((row) => [row.label.toLowerCase(), row]));
+
+  const hideScores = productSlug ? deferPayAsYouGoScores(productSlug, subscoreSlug) : false;
 
   if (!groups?.length) {
     return contributorSlugs.flatMap((slug) => {
@@ -96,8 +100,8 @@ export function buildGroupedContributors(
         {
           label,
           value: result.publicResult ?? '—',
-          internalScore: result.normalizedScore ?? fileMatch?.internalScore,
-          icon: fileMatch?.icon ?? iconForContributor(slug, label),
+          internalScore: hideScores ? undefined : result.normalizedScore ?? fileMatch?.internalScore,
+          icon: fileMatch?.icon ?? iconForEvidenceDef(slug, label),
         },
       ];
     });
@@ -116,7 +120,9 @@ export function buildGroupedContributors(
         label: group.name,
         value: formatGroupValue(group.slug, group.memberSlugs, resultBySlug, fileRow),
         icon: fileRow?.icon ?? iconForContributor(group.slug, group.name),
-        internalScore: averageScore(memberScores) ?? fileRow?.internalScore,
+        internalScore: hideScores
+          ? undefined
+          : averageScore(memberScores) ?? fileRow?.internalScore,
       } satisfies DataRow;
     })
     .filter((row): row is DataRow => row != null);

@@ -1,7 +1,7 @@
 // Authentication + role-based access control for the admin panel.
 // Permissions are enforced HERE (server-side), never only in the UI.
 
-import { getDb, id } from './server';
+import { getDb, id, resetDb } from './server';
 import { env } from '../env';
 
 export type Role =
@@ -82,7 +82,22 @@ export function permissionsForRole(role: Role): Permission[] {
 }
 
 function isNetworkError(message: string): boolean {
-  return /ENOTFOUND|ECONNREFUSED|fetch failed|network|getaddrinfo/i.test(message);
+  return /ENOTFOUND|ECONNREFUSED|fetch failed|getaddrinfo|ETIMEDOUT|ECONNRESET/i.test(message);
+}
+
+async function withInstantRetry<T>(fn: (db: ReturnType<typeof getDb>) => Promise<T>): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await fn(getDb());
+    } catch (err) {
+      lastError = err;
+      const message = err instanceof Error ? err.message : String(err);
+      if (!isNetworkError(message) || attempt === 1) throw err;
+      resetDb();
+    }
+  }
+  throw lastError;
 }
 
 /**
@@ -111,14 +126,16 @@ export async function resolveIdentity(request: Request): Promise<AdminIdentity |
   let user: { id?: string; email?: string } | null = null;
   let authError: string | null = null;
   try {
-    user = await db.auth.verifyToken(token);
+    user = await withInstantRetry((activeDb) => activeDb.auth.verifyToken(token));
   } catch (err) {
     authError = err instanceof Error ? err.message : 'verifyToken failed';
     user = null;
   }
   if (!user?.email) {
     try {
-      const byRefresh = await db.auth.getUser({ refresh_token: token });
+      const byRefresh = await withInstantRetry((activeDb) =>
+        activeDb.auth.getUser({ refresh_token: token }),
+      );
       if (byRefresh?.email) user = byRefresh;
     } catch (err) {
       authError = err instanceof Error ? err.message : authError ?? 'getUser failed';
@@ -138,7 +155,7 @@ export async function resolveIdentity(request: Request): Promise<AdminIdentity |
 
   async function findAdminByEmail(): Promise<any | null> {
     try {
-      const res = await (db.query as any)({ adminUsers: {} });
+      const res = await withInstantRetry((activeDb) => (activeDb.query as any)({ adminUsers: {} }));
       const list = (res.adminUsers ?? []) as any[];
       return list.find((u) => String(u.email ?? '').toLowerCase() === email) ?? null;
     } catch (err) {

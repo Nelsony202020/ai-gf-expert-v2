@@ -1,9 +1,11 @@
 ---
 import type { RatingCategory as RatingCategoryType } from '../../../data/products';
-import type { DraftCategory } from '../../../lib/draft-ratings/types';
+import type { DraftCategory, DraftEvidenceCategory } from '../../../lib/draft-ratings/types';
 import { fmtScore } from '../../../lib/scores';
 import { getDraftScoreChipClass, getDraftScoreVisual } from '../../../lib/draft-ratings/scoreBands';
-import DraftScorePill from '../draft-ratings/DraftScorePill.astro';
+import { deferPricingBenchmarkScores, PRICING_BENCHMARK_PENDING_NOTE } from '../../../lib/ratings/evidenceIcons';
+import { evidenceCategoriesToTooltipItems } from '../../../lib/ratings/evidenceTooltipItems';
+import DraftScorePill from '../DraftScorePill.astro';
 import EvidenceCategoryTable from '../EvidenceCategoryTable.astro';
 import SubscoreScoreTooltip from '../tooltips/SubscoreScoreTooltip.astro';
 import CategoryScoreTooltip from '../tooltips/CategoryScoreTooltip.astro';
@@ -12,19 +14,40 @@ interface Props {
   category: RatingCategoryType;
   enrichedCategory?: DraftCategory;
   productName?: string;
+  productSlug?: string;
   open?: boolean;
   isFirst?: boolean;
   isLast?: boolean;
 }
 
-const { category, enrichedCategory, productName, open = false, isFirst = false, isLast = false } = Astro.props;
+const { category, enrichedCategory, productName, productSlug, open = false, isFirst = false, isLast = false } = Astro.props;
+const categoryLabel = category.key === 'pricing' ? 'Pricing' : category.name;
 const visual = getDraftScoreVisual(category.score);
 const subscoreCount = category.subscores.length;
 const subscoreMeta = `${subscoreCount} subscore${subscoreCount === 1 ? '' : 's'} · ${category.weight}% of overall score`;
 
+function contributorDrawerIdsForSub(
+  subIndex: number,
+  sub: RatingCategoryType['subscores'][number],
+  evidenceCategories: DraftEvidenceCategory[],
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const ec of evidenceCategories) {
+    out[ec.name] = ec.drawerId;
+  }
+  sub.contributors.forEach((c, ci) => {
+    if (out[c.label]) return;
+    const match = evidenceCategories.find((ec) => ec.name.toLowerCase() === c.label.toLowerCase());
+    out[c.label] = match?.drawerId ?? `evidence-fallback-${category.key}-${subIndex}-${ci}`;
+  });
+  return out;
+}
+
 const subscorePanels = category.subscores.map((sub, i) => {
   const enrichedSub = enrichedCategory?.subscores.find((s) => s.name === sub.name);
   const evidenceCategories = enrichedSub?.evidenceCategories ?? [];
+  const deferScores =
+    productSlug && enrichedSub ? deferPricingBenchmarkScores(productSlug, enrichedSub.slug) : false;
   const calcDrawerId = enrichedSub
     ? `subscore-calc-${enrichedCategory?.slug}-${enrichedSub.slug}`
     : undefined;
@@ -32,8 +55,11 @@ const subscorePanels = category.subscores.map((sub, i) => {
     sub,
     index: i,
     evidenceCategories,
+    evidenceItems: evidenceCategoriesToTooltipItems(evidenceCategories, deferScores),
     calcDrawerId,
+    contributorDrawerIds: contributorDrawerIdsForSub(i, sub, evidenceCategories),
     categoryCount: evidenceCategories.length,
+    deferScores,
   };
 });
 ---
@@ -46,33 +72,36 @@ const subscorePanels = category.subscores.map((sub, i) => {
   ]}
   data-category={category.key}
 >
-  <div
-    role="button"
-    tabindex="0"
-    data-accordion-toggle
-    aria-expanded={open ? 'true' : 'false'}
-    aria-label={`Toggle ${category.name} details`}
-    class="ratings-accordion__toggle"
-  >
-    <div class="ratings-accordion__toggle-main">
-      <DraftScorePill score={category.score} size="md" variant="solid" shape="badge" />
-      <div class="ratings-accordion__toggle-copy">
-        <div class="ratings-accordion__title-row">
-          <span class="ratings-accordion__title">{category.name}</span>
-          <CategoryScoreTooltip category={category} compact brandName={productName} />
+  <div class="ratings-accordion__category-heading">
+    <button
+      type="button"
+      data-accordion-toggle
+      aria-expanded={open ? 'true' : 'false'}
+      aria-label={`Toggle ${categoryLabel} details`}
+      class="ratings-accordion__toggle"
+    >
+      <div class="ratings-accordion__toggle-main">
+        <span aria-hidden="true">
+          <DraftScorePill score={category.score} size="md" variant="solid" shape="badge" />
+        </span>
+        <div class="ratings-accordion__toggle-copy">
+          <div class="ratings-accordion__title-row">
+            <h3 class="ratings-accordion__title">{categoryLabel}</h3>
+            <CategoryScoreTooltip category={category} compact brandName={productName} />
+          </div>
+          <p class="ratings-accordion__meta">{subscoreMeta}</p>
         </div>
-        <p class="ratings-accordion__meta">{subscoreMeta}</p>
       </div>
-    </div>
-    <span class="material-symbols-outlined ratings-accordion__chevron" aria-hidden="true">expand_more</span>
+      <span class="material-symbols-outlined ratings-accordion__chevron" aria-hidden="true">expand_more</span>
+    </button>
   </div>
 
   <div data-accordion-content class:list={['ratings-accordion__content', !open && 'hidden']}>
     <div class="ratings-accordion__expanded" data-subscore-grid>
       <div class="ratings-subscore-nav" data-subscore-list>
-        <h4 class="ratings-subscore-nav__label">Subscores</h4>
+        <p class="ratings-subscore-nav__label">Subscores</p>
         {
-          category.subscores.map((sub, i) => {
+          subscorePanels.map(({ sub, index: i, calcDrawerId, contributorDrawerIds, evidenceItems }) => {
             const sv = getDraftScoreVisual(sub.score);
             return (
               <div
@@ -87,7 +116,16 @@ const subscorePanels = category.subscores.map((sub, i) => {
                 <DraftScorePill score={sub.score} size="sm" variant="outline" />
                 <span class="ratings-subscore-nav__label-row">
                   <span data-subscore-label class="ratings-subscore-nav__name">{sub.name}</span>
-                  <SubscoreScoreTooltip categoryKey={category.key} categoryName={category.name} brandName={productName} sub={sub} compact />
+                  <SubscoreScoreTooltip
+                    categoryKey={category.key}
+                    categoryName={category.name}
+                    brandName={productName}
+                    sub={sub}
+                    compact
+                    calcDrawerId={calcDrawerId}
+                    contributorDrawerIds={contributorDrawerIds}
+                    evidenceItems={evidenceItems.length > 0 ? evidenceItems : undefined}
+                  />
                 </span>
                 <span data-subscore-chevron class="material-symbols-outlined ratings-subscore-nav__chevron" aria-hidden="true">
                   chevron_right
@@ -101,20 +139,28 @@ const subscorePanels = category.subscores.map((sub, i) => {
       <div class="ratings-subscore-panel" data-subscore-breakdown data-detail-tier="deep">
         {
           subscorePanels.map(({ sub, index, evidenceCategories, calcDrawerId, categoryCount }) => {
+            const enrichedSub = enrichedCategory?.subscores.find((s) => s.name === sub.name);
+            const showBenchmarkNote =
+              category.key === 'pricing' &&
+              productSlug &&
+              enrichedSub &&
+              deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
             const tableId = `evidence-${category.key}-${sub.name}`.replace(/[^a-zA-Z0-9_-]/g, '-');
             const evidenceCount = categoryCount || sub.contributors.length;
+            const deferScores = enrichedSub && productSlug && deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
             return (
               <div data-subscore-panel data-subscore-index={index} class="hidden">
                 <div class="ratings-subscore-panel__header">
                   <div class="ratings-subscore-panel__heading">
-                    <h4 class="ratings-subscore-panel__title">
+                    <div class="ratings-subscore-panel__title-row">
+                      <h4 class="ratings-subscore-panel__title">{sub.name}</h4>
                       <span
                         class={`rt-score-chip rt-score-chip--outline ratings-subscore-panel__score tabular-nums ${getDraftScoreChipClass(sub.score)}`}
+                        aria-label={`Score ${fmtScore(sub.score)} out of 10`}
                       >
                         {fmtScore(sub.score)}
                       </span>
-                      {sub.name}
-                    </h4>
+                    </div>
                     <p class="ratings-subscore-panel__meta">
                       Based on {evidenceCount} evidence {evidenceCount === 1 ? 'category' : 'categories'}
                     </p>
@@ -134,15 +180,24 @@ const subscorePanels = category.subscores.map((sub, i) => {
                 </div>
 
                 {
+                  showBenchmarkNote && (
+                    <p class="ratings-subscore-panel__benchmark-note" role="note">
+                      {PRICING_BENCHMARK_PENDING_NOTE}
+                    </p>
+                  )
+                }
+
+                {
                   evidenceCategories.length > 0 ? (
-                    <EvidenceCategoryTable tableId={tableId} items={evidenceCategories} />
+                    <EvidenceCategoryTable tableId={tableId} items={evidenceCategories} hideScores={deferScores} />
                   ) : (
                     <EvidenceCategoryTable
                       tableId={tableId}
+                      hideScores={deferScores}
                       items={sub.contributors.map((c, ci) => ({
                         slug: c.label.toLowerCase().replace(/\s+/g, '-'),
                         name: c.label,
-                        score: c.internalScore ?? sub.score,
+                        score: deferScores ? null : c.internalScore ?? sub.score,
                         summary: c.value,
                         cardTeaser: c.value,
                         testResults: [],
@@ -179,6 +234,7 @@ const subscorePanels = category.subscores.map((sub, i) => {
           card.classList.remove('ratings-subscore-nav__item--active');
         });
         panels.forEach((panel) => panel.classList.add('hidden'));
+        categoryEl.querySelector<HTMLElement>('[data-subscore-grid]')?.removeAttribute('data-subscore-open');
       }
 
       function selectSubscore(index: string, scrollToBreakdown = false) {
@@ -192,10 +248,14 @@ const subscorePanels = category.subscores.map((sub, i) => {
           panel.classList.toggle('hidden', panel.dataset.subscoreIndex !== index);
         });
 
+        categoryEl.querySelector<HTMLElement>('[data-subscore-grid]')?.setAttribute('data-subscore-open', 'true');
+
         if (scrollToBreakdown) {
-          categoryEl.querySelector<HTMLElement>('[data-subscore-breakdown]')?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest',
+          requestAnimationFrame(() => {
+            categoryEl.querySelector<HTMLElement>('[data-subscore-breakdown]')?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'nearest',
+            });
           });
         }
       }
@@ -211,18 +271,19 @@ const subscorePanels = category.subscores.map((sub, i) => {
 
           const root = document.querySelector<HTMLElement>('[data-ratings-root]');
           const level = root?.dataset.detailLevel ?? 'skim';
+
           if (level === 'medium') {
             const isActive = card.getAttribute('aria-selected') === 'true';
-            if (isActive) clearSubscoreSelection();
-            else selectSubscore(index);
-            return;
+            if (isActive) {
+              clearSubscoreSelection();
+              return;
+            }
+          } else if (level === 'all-in') {
+            const isActive = card.getAttribute('aria-selected') === 'true';
+            if (isActive) return;
           }
 
-          if (level === 'skim') return;
-
-          const isActive = card.getAttribute('aria-selected') === 'true';
-          if (isActive) return;
-          selectSubscore(index);
+          selectSubscore(index, true);
         });
 
         card.addEventListener('keydown', (e) => {
@@ -231,7 +292,7 @@ const subscorePanels = category.subscores.map((sub, i) => {
           e.preventDefault();
           const index = card.dataset.subscoreIndex;
           if (index === undefined) return;
-          selectSubscore(index);
+          selectSubscore(index, true);
         });
       });
 
@@ -239,7 +300,7 @@ const subscorePanels = category.subscores.map((sub, i) => {
       const content = categoryEl.querySelector<HTMLElement>('[data-accordion-content]');
       const isOpen = content && !content.classList.contains('hidden');
       if (root?.dataset.detailLevel === 'all-in' && isOpen) {
-        selectSubscore('0');
+        selectSubscore('0', false);
       } else {
         clearSubscoreSelection();
       }
@@ -255,11 +316,19 @@ const subscorePanels = category.subscores.map((sub, i) => {
   document.addEventListener('detail-level-change', ((e: CustomEvent) => {
     if (e.detail?.level === 'medium') clearAllSubscores();
     if (e.detail?.level === 'all-in') {
+      document.querySelectorAll<HTMLElement>('[data-subscore-list]').forEach((nav) => {
+        nav.classList.add('ratings-subscore-nav--instant');
+      });
       document.querySelectorAll<HTMLElement>('[data-category]').forEach((el) => {
         const content = el.querySelector<HTMLElement>('[data-accordion-content]');
         if (content && !content.classList.contains('hidden')) {
-          el.selectSubscore?.('0');
+          el.selectSubscore?.('0', false);
         }
+      });
+      requestAnimationFrame(() => {
+        document.querySelectorAll<HTMLElement>('[data-subscore-list]').forEach((nav) => {
+          nav.classList.remove('ratings-subscore-nav--instant');
+        });
       });
     }
   }) as EventListener);

@@ -1,13 +1,19 @@
 ---
 import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import StandardContentLayout from '../../../../layouts/StandardContentLayout.astro';
 import Header from '../../../../components/Header.astro';
 import Footer from '../../../../components/Footer.astro';
-import TestBreadcrumbs from '../../../../components/test/TestBreadcrumbs.astro';
-import { findTestSubscore } from '../../../../lib/test-framework';
+import TestSubscoreMethodologyBody from '../../../../components/test/TestSubscoreMethodologyBody.astro';
+import TestSubscoreMethodologyHero from '../../../../components/test/TestSubscoreMethodologyHero.astro';
+import TestHubSidebar from '../../../../components/test/TestHubSidebar.astro';
+import { findTestSubscore, getTestCategories } from '../../../../lib/test-framework';
 import { getMethodology } from '../../../../data/methodology';
-import { testCategoryUrl, testHubUrl, toSlug } from '../../../../lib/slugs';
-import { getTestCategories } from '../../../../lib/test-framework';
+import { getTestSubscoreMethodology } from '../../../../data/test-subscore-methodology';
+import { getTestCategoryMethodology } from '../../../../data/test-category-methodology';
+import { testCategoryUrl, testHubUrl } from '../../../../lib/slugs';
 import '../../../../styles/test-hub.css';
+
+const categories = getTestCategories();
 
 export function getStaticPaths() {
   const paths: { params: { category: string; subscore: string } }[] = [];
@@ -33,76 +39,195 @@ if (!match) {
   throw new Error(`Unknown subscore: ${category}/${subscore}`);
 }
 
-const { category: catNode, sub: subNode, rawSub } = match;
+const { category: catNode, sub: subNode } = match;
+const richContent = getTestSubscoreMethodology(category!, subscore!);
 const pageTitle = `${subNode.name} — ${catNode.name} — How We Test`;
+
+const evidenceItems = subNode.contributors.map((contributor) => ({
+  id: contributor.slug,
+  label: contributor.label,
+  contributorSlug: contributor.slug,
+}));
+
+const categoryMethodology = getTestCategoryMethodology(catNode.key);
+const subscoreWeight = categoryMethodology?.scoreCalculation.weights.find(
+  (item) => item.name === subNode.name,
+)?.weight;
+
+const tocItems = richContent
+  ? [
+      { id: 'why-it-matters', label: richContent.whyItMatters.title },
+      { id: 'how-we-test', label: richContent.howWeTest.title },
+      { id: 'high-low-score', label: richContent.highLowScore.title },
+      { id: 'score-calculation', label: richContent.scoreCalculation.title },
+      {
+        id: 'evidence-we-measure',
+        label: 'Evidence we measure',
+        children: richContent.evidenceSections.map((section) => ({
+          id: section.id,
+          label: section.title,
+        })),
+      },
+      { id: 'limitations', label: richContent.limitations.title },
+    ]
+  : [
+      {
+        id: 'evidence-we-measure',
+        label: 'Evidence we measure',
+        children: evidenceItems.map((item) => ({ id: item.id, label: item.label })),
+      },
+    ];
 ---
 
-<BaseLayout title={pageTitle} description={subNode.description}>
+<BaseLayout
+  title={pageTitle}
+  description={richContent?.heroIntro.join(' ') ?? subNode.description}
+>
   <Header />
-  <main class="test-page">
-    <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">
-      <TestBreadcrumbs
-        items={[
-          { label: 'Home', href: '/' },
-          { label: 'How We Test', href: testHubUrl() },
-          { label: catNode.name, href: testCategoryUrl(catNode.key) },
-          { label: subNode.name },
-        ]}
-      />
+  <StandardContentLayout pageClass="test-category-page test-page">
+    <TestHubSidebar
+      slot="sidebar"
+      categories={categories}
+      tocSections={tocItems}
+      relatedMethodology={categoryMethodology?.related}
+      topAnchor="#test-subscore-top"
+      topSectionId="test-subscore-top"
+    />
 
-      <header class="test-page__header">
-        <p class="test-page__eyebrow">Subscore methodology</p>
-        <h1 class="test-page__title">{subNode.name}</h1>
-        <p class="test-page__intro">{subNode.description}</p>
-      </header>
+    <TestSubscoreMethodologyHero
+      slot="hero"
+      breadcrumbs={[
+        { label: 'Home', href: '/' },
+        { label: 'How We Test', href: testHubUrl() },
+        { label: catNode.name, href: testCategoryUrl(catNode.key) },
+        { label: subNode.name },
+      ]}
+      category={catNode}
+      subscore={subNode}
+      intro={richContent?.heroIntro ?? [subNode.description]}
+      evidenceCount={evidenceItems.length}
+      subscoreWeight={subscoreWeight}
+    />
 
-      {
-        rawSub && (
-          <>
-            <section class="test-page__section">
-              <h2 class="test-page__h2">Evidence we measure</h2>
-              <div class="test-evidence-list">
-                {
-                  rawSub.contributors.map((c) => {
-                    const contributorSlug = toSlug(c.label);
-                    const methodology = getMethodology(category!, subscore!, contributorSlug);
-                    return (
-                      <article class="test-evidence-item" id={contributorSlug}>
-                        <div class="test-evidence-item__head">
-                          <h3 class="test-evidence-item__title">{c.label}</h3>
-                        </div>
-                        {
-                          methodology ? (
-                            <>
-                              <p class="test-evidence-item__lead">{methodology.measured}</p>
-                              <p class="test-evidence-item__body">{methodology.howToTest}</p>
-                              {methodology.resultFormat && (
-                                <p class="test-evidence-item__result">
-                                  <strong>Displayed result:</strong> {methodology.resultFormat}
-                                </p>
-                              )}
-                            </>
-                          ) : (
-                            <p class="test-evidence-item__body">
-                              Documentation for this evidence point is being added.
-                            </p>
-                          )
-                        }
-                      </article>
-                    );
-                  })
-                }
-              </div>
-            </section>
-          </>
-        )
-      }
+    {
+      richContent ? (
+        <TestSubscoreMethodologyBody category={catNode} subscore={subNode} content={richContent} />
+      ) : (
+        <div id="test-subscore-top">
+          {
+            evidenceItems.length > 0 && (
+              <section id="evidence-we-measure" class="test-page__section scroll-mt-24">
+                <h2 class="test-page__h2">Evidence we measure</h2>
+                <div class="test-evidence-list">
+                  {
+                    evidenceItems.map((item) => {
+                      const methodology = getMethodology(category!, subscore!, item.contributorSlug);
+                      return (
+                        <article class="test-evidence-item scroll-mt-24" id={item.id}>
+                          <div class="test-evidence-item__head">
+                            <h3 class="test-evidence-item__title">{item.label}</h3>
+                          </div>
+                          {
+                            methodology ? (
+                              <>
+                                <p class="test-evidence-item__lead">{methodology.measured}</p>
+                                <p class="test-evidence-item__body">{methodology.howToTest}</p>
+                                {methodology.resultFormat && (
+                                  <p class="test-evidence-item__result">
+                                    <strong>Displayed result:</strong> {methodology.resultFormat}
+                                  </p>
+                                )}
+                              </>
+                            ) : (
+                              <p class="test-evidence-item__body">
+                                Documentation for this evidence point is being added.
+                              </p>
+                            )
+                          }
+                        </article>
+                      );
+                    })
+                  }
+                </div>
+              </section>
+            )
+          }
 
-      <a class="test-inline-link test-page__back" href={catNode.href}>
-        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-        Back to {catNode.name}
-      </a>
-    </div>
-  </main>
+          <a class="test-inline-link test-page__back" href={catNode.href}>
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+            Back to {catNode.name}
+          </a>
+        </div>
+      )
+    }
+  </StandardContentLayout>
   <Footer />
+
+  <script>
+    function initTestHubNav() {
+      const navs = Array.from(document.querySelectorAll('[data-test-hub-nav]'));
+      if (!navs.length || document.documentElement.dataset.testHubNavBound === 'true') return;
+      document.documentElement.dataset.testHubNavBound = 'true';
+
+      const sectionLinks = Array.from(
+        navs[0].querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]'),
+      );
+      if (!sectionLinks.length) return;
+
+      const sections = sectionLinks
+        .map((link) => {
+          const id = link.dataset.sectionId;
+          return id ? document.getElementById(id) : null;
+        })
+        .filter((section): section is HTMLElement => section instanceof HTMLElement);
+
+      const setActive = (id: string | null) => {
+        navs.forEach((nav) => {
+          nav.querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]').forEach((link) => {
+            const active = link.dataset.sectionId === id;
+            link.classList.toggle('is-active', active);
+            if (active) link.setAttribute('aria-current', 'location');
+            else link.removeAttribute('aria-current');
+          });
+        });
+      };
+
+      const scrollOffset = 24;
+
+      navs.forEach((nav) => {
+        nav.querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]').forEach((link) => {
+          link.addEventListener('click', (event) => {
+            const id = link.dataset.sectionId;
+            if (!id) return;
+            const section = document.getElementById(id);
+            if (!section) return;
+            event.preventDefault();
+            const y = section.getBoundingClientRect().top + window.scrollY - scrollOffset;
+            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+            history.pushState(null, '', `#${id}`);
+            setActive(id);
+          });
+        });
+      });
+
+      const updateActiveSection = () => {
+        const marker = window.scrollY + scrollOffset + 8;
+        let currentId: string | null = sections[0]?.id ?? null;
+
+        for (const section of sections) {
+          if (section.offsetTop <= marker) currentId = section.id;
+          else break;
+        }
+
+        setActive(currentId);
+      };
+
+      updateActiveSection();
+      window.addEventListener('scroll', updateActiveSection, { passive: true });
+      window.addEventListener('resize', updateActiveSection);
+    }
+
+    initTestHubNav();
+    document.addEventListener('astro:page-load', initTestHubNav);
+  </script>
 </BaseLayout>

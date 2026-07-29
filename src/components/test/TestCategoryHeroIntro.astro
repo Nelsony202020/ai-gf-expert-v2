@@ -16,9 +16,12 @@ interface Props {
   category: TestCategoryNode;
   meta: TestMethodologyPageMeta;
   shareUrl?: string;
+  /** Rich intro paragraphs; falls back to category.description. */
+  intro?: string[];
 }
 
-const { category, meta, shareUrl } = Astro.props;
+const { category, meta, shareUrl, intro } = Astro.props;
+const introParagraphs = intro?.length ? intro : [category.description];
 const shareTitle = `${category.name} Testing Methodology — AI Girlfriend Expert`;
 ---
 
@@ -99,10 +102,19 @@ const shareTitle = `${category.name} Testing Methodology — AI Girlfriend Exper
 <RoundupHubNav active="how-we-test" />
 
 <div class="roundup-hero-intro__body">
-  <p class="text-[15px] md:text-base text-on-surface-variant leading-relaxed">
-    {category.description}
-  </p>
+  {
+    introParagraphs.map((p, i) => (
+      <p
+        class:list={[
+          'text-[15px] md:text-base text-on-surface-variant leading-relaxed',
+          i > 0 && 'mt-3',
+        ]}
+      >
+        {p}
+      </p>
+    ))
+  }
   <p class="test-category-page__weight text-[15px] md:text-base text-on-surface-variant leading-relaxed mt-3">
-    {category.weight}% of overall performance score
+    <strong>{category.weight}%</strong> of the overall performance score
   </p>
 </div>

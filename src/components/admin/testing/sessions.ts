@@ -72,7 +72,6 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
         'hair-style',
         'hair-color',
         'outfits',
-        'creator-personalities',
       ],
     },
     {
@@ -80,7 +79,7 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
       title: 'Personality & voice options',
       intro: 'In the character creator: count personality, relationship/chat style, occupation, kink options, and voice options.',
       icon: 'psychology',
-      slugs: ['traits', 'interests', 'relationship', 'kink-options', 'role', 'voice'],
+      slugs: ['creator-personalities', 'traits', 'interests', 'relationship', 'kink-options', 'role', 'voice'],
     },
     {
       id: 'creator-control',
@@ -161,7 +160,7 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     },
     {
       id: 'platform-extras',
-      title: 'Platform extras',
+      title: 'Bonus features',
       intro:
         'Does the app have bonus features beyond normal chat? If yes, note AI cam models and any other extras with proof.',
       icon: 'stars',
@@ -293,34 +292,25 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
 
   pricing: [
     {
-      id: 'subscription-basics',
-      title: 'Free plan & trial',
-      intro: 'Record whether a free plan and free trial exist. Plan prices live in the Pricing tab.',
+      id: 'pricing-plan-value',
+      title: 'Plan inclusions & limits',
+      intro: 'Record which features are included and usage limits. Plan prices and credits come from the Pricing tab.',
       icon: 'payments',
-      slugs: ['free-plan', 'free-trial', 'included-features'],
+      slugs: ['included-features', 'plan-limits'],
     },
     {
-      id: 'pricing-limits-policies',
-      title: 'Limits, paywalls & refunds',
-      intro:
-        'Record usage limits, credit expiry rules, feature paywalls, and refund policy. Dollar amounts for plans and packages come from the Pricing tab.',
+      id: 'pricing-free-access',
+      title: 'Free access',
+      intro: 'Record what users get without paying: messages, images, video, voice, characters, and free trial without credit card.',
+      icon: 'card_giftcard',
+      slugs: ['free-chat', 'free-characters', 'free-images', 'free-video', 'free-voice', 'free-value'],
+    },
+    {
+      id: 'pricing-billing',
+      title: 'Billing & policies',
+      intro: 'Record pricing clarity, credit expiry, refunds, and easy cancellation. Payment privacy comes from the Pricing tab.',
       icon: 'policy',
-      slugs: ['plan-limits', 'credit-expiry', 'feature-paywalls', 'refunds'],
-    },
-    {
-      id: 'pricing-value-breakdown',
-      title: 'Value breakdown',
-      intro:
-        'Compare value vs competitors. Real-world spend estimates are configured on the Pricing tab under “Real-world spend”.',
-      icon: 'analytics',
-      slugs: ['category-comparison', 'feature-value', 'usage-value'],
-    },
-    {
-      id: 'value',
-      title: 'Value for money',
-      intro: 'Pricing clarity and whether the product feels worth the money.',
-      icon: 'monitoring',
-      slugs: ['pricing-clarity'],
+      slugs: ['pricing-clarity', 'credit-expiry', 'refunds', 'cancellation'],
     },
   ],
 };

@@ -4,26 +4,26 @@
 [data-theme='dark'] .md-panel,
 [data-theme='dark'] .md-select,
 [data-theme='dark'] .md-btn-outline {
-  background: #1a1f18 !important;
-  border-color: #2a3328 !important;
-  color: #ececec;
+  background: var(--dark-elevated) !important;
+  border-color: var(--dark-border-subtle) !important;
+  color: var(--color-on-surface);
 }
 
 [data-theme='dark'] .md-metric-card__value,
 [data-theme='dark'] .md-panel h3,
 [data-theme='dark'] .md-comp-table td,
 [data-theme='dark'] .md-comp-table th {
-  color: #ececec;
+  color: var(--color-on-surface);
 }
 
 [data-theme='dark'] .md-metric-card__label,
 [data-theme='dark'] .md-metric-card__sub,
 [data-theme='dark'] .md-comp-table thead th {
-  color: #b8c4b2;
+  color: var(--dark-muted);
 }
 
 [data-theme='dark'] .md-comp-table tbody tr {
-  border-color: #2a3328 !important;
+  border-color: var(--dark-border-subtle) !important;
 }
 
 [data-theme='dark'] .md-comp-table tbody tr.md-comp-table__highlight {
@@ -32,20 +32,20 @@
 
 [data-theme='dark'] .md-price-chart__avg-line span,
 [data-theme='dark'] .md-scatter__label {
-  background: #1a1f18;
-  color: #b8c4b2;
-  border-color: #2a3328;
+  background: var(--dark-elevated);
+  color: var(--dark-muted);
+  border-color: var(--dark-border-subtle);
 }
 
 [data-theme='dark'] .md-scatter__dot {
-  border-color: #1a1f18;
+  border-color: var(--dark-elevated);
 }
 
 [data-theme='dark'] .md-scatter__grid {
-  border-color: #2a3328;
+  border-color: var(--dark-border-subtle);
   background:
-    linear-gradient(to right, transparent 49.5%, rgb(42 51 40 / 80%) 49.5%, rgb(42 51 40 / 80%) 50.5%, transparent 50.5%),
-    linear-gradient(to top, transparent 49.5%, rgb(42 51 40 / 80%) 49.5%, rgb(42 51 40 / 80%) 50.5%, transparent 50.5%);
+    linear-gradient(to right, transparent 49.5%, rgb(51 65 85 / 80%) 49.5%, rgb(51 65 85 / 80%) 50.5%, transparent 50.5%),
+    linear-gradient(to top, transparent 49.5%, rgb(51 65 85 / 80%) 49.5%, rgb(51 65 85 / 80%) 50.5%, transparent 50.5%);
 }
 
 [data-theme='dark'] .md-price-callout {
@@ -54,7 +54,7 @@
 }
 
 [data-theme='dark'] .md-line-chart__svg line {
-  stroke: #2a3328;
+  stroke: var(--dark-border-subtle);
 }
 
 [data-theme='dark'] .md-line-chart__ylabels,
@@ -62,15 +62,15 @@
 [data-theme='dark'] .md-price-chart__y-label,
 [data-theme='dark'] .md-price-chart__val,
 [data-theme='dark'] .md-price-chart__name {
-  color: #b8c4b2;
+  color: var(--dark-muted);
 }
 
 [data-theme='dark'] .md-price-chart__bars {
-  border-bottom-color: #2a3328;
+  border-bottom-color: var(--dark-border-subtle);
 }
 
 [data-theme='dark'] .md-rank-row__pos {
-  color: #b8c4b2;
+  color: var(--dark-muted);
 }
 
 [data-theme='dark'] .md-growth--up {
@@ -84,5 +84,5 @@
 }
 
 [data-theme='dark'] .md-expert {
-  background: #1a1f18 !important;
+  background: var(--dark-elevated) !important;
 }

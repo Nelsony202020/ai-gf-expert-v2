@@ -576,83 +576,99 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "AI Cam Models first, then Bonus features Yes/No. If yes, add More bonus features with name, description, and proof."
   },
   "pricing|monthly-price": {
-    "q": "Pricing: monthly cost?",
-    "hint": "Cheapest paid monthly plan in USD."
+    "q": "Monthly price?",
+    "hint": "Cheapest paid monthly plan in USD (filled from Pricing tab when available)."
   },
   "pricing|annual-price": {
-    "q": "Pricing: annual cost?",
-    "hint": "Full year price in USD (or monthly equivalent)."
+    "q": "Annual price?",
+    "hint": "Effective monthly cost when paying yearly."
   },
-  "pricing|free-plan": {
-    "q": "Pricing: free plan?",
-    "hint": "Can you use it 7 days without paying?"
-  },
-  "pricing|free-trial": {
-    "q": "Pricing: free trial?",
-    "hint": "Can you try paid features before being charged?"
+  "pricing|annual-discount": {
+    "q": "Annual discount?",
+    "hint": "Percent saved vs paying monthly for 12 months."
   },
   "pricing|included-credits": {
-    "q": "Pricing: included credits?",
-    "hint": "Tokens/credits included with a normal subscription."
+    "q": "Included credits?",
+    "hint": "Tokens or credits included with the subscription."
   },
   "pricing|included-features": {
-    "q": "Pricing: what is included?",
-    "hint": "Tick features you get without paying extra."
+    "q": "Included features?",
+    "hint": "Tick core features included without extra payment."
   },
   "pricing|plan-limits": {
-    "q": "Pricing: usage limits?",
-    "hint": "Daily/monthly caps on messages, images, etc."
+    "q": "Plan limits?",
+    "hint": "Daily or monthly caps on messages, images, video, voice, characters."
   },
   "pricing|image-cost": {
-    "q": "Pricing: image cost?",
-    "hint": "USD cost for one image."
+    "q": "Image cost?",
+    "hint": "USD per usable image (total generation cost ÷ usable images when possible)."
   },
   "pricing|video-cost": {
-    "q": "Pricing: video cost?",
-    "hint": "USD cost for one video."
+    "q": "Video cost?",
+    "hint": "USD per 10 seconds of video — normalize shorter clips to this unit."
   },
   "pricing|voice-cost": {
-    "q": "Pricing: voice cost?",
-    "hint": "Cost per voice message or per minute."
+    "q": "Voice cost?",
+    "hint": "USD per 10 seconds of voice message."
   },
-  "pricing|top-ups": {
-    "q": "Pricing: credit packs?",
-    "hint": "Smallest and biggest token pack + price per credit."
+  "pricing|call-cost": {
+    "q": "Call cost?",
+    "hint": "USD per minute of voice calling."
   },
-  "pricing|credit-expiry": {
-    "q": "Pricing: credits expire?",
-    "hint": "Do bought credits expire? When?"
+  "pricing|top-up-value": {
+    "q": "Top-up value?",
+    "hint": "Smallest and largest credit packages plus cost per credit."
   },
-  "pricing|feature-paywalls": {
-    "q": "Pricing: pay extra for what?",
-    "hint": "Tick features that cost more on top of your plan."
+  "pricing|monthly-spend": {
+    "q": "Monthly spend?",
+    "hint": "Estimated monthly cost for regular use (500 msgs, 20 images, 4 videos, 30 voice min)."
   },
-  "pricing|refunds": {
-    "q": "Pricing: refunds allowed?",
-    "hint": "Can you get money back? Any rules?"
+  "pricing|free-chat": {
+    "q": "Free chat?",
+    "hint": "How many messages can a free user send? Use a short label like 20 messages."
   },
-  "pricing|real-cost": {
-    "q": "Pricing: normal month total?",
-    "hint": "500 msgs + 20 images + 4 videos + 30 voice min — total cost?"
+  "pricing|free-images": {
+    "q": "Free images?",
+    "hint": "How many images can a free user generate? e.g. 3 images."
   },
-  "pricing|heavy-use-cost": {
-    "q": "Pricing: heavy month total?",
-    "hint": "2000 msgs + 100 images + 20 videos + 120 voice min — total cost?"
+  "pricing|free-video": {
+    "q": "Free video?",
+    "hint": "How many videos can a free user create? e.g. 1 video."
   },
-  "pricing|category-comparison": {
-    "q": "Pricing: vs other apps?",
-    "hint": "Cheaper or pricier than similar apps for normal use?"
+  "pricing|free-voice": {
+    "q": "Free voice?",
+    "hint": "Free voice allowance in seconds — e.g. 30 sec voice."
   },
-  "pricing|feature-value": {
-    "q": "Pricing: worth the money?",
-    "hint": "Tick features included in a normal month without extra pay (10 items)."
+  "pricing|free-characters": {
+    "q": "Free characters?",
+    "hint": "How many characters can a free user create or chat with? e.g. 1 character."
   },
-  "pricing|usage-value": {
-    "q": "Pricing: stuff per $10?",
-    "hint": "Count usable chats, images, videos, voice from your tests. Results per $10 spent."
+  "pricing|free-value": {
+    "q": "Free trial without credit card?",
+    "hint": "Yes if users can try without entering payment details."
   },
   "pricing|pricing-clarity": {
-    "q": "Pricing: prices shown clearly?",
+    "q": "Price clarity?",
     "hint": "Tick what the site shows before checkout (price, limits, refunds, etc.)."
+  },
+  "pricing|paywalls": {
+    "q": "Paywalls?",
+    "hint": "Deprecated — removed from testing."
+  },
+  "pricing|credit-expiry": {
+    "q": "Credit expiry?",
+    "hint": "Do purchased credits expire? When?"
+  },
+  "pricing|refunds": {
+    "q": "Refunds?",
+    "hint": "Can you get money back? Any rules or time limits?"
+  },
+  "pricing|cancellation": {
+    "q": "Easy cancellation?",
+    "hint": "Yes, Limited, or No — how easy it is to cancel without support."
+  },
+  "pricing|payment-privacy": {
+    "q": "Payment & privacy?",
+    "hint": "Filled from Pricing tab discreet billing — not entered in testing."
   }
 };

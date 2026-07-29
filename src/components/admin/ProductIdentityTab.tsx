@@ -259,6 +259,7 @@ export function ProductIdentityTab({
                 role="featured"
                 accept="image/png,image/jpeg,image/webp"
                 productId={productId}
+                productName={String(fields.name ?? '')}
                 value={links.featuredImage ?? null}
                 mediaRows={mediaRows}
                 onChange={(id) => setLinks((p) => ({ ...p, featuredImage: id }))}

@@ -15,6 +15,7 @@ import { isEvidenceApplicable } from '../testing/capabilityGating';
 import { computePricingSuggestions } from '../testing/pricingAutofill';
 import { PRICING_AUTOFILL_SLUGS } from '../testing/pricingEvidenceSlugs';
 import { repairChatModesRaw } from '../testing/evidenceComplete';
+import { deferUsageCostScores } from '../ratings/evidenceIcons';
 
 function isEditingAccuracyScoredForRun(resultBySlug: Map<string, { notApplicable?: boolean; rawValue?: unknown }>): boolean {
   const imageEdit = resultBySlug.get('image-editing');
@@ -49,14 +50,16 @@ async function loadProductPricing(productId: string) {
       subscriptionPlans: {},
       creditPackages: {},
       featureCosts: {},
+      paymentProfile: {},
     },
   });
   const product = products[0];
-  if (!product) return { plans: [], packages: [], featureCosts: [] };
+  if (!product) return { plans: [], packages: [], featureCosts: [], paymentProfile: null };
   return {
     plans: (product.subscriptionPlans ?? []) as Record<string, unknown>[],
     packages: (product.creditPackages ?? []) as Record<string, unknown>[],
     featureCosts: (product.featureCosts ?? []) as Record<string, unknown>[],
+    paymentProfile: (product.paymentProfile ?? null) as Record<string, unknown> | null,
   };
 }
 
@@ -158,6 +161,10 @@ export async function calculateRun(testRunId: string): Promise<{
 
   await repairChatModesEvidence(resultByDef, resultBySlug);
   await syncPricingEvidence(testRunId, productId, mv, resultByDef);
+  for (const row of resultByDef.values()) {
+    const slug = row.evidenceDefinition?.slug;
+    if (slug) resultBySlug.set(String(slug), row);
+  }
 
   const categories = (mv.categories ?? [])
     .filter((c: any) => c.active)
@@ -177,6 +184,7 @@ export async function calculateRun(testRunId: string): Promise<{
   );
 
   const productFields = (run.product ?? {}) as Record<string, unknown>;
+  const productSlug = String(run.product?.slug ?? '');
 
   const evidence: EvidenceInput[] = (mv.categories ?? [])
     .sort((a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
@@ -206,6 +214,7 @@ export async function calculateRun(testRunId: string): Promise<{
                 notApplicable:
                   result?.notApplicable ||
                   capabilityGated ||
+                  deferUsageCostScores(productSlug, s.slug) ||
                   (c.slug === 'images' &&
                     d.slug === 'editing-accuracy' &&
                     !isEditingAccuracyScoredForRun(resultBySlug)),
@@ -245,6 +254,89 @@ export async function calculateRun(testRunId: string): Promise<{
   }
   if (updates.length > 0) await db.transact(updates);
 
+  return { tree, run };
+}
+
+/** Recalculate and replace score snapshots for a run (preview / post-migration refresh). */
+export async function refreshScoreSnapshots(testRunId: string) {
+  const { tree, run } = await calculateRun(testRunId);
+  const db = getDb();
+  const productId = run.product!.id;
+  const mvVersion = run.methodologyVersion!.version;
+  const mv = run.methodologyVersion!;
+  const now = Date.now();
+
+  const catOrder = new Map<string, number>();
+  const subOrder = new Map<string, number>();
+  const subNames = new Map<string, string>();
+  for (const c of mv.categories ?? []) {
+    catOrder.set(String(c.slug), Number(c.displayOrder ?? 0));
+    for (const s of c.subscores ?? []) {
+      if (s.active === false) continue;
+      subOrder.set(String(s.slug), Number(s.displayOrder ?? 0));
+      subNames.set(String(s.slug), String(s.name ?? s.slug));
+    }
+  }
+
+  const { scoreSnapshots: existingSnaps } = await db.query({
+    scoreSnapshots: { $: { where: { 'testRun.id': testRunId } } },
+  });
+
+  const chunks: any[] = [];
+  for (const s of existingSnaps) {
+    chunks.push(db.tx.scoreSnapshots[s.id].delete());
+  }
+
+  function snapshot(
+    kind: string,
+    refSlug: string,
+    score: number | null,
+    weight?: number,
+    parentSlug?: string,
+    detail?: unknown,
+  ) {
+    const sid = newId();
+    chunks.push(
+      db.tx.scoreSnapshots[sid]
+        .update({
+          kind,
+          refSlug,
+          parentSlug,
+          score: score ?? undefined,
+          weight,
+          calculationVersion: tree.calculationVersion,
+          methodologyVersion: mvVersion,
+          detail: detail ? JSON.parse(JSON.stringify(detail)) : undefined,
+          createdAt: now,
+        })
+        .link({ testRun: testRunId, product: productId }),
+    );
+  }
+
+  if (tree.overall !== null) snapshot('overall', 'overall', tree.overall);
+  for (const cat of tree.categories) {
+    if (cat.score !== null) {
+      snapshot('category', cat.slug, cat.score, cat.weight, undefined, {
+        displayOrder: catOrder.get(cat.slug) ?? 0,
+      });
+    }
+    for (const sub of cat.subscores) {
+      if (sub.score === null) continue;
+      snapshot('subscore', sub.slug, sub.score, sub.weight, cat.slug, {
+        displayOrder: subOrder.get(sub.slug) ?? 0,
+        name: subNames.get(sub.slug) ?? sub.name,
+        evidence: sub.evidence.map((e) => ({
+          slug: e.slug,
+          score: e.normalizedScore,
+          weight: e.effectiveWeight,
+          status: e.status,
+          overridden: e.overridden,
+        })),
+      });
+    }
+  }
+
+  if (chunks.length > 0) await db.transact(chunks);
   return { tree, run };
 }
 

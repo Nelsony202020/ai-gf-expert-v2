@@ -6,9 +6,10 @@ import { getDraftScoreChipClass } from '../../lib/draft-ratings/scoreBands';
 interface Props {
   tableId: string;
   items: DraftEvidenceCategory[];
+  hideScores?: boolean;
 }
 
-const { tableId, items } = Astro.props;
+const { tableId, items, hideScores = false } = Astro.props;
 ---
 
 <div class="evidence-cat-table-wrap">
@@ -23,7 +24,8 @@ const { tableId, items } = Astro.props;
 
     {
       items.map((item) => {
-        const chip = getDraftScoreChipClass(item.score);
+        const displayScore = hideScores ? null : item.score;
+        const chip = getDraftScoreChipClass(displayScore);
         const summary = item.cardTeaser || item.summary;
         return (
           <button
@@ -34,7 +36,7 @@ const { tableId, items } = Astro.props;
             aria-haspopup="dialog"
           >
             <span class="evidence-cat-table__score" role="cell">
-              <span class={`rt-score-chip rt-score-chip--outline ${chip}`}>{fmtScore(item.score)}</span>
+              <span class={`rt-score-chip rt-score-chip--outline ${chip}`}>{fmtScore(displayScore)}</span>
             </span>
             <span class="evidence-cat-table__name" role="cell">{item.name}</span>
             <span class="evidence-cat-table__summary" role="cell">{summary}</span>

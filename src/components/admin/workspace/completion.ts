@@ -6,6 +6,7 @@
 // their own separate percentages.
 
 import type { EntityRow } from '../api';
+import { isHeroMedia } from '../../../lib/media/catalog';
 import { SETUP_CHARACTER_CAPABILITIES } from '../productCapabilities';
 
 export const WORKSPACE_TABS = [
@@ -59,7 +60,7 @@ export interface TabCompletion {
 export type TabVisualStatus = 'complete' | 'attention' | 'not_started' | 'blocked';
 
 /** Tabs where recommended checks still matter for the yellow indicator. */
-const RECOMMENDED_TRACKED_TABS = new Set<WorkspaceTabId>(['pricing', 'media', 'review', 'seo']);
+const RECOMMENDED_TRACKED_TABS = new Set<WorkspaceTabId>(['pricing', 'review', 'seo']);
 
 export function tabVisualStatus(tab: TabCompletion): TabVisualStatus {
   if (tab.id === 'publish') {
@@ -97,6 +98,19 @@ interface Check {
 }
 
 const STALE_PRICE_DAYS = 60;
+const MIN_CHARACTERS_FOR_COMPLETE = 3;
+
+function activeMedia(media: EntityRow[]): EntityRow[] {
+  return media.filter((m) => !m.deletedAt);
+}
+
+function mediaNeedingAlt(m: EntityRow): boolean {
+  return m.mediaType !== 'video';
+}
+
+function activeCharacters(characters: EntityRow[]): EntityRow[] {
+  return characters.filter((c) => !c.deletedAt && c.active !== false);
+}
 
 function textFilled(v: unknown): boolean {
   return v !== undefined && v !== null && String(v).trim() !== '';
@@ -187,16 +201,38 @@ const REVIEW_CHECKS: Check[] = [
 
 const MEDIA_CHECKS: Check[] = [
   {
-    key: 'galleryMedia',
-    label: 'Approved gallery media',
-    severity: 'recommended',
-    done: (i) => i.media.some((m) => (m.role === 'gallery' || m.role === 'character') && m.approved),
+    key: 'featuredImage',
+    label: 'Featured image',
+    severity: 'required',
+    done: (i) =>
+      Boolean(i.links.featuredImage) || activeMedia(i.media).some((m) => isHeroMedia(m)),
   },
   {
     key: 'altText',
-    label: 'Complete alt text on media',
+    label: 'Alt text on all images',
+    severity: 'required',
+    done: (i) => {
+      const images = activeMedia(i.media).filter(mediaNeedingAlt);
+      return images.length > 0 && images.every((m) => textFilled(m.altText));
+    },
+  },
+  {
+    key: 'galleryMedia',
+    label: 'Approved public gallery media',
     severity: 'recommended',
-    done: (i) => i.media.length > 0 && i.media.every((m) => textFilled(m.altText)),
+    done: (i) =>
+      activeMedia(i.media).some(
+        (m) => (m.role === 'gallery' || m.role === 'character') && m.approved,
+      ),
+  },
+];
+
+const CHARACTERS_CHECKS: Check[] = [
+  {
+    key: 'minCharacters',
+    label: `At least ${MIN_CHARACTERS_FOR_COMPLETE} characters`,
+    severity: 'recommended',
+    done: (i) => activeCharacters(i.characters).length >= MIN_CHARACTERS_FOR_COMPLETE,
   },
 ];
 
@@ -246,12 +282,13 @@ const TAB_CHECKS: Partial<Record<WorkspaceTabId, Check[]>> = {
   verdict: VERDICT_CHECKS,
   review: REVIEW_CHECKS,
   media: MEDIA_CHECKS,
+  characters: CHARACTERS_CHECKS,
   pricing: PRICING_CHECKS,
   seo: SEO_CHECKS,
 };
 
-/** Tabs with no completion tracking — presence is entirely optional. */
-const OPTIONAL_TABS: WorkspaceTabId[] = ['characters'];
+/** Tabs with no completion tracking. */
+const OPTIONAL_TABS: WorkspaceTabId[] = [];
 
 export function computeProductCompletion(input: CompletionInput): ProductCompletion {
   const tabs: TabCompletion[] = [];

@@ -56,7 +56,7 @@ export function buildProofAssignTargets(
       defId: liveCamDef.id,
       liveCamProof: true,
       label: 'AI Cam Models',
-      defaultAltText: 'Proof: AI Cam Models',
+      defaultAltText: '',
     });
   }
   for (const { def } of items) {
@@ -74,21 +74,21 @@ export function buildProofAssignTargets(
           defId: def.id,
           bonusExtraId: extra.id,
           label: `Bonus: ${name}`,
-          defaultAltText: `Bonus: ${name}`,
+          defaultAltText: '',
         });
       }
       targets.push({
         targetId: def.id,
         defId: def.id,
         label: `${label} (general)`,
-        defaultAltText: `Evidence: ${def.name}`,
+        defaultAltText: '',
       });
     } else {
       targets.push({
         targetId: def.id,
         defId: def.id,
         label,
-        defaultAltText: `Evidence: ${def.name}`,
+        defaultAltText: '',
       });
     }
   }
@@ -226,10 +226,9 @@ export function SessionProofZone({
           form.set('file', s.file);
           form.set('adult', '0');
           form.set('role', 'proof');
-          form.set(
-            'altText',
-            s.altText.trim() || target?.defaultAltText || `Evidence: ${def.name}`,
-          );
+          if (s.altText.trim()) {
+            form.set('altText', s.altText.trim());
+          }
           if (liveCamProof) {
             form.set('caption', proofTagCaption(LIVE_CAM_PROOF_TAG, s.caption.trim()));
           } else if (bonusExtraId) {

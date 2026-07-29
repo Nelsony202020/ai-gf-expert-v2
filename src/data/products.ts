@@ -6,6 +6,8 @@ import { auraAiCategories } from './aura-ai-categories';
 import { auraAiVerdicts, auraAiExpertOpinion } from './aura-ai-verdict';
 import { computeOverallScore } from '../lib/scores';
 
+import type { MediaItem } from './aura-ai-media';
+
 export interface Author {
   name: string;
   role: string;
@@ -155,6 +157,13 @@ export interface VideoReview {
   channelLabel?: string;
 }
 
+/** Persisted review article blocks from the admin editor. */
+export interface ReviewBlock {
+  id: string;
+  type: string;
+  data?: Record<string, unknown>;
+}
+
 export interface Product {
   slug: string;
   name: string;
@@ -170,6 +179,10 @@ export interface Product {
   /** Hero image on the review page; falls back to gallery[0] when unset. */
   featuredImage?: GalleryImage;
   gallery: GalleryImage[];
+  /** Hero carousel images (tagged Hero in admin). */
+  heroGallery?: GalleryImage[];
+  /** All public media for Photos & Videos tab. */
+  mediaItems?: MediaItem[];
   overallScore: number | null;
   overallSummary: string;
   ourTake: string;
@@ -182,6 +195,8 @@ export interface Product {
   expertOpinion: string;
   pricingDisplay: { monthly: string; typicalMonthly?: string | null; storeLabel: string };
   videoReview?: VideoReview;
+  /** Saved review body blocks (admin editor). Empty when no draft exists. */
+  reviewBlocks?: ReviewBlock[];
 }
 
 const img = (seed: string, w: number, h: number) => `https://picsum.photos/seed/${seed}/${w}/${h}`;

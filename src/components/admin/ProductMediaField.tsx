@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { api, type EntityRow } from './api';
+import { resolveMediaUrl } from '../../lib/media/url';
 import { Button, Icon, ErrorNote } from './ui';
 import { FieldHint } from './FieldHint';
 
@@ -12,8 +13,10 @@ interface ProductMediaFieldProps {
   role: 'logo' | 'featured';
   accept: string;
   productId?: string;
+  productName?: string;
   value: string | null;
   mediaRows: EntityRow[];
+  linkedMedia?: { url?: string | null } | null;
   onChange: (mediaId: string | null) => void;
   onUploaded: () => void;
 }
@@ -25,8 +28,10 @@ export function ProductMediaField({
   role,
   accept,
   productId,
+  productName,
   value,
   mediaRows,
+  linkedMedia,
   onChange,
   onUploaded,
 }: ProductMediaFieldProps) {
@@ -37,7 +42,10 @@ export function ProductMediaField({
   const [localPreview, setLocalPreview] = useState<string | null>(null);
 
   const selected = value ? mediaRows.find((m) => m.id === value) : null;
-  const previewUrl = localPreview ?? selected?.url ?? null;
+  const linkedPreview = linkedMedia?.url ? String(linkedMedia.url) : '';
+  const previewUrl =
+    localPreview ??
+    (resolveMediaUrl(selected as { url?: unknown; file?: { url?: unknown } }) || linkedPreview || null);
   const uploadTitle = label.toLowerCase().startsWith('upload') ? label : `Upload ${label.toLowerCase()}`;
 
   async function handleFile(file: File) {
@@ -50,7 +58,12 @@ export function ProductMediaField({
       form.set('file', file);
       form.set('adult', '0');
       form.set('role', role);
-      form.set('altText', `${label} for product`);
+      form.set(
+        'altText',
+        role === 'featured' && productName?.trim()
+          ? `${productName.trim()} review featured image`
+          : `${label} for product`,
+      );
       if (productId) form.set('productId', productId);
       if (file.type.startsWith('image/')) {
         const dims = await imageDimensions(file).catch(() => null);

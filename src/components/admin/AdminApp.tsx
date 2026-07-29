@@ -62,7 +62,7 @@ export default function AdminApp({ appId }: { appId: string }) {
           message={
             meError?.includes('Cannot reach InstantDB') ||
             meError?.includes('InstantDB is not configured')
-              ? meError
+              ? `${meError} Stop other dev servers and run \`npm run dev\` — it now clears stale ports and always uses http://localhost:4321/admin.`
               : meError?.includes('Not authenticated') || meError?.includes('403')
                 ? 'This account does not have admin access.'
                 : meError ?? 'This account does not have admin access.'

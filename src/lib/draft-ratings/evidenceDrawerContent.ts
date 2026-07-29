@@ -126,15 +126,32 @@ const ENHANCED_SCOPE: Record<string, string> = {
   'support-available': 'Whether live or responsive support is offered.',
   'support-helpfulness': 'How useful support replies were in our test.',
   // Pricing
-  subscription: 'Monthly and annual subscription prices and what you get.',
-  'extra-costs': 'Top-ups, credits, and pay-as-you-go costs beyond the subscription.',
-  value: 'Whether pricing feels fair for what you actually get.',
+  'plan-value': 'Monthly and annual subscription prices and what you get.',
+  'usage-costs': 'Per-use costs for images, video, voice, calls, and estimated monthly spend.',
+  'free-access': 'What you can use without paying on the free tier.',
+  billing: 'Pricing clarity, credit expiry, refunds, and easy cancellation.',
   'monthly-price': 'Cheapest paid monthly plan price.',
   'annual-price': 'Annual plan price or monthly equivalent.',
-  'free-plan': 'Whether you can use the product without paying.',
-  'free-trial': 'Whether you can try paid features before being charged.',
+  'annual-discount': 'Percentage saved when paying annually vs monthly.',
+  'pricing-clarity': 'How clearly the platform explains costs before you pay.',
   'included-credits': 'Tokens or credits included with a normal subscription.',
   'included-features': 'Which major features are included without extra payment.',
+  'image-cost': 'Estimated dollar cost per image.',
+  'video-cost': 'Estimated dollar cost per 10 seconds of video.',
+  'voice-cost': 'Estimated dollar cost per 10 seconds of voice.',
+  'call-cost': 'Estimated dollar cost per minute of voice calling.',
+  'top-up-value': 'Smallest and largest credit packages available.',
+  'monthly-spend': 'Estimated monthly cost for regular use.',
+  'free-chat': 'How many chat messages are free before payment.',
+  'free-images': 'How many images are free before payment.',
+  'free-video': 'How many videos are free before payment.',
+  'free-voice': 'How much voice is free before payment.',
+  'free-characters': 'How many characters are free before payment.',
+  'free-value': 'Whether users can start a free trial without a credit card.',
+  'credit-expiry': 'Whether purchased credits expire and when.',
+  refunds: 'Whether refunds are offered and on what terms.',
+  cancellation: 'How easy it is to cancel a subscription (Yes, Limited, or No).',
+  'payment-privacy': 'Whether billing is discreet on statements (from Pricing tab).',
 };
 
 function slugToPlainScope(slug: string): string {
@@ -559,6 +576,14 @@ export function proofShortCaption(
   proof: DraftProofItem,
   related?: DraftMeasurement,
 ): string {
+  const userCaption = proof.caption?.replace(/^Evidence:\s*/i, '').trim();
+  if (userCaption) {
+    const pipe = userCaption.indexOf('|');
+    const label = pipe === -1 ? userCaption : userCaption.slice(pipe + 1).trim();
+    if (label && !label.startsWith('bonus-extra:') && label !== 'live-cam-proof') {
+      return label.length <= 48 ? label : `${label.slice(0, 45)}…`;
+    }
+  }
   if (related?.slug && PROOF_SHORT_LABELS[related.slug]) {
     return PROOF_SHORT_LABELS[related.slug];
   }

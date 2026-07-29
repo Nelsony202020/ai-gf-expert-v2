@@ -90,7 +90,7 @@ const CHECKLIST: Record<string, { items: string[] }> = {
       'Message regeneration',
     ],
   },
-  'Pricing|feature-paywalls': {
+  'Pricing|paywalls': {
     items: [
       'Standard chat',
       'Character library',

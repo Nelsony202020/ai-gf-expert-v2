@@ -7,6 +7,28 @@ export function Icon({ name, className = '' }: { name: string; className?: strin
   return <span className={`material-symbols-outlined ${className}`}>{name}</span>;
 }
 
+/** Text close control shared across admin drawers (matches review calc drawer). */
+export function DrawerCloseButton({
+  onClick,
+  className = '',
+  ariaLabel = 'Close',
+}: {
+  onClick: () => void;
+  className?: string;
+  ariaLabel?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className={`drawer-close-text shrink-0 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 ${className}`}
+    >
+      <span aria-hidden="true">✕</span> Close
+    </button>
+  );
+}
+
 export function YouTubeIcon({ className = 'h-[18px] w-[18px]' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

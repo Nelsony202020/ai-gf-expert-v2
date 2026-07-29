@@ -1,5 +1,5 @@
 ---
-import type { Product } from '../../../data/products';
+import type { Product, RatingCategory as ProductRatingCategory } from '../../../data/products';
 import type { DraftCategory, DraftRatingsViewModel } from '../../../lib/draft-ratings/types';
 import RatingCategory from './RatingCategory.astro';
 import DetailLevelControl from '../DetailLevelControl.astro';
@@ -13,8 +13,9 @@ import {
   buildSubscoreKeyTakeaways,
 } from '../../../lib/draft-ratings/evidenceDrawerContent';
 import { getSubscoreDescription } from '../../../data/subscore-descriptions';
-import { equalWeights, weightedValue } from '../../../lib/scores';
+import { buildRedistributedCalcItems, equalWeights } from '../../../lib/scores';
 import { buildDrawerNavChain } from '../../../lib/draft-ratings/drawerNav';
+import { deferPayAsYouGoScores, iconForEvidenceDef, PRICING_BENCHMARK_PENDING_NOTE } from '../../../lib/ratings/evidenceIcons';
 import '../testing-credentials.css';
 import '../ratings-evidence.css';
 
@@ -31,6 +32,31 @@ const ratingsModel =
 
 const enrichedByKey = new Map(ratingsModel.categories.map((c) => [c.slug, c]));
 
+/** Prefer draft subscore structure (methodology) over stale published snapshots. */
+function displayCategory(productCat: ProductRatingCategory, draftCat?: DraftCategory): ProductRatingCategory {
+  if (!draftCat?.subscores.length) return productCat;
+  return {
+    ...productCat,
+    score: draftCat.score ?? productCat.score,
+    subscores: draftCat.subscores.map((ds) => {
+      const ps = productCat.subscores.find(
+        (s) => s.name === ds.name || s.name.toLowerCase().replace(/\s+/g, '-') === ds.slug,
+      );
+      return {
+        name: ds.name,
+        score: ds.score ?? ps?.score ?? null,
+        weight: ps?.weight ?? 25,
+        description: ds.finding ?? ps?.description ?? getSubscoreDescription(draftCat.slug, ds.name),
+        contributors: ps?.contributors ?? [],
+      };
+    }),
+  };
+}
+
+const displayCategories = product.categories.map((cat) =>
+  displayCategory(cat, enrichedByKey.get(cat.key)),
+);
+
 const drawerNavById = buildDrawerNavChain(ratingsModel.categories);
 
 const allEvidenceCategories = ratingsModel.categories.flatMap((c) =>
@@ -39,19 +65,34 @@ const allEvidenceCategories = ratingsModel.categories.flatMap((c) =>
 
 const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
   cat.subscores.map((sub) => {
-    const weights = equalWeights(sub.evidenceCategories.length || sub.testGroups.length || 1);
     const productCat = product.categories.find((c) => c.key === cat.slug);
     const productSub = productCat?.subscores.find((s) => s.name === sub.name);
     const iconByName = new Map(
       (productSub?.contributors ?? []).map((c) => [c.label, c.icon ?? 'analytics']),
     );
-    const items = sub.evidenceCategories.map((ec, i) => ({
-      name: ec.name,
-      score: ec.score,
-      weight: weights[i] ?? 0,
-      icon: iconByName.get(ec.name) ?? 'analytics',
-      contribution: ec.score != null ? weightedValue(ec.score, weights[i] ?? 0) : null,
+    const deferScores = deferPayAsYouGoScores(product.slug, sub.slug);
+    const nominalWeights = equalWeights(sub.evidenceCategories.length || sub.testGroups.length || 1);
+    const { rows, excludedNames } = buildRedistributedCalcItems(
+      sub.evidenceCategories.map((ec, i) => ({
+        name: ec.name,
+        score: deferScores ? null : ec.score,
+        nominalWeight: nominalWeights[i] ?? 0,
+      })),
+    );
+    const items = rows.map((row, i) => ({
+      name: row.name,
+      score: row.score,
+      weight: row.weight,
+      icon: iconForEvidenceDef(sub.evidenceCategories[i]?.slug ?? '', row.name) ?? iconByName.get(row.name) ?? 'analytics',
+      contribution: row.contribution,
+      excluded: row.excluded,
     }));
+    const excludedNote =
+      deferScores && excludedNames.length === 0
+        ? PRICING_BENCHMARK_PENDING_NOTE
+        : excludedNames.length > 0
+          ? `Excluded from score (no penalty): ${excludedNames.join(', ')}. Remaining weights scaled to 100%.`
+          : undefined;
     const scopeSource =
       sub.scopeDescription ||
       productSub?.description ||
@@ -71,6 +112,7 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
         sub.explanation || sub.finding || productSub?.description,
       ),
       items,
+      excludedNote,
       ...nav,
     };
   }),
@@ -95,9 +137,10 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
       {
         product.categories.map((category, index) => (
           <RatingCategory
-            category={category}
+            category={displayCategories[index] ?? category}
             enrichedCategory={enrichedByKey.get(category.key)}
             productName={product.name}
+            productSlug={product.slug}
             open={false}
             isFirst={index === 0}
             isLast={index === product.categories.length - 1}

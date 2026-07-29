@@ -25,6 +25,7 @@ import {
   withDefaultTokenExpiration,
   type CreditCurrencyLike,
 } from '../../../../lib/pricing/credit-currency';
+import { PRICING_PROOF_CAPTION, pricingProofMediaPatch } from '../../../../lib/media/catalog';
 import { useAsyncToast, useToastError } from '../../Toast';
 import {
   Badge,
@@ -42,6 +43,7 @@ import { SimpleFeatureCosts } from './SimpleFeatureCosts';
 import { UsageScenariosPanel } from './UsageScenariosPanel';
 import { PricingImportCard } from '../../ai-pricing/PricingImportCard';
 import { PricingReviewModal, type PricingDraftClient } from '../../ai-pricing/PricingReviewModal';
+import { ProofThumb } from '../../testing/ProofThumb';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -1224,6 +1226,8 @@ function PricingEvidence({
         form.set('file', file);
         form.set('adult', '0');
         form.set('role', 'proof');
+        form.set('caption', PRICING_PROOF_CAPTION);
+        form.set('testCategory', 'pricing');
         form.set('altText', altText);
         form.set('productId', ws.productId);
         const created = await api.upload<{ id: string }>('/api/admin/media/upload', form);
@@ -1269,28 +1273,14 @@ function PricingEvidence({
         {!compact && <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Evidence</span>}
         {ids.map((id) => {
           const m = mediaById.get(id);
+          if (!m) return null;
           return (
-            <span
+            <ProofThumb
               key={id}
-              className="group relative inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
-              title={String(m?.altText ?? m?.caption ?? 'Evidence')}
-            >
-              {m?.url ? (
-                <img src={String(m.url)} alt={String(m.altText ?? '')} className="h-full w-full object-cover" />
-              ) : (
-                <Icon name="image" className="!text-[16px] text-slate-400" />
-              )}
-              {canEdit && (
-                <button
-                  type="button"
-                  aria-label="Remove evidence"
-                  className="absolute inset-0 hidden items-center justify-center bg-black/50 text-white group-hover:flex"
-                  onClick={() => void patch(ids.filter((x) => x !== id))}
-                >
-                  <Icon name="close" className="!text-[14px]" />
-                </button>
-              )}
-            </span>
+              media={m}
+              disabled={!canEdit}
+              onDetach={canEdit ? () => void patch(ids.filter((x) => x !== id)) : undefined}
+            />
           );
         })}
         {canEdit && (
@@ -1333,7 +1323,15 @@ function PricingEvidence({
           excludeIds={ids}
           onSelect={(id) => {
             setShowPicker(false);
-            void patch([...ids, id]);
+            void (async () => {
+              try {
+                await dataApi.update('media', id, pricingProofMediaPatch(altText));
+                await ws.refreshRelated();
+                await patch([...ids, id]);
+              } catch (e) {
+                setError(e instanceof Error ? e.message : 'Could not tag media as pricing proof');
+              }
+            })();
           }}
           onClose={() => setShowPicker(false)}
         />

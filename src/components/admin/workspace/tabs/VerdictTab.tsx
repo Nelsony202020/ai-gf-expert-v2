@@ -28,6 +28,7 @@ import {
   computeVerdictProgress,
   VERDICT_STEPS,
 } from '../verdict/verdictSteps';
+import { sanitizeCategoryVerdictDraft } from '../verdict/categoryVerdictProgress';
 import { useVerdictTestingSummary, countCategoryRemainingRequired } from '../verdict/useVerdictTestingSummary';
 import { workspaceTabPath } from '../completion';
 
@@ -79,6 +80,7 @@ export function VerdictTab() {
   const { fields, set, setMany, related, productId, saving } = ws;
   const [activeStep, setActiveStep] = useState<VerdictStepId>('overall');
   const [categoryDrawerSlug, setCategoryDrawerSlug] = useState<string | null>(null);
+  const [categoryNotesOpen, setCategoryNotesOpen] = useState(false);
   const [notesDrawerOpen, setNotesDrawerOpen] = useState(false);
   const [notesSectionKey, setNotesSectionKey] = useState<string | null>(null);
   const [aiAssistedFields, setAiAssistedFields] = useState<Set<string>>(new Set());
@@ -200,6 +202,10 @@ export function VerdictTab() {
 
   const testRunId = testing.currentRun?.id;
 
+  useEffect(() => {
+    setCategoryNotesOpen(false);
+  }, [categoryDrawerSlug]);
+
   function currentNotesSectionKey(): string {
     if (categoryDrawerSlug) return categorySectionKey(categoryDrawerSlug);
     return verdictStepSectionKey(activeStep);
@@ -305,24 +311,32 @@ export function VerdictTab() {
   async function handleSaveSection() {
     const ok = await ws.save();
     if (ok) toast.success('Section saved');
+    else if (ws.saveError) toast.error(ws.saveError);
   }
 
   async function saveCategoryDraft(slug: string, draft: CategoryVerdict): Promise<boolean> {
+    const cleaned = sanitizeCategoryVerdictDraft(draft);
     const next = {
       ...categoryVerdicts,
-      [slug]: { ...categoryVerdicts[slug], ...draft },
+      [slug]: { ...categoryVerdicts[slug], ...cleaned },
     };
     flushSync(() => setMany({ categoryVerdicts: next }));
-    const ok = await ws.save();
+    const ok = await ws.save({ categoryVerdicts: next });
     if (ok) toast.success('Category verdict saved');
+    else if (ws.saveError) toast.error(ws.saveError);
     return ok;
   }
 
   const openCategoryNotes = useCallback(
     async (slug: string) => {
+      if (categoryNotesOpen && notesSectionKey === categorySectionKey(slug)) {
+        setCategoryNotesOpen(false);
+        return;
+      }
+      setCategoryNotesOpen(true);
       await openNotesDrawer(categorySectionKey(slug));
     },
-    [openNotesDrawer],
+    [categoryNotesOpen, notesSectionKey, openNotesDrawer],
   );
 
   const activeStepLabel = VERDICT_STEPS.find((s) => s.id === activeStep)?.label ?? '';
@@ -776,13 +790,47 @@ export function VerdictTab() {
           onClose={() => setCategoryDrawerSlug(null)}
           onSave={saveCategoryDraft}
           onOpenNotes={() => void openCategoryNotes(categoryDrawerSlug)}
+          notesOpen={categoryNotesOpen}
+          notesPanel={
+            categoryNotesOpen ? (
+              <AiNotesDrawer
+                embedded
+                open
+                sectionLabel={
+                  String(
+                    related.categories.find((c) => String(c.slug) === categoryDrawerSlug)?.name ??
+                      categoryDrawerSlug,
+                  )
+                }
+                productName={String(fields.name ?? 'Product')}
+                testRunName={testing.currentRun?.name}
+                notes={aiNotes.notes}
+                loading={aiNotes.loading}
+                generating={aiNotes.generating}
+                error={aiNotes.error}
+                onClose={() => setCategoryNotesOpen(false)}
+                onGenerate={() => void handleGenerateNotes()}
+                onRegenerate={() => void handleRegenerateNotes()}
+                getFieldValue={getNotesFieldValue}
+                onInsertField={handleNotesInsertField}
+                onInsertListField={handleNotesInsertListField}
+              />
+            ) : null
+          }
+          renderFieldAssist={(opts) =>
+            renderAssist({
+              ...opts,
+              categorySlug: categoryDrawerSlug,
+              fieldKey: `categoryVerdicts.${categoryDrawerSlug}.${opts.fieldKey}`,
+            })
+          }
           onNavigate={(slug) => setCategoryDrawerSlug(slug)}
           onContinueNext={(slug) => setCategoryDrawerSlug(slug)}
         />
       )}
 
       <AiNotesDrawer
-        open={notesDrawerOpen}
+        open={notesDrawerOpen && !categoryDrawerSlug}
         sectionLabel={
           notesSectionKey
             ? sectionConfig(

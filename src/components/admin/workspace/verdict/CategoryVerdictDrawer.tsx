@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { DRAWER_UNMOUNT_MS } from '../../../../lib/drawer/animate';
-import { ConfirmDialog } from '../../ConfirmDialog';
-import { Button, Field, Icon, TextArea, TextInput } from '../../ui';
-import { CategoryEvidenceList, CategoryEvidencePicker } from './CategoryEvidencePicker';
+import { Button, DrawerCloseButton, Field, Icon, TextArea, TextInput } from '../../ui';
+import { CategoryEvidenceList } from './CategoryEvidencePicker';
 import { CategoryProsConsEditor } from './CategoryProsConsEditor';
 import { deriveCategoryKeyFindings } from './categoryVerdictKeyFindings';
 import {
@@ -42,6 +41,9 @@ export function CategoryVerdictDrawer({
   onClose,
   onSave,
   onOpenNotes,
+  notesOpen = false,
+  notesPanel,
+  renderFieldAssist,
   onNavigate,
   onContinueNext,
 }: {
@@ -63,6 +65,17 @@ export function CategoryVerdictDrawer({
   onClose: () => void;
   onSave: (slug: string, draft: CategoryVerdict) => Promise<boolean>;
   onOpenNotes: () => void;
+  notesOpen?: boolean;
+  notesPanel?: ReactNode;
+  renderFieldAssist?: (opts: {
+    fieldKey: string;
+    targetField: string;
+    hasText: boolean;
+    currentText?: string;
+    list?: boolean;
+    onText?: (text: string) => void;
+    onItems?: (items: string[]) => void;
+  }) => ReactNode;
   onNavigate: (slug: string) => void;
   onContinueNext: (slug: string) => void;
 }) {
@@ -70,7 +83,6 @@ export function CategoryVerdictDrawer({
   const [dirty, setDirty] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [animOpen, setAnimOpen] = useState(false);
-  const [closeConfirm, setCloseConfirm] = useState(false);
   const [showAllEvidence, setShowAllEvidence] = useState(false);
   const [testingNoticeOpen, setTestingNoticeOpen] = useState(false);
   const savedRef = useRef(JSON.stringify(saved ?? EMPTY));
@@ -164,8 +176,13 @@ export function CategoryVerdictDrawer({
   }
 
   function tryClose() {
-    if (dirty) setCloseConfirm(true);
-    else closeDrawer();
+    if (dirty) {
+      void saveDraft().then((ok) => {
+        if (ok) closeDrawer();
+      });
+      return;
+    }
+    closeDrawer();
   }
 
   function closeDrawer() {
@@ -265,14 +282,7 @@ export function CategoryVerdictDrawer({
                 {progress.completedRequired} of {progress.totalRequired} required fields complete
               </p>
             </div>
-            <button
-              type="button"
-              onClick={tryClose}
-              className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-700"
-              aria-label="Close"
-            >
-              <Icon name="close" className="!text-[20px]" />
-            </button>
+            <DrawerCloseButton onClick={tryClose} />
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             <Button
@@ -374,10 +384,15 @@ export function CategoryVerdictDrawer({
 
           {/* AI action */}
           <div className="mb-5 border-b border-slate-100 pb-4 dark:border-slate-800">
-            <Button variant="secondary" className="w-full justify-center !py-2 text-sm sm:w-auto" onClick={onOpenNotes}>
+            <Button
+              variant="secondary"
+              className="w-full justify-center !py-2 text-sm sm:w-auto"
+              onClick={onOpenNotes}
+            >
               <Icon name="sticky_note_2" className="!text-[16px]" />
-              AI notes & suggestions
+              {notesOpen ? 'Hide AI notes & suggestions' : 'AI notes & suggestions'}
             </Button>
+            {notesOpen && notesPanel && <div className="mt-3">{notesPanel}</div>}
           </div>
 
           {/* Headline */}
@@ -390,6 +405,13 @@ export function CategoryVerdictDrawer({
               onChange={(e) => patch({ headline: e.target.value })}
               placeholder="Large and varied character library"
             />
+            {renderFieldAssist?.({
+              fieldKey: 'headline',
+              targetField: 'category verdict headline — short phrase summarizing performance in this category',
+              hasText: Boolean((draft.headline ?? '').trim()),
+              currentText: draft.headline ?? '',
+              onText: (text) => patch({ headline: text }),
+            })}
           </Field>
 
           {/* Verdict — primary writing field */}
@@ -413,6 +435,14 @@ export function CategoryVerdictDrawer({
               onChange={(e) => patch({ verdict: e.target.value })}
               placeholder={`How does this product perform on ${categoryName}?`}
             />
+            {renderFieldAssist?.({
+              fieldKey: 'verdict',
+              targetField:
+                'category verdict — 2–4 sentences explaining strongest result, main limitation, and what it means for users',
+              hasText: Boolean((draft.verdict ?? '').trim()),
+              currentText: draft.verdict ?? '',
+              onText: (text) => patch({ verdict: text }),
+            })}
           </div>
 
           {/* Strength / limitation */}
@@ -423,6 +453,13 @@ export function CategoryVerdictDrawer({
                 onChange={(e) => patch({ mainStrength: e.target.value })}
                 placeholder="Best-in-class library size"
               />
+              {renderFieldAssist?.({
+                fieldKey: 'mainStrength',
+                targetField: 'category primary strength — one concise strength for this category',
+                hasText: Boolean((draft.mainStrength ?? '').trim()),
+                currentText: draft.mainStrength ?? '',
+                onText: (text) => patch({ mainStrength: text }),
+              })}
             </Field>
             <Field label="Primary limitation">
               <TextInput
@@ -430,6 +467,13 @@ export function CategoryVerdictDrawer({
                 onChange={(e) => patch({ mainWeakness: e.target.value })}
                 placeholder="Limited male character options"
               />
+              {renderFieldAssist?.({
+                fieldKey: 'mainWeakness',
+                targetField: 'category primary limitation — one concise limitation for this category',
+                hasText: Boolean((draft.mainWeakness ?? '').trim()),
+                currentText: draft.mainWeakness ?? '',
+                onText: (text) => patch({ mainWeakness: text }),
+              })}
             </Field>
           </div>
 
@@ -440,23 +484,28 @@ export function CategoryVerdictDrawer({
               cons={draft.cons ?? []}
               onProsChange={(items) => patch({ pros: items })}
               onConsChange={(items) => patch({ cons: items })}
+              renderProsAssist={() =>
+                renderFieldAssist?.({
+                  fieldKey: 'pros',
+                  targetField: 'category pros — return one item per line, no bullets',
+                  hasText: Boolean(draft.pros?.some((p) => p.trim())),
+                  currentText: (draft.pros ?? []).join('\n'),
+                  list: true,
+                  onItems: (items) => patch({ pros: items }),
+                })
+              }
+              renderConsAssist={() =>
+                renderFieldAssist?.({
+                  fieldKey: 'cons',
+                  targetField: 'category cons — return one item per line, no bullets',
+                  hasText: Boolean(draft.cons?.some((c) => c.trim())),
+                  currentText: (draft.cons ?? []).join('\n'),
+                  list: true,
+                  onItems: (items) => patch({ cons: items }),
+                })
+              }
             />
           </div>
-
-          {/* Optional evidence links */}
-          {evidenceEntries.some((e) => e.complete) && (
-            <div className="mt-6 border-t border-slate-100 pt-5 dark:border-slate-800">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Linked evidence
-              </h3>
-              <p className="mb-2 text-xs text-slate-500">Optional references to support this category verdict.</p>
-              <CategoryEvidencePicker
-                entries={evidenceEntries}
-                selectedSlugs={draft.evidenceRefs ?? []}
-                onChange={(slugs) => patch({ evidenceRefs: slugs })}
-              />
-            </div>
-          )}
 
           {/* Missing / ready summary */}
           <div className="mt-6 border-t border-slate-100 pt-5 dark:border-slate-800">
@@ -525,20 +574,6 @@ export function CategoryVerdictDrawer({
           </div>
         </div>
       </aside>
-
-      {closeConfirm && (
-        <ConfirmDialog
-          title="Discard unsaved changes?"
-          message="You have unsaved edits to this category verdict."
-          confirmLabel="Close anyway"
-          danger
-          onCancel={() => setCloseConfirm(false)}
-          onConfirm={() => {
-            setCloseConfirm(false);
-            closeDrawer();
-          }}
-        />
-      )}
     </>
   );
 }

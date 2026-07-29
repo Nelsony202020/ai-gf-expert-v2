@@ -33,14 +33,8 @@
 
       btn.addEventListener('click', () => {
         const dark = root.getAttribute('data-theme') === 'dark';
-        const nextDark = !dark;
-
-        // Avoid view transitions — they snapshot the old header/logo and can
-        // flash duplicate logo/text below the header during the crossfade.
-        root.classList.add('theme-transition');
-        applyTheme(nextDark);
+        applyTheme(!dark);
         syncAll();
-        window.setTimeout(() => root.classList.remove('theme-transition'), 320);
       });
     });
 

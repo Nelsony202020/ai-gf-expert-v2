@@ -48,7 +48,6 @@ export function BonusProofPanel({
             ensureResultId={ensureLiveCamResultId}
             disabled={disabled}
             captionTag={LIVE_CAM_PROOF_TAG}
-            altTextPrefix="AI Cam Models"
             onUploaded={onUploaded}
           />
         </section>
@@ -69,7 +68,6 @@ export function BonusProofPanel({
             ensureResultId={ensureListResultId}
             disabled={disabled}
             captionTag={bonusExtraCaption(row.id)}
-            altTextPrefix={row.name.trim() || `Bonus feature ${idx + 1}`}
             onUploaded={onUploaded}
           />
         </section>

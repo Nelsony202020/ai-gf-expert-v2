@@ -1,5 +1,7 @@
 import { auraAiCategories } from '../data/aura-ai-categories';
 import type { RatingCategory } from '../data/products';
+import { getSubscoreDescription, getSubscoreEvidenceList } from './test-methodology-evidence';
+import { getPublicContributors } from './test-subscore-public-evidence';
 import {
   testCategoryUrl,
   testContributorUrl,
@@ -57,16 +59,22 @@ function mapCategory(cat: RatingCategory): TestCategoryNode {
     weight: cat.weight,
     description: cat.description,
     href: testCategoryUrl(cat.key),
-    subscores: cat.subscores.map((sub) => ({
-      name: sub.name,
-      slug: toSlug(sub.name),
-      description: sub.description,
-      href: testSubscoreUrl(cat.key, sub.name),
-      contributors: sub.contributors.map((c) => ({
-        label: c.label,
-        slug: toSlug(c.label),
-        href: testContributorUrl(cat.key, sub.name, c.label),
-      })),
-    })),
+    subscores: cat.subscores.map((sub) => {
+      const slug = toSlug(sub.name);
+      const publicContributors = getPublicContributors(cat.key, slug, sub.name);
+      const evidence = getSubscoreEvidenceList(cat.key, slug);
+
+      return {
+        name: sub.name,
+        slug,
+        description: getSubscoreDescription(cat.key, slug) ?? sub.description,
+        href: testSubscoreUrl(cat.key, sub.name),
+        contributors: (publicContributors ?? evidence.map((item) => ({
+          label: item.name,
+          slug: item.slug,
+          href: testContributorUrl(cat.key, sub.name, item.slug),
+        }))),
+      };
+    }),
   };
 }

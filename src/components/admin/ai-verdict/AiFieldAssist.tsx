@@ -133,10 +133,7 @@ export function AiFieldAssist({
           aria-label="Write with AI"
           aria-expanded={open}
           className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-pink-500 transition-colors hover:bg-pink-50 hover:text-pink-700 disabled:opacity-60 dark:hover:bg-pink-950/40 dark:hover:text-pink-300"
-          onClick={() => {
-            setOpen((v) => !v);
-            if (!open && !preview) void runSuggest('write');
-          }}
+          onClick={() => setOpen((v) => !v)}
         >
           <Icon
             name={loading ? 'progress_activity' : 'auto_awesome'}
@@ -149,6 +146,11 @@ export function AiFieldAssist({
 
       {open && (
         <div className="rounded-lg border border-pink-100 bg-pink-50/50 p-2.5 dark:border-pink-900/40 dark:bg-pink-950/20">
+          {!preview && !loading && (
+            <p className="mb-2 text-[11px] text-slate-500 dark:text-slate-400">
+              Choose how AI should write this field:
+            </p>
+          )}
           <div className="flex flex-wrap gap-1">
             {(Object.keys(MODE_LABELS) as FieldMode[]).map((m) => (
               <button

@@ -5,6 +5,7 @@ import { getDb, id as newId } from './server';
 import { HttpError, type AdminIdentity } from './auth';
 import { auditTx, diffRecords } from './audit';
 import { getEntityConfig, type EntityConfig } from './registry';
+import { formatValidationError } from '../validation/formatError';
 import { schemaForPartialUpdate } from '../validation/partialUpdate';
 import { deleteAffiliateLinkCascade, deleteProductCascade } from './cascade-delete';
 import {
@@ -128,7 +129,7 @@ export async function createEntity(
   const cfg = config(entity);
   const parsed = cfg.schema.safeParse(payload.fields);
   if (!parsed.success) {
-    throw new HttpError(400, `Validation failed: ${parsed.error.message}`);
+    throw new HttpError(400, formatValidationError(parsed.error));
   }
   const fields = { ...(cfg.createDefaults?.() ?? {}), ...(parsed.data as Record<string, unknown>) };
   validateLinks(cfg, payload.links);
@@ -185,7 +186,7 @@ export async function updateEntity(
   const partialSchema = schemaForPartialUpdate(cfg.schema);
   const parsed = partialSchema.safeParse(payload.fields);
   if (!parsed.success) {
-    throw new HttpError(400, `Validation failed: ${parsed.error.message}`);
+    throw new HttpError(400, formatValidationError(parsed.error));
   }
   const fields = parsed.data as Record<string, unknown>;
   validateLinks(cfg, payload.links);

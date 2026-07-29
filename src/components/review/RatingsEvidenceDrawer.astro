@@ -3,7 +3,7 @@ import type { DraftEvidenceCategory } from '../../lib/draft-ratings/types';
 import { proofShortCaption } from '../../lib/draft-ratings/evidenceDrawerContent';
 import { fmtScore } from '../../lib/scores';
 import { getDraftScoreChipClass } from '../../lib/draft-ratings/scoreBands';
-import DraftScorePill from './draft-ratings/DraftScorePill.astro';
+import DraftScorePill from './DraftScorePill.astro';
 import DrawerNavFooter from './DrawerNavFooter.astro';
 import type { DrawerNav } from '../../lib/draft-ratings/drawerNav';
 
@@ -13,6 +13,7 @@ interface SubscoreCalcItem {
   weight: number;
   icon: string;
   contribution: number | null;
+  excluded?: boolean;
 }
 
 interface SubscoreCalc {
@@ -24,6 +25,7 @@ interface SubscoreCalc {
   headlineConclusion: string;
   keyTakeaways: string;
   items: SubscoreCalcItem[];
+  excludedNote?: string;
   prevDrawerId?: string;
   prevLabel?: string;
   nextDrawerId?: string;
@@ -73,6 +75,7 @@ function breadcrumbParts(breadcrumb: string): string[] {
 
 <div data-ratings-drawer-root hidden>
   <div class="ratings-drawer-backdrop" data-ratings-drawer-backdrop aria-hidden="true"></div>
+  <div data-ratings-drawer-mount class="ratings-drawer-mount"></div>
 
   {
     evidenceCategories.map((ec) => {
@@ -95,9 +98,15 @@ function breadcrumbParts(breadcrumb: string): string[] {
         })),
       );
       const showResultsTable = ec.testResults.length > 0 && !isPlatformExtras(ec);
+      const liveCamResult = ec.testResults.find((m) => m.slug === 'live-cam');
+      const showLiveCam =
+        liveCamResult?.value?.toLowerCase().startsWith('yes') ||
+        Boolean(ec.liveCamProof?.length);
+      const showBonusSection = showLiveCam || Boolean(ec.bonusExtras?.length);
       const nav = drawerNavById[ec.drawerId] ?? {};
 
       return (
+        <template data-ratings-drawer-template={ec.drawerId}>
         <aside
           class="ratings-drawer-panel"
           role="dialog"
@@ -109,19 +118,19 @@ function breadcrumbParts(breadcrumb: string): string[] {
           <div class="ratings-drawer-panel__header">
             <button
               type="button"
-              class="ratings-drawer-panel__close"
+              class="drawer-close-text ratings-drawer-panel__close"
               data-ratings-close-drawer
               aria-label="Close evidence details"
             >
-              <span class="material-symbols-outlined text-xl">close</span>
+              <span aria-hidden="true">✕</span> Close
             </button>
           </div>
 
           <div class="ratings-drawer-panel__body">
             <header class="ratings-drawer-hero">
-              <h3 id={`ratings-drawer-title-${ec.drawerId}`} class="ratings-drawer-hero__title">
+              <h2 id={`ratings-drawer-title-${ec.drawerId}`} class="ratings-drawer-hero__title">
                 {ec.name}
-              </h3>
+              </h2>
               {ec.breadcrumb && (
                 <p class="ratings-drawer-breadcrumb">
                   {
@@ -174,48 +183,106 @@ function breadcrumbParts(breadcrumb: string): string[] {
               <div class="ratings-drawer-dual-cards">
                 {ec.scopeDescription && (
                   <section class="ratings-drawer-card ratings-drawer-card--measures">
-                    <h4 class="ratings-drawer-card__label">
+                    <p class="ratings-drawer-card__label">
                       <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
                         lightbulb
                       </span>
                       What this measures
-                    </h4>
+                    </p>
                     <p class="ratings-drawer-card__text">{ec.scopeDescription}</p>
                   </section>
                 )}
                 {ec.whatThisMeans && (
                   <section class="ratings-drawer-card ratings-drawer-card--finding">
-                    <h4 class="ratings-drawer-card__label">
+                    <p class="ratings-drawer-card__label">
                       <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
                         star
                       </span>
                       What this means
-                    </h4>
+                    </p>
                     <p class="ratings-drawer-card__text">{ec.whatThisMeans}</p>
                   </section>
                 )}
               </div>
             )}
 
-            {ec.bonusExtras && ec.bonusExtras.length > 0 && (
+            {showBonusSection && (
               <section class="ratings-drawer-section">
-                <h4 class="ratings-drawer-section__label">Bonus features found</h4>
-                <ul class="ratings-bonus-extras-list">
-                  {ec.bonusExtras.map((extra) => (
-                    <li class="ratings-bonus-extras-list__item">
-                      <span class="ratings-bonus-extras-list__name">{extra.name}</span>
-                      {extra.note && (
-                        <span class="ratings-bonus-extras-list__note">{extra.note}</span>
+                <p class="ratings-drawer-section__label">Bonus features</p>
+                <div class="ratings-bonus-cards">
+                  {showLiveCam && (
+                    <article class="ratings-bonus-card">
+                      <div class="ratings-bonus-card__header">
+                        <span class="material-symbols-outlined ratings-bonus-card__icon" aria-hidden="true">
+                          videocam
+                        </span>
+                        <div class="ratings-bonus-card__copy">
+                          <h3 class="ratings-bonus-card__title">Live cam</h3>
+                          <p class="ratings-bonus-card__note">Webcam-style character experience.</p>
+                        </div>
+                      </div>
+                      {ec.liveCamProof && ec.liveCamProof.length > 0 && (
+                        <div class="ratings-bonus-card__proof">
+                          {ec.liveCamProof.map((proof) => (
+                            <button
+                              type="button"
+                              class="ratings-bonus-proof-btn"
+                              data-lightbox-open={proof.fullUrl ?? proof.thumbUrl}
+                              data-lightbox-alt={proof.alt}
+                              data-lightbox-caption="Live cam proof"
+                            >
+                              <img
+                                src={proof.thumbUrl}
+                                alt={proof.alt ?? 'Live cam proof'}
+                                loading="lazy"
+                                class="ratings-bonus-proof-btn__img"
+                              />
+                            </button>
+                          ))}
+                        </div>
                       )}
-                    </li>
+                    </article>
+                  )}
+                  {ec.bonusExtras?.map((extra) => (
+                    <article class="ratings-bonus-card">
+                      <div class="ratings-bonus-card__header">
+                        <span class="material-symbols-outlined ratings-bonus-card__icon" aria-hidden="true">
+                          stars
+                        </span>
+                        <div class="ratings-bonus-card__copy">
+                          <h3 class="ratings-bonus-card__title">{extra.name}</h3>
+                          {extra.note && <p class="ratings-bonus-card__note">{extra.note}</p>}
+                        </div>
+                      </div>
+                      {extra.proof && extra.proof.length > 0 && (
+                        <div class="ratings-bonus-card__proof">
+                          {extra.proof.map((proof) => (
+                            <button
+                              type="button"
+                              class="ratings-bonus-proof-btn"
+                              data-lightbox-open={proof.fullUrl ?? proof.thumbUrl}
+                              data-lightbox-alt={proof.alt}
+                              data-lightbox-caption={extra.name}
+                            >
+                              <img
+                                src={proof.thumbUrl}
+                                alt={proof.alt ?? extra.name}
+                                loading="lazy"
+                                class="ratings-bonus-proof-btn__img"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </article>
                   ))}
-                </ul>
+                </div>
               </section>
             )}
 
             {showResultsTable && (
               <section class="ratings-drawer-section">
-                <h4 class="ratings-drawer-section__label">Test results</h4>
+                <p class="ratings-drawer-section__label">Test results</p>
                 <table class="ratings-drawer-results">
                   <thead>
                     <tr>
@@ -245,7 +312,7 @@ function breadcrumbParts(breadcrumb: string): string[] {
 
             {ec.howWeTested && (
               <section class="ratings-drawer-section">
-                <h4 class="ratings-drawer-section__label">How we tested</h4>
+                <p class="ratings-drawer-section__label">How we tested</p>
                 <p class="ratings-drawer-section__text">{ec.howWeTested}</p>
                 {ec.methodologyUrl && (
                   <a href={ec.methodologyUrl} class="ratings-drawer-method-link">
@@ -260,9 +327,9 @@ function breadcrumbParts(breadcrumb: string): string[] {
               <>
                 <hr class="ratings-drawer-divider" />
                 <section class="ratings-drawer-section">
-                  <h4 class="ratings-drawer-section__label">
+                  <p class="ratings-drawer-section__label">
                     Proof ({ec.proofCount} {ec.proofCount === 1 ? 'file' : 'files'})
-                  </h4>
+                  </p>
                   <div
                     class="ratings-proof-gallery"
                     data-gallery
@@ -366,6 +433,7 @@ function breadcrumbParts(breadcrumb: string): string[] {
             <DrawerNavFooter {...nav} />
           </div>
         </aside>
+        </template>
       );
     })
   }
@@ -379,6 +447,7 @@ function breadcrumbParts(breadcrumb: string): string[] {
         .filter((i) => i.contribution != null)
         .reduce((sum, i) => sum + i.contribution!, 0);
       return (
+        <template data-ratings-drawer-template={calc.drawerId}>
         <aside
           class="ratings-drawer-panel ratings-drawer-panel--calc"
           role="dialog"
@@ -387,19 +456,21 @@ function breadcrumbParts(breadcrumb: string): string[] {
           data-ratings-drawer-panel={calc.drawerId}
           hidden
         >
-          <div class="ratings-drawer-panel__body ratings-drawer-panel__body--calc">
+          <div class="ratings-drawer-panel__header">
             <button
               type="button"
-              class="ratings-drawer-calc__close"
+              class="drawer-close-text ratings-drawer-panel__close"
               data-ratings-close-drawer
               aria-label="Close score calculation"
             >
               <span aria-hidden="true">✕</span> Close
             </button>
+          </div>
 
-            <h3 id={`ratings-calc-title-${calc.drawerId}`} class="ratings-drawer-calc__title">
+          <div class="ratings-drawer-panel__body ratings-drawer-panel__body--calc">
+            <h2 id={`ratings-calc-title-${calc.drawerId}`} class="ratings-drawer-calc__title">
               How the {calc.subscoreName} score was calculated
-            </h3>
+            </h2>
             <p class="ratings-drawer-breadcrumb">
               <span class="ratings-drawer-breadcrumb__parent">{calc.categoryName}</span>
               <span class="material-symbols-outlined ratings-drawer-breadcrumb__sep" aria-hidden="true">
@@ -424,27 +495,34 @@ function breadcrumbParts(breadcrumb: string): string[] {
 
             <div class="ratings-drawer-dual-cards">
               <section class="ratings-drawer-card ratings-drawer-card--measures">
-                <h4 class="ratings-drawer-card__label">
+                <p class="ratings-drawer-card__label">
                   <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
                     lightbulb
                   </span>
                   What this measures
-                </h4>
+                </p>
                 <p class="ratings-drawer-card__text">{calc.scopeDescription}</p>
               </section>
               <section class="ratings-drawer-card ratings-drawer-card--finding">
-                <h4 class="ratings-drawer-card__label">
+                <p class="ratings-drawer-card__label">
                   <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
                     star
                   </span>
                   Key takeaways
-                </h4>
+                </p>
                 <p class="ratings-drawer-card__text">{calc.keyTakeaways}</p>
               </section>
             </div>
 
             <section class="ratings-drawer-section ratings-drawer-section--calc">
-              <h4 class="ratings-drawer-section__label">Breakdown</h4>
+              <p class="ratings-drawer-section__label">Breakdown</p>
+              {
+                calc.excludedNote && (
+                  <p class="ratings-drawer-calc__excluded-note" role="note">
+                    {calc.excludedNote}
+                  </p>
+                )
+              }
               <div class="ratings-drawer-table-wrap">
                 <table class="ratings-drawer-results ratings-drawer-results--calc">
                   <thead>
@@ -457,23 +535,34 @@ function breadcrumbParts(breadcrumb: string): string[] {
                   </thead>
                   <tbody>
                     {calc.items.map((item) => (
-                      <tr>
+                      <tr class:list={[item.excluded && 'ratings-drawer-results__row--excluded']}>
                         <td>
                           <span class="ratings-drawer-calc__evidence-name">
                             <span class="material-symbols-outlined ratings-drawer-calc__evidence-icon" aria-hidden="true">
                               {item.icon}
                             </span>
                             {item.name}
+                            {item.excluded && (
+                              <span class="ratings-drawer-calc__excluded-tag">Excluded</span>
+                            )}
                           </span>
                         </td>
                         <td class="ratings-drawer-results__num">
-                          <span
-                            class={`rt-score-chip rt-score-chip--outline ${getDraftScoreChipClass(item.score)}`}
-                          >
-                            {fmtScore(item.score)}
-                          </span>
+                          {
+                            item.excluded ? (
+                              <span class="ratings-drawer-calc__na">N/A</span>
+                            ) : (
+                              <span
+                                class={`rt-score-chip rt-score-chip--outline ${getDraftScoreChipClass(item.score)}`}
+                              >
+                                {fmtScore(item.score)}
+                              </span>
+                            )
+                          }
                         </td>
-                        <td class="ratings-drawer-results__num tabular-nums">{item.weight}%</td>
+                        <td class="ratings-drawer-results__num tabular-nums">
+                          {item.excluded ? '—' : `${item.weight}%`}
+                        </td>
                         <td class="ratings-drawer-results__num tabular-nums">
                           {item.contribution != null ? item.contribution.toFixed(2) : '—'}
                         </td>
@@ -494,7 +583,7 @@ function breadcrumbParts(breadcrumb: string): string[] {
             </section>
 
             <section class="ratings-drawer-section ratings-drawer-section--calc-footer">
-              <h4 class="ratings-drawer-section__label">About the calculation</h4>
+              <p class="ratings-drawer-section__label">About the calculation</p>
               <p class="ratings-drawer-section__text">
                 Each evidence category is scored on a 0–10 scale, weighted, and combined for the
                 final {calc.subscoreName} score.
@@ -509,6 +598,7 @@ function breadcrumbParts(breadcrumb: string): string[] {
             />
           </div>
         </aside>
+        </template>
       );
     })
   }

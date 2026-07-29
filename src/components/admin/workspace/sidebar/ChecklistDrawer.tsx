@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { DRAWER_UNMOUNT_MS } from '../../../../lib/drawer/animate';
 import { api } from '../../api';
-import { Button, Icon } from '../../ui';
+import { Button, DrawerCloseButton, Icon } from '../../ui';
 import {
   workspaceTabPath,
   type MissingItem,
@@ -93,7 +93,7 @@ function Section({
 }
 
 function optionalItems(charStats: CharacterStats): MissingItem[] {
-  if (charStats.total > 0) return [];
+  if (charStats.active >= 3) return [];
   return [{ key: 'characters', label: 'Add product characters (optional)', severity: 'recommended', tab: 'characters' }];
 }
 
@@ -199,14 +199,7 @@ export function ChecklistDrawer({
                 {status === 'published' && ' · Published'}
               </p>
             </div>
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={handleClose}
-              className="rounded-md p-1 text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-700"
-            >
-              <Icon name="close" className="!text-[20px]" />
-            </button>
+            <DrawerCloseButton onClick={handleClose} />
           </div>
         </div>
 
@@ -370,9 +363,7 @@ export function BlockersDrawer({
                 {loading ? 'Checking…' : `${blockers.length} blocking issue${blockers.length === 1 ? '' : 's'}`}
               </p>
             </div>
-            <button type="button" aria-label="Close" onClick={handleClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-700">
-              <Icon name="close" className="!text-[20px]" />
-            </button>
+            <DrawerCloseButton onClick={handleClose} />
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 space-y-4">

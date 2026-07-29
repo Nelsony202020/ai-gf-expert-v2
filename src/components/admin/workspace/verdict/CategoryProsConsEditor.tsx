@@ -160,17 +160,27 @@ export function CategoryProsConsEditor({
   disabled,
   onProsChange,
   onConsChange,
+  renderProsAssist,
+  renderConsAssist,
 }: {
   pros: string[];
   cons: string[];
   disabled?: boolean;
   onProsChange: (items: string[]) => void;
   onConsChange: (items: string[]) => void;
+  renderProsAssist?: () => React.ReactNode;
+  renderConsAssist?: () => React.ReactNode;
 }) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <ProsConsColumn kind="pro" items={pros} disabled={disabled} onChange={onProsChange} />
-      <ProsConsColumn kind="con" items={cons} disabled={disabled} onChange={onConsChange} />
+      <div>
+        <ProsConsColumn kind="pro" items={pros} disabled={disabled} onChange={onProsChange} />
+        {renderProsAssist?.()}
+      </div>
+      <div>
+        <ProsConsColumn kind="con" items={cons} disabled={disabled} onChange={onConsChange} />
+        {renderConsAssist?.()}
+      </div>
     </div>
   );
 }

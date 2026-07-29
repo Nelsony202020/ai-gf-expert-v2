@@ -217,6 +217,8 @@ export interface FeatureCostLike {
   creditCost?: number | null;
   minCost?: number | null;
   maxCost?: number | null;
+  unit?: string;
+  durationProduced?: number | null;
 }
 
 export interface CostRange {

@@ -29,10 +29,35 @@ function trapFocus(panel: HTMLElement) {
 let releaseFocus: (() => void) | null = null;
 let lastTrigger: HTMLElement | null = null;
 
+function getDrawerPanels() {
+  const mount = document.querySelector<HTMLElement>('[data-ratings-drawer-mount]');
+  return mount
+    ? Array.from(mount.querySelectorAll<HTMLElement>('[data-ratings-drawer-panel]'))
+    : Array.from(document.querySelectorAll<HTMLElement>('[data-ratings-drawer-panel]'));
+}
+
+function getOrCreatePanel(id: string): HTMLElement | null {
+  const mount = document.querySelector<HTMLElement>('[data-ratings-drawer-mount]');
+  if (!mount) {
+    return document.querySelector<HTMLElement>(`[data-ratings-drawer-panel="${id}"]`);
+  }
+
+  const existing = mount.querySelector<HTMLElement>(`[data-ratings-drawer-panel="${id}"]`);
+  if (existing) return existing;
+
+  const template = document.querySelector<HTMLTemplateElement>(
+    `template[data-ratings-drawer-template="${id}"]`,
+  );
+  if (!template) return null;
+
+  mount.appendChild(template.content.cloneNode(true));
+  return mount.querySelector<HTMLElement>(`[data-ratings-drawer-panel="${id}"]`);
+}
+
 function closeDrawer() {
   const root = document.querySelector<HTMLElement>('[data-ratings-drawer-root]');
   const backdrop = document.querySelector<HTMLElement>('[data-ratings-drawer-backdrop]');
-  const panels = document.querySelectorAll<HTMLElement>('[data-ratings-drawer-panel]');
+  const panels = getDrawerPanels();
 
   closeAnimatedDrawer({
     root,
@@ -52,14 +77,14 @@ function closeDrawer() {
 function openDrawer(id: string, trigger?: HTMLElement) {
   const root = document.querySelector<HTMLElement>('[data-ratings-drawer-root]');
   const backdrop = document.querySelector<HTMLElement>('[data-ratings-drawer-backdrop]');
-  const panel = document.querySelector<HTMLElement>(`[data-ratings-drawer-panel="${id}"]`);
+  const panel = getOrCreatePanel(id);
   if (!root || !backdrop || !panel) return;
 
   const isDrawerNav =
     trigger?.dataset.ratingsDrawerNav === 'next' ||
     trigger?.dataset.ratingsDrawerNav === 'back';
 
-  document.querySelectorAll<HTMLElement>('[data-ratings-drawer-panel]').forEach((p) => {
+  getDrawerPanels().forEach((p) => {
     if (p !== panel) {
       p.hidden = true;
       p.dataset.open = 'false';
@@ -116,6 +141,9 @@ function bindDrawer() {
 bindDrawer();
 document.addEventListener('astro:page-load', bindDrawer);
 
-(window as Window & { ratingsCloseDrawer?: () => void }).ratingsCloseDrawer = closeDrawer;
+(window as Window & {
+  ratingsCloseDrawer?: () => void;
+  ratingsOpenDrawer?: (id: string, trigger?: HTMLElement) => void;
+}).ratingsOpenDrawer = openDrawer;
 
 export {};

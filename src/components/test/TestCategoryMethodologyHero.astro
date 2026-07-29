@@ -1,0 +1,48 @@
+---
+import TestBreadcrumbs from './TestBreadcrumbs.astro';
+import TestCategoryRoadmap from './TestCategoryRoadmap.astro';
+import TestMethodologyTitle from './TestMethodologyTitle.astro';
+import type { BreadcrumbItem } from '../ui/Breadcrumbs.astro';
+import type { TestCategoryNode } from '../../lib/test-framework';
+
+interface Props {
+  breadcrumbs: BreadcrumbItem[];
+  category: TestCategoryNode;
+  intro: string[];
+}
+
+const { breadcrumbs, category, intro } = Astro.props;
+const subscoreCount = category.subscores.length;
+---
+
+<header class="test-category-hero standard-content-hero">
+  <TestBreadcrumbs items={breadcrumbs} />
+
+  <div class="test-category-hero__top">
+    <TestMethodologyTitle main={category.name} />
+
+    <aside class="test-category-hero__weight" aria-label="Methodology weight">
+      <div class="test-category-hero__weight-box">
+        <p class="test-category-hero__weight-value">{category.weight}%</p>
+      </div>
+      <p class="test-category-hero__weight-note">of overall score</p>
+    </aside>
+  </div>
+
+  <div class="test-category-hero__intro">
+    {
+      intro.map((paragraph, index) => (
+        <p class:list={['test-hub__intro', index > 0 && 'test-hub__intro--spaced']}>{paragraph}</p>
+      ))
+    }
+  </div>
+
+  <div class="test-category-hero__summary">
+    <span class="material-symbols-outlined test-category-hero__summary-icon" aria-hidden="true">category</span>
+    <h2 class="test-category-hero__summary-title">
+      {subscoreCount} {subscoreCount === 1 ? 'subscore' : 'subscores'}
+    </h2>
+  </div>
+
+  <TestCategoryRoadmap category={category} />
+</header>

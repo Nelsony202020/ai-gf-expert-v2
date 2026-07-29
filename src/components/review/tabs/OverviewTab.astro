@@ -76,7 +76,7 @@ const herman = getAuthor('herman-carter');
                     <ScoreRect score={verdict.score} size="md" />
                     <div class="min-w-0 pt-0.5">
                       <div class="flex items-center gap-1.5 flex-wrap">
-                        <h3 class="text-xl md:text-2xl font-bold text-on-surface">{verdict.label}</h3>
+                        <p class="text-xl md:text-2xl font-bold text-on-surface m-0">{verdict.label}</p>
                         {
                           verdict.id === 'overall' ? (
                             <OverallScoreTooltip product={product}>
@@ -103,7 +103,7 @@ const herman = getAuthor('herman-carter');
 
                   <div class="grid md:grid-cols-2 gap-x-10 gap-y-6">
                     <div>
-                      <h4 class="font-black text-lg mb-4 text-on-surface">Pros</h4>
+                      <p class="font-black text-lg mb-4 text-on-surface m-0">Pros</p>
                       <ul class="space-y-3">
                         {
                           verdict.pros.map((pro) => (
@@ -118,7 +118,7 @@ const herman = getAuthor('herman-carter');
                       </ul>
                     </div>
                     <div>
-                      <h4 class="font-black text-lg mb-4 text-on-surface">Cons</h4>
+                      <p class="font-black text-lg mb-4 text-on-surface m-0">Cons</p>
                       <ul class="space-y-3">
                         {
                           verdict.cons.map((con) => (
@@ -167,10 +167,10 @@ const herman = getAuthor('herman-carter');
 
         <aside class="overview-sidebar-stack lg:sticky space-y-6 self-start">
           <div class="overview-sidebar-box p-5 rounded-xl border border-amber-200/80 bg-amber-50/60">
-            <h3 class="text-sm font-extrabold text-on-surface mb-3 flex items-center gap-2">
-              <span class="material-symbols-outlined text-accent text-[18px]">thumb_up</span>
-              Best for
-            </h3>
+            <div class="flex items-center gap-2 mb-3">
+              <span class="material-symbols-outlined text-accent text-[18px]" aria-hidden="true">thumb_up</span>
+              <h3 class="text-sm font-extrabold text-on-surface m-0">Best for</h3>
+            </div>
             <ul class="space-y-2 mb-5">
               {
                 overview.bestForList.map((item) => (
@@ -181,10 +181,10 @@ const herman = getAuthor('herman-carter');
                 ))
               }
             </ul>
-            <h3 class="text-sm font-extrabold text-on-surface mb-3 flex items-center gap-2">
-              <span class="material-symbols-outlined text-tertiary text-[18px]">remove_circle</span>
-              Not ideal if you
-            </h3>
+            <div class="flex items-center gap-2 mb-3">
+              <span class="material-symbols-outlined text-tertiary text-[18px]" aria-hidden="true">remove_circle</span>
+              <h3 class="text-sm font-extrabold text-on-surface m-0">Not ideal for</h3>
+            </div>
             <ul class="space-y-2">
               {
                 overview.notIdealList.map((item) => (
@@ -197,7 +197,11 @@ const herman = getAuthor('herman-carter');
             </ul>
           </div>
 
-          <CharacterStoryHighlights characters={overview.characters} productName={product.name} />
+          <CharacterStoryHighlights
+            characters={overview.characters}
+            productName={product.name}
+            heading="Featured characters"
+          />
         </aside>
       </div>
     </div>
@@ -299,15 +303,15 @@ const herman = getAuthor('herman-carter');
   }
 
   [data-theme='dark'] .verdict-icon-nav__btn {
-    background: #1a1f18;
-    border-color: #2a3328;
-    color: #ececec;
+    background: var(--dark-elevated);
+    border-color: var(--dark-border-subtle);
+    color: var(--color-on-surface);
   }
 
   [data-theme='dark'] .verdict-icon-nav__tip {
-    background: #1a1f18;
-    border-color: #2a3328;
-    color: #ececec;
+    background: var(--dark-elevated);
+    border-color: var(--dark-border-subtle);
+    color: var(--color-on-surface);
     box-shadow: 0 4px 14px rgb(0 0 0 / 35%);
   }
 

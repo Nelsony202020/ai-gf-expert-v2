@@ -40,7 +40,7 @@ const {
 const displayChars = characters.slice(0, maxDisplay);
 const carouselChars = manualDrag || !staticCarousel ? [...displayChars, ...displayChars] : displayChars;
 const dataId = `char-stories-${productName.replace(/\s+/g, '-').toLowerCase()}`;
-const headingText = heading ?? `Meet some of ${productName}'s characters`;
+const headingText = heading ?? 'Featured characters';
 ---
 
 <section
@@ -59,11 +59,13 @@ const headingText = heading ?? `Meet some of ${productName}'s characters`;
 >
   {
     !hideHeading && (
-      <h3 class="char-stories__heading">
-        <img src="/brand/herman-in-love-icon.svg" alt="" class="char-stories__heading-icon" width="44" height="44" />
-        {headingText}
-        {badge && <span class="char-stories__badge">{badge}</span>}
-      </h3>
+      <div class="char-stories__heading">
+        <img src="/brand/herman-in-love-icon.svg" alt="" class="char-stories__heading-icon" width="44" height="44" aria-hidden="true" />
+        <h3 class="char-stories__heading-text">
+          {headingText}
+          {badge && <span class="char-stories__badge">{badge}</span>}
+        </h3>
+      </div>
     )
   }
 
@@ -76,6 +78,7 @@ const headingText = heading ?? `Meet some of ${productName}'s characters`;
             const slideCount = char.storySlides.length;
             const hasStory = slideCount > 0;
             const thumb = hasStory ? char.storySlides[char.storySlides.length - 1] : char.avatar;
+            const hasImage = Boolean(thumb);
             const ItemTag = hasStory ? 'button' : 'div';
             return (
               <ItemTag
@@ -99,7 +102,15 @@ const headingText = heading ?? `Meet some of ${productName}'s characters`;
                     )
                   }
                   <div class:list={['char-stories__avatar-wrap', !hasStory && 'char-stories__avatar-wrap--plain']}>
-                    <img src={thumb} alt={char.name} class="char-stories__avatar" loading="lazy" width="64" height="64" />
+                    {
+                      hasImage ? (
+                        <img src={thumb} alt={char.name} class="char-stories__avatar" loading="lazy" width="64" height="64" />
+                      ) : (
+                        <span class="char-stories__avatar char-stories__avatar--placeholder" aria-hidden="true">
+                          {char.name.charAt(0).toUpperCase()}
+                        </span>
+                      )
+                    }
                   </div>
                 </div>
                 <span class="char-stories__label-stack">
@@ -542,7 +553,12 @@ const headingText = heading ?? `Meet some of ${productName}'s characters`;
   }
   .char-stories__heading {
     display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
-    margin: 0 0 14px; font-size: 1.125rem; font-weight: 800; color: var(--color-on-surface);
+    margin: 0 0 14px;
+  }
+  .char-stories__heading-text {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    margin: 0;
+    font-size: 1.125rem; font-weight: 800; color: var(--color-on-surface);
   }
   .char-stories__badge {
     display: inline-flex;
@@ -686,6 +702,15 @@ const headingText = heading ?? `Meet some of ${productName}'s characters`;
     padding: 0;
   }
   .char-stories__avatar { width: 100%; height: 100%; border-radius: 999px; object-fit: cover; display: block; }
+  .char-stories__avatar--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #fce7f3, #fdf2f8);
+    color: #db2777;
+    font-size: 1.25rem;
+    font-weight: 900;
+  }
   .char-stories__name-row {
     display: inline-flex; align-items: center; justify-content: center; gap: 5px;
     max-width: 100%;

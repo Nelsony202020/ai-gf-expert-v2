@@ -1,0 +1,21 @@
+/* Shared text close control for site-wide drawers (matches ratings calc drawer). */
+.drawer-close-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-on-surface-variant, rgb(100 116 139));
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.drawer-close-text:hover,
+.drawer-close-text:focus-visible {
+  color: var(--color-on-surface, rgb(15 23 42));
+  outline: none;
+}

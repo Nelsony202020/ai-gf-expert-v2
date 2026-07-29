@@ -7,12 +7,8 @@ export type TestHubTocSection = {
 export const testHubTocSections: TestHubTocSection[] = [
   { id: 'how-scores-work', label: 'How our rating system works' },
   { id: 'overall-score', label: 'Overall performance score' },
-  { id: 'category-scores', label: 'Category scores' },
-  {
-    id: 'subscores',
-    label: 'How subscores work',
-    children: [{ id: 'browse-all-subscores', label: 'Browse all subscores' }],
-  },
+  { id: 'category-scores', label: 'Our eight testing categories' },
+  { id: 'subscores', label: 'How subscores work' },
   { id: 'evidence', label: 'Evidence points' },
   { id: 'full-framework', label: 'Explore our full testing framework' },
   { id: 'in-practice', label: 'How we test AI girlfriend apps in practice' },
@@ -30,6 +26,22 @@ export const testHubTocSections: TestHubTocSection[] = [
   { id: 'updates', label: 'Updates and methodology versions' },
   { id: 'faq', label: 'Frequently asked questions' },
 ];
+
+/** Hub TOC with per-category anchors under Category scores. */
+export function buildTestHubTocSections(
+  categories: { key: string; name: string }[],
+): TestHubTocSection[] {
+  return testHubTocSections.map((section) => {
+    if (section.id !== 'category-scores') return section;
+    return {
+      ...section,
+      children: categories.map((cat) => ({
+        id: `category-${cat.key}`,
+        label: cat.name,
+      })),
+    };
+  });
+}
 
 export const testHubRelatedMethodology = [
   { label: 'How score tooltips work', href: '/test/tooltips/' },
@@ -104,7 +116,7 @@ export const testHubImportantTests = [
   { label: 'Video motion quality test', href: '/test/video/quality/#motion', desc: 'Smooth, believable movement in generated video.' },
   { label: 'Privacy policy test', href: '/test/privacy/data-use/#policy-clarity', desc: 'Whether policies clearly explain data use.' },
   { label: 'Billing discretion test', href: '/test/privacy/security/#billing-descriptor', desc: 'How charges appear on statements.' },
-  { label: 'Real monthly cost test', href: '/test/pricing/value/#real-cost', desc: 'Estimated spend for typical and heavy use.' },
+  { label: 'Monthly spend test', href: '/test/pricing/usage-costs/#monthly-spend', desc: 'Estimated monthly spend for regular use.' },
 ];
 
 export const testHubFaq = [

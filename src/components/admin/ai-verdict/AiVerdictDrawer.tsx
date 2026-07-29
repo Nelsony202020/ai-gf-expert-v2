@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, ErrorNote, Icon, Spinner } from '../ui';
+import { Button, DrawerCloseButton, ErrorNote, Icon, Spinner } from '../ui';
 import type { AiVerdictScope } from '../../../lib/ai-verdict/config';
 import type { AiSuggestionOutput } from '../../../lib/ai-verdict/suggestionSchema';
 import { DRAWER_UNMOUNT_MS } from '../../../lib/drawer/animate';
@@ -123,9 +123,7 @@ export function AiVerdictDrawer({
               {testRunName ? ` · ${testRunName}` : ''}
             </p>
           </div>
-          <button type="button" onClick={handleClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-700">
-            <Icon name="close" className="!text-[20px]" />
-          </button>
+          <DrawerCloseButton onClick={handleClose} ariaLabel="Close AI suggestions" />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 space-y-4">

@@ -5,6 +5,7 @@ import {
   cheapestTopUpRate,
   estimatedFeatureMoneyCost,
   fmtMoney,
+  intervalDiscount,
   lowestPlainMonthlyPrice,
   monthlyEquivalent,
   packageTotalCredits,
@@ -26,10 +27,38 @@ export interface PricingSourceData {
   plans: Record<string, unknown>[];
   packages: Record<string, unknown>[];
   featureCosts: Record<string, unknown>[];
+  paymentProfile?: Record<string, unknown> | null;
 }
 
 const REGULAR_USE = { images: 20, videos: 4, voiceMinutes: 30, messages: 500 };
-const HEAVY_USE = { images: 100, videos: 20, voiceMinutes: 120, messages: 2000 };
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/** Normalize a per-unit cost to dollars per 10 seconds (video / voice message). */
+export function normalizeCostPer10Sec(money: number, cost: FeatureCostLike): number {
+  const unit = String(cost.unit ?? '');
+  const duration = Number(cost.durationProduced);
+  const hasDuration = Number.isFinite(duration) && duration > 0;
+
+  if (unit === 'per_second') {
+    const secs = hasDuration ? duration : 1;
+    return round2((money / secs) * 10);
+  }
+  if (unit === 'per_video') {
+    const secs = hasDuration ? duration : 10;
+    return round2((money / secs) * 10);
+  }
+  if (unit === 'per_minute') {
+    return round2(money / 6);
+  }
+  if (unit === 'per_message') {
+    const secs = hasDuration ? duration : 10;
+    return round2((money / secs) * 10);
+  }
+  return round2(money);
+}
 
 export function computePricingSuggestions(source: PricingSourceData): Map<string, AutofillSuggestion> {
   const out = new Map<string, AutofillSuggestion>();
@@ -52,6 +81,7 @@ export function computePricingSuggestions(source: PricingSourceData): Map<string
 
   let annualEq: number | null = null;
   let annualTotal: number | null = null;
+  let annualDiscountPct: number | null = null;
   for (const tier of tiers) {
     for (const opt of tierBillingOptions(tier)) {
       if (opt.active === false || opt.interval !== 'yearly') continue;
@@ -59,6 +89,9 @@ export function computePricingSuggestions(source: PricingSourceData): Map<string
       if (eq !== null && (annualEq === null || eq < annualEq)) {
         annualEq = eq;
         annualTotal = opt.price;
+        if (plainMonthly !== null) {
+          annualDiscountPct = intervalDiscount(plainMonthly, opt);
+        }
       }
     }
   }
@@ -68,24 +101,10 @@ export function computePricingSuggestions(source: PricingSourceData): Map<string
       note: `${fmtMoney(annualTotal)} per year → ${fmtMoney(annualEq)}/month effective.`,
     });
   }
-
-  const hasFreeTier = tiers.some((t) =>
-    tierBillingOptions(t).some((o) => o.active !== false && o.price === 0),
-  );
-  if (hasFreeTier) {
-    out.set('pricing/free-plan', {
-      raw: { status: 'yes' },
-      note: 'A $0 plan tier exists in the Pricing tab. Confirm with the 7-day usage test.',
-    });
-  }
-
-  const hasTrial = tiers.some((t) =>
-    tierBillingOptions(t).some((o) => o.active !== false && o.freeTrial),
-  );
-  if (hasTrial) {
-    out.set('pricing/free-trial', {
-      raw: { status: 'yes' },
-      note: 'At least one plan option is marked "free trial" in the Pricing tab.',
+  if (annualDiscountPct !== null && annualDiscountPct > 0) {
+    out.set('pricing/annual-discount', {
+      raw: { value: annualDiscountPct },
+      note: `${annualDiscountPct.toFixed(1)}% cheaper than paying monthly for 12 months.`,
     });
   }
 
@@ -128,27 +147,42 @@ export function computePricingSuggestions(source: PricingSourceData): Map<string
   if (videoCost && bestPkg) {
     const money = estimatedFeatureMoneyCost(bestPkg, videoCost);
     if (money) {
+      const per10 = normalizeCostPer10Sec(money.max, videoCost);
       out.set('pricing/video-cost', {
-        raw: { value: money.max },
-        note: `Standard video cost at the cheapest credit package rate (${fmtMoney(money.min)}–${fmtMoney(money.max)}).`,
+        raw: { value: per10, detail: { rawCost: money.max, unit: videoCost.unit, durationProduced: videoCost.durationProduced } },
+        note: `Standard video normalized to ${fmtMoney(per10)} / 10 sec (raw ${fmtMoney(money.max)}).`,
       });
       out.set('video/cost', {
-        raw: { value: money.max },
-        note: 'Calculated from the Pricing tab: standard video at the cheapest package rate.',
+        raw: { value: per10 },
+        note: 'Calculated from the Pricing tab: standard video normalized to cost per 10 sec.',
       });
     }
   }
 
-  const voiceCost = findCost('voice_call', 'voice_message');
-  if (voiceCost && bestPkg) {
-    const money = estimatedFeatureMoneyCost(bestPkg, voiceCost);
+  const voiceMessageCost = findCost('voice_message');
+  if (voiceMessageCost && bestPkg) {
+    const money = estimatedFeatureMoneyCost(bestPkg, voiceMessageCost);
     if (money) {
+      const per10 = normalizeCostPer10Sec(money.max, voiceMessageCost);
       out.set('pricing/voice-cost', {
-        raw: { value: money.max },
-        note: `Voice cost at the cheapest credit package rate (${fmtMoney(money.min)}–${fmtMoney(money.max)}).`,
+        raw: { value: per10, detail: { rawCost: money.max, unit: voiceMessageCost.unit, durationProduced: voiceMessageCost.durationProduced } },
+        note: `Voice message normalized to ${fmtMoney(per10)} / 10 sec.`,
       });
     }
   }
+
+  const voiceCallCost = findCost('voice_call');
+  if (voiceCallCost && bestPkg) {
+    const money = estimatedFeatureMoneyCost(bestPkg, voiceCallCost);
+    if (money) {
+      out.set('pricing/call-cost', {
+        raw: { value: money.max },
+        note: `Voice call cost per minute at the cheapest credit package rate (${fmtMoney(money.min)}–${fmtMoney(money.max)}).`,
+      });
+    }
+  }
+
+  const voiceCost = voiceCallCost ?? voiceMessageCost;
 
   const priced = packages
     .map((p) => ({ pkg: p, price: Number(p.price), credits: packageTotalCredits(p) }))
@@ -162,7 +196,7 @@ export function computePricingSuggestions(source: PricingSourceData): Map<string
     const smallest = priced[0];
     const largest = priced[priced.length - 1];
     const rate = cheapestTopUpRate(packages);
-    out.set('pricing/top-ups', {
+    out.set('pricing/top-up-value', {
       raw: {
         text:
           priced.length === 1
@@ -185,16 +219,23 @@ export function computePricingSuggestions(source: PricingSourceData): Map<string
 
   const regular = scenarioMonthlyCost({ usage: scenarioUsage(REGULAR_USE) }, tiers, costs, packages);
   if (regular?.totalMonthly != null) {
-    out.set('pricing/real-cost', {
+    out.set('pricing/monthly-spend', {
       raw: { value: regular.totalMonthly, detail: { planCost: regular.planCost, topUpCost: regular.topUpCost } },
       note: `Regular use (500 msgs, 20 images, 4 videos, 30 voice min): ${fmtMoney(regular.planCost)} plan + ${fmtMoney(regular.topUpCost)} top-ups.`,
     });
   }
-  const heavy = scenarioMonthlyCost({ usage: scenarioUsage(HEAVY_USE) }, tiers, costs, packages);
-  if (heavy?.totalMonthly != null) {
-    out.set('pricing/heavy-use-cost', {
-      raw: { value: heavy.totalMonthly, detail: { planCost: heavy.planCost, topUpCost: heavy.topUpCost } },
-      note: `Heavy use (2000 msgs, 100 images, 20 videos, 120 voice min): ${fmtMoney(heavy.planCost)} plan + ${fmtMoney(heavy.topUpCost)} top-ups.`,
+
+  const profile = source.paymentProfile;
+  if (profile) {
+    const discreet = Boolean(profile.discreetBilling);
+    const descriptor = String(profile.billingDescriptor ?? '').trim();
+    out.set('pricing/payment-privacy', {
+      raw: discreet
+        ? { status: 'yes' as const, detail: descriptor ? { label: descriptor } : undefined }
+        : { status: 'no' as const },
+      note: discreet
+        ? `Discreet billing enabled${descriptor ? ` (${descriptor})` : ''} — from the Pricing tab.`
+        : 'Discreet billing not enabled — from the Pricing tab.',
     });
   }
 

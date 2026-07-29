@@ -13,23 +13,20 @@ const options = [
     </span>
     <div
       class="inline-flex p-1 rounded-lg border border-surface-variant bg-surface-container-low"
-      role="radiogroup"
+      role="tablist"
       aria-label="Detail level"
     >
       {
-        options.map((opt) => (
-          <label class="cursor-pointer">
-            <input
-              type="radio"
-              name="detail-level"
-              value={opt.id}
-              checked={opt.id === 'skim'}
-              class="peer sr-only"
-            />
-            <span class="block px-3 py-1.5 text-xs font-bold rounded-md transition-colors peer-checked:bg-brand-lime peer-checked:text-on-brand-lime peer-checked:shadow-sm text-on-surface-variant hover:text-on-surface">
-              {opt.label}
-            </span>
-          </label>
+        options.map((opt, index) => (
+          <button
+            type="button"
+            role="tab"
+            data-detail-level-tab={opt.id}
+            aria-selected={index === 0 ? 'true' : 'false'}
+            class="detail-level-tab block px-3 py-1.5 text-xs font-bold rounded-md transition-colors text-on-surface-variant hover:text-on-surface"
+          >
+            {opt.label}
+          </button>
         ))
       }
     </div>
@@ -37,6 +34,18 @@ const options = [
 </div>
 
 <style is:global>
+  .detail-level-tab[aria-selected='true'] {
+    background: var(--color-brand-lime);
+    color: var(--color-on-brand-lime);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  }
+
+  [data-theme='dark'] .detail-level-tab[aria-selected='true'] {
+    background: #db2777;
+    color: #fff;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+  }
+
   [data-ratings-root][data-detail-level='skim'] [data-detail-tier='deep'] {
     display: none !important;
   }
@@ -56,6 +65,18 @@ const options = [
 
   [data-ratings-root][data-detail-level='medium'] [data-subscore-list] {
     max-width: 420px;
+  }
+
+  [data-ratings-root][data-detail-level='medium'] [data-subscore-grid][data-subscore-open] [data-subscore-breakdown],
+  [data-ratings-root][data-detail-level='skim'] [data-subscore-grid][data-subscore-open] [data-subscore-breakdown] {
+    display: block !important;
+  }
+
+  @media (min-width: 1024px) {
+    [data-ratings-root][data-detail-level='medium'] [data-subscore-grid][data-subscore-open],
+    [data-ratings-root][data-detail-level='skim'] [data-subscore-grid][data-subscore-open] {
+      grid-template-columns: var(--ratings-subscore-nav-width, 300px) minmax(0, 1fr) !important;
+    }
   }
 
   [data-ratings-root][data-detail-level='medium'] .ratings-subscore-nav__item {
@@ -120,19 +141,28 @@ const options = [
     });
   }
 
+  function syncDetailLevelTabs(level: DetailLevel) {
+    document.querySelectorAll<HTMLButtonElement>('[data-detail-level-tab]').forEach((tab) => {
+      const active = tab.dataset.detailLevelTab === level;
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+  }
+
   function applyDetailLevel(level: string) {
     const root = document.querySelector<HTMLElement>('[data-ratings-root]');
     if (!root) return;
 
+    const scrollY = window.scrollY;
     const normalized = (level === 'medium' || level === 'all-in' ? level : 'skim') as DetailLevel;
     root.dataset.detailLevel = normalized;
 
-    document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
-      input.checked = input.value === normalized;
-    });
-
+    syncDetailLevelTabs(normalized);
     syncAccordionVisibility(normalized);
-    document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level: normalized } }));
+
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, behavior: 'instant' in window ? 'instant' : 'auto' });
+      document.dispatchEvent(new CustomEvent('detail-level-change', { detail: { level: normalized } }));
+    });
   }
 
   function initDetailLevel() {
@@ -143,18 +173,11 @@ const options = [
     if (html.dataset.detailLevelBound !== 'true') {
       html.dataset.detailLevelBound = 'true';
 
-      document.addEventListener('change', (event) => {
-        const target = event.target;
-        if (!(target instanceof HTMLInputElement) || target.name !== 'detail-level' || !target.checked) return;
-        applyDetailLevel(target.value);
-      });
-
       document.addEventListener('click', (event) => {
-        const label = (event.target as HTMLElement).closest('label');
-        if (!label || !label.closest('[data-detail-level-control]')) return;
-        const input = label.querySelector<HTMLInputElement>('input[name="detail-level"]');
-        if (!input) return;
-        applyDetailLevel(input.value);
+        const tab = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-detail-level-tab]');
+        if (!tab || !tab.closest('[data-detail-level-control]')) return;
+        const level = tab.dataset.detailLevelTab;
+        if (level) applyDetailLevel(level);
       });
 
       document.addEventListener('detail-level-set', ((event: CustomEvent<{ level: string }>) => {
@@ -163,9 +186,7 @@ const options = [
     }
 
     const level = root.dataset.detailLevel || 'skim';
-    document.querySelectorAll<HTMLInputElement>('input[name="detail-level"]').forEach((input) => {
-      input.checked = input.value === level;
-    });
+    syncDetailLevelTabs(level as DetailLevel);
 
     if (root.dataset.detailLevelInitialized !== 'true') {
       root.dataset.detailLevelInitialized = 'true';

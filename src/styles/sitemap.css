@@ -367,12 +367,12 @@
 }
 
 [data-theme='dark'] .sitemap-card {
-  background: #1a1f18;
-  border-color: #2a3328;
+  background: var(--dark-elevated);
+  border-color: var(--dark-border-subtle);
 }
 
 [data-theme='dark'] .sitemap-card__title {
-  color: #ececec;
+  color: var(--color-on-surface);
 }
 
 [data-theme='dark'] .sitemap-card__icon--amber {
@@ -381,8 +381,8 @@
 }
 
 [data-theme='dark'] .sitemap-card__icon--lime {
-  background: rgb(218 246 108 / 14%);
-  color: #daf66c;
+  background: var(--color-accent-soft);
+  color: var(--dark-accent-text);
 }
 
 [data-theme='dark'] .sitemap-card__icon--green {
@@ -409,7 +409,7 @@
 }
 
 [data-theme='dark'] .sitemap-card__arrow {
-  color: #9cab96;
+  color: var(--dark-muted);
 }
 
 [data-theme='dark'] .sitemap-card__link:hover {

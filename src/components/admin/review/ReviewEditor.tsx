@@ -8,7 +8,6 @@
 // blockConversion.ts.
 
 import {
-  createContext,
   useContext,
   useEffect,
   useMemo,
@@ -41,17 +40,14 @@ import { isYouTubeUrl, youtubeEmbedUrl, type JSONDoc } from './blockConversion';
 import { DynamicBlockNode, defaultBlockData } from './DynamicBlockNode';
 import { MediaPickerModal, type PickedMedia } from './MediaPickerModal';
 import { SlashCommands, type SlashCommandItem } from './SlashMenu';
+import { createClipboardImagePaste } from './clipboardImagePaste';
+import { useToast } from '../Toast';
+import {
+  ReviewEditorUIContext,
+  type ImageInspectorTarget,
+  type ReviewEditorUI,
+} from './reviewEditorContext';
 import './editor.css';
-
-// ---------------------------------------------------------------------------
-// Editor-UI context so node views can open the shared media picker
-// ---------------------------------------------------------------------------
-
-interface ReviewEditorUI {
-  openImagePicker: (onPick: (media: PickedMedia) => void) => void;
-}
-
-const ReviewEditorUIContext = createContext<ReviewEditorUI>({ openImagePicker: () => {} });
 
 // ---------------------------------------------------------------------------
 // Custom nodes: image with caption/mediaId, YouTube embed with caption
@@ -65,6 +61,8 @@ const ReviewImage = Image.extend({
       ...this.parent?.(),
       caption: { default: '' },
       mediaId: { default: null },
+      widthPercent: { default: 100 },
+      borderRadiusPercent: { default: 0 },
     };
   },
 
@@ -73,23 +71,51 @@ const ReviewImage = Image.extend({
   },
 });
 
-function ImageView({ node, selected, editor, updateAttributes, deleteNode }: NodeViewProps) {
+function ImageView({ node, selected, editor, updateAttributes, deleteNode, getPos }: NodeViewProps) {
   const ui = useContext(ReviewEditorUIContext);
   const editable = editor.isEditable;
   const src = String(node.attrs.src ?? '');
-  const missingAlt = !String(node.attrs.alt ?? '').trim();
+  const widthPercent = Math.min(100, Math.max(30, Number(node.attrs.widthPercent ?? 100)));
+  const borderRadiusPercent = Math.min(50, Math.max(0, Number(node.attrs.borderRadiusPercent ?? 0)));
 
   return (
     <NodeViewWrapper
       as="figure"
-      className={`review-image-node group relative my-4 rounded-lg ${
-        selected ? 'ring-2 ring-pink-400' : ''
-      }`}
+      className={`review-image-node group relative my-4 ${selected ? 'ring-2 ring-pink-400' : ''}`}
       contentEditable={false}
+      style={{
+        width: `${widthPercent}%`,
+        maxWidth: '100%',
+        marginInline: widthPercent < 100 ? 'auto' : undefined,
+        borderRadius: `${borderRadiusPercent}%`,
+        overflow: 'hidden',
+      }}
     >
-      <span data-drag-handle draggable className={`block ${editable ? 'cursor-grab' : ''}`}>
+      <span data-drag-handle draggable={editable} className={`block ${editable ? 'cursor-grab' : ''}`}>
         {src ? (
-          <img src={src} alt={String(node.attrs.alt ?? '')} className="max-h-96 rounded-lg object-contain" />
+          <button
+            type="button"
+            className="block w-full cursor-pointer border-0 bg-transparent p-0"
+            draggable={editable}
+            onDragStart={(e) => {
+              const pos = getPos();
+              if (typeof pos !== 'number') return;
+              e.dataTransfer.setData(
+                'application/x-review-image',
+                JSON.stringify({ pos, attrs: node.attrs }),
+              );
+            }}
+            onClick={() =>
+              editable &&
+              ui.openImageInspector({
+                kind: 'image',
+                attrs: node.attrs as Record<string, unknown>,
+                updateAttributes,
+              })
+            }
+          >
+            <img src={src} alt={String(node.attrs.alt ?? '')} className="block max-h-96 w-full object-contain" />
+          </button>
         ) : (
           <span className="flex h-32 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400 dark:bg-slate-800">
             Image not available
@@ -117,28 +143,6 @@ function ImageView({ node, selected, editor, updateAttributes, deleteNode }: Nod
             <Icon name="delete" className="!text-[16px]" />
           </button>
         </span>
-      )}
-      {editable ? (
-        <span className="mt-1.5 grid gap-1 sm:grid-cols-2">
-          <input
-            value={String(node.attrs.alt ?? '')}
-            onChange={(e) => updateAttributes({ alt: e.target.value })}
-            placeholder="Alt text (required for accessibility)"
-            className={`w-full rounded border bg-transparent px-2 py-1 text-xs text-slate-600 placeholder:text-slate-400 focus:border-pink-400 focus:outline-none dark:text-slate-300 ${
-              missingAlt ? 'border-amber-300 dark:border-amber-700' : 'border-slate-200 dark:border-slate-700'
-            }`}
-          />
-          <input
-            value={String(node.attrs.caption ?? '')}
-            onChange={(e) => updateAttributes({ caption: e.target.value })}
-            placeholder="Caption (optional)"
-            className="w-full rounded border border-slate-200 bg-transparent px-2 py-1 text-xs italic text-slate-500 placeholder:text-slate-400 focus:border-pink-400 focus:outline-none dark:border-slate-700 dark:text-slate-400"
-          />
-        </span>
-      ) : (
-        node.attrs.caption && (
-          <figcaption className="mt-1 text-xs italic text-slate-500">{String(node.attrs.caption)}</figcaption>
-        )
       )}
     </NodeViewWrapper>
   );
@@ -422,6 +426,8 @@ export interface ReviewEditorProps {
   onChange: (doc: JSONDoc) => void;
   /** Rendered on the right side of the sticky toolbar (save button etc.). */
   toolbarExtra?: ReactNode;
+  onImageInspectorChange?: (target: ImageInspectorTarget | null) => void;
+  onRegisterUi?: (ui: ReviewEditorUI) => void;
 }
 
 export default function ReviewEditor({
@@ -431,14 +437,53 @@ export default function ReviewEditor({
   productId,
   onChange,
   toolbarExtra,
+  onImageInspectorChange,
+  onRegisterUi,
 }: ReviewEditorProps) {
   const [imagePickerHandler, setImagePickerHandler] = useState<((m: PickedMedia) => void) | null>(null);
   const [youtubeDialogOpen, setYoutubeDialogOpen] = useState(false);
+  const [pasteUploading, setPasteUploading] = useState(false);
+  const onImageInspectorChangeRef = useRef(onImageInspectorChange);
+  onImageInspectorChangeRef.current = onImageInspectorChange;
+  const { toast } = useToast();
 
-  const ui = useMemo<ReviewEditorUI>(
-    () => ({ openImagePicker: (onPick) => setImagePickerHandler(() => onPick) }),
+  const productIdRef = useRef(productId);
+  productIdRef.current = productId;
+  const pasteUploadingRef = useRef(false);
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
+  const clipboardPasteExtension = useMemo(
+    () =>
+      createClipboardImagePaste(() => ({
+        productId: productIdRef.current,
+        onUploadStart: () => {
+          if (!pasteUploadingRef.current) {
+            pasteUploadingRef.current = true;
+            setPasteUploading(true);
+            toastRef.current('info', 'Uploading pasted image…');
+          }
+        },
+        onUploadEnd: () => {
+          pasteUploadingRef.current = false;
+          setPasteUploading(false);
+        },
+        onError: (message) => toastRef.current('error', 'Paste upload failed', { message }),
+      })),
     [],
   );
+
+  const ui = useMemo<ReviewEditorUI>(
+    () => ({
+      openImagePicker: (onPick) => setImagePickerHandler(() => onPick),
+      openImageInspector: (target) => onImageInspectorChangeRef.current?.(target),
+    }),
+    [],
+  );
+
+  useEffect(() => {
+    onRegisterUi?.(ui);
+  }, [ui, onRegisterUi]);
 
   // Stable ref so slash items (built once) always see the latest handlers.
   const editorRef = useRef<Editor | null>(null);
@@ -493,9 +538,14 @@ export default function ReviewEditor({
       DynamicBlockNode,
       BlockIdAttribute,
       SlashCommands.configure({ getItems: () => itemsRef.current }),
+      clipboardPasteExtension,
     ],
     content,
     onUpdate: ({ editor: e }) => onChangeRef.current(e.getJSON() as JSONDoc),
+    onSelectionUpdate: ({ editor: e }) => {
+      if (e.isActive('image')) return;
+      onImageInspectorChangeRef.current?.(null);
+    },
   });
   editorRef.current = editor;
 
@@ -607,7 +657,12 @@ export default function ReviewEditor({
         </BubbleMenu>
 
         {/* Writing canvas */}
-        <div className="rounded-xl border border-slate-200 bg-white px-6 py-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:px-10 md:py-8">
+        <div className="relative rounded-xl border border-slate-200 bg-white px-6 py-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:px-10 md:py-8">
+          {pasteUploading && (
+            <span className="pointer-events-none absolute right-4 top-3 z-10 rounded-md bg-slate-900/75 px-2.5 py-1 text-xs text-white dark:bg-slate-100/90 dark:text-slate-900">
+              Uploading image…
+            </span>
+          )}
           <EditorContent editor={editor} />
         </div>
 

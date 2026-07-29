@@ -22,6 +22,23 @@ import { useAsyncToast, useToast } from '../../Toast';
 import { ConfirmDialog } from '../../ConfirmDialog';
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
+import { MediaRoleFields } from './MediaRoleFields';
+import { MediaPreviewLightbox, MediaPreviewThumb, MediaThumb } from './MediaPreviewLightbox';
+import {
+  getMediaPlacement,
+  getMediaTags,
+  isAssetMedia,
+  isHeroMedia,
+  isPricingProofMedia,
+  pricingProofMediaPatch,
+  pricingProofPlacementLabel,
+  readMediaRoleState,
+  sortHeroMedia,
+  tagLabels,
+  writeMediaRoleState,
+  heroSortOrderUpdates,
+  type MediaRoleState,
+} from '../../../../lib/media/catalog';
 
 
 const ASSET_ROLES = ['logo', 'featured'];
@@ -44,9 +61,19 @@ function sectionFilterLabel(filters: Set<MediaSection>): string {
 }
 
 function mediaSection(row: EntityRow): MediaSection {
-  if (row.role === 'proof' || row.evidenceResult) return 'evidence';
-  if (ASSET_ROLES.includes(row.role ?? '') || row.role === 'hero') return 'assets';
+  if (getMediaPlacement(row) === 'proof') return 'evidence';
+  if (isAssetMedia(row)) return 'assets';
   return 'gallery';
+}
+
+function placementLabel(row: EntityRow): string {
+  const placement = getMediaPlacement(row);
+  if (placement === 'proof' && isPricingProofMedia(row)) {
+    return pricingProofPlacementLabel();
+  }
+  const tags = tagLabels(getMediaTags(row));
+  const base = placement === 'proof' ? 'Proof' : 'Gallery';
+  return tags.length > 0 ? `${base} · ${tags.join(', ')}` : base;
 }
 
 function sectionBadgeTone(section: MediaSection): 'pink' | 'blue' | 'gray' {
@@ -55,13 +82,10 @@ function sectionBadgeTone(section: MediaSection): 'pink' | 'blue' | 'gray' {
   return 'gray';
 }
 
-// Videos are not a category — mediaType === 'video' is detected automatically,
-// so a video can also be e.g. a character.
+// Videos are not a category — mediaType === 'video' is detected automatically.
 const ROLE_OPTIONS = [
-  { value: 'proof', label: 'Testing evidence' },
-  { value: 'character', label: 'Character' },
-  { value: 'chat', label: 'Chat' },
-  { value: 'image_generator', label: 'Image generator' },
+  { value: 'gallery', label: 'Gallery' },
+  { value: 'proof', label: 'Proof' },
 ];
 
 function roleLabel(role: string | null | undefined): string {
@@ -97,6 +121,7 @@ export function MediaTab() {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiReview, setAiReview] = useState<AiReviewState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ kind: 'one'; row: EntityRow } | { kind: 'bulk'; count: number } | null>(null);
+  const [previewRow, setPreviewRow] = useState<EntityRow | null>(null);
   const altInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   const { setError } = useAsyncToast();
   const toast = useToast();
@@ -118,6 +143,11 @@ export function MediaTab() {
 
   const galleryMedia = useMemo(
     () => allMedia.filter((m) => mediaSection(m) === 'gallery'),
+    [allMedia],
+  );
+
+  const heroMedia = useMemo(
+    () => sortHeroMedia(allMedia.filter((m) => isHeroMedia(m))),
     [allMedia],
   );
 
@@ -352,6 +382,21 @@ export function MediaTab() {
     }
   }
 
+  async function reorderHero(fromId: string, toId: string) {
+    const ordered = [...heroMedia];
+    const fromIdx = ordered.findIndex((m) => m.id === fromId);
+    const toIdx = ordered.findIndex((m) => m.id === toId);
+    if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
+    const [moved] = ordered.splice(fromIdx, 1);
+    ordered.splice(toIdx, 0, moved);
+    try {
+      await Promise.all(ordered.map((m, i) => dataApi.update('media', m.id, { heroSortOrder: i })));
+      await ws.refreshRelated();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
       <div className="space-y-4">
@@ -413,6 +458,15 @@ export function MediaTab() {
             )}
           </div>
         </div>
+
+        {canEdit && (
+          <HeroMediaStrip
+            items={heroMedia}
+            canEdit={canEdit}
+            onPreview={setPreviewRow}
+            onReorder={(fromId, toId) => void reorderHero(fromId, toId)}
+          />
+        )}
 
         {canEdit && (
           <UploadPanel
@@ -513,6 +567,7 @@ export function MediaTab() {
                   selectMode={selectMode}
                   selected={selected.has(m.id)}
                   onSelect={() => toggleSelected(m.id)}
+                  onPreview={() => setPreviewRow(m)}
                   onDropOn={
                     canReorderGallery && section === 'gallery'
                       ? (fromId) => void reorderGallery(fromId, m.id)
@@ -568,7 +623,12 @@ export function MediaTab() {
                         </td>
                       )}
                       <td className="px-3 py-2">
-                        <MediaThumb row={m} className="h-12 w-12" />
+                        <MediaPreviewThumb
+                          row={m}
+                          className="h-12 w-12"
+                          hoverPreview={!selectMode}
+                          onClick={selectMode ? undefined : () => setPreviewRow(m)}
+                        />
                       </td>
                       <td className="px-3 py-2">
                         <Badge tone={sectionBadgeTone(section)}>{SECTION_LABELS[section]}</Badge>
@@ -585,7 +645,7 @@ export function MediaTab() {
                           <span className="text-xs">{m.altText || '—'}</span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-xs capitalize text-slate-500">{roleLabel(m.role)}</td>
+                      <td className="px-3 py-2 text-xs text-slate-500">{placementLabel(m)}</td>
                       <td className="px-3 py-2">
                         <div className="flex flex-wrap gap-1">
                           <Badge tone={m.adult ? 'red' : 'green'}>{m.adult ? '18+' : 'Safe'}</Badge>
@@ -673,6 +733,7 @@ export function MediaTab() {
           rows={queueRows}
           categories={ws.related.categories}
           evidenceResults={evidenceResults}
+          heroCount={heroMedia.length}
           onClose={() => setEditQueue(null)}
           onDone={() => {
             setEditQueue(null);
@@ -680,6 +741,8 @@ export function MediaTab() {
           }}
         />
       )}
+
+      <MediaPreviewLightbox row={previewRow} onClose={() => setPreviewRow(null)} />
     </div>
   );
 }
@@ -768,23 +831,6 @@ function EmptyMediaState({ note }: { note: string }) {
   return (
     <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-900">
       {note}
-    </div>
-  );
-}
-
-function MediaThumb({ row, className = 'aspect-square w-full' }: { row: EntityRow; className?: string }) {
-  if (row.mediaType === 'video') {
-    return (
-      <div className={`flex items-center justify-center rounded-md bg-slate-900 ${className}`}>
-        <Icon name="play_circle" className="!text-[24px] text-white/80" />
-      </div>
-    );
-  }
-  return row.url ? (
-    <img src={row.url} alt={row.altText ?? ''} className={`rounded-md object-cover ${className}`} />
-  ) : (
-    <div className={`flex items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 ${className}`}>
-      <Icon name="image" className="!text-[20px] text-slate-300" />
     </div>
   );
 }
@@ -920,6 +966,85 @@ function AiAltTextReviewModal({
   );
 }
 
+function HeroMediaStrip({
+  items,
+  canEdit,
+  onPreview,
+  onReorder,
+}: {
+  items: EntityRow[];
+  canEdit: boolean;
+  onPreview: (row: EntityRow) => void;
+  onReorder: (fromId: string, toId: string) => void;
+}) {
+  return (
+    <section className="rounded-xl border border-pink-200 bg-pink-50/50 p-3 dark:border-pink-900/40 dark:bg-pink-950/20">
+      <div className="mb-2 flex items-center gap-2">
+        <Icon name="star" className="!text-[18px] text-pink-600" />
+        <h3 className="text-sm font-bold text-pink-800 dark:text-pink-200">Featured in hero</h3>
+        <span className="text-xs text-pink-600/80 dark:text-pink-300/80">
+          Drag to set order on the review page hero carousel
+        </span>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-xs text-slate-500">
+          No hero media yet. Edit any item and toggle <strong>Hero</strong> to feature it on the review page.
+        </p>
+      ) : (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {items.map((row) => (
+            <HeroMediaCard
+              key={row.id}
+              row={row}
+              canEdit={canEdit}
+              onPreview={() => onPreview(row)}
+              onDropOn={(fromId) => onReorder(fromId, row.id)}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function HeroMediaCard({
+  row,
+  canEdit,
+  onPreview,
+  onDropOn,
+}: {
+  row: EntityRow;
+  canEdit: boolean;
+  onPreview: () => void;
+  onDropOn: (fromId: string) => void;
+}) {
+  const [dragOver, setDragOver] = useState(false);
+  return (
+    <div
+      draggable={canEdit}
+      onDragStart={(e) => e.dataTransfer.setData('text/hero-media-id', row.id)}
+      onDragOver={(e) => {
+        if (!canEdit) return;
+        e.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        const fromId = e.dataTransfer.getData('text/hero-media-id');
+        if (fromId && fromId !== row.id) onDropOn(fromId);
+      }}
+      className={`w-28 shrink-0 rounded-lg border bg-white p-1.5 shadow-sm transition-colors dark:bg-slate-900 ${
+        dragOver ? 'border-pink-400' : 'border-pink-200 dark:border-pink-900/50'
+      }`}
+    >
+      <MediaPreviewThumb row={row} className="aspect-[4/3] w-full" onClick={onPreview} />
+      <p className="mt-1 truncate text-[10px] text-slate-500">{row.altText || row.caption || 'No label'}</p>
+    </div>
+  );
+}
+
 function MediaCard({
   row,
   section,
@@ -928,6 +1053,7 @@ function MediaCard({
   selectMode,
   selected,
   onSelect,
+  onPreview,
   onDropOn,
   onEdit,
   onRemove,
@@ -939,6 +1065,7 @@ function MediaCard({
   selectMode?: boolean;
   selected?: boolean;
   onSelect?: () => void;
+  onPreview?: () => void;
   onDropOn?: (fromId: string) => void;
   onEdit: () => void;
   onRemove: () => void;
@@ -989,10 +1116,19 @@ function MediaCard({
       }`}
     >
       <div className="relative">
-        <MediaThumb row={row} />
+        <MediaPreviewThumb
+          row={row}
+          onClick={selecting ? undefined : onPreview}
+          hoverPreview={!selecting}
+        />
         <span className="absolute left-1 top-1 max-w-[calc(100%-0.5rem)] truncate rounded bg-black/60 px-1 py-0.5 text-[9px] font-medium leading-tight text-white backdrop-blur-sm">
           {SECTION_LABELS[section]}
         </span>
+        {isHeroMedia(row) && (
+          <span className="absolute bottom-1.5 right-1.5 rounded bg-pink-600 px-1 py-0.5 text-[9px] font-bold uppercase text-white">
+            Hero
+          </span>
+        )}
         {selecting && (
           <span
             className={`absolute bottom-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded border shadow ${
@@ -1010,7 +1146,7 @@ function MediaCard({
           {row.mediaType === 'video' && <Badge tone="blue">video</Badge>}
         </div>
       </div>
-      <p className="mt-1.5 truncate text-xs capitalize text-slate-400">{roleLabel(row.role)}</p>
+      <p className="mt-1.5 truncate text-xs text-slate-400">{placementLabel(row)}</p>
       <p className="truncate text-xs text-slate-500" title={row.altText ?? ''}>
         {row.altText || <span className="text-amber-600">No alt text</span>}
       </p>
@@ -1208,12 +1344,14 @@ function MediaEditFlow({
   rows,
   categories,
   evidenceResults,
+  heroCount,
   onClose,
   onDone,
 }: {
   rows: EntityRow[];
   categories: EntityRow[];
   evidenceResults: EntityRow[];
+  heroCount: number;
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -1236,6 +1374,7 @@ function MediaEditFlow({
         row={row}
         categories={categories}
         evidenceResults={evidenceResults}
+        heroCount={heroCount}
         isLast={index + 1 >= total}
         multi={total > 1}
         onSaved={next}
@@ -1250,6 +1389,7 @@ function MediaEditForm({
   row,
   categories,
   evidenceResults,
+  heroCount,
   isLast,
   multi,
   onSaved,
@@ -1259,6 +1399,7 @@ function MediaEditForm({
   row: EntityRow;
   categories: EntityRow[];
   evidenceResults: EntityRow[];
+  heroCount: number;
   isLast: boolean;
   multi: boolean;
   onSaved: () => void;
@@ -1268,7 +1409,7 @@ function MediaEditForm({
   const ws = useWorkspace();
   const [altText, setAltText] = useState(String(row.altText ?? ''));
   const [adult, setAdult] = useState(Boolean(row.adult));
-  const [role, setRole] = useState(String(row.role ?? 'gallery'));
+  const [roleState, setRoleState] = useState<MediaRoleState>(() => readMediaRoleState(row));
   const [testCategory, setTestCategory] = useState(String(row.testCategory ?? ''));
   const [evidenceResultId, setEvidenceResultId] = useState(String(row.evidenceResult?.id ?? ''));
   const [caption, setCaption] = useState(String(row.caption ?? ''));
@@ -1278,10 +1419,7 @@ function MediaEditForm({
   const toast = useToast();
   const { busy, run } = useAsyncToast();
 
-  const isProof = role === 'proof';
-  const roleOptions = ROLE_OPTIONS.some((r) => r.value === role)
-    ? ROLE_OPTIONS
-    : [{ value: role, label: roleLabel(role) }, ...ROLE_OPTIONS];
+  const isProof = roleState.placement === 'proof';
 
   async function aiAltText() {
     setAiBusy(true);
@@ -1302,6 +1440,16 @@ function MediaEditForm({
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    const nextRoleState = roleState;
+    const { role, mediaTags } = writeMediaRoleState(nextRoleState);
+    const wasHero = isHeroMedia(row);
+    const becomingHero = nextRoleState.hero && !wasHero;
+    const heroSortOrder =
+      nextRoleState.hero && becomingHero
+        ? 0
+        : nextRoleState.hero
+          ? row.heroSortOrder ?? heroCount
+          : undefined;
     const done = await run(async () => {
       await dataApi.update(
         'media',
@@ -1311,14 +1459,23 @@ function MediaEditForm({
           caption: caption.trim() || undefined,
           credit: credit.trim() || undefined,
           adult,
-          // 18+ media is always age-gated — no separate toggle.
           ageGated: adult,
           role,
+          mediaTags,
+          heroSortOrder: nextRoleState.hero ? heroSortOrder : null,
           testCategory: isProof ? testCategory || undefined : undefined,
           approved: true,
         },
         { evidenceResult: isProof && evidenceResultId ? evidenceResultId : null },
       );
+      if (nextRoleState.hero && heroSortOrder === 0) {
+        const updates = heroSortOrderUpdates(ws.related.media, row.id).filter((u) => u.id !== row.id);
+        if (updates.length > 0) {
+          await Promise.all(
+            updates.map((u) => dataApi.update('media', u.id, { heroSortOrder: u.heroSortOrder })),
+          );
+        }
+      }
       return true;
     });
     if (done) onSaved();
@@ -1352,15 +1509,7 @@ function MediaEditForm({
         </div>
       </Field>
 
-      <Field label="Category">
-        <Select value={role} onChange={(e) => setRole(e.target.value)}>
-          {roleOptions.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </Select>
-      </Field>
+      <MediaRoleFields value={roleState} onChange={setRoleState} />
 
       {isProof && (
         <div className="grid grid-cols-2 gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/40">

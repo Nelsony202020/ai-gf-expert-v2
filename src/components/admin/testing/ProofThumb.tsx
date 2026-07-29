@@ -2,11 +2,9 @@ import { useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { EntityRow } from '../api';
 import { Icon } from '../ui';
-import { displayCaption, parseProofCaption } from './proofTags';
+import { proofMediaLabel } from './proofTags';
 
-function ProofHoverPreview({ media, anchorRect }: { media: EntityRow; anchorRect: DOMRect }) {
-  const isVideo = media.mediaType === 'video';
-  const url = String(media.url ?? '');
+function ImageHoverPreview({ url, anchorRect, isVideo = false }: { url: string; anchorRect: DOMRect; isVideo?: boolean }) {
   const style: CSSProperties = {
     position: 'fixed',
     left: Math.min(anchorRect.left, window.innerWidth - 320),
@@ -29,11 +27,66 @@ function ProofHoverPreview({ media, anchorRect }: { media: EntityRow; anchorRect
           loop
           playsInline
         />
-      ) : url ? (
+      ) : (
         <img src={url} alt="" className="max-h-64 max-w-[min(320px,90vw)] object-contain" />
-      ) : null}
+      )}
     </div>,
     document.body,
+  );
+}
+
+function ProofHoverPreview({ media, anchorRect }: { media: EntityRow; anchorRect: DOMRect }) {
+  const url = String(media.url ?? '');
+  if (!url) return null;
+  return <ImageHoverPreview url={url} anchorRect={anchorRect} isVideo={media.mediaType === 'video'} />;
+}
+
+export function ImageHoverThumb({
+  url,
+  title,
+  onRemove,
+  size = 'md',
+}: {
+  url: string;
+  title?: string;
+  onRemove?: () => void;
+  size?: 'sm' | 'md';
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState(false);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const dim = size === 'sm' ? 'h-8 w-8' : 'h-12 w-12';
+  const iconSize = size === 'sm' ? '!text-[14px]' : '!text-[18px]';
+
+  return (
+    <>
+      <div
+        ref={ref}
+        className={`group relative ${dim} shrink-0 overflow-hidden rounded border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800`}
+        onMouseEnter={() => {
+          if (ref.current) setRect(ref.current.getBoundingClientRect());
+          setHover(true);
+        }}
+        onMouseLeave={() => setHover(false)}
+        title={title}
+      >
+        <img src={url} alt="" className="h-full w-full object-cover" />
+        {onRemove && (
+          <button
+            type="button"
+            className="absolute inset-0 flex items-start justify-end bg-black/0 p-0 opacity-0 transition-opacity group-hover:bg-black/40 group-hover:opacity-100"
+            aria-label="Remove screenshot"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+          >
+            <Icon name="close" className={`${iconSize} text-white`} />
+          </button>
+        )}
+      </div>
+      {hover && rect && url && <ImageHoverPreview url={url} anchorRect={rect} />}
+    </>
   );
 }
 
@@ -53,7 +106,7 @@ export function ProofThumb({
   const [rect, setRect] = useState<DOMRect | null>(null);
   const isVideo = media.mediaType === 'video';
   const url = String(media.url ?? '');
-  const title = displayCaption(media.caption, media.altText) || 'Proof';
+  const title = proofMediaLabel(media.caption) || 'Proof';
   const dim = size === 'sm' ? 'h-8 w-8' : 'h-9 w-9';
   const iconSize = size === 'sm' ? '!text-[14px]' : '!text-[18px]';
 

@@ -1,4 +1,12 @@
-export type MediaFilter = 'all' | 'proof' | 'videos' | 'characters' | 'chat' | 'image-generator' | 'gallery';
+export type MediaFilter =
+  | 'all'
+  | 'proof'
+  | 'videos'
+  | 'characters'
+  | 'chat'
+  | 'image-generator'
+  | '18plus'
+  | 'gallery';
 
 export interface MediaItem {
   id: string;

@@ -1,0 +1,105 @@
+/* Standard editorial pages: hero + sidebar TOC + aligned content column */
+
+.standard-content-page {
+  --roundup-sidebar-width: 12.5rem;
+  --roundup-layout-gap: 2rem;
+  --roundup-content-max: 48rem;
+  --roundup-header-bg: #f8faf3;
+  --roundup-intro-offset: 0;
+}
+
+[data-theme='dark'] .standard-content-page {
+  --roundup-header-bg: #0f172a;
+}
+
+.standard-content-grid {
+  display: grid;
+  column-gap: var(--roundup-layout-gap);
+  row-gap: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.standard-content-grid__hero,
+.standard-content-grid__body {
+  min-width: 0;
+}
+
+.standard-content-hero {
+  padding: 2rem 0 1.5rem;
+}
+
+.standard-content-hero .breadcrumbs {
+  margin-bottom: 0.75rem;
+}
+
+.standard-content-hero .test-inline-link {
+  display: inline-flex;
+  margin-top: 1rem;
+}
+
+/* Hero and article share the same left edge (content column) */
+.standard-content-grid__hero > :not(.roundup-compare),
+.standard-content-grid__body > :not(.roundup-compare) {
+  max-width: var(--roundup-content-max);
+}
+
+.standard-content-page .standard-content-grid__body .test-hub__main {
+  max-width: none;
+}
+
+.standard-content-grid__sidebar {
+  display: none;
+}
+
+.standard-content-page .standard-content-grid__sidebar .roundup-sidebar {
+  position: static;
+  display: none;
+  padding-top: 0;
+  max-height: none;
+}
+
+.standard-content-page .standard-content-grid__sidebar .test-hub-nav {
+  position: static;
+}
+
+@media (min-width: 1024px) {
+  .standard-content-grid {
+    grid-template-columns: var(--roundup-sidebar-width) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .standard-content-grid__hero {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .standard-content-grid__sidebar {
+    display: block;
+    grid-column: 1;
+    grid-row: 1 / -1;
+    align-self: start;
+    position: sticky;
+    top: 1.5rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    padding-top: 2rem;
+  }
+
+  .standard-content-grid__body {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .standard-content-page .standard-content-grid__sidebar .roundup-sidebar {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .standard-content-page .standard-content-grid__sidebar .roundup-toc {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+}

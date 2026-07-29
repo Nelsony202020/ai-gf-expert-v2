@@ -54,8 +54,30 @@ const RolesPage = lazy(() => import('./pages/Roles').then((m) => ({ default: m.R
 const ComingSoon = lazy(() => import('./pages/ComingSoon').then((m) => ({ default: m.ComingSoon })));
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
+const THEME_KEY = 'theme';
 const SIDEBAR_EXPANDED_W = '15rem'; // w-60
 const SIDEBAR_COLLAPSED_W = '5rem';
+
+function loadThemeDark(): boolean {
+  if (typeof document === 'undefined') return false;
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'dark') return true;
+    if (stored === 'light') return false;
+  } catch {
+    /* ignore */
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function applyTheme(dark: boolean) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  try {
+    localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
+  } catch {
+    /* ignore */
+  }
+}
 
 function loadSidebarCollapsed(): boolean {
   try {
@@ -193,6 +215,7 @@ export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
   const location = useLocation();
   const activeGroup = useMemo(() => groupForPath(location.pathname), [location.pathname]);
   const [collapsed, setCollapsed] = useState(loadSidebarCollapsed);
+  const [darkMode, setDarkMode] = useState(loadThemeDark);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(NAV.map((g) => [g.label, g.label === activeGroup])),
   );
@@ -213,6 +236,10 @@ export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
   useEffect(() => {
     setOpenGroups((prev) => ({ ...prev, [activeGroup]: true }));
   }, [activeGroup]);
+
+  useEffect(() => {
+    applyTheme(darkMode);
+  }, [darkMode]);
 
   useEffect(() => {
     try {
@@ -249,6 +276,15 @@ export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
           <div className={collapsed ? 'shrink-0' : 'min-w-0 flex-1'}>
             <AdminLogo variant="sidebar" compact={collapsed} />
           </div>
+          <button
+            type="button"
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={darkMode ? 'Light mode' : 'Dark mode'}
+            onClick={() => setDarkMode((d) => !d)}
+            className="shrink-0 cursor-pointer rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+          >
+            <Icon name={darkMode ? 'light_mode' : 'dark_mode'} className="!text-[20px]" />
+          </button>
           <button
             type="button"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}

@@ -2,7 +2,7 @@
 // Data stays in separate entities behind the scenes — this shell loads the
 // product plus related records and routes between the nine workspace tabs.
 
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { AdminErrorBoundary } from '../ErrorBoundary';
 import { ErrorNote, Spinner } from '../ui';
@@ -26,6 +26,19 @@ const PublishTab = lazy(() => import('./tabs/PublishTab').then((m) => ({ default
 
 const TAB_IDS = WORKSPACE_TABS.map((t) => t.id) as string[];
 
+function TabLoading({ label }: { label: string }) {
+  return (
+    <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 py-12">
+      <Spinner />
+      <p className="text-sm text-slate-500 dark:text-slate-400">Loading {label}…</p>
+    </div>
+  );
+}
+
+const TAB_LABELS: Record<WorkspaceTabId, string> = Object.fromEntries(
+  WORKSPACE_TABS.map((t) => [t.id, t.label]),
+) as Record<WorkspaceTabId, string>;
+
 export function ProductWorkspace() {
   const { id, tab } = useParams();
 
@@ -39,6 +52,7 @@ export function ProductWorkspace() {
 
 function WorkspaceInner({ productId, tab }: { productId: string; tab: WorkspaceTabId }) {
   const ws = useProductWorkspaceState(productId);
+  const [tabLoadKey, setTabLoadKey] = useState(0);
 
   if (ws.loading) return <Spinner />;
   if (!ws.original) {
@@ -50,8 +64,11 @@ function WorkspaceInner({ productId, tab }: { productId: string; tab: WorkspaceT
       <WorkspaceSaveErrorToast />
       <div className="space-y-4">
         <ProductWorkspaceHeader />
-        <AdminErrorBoundary>
-          <Suspense fallback={<Spinner />}>
+        <AdminErrorBoundary onReset={() => setTabLoadKey((k) => k + 1)}>
+          <Suspense
+            fallback={<TabLoading label={TAB_LABELS[tab]} />}
+            key={`${tab}-${tabLoadKey}`}
+          >
             {tab === 'setup' && <SetupTab />}
             {tab === 'pricing' && <PricingTab />}
             {tab === 'testing' && <TestingTab />}

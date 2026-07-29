@@ -6,9 +6,9 @@ import { Button, Icon, TextInput } from '../ui';
 import { MediaPickerModal } from '../MediaPicker';
 import { ProofThumb } from './ProofThumb';
 import {
-  displayCaption,
   mediaMatchesProofTag,
   parseProofCaption,
+  proofMediaLabel,
   proofTagCaption,
 } from './proofTags';
 import { evidenceRequirements } from './presentation';
@@ -30,7 +30,6 @@ export function EvidenceAttachments({
   disabled,
   captionTag,
   embedded,
-  altTextPrefix,
   onUploaded,
 }: {
   def: EntityRow;
@@ -42,7 +41,6 @@ export function EvidenceAttachments({
   captionTag?: string;
   /** Compact block for inline rows (bonus features, etc.). */
   embedded?: boolean;
-  altTextPrefix?: string;
   onUploaded?: () => void;
 }) {
   const [attachments, setAttachments] = useState<EntityRow[]>([]);
@@ -108,7 +106,6 @@ export function EvidenceAttachments({
     const failures: string[] = [];
     try {
       const id = await resolveResultId();
-      const alt = altTextPrefix?.trim() ? `Proof: ${altTextPrefix.trim()}` : `Evidence: ${def.name}`;
       for (let i = 0; i < files.length; i++) {
         setUploadProgress({ done: i, total: files.length });
         try {
@@ -116,7 +113,6 @@ export function EvidenceAttachments({
           form.set('file', files[i]);
           form.set('adult', '0');
           form.set('role', 'proof');
-          form.set('altText', alt);
           if (captionTag) form.set('caption', proofTagCaption(captionTag));
           form.set('evidenceResultId', id);
           if (productId) form.set('productId', productId);
@@ -270,36 +266,43 @@ export function EvidenceAttachments({
             const captionValue = captionTag
               ? parseProofCaption(m.caption).userCaption
               : String(m.caption ?? '');
+            const mediaLabel = proofMediaLabel(m.caption);
             return (
               <li
                 key={m.id}
                 className="space-y-2 rounded-md bg-slate-50 px-2 py-2 dark:bg-slate-800/60"
               >
-                <div className="flex items-center gap-2">
-                  <ProofThumb media={m} size="sm" disabled={disabled} />
-                  <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700 dark:text-slate-300">
-                    {displayCaption(m.caption, m.altText) || m.url?.split('/').pop() || m.mediaType}
-                  </span>
-                  {m.url && (
-                    <a
-                      href={m.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="shrink-0 text-xs font-medium text-pink-600 hover:underline"
-                    >
-                      View
-                    </a>
-                  )}
-                  {!disabled && (
-                    <button
-                      type="button"
-                      aria-label="Remove attachment"
-                      onClick={() => void detach(m.id)}
-                      className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-red-600 dark:hover:bg-slate-700"
-                    >
-                      <Icon name="close" className="!text-[16px]" />
-                    </button>
-                  )}
+                <div className="flex items-start gap-2">
+                  <div className="flex shrink-0 flex-col items-center gap-1">
+                    <ProofThumb media={m} size="sm" disabled={disabled} />
+                    {mediaLabel && (
+                      <span className="max-w-[4.5rem] text-center text-[10px] leading-tight text-slate-600 dark:text-slate-400">
+                        {mediaLabel}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+                    {m.url && (
+                      <a
+                        href={m.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="shrink-0 text-xs font-medium text-pink-600 hover:underline"
+                      >
+                        View
+                      </a>
+                    )}
+                    {!disabled && (
+                      <button
+                        type="button"
+                        aria-label="Remove attachment"
+                        onClick={() => void detach(m.id)}
+                        className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-red-600 dark:hover:bg-slate-700"
+                      >
+                        <Icon name="close" className="!text-[16px]" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {!disabled && (
                   <div className="grid gap-2 sm:grid-cols-2">

@@ -9,6 +9,8 @@ interface Props {
   methodologyOnly?: boolean;
   /** Compact rows — show only the view-results control (methodology lives on the label link). */
   resultsOnly?: boolean;
+  /** Opens the evidence drawer for this category (e.g. Profile Quality). */
+  drawerId?: string;
 }
 
 const {
@@ -18,6 +20,7 @@ const {
   compact = false,
   methodologyOnly = false,
   resultsOnly = false,
+  drawerId,
 } = Astro.props;
 
 const methodologyHref = subscoreName
@@ -40,9 +43,15 @@ const resultsAttrs = contributorLabel
 <div class={`rt-tooltip-actions ${compact ? 'rt-tooltip-actions--compact' : ''}`}>
   {
     !methodologyOnly && (
-      <button type="button" class="rt-tooltip-actions__btn rt-tooltip-actions__btn--primary" {...resultsAttrs}>
+      <button
+        type="button"
+        class="rt-tooltip-actions__btn rt-tooltip-actions__btn--primary"
+        {...resultsAttrs}
+        {...drawerId ? { 'data-ratings-open-drawer': drawerId } : {}}
+        aria-label={contributorLabel ? `View ${contributorLabel} test results` : 'View results'}
+      >
         <span class="material-symbols-outlined text-[14px]">visibility</span>
-        View results
+        {compact ? <span class="sr-only">View results</span> : 'View results'}
       </button>
     )
   }

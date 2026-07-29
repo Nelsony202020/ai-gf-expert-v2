@@ -1,8 +1,11 @@
 ---
 import type { Subscore } from '../../../data/products';
 import { products } from '../../../data/products';
-import { equalWeights, fmtScore, getScoreChipClass, weightedValue } from '../../../lib/scores';
+import { fmtScore, getScoreChipClass } from '../../../lib/scores';
+import { getDraftScoreChipClass } from '../../../lib/draft-ratings/scoreBands';
 import { buildAllScoreBins } from '../../../lib/score-distribution';
+import type { EvidenceTooltipItem } from '../../../lib/ratings/evidenceTooltipItems';
+import { evidenceTooltipSummaryLine } from '../../../lib/ratings/evidenceTooltipItems';
 import TooltipActionLinks from './TooltipActionLinks.astro';
 import InlineTestLink from './InlineTestLink.astro';
 import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
@@ -16,6 +19,12 @@ interface Props {
   brandName?: string;
   sub: Subscore;
   compact?: boolean;
+  /** Opens the subscore calculation drawer on click (compact nav only). */
+  calcDrawerId?: string;
+  /** Evidence category label → drawer id (for view-results eye icon). */
+  contributorDrawerIds?: Record<string, string>;
+  /** Evidence rows from draft model — same source/order as EvidenceCategoryTable. */
+  evidenceItems?: EvidenceTooltipItem[];
   /** Multi-product compare table — methodology only, no scores vs site avg */
   compareMode?: boolean;
   /** Compare table — what it is and site avg only */
@@ -24,21 +33,46 @@ interface Props {
   inlineTestLinks?: boolean;
 }
 
-const { categoryKey, categoryName, brandName, sub, compact = false, compareMode = false, compareTableOnly = false, inlineTestLinks = false } = Astro.props;
+const {
+  categoryKey,
+  categoryName,
+  brandName,
+  sub,
+  compact = false,
+  calcDrawerId,
+  contributorDrawerIds = {},
+  evidenceItems,
+  compareMode = false,
+  compareTableOnly = false,
+  inlineTestLinks = false,
+} = Astro.props;
+
+function drawerIdForContributor(label: string, fallback?: string): string | undefined {
+  if (fallback) return fallback;
+  if (contributorDrawerIds[label]) return contributorDrawerIds[label];
+  const key = Object.keys(contributorDrawerIds).find((k) => k.toLowerCase() === label.toLowerCase());
+  return key ? contributorDrawerIds[key] : undefined;
+}
 const tooltipId = `sub-${categoryKey}-${sub.name}${compact ? '-compact' : ''}${compareMode ? '-compare' : ''}${compareTableOnly ? '-compare-table' : ''}${inlineTestLinks ? '-inline' : ''}`.replace(/[^a-zA-Z0-9_-]/g, '-');
 
 const currentScore = sub.score;
-const currentChip = getScoreChipClass(currentScore);
+const currentChip = evidenceItems ? getDraftScoreChipClass(currentScore) : getScoreChipClass(currentScore);
+const chipForScore = evidenceItems ? getDraftScoreChipClass : getScoreChipClass;
 
-const contributorWeights = equalWeights(sub.contributors.length);
-
-const contributorPoints = sub.contributors.map((c, i) => {
-  const internal = c.internalScore ?? sub.score;
-  const weight = contributorWeights[i] ?? 0;
-  const contribution = weightedValue(internal, weight);
-  return { ...c, internal, weight, contribution };
-});
-const rawSubTotal = contributorPoints.reduce((s, x) => s + x.contribution, 0) || 1;
+const evidencePoints =
+  evidenceItems && evidenceItems.length > 0
+    ? evidenceItems.map((item) => ({
+        label: item.label,
+        internal: item.score,
+        summary: evidenceTooltipSummaryLine(item),
+        drawerId: item.drawerId ?? drawerIdForContributor(item.label),
+      }))
+    : sub.contributors.map((c) => ({
+        label: c.label,
+        internal: c.internalScore ?? sub.score,
+        summary: c.value?.trim() || '—',
+        drawerId: drawerIdForContributor(c.label),
+      }));
 
 const scorePoints = products
   .map((p) => {
@@ -61,7 +95,8 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
   tabindex="0"
   class="rt-tooltip-trigger inline-flex cursor-help shrink-0"
   data-ratings-tooltip-trigger={tooltipId}
-  aria-label={`About ${sub.name} subscore`}
+  {...compact && calcDrawerId ? { 'data-ratings-open-drawer': calcDrawerId } : {}}
+  aria-label={compact && calcDrawerId ? `View ${sub.name} score calculation` : `About ${sub.name} subscore`}
 >
   <slot>
     <InfoIcon size="xs" class="text-tertiary/45 hover:text-tertiary/70" />
@@ -133,15 +168,15 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
               />
             </div>
             {
-              contributorPoints.length > 0 && (
+              evidencePoints.length > 0 && (
                 <div class="ratings-tooltip-panel__split-col">
                   <p class="ratings-tooltip-panel__section-title">Evidence</p>
                   <div class="rt-comp-list rt-comp-list--dense">
                     {
-                      contributorPoints.map((c) => {
-                        const chip = getScoreChipClass(c.internal);
+                      evidencePoints.map((c) => {
+                        const chip = chipForScore(c.internal);
                         return (
-                          <div class="rt-comp-row rt-comp-row--inline">
+                          <div class="rt-comp-row rt-comp-row--stacked">
                             <div class="rt-comp-row__main">
                               <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(c.internal)}</span>
                               {
@@ -172,6 +207,7 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
                                           contributorLabel={c.label}
                                           compact
                                           resultsOnly
+                                          drawerId={c.drawerId}
                                         />
                                       )
                                     }
@@ -179,6 +215,7 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
                                 )
                               }
                             </div>
+                            <p class="rt-comp-summary">{c.summary}</p>
                           </div>
                         );
                       })
@@ -207,15 +244,15 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
       </div>
 
       {
-        contributorPoints.length > 0 && (
+        evidencePoints.length > 0 && (
           <div>
             <p class="ratings-tooltip-panel__section-title">Evidence</p>
             <div class="rt-comp-list">
               {
-                contributorPoints.map((c) => {
-                  const chip = getScoreChipClass(c.internal);
+                evidencePoints.map((c) => {
+                  const chip = chipForScore(c.internal);
                   return (
-                    <div class="rt-comp-row rt-comp-row--inline">
+                    <div class="rt-comp-row rt-comp-row--stacked">
                       <div class="rt-comp-row__main">
                         <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(c.internal)}</span>
                         {
@@ -246,6 +283,7 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
                                     contributorLabel={c.label}
                                     compact
                                     resultsOnly
+                                    drawerId={c.drawerId}
                                   />
                                 )
                               }
@@ -253,6 +291,7 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
                           )
                         }
                       </div>
+                      <p class="rt-comp-summary">{c.summary}</p>
                     </div>
                   );
                 })

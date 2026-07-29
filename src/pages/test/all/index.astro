@@ -1,8 +1,10 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import StandardContentLayout from '../../../layouts/StandardContentLayout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
-import TestBreadcrumbs from '../../../components/test/TestBreadcrumbs.astro';
+import StandardContentHero from '../../../components/content/StandardContentHero.astro';
+import StandardContentToc from '../../../components/content/StandardContentToc.astro';
 import { getTestCategories } from '../../../lib/test-framework';
 import { testHubImportantTests } from '../../../data/test-hub-content';
 import { testHubUrl } from '../../../lib/slugs';
@@ -24,6 +26,14 @@ for (const test of testHubImportantTests) {
 }
 
 const pageTitle = 'All Tests — AI Girlfriend Expert';
+
+const tocItems = [
+  ...categories.map((cat) => ({
+    id: `category-${cat.key}`,
+    label: cat.name,
+  })),
+  { id: 'supporting-methodology', label: 'Supporting methodology' },
+];
 ---
 
 <BaseLayout
@@ -31,34 +41,33 @@ const pageTitle = 'All Tests — AI Girlfriend Expert';
   description="Complete directory of our AI girlfriend app testing methodology — categories, subscores, evidence points, and featured individual tests."
 >
   <Header />
-  <main class="test-page test-archive">
-    <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">
-      <TestBreadcrumbs
-        items={[
-          { label: 'Home', href: '/' },
-          { label: 'How We Test', href: testHubUrl() },
-          { label: 'All tests' },
-        ]}
-      />
+  <StandardContentLayout pageClass="test-page test-archive">
+    <StandardContentToc slot="sidebar" items={tocItems} topAnchor="#test-all-top" />
 
-      <header class="test-page__header">
-        <p class="test-page__eyebrow">Complete directory</p>
-        <h1 class="test-page__title">All tests</h1>
-        <p class="test-page__intro">
-          Full hierarchy of our testing methodology — {testPageCount} pages covering categories, subscores, and individual evidence points.
-        </p>
-        <a class="test-inline-link" href={testHubUrl()}>
-          How We Test AI Girlfriend Apps
-          <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-        </a>
-      </header>
+    <StandardContentHero
+      slot="hero"
+      breadcrumbs={[
+        { label: 'Home', href: '/' },
+        { label: 'How We Test', href: testHubUrl() },
+        { label: 'All tests' },
+      ]}
+      eyebrow="Complete directory"
+      title="All tests"
+      intro={`Full hierarchy of our testing methodology — ${testPageCount} pages covering categories, subscores, and individual evidence points.`}
+    >
+      <a class="test-inline-link" href={testHubUrl()}>
+        How We Test AI Girlfriend Apps
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+      </a>
+    </StandardContentHero>
 
+    <div id="test-all-top">
       <div class="test-archive__tree">
         {
           categories.map((cat, i) => {
             const featured = featuredByCategory.get(cat.key) ?? [];
             return (
-              <details class="test-archive__category" open={i === 0}>
+              <details class="test-archive__category scroll-mt-24" id={`category-${cat.key}`} open={i === 0}>
                 <summary>
                   <a href={cat.href} class="test-archive__category-link">{cat.name}</a>
                 </summary>
@@ -96,7 +105,7 @@ const pageTitle = 'All Tests — AI Girlfriend Expert';
         }
       </div>
 
-      <section class="test-page__section test-archive__supporting">
+      <section id="supporting-methodology" class="test-page__section test-archive__supporting scroll-mt-24">
         <h2 class="test-page__h2">Supporting methodology</h2>
         <ul class="test-archive__support-links">
           <li><a href="/test/market-data/">Market Data Methodology</a></li>
@@ -109,6 +118,6 @@ const pageTitle = 'All Tests — AI Girlfriend Expert';
         Back to how we test
       </a>
     </div>
-  </main>
+  </StandardContentLayout>
   <Footer />
 </BaseLayout>

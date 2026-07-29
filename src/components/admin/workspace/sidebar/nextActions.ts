@@ -85,8 +85,10 @@ export function workflowStatusLabel(tab: TabCompletion, ctx: SidebarContext): st
     case 'review':
       return reviewStatus(ctx.review, tab);
     case 'media':
+      if (tab.pct === 100) return 'Complete';
       return mediaStatus(ctx.media);
     case 'characters':
+      if (tab.pct === 100) return 'Complete';
       return charactersStatus(ctx.characters);
     case 'pricing':
       return pricingStatus(ctx.plans);

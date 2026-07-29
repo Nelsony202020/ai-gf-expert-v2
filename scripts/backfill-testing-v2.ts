@@ -60,7 +60,7 @@ const NEW_DEFS: NewDef[] = [
   { category: 'customization', subscore: 'appearance', slug: 'hair-style', name: 'Hair style', publicDescription: 'hairstyle options', displayOrder: 6, weight: 11 },
   { category: 'customization', subscore: 'appearance', slug: 'hair-color', name: 'Hair color', publicDescription: 'hair color options', displayOrder: 7, weight: 11 },
   { category: 'customization', subscore: 'appearance', slug: 'outfits', name: 'Outfits', publicDescription: 'clothing and outfit options', displayOrder: 8, weight: 11 },
-  { category: 'customization', subscore: 'appearance', slug: 'creator-personalities', name: 'Personalities', publicDescription: 'personality options in the creator', displayOrder: 9, weight: 11 },
+  { category: 'customization', subscore: 'personality', slug: 'creator-personalities', name: 'Personalities', publicDescription: 'personality options in the creator', displayOrder: 7, weight: 16 },
 ];
 
 const DEACTIVATE_SLUGS = new Set(['amount', 'genders', 'gender', 'face', 'hair', 'body', 'clothing']);

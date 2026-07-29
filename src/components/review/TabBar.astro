@@ -12,14 +12,15 @@ interface Props {
 const { tabs, active = tabs[0]?.id } = Astro.props;
 ---
 
-<nav class="review-tabbar border-surface-variant bg-white z-40 border-b" data-tabbar>
+<nav class="review-tabbar border-surface-variant bg-white z-40 border-b" data-tabbar aria-label="Review sections">
   <div class="section-container px-4 md:px-8">
-    <ul class="flex overflow-x-auto whitespace-nowrap gap-6 md:gap-8 text-sm font-bold text-tertiary justify-start md:justify-center py-3 no-scrollbar">
+    <ul class="flex overflow-x-auto whitespace-nowrap gap-6 md:gap-8 text-sm font-bold text-tertiary justify-start md:justify-center py-3 no-scrollbar" role="tablist">
       {
         tabs.map((tab) => (
-          <li>
+          <li role="presentation">
             <button
               type="button"
+              role="tab"
               data-tab={tab.id}
               aria-current={tab.id === active ? 'true' : 'false'}
               class="tab-btn transition-colors cursor-pointer pb-2 -mb-3 border-b-2 border-transparent hover:text-accent"

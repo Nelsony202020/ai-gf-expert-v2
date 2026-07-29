@@ -1,0 +1,14 @@
+---
+interface Props {
+  main: string;
+  sub?: string;
+  class?: string;
+}
+
+const { main, sub = 'Testing methodology', class: className } = Astro.props;
+---
+
+<h1 class:list={['test-methodology-title test-hub__title', className]}>
+  <span class="test-methodology-title__main">{main}</span>
+  <span class="test-methodology-title__sub font-serif italic font-normal">{sub}</span>
+</h1>

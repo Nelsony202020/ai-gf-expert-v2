@@ -9,6 +9,10 @@ export type AdminDb = InstantAdminDatabase<AppSchema>;
 
 let _db: AdminDb | null = null;
 
+export function resetDb(): void {
+  _db = null;
+}
+
 export function isDbConfigured(): boolean {
   return Boolean(env('PUBLIC_INSTANT_APP_ID') && env('INSTANT_APP_ADMIN_TOKEN'));
 }

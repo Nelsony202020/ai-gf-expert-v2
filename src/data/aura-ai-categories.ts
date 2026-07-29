@@ -197,6 +197,7 @@ const rawCategories: Omit<RatingCategory, 'score' | 'evidence'>[] = [
       {
         name: 'Media',
         score: 9.3,
+        weight: 30,
         description: 'Images, voice, video, GIFs and reactions in chat.',
         contributors: [
           row('Images Sent', 'Yes', 'upload'),
@@ -211,6 +212,7 @@ const rawCategories: Omit<RatingCategory, 'score' | 'evidence'>[] = [
       {
         name: 'Interaction',
         score: 9.1,
+        weight: 30,
         description: 'Calls, modes, groups and proactive messaging.',
         contributors: [
           row('Voice Calls', 'Yes · 3 / 3', 'call'),
@@ -224,6 +226,7 @@ const rawCategories: Omit<RatingCategory, 'score' | 'evidence'>[] = [
       {
         name: 'Controls',
         score: 9.0,
+        weight: 30,
         description: 'Edit, delete, regenerate, memories and export.',
         contributors: [
           row('Edit Messages', 'Yes', 'edit'),
@@ -233,6 +236,16 @@ const rawCategories: Omit<RatingCategory, 'score' | 'evidence'>[] = [
           row('Edit Memories', 'Yes', 'book'),
           row('Reset Chat', 'Yes', 'restart_alt'),
           row('Export Chat', 'Limited', 'download'),
+        ],
+      },
+      {
+        name: 'Platform Extras',
+        score: 8.5,
+        weight: 10,
+        description: 'Live cam and other bonus platform experiences.',
+        contributors: [
+          row('Live Cam', 'Yes', 'videocam'),
+          row('Other Extras', '3 features', 'extension'),
         ],
       },
     ]),
@@ -358,11 +371,12 @@ const rawCategories: Omit<RatingCategory, 'score' | 'evidence'>[] = [
     key: 'privacy',
     name: 'Privacy',
     weight: 10,
-    description: 'Measures chat privacy, user control, account security and billing privacy.',
+    description: 'Measures chat privacy, user control, account security, billing privacy and support.',
     subscores: subs([
       {
         name: 'Data Use',
         score: 9.3,
+        weight: 31,
         description: 'Training, review, sharing, advertising, retention and policy clarity.',
         contributors: [
           row('Training', 'No', 'model_training'),
@@ -376,6 +390,7 @@ const rawCategories: Omit<RatingCategory, 'score' | 'evidence'>[] = [
       {
         name: 'User Control',
         score: 9.1,
+        weight: 28,
         description: 'Deletion, opt-out, export and consent controls.',
         contributors: [
           row('Delete Chats', 'Yes · 3 / 3', 'delete'),
@@ -389,6 +404,7 @@ const rawCategories: Omit<RatingCategory, 'score' | 'evidence'>[] = [
       {
         name: 'Security',
         score: 9.0,
+        weight: 28,
         description: 'Encryption, account security, 2FA and billing privacy.',
         contributors: [
           row('Encryption', '2 / 3 confirmed', 'enhanced_encryption'),
@@ -397,6 +413,19 @@ const rawCategories: Omit<RatingCategory, 'score' | 'evidence'>[] = [
           row('Billing Privacy', 'Discreet', 'credit_card_off'),
           row('Billing Descriptor', 'Yes', 'receipt'),
           row('Security Incidents', '0 in 5 years', 'report'),
+        ],
+      },
+      {
+        name: 'Support',
+        score: 8.8,
+        weight: 13,
+        description: 'Availability, channels, contact ease, response speed and helpfulness.',
+        contributors: [
+          row('Support Available', 'Yes', 'support_agent'),
+          row('Support Channels', 'Email · Help center', 'contact_support'),
+          row('Ease of Contact', 'Good', 'touch_app'),
+          row('Response Speed', 'Very good', 'schedule'),
+          row('Helpfulness', 'Good', 'thumb_up'),
         ],
       },
     ]),
@@ -414,53 +443,69 @@ const rawCategories: Omit<RatingCategory, 'score' | 'evidence'>[] = [
     description: 'Measures what users pay and the value they receive.',
     subscores: subs([
       {
-        name: 'Subscription',
+        name: 'Plan Value',
         score: 8.8,
-        description: 'Monthly price, free plan, credits and included features.',
+        weight: 30,
+        description: 'Monthly price, credits, included features, limits, and annual discount.',
         contributors: [
           row('Monthly Price', '$12.99/mo', 'payments'),
           row('Annual Price', '$9.99/mo effective', 'calendar_month'),
-          row('Free Plan', 'Limited', 'card_giftcard'),
-          row('Free Trial', 'Yes · 3 days', 'timer'),
+          row('Annual Discount', '23%', 'sell'),
           row('Included Credits', '500/mo', 'toll'),
           row('Included Features', '8 / 10', 'checklist'),
           row('Plan Limits', '100 msgs/day free', 'speed'),
         ],
       },
       {
-        name: 'Extra Costs',
+        name: 'Usage Costs',
         score: 8.2,
-        description: 'Per-use costs, top-ups, paywalls and refunds.',
+        weight: 35,
+        description: 'Per-use costs and estimated monthly spend for regular use.',
         contributors: [
-          row('Image Cost', '$0.12 each', 'image'),
-          row('Video Cost', '$1.40 each', 'movie'),
-          row('Voice Cost', '$0.02/msg · $0.15/min', 'call'),
-          row('Top-Ups', '$4.99 – $49.99', 'add_shopping_cart'),
-          row('Credit Expiry', 'No', 'event_busy'),
-          row('Feature Paywalls', '2 / 10', 'lock'),
-          row('Refunds', 'Yes · 7 days', 'currency_exchange'),
+          row('Image Cost', '$0.12 / image', 'image'),
+          row('Video Cost', '$0.28 / 10 sec', 'movie'),
+          row('Voice Cost', '$0.04 / 10 sec', 'mic'),
+          row('Call Cost', '$0.15 / min', 'call'),
+          row('Top-Up Value', '$4.99 – $49.99', 'add_shopping_cart'),
+          row('Monthly Spend', '$31 / month', 'account_balance_wallet'),
         ],
       },
       {
-        name: 'Value',
-        score: 8.4,
-        description: 'Real cost, heavy-use cost and pricing clarity.',
+        name: 'Free Access',
+        score: 7.5,
+        weight: 20,
+        description: 'What you can use without paying and any restrictions.',
         contributors: [
-          row('Real Cost', '$31/mo regular use', 'account_balance_wallet'),
-          row('Heavy-Use Cost', '$89/mo', 'trending_up'),
-          row('Category Comparison', '8% below average', 'leaderboard'),
-          row('Feature Value', '8 / 10 at real cost', 'verified'),
-          row('Usage Value', '14 outputs per $10', 'analytics'),
+          row('Free Chat', '20 messages', 'chat'),
+          row('Free Images', '3 images', 'photo'),
+          row('Free Video', '1 video', 'videocam'),
+          row('Free Voice', '30 sec voice', 'record_voice_over'),
+          row('Free Characters', '1 character', 'person'),
+          row('Free Value', 'No card needed', 'card_giftcard'),
+          row('Restrictions', 'Resets daily', 'event_busy'),
+        ],
+      },
+      {
+        name: 'Billing',
+        score: 8.4,
+        weight: 15,
+        description: 'Pricing clarity, paywalls, expiry, refunds, cancellation, and payment privacy.',
+        contributors: [
           row('Pricing Clarity', '88%', 'info'),
+          row('Paywalls', '2 / 10', 'lock'),
+          row('Credit Expiry', 'No', 'schedule'),
+          row('Refunds', 'Yes · 7 days', 'currency_exchange'),
+          row('Cancellation', 'Yes', 'cancel'),
+          row('Payment Privacy', 'Yes', 'visibility_off'),
         ],
       },
     ]),
     proof: [
       { src: img('price-plans'), caption: 'Plans', sub: '($12.99/mo)', type: 'image' },
-      { src: img('price-real'), caption: 'Real Cost', sub: '($31/mo)', type: 'image' },
-      { src: img('price-heavy'), caption: 'Heavy Use', sub: '($89/mo)', type: 'image' },
+      { src: img('price-real'), caption: 'Monthly Spend', sub: '($31/mo)', type: 'image' },
+      { src: img('price-free'), caption: 'Free Access', sub: '(20 msgs)', type: 'image' },
     ],
-    whatThisMeans: '$12.99 subscription · $31 estimated regular use',
+    whatThisMeans: '$12.99 subscription · $31 estimated monthly spend',
   },
 ];
 

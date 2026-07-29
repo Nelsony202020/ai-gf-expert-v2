@@ -1,0 +1,199 @@
+---
+import type { TestCategoryNode } from '../../lib/test-framework';
+import type { TestCategoryMethodologyContent } from '../../data/test-category-methodology';
+import TestCategoryGoodLooksLike from './TestCategoryGoodLooksLike.astro';
+import { loadCategoryBenchmarkPanel, hasCategoryBenchmarkPanel } from '../../lib/test-category-benchmarks/load-panel';
+import { iconForEvidenceDef } from '../../lib/ratings/evidenceIcons';
+import { testHubUrl } from '../../lib/slugs';
+
+interface Props {
+  category: TestCategoryNode;
+  content: TestCategoryMethodologyContent;
+}
+
+const { category, content } = Astro.props;
+
+const benchmarkPanel =
+  content.whyWeTest && hasCategoryBenchmarkPanel(category.key)
+    ? await loadCategoryBenchmarkPanel(category.key)
+    : null;
+
+function subscoreContent(slug: string) {
+  return content.subscores.find((s) => s.slug === slug);
+}
+
+function subscoreWeight(name: string) {
+  return content.scoreCalculation.weights.find((w) => w.name === name)?.weight;
+}
+
+function contributorIcon(subscoreSlug: string, contributorSlug: string, label: string) {
+  return iconForEvidenceDef(contributorSlug, label);
+}
+---
+
+<div id="test-category-top" class="test-hub__main">
+  <section id="category-subscores" class="test-category-subscores-box scroll-mt-24">
+    {
+      category.subscores.map((sub) => {
+        const rich = subscoreContent(sub.slug);
+        const weight = subscoreWeight(sub.name);
+
+        return (
+          <article class="test-category-subscore scroll-mt-24" id={sub.slug}>
+            {
+              weight != null && (
+                <div class="test-category-subscore__weight-col">
+                  <span class="test-category-subscore__weight">{weight}%</span>
+                </div>
+              )
+            }
+
+            <div class="test-category-subscore__divider" aria-hidden="true"></div>
+
+            <div class="test-category-subscore__head">
+              <div class="test-category-subscore__title-block">
+                <h3 class="test-category-subscore__name">{sub.name}</h3>
+                <a class="test-category-subscore__method-link" href={sub.href}>
+                  {rich?.methodologyLinkLabel ?? `View ${sub.name} methodology`}
+                  <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="test-category-subscore__content">
+              {
+                rich ? (
+                  <>
+                    <p class="test-category-subscore__lead">{rich.lead}</p>
+                    <p class="test-category-subscore__body">{rich.body}</p>
+                    {rich.bodyExtra && <p class="test-category-subscore__body">{rich.bodyExtra}</p>}
+
+                    <div class="test-category-subscore__tests">
+                      <p class="test-category-subscore__tests-label">Included tests</p>
+                      <ul class="test-category-included-tests">
+                        {
+                          sub.contributors.map((contributor) => (
+                            <li>
+                              <a href={contributor.href}>
+                                <span class="material-symbols-outlined" aria-hidden="true">
+                                  {contributorIcon(sub.slug, contributor.slug, contributor.label)}
+                                </span>
+                                {contributor.label}
+                              </a>
+                            </li>
+                          ))
+                        }
+                      </ul>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p class="test-category-subscore__body">{sub.description}</p>
+                    <div class="test-category-subscore__tests">
+                      <p class="test-category-subscore__tests-label">Included tests</p>
+                      <ul class="test-category-included-tests">
+                        {
+                          sub.contributors.map((contributor) => (
+                            <li>
+                              <a href={contributor.href}>
+                                <span class="material-symbols-outlined" aria-hidden="true">
+                                  {contributorIcon(sub.slug, contributor.slug, contributor.label)}
+                                </span>
+                                {contributor.label}
+                              </a>
+                            </li>
+                          ))
+                        }
+                      </ul>
+                    </div>
+                  </>
+                )
+              }
+            </div>
+          </article>
+        );
+      })
+    }
+  </section>
+
+  <section id="score-calculation" class="test-category-calc scroll-mt-24">
+    <h2 class="test-category-section-label">{content.scoreCalculation.title}</h2>
+    <p class="test-category-calc__intro">{content.scoreCalculation.intro}</p>
+    <p class="test-category-calc__footer">{content.scoreCalculation.footer}</p>
+
+    <div class="test-category-calc-panel">
+      <div class="test-category-calc-flow" aria-label="Score calculation flow">
+        {
+          content.scoreCalculation.weights.map((item, index) => (
+            <>
+              {index > 0 && <span class="test-category-calc-flow__op" aria-hidden="true">+</span>}
+              <span class="test-category-calc-chip">
+                <span class="test-category-calc-chip__weight">{item.weight}%</span>
+                <span class="test-category-calc-chip__name">{item.name}</span>
+              </span>
+            </>
+          ))
+        }
+        <span class="test-category-calc-flow__op" aria-hidden="true">→</span>
+        <span class="test-category-calc-chip test-category-calc-chip--result">
+          <span class="test-category-calc-chip__name">{category.name} score</span>
+        </span>
+        <span class="test-category-calc-flow__op" aria-hidden="true">→</span>
+        <span class="test-category-calc-chip test-category-calc-chip--result">
+          <span class="test-category-calc-chip__weight">{category.weight}%</span>
+          <span class="test-category-calc-chip__name">of overall performance score</span>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  {
+    content.whyWeTest && (
+      <section id={`why-we-test-${category.key}`} class="test-category-why scroll-mt-24">
+        <div class:list={['test-category-why-split', benchmarkPanel && 'test-category-why-split--with-benchmarks']}>
+          <div class="test-category-why-split__col">
+            <h2 class="test-category-section-label">{content.whyWeTest.title}</h2>
+            <p class="test-category-subscore__lead">{content.whyWeTest.lead}</p>
+            {
+              content.whyWeTest.paragraphs.map((paragraph) => (
+                <p class="test-category-subscore__body">{paragraph}</p>
+              ))
+            }
+          </div>
+          {benchmarkPanel && (
+            <div class="test-category-why-split__col test-category-why-split__col--benchmarks">
+              <TestCategoryGoodLooksLike panel={benchmarkPanel} />
+            </div>
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  <section id="how-we-test" class="test-category-split scroll-mt-24">
+    <div class="test-category-split__col">
+      <h2 class="test-category-section-label">{content.howWeTest.title}</h2>
+      {
+        content.howWeTest.paragraphs.map((paragraph) => (
+          <p class="test-methodology-prose">{paragraph}</p>
+        ))
+      }
+    </div>
+
+    <div class="test-category-split__col" id="limitations">
+      <h2 class="test-category-section-label">{content.limitations.title}</h2>
+      {
+        content.limitations.paragraphs.map((paragraph) => (
+          <p class="test-methodology-prose">{paragraph}</p>
+        ))
+      }
+    </div>
+  </section>
+
+  <nav class="test-page__back-nav" aria-label="Related pages">
+    <a class="test-inline-link test-page__back" href={testHubUrl()}>
+      <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+      Back to how we test
+    </a>
+  </nav>
+</div>

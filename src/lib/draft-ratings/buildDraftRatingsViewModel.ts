@@ -13,8 +13,10 @@ import {
   enrichMeasurements,
   methodologyLinkForEvidence,
 } from './evidenceDrawerContent';
-import { parseBonusExtrasFromRaw } from './resolveEvidenceDisplay';
+import { mediaMatchesProofTag, bonusExtraCaption, LIVE_CAM_PROOF_TAG } from '../../components/admin/testing/proofTags';
+import { formatBonusFeaturesSummaryLine } from './resolveEvidenceDisplay';
 import { evidenceGroupsForSubscore, scopeForContributor } from '../ratings/evidenceCategoryMapping';
+import { deferPayAsYouGoScores } from '../ratings/evidenceIcons';
 import { toSlug } from '../slugs';
 import type {
   DraftCategory,
@@ -253,7 +255,15 @@ function averageEvidenceScore(measurements: DraftMeasurement[]): number | null {
 function buildCategorySummary(
   contributor: { label: string; value: string },
   testResults: DraftMeasurement[],
+  opts?: { platformExtras?: boolean; bySlug?: Map<string, DraftRatingsDbContext['evidenceResults'][0]> },
 ): string {
+  if (opts?.platformExtras && opts.bySlug) {
+    const formatted = formatBonusFeaturesSummaryLine(
+      opts.bySlug.get('platform-extras-list')?.rawValue,
+      opts.bySlug.get('live-cam')?.rawValue,
+    );
+    if (formatted) return formatted;
+  }
   if (contributor.value?.trim() && contributor.value !== '—') {
     return contributor.value.trim();
   }
@@ -345,6 +355,36 @@ function isPlatformExtrasCategory(slug: string, memberSlugs?: string[]): boolean
   );
 }
 
+function buildBonusExtrasWithProof(
+  listRaw: unknown,
+  proofItems: DraftProofItem[],
+): Array<{ id: string; name: string; note?: string; proof: DraftProofItem[] }> {
+  const structured =
+    listRaw && typeof listRaw === 'object' && 'structured' in listRaw
+      ? (listRaw as { structured?: { hasBonus?: string; extras?: Array<{ id?: string; name?: string; note?: string }> } })
+          .structured
+      : undefined;
+  if (structured?.hasBonus !== 'yes') return [];
+  const saved = Array.isArray(structured?.extras) ? structured!.extras! : [];
+  return saved
+    .map((row, idx) => {
+      const name = row.name?.trim() ?? '';
+      if (!name) return null;
+      const id = typeof row.id === 'string' && row.id ? row.id : `legacy-${idx}`;
+      return {
+        id,
+        name,
+        note: row.note?.trim() || undefined,
+        proof: proofItems.filter((p) => mediaMatchesProofTag(p.caption, bonusExtraCaption(id))),
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => row != null);
+}
+
+function liveCamProofItems(proofItems: DraftProofItem[]): DraftProofItem[] {
+  return proofItems.filter((p) => mediaMatchesProofTag(p.caption, LIVE_CAM_PROOF_TAG));
+}
+
 function finalizeEvidenceCategory(
   catSlug: string,
   subSlug: string,
@@ -396,15 +436,26 @@ function finalizeEvidenceCategory(
     calculation.summary = calculationSummary;
   }
 
+  const platformExtras = isPlatformExtrasCategory(rest.slug, memberSlugs);
+  let summary = rest.summary;
+  if (platformExtras) {
+    const line = formatBonusFeaturesSummaryLine(
+      bySlug.get('platform-extras-list')?.rawValue,
+      bySlug.get('live-cam')?.rawValue,
+    );
+    if (line) summary = line;
+  }
+
   return {
     ...rest,
+    summary,
     testResults,
     scopeDescription,
     drawerId: `evidence-${catSlug}-${subSlug}-${rest.slug}`,
     selectedProof: proofItems.slice(0, 12),
     cardTeaser: buildCardTeaser(verified.length > 0 ? verified : testResults),
-    meaning: buildCategoryMeaning(scopeDescription, rest.summary),
-    mainResult: verified[0] ? `${verified[0].value} ${verified[0].label.toLowerCase()}` : rest.summary,
+    meaning: buildCategoryMeaning(scopeDescription, summary),
+    mainResult: verified[0] ? `${verified[0].value} ${verified[0].label.toLowerCase()}` : summary,
     whyItMatters:
       scopeDescription ??
       `This helps us score ${rest.name.toLowerCase()} as part of the overall rating.`,
@@ -440,7 +491,10 @@ function finalizeEvidenceCategory(
       internalScore: m.normalizedScore ?? null,
     })),
     bonusExtras: isPlatformExtrasCategory(rest.slug, memberSlugs)
-      ? parseBonusExtrasFromRaw(bySlug.get('platform-extras-list')?.rawValue)
+      ? buildBonusExtrasWithProof(bySlug.get('platform-extras-list')?.rawValue, proofItems)
+      : undefined,
+    liveCamProof: isPlatformExtrasCategory(rest.slug, memberSlugs)
+      ? liveCamProofItems(proofItems)
       : undefined,
   };
 }
@@ -458,6 +512,34 @@ function buildEvidenceCategories(
     paidAccount?: boolean;
   },
 ): DraftEvidenceCategory[] {
+  const dbRows = [...bySlug.values()].filter(
+    (r) => r.categorySlug === catSlug && r.subscoreSlug === sub.slug,
+  );
+  if (catSlug === 'pricing' && dbRows.length > 0) {
+    return dbRows.map((row) => {
+      const testResults = [measurementFromRow(row.slug, row)];
+      const testGroup = sub.testGroups.find((g) => g.measurements.some((m) => m.slug === row.slug));
+      return finalizeEvidenceCategory(
+        catSlug,
+        sub.slug,
+        {
+          slug: row.slug,
+          name: row.name,
+          score: row.normalizedScore ?? null,
+          summary: row.publicResult?.trim() || '—',
+          testResults,
+          testGroupId: testGroup?.id,
+          proofCount: row.proofCount ?? 0,
+          proofLabel: formatProofLabel(row.proofCount ?? 0, row.proof ?? []),
+          memberSlugs: [row.slug],
+        },
+        bySlug,
+        testGroup,
+        { ...context, subscoreName: sub.name },
+      );
+    });
+  }
+
   const groupDefs = evidenceGroupsForSubscore(catSlug, sub.slug);
   const contributorBySlug = new Map(
     productContributors.map((c) => [toSlug(c.label), c]),
@@ -497,8 +579,14 @@ function buildEvidenceCategories(
               averageEvidenceScore(verifiedResults) ??
               null,
             summary: productContributor
-              ? buildCategorySummary(productContributor, verifiedResults)
-              : buildCategorySummary({ label: group.name, value: '—' }, verifiedResults),
+              ? buildCategorySummary(productContributor, verifiedResults, {
+                  platformExtras: isPlatformExtrasCategory(group.slug, group.memberSlugs),
+                  bySlug,
+                })
+              : buildCategorySummary({ label: group.name, value: '—' }, verifiedResults, {
+                  platformExtras: isPlatformExtrasCategory(group.slug, group.memberSlugs),
+                  bySlug,
+                }),
             scopeDescription: scopeForContributor(group.name),
             testResults: verifiedResults.length > 0 ? verifiedResults : testResults,
             testGroupId,
@@ -572,7 +660,10 @@ function buildEvidenceCategories(
         slug,
         name: contributor.label,
         score: contributor.internalScore ?? averageEvidenceScore(verifiedResults) ?? null,
-        summary: buildCategorySummary(contributor, verifiedResults),
+        summary: buildCategorySummary(contributor, verifiedResults, {
+          platformExtras: isPlatformExtrasCategory(slug, members),
+          bySlug,
+        }),
         scopeDescription: scopeForContributor(contributor.label),
         testResults: verifiedResults.length > 0 ? verifiedResults : testResults,
         testGroupId: testGroup?.id,
@@ -750,15 +841,31 @@ export function buildDraftRatingsViewModel(
 
     const subscoreMap = new Map<string, DraftSubscore>();
 
-    for (const sub of productCat.subscores) {
-      const slug =
-        subscoreNames.find((s) => s.name === sub.name)?.slug ??
-        sub.name.toLowerCase().replace(/\s+/g, '-');
+    const subscoreSeeds =
+      subscoreNames.length > 0
+        ? subscoreNames.map((meta) => {
+            const productSub = productCat.subscores.find((s) => {
+              const slug =
+                subscoreNames.find((n) => n.name === s.name)?.slug ??
+                s.name.toLowerCase().replace(/\s+/g, '-');
+              return slug === meta.slug || s.name === meta.name;
+            });
+            return { slug: meta.slug, name: meta.name, productSub };
+          })
+        : productCat.subscores.map((s) => ({
+            slug:
+              subscoreNames.find((n) => n.name === s.name)?.slug ??
+              s.name.toLowerCase().replace(/\s+/g, '-'),
+            name: s.name,
+            productSub: s,
+          }));
+
+    for (const { slug, name, productSub } of subscoreSeeds) {
       subscoreMap.set(slug, {
         slug,
-        name: sub.name,
-        score: sub.score,
-        finding: sub.description || undefined,
+        name,
+        score: productSub?.score ?? null,
+        finding: productSub?.description || undefined,
         keyMeasurements: [],
         evidenceCategories: [],
         testGroups: [],
@@ -887,6 +994,23 @@ export function buildDraftRatingsViewModel(
           categoryName: productCat.name,
         },
       );
+      if (deferPayAsYouGoScores(product.slug, sub.slug)) {
+        sub.evidenceCategories = sub.evidenceCategories.map((ec) => ({
+          ...ec,
+          score: null,
+          calculation: ec.calculation
+            ? {
+                ...ec.calculation,
+                finalScore: null,
+                formulaTotal: null,
+                rows: ec.calculation.rows.map((row) => ({ ...row, internalScore: null })),
+              }
+            : undefined,
+          scoreCalculation: ec.scoreCalculation
+            ? { ...ec.scoreCalculation, score: null }
+            : undefined,
+        }));
+      }
     }
 
     const subscores = [...subscoreMap.values()];

@@ -1,11 +1,18 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import StandardContentLayout from '../layouts/StandardContentLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import TestBreadcrumbs from '../components/test/TestBreadcrumbs.astro';
+import StandardContentHero from '../components/content/StandardContentHero.astro';
+import StandardContentToc from '../components/content/StandardContentToc.astro';
 import { editorialGuidelinesSections } from '../data/methodology-support-content';
-import { testHubUrl } from '../lib/slugs';
+import { testHubUrl, toSlug } from '../lib/slugs';
 import '../styles/test-hub.css';
+
+const sections = editorialGuidelinesSections.map((section) => ({
+  ...section,
+  id: toSlug(section.title),
+}));
 ---
 
 <BaseLayout
@@ -13,26 +20,28 @@ import '../styles/test-hub.css';
   description="Our editorial independence, fact-checking standards, correction policy, affiliate disclosures, and separation between commercial relationships and product scoring."
 >
   <Header />
-  <main class="test-page">
-    <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">
-      <TestBreadcrumbs
-        items={[
-          { label: 'Home', href: '/' },
-          { label: 'Editorial guidelines' },
-        ]}
-      />
+  <StandardContentLayout pageClass="test-page">
+    <StandardContentToc
+      slot="sidebar"
+      items={sections.map((section) => ({ id: section.id, label: section.title }))}
+      topAnchor="#editorial-guidelines-top"
+    />
 
-      <header class="test-page__header">
-        <p class="test-page__eyebrow">Editorial standards</p>
-        <h1 class="test-page__title">Editorial guidelines</h1>
-        <p class="test-page__intro">
-          How we maintain editorial independence, verify facts, handle corrections, disclose affiliate relationships, and keep commercial interests separate from scoring.
-        </p>
-      </header>
+    <StandardContentHero
+      slot="hero"
+      breadcrumbs={[
+        { label: 'Home', href: '/' },
+        { label: 'Editorial guidelines' },
+      ]}
+      eyebrow="Editorial standards"
+      title="Editorial guidelines"
+      intro="How we maintain editorial independence, verify facts, handle corrections, disclose affiliate relationships, and keep commercial interests separate from scoring."
+    />
 
+    <div id="editorial-guidelines-top">
       {
-        editorialGuidelinesSections.map((section) => (
-          <section class="test-page__section">
+        sections.map((section) => (
+          <section id={section.id} class="test-page__section scroll-mt-24">
             <h2 class="test-page__h2">{section.title}</h2>
             <p class="test-prose">{section.body}</p>
           </section>
@@ -49,6 +58,6 @@ import '../styles/test-hub.css';
         Back to how we test
       </a>
     </div>
-  </main>
+  </StandardContentLayout>
   <Footer />
 </BaseLayout>

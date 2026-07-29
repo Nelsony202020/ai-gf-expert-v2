@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import StandardContentLayout from '../../../layouts/StandardContentLayout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
-import TestBreadcrumbs from '../../../components/test/TestBreadcrumbs.astro';
+import StandardContentHero from '../../../components/content/StandardContentHero.astro';
 import TestTooltipIconSamples from '../../../components/test/TestTooltipIconSamples.astro';
 import TestTooltipOverallAnnotation from '../../../components/test/TestTooltipOverallAnnotation.astro';
 import TestTooltipProductAnnotation from '../../../components/test/TestTooltipProductAnnotation.astro';
@@ -39,39 +40,31 @@ const pageTitle = 'How Our Score Tooltips Work — AI Girlfriend Expert';
   description="How tooltips explain our ratings across reviews, roundups, directories, and the rest of AI Girlfriend Expert — and what each type of tooltip shows."
 >
   <Header />
-  <main class="test-hub test-tooltips-page">
-    <div class="section-container px-4 md:px-8">
-      <div class="test-hub__hero">
-        <TestBreadcrumbs
-          items={[
-            { label: 'Home', href: '/' },
-            { label: 'Tests', href: testHubUrl() },
-            { label: 'How score tooltips work' },
-          ]}
-        />
-        <p class="test-hub__eyebrow">Score transparency</p>
-        <h1 class="test-hub__title">How Our Score Tooltips Work</h1>
-        <p class="test-hub__intro">
-          You may have noticed that we use a lot of tooltips throughout AI Girlfriend Expert.
-        </p>
-        <p class="test-hub__intro">
-          These tooltips explain our ratings and provide helpful information, giving you more context before you sign up for an AI girlfriend app.
-        </p>
-        <p class="test-hub__intro test-hub__intro--spaced">
-          This page explains where we use tooltips and what each type of tooltip does.
-        </p>
-      </div>
+  <StandardContentLayout pageClass="test-hub test-tooltips-page">
+    <TestHubSidebar
+      slot="sidebar"
+      categories={categories}
+      tocSections={testTooltipsTocSections}
+      relatedMethodology={testTooltipsRelatedMethodology}
+    />
 
-      <div class="test-hub__layout">
-        <aside class="test-hub__toc test-hub__toc--desktop" aria-label="Table of contents">
-          <TestHubSidebar
-            categories={categories}
-            tocSections={testTooltipsTocSections}
-            relatedMethodology={testTooltipsRelatedMethodology}
-          />
-        </aside>
+    <StandardContentHero
+      slot="hero"
+      breadcrumbs={[
+        { label: 'Home', href: '/' },
+        { label: 'Tests', href: testHubUrl() },
+        { label: 'How score tooltips work' },
+      ]}
+      eyebrow="Score transparency"
+      title="How Our Score Tooltips Work"
+      intro={[
+        'You may have noticed that we use a lot of tooltips throughout AI Girlfriend Expert.',
+        'These tooltips explain our ratings and provide helpful information, giving you more context before you sign up for an AI girlfriend app.',
+        'This page explains where we use tooltips and what each type of tooltip does.',
+      ]}
+    />
 
-        <article class="test-hub__main">
+    <article class="test-hub__main">
           <section id="why-tooltips" class="test-hub__section">
             <h2 class="test-hub__h2">Why do we use tooltips?</h2>
             <p class="test-hub__lead">
@@ -203,27 +196,27 @@ const pageTitle = 'How Our Score Tooltips Work — AI Girlfriend Expert';
               <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
             </a>
           </aside>
-        </article>
+    </article>
+
+    <div slot="after">
+      <button type="button" class="test-hub__mobile-toc-btn lg:hidden" data-test-hub-toc-open aria-label="Open table of contents">
+        <span class="material-symbols-outlined" aria-hidden="true">description</span>
+      </button>
+
+      <div class="test-hub-sheet" data-test-hub-sheet hidden aria-hidden="true">
+        <div class="test-hub-sheet__backdrop" data-test-hub-sheet-close tabindex="-1"></div>
+        <div class="test-hub-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="test-tooltips-sheet-title">
+          <h2 id="test-tooltips-sheet-title" class="test-hub-sheet__title">Contents</h2>
+          <TestHubSidebar
+            categories={categories}
+            tocSections={testTooltipsTocSections}
+            relatedMethodology={testTooltipsRelatedMethodology}
+            mobile
+          />
+        </div>
       </div>
     </div>
-
-    <button type="button" class="test-hub__mobile-toc-btn lg:hidden" data-test-hub-toc-open aria-label="Open table of contents">
-      <span class="material-symbols-outlined" aria-hidden="true">description</span>
-    </button>
-
-    <div class="test-hub-sheet" data-test-hub-sheet hidden aria-hidden="true">
-      <div class="test-hub-sheet__backdrop" data-test-hub-sheet-close tabindex="-1"></div>
-      <div class="test-hub-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="test-tooltips-sheet-title">
-        <h2 id="test-tooltips-sheet-title" class="test-hub-sheet__title">Contents</h2>
-        <TestHubSidebar
-          categories={categories}
-          tocSections={testTooltipsTocSections}
-          relatedMethodology={testTooltipsRelatedMethodology}
-          mobile
-        />
-      </div>
-    </div>
-  </main>
+  </StandardContentLayout>
   <Footer />
 
   <script>
@@ -358,7 +351,7 @@ const pageTitle = 'How Our Score Tooltips Work — AI Girlfriend Expert';
         if (!appsEl) return;
 
         function scoreChipClass(score: number): string {
-          if (score >= 6.5) return 'rt-score-chip--good';
+          if (score >= 7.0) return 'rt-score-chip--good';
           if (score >= 5.5) return 'rt-score-chip--fair';
           return 'rt-score-chip--poor';
         }

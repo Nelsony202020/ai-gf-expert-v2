@@ -1,16 +1,14 @@
 // Keeps character.featured ↔ homepageSlots (featured_character) ↔ public homepage in sync.
 
 import type { HomeFeaturedCharacter } from '../../data/homepage';
-import { DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
-import { appendReferralSuffix } from '../characters/destinationUrl';
-import { resolveMediaUrl } from '../media/url';
+import { mapCharacterForPublic } from '../characters/public';
 import { getDb, id as newId, isDbConfigured } from '../db/server';
 import { HttpError } from '../db/auth';
 
 export const MAX_HOMEPAGE_FEATURED_CHARACTERS = 12;
 
 const CHARACTER_QUERY = {
-  product: { affiliateLinks: {} },
+  product: { affiliateLinks: {}, media: {} },
   image: { file: {} },
   storySlides: { media: { file: {} } },
   affiliateLink: {},
@@ -21,37 +19,20 @@ export function mapCharacterToHomeFeatured(character: any): HomeFeaturedCharacte
   if (!character || character.deletedAt || character.active === false) return null;
 
   const product = character.product;
+  const mapped = mapCharacterForPublic(character, product);
+  if (!mapped) return null;
+
   const tags = Array.isArray(character.personalityTags)
     ? character.personalityTags.filter(Boolean)
     : [];
-
-  const storySlides: string[] = (character.storySlides ?? [])
-    .filter((s: any) => s.active !== false && !s.deletedAt)
-    .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .map((s: any) => resolveMediaUrl(s.media))
-    .filter(Boolean);
-
-  const activeProductLink = (product?.affiliateLinks ?? []).find((l: any) => l.active);
-  const destinationWithSuffix = character.destinationUrl
-    ? appendReferralSuffix(String(character.destinationUrl), product?.referralSuffix)
-    : '';
-  const profileUrl =
-    destinationWithSuffix ||
-    (character.affiliateLink?.active ? `/go/${character.affiliateLink.cloakedSlug}` : '') ||
-    (activeProductLink ? `/go/${activeProductLink.cloakedSlug}` : undefined);
 
   const bio =
     String(character.shortDescription ?? '').trim() ||
     `${character.name} on ${product?.name ?? 'this platform'}.`;
 
   return {
-    name: String(character.name ?? ''),
-    archetype: tags[0] ?? character.characterStyle ?? 'Featured',
-    platform: product?.name ? String(product.name) : undefined,
-    avatar: resolveMediaUrl(character.image) || storySlides[0] || '',
-    storySlides,
-    profileUrl,
-    profileRel: DEFAULT_AFFILIATE_REL,
+    ...mapped,
+    platform: product?.name ? String(product.name) : mapped.platform,
     bio,
     quote: tags.length > 1 ? tags.slice(1, 4).join(' · ') : bio.split('.')[0] ?? bio,
     tags: tags.length > 0 ? tags.slice(0, 4) : [character.characterStyle ?? 'Featured'].filter(Boolean),

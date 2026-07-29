@@ -107,7 +107,7 @@ export function UsageScenariosPanel({
     ]);
     const slugToDef = new Map<string, EntityRow>();
     for (const d of defsRes.rows) {
-      if (String(d.slug) === 'real-cost' || String(d.slug) === 'heavy-use-cost') {
+      if (String(d.slug) === 'monthly-spend') {
         slugToDef.set(String(d.slug), d);
       }
     }
@@ -141,23 +141,16 @@ export function UsageScenariosPanel({
     }
 
     if (regular?.totalMonthly != null) {
-      writeEvidence('real-cost', regular.totalMonthly, {
+      writeEvidence('monthly-spend', regular.totalMonthly, {
         planCost: regular.planCost,
         topUpCost: regular.topUpCost,
         profile: 'regular',
       });
     }
-    if (power?.totalMonthly != null) {
-      writeEvidence('heavy-use-cost', power.totalMonthly, {
-        planCost: power.planCost,
-        topUpCost: power.topUpCost,
-        profile: 'power',
-      });
-    }
 
     await Promise.all(writes);
     if (writes.length === 0) {
-      setError('Could not find real-cost / heavy-use-cost evidence definitions.');
+      setError('Could not find monthly-spend evidence definition.');
     }
   }
 

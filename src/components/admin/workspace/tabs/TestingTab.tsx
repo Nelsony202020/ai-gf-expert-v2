@@ -345,6 +345,7 @@ export function TestingTab() {
       plans: ws.related.plans,
       packages: ws.related.packages,
       featureCosts: ws.related.featureCosts,
+      paymentProfile: ws.related.paymentProfile,
     });
     const map = new Map<string, AutofillSuggestion>();
     if (bySlugKey.size === 0) return map;
@@ -362,6 +363,7 @@ export function TestingTab() {
     ws.related.plans,
     ws.related.packages,
     ws.related.featureCosts,
+    ws.related.paymentProfile,
     ws.related.categories,
     structureByCategory,
     ws.fields,

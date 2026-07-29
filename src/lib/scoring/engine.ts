@@ -21,9 +21,9 @@ export type ScoringRule =
   | { kind: 'manual' };
 
 export type RawValue =
-  | { value: number }
-  | { status: 'yes' | 'limited' | 'optional' | 'no' | 'unknown' | 'na' }
-  | { text: string }
+  | { value: number; detail?: Record<string, unknown> }
+  | { status: 'yes' | 'limited' | 'optional' | 'no' | 'unknown' | 'na'; detail?: Record<string, unknown> }
+  | { text: string; detail?: Record<string, unknown> }
   | { structured: Record<string, unknown> };
 
 export interface EvidenceInput {
@@ -111,10 +111,10 @@ const MODE_RATING_SCORES: Record<string, number> = {
   poor: 0,
 };
 
-/** Absent = excluded from score; present = bonus points (live cam only). */
+/** Absent = excluded from score; present = bonus points. */
 export const BONUS_ONLY_SLUGS = new Set(['live-cam']);
 
-const EDITORIAL_SLUGS = new Set(['platform-extras-list', 'support-channels', 'support-available']);
+const EDITORIAL_SLUGS = new Set(['support-channels', 'support-available']);
 
 const SUPPORT_RATING_SLUGS = new Set(['support-reach', 'support-speed', 'support-helpfulness']);
 
@@ -152,6 +152,45 @@ export function normalizeEvidence(input: EvidenceInput): {
 
   if (input.notApplicable || (input.rawValue && 'status' in input.rawValue && input.rawValue.status === 'na')) {
     return { score: null, status: 'na', detail: 'Not applicable — removed, weights re-scaled' };
+  }
+
+  if (input.slug === 'platform-extras-list') {
+    if (!input.rawValue || !('structured' in input.rawValue)) {
+      return {
+        score: null,
+        status: 'na',
+        detail: 'No bonus features recorded — excluded from score (no penalty)',
+      };
+    }
+    const structured = (input.rawValue as { structured?: Record<string, unknown> }).structured;
+    if (structured?.hasBonus === 'no') {
+      return {
+        score: null,
+        status: 'na',
+        detail: 'No bonus features — excluded from score (no penalty)',
+      };
+    }
+    if (structured?.hasBonus === 'yes') {
+      const extras = Array.isArray(structured.extras) ? structured.extras : [];
+      const named = extras.filter((row) => String((row as { name?: string }).name ?? '').trim());
+      if (named.length > 0) {
+        return {
+          score: 10,
+          status: 'scored',
+          detail: `${named.length} bonus feature(s) — bonus 10/10`,
+        };
+      }
+      return {
+        score: null,
+        status: 'na',
+        detail: 'No named bonus features — excluded from score (no penalty)',
+      };
+    }
+    return {
+      score: null,
+      status: 'na',
+      detail: 'Bonus features not answered — excluded from score (no penalty)',
+    };
   }
 
   if (input.slug === 'edit-memories') {
@@ -278,20 +317,8 @@ export function normalizeEvidence(input: EvidenceInput): {
   if ('status' in raw) {
     const status = raw.status;
 
-    if (input.slug === 'free-plan') {
-      if (status === 'no') {
-        return {
-          score: null,
-          status: 'na',
-          detail: 'No free plan — neutral, excluded from score (no penalty)',
-        };
-      }
-      if (status === 'yes') {
-        return { score: 10, status: 'scored', detail: 'Free plan available — bonus 10/10' };
-      }
-      if (status === 'limited') {
-        return { score: 7, status: 'scored', detail: 'Limited free plan — bonus 7/10' };
-      }
+    if (input.slug === 'free-value' && status === 'no') {
+      return { score: 0, status: 'scored', detail: 'No meaningful free access — 0/10' };
     }
 
     if (BONUS_ONLY_SLUGS.has(input.slug)) {
@@ -308,10 +335,6 @@ export function normalizeEvidence(input: EvidenceInput): {
       if (status === 'limited') {
         return { score: 6, status: 'scored', detail: 'Limited availability — bonus 6/10' };
       }
-    }
-
-    if (input.slug === 'free-trial' && status === 'no') {
-      return { score: 0, status: 'scored', detail: 'No free trial — 0/10 (major gap vs industry standard)' };
     }
 
     if (rule.kind === 'ynl') {

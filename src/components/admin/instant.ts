@@ -15,6 +15,6 @@ export function getClientDb(appId: string): ClientDb {
   if (typeof window === 'undefined') {
     throw new Error('getClientDb() is browser-only');
   }
-  if (!db) db = init({ appId, schema });
+  if (!db) db = init({ appId, schema, devtool: false });
   return db;
 }

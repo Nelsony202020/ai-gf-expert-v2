@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, ErrorNote, Icon, Spinner } from '../ui';
+import { Button, DrawerCloseButton, ErrorNote, Icon, Spinner } from '../ui';
 import { useToast } from '../Toast';
 import type { AiVerdictNotesDto } from '../../../lib/ai-verdict/notesSchema';
 import { FIELD_LABELS, normalizeListField, normalizeScalarField } from '../../../lib/ai-verdict/notesSchema';
@@ -117,6 +117,7 @@ function SuggestionListBlock({
 
 export function AiNotesDrawer({
   open,
+  embedded = false,
   sectionLabel,
   productName,
   testRunName,
@@ -145,6 +146,8 @@ export function AiNotesDrawer({
   getFieldValue: (fieldKey: string) => string | string[];
   onInsertField: (fieldKey: string, value: string) => void;
   onInsertListField: (fieldKey: string, items: string[]) => void;
+  /** When true, renders inline inside a parent panel instead of a fixed overlay drawer. */
+  embedded?: boolean;
 }) {
   const toast = useToast();
   const [visible, setVisible] = useState(false);
@@ -154,26 +157,48 @@ export function AiNotesDrawer({
   useEffect(() => {
     if (open) {
       setVisible(true);
+      if (embedded) {
+        setAnimOpen(true);
+        return;
+      }
       const t = requestAnimationFrame(() => setAnimOpen(true));
       return () => cancelAnimationFrame(t);
     }
     setAnimOpen(false);
+    if (embedded) {
+      setVisible(false);
+      return;
+    }
     const t = window.setTimeout(() => setVisible(false), DRAWER_UNMOUNT_MS);
     return () => window.clearTimeout(t);
-  }, [open]);
+  }, [open, embedded]);
 
   useEffect(() => {
+    if (!open) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && open) handleClose();
+      if (e.key === 'Escape') {
+        if (embedded) e.stopPropagation();
+        handleClose();
+      }
     }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+    window.addEventListener('keydown', onKey, embedded);
+    return () => window.removeEventListener('keydown', onKey, embedded);
+  }, [open, embedded]);
 
   function handleClose() {
+    if (embedded) {
+      onClose();
+      return;
+    }
     setAnimOpen(false);
     setRegenConfirm(false);
     window.setTimeout(onClose, DRAWER_UNMOUNT_MS);
+  }
+
+  if (embedded) {
+    if (!open) return null;
+  } else if (!visible) {
+    return null;
   }
 
   async function handleCopy(text: string, label?: string) {
@@ -211,32 +236,25 @@ export function AiNotesDrawer({
     toast.success(`Inserted into ${label}`);
   }
 
-  if (!visible) return null;
-
   const suggestions = notes?.fieldSuggestions ?? {};
   const scalarKeys = Object.keys(suggestions).filter(
     (k) => !Array.isArray(suggestions[k]) && k !== 'expertOutline',
   );
   const listKeys = ['pros', 'cons', 'bestFor', 'notIdealFor', 'expertOutline'];
 
-  return (
-    <>
-      <button
-        type="button"
-        aria-label="Close AI notes"
-        className={`testing-proof-backdrop fixed inset-0 z-[60] bg-slate-900/30 transition-opacity duration-200 ${
-          animOpen ? 'opacity-100' : 'opacity-0'
-        }`}
-        onClick={handleClose}
-      />
-      <aside
-        className={`testing-proof-drawer fixed inset-y-0 right-0 z-[70] flex w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-slate-700 dark:bg-slate-900 ${
-          animOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        role="dialog"
-        aria-labelledby="ai-notes-drawer-title"
-        aria-modal="true"
-      >
+  const panel = (
+    <div
+      className={
+        embedded
+          ? 'flex max-h-[min(420px,50vh)] flex-col overflow-hidden rounded-lg border border-pink-200 bg-pink-50/30 dark:border-pink-900/40 dark:bg-pink-950/10'
+          : `testing-proof-drawer fixed inset-y-0 right-0 z-[70] flex w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-slate-700 dark:bg-slate-900 ${
+              animOpen ? 'translate-x-0' : 'translate-x-full'
+            }`
+      }
+      role={embedded ? 'region' : 'dialog'}
+      aria-labelledby="ai-notes-drawer-title"
+      aria-modal={embedded ? undefined : true}
+    >
         <div className="flex shrink-0 items-start justify-between gap-2 border-b border-slate-200/80 px-4 py-3 dark:border-slate-700">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--testing-accent-muted)]">
@@ -255,14 +273,7 @@ export function AiNotesDrawer({
               </p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-700"
-            aria-label="Close"
-          >
-            <Icon name="close" className="!text-[20px]" />
-          </button>
+          <DrawerCloseButton onClick={handleClose} />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 space-y-4">
@@ -409,12 +420,27 @@ export function AiNotesDrawer({
                 </Button>
               )}
               <Button variant="ghost" className="flex-1" onClick={handleClose}>
-                Close
+                {embedded ? 'Hide' : 'Close'}
               </Button>
             </div>
           )}
         </div>
-      </aside>
+    </div>
+  );
+
+  if (embedded) return panel;
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="Close AI notes"
+        className={`testing-proof-backdrop fixed inset-0 z-[60] bg-slate-900/30 transition-opacity duration-200 ${
+          animOpen ? 'opacity-100' : 'opacity-0'
+        }`}
+        onClick={handleClose}
+      />
+      {panel}
     </>
   );
 }

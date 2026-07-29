@@ -1,0 +1,145 @@
+---
+import { findEvidenceBySlug } from '../../lib/test-methodology-evidence';
+import { formatScoringBandsForDisplay } from '../../lib/test-category-benchmarks/format-from-rule';
+import type { TestEvidenceSectionContent } from '../../data/test-subscore-methodology';
+
+interface Props {
+  categoryKey: string;
+  subscoreSlug: string;
+  section: TestEvidenceSectionContent;
+}
+
+const { categoryKey, subscoreSlug, section } = Astro.props;
+
+function scoringLines(section: TestEvidenceSectionContent): string[] {
+  if (section.scoringLines?.length) return section.scoringLines;
+
+  if (section.scoringEvidenceSlug) {
+    const evidence = findEvidenceBySlug(categoryKey, subscoreSlug, section.scoringEvidenceSlug);
+    if (evidence?.scoringRule) {
+      const unit = section.scoringEvidenceSlug === 'styles' ? 'style' : undefined;
+      const plural =
+        section.scoringEvidenceSlug === 'styles'
+          ? 'styles'
+          : section.scoringEvidenceSlug === 'ethnicities'
+            ? 'categories'
+            : section.scoringEvidenceSlug === 'personalities'
+              ? 'types'
+              : section.scoringEvidenceSlug === 'scenarios'
+                ? 'scenarios'
+                : undefined;
+      return formatScoringBandsForDisplay(evidence.scoringRule, {
+        singular: unit,
+        plural,
+      });
+    }
+  }
+
+  return [];
+}
+
+function disclosureLines(slug: string): string[] {
+  const evidence = findEvidenceBySlug(categoryKey, subscoreSlug, slug);
+  if (!evidence?.scoringRule) return [];
+  return formatScoringBandsForDisplay(evidence.scoringRule, {
+    singular: 'character',
+    plural: 'characters',
+  });
+}
+
+const bands = scoringLines(section);
+---
+
+<article class="test-evidence-item test-evidence-item--detailed scroll-mt-24" id={section.id}>
+  <h3 class="test-evidence-item__title">{section.title}</h3>
+
+  <dl class="test-evidence-detail">
+    <div class="test-evidence-detail__row">
+      <dt>What it measures</dt>
+      <dd>{section.whatItMeasures}</dd>
+    </div>
+
+    <div class="test-evidence-detail__row">
+      <dt>Why it matters</dt>
+      <dd><p>{section.whyItMatters}</p></dd>
+    </div>
+
+    <div class="test-evidence-detail__row">
+      <dt>How we test it</dt>
+      <dd><p>{section.howWeTest}</p></dd>
+    </div>
+
+    <div class="test-evidence-detail__row">
+      <dt>What we count</dt>
+      <dd>
+        <ul>
+          {section.whatWeCount.map((item) => <li>{item}</li>)}
+        </ul>
+      </dd>
+    </div>
+
+    <div class="test-evidence-detail__row">
+      <dt>What we do not count</dt>
+      <dd>
+        <ul>
+          {section.whatWeDoNotCount.map((item) => <li>{item}</li>)}
+        </ul>
+      </dd>
+    </div>
+
+    <div class="test-evidence-detail__row">
+      <dt>Displayed result</dt>
+      <dd>
+        <pre class="test-evidence-detail__example">{section.displayedResult}</pre>
+        {
+          section.displayedResultExtra && (
+            <pre class="test-evidence-detail__example test-evidence-detail__example--secondary">
+              {section.displayedResultExtra}
+            </pre>
+          )
+        }
+      </dd>
+    </div>
+
+    <div class="test-evidence-detail__row">
+      <dt>How it is scored</dt>
+      <dd>
+        {
+          section.scoringNote && <p class="test-evidence-detail__note">{section.scoringNote}</p>
+        }
+        {
+          bands.length > 0 && (
+            <pre class="test-evidence-detail__example">{bands.join('\n')}</pre>
+          )
+        }
+        {
+          section.scoringDisclosure && (
+            <details class="test-evidence-detail__disclosure">
+              <summary>{section.scoringDisclosure.title}</summary>
+              <div class="test-evidence-detail__disclosure-body">
+                {
+                  section.scoringDisclosure.memberSlugs.map((member) => {
+                    const lines = disclosureLines(member.slug);
+                    return (
+                      lines.length > 0 && (
+                        <div class="test-evidence-detail__disclosure-group">
+                          <p class="test-evidence-detail__disclosure-label">{member.label}</p>
+                          <pre class="test-evidence-detail__example">{lines.join('\n')}</pre>
+                        </div>
+                      )
+                    );
+                  })
+                }
+              </div>
+            </details>
+          )
+        }
+      </dd>
+    </div>
+
+    <div class="test-evidence-detail__row">
+      <dt>Important edge cases</dt>
+      <dd><p>{section.edgeCases}</p></dd>
+    </div>
+  </dl>
+</article>

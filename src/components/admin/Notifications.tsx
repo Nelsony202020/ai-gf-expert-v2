@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from './api';
 import { useToastInbox } from './Toast';
-import { Badge, Button, Icon } from './ui';
+import { Badge, Button, DrawerCloseButton, Icon } from './ui';
 
 interface NotificationRow {
   id: string;
@@ -206,14 +206,7 @@ function NotificationDrawer({ visible, onClose }: { visible: boolean; onClose: (
           <Button variant="ghost" className="!py-1 text-xs" onClick={() => void readAll()}>
             Mark all read
           </Button>
-          <button
-            type="button"
-            aria-label="Close notifications"
-            className="rounded p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-            onClick={onClose}
-          >
-            <Icon name="close" className="!text-[18px]" />
-          </button>
+          <DrawerCloseButton onClick={onClose} ariaLabel="Close notifications" />
         </div>
 
         <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2 dark:border-slate-800">

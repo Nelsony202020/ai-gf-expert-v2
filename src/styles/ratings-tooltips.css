@@ -336,6 +336,14 @@
   grid-template-columns: none;
 }
 
+.rt-comp-summary {
+  margin: 0;
+  padding-left: calc(38px + 6px);
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--color-on-surface-variant, #64748b);
+}
+
 .rt-comp-row--inline .rt-comp-row__main .rt-tooltip-actions--compact {
   margin-left: 0;
   padding-left: 0;
@@ -495,6 +503,7 @@
   outline: 2px solid rgb(219 39 119 / 45%);
   outline-offset: 2px;
   border-radius: 12px;
+  scroll-margin-top: 6rem;
 }
 
 @keyframes resultsPulse {
@@ -1488,40 +1497,40 @@ a.rt-inline-test-link.rt-comp-name {
 [data-theme='dark'] .ratings-tooltip-panel__desc,
 [data-theme='dark'] .ratings-tooltip-panel__avg,
 [data-theme='dark'] .rt-comp-name span:last-child {
-  color: #ececec;
+  color: var(--color-on-surface);
 }
 
 [data-theme='dark'] .ratings-tooltip-panel__avg {
-  color: #9cab96;
+  color: var(--dark-muted);
 }
 
 [data-theme='dark'] .evidence-table__row {
-  border-bottom-color: rgb(42 51 40 / 80%);
+  border-bottom-color: rgb(51 65 85 / 80%);
 }
 
 [data-theme='dark'] .evidence-table__head {
-  color: #9cab96;
+  color: var(--dark-muted);
 }
 
 [data-theme='dark'] .evidence-table__metric-link,
 [data-theme='dark'] .evidence-table__cell,
 [data-theme='dark'] .evidence-table__measured {
-  color: #ececec;
+  color: var(--color-on-surface);
 }
 
 [data-theme='dark'] .evidence-table__weight-pill {
-  background: rgb(42 51 40 / 90%);
-  border-color: rgb(156 171 150 / 30%);
-  color: #daf66c;
+  background: rgb(51 65 85 / 90%);
+  border-color: rgb(148 163 184 / 30%);
+  color: var(--dark-accent-text);
 }
 
 [data-theme='dark'] .evidence-table__contrib {
-  color: #ececec;
+  color: var(--color-on-surface);
 }
 
 [data-theme='dark'] .evidence-table__total {
-  background: rgb(26 36 24 / 50%);
-  border-color: #2a3328;
+  background: rgb(15 23 42 / 50%);
+  border-color: var(--dark-border-subtle);
 }
 
 /* Score chips & methodology badges — always black on white inside tooltips */

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { dataApi, type EntityRow } from '../api';
-import { Icon } from '../ui';
+import { DrawerCloseButton } from '../ui';
 import { DRAWER_UNMOUNT_MS } from '../../../lib/drawer/animate';
 import { BonusProofPanel } from './BonusProofPanel';
 import type { RawValue } from './EvidenceInput';
@@ -120,13 +120,7 @@ export function ProofDrawer({
               <QuestionLabel def={def} categorySlug={categorySlug} />
             </h2>
           </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-200/80 hover:text-slate-600 dark:hover:bg-slate-700"
-          >
-            <Icon name="close" className="!text-[20px]" />
-          </button>
+          <DrawerCloseButton onClick={handleClose} ariaLabel="Close proof panel" />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
           {String(def.slug) === 'platform-extras-list' && liveCamDef ? (

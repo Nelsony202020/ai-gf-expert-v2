@@ -1,0 +1,28 @@
+---
+import '../styles/roundup.css';
+import '../styles/standard-content.css';
+
+interface Props {
+  pageClass?: string;
+}
+
+const { pageClass = '' } = Astro.props;
+---
+
+<main class:list={['standard-content-page', pageClass]}>
+  <slot name="featured" />
+  <div class="section-container px-4 md:px-8 pb-16 md:pb-24">
+    <div class="standard-content-grid">
+      <div class="standard-content-grid__hero">
+        <slot name="hero" />
+      </div>
+      <div class="standard-content-grid__sidebar">
+        <slot name="sidebar" />
+      </div>
+      <div class="standard-content-grid__body">
+        <slot />
+      </div>
+    </div>
+  </div>
+  <slot name="after" />
+</main>

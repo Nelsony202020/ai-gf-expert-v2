@@ -1,0 +1,33 @@
+---
+import TestBreadcrumbs from '../test/TestBreadcrumbs.astro';
+import TestMethodologyTitle from '../test/TestMethodologyTitle.astro';
+import type { BreadcrumbItem } from '../ui/Breadcrumbs.astro';
+
+interface Props {
+  breadcrumbs: BreadcrumbItem[];
+  eyebrow?: string;
+  title: string;
+  /** When set, renders `title` on the first line and this text in italic on the second. */
+  titleSub?: string;
+  intro?: string | string[];
+}
+
+const { breadcrumbs, eyebrow, title, titleSub, intro } = Astro.props;
+const introParagraphs = intro
+  ? Array.isArray(intro)
+    ? intro
+    : [intro]
+  : [];
+---
+
+<header class="standard-content-hero">
+  <TestBreadcrumbs items={breadcrumbs} />
+  {eyebrow && <p class="test-hub__eyebrow">{eyebrow}</p>}
+  {titleSub ? <TestMethodologyTitle main={title} sub={titleSub} /> : <h1 class="test-hub__title">{title}</h1>}
+  {
+    introParagraphs.map((paragraph, index) => (
+      <p class:list={['test-hub__intro', index > 0 && 'test-hub__intro--spaced']}>{paragraph}</p>
+    ))
+  }
+  <slot />
+</header>

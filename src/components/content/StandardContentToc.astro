@@ -1,0 +1,102 @@
+---
+interface TocItem {
+  id: string;
+  label: string;
+  children?: TocItem[];
+}
+
+interface Props {
+  title?: string;
+  items: TocItem[];
+  topAnchor?: string;
+  topLabel?: string;
+}
+
+const {
+  title = 'On this page',
+  items,
+  topAnchor,
+  topLabel = 'Top',
+} = Astro.props;
+---
+
+<aside class="roundup-sidebar" aria-label="Page contents">
+  <nav class="roundup-toc" aria-label="Table of contents">
+    <p class="roundup-toc__title">{title}</p>
+    <ul class="roundup-toc__list">
+      {
+        topAnchor && (
+          <li>
+            <a class="roundup-toc__link roundup-toc__link--top" href={topAnchor}>
+              <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+              {topLabel}
+            </a>
+          </li>
+        )
+      }
+      {
+        items.map((item) => (
+          <li>
+            <a class="roundup-toc__link" href={`#${item.id}`} data-toc-link={item.id}>
+              {item.label}
+            </a>
+            {
+              item.children?.length ? (
+                <ul class="roundup-toc__sublist">
+                  {
+                    item.children.map((child) => (
+                      <li>
+                        <a
+                          class="roundup-toc__link roundup-toc__link--h3"
+                          href={`#${child.id}`}
+                          data-toc-link={child.id}
+                        >
+                          {child.label}
+                        </a>
+                      </li>
+                    ))
+                  }
+                </ul>
+              ) : null
+            }
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+  <slot />
+</aside>
+
+<script>
+  function initStandardContentToc() {
+    const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]'));
+    const sections = tocLinks
+      .map((link) => {
+        const id = link.dataset.tocLink!;
+        const el = document.getElementById(id);
+        return el ? { link, el } : null;
+      })
+      .filter((x): x is { link: HTMLAnchorElement; el: HTMLElement } => !!x);
+
+    if (!sections.length) return;
+
+    function updateTocActive() {
+      const offset = 100;
+      let current: string | null = null;
+      for (const { link, el } of sections) {
+        if (el.getBoundingClientRect().top - offset <= 0) {
+          current = link.dataset.tocLink!;
+        }
+      }
+      tocLinks.forEach((link) => {
+        link.classList.toggle('is-active', link.dataset.tocLink === current);
+      });
+    }
+
+    window.addEventListener('scroll', updateTocActive, { passive: true });
+    updateTocActive();
+  }
+
+  initStandardContentToc();
+  document.addEventListener('astro:page-load', initStandardContentToc);
+</script>

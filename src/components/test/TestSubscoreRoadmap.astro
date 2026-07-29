@@ -1,0 +1,41 @@
+---
+import MethodologyDepthRoadmap from './MethodologyDepthRoadmap.astro';
+import type { TestCategoryNode, TestSubscoreNode } from '../../lib/test-framework';
+import { testHubUrl } from '../../lib/slugs';
+
+interface Props {
+  category: TestCategoryNode;
+  subscore: TestSubscoreNode;
+}
+
+const { category, subscore } = Astro.props;
+const evidenceCount = subscore.contributors.length;
+
+const steps = [
+  {
+    level: 'overall' as const,
+    icon: 'crown',
+    label: 'Overall Performance',
+    href: `${testHubUrl()}#how-scores-work`,
+  },
+  {
+    level: 'category' as const,
+    icon: 'apps',
+    label: category.name,
+    href: category.href,
+  },
+  {
+    level: 'subscore' as const,
+    icon: 'bar_chart',
+    label: subscore.name,
+  },
+  {
+    level: 'evidence' as const,
+    icon: 'description',
+    label: `${evidenceCount} ${evidenceCount === 1 ? 'evidence test' : 'evidence tests'}`,
+    href: '#evidence-we-measure',
+  },
+];
+---
+
+<MethodologyDepthRoadmap steps={steps} activeLevel="subscore" />

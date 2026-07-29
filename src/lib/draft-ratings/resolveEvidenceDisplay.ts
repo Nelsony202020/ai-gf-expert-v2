@@ -1,4 +1,5 @@
 import { formatEvidenceAnswer } from '../testing/evidenceExport';
+import { fmtMoney } from '../pricing/calc';
 import { renderPublicResult } from '../../components/admin/testing/presentation';
 
 type EvidenceDef = {
@@ -18,6 +19,27 @@ type EvidenceRow = {
 };
 
 type BonusExtraRow = { name: string; note?: string };
+
+const PRICING_CURRENCY_SUFFIX: Record<string, string> = {
+  'image-cost': '/ image',
+  'video-cost': '/ 10 sec',
+  'voice-cost': '/ 10 sec',
+  'call-cost': '/ min',
+  'monthly-spend': '/ month',
+};
+
+const FREE_ACCESS_COUNT_LABEL: Record<string, string> = {
+  'free-chat': 'messages',
+  'free-images': 'images',
+  'free-video': 'videos',
+  'free-characters': 'characters',
+};
+
+const FREE_VALUE_LABELS: Record<string, string> = {
+  yes: 'No card needed',
+  limited: 'Limited free access',
+  no: 'No free access',
+};
 
 function parseBonusExtrasRaw(raw: unknown): BonusExtraRow[] {
   if (!raw || typeof raw !== 'object') return [];
@@ -47,7 +69,54 @@ function yesNoFromRaw(raw: unknown): 'yes' | 'no' | '' {
   return '';
 }
 
-function formatPlatformExtrasDisplay(listRaw: unknown, liveRaw?: unknown): string {
+function formatPricingCurrency(slug: string, value: number): string {
+  const suffix = PRICING_CURRENCY_SUFFIX[slug];
+  const money = fmtMoney(value);
+  return suffix ? `${money} ${suffix}` : money;
+}
+
+function formatFreeAccessValue(slug: string | undefined, raw: unknown): string | null {
+  if (!slug || !raw || typeof raw !== 'object') return null;
+
+  if (slug === 'free-voice' && 'value' in raw) {
+    const sec = Number((raw as { value: unknown }).value);
+    if (!Number.isFinite(sec)) return null;
+    return `${sec} sec voice`;
+  }
+
+  if (slug === 'free-value' && 'status' in raw) {
+    const status = String((raw as { status: unknown }).status);
+    const detail =
+      'detail' in raw && raw.detail && typeof raw.detail === 'object'
+        ? (raw.detail as Record<string, unknown>)
+        : undefined;
+    if (typeof detail?.label === 'string' && detail.label.trim()) return detail.label.trim();
+    if (FREE_VALUE_LABELS[status]) return FREE_VALUE_LABELS[status];
+    if ('text' in raw && typeof (raw as { text: unknown }).text === 'string') {
+      return (raw as { text: string }).text.trim();
+    }
+  }
+
+  if (slug === 'restrictions') {
+    if ('text' in raw && typeof (raw as { text: unknown }).text === 'string') {
+      const text = (raw as { text: string }).text.trim();
+      if (text) return text;
+    }
+    const structured =
+      'structured' in raw ? (raw as { structured?: Record<string, unknown> }).structured : undefined;
+    if (structured && typeof structured.label === 'string') return structured.label.trim();
+  }
+
+  if (slug && FREE_ACCESS_COUNT_LABEL[slug] && 'value' in raw) {
+    const count = Number((raw as { value: unknown }).value);
+    if (!Number.isFinite(count)) return null;
+    return `${count} ${FREE_ACCESS_COUNT_LABEL[slug]}`;
+  }
+
+  return null;
+}
+
+export function formatPlatformExtrasDisplay(listRaw: unknown, liveRaw?: unknown): string {
   const structured =
     listRaw && typeof listRaw === 'object' && 'structured' in listRaw
       ? (listRaw as { structured?: Record<string, unknown> }).structured
@@ -58,29 +127,20 @@ function formatPlatformExtrasDisplay(listRaw: unknown, liveRaw?: unknown): strin
     hasBonus = structured.hasBonus;
   }
 
-  if (hasBonus === 'no') return 'No bonus features found';
+  if (hasBonus === 'no') return 'None';
   if (hasBonus !== 'yes') return '';
 
-  const extras = parseBonusExtrasRaw(listRaw);
-  const cam =
-    yesNoFromRaw(liveRaw) === 'yes'
-      ? 'AI cam available'
-      : yesNoFromRaw(liveRaw) === 'no'
-        ? 'No AI cam'
-        : '';
-
-  const parts: string[] = [];
-  if (cam) parts.push(cam);
-  if (extras.length > 0) {
-    parts.push(
-      extras
-        .slice(0, 6)
-        .map((e) => (e.note ? `${e.name} (${e.note})` : e.name))
-        .join('; '),
-    );
+  const names: string[] = [];
+  if (yesNoFromRaw(liveRaw) === 'yes') names.push('Live cam');
+  for (const extra of parseBonusExtrasRaw(listRaw)) {
+    if (extra.name.trim()) names.push(extra.name.trim());
   }
-  if (parts.length === 0) return 'Bonus features available';
-  return parts.join(' · ');
+  if (names.length === 0) return '—';
+  return names.slice(0, 8).join(', ');
+}
+
+export function formatBonusFeaturesSummaryLine(listRaw: unknown, liveRaw?: unknown): string {
+  return formatPlatformExtrasDisplay(listRaw, liveRaw);
 }
 
 /** Public-facing display string — prefers saved publicResult, falls back to rawValue formatting. */
@@ -100,8 +160,15 @@ export function resolveEvidenceDisplayValue(def: EvidenceDef, row: EvidenceRow):
   if (!raw) return published ?? '';
 
   if (typeof raw === 'object' && raw !== null) {
+    const freeAccess = formatFreeAccessValue(def.slug, raw);
+    if (freeAccess) return freeAccess;
+
     if ('value' in raw && typeof (raw as { value: unknown }).value === 'number') {
-      const templated = renderPublicResult(def as Parameters<typeof renderPublicResult>[0], (raw as { value: number }).value);
+      const num = (raw as { value: number }).value;
+      if (def.slug && PRICING_CURRENCY_SUFFIX[def.slug]) {
+        return formatPricingCurrency(def.slug, num);
+      }
+      const templated = renderPublicResult(def as Parameters<typeof renderPublicResult>[0], num);
       if (templated) return templated;
     }
     if ('text' in raw && typeof (raw as { text: unknown }).text === 'string') {

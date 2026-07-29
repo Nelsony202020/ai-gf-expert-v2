@@ -18,8 +18,8 @@
   let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
   function scoreChipClass(score: number): string {
-    if (score >= 7.6) return 'rt-score-chip--good';
-    if (score >= 5.1) return 'rt-score-chip--fair';
+    if (score >= 7.0) return 'rt-score-chip--good';
+    if (score >= 5.5) return 'rt-score-chip--fair';
     return 'rt-score-chip--poor';
   }
 
@@ -146,6 +146,26 @@
     panel.style.top = `${top}px`;
   }
 
+  function bindTooltipPanelActions(panel: HTMLElement) {
+    if (panel.dataset.actionsBound === 'true') return;
+    panel.dataset.actionsBound = 'true';
+
+    panel.addEventListener('click', (e) => {
+      const drawerBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-ratings-open-drawer]');
+      if (!drawerBtn?.dataset.ratingsOpenDrawer) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      hidePanel();
+
+      const id = drawerBtn.dataset.ratingsOpenDrawer;
+      (window as Window & { ratingsOpenDrawer?: (id: string, trigger?: HTMLElement) => void }).ratingsOpenDrawer?.(
+        id,
+        drawerBtn,
+      );
+    });
+  }
+
   function bindDistribution(panel: HTMLElement) {
     const chart = panel.querySelector<HTMLElement>('[data-dist-chart]');
     if (!chart) return;
@@ -257,6 +277,7 @@
 
     positionPanel(trigger, panel);
     bindDistribution(panel);
+    bindTooltipPanelActions(panel);
 
     panel.addEventListener('mouseenter', cancelHide);
     panel.addEventListener('mouseleave', scheduleHide);
@@ -272,6 +293,15 @@
       trigger.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
+        const drawerId = trigger.dataset.ratingsOpenDrawer;
+        if (drawerId) {
+          hidePanel();
+          (window as Window & { ratingsOpenDrawer?: (id: string, trigger?: HTMLElement) => void }).ratingsOpenDrawer?.(
+            drawerId,
+            trigger,
+          );
+          return;
+        }
         showPanel(trigger);
       });
       trigger.addEventListener('focus', () => showPanel(trigger));

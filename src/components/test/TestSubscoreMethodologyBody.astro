@@ -1,0 +1,84 @@
+---
+import type { TestCategoryNode, TestSubscoreNode } from '../../lib/test-framework';
+import type { TestSubscoreMethodologyContent } from '../../data/test-subscore-methodology';
+import TestSubscoreEvidenceSection from './TestSubscoreEvidenceSection.astro';
+
+interface Props {
+  category: TestCategoryNode;
+  subscore: TestSubscoreNode;
+  content: TestSubscoreMethodologyContent;
+}
+
+const { category, subscore, content } = Astro.props;
+---
+
+<div id="test-subscore-top" class="test-subscore-methodology">
+  <section id="why-it-matters" class="test-page__section scroll-mt-24">
+    <h2 class="test-page__h2">{content.whyItMatters.title}</h2>
+    {
+      content.whyItMatters.paragraphs.map((paragraph) => (
+        <p class="test-methodology-prose">{paragraph}</p>
+      ))
+    }
+  </section>
+
+  <section id="how-we-test" class="test-page__section scroll-mt-24">
+    <h2 class="test-page__h2">{content.howWeTest.title}</h2>
+    {
+      content.howWeTest.paragraphs.map((paragraph) => (
+        <p class="test-methodology-prose">{paragraph}</p>
+      ))
+    }
+  </section>
+
+  <section id="high-low-score" class="test-page__section scroll-mt-24">
+    <h2 class="test-page__h2">{content.highLowScore.title}</h2>
+    {
+      content.highLowScore.paragraphs.map((paragraph) => (
+        <p class="test-methodology-prose">{paragraph}</p>
+      ))
+    }
+  </section>
+
+  <section id="score-calculation" class="test-page__section scroll-mt-24">
+    <h2 class="test-page__h2">{content.scoreCalculation.title}</h2>
+    {
+      content.scoreCalculation.paragraphs.map((paragraph) => (
+        <p class="test-methodology-prose">{paragraph}</p>
+      ))
+    }
+    <details class="test-subscore-methodology__calc-disclosure">
+      <summary>{content.scoreCalculation.exactCalculationTitle}</summary>
+      <p class="test-methodology-prose">{content.scoreCalculation.exactCalculationBody}</p>
+    </details>
+  </section>
+
+  <section id="evidence-we-measure" class="test-page__section scroll-mt-24">
+    <h2 class="test-page__h2">Evidence we measure</h2>
+    <div class="test-evidence-list">
+      {
+        content.evidenceSections.map((section) => (
+          <TestSubscoreEvidenceSection
+            categoryKey={content.categoryKey}
+            subscoreSlug={content.subscoreSlug}
+            section={section}
+          />
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="limitations" class="test-page__section scroll-mt-24">
+    <h2 class="test-page__h2">{content.limitations.title}</h2>
+    {
+      content.limitations.paragraphs.map((paragraph) => (
+        <p class="test-methodology-prose">{paragraph}</p>
+      ))
+    }
+  </section>
+
+  <a class="test-inline-link test-page__back" href={category.href}>
+    <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+    Back to {category.name}
+  </a>
+</div>

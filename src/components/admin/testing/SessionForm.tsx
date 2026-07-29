@@ -7,7 +7,6 @@ import { Button, ErrorNote, Icon, TextInput, useAsync } from '../ui';
 import { ChatUnderstandingGrid } from './ChatUnderstandingGrid';
 import { TestingHint } from './TestingHint';
 import { EvidenceInput, type RawValue } from './EvidenceInput';
-import { PricingBasicsForm } from './PricingBasicsForm';
 import { QuestionLabel } from './QuestionLabel';
 import { renderPublicResult } from './presentation';
 import type { AutofillSuggestion } from './pricingAutofill';
@@ -410,7 +409,6 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         form.set('file', file);
         form.set('adult', '0');
         form.set('role', 'proof');
-        form.set('altText', `Evidence: ${def.name}`);
         form.set('evidenceResultId', resultId);
         if (productId) form.set('productId', productId);
         await api.upload('/api/admin/media/upload', form);
@@ -445,7 +443,6 @@ export const SessionForm = forwardRef<SessionFormHandle, {
       form.set('file', file);
       form.set('adult', '0');
       form.set('role', 'proof');
-      form.set('altText', `Evidence: ${def.name}`);
       form.set('evidenceResultId', resultId);
       if (productId) form.set('productId', productId);
       uploaded.push(await api.upload<{ id: string; url?: string }>('/api/admin/media/upload', form));
@@ -1066,15 +1063,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         </>
       )}
 
-      {session.id === 'subscription-basics' && categorySlug === 'pricing' ? (
-        <PricingBasicsForm
-          items={items}
-          categorySlug={categorySlug}
-          drafts={drafts}
-          disabled={isBlocked}
-          onPatch={(defId, raw) => patchDraft(defId, { raw })}
-        />
-      ) : layout === 'step' && !worksheet ? (
+      {layout === 'step' && !worksheet ? (
         renderStepView()
       ) : useTable && !imageEditingLocked ? (
         <SessionAnswerTable

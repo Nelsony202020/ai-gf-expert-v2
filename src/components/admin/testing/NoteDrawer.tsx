@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { EntityRow } from '../api';
-import { Button, Icon, TextArea } from '../ui';
+import { Button, DrawerCloseButton, TextArea } from '../ui';
 import { DRAWER_UNMOUNT_MS } from '../../../lib/drawer/animate';
 import { QuestionLabel } from './QuestionLabel';
 
@@ -92,14 +92,7 @@ export function NoteDrawer({
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Internal note</p>
             <QuestionLabel def={def} categorySlug={categorySlug} />
           </div>
-          <button
-            type="button"
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
-            onClick={handleClose}
-            aria-label="Close"
-          >
-            <Icon name="close" />
-          </button>
+          <DrawerCloseButton onClick={handleClose} />
         </div>
         <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
           <TextArea

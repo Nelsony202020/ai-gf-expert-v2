@@ -3,6 +3,7 @@ import { Button, ErrorNote } from './ui';
 
 interface Props {
   children: ReactNode;
+  onReset?: () => void;
 }
 
 interface State {
@@ -29,7 +30,13 @@ export class AdminErrorBoundary extends Component<Props, State> {
             This can happen after a code update during development. Reload the page to recover.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => this.setState({ error: null })}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                this.props.onReset?.();
+                this.setState({ error: null });
+              }}
+            >
               Try again
             </Button>
             <Button onClick={() => window.location.reload()}>Reload admin</Button>

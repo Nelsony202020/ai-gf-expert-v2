@@ -4,6 +4,9 @@
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, dataApi, type EntityRow } from '../api';
+import { normalizeListField } from '../../../lib/ai-verdict/notesSchema';
+import { sanitizeCategoryVerdictDraft } from './verdict/categoryVerdictProgress';
+import type { CategoryVerdict } from './verdict/types';
 import { computeProductCompletion, type ProductCompletion } from './completion';
 
 export interface ScoreHistoryRun {
@@ -71,7 +74,7 @@ export interface ProductWorkspaceState {
   clearSaveError: () => void;
   lastSavedAt: number | null;
   /** Saves ONLY the product record (each tab saves its own related entities). */
-  save: () => Promise<boolean>;
+  save: (fieldOverrides?: Record<string, unknown>) => Promise<boolean>;
   reloadProduct: () => Promise<void>;
   related: WorkspaceRelated;
   relatedLoading: boolean;
@@ -107,6 +110,23 @@ const EDITABLE_FIELDS = [
 
 const CAPABILITY_PREFIX = 'cap';
 
+const LIST_FIELDS = new Set(['pros', 'cons', 'bestFor', 'notIdealFor']);
+
+function sanitizeListField(value: unknown): string[] | undefined {
+  const items = normalizeListField(value);
+  return items.length > 0 ? items : undefined;
+}
+
+function sanitizeCategoryVerdicts(raw: unknown): Record<string, CategoryVerdict> | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const out: Record<string, CategoryVerdict> = {};
+  for (const [slug, entry] of Object.entries(raw as Record<string, CategoryVerdict>)) {
+    const cleaned = sanitizeCategoryVerdictDraft(entry);
+    if (Object.keys(cleaned).length > 0) out[slug] = cleaned;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 function extractLinks(row: EntityRow): Record<string, string | null> {
   return {
     author: row.author?.id ?? null,
@@ -134,14 +154,23 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
   const [slugAuto, setSlugAuto] = useState(false);
   const savedSnapshot = useRef('');
   const slugAccepted = useRef('');
+  const fieldsRef = useRef<Record<string, any>>({});
+  const linksRef = useRef<Record<string, string | null>>({});
+
+  useEffect(() => {
+    linksRef.current = links;
+  }, [links]);
 
   async function reloadProduct() {
     const r = await dataApi.get('products', productId);
     setOriginal(r.row);
-    setFields({ ...r.row });
+    const nextFields = { ...r.row };
+    setFields(nextFields);
+    fieldsRef.current = nextFields;
     const nextLinks = extractLinks(r.row);
     setLinks(nextLinks);
-    savedSnapshot.current = snapshot({ ...r.row }, nextLinks);
+    linksRef.current = nextLinks;
+    savedSnapshot.current = snapshot(nextFields, nextLinks);
     slugAccepted.current = String(r.row.slug ?? '');
   }
 
@@ -228,14 +257,26 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
   function set(name: string, value: unknown) {
     if (name === 'slug') {
       setSlugAuto(false);
-      setFields((prev) => ({ ...prev, slug: value }));
+      setFields((prev) => {
+        const next = { ...prev, slug: value };
+        fieldsRef.current = next;
+        return next;
+      });
       return;
     }
-    setFields((prev) => ({ ...prev, [name]: value }));
+    setFields((prev) => {
+      const next = { ...prev, [name]: value };
+      fieldsRef.current = next;
+      return next;
+    });
   }
 
   function setMany(updates: Record<string, unknown>) {
-    setFields((prev) => ({ ...prev, ...updates }));
+    setFields((prev) => {
+      const next = { ...prev, ...updates };
+      fieldsRef.current = next;
+      return next;
+    });
   }
 
   function confirmSlugChange(nextSlug: string, previousSlug: string): boolean {
@@ -251,10 +292,10 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
     return ok;
   }
 
-  function validate(): Record<string, string> {
+  function validate(source: Record<string, unknown>): Record<string, string> {
     const errors: Record<string, string> = {};
-    if (!String(fields.name ?? '').trim()) errors.name = 'Product name is required.';
-    const slug = String(fields.slug ?? '').trim();
+    if (!String(source.name ?? '').trim()) errors.name = 'Product name is required.';
+    const slug = String(source.slug ?? '').trim();
     if (!slug) errors.slug = 'Slug is required.';
     else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
       errors.slug = 'Use lowercase letters, numbers, and hyphens only.';
@@ -262,21 +303,38 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
     return errors;
   }
 
-  function cleanFields(): Record<string, unknown> {
+  function cleanFields(source: Record<string, unknown>): Record<string, unknown> {
     const out: Record<string, unknown> = {};
-    for (const [key, v] of Object.entries(fields)) {
+    for (const [key, v] of Object.entries(source)) {
       const editable = EDITABLE_FIELDS.includes(key) || key.startsWith(CAPABILITY_PREFIX);
       if (!editable) continue;
-      if (typeof v === 'boolean') out[key] = v;
-      else if (v !== undefined && v !== null && v !== '') out[key] = v;
+      if (typeof v === 'boolean') {
+        out[key] = v;
+        continue;
+      }
+      if (LIST_FIELDS.has(key)) {
+        const items = sanitizeListField(v);
+        if (items) out[key] = items;
+        continue;
+      }
+      if (key === 'categoryVerdicts') {
+        const verdicts = sanitizeCategoryVerdicts(v);
+        if (verdicts) out[key] = verdicts;
+        continue;
+      }
+      if (v !== undefined && v !== null && v !== '') out[key] = v;
     }
     return out;
   }
 
-  async function save(): Promise<boolean> {
+  async function save(fieldOverrides?: Record<string, unknown>): Promise<boolean> {
     setSaveError(null);
 
-    const errors = validate();
+    const source = fieldOverrides
+      ? { ...fieldsRef.current, ...fieldOverrides }
+      : fieldsRef.current;
+
+    const errors = validate(source);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       setSaveError('Fix the highlighted fields before saving.');
@@ -284,17 +342,17 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
     }
     setFieldErrors({});
 
-    if (fields.noindex || fields.nofollow) {
+    if (source.noindex || source.nofollow) {
       const flags: string[] = [];
-      if (fields.noindex) flags.push('noindex (hide from search results)');
-      if (fields.nofollow) flags.push('nofollow (do not follow links on this page)');
+      if (source.noindex) flags.push('noindex (hide from search results)');
+      if (source.nofollow) flags.push('nofollow (do not follow links on this page)');
       const ok = confirm(
         `Warning: you have enabled ${flags.join(' and ')}.\n\nThis limits how search engines treat this product page. Save anyway?`,
       );
       if (!ok) return false;
     }
 
-    const payload = cleanFields();
+    const payload = cleanFields(source);
     setSaving(true);
     try {
       // Slug changes go through the dedicated endpoint so a 301 can be created.
@@ -313,7 +371,7 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
         delete payload.slug;
       }
 
-      await dataApi.update('products', productId, payload, links);
+      await dataApi.update('products', productId, payload, linksRef.current);
       await reloadProduct();
       setLastSavedAt(Date.now());
       return true;

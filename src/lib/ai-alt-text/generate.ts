@@ -9,17 +9,19 @@ import { HttpError, type AdminIdentity } from '../db/auth';
 import { getOpenAIClient } from '../ai-verdict/openaiClient';
 import { assertRateLimit } from '../ai-verdict/rateLimit';
 
+const ALT_TEXT_MAX_IMAGES = Number(env('AI_ALT_TEXT_MAX_IMAGES') ?? 100);
+
 export function aiAltTextConfig() {
   return {
     enabled: env('AI_ALT_TEXT_ENABLED') !== 'false',
     model: env('OPENAI_ALT_TEXT_MODEL') ?? env('OPENAI_VERDICT_MODEL') ?? 'gpt-4o-mini',
-    maxImages: Number(env('AI_ALT_TEXT_MAX_IMAGES') ?? 20),
+    maxImages: ALT_TEXT_MAX_IMAGES,
   };
 }
 
 export const altTextRequestSchema = z.object({
   productId: z.string().min(1),
-  mediaIds: z.array(z.string().min(1)).min(1).max(20),
+  mediaIds: z.array(z.string().min(1)).min(1).max(ALT_TEXT_MAX_IMAGES),
 });
 
 export type AltTextRequest = z.infer<typeof altTextRequestSchema>;
@@ -39,6 +41,16 @@ const outputSchema = z.object({
 interface MediaImage {
   id: string;
   url: string;
+}
+
+async function imageUrlToDataUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new HttpError(502, `Failed to download image (${res.status})`);
+  }
+  const contentType = res.headers.get('content-type')?.split(';')[0]?.trim() || 'image/jpeg';
+  const buffer = Buffer.from(await res.arrayBuffer());
+  return `data:${contentType};base64,${buffer.toString('base64')}`;
 }
 
 async function loadImages(productId: string, mediaIds: string[]): Promise<MediaImage[]> {
@@ -95,6 +107,16 @@ export async function generateAltTexts(
     loadProductName(body.productId),
   ]);
 
+  const dataUrls = await Promise.all(
+    images.map(async (img) => {
+      try {
+        return await imageUrlToDataUrl(img.url);
+      } catch {
+        throw new HttpError(502, `Could not download image for media ${img.id}`);
+      }
+    }),
+  );
+
   const systemPrompt = `You write alt text for images on a review site that documents AI companion apps. The images are screenshots or generated images from the app "${productName}".
 For EACH image (1-based index, in the order provided) write one concise, descriptive alt text:
 - Describe what is actually visible; never invent details.
@@ -108,7 +130,7 @@ Respond with a single JSON object: {"altTexts":[{"index":1,"altText":"..."}]}`;
   > = [{ type: 'text', text: `Write alt text for these ${images.length} image(s).` }];
   images.forEach((img, i) => {
     userContent.push({ type: 'text', text: `Image ${i + 1}:` });
-    userContent.push({ type: 'image_url', image_url: { url: img.url, detail: 'low' } });
+    userContent.push({ type: 'image_url', image_url: { url: dataUrls[i], detail: 'low' } });
   });
 
   const client = getOpenAIClient();

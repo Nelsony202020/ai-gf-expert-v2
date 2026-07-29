@@ -1,0 +1,82 @@
+---
+export type MethodologyDepthLevel = 'overall' | 'category' | 'subscore' | 'evidence';
+
+export interface MethodologyDepthStep {
+  level: MethodologyDepthLevel;
+  icon: string;
+  label: string;
+  href?: string;
+}
+
+interface Props {
+  steps: MethodologyDepthStep[];
+  activeLevel: MethodologyDepthLevel;
+  ariaLabel?: string;
+}
+
+const { steps, activeLevel, ariaLabel = 'Methodology depth' } = Astro.props;
+const activeIndex = steps.findIndex((step) => step.level === activeLevel);
+---
+
+<nav class="rt-pipeline rt-pipeline--horizontal test-methodology-roadmap" aria-label={ariaLabel}>
+  <ol class="rt-pipeline__track">
+    {
+      steps.map((step, i) => {
+        const isHere = step.level === activeLevel;
+        const isPast = i < activeIndex;
+        const Tag = step.href && !isHere ? 'a' : 'span';
+
+        return (
+          <li
+            class:list={[
+              'rt-pipeline__step',
+              isHere && 'rt-pipeline__step--here',
+              isPast && 'rt-pipeline__step--past',
+            ]}
+            aria-current={isHere ? 'page' : undefined}
+          >
+            <div class="rt-pipeline__rail">
+              <div
+                class:list={[
+                  'rt-pipeline__connector',
+                  'rt-pipeline__connector--before',
+                  i === 0 && 'rt-pipeline__connector--spacer',
+                  i > 0 && i <= activeIndex && 'rt-pipeline__connector--filled',
+                ]}
+              >
+                {i > 0 && <span class="rt-pipeline__connector-fill" />}
+              </div>
+              <Tag
+                class="rt-pipeline__node"
+                href={step.href && !isHere ? step.href : undefined}
+              >
+                <span class="material-symbols-outlined rt-pipeline__node-icon">{step.icon}</span>
+              </Tag>
+              <div
+                class:list={[
+                  'rt-pipeline__connector',
+                  'rt-pipeline__connector--after',
+                  i === steps.length - 1 && 'rt-pipeline__connector--spacer',
+                  isPast && 'rt-pipeline__connector--filled',
+                ]}
+              >
+                {i < steps.length - 1 && <span class="rt-pipeline__connector-fill" />}
+              </div>
+            </div>
+            <div class="rt-pipeline__card">
+              {
+                step.href && !isHere ? (
+                  <a class="rt-pipeline__label rt-pipeline__label--link" href={step.href}>
+                    {step.label}
+                  </a>
+                ) : (
+                  <span class="rt-pipeline__label">{step.label}</span>
+                )
+              }
+            </div>
+          </li>
+        );
+      })
+    }
+  </ol>
+</nav>

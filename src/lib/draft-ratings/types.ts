@@ -152,7 +152,9 @@ export interface DraftEvidenceCategory {
   scopeDescription?: string;
   /** Raw test results — values only on the main page. */
   /** Editorial bonus-feature rows (platform-extras-list). */
-  bonusExtras?: Array<{ name: string; note?: string }>;
+  bonusExtras?: Array<{ id: string; name: string; note?: string; proof?: DraftProofItem[] }>;
+  /** Live cam proof screenshots for platform extras drawer. */
+  liveCamProof?: DraftProofItem[];
   testResults: DraftMeasurement[];
   /** Drawer panel id. */
   drawerId: string;

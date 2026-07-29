@@ -1,33 +1,17 @@
 ---
 import type { TestCategoryNode } from '../../lib/test-framework';
 import { HUB_NAV_TABS, type HubTabId } from '../../lib/hub-nav';
-import {
-  testHubRelatedMethodology,
-  testHubTocSections,
-  type TestHubTocSection,
-} from '../../data/test-hub-content';
+import TestHubSidebar from './TestHubSidebar.astro';
+import type { TestHubTocSection } from '../../data/test-hub-content';
 
 interface Props {
   categories: TestCategoryNode[];
+  tocSections: TestHubTocSection[];
   active?: HubTabId;
+  collapsibleToc?: boolean;
 }
 
-const { categories, active = 'how-we-test' } = Astro.props;
-
-function withCategoryChildren(sections: TestHubTocSection[]): TestHubTocSection[] {
-  return sections.map((section) => {
-    if (section.id !== 'category-scores') return section;
-    return {
-      ...section,
-      children: categories.map((cat) => ({
-        id: `category-${cat.key}`,
-        label: cat.name,
-      })),
-    };
-  });
-}
-
-const tocSections = withCategoryChildren(testHubTocSections);
+const { categories, tocSections, active = 'how-we-test', collapsibleToc = false } = Astro.props;
 ---
 
 <div class="roundup-sheet roundup-nav-sheet test-hub-nav-sheet" data-nav-sheet hidden aria-hidden="true">
@@ -63,98 +47,20 @@ const tocSections = withCategoryChildren(testHubTocSections);
 
     <div class="roundup-nav-sheet__divider" aria-hidden="true"></div>
 
-    <nav class="roundup-nav-sheet__toc" aria-label="Table of contents">
-      <p class="roundup-nav-sheet__toc-title">Contents</p>
-      <ul class="roundup-nav-sheet__toc-list">
-        <li>
-          <a class="roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--top" href="#test-hub-top">
-            <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
-            Top
-          </a>
-        </li>
-        {
-          tocSections.map((section) => (
-            <li
-              class:list={[section.children?.length && 'has-toc-children']}
-              data-toc-section={section.children?.length ? section.id : undefined}
-            >
-              <a class="roundup-nav-sheet__toc-link" href={`#${section.id}`} data-toc-link={section.id}>
-                {section.label}
-              </a>
-              {
-                section.children && section.children.length > 0 && (
-                  <ul class="roundup-nav-sheet__toc-sublist roundup-toc__sublist" data-toc-sublist>
-                    {
-                      section.children.map((child) => (
-                        <li>
-                          <a
-                            class="roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h3"
-                            href={`#${child.id}`}
-                            data-toc-link={child.id}
-                          >
-                            {child.label}
-                          </a>
-                        </li>
-                      ))
-                    }
-                  </ul>
-                )
-              }
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
-
-    <details class="roundup-nav-sheet__toc-panel">
-      <summary class="roundup-nav-sheet__toc-panel-toggle">
-        <span class="roundup-nav-sheet__toc-panel-label">
-          <span class="material-symbols-outlined" aria-hidden="true">category</span>
-          Eight testing categories
-        </span>
-        <span class="material-symbols-outlined roundup-nav-sheet__toc-panel-chevron" aria-hidden="true">expand_more</span>
-      </summary>
-      <ul class="roundup-nav-sheet__toc-list roundup-nav-sheet__toc-panel-list">
-        {
-          categories.map((cat) => (
-            <li>
-              <a class="roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h3" href={cat.href}>
-                {cat.name}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </details>
-
-    <details class="roundup-nav-sheet__toc-panel">
-      <summary class="roundup-nav-sheet__toc-panel-toggle">
-        <span class="roundup-nav-sheet__toc-panel-label">
-          <span class="material-symbols-outlined" aria-hidden="true">menu_book</span>
-          Related
-        </span>
-        <span class="material-symbols-outlined roundup-nav-sheet__toc-panel-chevron" aria-hidden="true">expand_more</span>
-      </summary>
-      <ul class="roundup-nav-sheet__toc-list roundup-nav-sheet__toc-panel-list">
-        {
-          testHubRelatedMethodology.map((link) => (
-            <li>
-              <a class="roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h3" href={link.href}>
-                {link.label}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </details>
+    <TestHubSidebar
+      categories={categories}
+      tocSections={tocSections}
+      mobile
+      collapsibleToc={collapsibleToc}
+      topAnchor="#test-hub-top"
+      topSectionId="test-hub-top"
+    />
 
     <button type="button" class="roundup-sheet__cancel" data-sheet-close>Close</button>
   </div>
 </div>
 
 <script>
-  import './test-hub-toc.client.ts';
-
   function initTestHubMobileNavSheet() {
     const sheet = document.querySelector<HTMLElement>('.test-hub-nav-sheet[data-nav-sheet]');
     if (!sheet || sheet.dataset.bound === 'true') return;

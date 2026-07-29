@@ -1,18 +1,11 @@
 import { getTestCategories } from './test-framework';
 import { getDb, isDbConfigured } from './db/server';
 
-export type TestHubMetric =
-  | {
-      icon: string;
-      dynamic: true;
-      value: string;
-      label: string;
-    }
-  | {
-      icon: string;
-      dynamic: false;
-      text: string;
-    };
+export type TestHubMetric = {
+  icon: string;
+  value: string;
+  label: string;
+};
 
 type FrameworkCounts = {
   ratingCategories: number;
@@ -117,37 +110,23 @@ export async function loadTestHubMetrics(): Promise<TestHubMetric[]> {
   return [
     {
       icon: 'apps',
-      dynamic: true,
       value: formatCount(productsReviewed),
       label: productsReviewed === 1 ? 'product reviewed' : 'products reviewed',
     },
     {
       icon: 'category',
-      dynamic: true,
       value: formatCount(counts.ratingCategories),
       label: counts.ratingCategories === 1 ? 'rating category' : 'rating categories',
     },
     {
       icon: 'analytics',
-      dynamic: true,
       value: formatCount(counts.subscores),
       label: counts.subscores === 1 ? 'subscore' : 'subscores',
     },
     {
       icon: 'fact_check',
-      dynamic: true,
       value: formatCount(counts.evidencePoints),
       label: counts.evidencePoints === 1 ? 'evidence test' : 'evidence tests',
-    },
-    {
-      icon: 'payments',
-      dynamic: false,
-      text: '100% paid accounts',
-    },
-    {
-      icon: 'calendar_today',
-      dynamic: false,
-      text: '30+ days of testing',
     },
   ];
 }

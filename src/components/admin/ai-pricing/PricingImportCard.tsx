@@ -5,7 +5,9 @@
 import { useRef, useState } from 'react';
 import { api, dataApi } from '../api';
 import { Button, ErrorNote, Icon } from '../ui';
+import { ImageHoverThumb } from '../testing/ProofThumb';
 import type { PricingDraftClient } from './PricingReviewModal';
+import { PRICING_PROOF_CAPTION } from '../../../lib/media/catalog';
 
 interface UploadedShot {
   mediaId: string;
@@ -43,14 +45,16 @@ export function PricingImportCard({
         form.set('adult', '0');
         form.set('role', addToGallery ? 'gallery' : 'proof');
         form.set('altText', 'Pricing screenshot');
-        form.set('caption', 'Pricing proof');
+        form.set('caption', PRICING_PROOF_CAPTION);
+        form.set('testCategory', 'pricing');
         form.set('productId', productId);
         const created = await api.upload<{ id: string; url?: string }>('/api/admin/media/upload', form);
         if (addToGallery) {
           await dataApi.update('media', created.id, {
             approved: true,
             role: 'gallery',
-            caption: 'Pricing proof',
+            caption: PRICING_PROOF_CAPTION,
+            testCategory: 'pricing',
           });
           onGalleryUpdated?.();
         }
@@ -148,21 +152,12 @@ export function PricingImportCard({
       {(shots.length > 0 || uploading > 0) && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {shots.map((s) => (
-            <span
+            <ImageHoverThumb
               key={s.mediaId}
-              className="group relative inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
+              url={s.url}
               title={s.name}
-            >
-              <img src={s.url} alt={s.name} className="h-full w-full object-cover" />
-              <button
-                type="button"
-                aria-label="Remove screenshot"
-                className="absolute inset-0 hidden items-center justify-center bg-black/50 text-white group-hover:flex"
-                onClick={() => setShots((prev) => prev.filter((x) => x.mediaId !== s.mediaId))}
-              >
-                <Icon name="close" className="!text-[14px]" />
-              </button>
-            </span>
+              onRemove={() => setShots((prev) => prev.filter((x) => x.mediaId !== s.mediaId))}
+            />
           ))}
           {uploading > 0 && (
             <span className="inline-flex h-12 w-12 animate-pulse items-center justify-center rounded border border-dashed border-slate-300 dark:border-slate-600">

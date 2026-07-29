@@ -9,9 +9,12 @@ interface Props {
 }
 
 const { images, product, heroImage } = Astro.props;
-const hero = heroImage ?? images[0];
+const mergedImages = heroImage
+  ? [heroImage, ...images.filter((image) => image.full !== heroImage.full)]
+  : images;
+const hero = mergedImages[0];
 const galleryLightboxItems = JSON.stringify(
-  images.map((image) => ({ src: image.full, alt: image.alt, caption: image.alt })),
+  mergedImages.map((image) => ({ src: image.full, alt: image.alt, caption: image.alt })),
 );
 ---
 
@@ -41,13 +44,13 @@ const galleryLightboxItems = JSON.stringify(
   <div class="relative group">
     <div class="flex overflow-x-auto gap-2 pb-1 no-scrollbar" data-thumb-track>
       {
-        images.map((image, i) => (
+        mergedImages.map((image, i) => (
           <button
             type="button"
             data-thumb
             data-full={image.full}
             data-alt={image.alt}
-            aria-current={i === 0 ? 'true' : 'false'}
+            aria-current={image.full === hero?.full ? 'true' : 'false'}
             aria-label={`Show image ${i + 1}`}
             class="thumb flex-none w-24 h-16 sm:w-28 sm:h-18 rounded-lg overflow-hidden"
           >

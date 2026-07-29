@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "astro dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:clean": "node scripts/dev.mjs",
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
@@ -13,7 +14,8 @@
     "seed:validate": "tsx scripts/seed/validate.ts",
     "admin:bootstrap": "tsx scripts/bootstrap-admin.ts",
     "db:push": "npx instant-cli@latest push",
-    "test:ai-verdict": "tsx scripts/test-ai-verdict-schema.ts"
+    "test:ai-verdict": "tsx scripts/test-ai-verdict-schema.ts",
+    "export:methodology": "tsx scripts/export-methodology.ts"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.1",

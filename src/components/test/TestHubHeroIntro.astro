@@ -111,16 +111,8 @@ const shareTitle = 'How We Test AI Girlfriend Apps — AI Girlfriend Expert';
       metrics.map((metric) => (
         <li class="test-hub__metric">
           <span class="material-symbols-outlined" aria-hidden="true">{metric.icon}</span>
-          {
-            metric.dynamic ? (
-              <>
-                <span class="test-hub__metric-dynamic">{metric.value}</span>
-                <span class="test-hub__metric-label">{metric.label}</span>
-              </>
-            ) : (
-              <span>{metric.text}</span>
-            )
-          }
+          <span class="test-hub__metric-dynamic">{metric.value}</span>
+          <span class="test-hub__metric-label">{metric.label}</span>
         </li>
       ))
     }

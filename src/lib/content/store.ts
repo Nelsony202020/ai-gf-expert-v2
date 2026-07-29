@@ -28,6 +28,15 @@ import { getSubscoreDescription } from '../../data/subscore-descriptions';
 import { getDb, isDbConfigured } from '../db/server';
 import { env } from '../env';
 import { lowestPlainMonthlyPrice } from '../pricing/calc';
+import {
+  getMediaPlacement,
+  isHeroMedia,
+  isPublicMedia,
+  productMediaItems,
+  collectProductMediaRows,
+  sortGalleryMedia,
+  sortHeroMedia,
+} from '../media/catalog';
 import { resolveMediaUrl } from '../media/url';
 
 /** Fixed public category order — matches methodology template. */
@@ -49,7 +58,7 @@ function categorySortKey(slug: string, detail?: { displayOrder?: number }): numb
   return idx >= 0 ? idx : 999;
 }
 import { formatAudienceList, splitLegacyLines } from '../cms/format';
-import { appendReferralSuffix } from '../characters/destinationUrl';
+import { mapCharacterForPublic, selectPublicHighlightCharacters } from '../characters/public';
 import { affiliateRel, DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
 import { buildGroupedContributors } from '../ratings/groupContributors';
 
@@ -135,6 +144,7 @@ function mapProduct(
           contributorSlugs,
           resultBySlug,
           fileSub?.contributors ?? [],
+          String(dbProduct.slug),
         );
         return {
           name: subName,
@@ -160,22 +170,43 @@ function mapProduct(
     };
   });
 
-  const gallery: GalleryImage[] = (dbProduct.media ?? [])
-    .filter(
-      (m: any) =>
-        m.approved &&
-        !m.deletedAt &&
-        m.mediaType === 'image' &&
-        ['gallery', 'character', 'hero', 'chat', 'image_generator'].includes(m.role ?? 'gallery') &&
-        m.url,
-    )
-    .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .map((m: any) => ({ full: m.url, thumb: m.url, alt: m.altText ?? '' }));
+  const publicMedia = collectProductMediaRows(dbProduct).filter((m: any) => isPublicMedia(m));
+
+  const mediaItems = productMediaItems(dbProduct);
+
+  const heroGalleryRaw: GalleryImage[] = sortHeroMedia(publicMedia.filter((m: any) => isHeroMedia(m)))
+    .filter((m: any) => resolveMediaUrl(m))
+    .map((m: any) => {
+      const url = resolveMediaUrl(m);
+      return { full: url, thumb: url, alt: m.altText ?? '' };
+    });
 
   const featuredMedia = dbProduct.featuredImage;
-  const featuredImage: GalleryImage | undefined = featuredMedia?.url
-    ? { full: featuredMedia.url, thumb: featuredMedia.url, alt: featuredMedia.altText ?? '' }
+  const featuredUrl = resolveMediaUrl(featuredMedia);
+  const featuredImage: GalleryImage | undefined = featuredUrl
+    ? { full: featuredUrl, thumb: featuredUrl, alt: featuredMedia?.altText ?? '' }
     : fileFallback?.featuredImage ?? fileFallback?.gallery?.[0];
+
+  const prependFeatured = (images: GalleryImage[]): GalleryImage[] => {
+    if (!featuredImage?.full) return images;
+    const rest = images.filter((img) => img.full !== featuredImage.full);
+    return [featuredImage, ...rest];
+  };
+
+  const heroGallery: GalleryImage[] = prependFeatured(heroGalleryRaw);
+
+  const gallerySource = heroGallery.length
+    ? heroGallery
+    : prependFeatured(
+        sortGalleryMedia(publicMedia.filter((m: any) => getMediaPlacement(m) === 'gallery' && m.mediaType === 'image'))
+          .filter((m: any) => resolveMediaUrl(m))
+          .map((m: any) => {
+            const url = resolveMediaUrl(m);
+            return { full: url, thumb: url, alt: m.altText ?? '' };
+          }),
+      );
+
+  const gallery: GalleryImage[] = gallerySource;
 
   const activeLink = (dbProduct.affiliateLinks ?? []).find((l: any) => l.active);
   const plans = (dbProduct.subscriptionPlans ?? []).filter((p: any) => p.active);
@@ -252,6 +283,8 @@ function mapProduct(
     affiliateRel: affiliateRel(activeLink?.relTags),
     featuredImage,
     gallery: gallery.length > 0 ? gallery : fileFallback?.gallery ?? [],
+    heroGallery: heroGallery.length > 0 ? heroGallery : fileFallback?.heroGallery,
+    mediaItems: mediaItems.length > 0 ? mediaItems : fileFallback?.mediaItems,
     overallScore: hasCalculatedScores ? overall : null,
     overallSummary: dbProduct.oneLineVerdict ?? fileFallback?.overallSummary ?? '',
     ourTake: review?.ourTake ?? dbProduct.ourTake ?? fileFallback?.ourTake ?? '',
@@ -278,6 +311,9 @@ function mapProduct(
           channelUrl: dbProduct.youtubeReviewUrl,
         }
       : fileFallback?.videoReview,
+    reviewBlocks: Array.isArray(review?.blocks)
+      ? (review.blocks as Product['reviewBlocks'])
+      : fileFallback?.reviewBlocks ?? [],
   };
 }
 
@@ -360,37 +396,9 @@ function deriveOverview(p: any, monthlyPriceLabel: string | null): Product['over
       drawback: p.mainLimitation ?? '',
       startingPrice: monthlyPriceLabel ?? '—',
     },
-    characters: (p.characters ?? [])
-      .filter((c: any) => c.active && !c.deletedAt)
-      .slice(0, 6)
-      .map((c: any) => {
-        // Ordered active story slides from the structured entity; the ring
-        // stays empty (viewer disabled) until slides exist.
-        const slides: string[] = (c.storySlides ?? [])
-          .filter((s: any) => s.active && !s.deletedAt)
-          .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-          .map((s: any) => resolveMediaUrl(s.media))
-          .filter(Boolean);
-        const activeProductLink = (p.affiliateLinks ?? []).find((l: any) => l.active);
-        const destinationWithSuffix = c.destinationUrl
-          ? appendReferralSuffix(c.destinationUrl, p.referralSuffix)
-          : '';
-        const cta = destinationWithSuffix
-          ? destinationWithSuffix
-          : c.affiliateLink?.active
-            ? `/go/${c.affiliateLink.cloakedSlug}`
-            : activeProductLink
-              ? `/go/${activeProductLink.cloakedSlug}`
-              : undefined;
-        return {
-          name: c.name,
-          archetype: (c.personalityTags ?? [])[0] ?? '',
-          avatar: resolveMediaUrl(c.image) || slides[0] || '',
-          storySlides: slides,
-          profileUrl: cta,
-          profileRel: DEFAULT_AFFILIATE_REL,
-        };
-      }),
+    characters: (selectPublicHighlightCharacters(p.characters ?? [], 6))
+      .map((c: any) => mapCharacterForPublic(c, p))
+      .filter(Boolean) as Product['overview']['characters'],
     featureCards: [],
     comparisonMetrics: [],
     searchTrends: {
@@ -537,14 +545,14 @@ export async function loadProductsWithDb(fileProducts: Product[]): Promise<Produ
         review: { author: {}, factChecker: {} },
         author: {},
         factChecker: {},
-        media: {},
+        media: { file: {} },
         logo: {},
-        featuredImage: {},
+        featuredImage: { file: {} },
         subscriptionPlans: {},
         affiliateLinks: {},
         characters: { image: { file: {} }, affiliateLink: {}, storySlides: { media: { file: {} } } },
         scoreSnapshots: { testRun: {} },
-        evidenceResults: { testRun: {}, evidenceDefinition: {} },
+        evidenceResults: { testRun: {}, evidenceDefinition: {}, attachments: { file: {} } },
       },
     });
 
@@ -678,14 +686,14 @@ const PREVIEW_PRODUCT_QUERY = {
   review: { author: {}, factChecker: {} },
   author: {},
   factChecker: {},
-  media: {},
+  media: { file: {} },
   logo: {},
-  featuredImage: {},
+  featuredImage: { file: {} },
   subscriptionPlans: {},
   affiliateLinks: {},
   characters: { image: { file: {} }, affiliateLink: {}, storySlides: { media: { file: {} } } },
   scoreSnapshots: { testRun: {} },
-  evidenceResults: { testRun: {}, evidenceDefinition: {} },
+  evidenceResults: { testRun: {}, evidenceDefinition: {}, attachments: { file: {} } },
 };
 
 /** Build a minimal review Product from a roundup pick (placeholder content). */

@@ -234,6 +234,8 @@ export const mediaSchema = z.object({
     })
     .optional(),
   sortOrder: z.number().int().optional(),
+  heroSortOrder: z.number().int().optional(),
+  mediaTags: z.array(z.enum(['character', 'chat', 'image_generator', 'hero'])).optional(),
   role: z
     .enum(['gallery', 'logo', 'featured', 'proof', 'character', 'hero', 'chat', 'image_generator'])
     .optional(),

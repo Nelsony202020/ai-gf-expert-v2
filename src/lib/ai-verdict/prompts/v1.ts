@@ -90,7 +90,7 @@ function fieldModeInstruction(
   const base = `Generate field_suggestion for target field "${targetField}".`;
   switch (opts?.fieldMode) {
     case 'rewrite':
-      return `${base} Rewrite the current editor text for clarity while keeping the same meaning and evidence.`;
+      return `${base} Smooth and lightly polish the current editor text. Preserve the author's voice, tone, and editorial integrity — do not make it sound corporate, stiff, or technical. Keep every factual detail and nuance from the original; only improve flow and readability.`;
     case 'shorten':
       return `${base} Shorten the current editor text while keeping the key points.`;
     case 'specific':

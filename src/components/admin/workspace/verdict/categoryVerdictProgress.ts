@@ -123,13 +123,13 @@ export const CATEGORY_MISSING_SUMMARY_LABELS: Record<
 
 export function sanitizeCategoryVerdictDraft(v: CategoryVerdict): CategoryVerdict {
   return {
-    ...v,
     headline: v.headline?.trim() || undefined,
     verdict: v.verdict?.trim() || undefined,
     mainStrength: v.mainStrength?.trim() || undefined,
     mainWeakness: v.mainWeakness?.trim() || undefined,
     pros: v.pros?.map((p) => p.trim()).filter(Boolean),
     cons: v.cons?.map((c) => c.trim()).filter(Boolean),
+    expertOpinion: v.expertOpinion?.trim() || undefined,
   };
 }
 

@@ -18,6 +18,11 @@ interface Props {
   mobile?: boolean;
   tocSections?: TocSection[];
   relatedMethodology?: RelatedLink[];
+  topAnchor?: string;
+  topSectionId?: string;
+  topLabel?: string;
+  /** Collapse H3 children until their parent section is active (hub page only). */
+  collapsibleToc?: boolean;
 }
 
 const {
@@ -25,71 +30,233 @@ const {
   mobile = false,
   tocSections = testHubTocSections,
   relatedMethodology = testHubRelatedMethodology,
+  topAnchor,
+  topSectionId,
+  topLabel = 'Top',
+  collapsibleToc = false,
 } = Astro.props;
 const linkAttr = mobile ? { 'data-test-hub-sheet-link': true } : {};
+const wrapSidebar = collapsibleToc && !mobile;
 ---
 
-<nav class="test-hub-nav" aria-label="Test hub navigation" data-test-hub-nav>
-  <div class="test-hub-nav__section">
-    <p class="test-hub-nav__label">On this page</p>
-    <ul class="test-hub-nav__list test-hub-nav__list--primary">
-      {
-        tocSections.map((section) => (
-          <li>
-            <a
-              href={`#${section.id}`}
-              class="test-hub-nav__link"
-              data-test-hub-nav-link
-              data-section-id={section.id}
-              {...linkAttr}
-            >
-              {section.label}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-  </div>
+{
+  wrapSidebar ? (
+    <aside class="test-hub-sidebar">
+      <nav class="test-hub-nav" aria-label="Table of contents" data-test-hub-nav>
+        <div class="test-hub-nav__section">
+          <p class="test-hub-nav__label">On this page</p>
+          <ul class="test-hub-nav__list test-hub-nav__list--primary">
+            {
+              topAnchor && topSectionId && (
+                <li>
+                  <a
+                    class="test-hub-nav__link test-hub-nav__link--top"
+                    href={topAnchor}
+                    data-test-hub-nav-link
+                    data-section-id={topSectionId}
+                    {...linkAttr}
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+                    {topLabel}
+                  </a>
+                </li>
+              )
+            }
+            {
+              tocSections.map((section) => (
+                <li
+                  class:list={[collapsibleToc && section.children?.length && 'has-toc-children']}
+                  data-toc-section={collapsibleToc && section.children?.length ? section.id : undefined}
+                >
+                  <a
+                    href={`#${section.id}`}
+                    class="test-hub-nav__link"
+                    data-test-hub-nav-link
+                    data-section-id={section.id}
+                    {...linkAttr}
+                  >
+                    {section.label}
+                  </a>
+                  {
+                    section.children?.length ? (
+                      <ul
+                        class="test-hub-nav__list test-hub-nav__list--nested"
+                        data-toc-sublist={collapsibleToc || undefined}
+                      >
+                        {
+                          section.children.map((child) => (
+                            <li>
+                              <a
+                                href={`#${child.id}`}
+                                class="test-hub-nav__link test-hub-nav__link--nested"
+                                data-test-hub-nav-link
+                                data-section-id={child.id}
+                                {...linkAttr}
+                              >
+                                {child.label}
+                              </a>
+                            </li>
+                          ))
+                        }
+                      </ul>
+                    ) : null
+                  }
+                </li>
+              ))
+            }
+          </ul>
+        </div>
 
-  <details class="test-hub-nav__group">
-    <summary class="test-hub-nav__group-toggle">
-      <span class="test-hub-nav__group-label">
-        <span class="material-symbols-outlined test-hub-nav__group-icon" aria-hidden="true">category</span>
-        <span>Eight testing categories</span>
-      </span>
-      <span class="material-symbols-outlined test-hub-nav__chevron" aria-hidden="true">expand_more</span>
-    </summary>
-    <ul class="test-hub-nav__list test-hub-nav__list--nested">
-      {
-        categories.map((cat) => (
-          <li>
-            <a href={cat.href} class="test-hub-nav__link test-hub-nav__link--nested" {...linkAttr}>
-              {cat.name}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-  </details>
+        <details class="test-hub-nav__group">
+          <summary class="test-hub-nav__group-toggle">
+            <span class="test-hub-nav__group-label">
+              <span class="material-symbols-outlined test-hub-nav__group-icon" aria-hidden="true">category</span>
+              <span>Eight testing categories</span>
+            </span>
+            <span class="material-symbols-outlined test-hub-nav__chevron" aria-hidden="true">expand_more</span>
+          </summary>
+          <ul class="test-hub-nav__list test-hub-nav__list--nested">
+            {
+              categories.map((cat) => (
+                <li>
+                  <a href={cat.href} class="test-hub-nav__link test-hub-nav__link--nested" {...linkAttr}>
+                    {cat.name}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </details>
 
-  <details class="test-hub-nav__group">
-    <summary class="test-hub-nav__group-toggle">
-      <span class="test-hub-nav__group-label">
-        <span class="material-symbols-outlined test-hub-nav__group-icon" aria-hidden="true">menu_book</span>
-        <span>Related methodology</span>
-      </span>
-      <span class="material-symbols-outlined test-hub-nav__chevron" aria-hidden="true">expand_more</span>
-    </summary>
-    <ul class="test-hub-nav__list test-hub-nav__list--nested">
-      {
-        relatedMethodology.map((link) => (
-          <li>
-            <a href={link.href} class="test-hub-nav__link test-hub-nav__link--nested" {...linkAttr}>
-              {link.label}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-  </details>
-</nav>
+        <details class="test-hub-nav__group">
+          <summary class="test-hub-nav__group-toggle">
+            <span class="test-hub-nav__group-label">
+              <span class="material-symbols-outlined test-hub-nav__group-icon" aria-hidden="true">menu_book</span>
+              <span>Related methodology</span>
+            </span>
+            <span class="material-symbols-outlined test-hub-nav__chevron" aria-hidden="true">expand_more</span>
+          </summary>
+          <ul class="test-hub-nav__list test-hub-nav__list--nested">
+            {
+              relatedMethodology.map((link) => (
+                <li>
+                  <a href={link.href} class="test-hub-nav__link test-hub-nav__link--nested" {...linkAttr}>
+                    {link.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </details>
+      </nav>
+    </aside>
+  ) : (
+    <nav class="test-hub-nav" aria-label="Table of contents" data-test-hub-nav>
+      <div class="test-hub-nav__section">
+        <p class="test-hub-nav__label">On this page</p>
+        <ul class="test-hub-nav__list test-hub-nav__list--primary">
+          {
+            topAnchor && topSectionId && (
+              <li>
+                <a
+                  class="test-hub-nav__link test-hub-nav__link--top"
+                  href={topAnchor}
+                  data-test-hub-nav-link
+                  data-section-id={topSectionId}
+                  {...linkAttr}
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+                  {topLabel}
+                </a>
+              </li>
+            )
+          }
+          {
+            tocSections.map((section) => (
+              <li
+                class:list={[collapsibleToc && section.children?.length && 'has-toc-children']}
+                data-toc-section={collapsibleToc && section.children?.length ? section.id : undefined}
+              >
+                <a
+                  href={`#${section.id}`}
+                  class="test-hub-nav__link"
+                  data-test-hub-nav-link
+                  data-section-id={section.id}
+                  {...linkAttr}
+                >
+                  {section.label}
+                </a>
+                {
+                  section.children?.length ? (
+                    <ul
+                      class="test-hub-nav__list test-hub-nav__list--nested"
+                      data-toc-sublist={collapsibleToc || undefined}
+                    >
+                      {
+                        section.children.map((child) => (
+                          <li>
+                            <a
+                              href={`#${child.id}`}
+                              class="test-hub-nav__link test-hub-nav__link--nested"
+                              data-test-hub-nav-link
+                              data-section-id={child.id}
+                              {...linkAttr}
+                            >
+                              {child.label}
+                            </a>
+                          </li>
+                        ))
+                      }
+                    </ul>
+                  ) : null
+                }
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <details class="test-hub-nav__group">
+        <summary class="test-hub-nav__group-toggle">
+          <span class="test-hub-nav__group-label">
+            <span class="material-symbols-outlined test-hub-nav__group-icon" aria-hidden="true">category</span>
+            <span>Eight testing categories</span>
+          </span>
+          <span class="material-symbols-outlined test-hub-nav__chevron" aria-hidden="true">expand_more</span>
+        </summary>
+        <ul class="test-hub-nav__list test-hub-nav__list--nested">
+          {
+            categories.map((cat) => (
+              <li>
+                <a href={cat.href} class="test-hub-nav__link test-hub-nav__link--nested" {...linkAttr}>
+                  {cat.name}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </details>
+
+      <details class="test-hub-nav__group">
+        <summary class="test-hub-nav__group-toggle">
+          <span class="test-hub-nav__group-label">
+            <span class="material-symbols-outlined test-hub-nav__group-icon" aria-hidden="true">menu_book</span>
+            <span>Related methodology</span>
+          </span>
+          <span class="material-symbols-outlined test-hub-nav__chevron" aria-hidden="true">expand_more</span>
+        </summary>
+        <ul class="test-hub-nav__list test-hub-nav__list--nested">
+          {
+            relatedMethodology.map((link) => (
+              <li>
+                <a href={link.href} class="test-hub-nav__link test-hub-nav__link--nested" {...linkAttr}>
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </details>
+    </nav>
+  )
+}

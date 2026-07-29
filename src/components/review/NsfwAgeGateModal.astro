@@ -14,7 +14,7 @@ import AgeRatingIcon from '../ui/AgeRatingIcon.astro';
     <div class="nsfw-gate__icon" aria-hidden="true">
       <AgeRatingIcon size={32} />
     </div>
-    <h3 id="nsfw-gate-title" class="nsfw-gate__title">Show 18+ content?</h3>
+    <p id="nsfw-gate-title" class="nsfw-gate__title">Show 18+ content?</p>
     <p id="nsfw-gate-desc" class="nsfw-gate__desc">
       This gallery contains adult images and videos. Please confirm that you are 18 or older to continue.
     </p>
@@ -237,23 +237,23 @@ import AgeRatingIcon from '../ui/AgeRatingIcon.astro';
   }
 
   [data-theme='dark'] .nsfw-gate__dialog {
-    background: #1a1f18;
-    border-color: #2a3328;
+    background: var(--dark-elevated);
+    border-color: var(--dark-border-subtle);
   }
 
   [data-theme='dark'] .nsfw-gate__check {
-    border-color: #2a3328;
+    border-color: var(--dark-border-subtle);
     background: rgb(255 255 255 / 2%);
   }
 
   [data-theme='dark'] .nsfw-gate__check-box {
-    background: #121612;
-    border-color: #2a3328;
+    background: var(--color-background);
+    border-color: var(--dark-border-subtle);
   }
 
   [data-theme='dark'] .nsfw-gate__btn--cancel {
-    background: #121612;
-    border-color: #2a3328;
-    color: #ececec;
+    background: var(--color-background);
+    border-color: var(--dark-border-subtle);
+    color: var(--color-on-surface);
   }
 </style>

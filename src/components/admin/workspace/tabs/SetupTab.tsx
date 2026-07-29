@@ -1,11 +1,12 @@
 // Setup tab: core identity, links (incl. embedded affiliate management),
 // basic media, visibility flags, and grouped capability toggles.
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { dataApi, type EntityRow } from '../../api';
 import { useCan } from '../../context';
 import { AuthorSelect } from '../../AuthorSelect';
+import { ConfirmDialog } from '../../ConfirmDialog';
 import { ProductFormSection } from '../../ProductFormSection';
 import { ProductMediaField } from '../../ProductMediaField';
 import { ToggleWithHint } from '../../FieldHint';
@@ -189,10 +190,9 @@ export function SetupTab() {
                   label="Referral suffix"
                   hint="Appended to every character destination URL — e.g. ?ref=yourcode or &via=affiliate"
                 >
-                  <TextInput
+                  <ReferralSuffixField
                     value={fields.referralSuffix ?? ''}
-                    onChange={(e) => set('referralSuffix', e.target.value)}
-                    placeholder="?ref=your-affiliate-code"
+                    onChange={(value) => set('referralSuffix', value)}
                   />
                 </Field>
               </div>
@@ -221,8 +221,10 @@ export function SetupTab() {
                 role="featured"
                 accept="image/png,image/jpeg,image/webp"
                 productId={ws.productId}
+                productName={String(fields.name ?? '')}
                 value={links.featuredImage ?? null}
                 mediaRows={related.mediaAll}
+                linkedMedia={ws.original?.featuredImage}
                 onChange={(id) => setLinks((p) => ({ ...p, featuredImage: id }))}
                 onUploaded={() => void ws.refreshRelated()}
               />
@@ -283,6 +285,73 @@ export function SetupTab() {
 
       <CompletionSidebar />
     </div>
+  );
+}
+
+function ReferralSuffixField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    if (!editing) setDraft(value);
+  }, [value, editing]);
+
+  if (editing) {
+    return (
+      <TextInput
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder="?ref=your-affiliate-code"
+        autoFocus
+        onBlur={() => {
+          onChange(draft);
+          setEditing(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onChange(draft);
+            setEditing(false);
+          }
+          if (e.key === 'Escape') {
+            setDraft(value);
+            setEditing(false);
+          }
+        }}
+      />
+    );
+  }
+
+  return (
+    <>
+      <TextInput
+        readOnly
+        value={value}
+        placeholder="?ref=your-affiliate-code"
+        className="cursor-pointer bg-slate-100 text-slate-600 read-only:opacity-100 dark:bg-slate-800/70 dark:text-slate-400"
+        onClick={() => setConfirmOpen(true)}
+        onFocus={(e) => e.target.blur()}
+      />
+      {confirmOpen && (
+        <ConfirmDialog
+          title="Change referral suffix?"
+          message="Are you sure you want to change the referral suffix?"
+          confirmLabel="Edit suffix"
+          onConfirm={() => {
+            setConfirmOpen(false);
+            setEditing(true);
+          }}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      )}
+    </>
   );
 }
 

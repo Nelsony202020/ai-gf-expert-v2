@@ -1,10 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import StandardContentLayout from '../../layouts/StandardContentLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import TestCategoryHero from '../../components/test/TestCategoryHero.astro';
 import TestHubHeroIntro from '../../components/test/TestHubHeroIntro.astro';
-import TestHubRoundupSidebar from '../../components/test/TestHubRoundupSidebar.astro';
+import TestHubSidebar from '../../components/test/TestHubSidebar.astro';
 import TestHubMobileNavSheet from '../../components/test/TestHubMobileNavSheet.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
@@ -15,28 +15,25 @@ import TestHubEvidenceSection from '../../components/test/TestHubEvidenceSection
 import TestHubProcessPinned from '../../components/test/TestHubProcessPinned.astro';
 import TestHubScoreLocations from '../../components/test/TestHubScoreLocations.astro';
 import TestHubScoreExample from '../../components/test/TestHubScoreExample.astro';
-import TestHubSubscoreBrowse from '../../components/test/TestHubSubscoreBrowse.astro';
 import TestHubSubscoreExample from '../../components/test/TestHubSubscoreExample.astro';
 import RoundupFaq from '../../components/roundup/RoundupFaq.astro';
 import { getTestCategories } from '../../lib/test-framework';
 import { loadTestHubMetrics } from '../../lib/test-hub-stats';
 import {
+  buildTestHubTocSections,
   testHubFaq,
   testHubProcessSteps,
   testHubVersions,
 } from '../../data/test-hub-content';
 import { testHubScoredVsInformational } from '../../data/methodology-support-content';
-import {
-  testHubFeaturedImage,
-  testHubFeaturedImageAlt,
-  testMethodologyPageMeta,
-} from '../../data/test-category-pages';
+import { testMethodologyPageMeta } from '../../data/test-category-pages';
 import '../../styles/test-hub.css';
 import '../../styles/ratings-tooltips.css';
 
 const categories = getTestCategories();
 const trustMetrics = await loadTestHubMetrics();
 const chatCategory = categories.find((c) => c.key === 'chat');
+const tocSections = buildTestHubTocSections(categories);
 const testFaqItems = testHubFaq.map((item) => ({
   question: item.q,
   answer: item.a,
@@ -48,222 +45,213 @@ const canonical = new URL('/test/', Astro.site ?? Astro.url.origin).toString();
 <BaseLayout
   title={pageTitle}
   description="How we test AI girlfriend apps using paid accounts, structured scenarios, and measurable evidence across eight rating categories."
-  image={testHubFeaturedImage}
 >
   <Header />
-  <main class="roundup-page test-hub-page" id="test-hub-top">
-    <TestCategoryHero image={testHubFeaturedImage} alt={testHubFeaturedImageAlt} />
+  <StandardContentLayout pageClass="test-hub-page">
+    <TestHubSidebar
+      slot="sidebar"
+      categories={categories}
+      tocSections={tocSections}
+      topAnchor="#test-hub-top"
+      topSectionId="test-hub-top"
+      collapsibleToc
+    />
 
-    <div class="section-container px-4 md:px-8 pb-16 md:pb-24">
-      <div class="roundup-layout">
-        <TestHubRoundupSidebar categories={categories} />
-
-        <div class="roundup-main min-w-0">
-          <TestHubHeroIntro meta={testMethodologyPageMeta} metrics={trustMetrics} shareUrl={canonical} />
-
-          <article class="test-hub__main">
-          <section id="how-scores-work" class="test-hub__section">
-            <h2 class="test-hub__h2">How our rating system works</h2>
-            <p class="test-hub__lead">
-              Our rating system has four levels. Specific evidence is used to calculate subscores, which then determine each category rating. Finally, the weighted category ratings are combined to create the overall performance score.
-            </p>
-            <p class="test-hub__tooltips-note">
-              Scores throughout the site include interactive explanations.
-            </p>
-            <TestHubHierarchyPipeline />
-          </section>
-
-          <section id="overall-score" class="test-hub__section">
-            <h2 class="test-hub__h2">Overall performance score</h2>
-            <div class="test-hub__split test-hub__split--score-example">
-              <div>
-                <p class="test-hub__lead">
-                  The overall performance score is the final rating shown across the site. It gives you a quick overview of how well an app performs across all eight categories.
-                </p>
-                <p class="test-hub__lead">
-                  It is not a simple average. Each category has a different weight based on how important it is to the overall AI companion experience.
-                </p>
-                <p class="test-hub__lead">
-                  The box on the right shows an example of what an overall performance score looks like.
-                </p>
-              </div>
-              <TestHubScoreExample />
-            </div>
-          </section>
-
-          <section id="category-scores" class="test-hub__section">
-            <h2 class="test-hub__h2">Category scores</h2>
-            <p class="test-hub__lead">
-              Every app receives a score across eight main categories.
-            </p>
-
-            <div class="test-category-index-wrap">
-              <ul class="test-category-index" aria-label="Rating categories">
-                {
-                  categories.map((cat, index) => (
-                    <li>
-                      <span class="test-category-index__num" aria-hidden="true">{index + 1}.</span>
-                      <a href={`#category-${cat.key}`} class="test-category-index__link" data-category-jump>{cat.name}</a>
-                    </li>
-                  ))
-                }
-              </ul>
-            </div>
-
-            <TestHubCategoryCards categories={categories} />
-
-            <div class="test-hub__origin-story">
-              <p class="test-hub__lead">You are probably wondering how we came up with them.</p>
-              <p class="test-hub__lead">
-                <a class="test-hub__author-link" href="/author/herman-carter">Herman</a>, the CEO of AI Girlfriend Expert, was a beta tester for some of the first AI girlfriend apps back in October 2024, including DreamGF AI, Candy AI, Character AI, and Replika.
-              </p>
-              <p class="test-hub__lead">
-                At the time, chat was the main feature available because AI image generation was still very new and not very good. This forced many AI girlfriend apps to build more features around chatting, such as interactive roleplay scenarios, the ability to upload memory snippets, and even AI group chats.
-              </p>
-              <p class="test-hub__lead">That is how our Chat and Chat Features categories were born.</p>
-              <p class="test-hub__lead">
-                Privacy became a category because it is important for any website, especially one with adult content.
-              </p>
-              <p class="test-hub__lead">
-                Pricing is also included because you want to know whether you are getting good value for your money.
-              </p>
-              <p class="test-hub__lead">
-                The other four categories were developed through extensive research and a survey of 100 AI girlfriend users across different platforms. We asked them which features mattered most. We found participants by joining more than 25 Discord servers from different AI girlfriend platforms.
-              </p>
-            </div>
-          </section>
-
-          <section id="subscores" class="test-hub__section">
-            <h2 class="test-hub__h2">How subscores work</h2>
-            <p class="test-hub__lead">
-              Each category is divided into three broad subscores. These organize related measurements into results that are easier to understand and compare.
-            </p>
-
-            <hr class="test-hub__divider" />
-
-            {
-              chatCategory && (
-                <TestHubSubscoreExample
-                  categoryName={chatCategory.name}
-                  categoryKey={chatCategory.key}
-                  subscores={chatCategory.subscores}
-                />
-              )
-            }
-
-            <h3 id="browse-all-subscores" class="test-hub__h3 test-hub__h3--spaced">Browse all subscores</h3>
-            <TestHubSubscoreBrowse categories={categories} />
-          </section>
-
-          <section id="evidence" class="test-hub__section">
-            <h2 class="test-hub__h2">Evidence points</h2>
-            <p class="test-hub__lead">
-              Evidence points are the individual measurements collected during testing. They are the foundation of every score. Some are simple yes/no checks; others use percentages, counts, timings, or structured quality assessments.
-            </p>
-            <TestHubEvidenceSection />
-          </section>
-
-          <section id="full-framework" class="test-hub__section">
-            <h2 class="test-hub__h2">Explore our full testing framework</h2>
-            <TestHubFrameworkAccordion categories={categories} />
-          </section>
-
-          <section id="in-practice" class="test-hub__section test-hub__section--process">
-            <h2 class="test-hub__h2">How we test AI girlfriend apps in practice</h2>
-            <TestHubProcessPinned steps={testHubProcessSteps} />
-          </section>
-
-          <section id="across-site" class="test-hub__section">
-            <h2 class="test-hub__h2">Where you will see our scores</h2>
-            <TestHubScoreLocations />
-          </section>
-
-          <section id="beyond-the-score" class="test-hub__section">
-            <h2 class="test-hub__h2">Beyond the score</h2>
-            <p class="test-hub__lead">
-              We aim to keep our reviews as objective as possible, so our recommendations are truly based on data. That said, personal experience, expert analysis, and how a platform actually feels to use still matter. We are humans, after all.
-            </p>
-            <ul class="test-beyond-links">
-              <li class="test-beyond-links__item">
-                <a class="test-beyond-links__title" href="/test/market-data/">
-                  Market data methodology
-                  <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-                </a>
-                <p class="test-beyond-links__desc">Google Trends, search interest, growth, internal popularity rankings, and competitive comparisons.</p>
-              </li>
-              <li class="test-beyond-links__item">
-                <a class="test-beyond-links__title" href="/editorial-guidelines/">
-                  Editorial guidelines
-                  <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-                </a>
-                <p class="test-beyond-links__desc">Independence, fact-checking, corrections, and affiliate disclosures.</p>
-              </li>
-            </ul>
-            <h3 id="scored-vs-informational" class="test-hub__h3">Scored vs informational</h3>
-            <table class="test-scored-table">
-              <thead>
-                <tr>
-                  <th>Content type</th>
-                  <th>Affects score</th>
-                </tr>
-              </thead>
-              <tbody>
-                {
-                  testHubScoredVsInformational.map((row) => (
-                    <tr>
-                      <td>
-                        {row.item}
-                        {row.note && <span class="test-scored-table__note"> — {row.note}</span>}
-                      </td>
-                      <td>{row.affectsScore ? 'Yes' : 'No'}</td>
-                    </tr>
-                  ))
-                }
-              </tbody>
-            </table>
-          </section>
-
-          <section id="consistency" class="test-hub__section">
-            <h2 class="test-hub__h2">How we keep scores consistent</h2>
-            <p class="test-hub__lead">Every app is tested using the same categories and the same tasks.</p>
-            <p class="test-hub__lead">When privacy information is unclear or unavailable, we do not assume the app is safe.</p>
-            <p class="test-hub__lead">Image and video costs are shown in those sections, but they only affect the Pricing score. This prevents us from counting the same thing twice.</p>
-            <p class="test-hub__lead">Simply having a feature does not guarantee a high score. The feature also needs to work well.</p>
-          </section>
-
-          <section id="updates" class="test-hub__section">
-            <h2 class="test-hub__h2">Updates and methodology versions</h2>
-            <p class="test-hub__lead">Current methodology: <strong>V3.1</strong> (August 2026). We recalculate or retest when products or methodology versions change.</p>
-            <table class="test-version-table">
-              <thead>
-                <tr>
-                  <th>Version</th>
-                  <th>Date</th>
-                  <th>Main change</th>
-                </tr>
-              </thead>
-              <tbody>
-                {
-                  testHubVersions.map((v) => (
-                    <tr>
-                      <td>{v.version}</td>
-                      <td>{v.date}</td>
-                      <td>{v.change}</td>
-                    </tr>
-                  ))
-                }
-              </tbody>
-            </table>
-          </section>
-
-          <RoundupFaq sectionId="faq" sectionClass="test-hub__section" items={testFaqItems} />
-          </article>
-        </div>
-      </div>
+    <div id="test-hub-top" slot="hero" class="standard-content-hero test-hub-hero">
+      <TestHubHeroIntro meta={testMethodologyPageMeta} metrics={trustMetrics} shareUrl={canonical} />
     </div>
-  </main>
+
+    <article class="test-hub__main">
+      <section id="how-scores-work" class="test-hub__section">
+        <h2 class="test-hub__h2">How our rating system works</h2>
+        <p class="test-hub__lead">
+          Our rating system has four levels. Specific evidence is used to calculate subscores, which then determine each category rating. Finally, the weighted category ratings are combined to create the overall performance score.
+        </p>
+        <p class="test-hub__tooltips-note">
+          Scores throughout the site include interactive explanations.
+        </p>
+        <TestHubHierarchyPipeline />
+      </section>
+
+      <section id="overall-score" class="test-hub__section">
+        <h2 class="test-hub__h2">Overall performance score</h2>
+        <div class="test-hub__split test-hub__split--score-example">
+          <div>
+            <p class="test-hub__lead">
+              The overall performance score is the final rating shown across the site. It gives you a quick overview of how well an app performs across all eight categories.
+            </p>
+            <p class="test-hub__lead">
+              It is not a simple average. Each category has a different weight based on how important it is to the overall AI companion experience.
+            </p>
+            <p class="test-hub__lead">
+              The box on the right shows an example of what an overall performance score looks like.
+            </p>
+          </div>
+          <TestHubScoreExample />
+        </div>
+      </section>
+
+      <section id="category-scores" class="test-hub__section">
+        <h2 class="test-hub__h2">Our eight testing categories</h2>
+        <p class="test-hub__lead">
+          Every app receives a score across eight main categories. Each category is weighted based on how important it is to the overall AI companion experience.
+        </p>
+
+        <TestHubCategoryCards categories={categories} />
+
+        <div class="test-hub__origin-story">
+          <p class="test-hub__lead">You are probably wondering how we came up with them.</p>
+          <p class="test-hub__lead">
+            <a class="test-hub__author-link" href="/author/herman-carter">Herman</a>, the CEO of AI Girlfriend Expert, was a beta tester for some of the first AI girlfriend apps back in October 2024, including DreamGF AI, Candy AI, Character AI, and Replika.
+          </p>
+          <p class="test-hub__lead">
+            At the time, chat was the main feature available because AI image generation was still very new and not very good. This forced many AI girlfriend apps to build more features around chatting, such as interactive roleplay scenarios, the ability to upload memory snippets, and even AI group chats.
+          </p>
+          <p class="test-hub__lead">That is how our Chat and Chat Features categories were born.</p>
+          <p class="test-hub__lead">
+            Privacy became a category because it is important for any website, especially one with adult content.
+          </p>
+          <p class="test-hub__lead">
+            Pricing is also included because you want to know whether you are getting good value for your money.
+          </p>
+          <p class="test-hub__lead">
+            The other four categories were developed through extensive research and a survey of 100 AI girlfriend users across different platforms. We asked them which features mattered most. We found participants by joining more than 25 Discord servers from different AI girlfriend platforms.
+          </p>
+        </div>
+      </section>
+
+      <section id="subscores" class="test-hub__section">
+        <h2 class="test-hub__h2">How subscores work</h2>
+        <p class="test-hub__lead">
+          Each category is divided into three broad subscores. These organize related measurements into results that are easier to understand and compare.
+        </p>
+
+        <hr class="test-hub__divider" />
+
+        {
+          chatCategory && (
+            <TestHubSubscoreExample
+              categoryName={chatCategory.name}
+              categoryWeight={chatCategory.weight}
+              categoryHref={chatCategory.href}
+              subscores={chatCategory.subscores}
+            />
+          )
+        }
+
+      </section>
+
+      <section id="evidence" class="test-hub__section">
+        <h2 class="test-hub__h2">Evidence points</h2>
+        <p class="test-hub__lead">
+          Evidence points are the individual measurements collected during testing. They are the foundation of every score. Some are simple yes/no checks; others use percentages, counts, timings, or structured quality assessments.
+        </p>
+        <TestHubEvidenceSection />
+      </section>
+
+      <section id="full-framework" class="test-hub__section">
+        <h2 class="test-hub__h2">Explore our full testing framework</h2>
+        <TestHubFrameworkAccordion categories={categories} />
+      </section>
+
+      <section id="in-practice" class="test-hub__section test-hub__section--process">
+        <h2 class="test-hub__h2">How we test AI girlfriend apps in practice</h2>
+        <TestHubProcessPinned steps={testHubProcessSteps} />
+      </section>
+
+      <section id="across-site" class="test-hub__section">
+        <h2 class="test-hub__h2">Where you will see our scores</h2>
+        <TestHubScoreLocations />
+      </section>
+
+      <section id="beyond-the-score" class="test-hub__section">
+        <h2 class="test-hub__h2">Beyond the score</h2>
+        <p class="test-hub__lead">
+          We aim to keep our reviews as objective as possible, so our recommendations are truly based on data. That said, personal experience, expert analysis, and how a platform actually feels to use still matter. We are humans, after all.
+        </p>
+        <ul class="test-beyond-links">
+          <li class="test-beyond-links__item">
+            <a class="test-beyond-links__title" href="/test/market-data/">
+              Market data methodology
+              <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+            </a>
+            <p class="test-beyond-links__desc">Google Trends, search interest, growth, internal popularity rankings, and competitive comparisons.</p>
+          </li>
+          <li class="test-beyond-links__item">
+            <a class="test-beyond-links__title" href="/editorial-guidelines/">
+              Editorial guidelines
+              <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+            </a>
+            <p class="test-beyond-links__desc">Independence, fact-checking, corrections, and affiliate disclosures.</p>
+          </li>
+        </ul>
+        <h3 id="scored-vs-informational" class="test-hub__h3">Scored vs informational</h3>
+        <table class="test-scored-table">
+          <thead>
+            <tr>
+              <th>Content type</th>
+              <th>Affects score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              testHubScoredVsInformational.map((row) => (
+                <tr>
+                  <td>
+                    {row.item}
+                    {row.note && <span class="test-scored-table__note"> — {row.note}</span>}
+                  </td>
+                  <td>{row.affectsScore ? 'Yes' : 'No'}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <section id="consistency" class="test-hub__section">
+        <h2 class="test-hub__h2">How we keep scores consistent</h2>
+        <p class="test-hub__lead">Every app is tested using the same categories and the same tasks.</p>
+        <p class="test-hub__lead">When privacy information is unclear or unavailable, we do not assume the app is safe.</p>
+        <p class="test-hub__lead">Image and video costs are shown in those sections, but they only affect the Pricing score. This prevents us from counting the same thing twice.</p>
+        <p class="test-hub__lead">Simply having a feature does not guarantee a high score. The feature also needs to work well.</p>
+      </section>
+
+      <section id="updates" class="test-hub__section">
+        <h2 class="test-hub__h2">Updates and methodology versions</h2>
+        <p class="test-hub__lead">Current methodology: <strong>V3.1</strong> (August 2026). We recalculate or retest when products or methodology versions change.</p>
+        <table class="test-version-table">
+          <thead>
+            <tr>
+              <th>Version</th>
+              <th>Date</th>
+              <th>Main change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              testHubVersions.map((v) => (
+                <tr>
+                  <td>{v.version}</td>
+                  <td>{v.date}</td>
+                  <td>{v.change}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <RoundupFaq sectionId="faq" sectionClass="test-hub__section" items={testFaqItems} />
+    </article>
+  </StandardContentLayout>
   <Footer />
-  <TestHubMobileNavSheet categories={categories} active="how-we-test" />
+  <TestHubMobileNavSheet
+    categories={categories}
+    tocSections={tocSections}
+    active="how-we-test"
+    collapsibleToc
+  />
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
   <RatingsTooltipInit />
 
@@ -299,6 +287,97 @@ const canonical = new URL('/test/', Astro.site ?? Astro.url.origin).toString();
       });
     }
 
+    function initTestHubNav() {
+      const navs = Array.from(document.querySelectorAll('[data-test-hub-nav]'));
+      if (!navs.length || document.documentElement.dataset.testHubNavBound === 'true') return;
+      document.documentElement.dataset.testHubNavBound = 'true';
+
+      const sectionLinks = Array.from(
+        navs[0].querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]'),
+      );
+      if (!sectionLinks.length) return;
+
+      const sections = sectionLinks
+        .map((link) => {
+          const id = link.dataset.sectionId;
+          return id ? document.getElementById(id) : null;
+        })
+        .filter((section): section is HTMLElement => section instanceof HTMLElement);
+
+      const setActive = (id: string | null) => {
+        navs.forEach((nav) => {
+          nav.querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]').forEach((link) => {
+            const active = link.dataset.sectionId === id;
+            link.classList.toggle('is-active', active);
+            if (active) link.setAttribute('aria-current', 'location');
+            else link.removeAttribute('aria-current');
+          });
+        });
+
+        const childToParent = new Map<string, string>();
+        const sectionIds = new Set<string>();
+
+        navs.forEach((nav) => {
+          nav.querySelectorAll<HTMLElement>('[data-toc-section]').forEach((li) => {
+            const sectionId = li.dataset.tocSection;
+            if (!sectionId) return;
+            sectionIds.add(sectionId);
+            li.querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]').forEach((link) => {
+              const linkId = link.dataset.sectionId;
+              if (linkId && linkId !== sectionId) childToParent.set(linkId, sectionId);
+            });
+          });
+        });
+
+        if (!sectionIds.size) return;
+
+        let expandedSection: string | null = null;
+        if (id) {
+          expandedSection = childToParent.get(id) ?? (sectionIds.has(id) ? id : null);
+        }
+
+        navs.forEach((nav) => {
+          nav.querySelectorAll<HTMLElement>('[data-toc-section]').forEach((li) => {
+            li.classList.toggle('is-expanded', li.dataset.tocSection === expandedSection);
+          });
+        });
+      };
+
+      const scrollOffset = 24;
+
+      navs.forEach((nav) => {
+        nav.querySelectorAll<HTMLAnchorElement>('[data-test-hub-nav-link]').forEach((link) => {
+          link.addEventListener('click', (event) => {
+            const id = link.dataset.sectionId;
+            if (!id) return;
+            const section = document.getElementById(id);
+            if (!section) return;
+            event.preventDefault();
+            const y = section.getBoundingClientRect().top + window.scrollY - scrollOffset;
+            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+            history.pushState(null, '', `#${id}`);
+            setActive(id);
+          });
+        });
+      });
+
+      const updateActiveSection = () => {
+        const marker = window.scrollY + scrollOffset + 8;
+        let currentId: string | null = sections[0]?.id ?? null;
+
+        for (const section of sections) {
+          if (section.offsetTop <= marker) currentId = section.id;
+          else break;
+        }
+
+        setActive(currentId);
+      };
+
+      updateActiveSection();
+      window.addEventListener('scroll', updateActiveSection, { passive: true });
+      window.addEventListener('resize', updateActiveSection);
+    }
+
     function initCategoryJumpHighlight() {
       const HIGHLIGHT_CLASS = 'is-highlighted';
       const HIGHLIGHT_MS = 2600;
@@ -309,7 +388,7 @@ const canonical = new URL('/test/', Astro.site ?? Astro.url.origin).toString();
       }
 
       function flashCard(card: HTMLElement) {
-        document.querySelectorAll('.test-category-card.is-highlighted').forEach((el) => {
+        document.querySelectorAll('.test-hub-category-overview.is-highlighted').forEach((el) => {
           el.classList.remove(HIGHLIGHT_CLASS);
         });
         card.classList.remove(HIGHLIGHT_CLASS);
@@ -358,9 +437,11 @@ const canonical = new URL('/test/', Astro.site ?? Astro.url.origin).toString();
     }
 
     initAuthorPopovers();
+    initTestHubNav();
     initCategoryJumpHighlight();
     document.addEventListener('astro:page-load', () => {
       initAuthorPopovers();
+      initTestHubNav();
       initCategoryJumpHighlight();
     });
   </script>

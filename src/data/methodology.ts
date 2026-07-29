@@ -1,4 +1,5 @@
 import { toSlug } from '../lib/slugs';
+import { findEvidenceBySlug } from '../lib/test-methodology-evidence';
 
 export interface MethodologyEntry {
   category: string;
@@ -174,26 +175,31 @@ add('privacy', 'Security', 'Billing Descriptor', 'Descriptor shown before paymen
 add('privacy', 'Security', 'Security Incidents', 'Known data breaches', 'Search confirmed incidents from previous five years (company, regulator, court, reliable report).', 'Number of confirmed incidents or Unknown');
 
 // --- Pricing ---
-add('pricing', 'Subscription', 'Monthly Price', 'Standard monthly subscription', 'Record full non-discounted main monthly price.', 'Monthly price');
-add('pricing', 'Subscription', 'Annual Price', 'Effective monthly on annual plan', 'Record total annual payment ÷ 12.', 'Total annual and effective monthly price');
-add('pricing', 'Subscription', 'Free Plan', 'Free account availability', 'Create free account; use seven days; record if payment required.', 'Yes, Limited or No', { testSize: '7 days' });
-add('pricing', 'Subscription', 'Free Trial', 'Trial before payment', 'Record trial length, credits, features, payment details required.', 'Yes, Limited or No');
-add('pricing', 'Subscription', 'Included Credits', 'Credits in subscription', 'Record exact credits/tokens per billing period.', 'Credits per period');
-add('pricing', 'Subscription', 'Included Features', 'Features without extra payment', '10-feature checklist: chat, library, creation, images, editing, video, voice msg, calls, memory, regenerate.', 'Number and percentage of 10 included');
-add('pricing', 'Subscription', 'Plan Limits', 'Usage limits', 'Record daily/monthly limits for messages, images, video, voice, characters.', 'Exact limit per feature or Unknown');
-add('pricing', 'Extra Costs', 'Image Cost', 'Cost per image', 'Credits per standard image × cheapest credit package price.', 'Cost per standard image');
-add('pricing', 'Extra Costs', 'Video Cost', 'Cost per video', 'Credits per standard video (same length/resolution as other platforms).', 'Cost per standard video');
-add('pricing', 'Extra Costs', 'Voice Cost', 'Voice costs', 'Cost of one voice message and one minute of calling.', 'Cost per message and per minute');
-add('pricing', 'Extra Costs', 'Top-Ups', 'Credit packages', 'Smallest and largest packages: price, credits, cost per credit.', 'Smallest, largest, cost per credit');
-add('pricing', 'Extra Costs', 'Credit Expiry', 'Credits expire', 'Check pricing terms and balance info.', 'Yes, No or Unknown plus expiry period');
-add('pricing', 'Extra Costs', 'Feature Paywalls', 'Features behind paywall', 'Same 10 features; count requiring higher plan, credits or purchase.', 'Number and percentage behind paywall');
-add('pricing', 'Extra Costs', 'Refunds', 'Refund policy', 'Record allowed, period, restrictions.', 'Yes, Limited, No or Unknown');
-add('pricing', 'Value', 'Real Cost', 'Monthly cost for regular use', 'Regular use: 500 msgs, 20 images, 4 videos, 30 voice min + sub + top-ups + fees.', 'Estimated monthly cost', { testSize: 'Regular-use scenario' });
-add('pricing', 'Value', 'Heavy-Use Cost', 'Monthly cost for heavy use', 'Heavy use: 2000 msgs, 100 images, 20 videos, 120 voice min.', 'Estimated monthly cost', { testSize: 'Heavy-use scenario' });
-add('pricing', 'Value', 'Category Comparison', 'Vs category average', '(Platform regular cost − average) ÷ average × 100. Only when 10+ platforms measured.', 'Percentage above or below average');
-add('pricing', 'Value', 'Feature Value', 'Features for total price', 'Same 10-feature checklist within regular-use cost.', 'Number and percentage included');
-add('pricing', 'Value', 'Usage Value', 'Usable content per dollar', 'Count successful replies, images, videos, voice minutes from standard tests per $10 spent.', 'Usable outputs per $10');
-add('pricing', 'Value', 'Pricing Clarity', 'Costs explained before payment', 'Eight items: sub price, renewal, credits, image cost, video cost, limits, expiry, refunds.', 'Percentage of eight clearly shown');
+add('pricing', 'Plan Value', 'Monthly Price', 'Standard monthly subscription', 'Record full non-discounted main monthly price.', 'Monthly price');
+add('pricing', 'Plan Value', 'Annual Price', 'Effective monthly on annual plan', 'Record total annual payment ÷ 12.', 'Total annual and effective monthly price');
+add('pricing', 'Plan Value', 'Included Features', 'Features without extra payment', '10-feature checklist: chat, library, creation, images, editing, video, voice msg, calls, memory, regenerate.', 'Number and percentage of 10 included');
+add('pricing', 'Plan Value', 'Included Credits', 'Credits in subscription', 'Record exact credits/tokens per billing period.', 'Credits per period');
+add('pricing', 'Plan Value', 'Plan Limits', 'Usage limits', 'Record daily/monthly limits for messages, images, video, voice, characters.', 'Exact limit per feature or Unknown');
+add('pricing', 'Plan Value', 'Annual Discount', 'Savings on annual billing', 'Compare annual total to 12× monthly on the same tier.', 'Percentage discount');
+add('pricing', 'Usage Costs', 'Image Cost', 'Cost per image', 'Credits per standard image × cheapest credit package price.', 'Cost per image');
+add('pricing', 'Usage Costs', 'Video Cost', 'Cost per 10 sec of video', 'Normalize video cost to per 10 seconds.', 'Cost per 10 sec');
+add('pricing', 'Usage Costs', 'Voice Cost', 'Cost per 10 sec of voice', 'Normalize voice message cost to per 10 seconds.', 'Cost per 10 sec');
+add('pricing', 'Usage Costs', 'Call Cost', 'Cost per voice call minute', 'Credits per voice call minute × cheapest credit package price.', 'Cost per minute');
+add('pricing', 'Usage Costs', 'Top-Up Value', 'Credit packages', 'Smallest and largest packages: price, credits, cost per credit.', 'Smallest, largest, cost per credit');
+add('pricing', 'Usage Costs', 'Monthly Spend', 'Monthly cost for regular use', 'Regular use: 500 msgs, 20 images, 4 videos, 30 voice min + sub + top-ups + fees.', 'Estimated monthly cost', { testSize: 'Regular-use scenario' });
+add('pricing', 'Free Access', 'Free Chat', 'Free messages', 'Record how many chat messages are free before payment.', 'Number of free messages');
+add('pricing', 'Free Access', 'Free Images', 'Free images', 'Record how many images are free before payment.', 'Number of free images');
+add('pricing', 'Free Access', 'Free Video', 'Free videos', 'Record how many videos are free before payment.', 'Number of free videos');
+add('pricing', 'Free Access', 'Free Voice', 'Free voice', 'Record free voice seconds before payment.', 'Free voice duration');
+add('pricing', 'Free Access', 'Free Characters', 'Free characters', 'Record how many characters are free before payment.', 'Number of free characters');
+add('pricing', 'Free Access', 'Free Value', 'Overall free tier value', 'Record whether meaningful free access exists without a card.', 'Short free-tier label');
+add('pricing', 'Free Access', 'Restrictions', 'Free access limits', 'Record reset/expiry rules for free allowances.', 'Restriction label');
+add('pricing', 'Billing', 'Pricing Clarity', 'Costs explained before payment', 'Eight items: sub price, renewal, credits, image cost, video cost, limits, expiry, refunds.', 'Percentage of eight clearly shown');
+add('pricing', 'Billing', 'Paywalls', 'Features behind paywall', 'Same 10 features; count requiring higher plan, credits or purchase.', 'Number and percentage behind paywall');
+add('pricing', 'Billing', 'Credit Expiry', 'Credits expire', 'Check pricing terms and balance info.', 'Yes, No or Unknown plus expiry period');
+add('pricing', 'Billing', 'Refunds', 'Refund policy', 'Record allowed, period, restrictions.', 'Yes, Limited, No or Unknown');
+add('pricing', 'Billing', 'Cancellation', 'Subscription cancellation', 'Try to cancel or locate cancellation instructions.', 'Yes, Limited, No or Unknown');
+add('pricing', 'Billing', 'Payment Privacy', 'Discreet billing', 'Check checkout for discreet descriptor and billing privacy.', 'Yes, Limited, No or Unknown');
 
 const lookup = new Map<string, MethodologyEntry>();
 for (const e of entries) {
@@ -201,7 +207,26 @@ for (const e of entries) {
 }
 
 export function getMethodology(category: string, subscore: string, contributor: string): MethodologyEntry | undefined {
-  return lookup.get(`${toSlug(category)}/${toSlug(subscore)}/${toSlug(contributor)}`);
+  const categorySlug = toSlug(category);
+  const subscoreSlug = toSlug(subscore);
+  const contributorSlug = toSlug(contributor);
+
+  const entry = lookup.get(`${categorySlug}/${subscoreSlug}/${contributorSlug}`);
+  if (entry) return entry;
+
+  const db = findEvidenceBySlug(categorySlug, subscoreSlug, contributorSlug);
+  if (!db) return undefined;
+
+  return {
+    category,
+    subscore,
+    contributor: db.name,
+    measured: db.publicDescription
+      ? db.publicDescription.charAt(0).toUpperCase() + db.publicDescription.slice(1)
+      : db.name,
+    howToTest: db.internalInstructions ?? 'See our full testing methodology for step-by-step instructions.',
+    resultFormat: db.resultFormat ?? 'Measured result recorded during testing.',
+  };
 }
 
 export function getAllMethodologyEntries(): MethodologyEntry[] {

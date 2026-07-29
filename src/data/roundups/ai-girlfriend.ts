@@ -161,7 +161,7 @@ const defaultSubscores: Record<string, [string, string, string]> = {
   images: ['Quality', 'Consistency', 'Speed'],
   video: ['Quality', 'Capabilities', 'Ease of use'],
   privacy: ['Data use', 'User control', 'Security'],
-  pricing: ['Subscription', 'Extra costs', 'Value'],
+  pricing: ['Subscription', 'Free trial', 'Pay-as-you-go', 'Value'],
 };
 
 function mockSubscores(key: string, score: number): RoundupSubscore[] {

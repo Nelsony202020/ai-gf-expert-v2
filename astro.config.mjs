@@ -48,7 +48,12 @@ export default defineConfig({
   },
   vite: {
     plugins: [astroScriptTsPlugin(), tailwindcss(), react()],
+    ssr: {
+      noExternal: ['@instantdb/admin', '@instantdb/core', '@instantdb/version'],
+    },
     server: {
+      port: 4321,
+      strictPort: true,
       watch: {
         // Ignore build output — watching .vercel/ triggers thousands of HMR reloads
         // and breaks admin module loading in dev.

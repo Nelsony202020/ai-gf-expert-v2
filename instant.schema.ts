@@ -196,8 +196,11 @@ const _schema = i.schema({
       focalPoint: i.json().optional(), // { x: 0-1, y: 0-1 }
       crop: i.json().optional(), // { x, y, width, height } in source pixels
       sortOrder: i.number().optional(),
-      // e.g. gallery | logo | featured | proof | character | hero | chat | image_generator
+      // Primary placement: gallery (public Photos & Videos) or proof (testing proof tab)
       role: i.string().optional().indexed(),
+      // Optional tags: character | chat | image_generator | hero (combinable with gallery or proof)
+      mediaTags: i.json().optional(),
+      heroSortOrder: i.number().optional(),
       // For testing-evidence media: rating category slug (characters, chat…)
       testCategory: i.string().optional(),
       uploadedBy: i.string().optional(),

@@ -1,13 +1,24 @@
 ---
 import type { TestCategoryNode } from '../../lib/test-framework';
+import type { TestCategoryMethodologyContent } from '../../data/test-category-methodology';
 import { testHubRelatedMethodology } from '../../data/test-hub-content';
 import { testHubUrl } from '../../lib/slugs';
 
 interface Props {
   category: TestCategoryNode;
+  methodology?: TestCategoryMethodologyContent;
 }
 
-const { category } = Astro.props;
+const { category, methodology } = Astro.props;
+
+const extraSections = methodology
+  ? [
+      { id: 'how-we-test', label: methodology.howWeTest.title },
+      { id: 'score-calculation', label: methodology.scoreCalculation.title },
+      { id: 'limitations', label: methodology.limitations.title },
+      { id: 'related-methodology', label: 'Related methodology' },
+    ]
+  : [];
 ---
 
 <aside class="roundup-sidebar" aria-label="Category methodology navigation">
@@ -40,6 +51,19 @@ const { category } = Astro.props;
           }
         </ul>
       </li>
+      {
+        extraSections.map((section) => (
+          <li>
+            <a
+              class="roundup-toc__link"
+              href={`#${section.id}`}
+              data-toc-link={section.id}
+            >
+              {section.label}
+            </a>
+          </li>
+        ))
+      }
       <li>
         <a class="roundup-toc__link" href={testHubUrl()} data-toc-link="how-we-test">
           How we test

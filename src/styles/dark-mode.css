@@ -1,0 +1,81 @@
+/* Site-wide dark mode — slate-blue palette (matches admin dashboard).
+   Loaded last so it wins over scoped Astro component styles. */
+
+html[data-theme='dark'] {
+  --roundup-header-bg: #0f172a;
+  --site-header-bg: #0f172a;
+  --site-header-border: #1e293b;
+}
+
+html[data-theme='dark'] body,
+html[data-theme='dark'] body.bg-white {
+  background-color: #020617 !important;
+  color: #f1f5f9;
+}
+
+/* Header / footer chrome */
+html[data-theme='dark'] .site-header {
+  background-color: #0f172a !important;
+  border-bottom-color: #1e293b !important;
+}
+
+html[data-theme='dark'] .site-header__mobile-menu {
+  background: #0f172a !important;
+  border-top-color: #1e293b !important;
+}
+
+html[data-theme='dark'] .site-footer {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-top-color: #1e293b !important;
+}
+
+html[data-theme='dark'] .site-footer__tagline,
+html[data-theme='dark'] .site-footer__links a,
+html[data-theme='dark'] .site-footer__bottom,
+html[data-theme='dark'] .site-footer__legal a,
+html[data-theme='dark'] .theme-toggle--footer {
+  color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .site-footer__label {
+  color: #f472b6 !important;
+}
+
+html[data-theme='dark'] .site-footer__bottom {
+  border-top-color: #1e293b !important;
+}
+
+/* Roundup blocks that used green-tinted header bg variable */
+html[data-theme='dark'] .roundup-page {
+  --roundup-header-bg: #0f172a;
+}
+
+/* Lime detail-level tab → pink in dark mode */
+html[data-theme='dark'] .detail-level-tab[aria-selected='true'] {
+  background: #db2777 !important;
+  color: #fff !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 20%) !important;
+}
+
+/* Green-tinted surface fallbacks used in component CSS */
+html[data-theme='dark'] .border-surface-variant {
+  border-color: #1e293b;
+}
+
+html[data-theme='dark'] .bg-surface-container-low,
+html[data-theme='dark'] .bg-surface-container,
+html[data-theme='dark'] .bg-surface-container-high {
+  background-color: var(--color-surface-container) !important;
+}
+
+html[data-theme='dark'] .bg-primary-container,
+html[data-theme='dark'] .bg-brand-cta,
+html[data-theme='dark'] [class*='bg-brand-lime'] {
+  background-color: #db2777 !important;
+  color: #fff !important;
+}
+
+html[data-theme='dark'] .bg-brand-cta:hover {
+  background-color: #be185d !important;
+}

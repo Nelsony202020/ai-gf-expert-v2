@@ -30,7 +30,7 @@ const SUBSCORE_DESCRIPTIONS: Record<string, string> = {
   'chat-features/controls':
     'Controls you have in chat — edit or delete messages, regenerate replies, manage memory, reset, and export.',
   'chat-features/platform-extras':
-    'Extra experiences beyond standard chat. Only live cam affects the score; other extras are noted in the review.',
+    'Optional experiences beyond standard chat. Live cam and named bonus features each contribute half the subscore when present; missing extras are not penalized.',
 
   'images/quality':
     'How good generated images look — realism, detail, composition, visual errors, and maximum resolution.',
@@ -55,12 +55,14 @@ const SUBSCORE_DESCRIPTIONS: Record<string, string> = {
   'privacy/support':
     'How easy it is to reach support, how fast they respond, and how helpful they are.',
 
-  'pricing/subscription':
-    'Subscription pricing and what it includes — monthly/annual price, free tier, trial, credits, features, and limits.',
-  'pricing/extra-costs':
-    'Costs on top of the subscription — images, video, voice, credit packs, expiry, paywalls, and refunds.',
-  'pricing/value':
-    'Whether the app is good value — estimated real monthly cost, comparison to rivals, and pricing clarity.',
+  'pricing/plan-value':
+    'What the cheapest monthly subscription costs and includes — price, credits, basic-plan feature access, limits, and annual discount.',
+  'pricing/usage-costs':
+    'Per-use costs — monthly spend estimate, credit top-ups, voice messages, voice calls, images, and video.',
+  'pricing/free-access':
+    'What you can try for free — messages, custom characters, images, video, voice, and free trial without credit card.',
+  'pricing/billing':
+    'Billing transparency — pricing clarity, credit expiry, refunds, easy cancellation, and payment privacy.',
 };
 
 export function getSubscoreDescription(categoryKey: string, subscoreName: string): string {

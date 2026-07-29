@@ -53,7 +53,7 @@ const herman = getAuthor('herman-carter');
                   <ScoreRect score={verdict.score} size="md" />
                   <div class="min-w-0 pt-0.5">
                     <div class="flex items-center gap-1.5">
-                      <h3 class="text-xl md:text-2xl font-bold text-on-surface">{verdict.label}</h3>
+                      <p class="text-xl md:text-2xl font-bold text-on-surface m-0">{verdict.label}</p>
                       {
                         verdict.id === 'overall' ? (
                           <OverallScoreTooltip product={product}>
@@ -82,7 +82,7 @@ const herman = getAuthor('herman-carter');
 
                 <div class="grid md:grid-cols-2 gap-x-10 gap-y-6">
                   <div>
-                    <h4 class="font-black text-lg mb-4 text-on-surface">Pros</h4>
+                    <p class="font-black text-lg mb-4 text-on-surface m-0">Pros</p>
                     <ul class="space-y-3">
                       {
                         verdict.pros.map((pro) => (
@@ -97,7 +97,7 @@ const herman = getAuthor('herman-carter');
                     </ul>
                   </div>
                   <div>
-                    <h4 class="font-black text-lg mb-4 text-on-surface">Cons</h4>
+                    <p class="font-black text-lg mb-4 text-on-surface m-0">Cons</p>
                     <ul class="space-y-3">
                       {
                         verdict.cons.map((con) => (

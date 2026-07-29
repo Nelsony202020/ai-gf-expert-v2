@@ -34,6 +34,8 @@ const shareTitle = `${product.name} Review — AI Girlfriend Expert`;
       {product.name} <span class="font-serif italic font-normal text-on-surface">Review</span>
     </h1>
 
+    <h2 class="sr-only">{product.name} Video Review</h2>
+
     <div class="article-meta-row mb-0">
       <span>Published {product.reviewedDate}</span>
       <span class="article-meta-row__sep" aria-hidden="true">·</span>
@@ -99,7 +101,11 @@ const shareTitle = `${product.name} Review — AI Girlfriend Expert`;
   <!-- Gallery + sticky ratings -->
   <div class="flex flex-col lg:flex-row gap-8">
     <div class="lg:w-[68%]">
-      <Gallery images={product.gallery} product={product} heroImage={product.featuredImage} />
+      <Gallery
+        images={product.heroGallery?.length ? product.heroGallery : product.gallery}
+        product={product}
+        heroImage={product.featuredImage}
+      />
     </div>
     <div class="lg:w-[32%]">
       <RatingSidebar product={product} />

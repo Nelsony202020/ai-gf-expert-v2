@@ -38,9 +38,9 @@ const TITLE_OVERRIDES: Record<string, string> = {
   'data-controls': 'Account and data-control test',
   'security-billing': 'Security features audit',
   'customer-support': 'Support response test',
-  'subscription-basics': 'Subscription pricing audit',
-  'pricing-limits-policies': 'Credit and top-up audit',
-  'pricing-value-breakdown': 'Pricing clarity and value test',
+  'pricing-plan-value': 'Plan inclusions audit',
+  'pricing-free-access': 'Free access audit',
+  'pricing-billing': 'Billing and policies audit',
   'video-capabilities': 'Video capabilities audit',
   'video-experience': 'Video generation workflow test',
 };
@@ -69,10 +69,9 @@ const SUBSCORE_BY_SESSION: Record<string, string> = {
   'data-controls': 'user-control',
   'security-billing': 'security',
   'customer-support': 'support',
-  'subscription-basics': 'subscription',
-  'pricing-limits-policies': 'extra-costs',
-  'pricing-value-breakdown': 'value',
-  value: 'value',
+  'pricing-plan-value': 'plan-value',
+  'pricing-free-access': 'free-access',
+  'pricing-billing': 'billing',
   'video-capabilities': 'capabilities',
   'video-experience': 'experience',
 };
@@ -83,9 +82,10 @@ function slugToSubscore(session: TestSessionDef, categorySlug: string): string {
   const first = session.slugs[0];
   if (first?.includes('privacy') || categorySlug === 'privacy') return session.id.split('-')[0] ?? session.id;
   if (categorySlug === 'pricing') {
-    if (session.id.includes('subscription')) return 'subscription';
-    if (session.id.includes('credit') || session.id.includes('top')) return 'extra-costs';
-    return 'value';
+    if (session.id.includes('plan-value') || session.id.includes('plan')) return 'plan-value';
+    if (session.id.includes('free-access') || session.id.includes('free')) return 'free-access';
+    if (session.id.includes('billing') || session.id.includes('policies')) return 'billing';
+    return 'usage-costs';
   }
   return session.id;
 }
