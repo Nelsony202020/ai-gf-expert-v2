@@ -1,7 +1,7 @@
 ---
 import type { HomeExplorerApp } from '../../data/homepage';
 import { buildExplorerApps } from '../../data/homepage';
-import { getProduct } from '../../data/products';
+import { loadComparisonProducts, overallScorePoints } from '../../lib/content/comparisonProducts';
 import { getScoreChipClass, fmtScore } from '../../lib/scores';
 import OverallScoreTooltip from '../review/tooltips/OverallScoreTooltip.astro';
 import InlineTestLink from '../review/tooltips/InlineTestLink.astro';
@@ -14,10 +14,11 @@ interface Props {
 }
 
 const { app } = Astro.props;
-const fullProduct = getProduct(app.slug);
+const comparisonProducts = await loadComparisonProducts();
+const fullProduct = comparisonProducts.find((product) => product.slug === app.slug);
 const tooltipId = `overall-explorer-${app.id}`;
 const currentChip = getScoreChipClass(app.overallScore);
-const scorePoints = buildExplorerApps().map((entry) => entry.overallScore);
+const scorePoints = overallScorePoints(comparisonProducts).map((point) => point.score);
 const avgScore = scorePoints.length
   ? scorePoints.reduce((sum, score) => sum + score, 0) / scorePoints.length
   : app.overallScore;

@@ -147,7 +147,7 @@ export const testTooltipsSubscoreAnnotations: TestTooltipAnnotationItem[] = [
   {
     n: 3,
     icon: 'fact_check',
-    label: 'Evidence points',
+    label: 'Scored tests',
     desc: 'The evidence used to calculate the score.',
   },
   {
@@ -278,7 +278,7 @@ export const testTooltipsSubscoreParts: TestTooltipPartItem[] = [
     n: 3,
     icon: 'fact_check',
     anchorId: 'subscore-part-3',
-    label: 'Evidence points',
+    label: 'Scored tests',
     desc: 'The evidence used to calculate the score.',
   },
   {

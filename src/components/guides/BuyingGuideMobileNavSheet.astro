@@ -48,12 +48,6 @@ const { active = 'buying-guide' } = Astro.props;
     <nav class="roundup-nav-sheet__toc" aria-label="Table of contents">
       <p class="roundup-nav-sheet__toc-title">Contents</p>
       <ul class="roundup-nav-sheet__toc-list">
-        <li>
-          <a class="roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--top" href="#buying-guide-top">
-            <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
-            Top
-          </a>
-        </li>
         {
           buyingGuideTocSections.map((section) => (
             <li

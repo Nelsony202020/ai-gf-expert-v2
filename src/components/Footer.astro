@@ -1,12 +1,13 @@
 ---
 // NOTE: Site footer — dark brand background, social links, dark mode toggle.
 import { authors } from '../data/authors';
-import { products } from '../data/products';
+import { loadComparisonProducts } from '../lib/content/comparisonProducts';
 import { megaMenuColumns } from '../data/nav-mega-menu';
 import { legalPages } from '../data/legal-pages';
 import SocialTooltip from './ui/SocialTooltip.astro';
 import ThemeToggle from './ui/ThemeToggle.astro';
 
+const publishedProducts = await loadComparisonProducts();
 const herman = authors['herman-carter'];
 const year = new Date().getFullYear();
 
@@ -14,7 +15,7 @@ const roundupLinks = megaMenuColumns.find((col) => col.id === 'best-picks')?.lin
   { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend' },
 ];
 
-const reviewLinks = products.map((product) => ({
+const reviewLinks = publishedProducts.map((product) => ({
   label: `${product.name} Review`,
   href: `/reviews/${product.slug}/`,
 }));

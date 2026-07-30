@@ -1,9 +1,10 @@
 ---
-import { products } from '../../data/products';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 import { getScoreVisual, fmtScore } from '../../lib/scores';
 import ScorePill from '../review/ScorePill.astro';
 
-const product = products.find((p) => p.slug === 'aura-ai') ?? products[0];
+const comparisonProducts = await loadComparisonProducts();
+const product = comparisonProducts.find((p) => p.slug === 'aura-ai') ?? comparisonProducts[0];
 
 if (!product) {
   throw new Error('TestHubScoreExample requires at least one product in the catalog.');

@@ -7,8 +7,9 @@ import SitemapTestMethodology from '../components/sitemap/SitemapTestMethodology
 import SitemapResourcesLegal from '../components/sitemap/SitemapResourcesLegal.astro';
 import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
 import { buildFullHtmlSitemapPage } from '../lib/sitemap';
+import { loadComparisonProducts } from '../lib/content/comparisonProducts';
 
-const page = buildFullHtmlSitemapPage();
+const page = buildFullHtmlSitemapPage(await loadComparisonProducts());
 ---
 
 <BaseLayout title="HTML Sitemap — AI Girlfriend Expert" description="Complete index of all reviews, roundups, guides, testing methodology, authors, resources, and legal pages.">

@@ -168,7 +168,7 @@ export async function assembleEvidence(opts: {
   const evidence: AssembledEvidenceItem[] = [];
   for (const cat of mv?.categories ?? []) {
     if (!cat.active) continue;
-    if (opts.scope === 'category' && opts.categorySlug && cat.slug !== opts.categorySlug) {
+    if (opts.categorySlug && cat.slug !== opts.categorySlug) {
       continue;
     }
     for (const sub of cat.subscores ?? []) {
@@ -197,11 +197,11 @@ export async function assembleEvidence(opts: {
     }
   }
 
-  if (opts.scope === 'category' && opts.categorySlug && evidence.length === 0) {
+  if (opts.categorySlug && evidence.length === 0) {
     throw new HttpError(400, `No evidence found for category ${opts.categorySlug}`);
   }
 
-  const scores: AssembledScore[] = (run.scoreSnapshots ?? []).map((s: any) => ({
+  let scores: AssembledScore[] = (run.scoreSnapshots ?? []).map((s: any) => ({
     kind: s.kind,
     refSlug: s.refSlug,
     parentSlug: s.parentSlug,
@@ -209,7 +209,17 @@ export async function assembleEvidence(opts: {
     weight: s.weight,
   }));
 
-  const overallScore = scores.find((s) => s.kind === 'overall')?.score ?? null;
+  if (opts.categorySlug) {
+    scores = scores.filter(
+      (s) =>
+        (s.kind === 'category' && s.refSlug === opts.categorySlug) ||
+        (s.kind === 'subscore' && s.parentSlug === opts.categorySlug),
+    );
+  }
+
+  const overallScore = opts.categorySlug
+    ? (scores.find((s) => s.kind === 'category' && s.refSlug === opts.categorySlug)?.score ?? null)
+    : (scores.find((s) => s.kind === 'overall')?.score ?? null);
   const benchmarks = await loadBenchmarks(opts.productId, scores, methodologyVersion);
 
   const activePricing = (pricingSnapshots as any[]).find(

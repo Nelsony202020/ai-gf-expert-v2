@@ -1,5 +1,8 @@
 // Server-side HTML renderer for persisted review blocks (public review article tab).
 
+import { isUsablePublicMediaUrl, inferMediaTypeFromUrl } from '../media/url';
+import type { MediaLookupEntry } from '../media/catalog';
+
 export interface ReviewBlockPublic {
   id: string;
   type: string;
@@ -100,12 +103,74 @@ function youtubeEmbedUrl(url: string): string | null {
   return `https://www.youtube-nocookie.com/embed/${m[1]}`;
 }
 
-function resolveImageSrc(data: Record<string, unknown>, mediaById?: Record<string, { url?: string }>): string {
-  const src = String(data.src ?? '').trim();
-  if (src) return src;
+function resolveMediaItem(
+  data: Record<string, unknown>,
+  mediaById?: Record<string, MediaLookupEntry>,
+): { src: string; mediaType: 'image' | 'video' } {
   const mediaId = data.mediaId ? String(data.mediaId) : '';
-  if (mediaId && mediaById?.[mediaId]?.url) return String(mediaById[mediaId].url);
-  return '';
+  const fromCatalog = mediaId ? mediaById?.[mediaId] : undefined;
+  if (fromCatalog?.url) {
+    return { src: fromCatalog.url, mediaType: fromCatalog.mediaType };
+  }
+
+  const stored = String(data.src ?? '').trim();
+  if (isUsablePublicMediaUrl(stored)) {
+    const hinted = data.mediaType === 'video' ? 'video' : data.mediaType === 'image' ? 'image' : null;
+    return {
+      src: stored,
+      mediaType: hinted ?? inferMediaTypeFromUrl(stored),
+    };
+  }
+
+  // #region agent log
+  fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
+    body: JSON.stringify({
+      sessionId: '28e868',
+      runId: 'pre-fix',
+      hypothesisId: 'H4',
+      location: 'renderReviewBlocks.ts:resolveMediaItem',
+      message: 'Unresolved review media item',
+      data: {
+        mediaId: mediaId || null,
+        storedSrc: stored || null,
+        hasCatalog: Boolean(fromCatalog),
+        alt: data.alt ?? null,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
+  return { src: '', mediaType: 'image' };
+}
+
+function renderImageFigure(
+  item: Record<string, unknown>,
+  opts?: { mediaById?: Record<string, MediaLookupEntry>; rowCell?: boolean },
+): string {
+  const { src, mediaType } = resolveMediaItem(item, opts?.mediaById);
+  if (!src) return '';
+  const mediaId = item.mediaId ? String(item.mediaId) : '';
+  const alt = escapeHtml(
+    String(item.alt ?? opts?.mediaById?.[mediaId]?.altText ?? ''),
+  );
+  const caption = String(item.caption ?? '').trim();
+  const width = Math.min(100, Math.max(30, Number(item.widthPercent ?? 100)));
+  const radius = Math.min(50, Math.max(0, Number(item.borderRadiusPercent ?? 0)));
+  const cellClass = opts?.rowCell ? 'review-figure review-image-row__cell' : 'review-figure';
+  const widthStyle = opts?.rowCell
+    ? `flex:0 0 calc(${width}% - 6px);max-width:calc(${width}% - 6px);`
+    : `width:${width}%;max-width:100%;margin-inline:${width < 100 ? 'auto' : '0'};`;
+  const mediaTag =
+    mediaType === 'video'
+      ? `<video class="review-video-native" src="${escapeHtml(src)}" controls preload="metadata" style="width:100%;height:auto;display:block"></video>`
+      : `<img src="${escapeHtml(src)}" alt="${alt}" loading="lazy" style="width:100%;height:auto;display:block" />`;
+  let html = `<figure class="${cellClass}" style="${widthStyle}border-radius:${radius}%;overflow:hidden">${mediaTag}`;
+  if (caption) html += `<figcaption>${escapeHtml(caption)}</figcaption>`;
+  html += '</figure>';
+  return html;
 }
 
 export function buildReviewToc(blocks: ReviewBlockPublic[]): ReviewTocEntry[] {
@@ -172,7 +237,7 @@ function renderPlaceholder(type: string): string {
 
 export function renderReviewBlocksHtml(
   blocks: ReviewBlockPublic[],
-  opts?: { mediaById?: Record<string, { url?: string; altText?: string }> },
+  opts?: { mediaById?: Record<string, MediaLookupEntry> },
 ): string {
   const parts: string[] = [];
 
@@ -191,18 +256,11 @@ export function renderReviewBlocksHtml(
         const flatItems =
           layoutRow?.flatMap((col) => (Array.isArray(col.items) ? col.items : [])) ?? rowItems ?? [];
         if (flatItems.length > 0) {
-          for (const raw of flatItems) {
-            const item = raw as Record<string, unknown>;
-            const src = resolveImageSrc(item, opts?.mediaById);
-            if (!src) continue;
-            const alt = escapeHtml(String(item.alt ?? opts?.mediaById?.[String(item.mediaId ?? '')]?.altText ?? ''));
-            const caption = String(item.caption ?? '').trim();
-            const width = Math.min(100, Math.max(30, Number(item.widthPercent ?? 100)));
-            const radius = Math.min(50, Math.max(0, Number(item.borderRadiusPercent ?? 0)));
-            let html = `<figure class="review-figure" style="width:${width}%;max-width:100%;margin-inline:${width < 100 ? 'auto' : '0'};border-radius:${radius}%;overflow:hidden"><img src="${escapeHtml(src)}" alt="${alt}" loading="lazy" />`;
-            if (caption) html += `<figcaption>${escapeHtml(caption)}</figcaption>`;
-            html += '</figure>';
-            parts.push(html);
+          const figures = flatItems
+            .map((raw) => renderImageFigure(raw as Record<string, unknown>, { mediaById: opts?.mediaById, rowCell: true }))
+            .filter(Boolean);
+          if (figures.length > 0) {
+            parts.push(`<div class="review-image-row">${figures.join('')}</div>`);
           }
           break;
         }
@@ -247,16 +305,8 @@ export function renderReviewBlocksHtml(
         break;
       }
       case 'image': {
-        const src = resolveImageSrc(data, opts?.mediaById);
-        if (!src) break;
-        const alt = escapeHtml(String(data.alt ?? opts?.mediaById?.[String(data.mediaId ?? '')]?.altText ?? ''));
-        const caption = String(data.caption ?? '').trim();
-        const width = Math.min(100, Math.max(30, Number(data.widthPercent ?? 100)));
-        const radius = Math.min(50, Math.max(0, Number(data.borderRadiusPercent ?? 0)));
-        let html = `<figure class="review-figure" style="width:${width}%;max-width:100%;margin-inline:${width < 100 ? 'auto' : '0'};border-radius:${radius}%;overflow:hidden"><img src="${escapeHtml(src)}" alt="${alt}" loading="lazy" />`;
-        if (caption) html += `<figcaption>${escapeHtml(caption)}</figcaption>`;
-        html += '</figure>';
-        parts.push(html);
+        const html = renderImageFigure(data, { mediaById: opts?.mediaById });
+        if (html) parts.push(html);
         break;
       }
       case 'video': {

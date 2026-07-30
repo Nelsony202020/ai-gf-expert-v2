@@ -5,6 +5,8 @@ import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import StandardContentHero from '../../../components/content/StandardContentHero.astro';
 import StandardContentToc from '../../../components/content/StandardContentToc.astro';
+import TestPageBackLink from '../../../components/test/TestPageBackLink.astro';
+import ArticleUtilityRail from '../../../components/article/ArticleUtilityRail.astro';
 import { getTestCategories } from '../../../lib/test-framework';
 import { testHubImportantTests } from '../../../data/test-hub-content';
 import { testHubUrl } from '../../../lib/slugs';
@@ -26,6 +28,7 @@ for (const test of testHubImportantTests) {
 }
 
 const pageTitle = 'All Tests — AI Girlfriend Expert';
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 
 const tocItems = [
   ...categories.map((cat) => ({
@@ -38,11 +41,11 @@ const tocItems = [
 
 <BaseLayout
   title={pageTitle}
-  description="Complete directory of our AI girlfriend app testing methodology — categories, subscores, evidence points, and featured individual tests."
+  description="Complete directory of our AI girlfriend app testing methodology — categories, subscores, scored tests, and featured individual tests."
 >
   <Header />
   <StandardContentLayout pageClass="test-page test-archive">
-    <StandardContentToc slot="sidebar" items={tocItems} topAnchor="#test-all-top" />
+    <StandardContentToc slot="sidebar" items={tocItems} />
 
     <StandardContentHero
       slot="hero"
@@ -53,7 +56,7 @@ const tocItems = [
       ]}
       eyebrow="Complete directory"
       title="All tests"
-      intro={`Full hierarchy of our testing methodology — ${testPageCount} pages covering categories, subscores, and individual evidence points.`}
+      intro={`Full hierarchy of our testing methodology — ${testPageCount} pages covering categories, subscores, and individual scored tests.`}
     >
       <a class="test-inline-link" href={testHubUrl()}>
         How We Test AI Girlfriend Apps
@@ -113,11 +116,9 @@ const tocItems = [
         </ul>
       </section>
 
-      <a class="test-inline-link test-page__back" href={testHubUrl()}>
-        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-        Back to how we test
-      </a>
+      <TestPageBackLink href={testHubUrl()} label="how we test" />
     </div>
   </StandardContentLayout>
   <Footer />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal />
 </BaseLayout>

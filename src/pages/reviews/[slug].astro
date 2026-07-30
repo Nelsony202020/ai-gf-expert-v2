@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
@@ -15,22 +17,19 @@ import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipI
 import ReviewScrollRestore from '../../components/review/ReviewScrollRestore.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import RoundupAffiliateFineprint from '../../components/roundup/RoundupAffiliateFineprint.astro';
-import { products, getProduct } from '../../data/products';
-import { getProductFeaturedIn } from '../../lib/content/store';
-
-export function getStaticPaths() {
-  return products.map((product) => ({ params: { slug: product.slug } }));
-}
+import { getProductFeaturedIn, loadPublishedProductBySlug } from '../../lib/content/store';
+import { resolveProductPageHead } from '../../lib/seo/productMeta';
 
 const { slug } = Astro.params;
-const product = getProduct(slug!);
+const product = slug ? await loadPublishedProductBySlug(slug) : null;
 
 if (!product) {
-  return Astro.redirect('/404');
+  return new Response(null, { status: 404, statusText: 'Not Found' });
 }
 
-// Internal relationship links (DB-driven; empty until USE_DB_CONTENT is on)
 const featuredIn = await getProductFeaturedIn(product.slug);
+const origin = Astro.site?.toString() ?? Astro.url.origin;
+const head = resolveProductPageHead(product, { origin });
 
 const tabs: Tab[] = [
   { id: 'overview', label: 'Overview' },
@@ -41,12 +40,18 @@ const tabs: Tab[] = [
   { id: 'market-data', label: 'Market Data' },
 ];
 
-const title = `${product.name} Review (${product.reviewedDate}) — Lovelace Reviews`;
-const description = product.tagline;
-const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.origin).toString();
+const shareUrl = head.canonical;
 ---
 
-<BaseLayout title={title} description={description} image={product.featuredImage?.full ?? product.gallery[0]?.full}>
+<BaseLayout
+  title={head.title}
+  description={head.metaDescription}
+  image={head.ogImage ?? undefined}
+  canonical={head.canonical}
+  ogTitle={head.ogTitle}
+  ogDescription={head.ogDescription}
+  robots={head.robots}
+>
   <Header />
   <main>
     <div class="roundup-affiliate-bar">
@@ -54,7 +59,7 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
         <RoundupAffiliateFineprint />
       </div>
     </div>
-    <ReviewHero product={product} shareUrl={canonical} />
+    <ReviewHero product={product} shareUrl={shareUrl} pageHead={head} />
     {featuredIn.length > 0 && (
       <div class="mx-auto max-w-6xl px-4 pt-3 text-sm text-white/60">
         Also featured in:{' '}
@@ -96,12 +101,18 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
     </div>
   </main>
   <Footer />
-  <ArticleUtilityRail pageTitle={title} pageUrl={canonical} />
+  <ArticleUtilityRail pageTitle={head.title} pageUrl={shareUrl} />
   <RatingsTooltipInit />
   <ReviewScrollRestore productSlug={product.slug} />
 </BaseLayout>
 
 <script>
+  import {
+    applyReviewRatingsHashFromLocation,
+    navigateToRatingsSection,
+  } from '../../lib/review/ratingsSectionNav.client.ts';
+  import { subscoreSlugFromLabel } from '../../lib/review/ratingsDeepLink.ts';
+
   const TABBAR_OFFSET = 52;
 
   function getScrollOffset() {
@@ -118,7 +129,7 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
     const tabTriggers = Array.from(document.querySelectorAll<HTMLElement>('[data-tab]'));
     const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-tab-panel]'));
 
-    function setActiveTab(id: string, scroll = true) {
+    function setActiveTab(id: string, scroll = true, hashOverride?: string) {
       let matched = false;
       panels.forEach((panel) => {
         const isMatch = panel.dataset.tabPanel === id;
@@ -127,28 +138,18 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
       });
       if (!matched) return;
       tabButtons.forEach((btn) => btn.setAttribute('aria-current', btn.dataset.tab === id ? 'true' : 'false'));
-      if (history.replaceState) history.replaceState(null, '', `#${id}`);
+      if (history.replaceState) history.replaceState(null, '', hashOverride ?? `#${id}`);
       if (scroll) {
         const y = panelsWrap.getBoundingClientRect().top + window.scrollY - getScrollOffset();
         window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
       }
     }
 
-    tabTriggers.forEach((trigger) => {
-      trigger.addEventListener('click', () => {
-        const id = trigger.dataset.tab;
-        if (id) setActiveTab(id);
-      });
-    });
-
     // Accordions — only one category open at a time
     function toggleAccordion(toggle: HTMLElement, force?: boolean) {
       const wrapper = toggle.closest('[data-category]');
       const content = wrapper?.querySelector<HTMLElement>('[data-accordion-content]');
       if (!content) return;
-
-      const ratingsRoot = document.querySelector<HTMLElement>('[data-ratings-root]');
-      const detailLevel = ratingsRoot?.dataset.detailLevel ?? 'skim';
 
       const willOpen = force ?? content.classList.contains('hidden');
 
@@ -167,6 +168,20 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
         el.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
       });
     }
+
+    const navDeps = {
+      getScrollOffset,
+      toggleAccordion,
+      setActiveTab,
+      isTabHash: (hash: string) => panels.some((p) => p.dataset.tabPanel === hash),
+    };
+
+    tabTriggers.forEach((trigger) => {
+      trigger.addEventListener('click', () => {
+        const id = trigger.dataset.tab;
+        if (id) setActiveTab(id);
+      });
+    });
 
     document.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((toggle) => {
       toggle.addEventListener('click', (e) => {
@@ -192,52 +207,36 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
         const contributor = viewBtn.dataset.contributor;
         if (!categoryKey) return;
 
-        setActiveTab('ratings', false);
+        navigateToRatingsSection(
+          {
+            categoryKey,
+            subscoreSlug: subscoreName ? subscoreSlugFromLabel(subscoreName) : undefined,
+            scroll: true,
+          },
+          navDeps,
+        );
 
-        const ratingsRoot = document.querySelector<HTMLElement>('[data-ratings-root]');
-        if (ratingsRoot && ratingsRoot.dataset.detailLevel !== 'all-in') {
-          document.dispatchEvent(new CustomEvent('detail-level-set', { detail: { level: 'all-in' } }));
-        }
-
-        const categoryEl = document.querySelector<HTMLElement>(`[data-category="${categoryKey}"]`);
-        const toggle = categoryEl?.querySelector<HTMLElement>('[data-accordion-toggle]');
-        if (toggle) toggleAccordion(toggle, true);
-
-        let highlightEl: HTMLElement | null = null;
-
-        if (subscoreName && categoryEl) {
-          const cards = Array.from(categoryEl.querySelectorAll<HTMLElement>('[data-subscore-select]'));
-          const match = cards.find((c) => {
-            const label = c.querySelector('[data-subscore-label]')?.textContent?.trim();
-            return label?.toLowerCase() === subscoreName.toLowerCase();
-          });
+        if (contributor) {
+          const categoryEl = document.querySelector<HTMLElement>(`[data-category="${categoryKey}"]`);
+          const cards = Array.from(categoryEl?.querySelectorAll<HTMLElement>('[data-subscore-select]') ?? []);
+          const match = subscoreName
+            ? cards.find((c) => {
+                const label = c.querySelector('[data-subscore-label]')?.textContent?.trim();
+                return label?.toLowerCase() === subscoreName.toLowerCase();
+              })
+            : cards[0];
           const index = match?.dataset.subscoreIndex ?? '0';
-          (categoryEl as HTMLElement & { selectSubscore?: (i: string, scroll?: boolean) => void }).selectSubscore?.(index, true);
+          const panel = categoryEl?.querySelector<HTMLElement>(`[data-subscore-panel][data-subscore-index="${index}"]`);
+          const rows = Array.from(panel?.querySelectorAll<HTMLElement>('.evidence-cat-table__row') ?? []);
+          const highlightEl =
+            rows.find((r) => {
+              const name = r.querySelector('.evidence-cat-table__name')?.textContent?.trim();
+              return name?.toLowerCase() === contributor.toLowerCase();
+            }) ??
+            rows.find((r) => r.textContent?.toLowerCase().includes(contributor.toLowerCase())) ??
+            panel;
 
-          if (contributor && match) {
-            const panel = categoryEl.querySelector<HTMLElement>(`[data-subscore-panel][data-subscore-index="${index}"]`);
-            const rows = Array.from(panel?.querySelectorAll<HTMLElement>('.evidence-cat-table__row') ?? []);
-            highlightEl =
-              rows.find((r) => {
-                const name = r.querySelector('.evidence-cat-table__name')?.textContent?.trim();
-                return name?.toLowerCase() === contributor.toLowerCase();
-              }) ??
-              rows.find((r) => r.textContent?.toLowerCase().includes(contributor.toLowerCase())) ??
-              panel;
-          } else {
-            highlightEl = match ?? categoryEl;
-          }
-        } else {
-          highlightEl = categoryEl;
-        }
-
-        if (highlightEl) {
-          highlightEl.classList.add('results-highlight');
-          const y = highlightEl.getBoundingClientRect().top + window.scrollY - getScrollOffset() - 12;
-          window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
-          setTimeout(() => highlightEl?.classList.remove('results-highlight'), 2400);
-
-          const drawerId = viewBtn.dataset.ratingsOpenDrawer ?? highlightEl.dataset.ratingsOpenDrawer;
+          const drawerId = viewBtn.dataset.ratingsOpenDrawer ?? highlightEl?.dataset.ratingsOpenDrawer;
           if (drawerId) {
             requestAnimationFrame(() => {
               (window as Window & { ratingsOpenDrawer?: (id: string, trigger?: HTMLElement) => void }).ratingsOpenDrawer?.(
@@ -255,21 +254,11 @@ const canonical = new URL(`/reviews/${product.slug}`, Astro.site ?? Astro.url.or
       e.preventDefault();
       const key = btn.dataset.gotoCategory;
       if (!key) return;
-      setActiveTab('ratings', false);
-      const target = document.querySelector<HTMLElement>(`[data-category="${key}"]`);
-      const toggle = target?.querySelector<HTMLElement>('[data-accordion-toggle]');
-      if (toggle) toggleAccordion(toggle, true);
-      if (target) {
-        const y = target.getBoundingClientRect().top + window.scrollY - getScrollOffset();
-        window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
-      }
+      navigateToRatingsSection({ categoryKey: key, scroll: true }, navDeps);
     });
 
-    // Deep-link support
-    const hash = window.location.hash.replace('#', '');
-    if (hash && panels.some((p) => p.dataset.tabPanel === hash)) {
-      setActiveTab(hash, false);
-    }
+    applyReviewRatingsHashFromLocation(navDeps);
+    window.addEventListener('hashchange', () => applyReviewRatingsHashFromLocation(navDeps));
   }
 
   initReview();

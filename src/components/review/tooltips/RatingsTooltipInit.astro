@@ -198,6 +198,17 @@
       if (hint) hint.hidden = false;
     }
 
+    function distAppHref(slug: string): string {
+      const categoryKey = chart.dataset.distLinkCategory || '';
+      const subscoreSlug = chart.dataset.distLinkSubscore || '';
+      let hash = 'ratings';
+      if (categoryKey) {
+        hash = `ratings--${categoryKey}`;
+        if (subscoreSlug) hash += `--${subscoreSlug}`;
+      }
+      return `/reviews/${slug}#${hash}`;
+    }
+
     function renderApps(selected: DistBin) {
       if (rangeLabel) {
         rangeLabel.textContent = `${selected.start.toFixed(1)}–${selected.end.toFixed(1)}`;
@@ -214,7 +225,7 @@
 
       selected.apps.forEach((app) => {
         const a = document.createElement('a');
-        a.href = `/reviews/${app.slug}#ratings`;
+        a.href = distAppHref(app.slug);
         a.className = 'rt-dist-chart__app';
         a.innerHTML = `<span>${app.name}</span><span class="rt-score-chip ${scoreChipClass(app.score)}">${app.score.toFixed(1)}</span>`;
         appsEl!.appendChild(a);

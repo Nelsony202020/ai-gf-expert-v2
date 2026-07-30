@@ -1,4 +1,5 @@
 import type { HtmlSitemapFullPage, HtmlSitemapLink, HtmlSitemapSection, SitemapEntry } from '../types/sitemap';
+import type { Product } from '../data/products';
 import { authors } from '../data/authors';
 import { guides } from '../data/guides';
 import { megaMenuColumns } from '../data/nav-mega-menu';
@@ -30,7 +31,7 @@ function entry(
 }
 
 /** All site pages derived from structured content — single source of truth. */
-export function getAllSitemapEntries(): SitemapEntry[] {
+export function getAllSitemapEntries(publishedProducts: Product[] = products): SitemapEntry[] {
   const entries: SitemapEntry[] = [];
   let order = 0;
 
@@ -70,7 +71,7 @@ export function getAllSitemapEntries(): SitemapEntry[] {
     showInHtmlSitemap: false,
   });
 
-  for (const product of products) {
+  for (const product of publishedProducts) {
     push({
       title: `${product.name} Review`,
       url: `/reviews/${product.slug}`,
@@ -257,8 +258,8 @@ export function getAllSitemapEntries(): SitemapEntry[] {
     .sort((a, b) => a.sitemapOrder - b.sitemapOrder);
 }
 
-export function getXmlSitemapEntries(): SitemapEntry[] {
-  return getAllSitemapEntries().filter((e) => e.includeInXmlSitemap);
+export function getXmlSitemapEntries(publishedProducts: Product[] = products): SitemapEntry[] {
+  return getAllSitemapEntries(publishedProducts).filter((e) => e.includeInXmlSitemap);
 }
 
 function dedupeLinks(items: HtmlSitemapLink[]): HtmlSitemapLink[] {
@@ -306,8 +307,8 @@ export const testSupportingLinks: HtmlSitemapLink[] = [
 ];
 
 /** Full HTML sitemap page data — every published link, no truncation. */
-export function buildFullHtmlSitemapPage(): HtmlSitemapFullPage {
-  const all = getAllSitemapEntries();
+export function buildFullHtmlSitemapPage(publishedProducts: Product[] = products): HtmlSitemapFullPage {
+  const all = getAllSitemapEntries(publishedProducts);
 
   const reviews = dedupeLinks(
     filterNavLinks(
@@ -482,8 +483,8 @@ export function buildHtmlSitemapSections(): HtmlSitemapSection[] {
   ];
 }
 
-export function buildXmlSitemap(siteOrigin: string): string {
-  const urls = getXmlSitemapEntries();
+export function buildXmlSitemap(siteOrigin: string, publishedProducts: Product[] = products): string {
+  const urls = getXmlSitemapEntries(publishedProducts);
   const origin = siteOrigin.replace(/\/$/, '');
 
   const urlNodes = urls

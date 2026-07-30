@@ -2,8 +2,10 @@
 import type { TestCategoryNode } from '../../lib/test-framework';
 import type { TestCategoryMethodologyContent } from '../../data/test-category-methodology';
 import TestCategoryGoodLooksLike from './TestCategoryGoodLooksLike.astro';
+import TestCategoryGoodLooksLikeSummary from './TestCategoryGoodLooksLikeSummary.astro';
+import TestPageBackLink from './TestPageBackLink.astro';
 import { loadCategoryBenchmarkPanel, hasCategoryBenchmarkPanel } from '../../lib/test-category-benchmarks/load-panel';
-import { iconForEvidenceDef } from '../../lib/ratings/evidenceIcons';
+import { iconForMethodologyScoredTest } from '../../lib/ratings/evidenceIcons';
 import { testHubUrl } from '../../lib/slugs';
 
 interface Props {
@@ -13,10 +15,14 @@ interface Props {
 
 const { category, content } = Astro.props;
 
+const goodLooksLikePanel = content.goodLooksLike ?? null;
+
 const benchmarkPanel =
-  content.whyWeTest && hasCategoryBenchmarkPanel(category.key)
+  content.whyWeTest && !goodLooksLikePanel && hasCategoryBenchmarkPanel(category.key)
     ? await loadCategoryBenchmarkPanel(category.key)
     : null;
+
+const showGoodLooksColumn = Boolean(goodLooksLikePanel || benchmarkPanel);
 
 function subscoreContent(slug: string) {
   return content.subscores.find((s) => s.slug === slug);
@@ -26,8 +32,8 @@ function subscoreWeight(name: string) {
   return content.scoreCalculation.weights.find((w) => w.name === name)?.weight;
 }
 
-function contributorIcon(subscoreSlug: string, contributorSlug: string, label: string) {
-  return iconForEvidenceDef(contributorSlug, label);
+function contributorIcon(_subscoreSlug: string, _contributorSlug: string, _label: string) {
+  return iconForMethodologyScoredTest();
 }
 ---
 
@@ -69,7 +75,7 @@ function contributorIcon(subscoreSlug: string, contributorSlug: string, label: s
                     {rich.bodyExtra && <p class="test-category-subscore__body">{rich.bodyExtra}</p>}
 
                     <div class="test-category-subscore__tests">
-                      <p class="test-category-subscore__tests-label">Included tests</p>
+                      <p class="test-category-subscore__tests-label">Evidence groups</p>
                       <ul class="test-category-included-tests">
                         {
                           sub.contributors.map((contributor) => (
@@ -90,7 +96,7 @@ function contributorIcon(subscoreSlug: string, contributorSlug: string, label: s
                   <>
                     <p class="test-category-subscore__body">{sub.description}</p>
                     <div class="test-category-subscore__tests">
-                      <p class="test-category-subscore__tests-label">Included tests</p>
+                      <p class="test-category-subscore__tests-label">Evidence groups</p>
                       <ul class="test-category-included-tests">
                         {
                           sub.contributors.map((contributor) => (
@@ -150,7 +156,7 @@ function contributorIcon(subscoreSlug: string, contributorSlug: string, label: s
   {
     content.whyWeTest && (
       <section id={`why-we-test-${category.key}`} class="test-category-why scroll-mt-24">
-        <div class:list={['test-category-why-split', benchmarkPanel && 'test-category-why-split--with-benchmarks']}>
+        <div class:list={['test-category-why-split', showGoodLooksColumn && 'test-category-why-split--with-benchmarks']}>
           <div class="test-category-why-split__col">
             <h2 class="test-category-section-label">{content.whyWeTest.title}</h2>
             <p class="test-category-subscore__lead">{content.whyWeTest.lead}</p>
@@ -160,11 +166,19 @@ function contributorIcon(subscoreSlug: string, contributorSlug: string, label: s
               ))
             }
           </div>
-          {benchmarkPanel && (
-            <div class="test-category-why-split__col test-category-why-split__col--benchmarks">
-              <TestCategoryGoodLooksLike panel={benchmarkPanel} />
-            </div>
-          )}
+          {
+            goodLooksLikePanel ? (
+              <div class="test-category-why-split__col test-category-why-split__col--benchmarks">
+                <TestCategoryGoodLooksLikeSummary panel={goodLooksLikePanel} />
+              </div>
+            ) : (
+              benchmarkPanel && (
+                <div class="test-category-why-split__col test-category-why-split__col--benchmarks">
+                  <TestCategoryGoodLooksLike panel={benchmarkPanel} />
+                </div>
+              )
+            )
+          }
         </div>
       </section>
     )
@@ -191,9 +205,6 @@ function contributorIcon(subscoreSlug: string, contributorSlug: string, label: s
   </section>
 
   <nav class="test-page__back-nav" aria-label="Related pages">
-    <a class="test-inline-link test-page__back" href={testHubUrl()}>
-      <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-      Back to how we test
-    </a>
+    <TestPageBackLink href={testHubUrl()} label="how we test" />
   </nav>
 </div>

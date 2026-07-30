@@ -1,7 +1,12 @@
 ---
-import { homeMeta, getHomeSearchIndex } from '../../data/homepage';
+import { homeMeta } from '../../data/homepage';
+import { buildMegaMenuColumns } from '../../data/nav-mega-menu';
+import { buildSearchIndex } from '../../data/site-search';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 
-const searchIndex = getHomeSearchIndex();
+const publishedProducts = await loadComparisonProducts();
+const megaMenuColumns = buildMegaMenuColumns(publishedProducts);
+const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
 ---
 
 <section class="home-hero" aria-labelledby="home-hero-title">

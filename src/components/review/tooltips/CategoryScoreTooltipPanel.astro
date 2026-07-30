@@ -1,6 +1,6 @@
 ---
 import type { RatingCategory } from '../../../data/products';
-import { products } from '../../../data/products';
+import { loadComparisonProducts, categoryScorePoints } from '../../../lib/content/comparisonProducts';
 import { getScoreChipClass, fmtScore } from '../../../lib/scores';
 import { buildAllScoreBins } from '../../../lib/score-distribution';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
@@ -18,12 +18,8 @@ const { category, embed = false, annotate = false } = Astro.props;
 const currentScore = category.score;
 const currentChip = getScoreChipClass(currentScore);
 
-const scorePoints = products
-  .map((p) => {
-    const cat = p.categories.find((c) => c.key === category.key);
-    return cat && cat.score != null ? { slug: p.slug, name: p.name, score: cat.score } : null;
-  })
-  .filter((x): x is { slug: string; name: string; score: number } => !!x);
+const comparisonProducts = await loadComparisonProducts();
+const scorePoints = categoryScorePoints(comparisonProducts, category.key);
 
 const avgScore = scorePoints.length
   ? scorePoints.reduce((s, x) => s + x.score, 0) / scorePoints.length
@@ -116,7 +112,7 @@ const panelClass = [
 
     <div {...(annotate ? { 'data-annotation-target': '4' } : {})}>
       <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-      <ScoreDistributionChart bins={bins} />
+      <ScoreDistributionChart bins={bins} categoryKey={category.key} />
     </div>
   </div>
 </div>

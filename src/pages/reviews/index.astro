@@ -3,12 +3,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
-import { products } from '../../data/products';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 import { megaMenuColumns } from '../../data/nav-mega-menu';
 import '../../styles/legal-hub.css';
 
 const roundupLinks = megaMenuColumns.find((col) => col.id === 'best-picks')?.links ?? [];
-const reviewProducts = [...products].sort((a, b) => a.name.localeCompare(b.name));
+const reviewProducts = [...(await loadComparisonProducts())].sort((a, b) => a.name.localeCompare(b.name));
 ---
 
 <BaseLayout

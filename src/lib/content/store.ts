@@ -1,16 +1,10 @@
 // Public-page content store.
 //
 // Pages keep rendering the exact same `Product` / `Roundup` shapes they use
-// today, but the data can come from InstantDB instead of the hardcoded
-// `src/data/*` files. The switch is the USE_DB_CONTENT env flag:
-//
-//   - off (default): file data only — safe until migration parity is verified
-//   - on: published DB records are mapped over the file data (DB wins for
-//     canonical fields; file data remains as fallback for products that are
-//     not yet published in the DB)
-//
-// This implements the plan's migration strategy: old files stay until score
-// parity is verified, then USE_DB_CONTENT=1 flips reads to the database.
+// today, but published product data comes from InstantDB when configured.
+// `loadPublishedProducts()` is the canonical loader for reviews, tooltips,
+// nav, and sitemap. USE_DB_CONTENT still gates some editorial overlays
+// (homepage slots) that predate the full DB migration.
 
 import type {
   Product,
@@ -36,8 +30,9 @@ import {
   collectProductMediaRows,
   sortGalleryMedia,
   sortHeroMedia,
+  buildMediaLookup,
 } from '../media/catalog';
-import { resolveMediaUrl } from '../media/url';
+import { resolveMediaUrl, isUsablePublicMediaUrl } from '../media/url';
 
 /** Fixed public category order — matches methodology template. */
 const CATEGORY_DISPLAY_ORDER = [
@@ -72,6 +67,62 @@ function fmtDate(ms?: number | string | null): string {
   const d = new Date(typeof ms === 'string' ? ms : Number(ms));
   if (Number.isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function youtubeIdFromUrl(url: string): string | null {
+  const m =
+    url.match(/[?&]v=([\w-]{6,})/) ??
+    url.match(/youtu\.be\/([\w-]{6,})/) ??
+    url.match(/\/embed\/([\w-]{6,})/);
+  return m?.[1] ?? null;
+}
+
+function youtubeEmbedUrl(url: string): string | null {
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  const id = youtubeIdFromUrl(trimmed);
+  if (id) return `https://www.youtube.com/embed/${id}`;
+  if (trimmed.includes('/embed/')) return trimmed;
+  return null;
+}
+
+function buildOverallVerdict(
+  dbProduct: any,
+  overallScore: number | null,
+  fileFallback?: Product,
+): VerdictItem | null {
+  const fileOverall = fileFallback?.verdicts?.find((v) => v.id === 'overall');
+  const tagline = String(
+    dbProduct.oneLineVerdict ?? fileFallback?.overallSummary ?? fileOverall?.tagline ?? '',
+  ).trim();
+  const summary = String(
+    dbProduct.ourTake ?? fileFallback?.ourTake ?? fileOverall?.summary ?? '',
+  ).trim();
+  const pros = Array.isArray(dbProduct.pros)
+    ? dbProduct.pros.map((p: string) => String(p).trim()).filter(Boolean)
+    : (fileOverall?.pros ?? []);
+  const cons = Array.isArray(dbProduct.cons)
+    ? dbProduct.cons.map((c: string) => String(c).trim()).filter(Boolean)
+    : (fileOverall?.cons ?? []);
+
+  if (pros.length === 0 && dbProduct.mainStrength?.trim()) {
+    pros.push(String(dbProduct.mainStrength).trim());
+  }
+  if (cons.length === 0 && dbProduct.mainLimitation?.trim()) {
+    cons.push(String(dbProduct.mainLimitation).trim());
+  }
+
+  if (!tagline && !summary && pros.length === 0 && cons.length === 0) return null;
+
+  return {
+    id: 'overall',
+    label: 'Overall Performance',
+    tagline: tagline || undefined,
+    summary,
+    pros,
+    cons,
+    score: overallScore ?? undefined,
+  };
 }
 
 function mapAuthor(a: any): Author {
@@ -173,19 +224,78 @@ function mapProduct(
   const publicMedia = collectProductMediaRows(dbProduct).filter((m: any) => isPublicMedia(m));
 
   const mediaItems = productMediaItems(dbProduct);
+  const reviewMediaById = buildMediaLookup(collectProductMediaRows(dbProduct));
+
+  // #region agent log
+  fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
+    body: JSON.stringify({
+      sessionId: '28e868',
+      runId: 'pre-fix',
+      hypothesisId: 'H2',
+      location: 'store.ts:reviewMediaById',
+      message: 'Review media lookup built',
+      data: {
+        slug: dbProduct.slug,
+        lookupCount: Object.keys(reviewMediaById).length,
+        mediaItemsCount: mediaItems.length,
+        sample: Object.entries(reviewMediaById)
+          .slice(0, 8)
+          .map(([id, v]) => ({ id, url: v.url, mediaType: v.mediaType })),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   const heroGalleryRaw: GalleryImage[] = sortHeroMedia(publicMedia.filter((m: any) => isHeroMedia(m)))
-    .filter((m: any) => resolveMediaUrl(m))
     .map((m: any) => {
       const url = resolveMediaUrl(m);
-      return { full: url, thumb: url, alt: m.altText ?? '' };
-    });
+      if (!url || !isUsablePublicMediaUrl(url)) return null;
+      return {
+        full: url,
+        thumb: url,
+        alt: m.altText ?? '',
+        mediaType: m.mediaType === 'video' ? 'video' : 'image',
+      } satisfies GalleryImage;
+    })
+    .filter((g): g is GalleryImage => g !== null);
+
+  // #region agent log
+  fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
+    body: JSON.stringify({
+      sessionId: '28e868',
+      runId: 'pre-fix',
+      hypothesisId: 'H1',
+      location: 'store.ts:heroGalleryRaw',
+      message: 'Hero gallery source rows',
+      data: {
+        slug: dbProduct.slug,
+        heroRows: sortHeroMedia(publicMedia.filter((m: any) => isHeroMedia(m))).map((m: any) => ({
+          id: m.id,
+          mediaType: m.mediaType,
+          resolvedUrl: resolveMediaUrl(m),
+          resolvedUsable: isUsablePublicMediaUrl(resolveMediaUrl(m)),
+          urlField: m.url ?? null,
+          fileUrl: m.file?.url ?? null,
+          alt: m.altText ?? '',
+        })),
+        heroGalleryRaw: heroGalleryRaw.map((g) => ({ full: g.full, alt: g.alt, mediaType: g.mediaType })),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   const featuredMedia = dbProduct.featuredImage;
   const featuredUrl = resolveMediaUrl(featuredMedia);
-  const featuredImage: GalleryImage | undefined = featuredUrl
-    ? { full: featuredUrl, thumb: featuredUrl, alt: featuredMedia?.altText ?? '' }
-    : fileFallback?.featuredImage ?? fileFallback?.gallery?.[0];
+  const featuredImage: GalleryImage | undefined =
+    featuredUrl && isUsablePublicMediaUrl(featuredUrl)
+      ? { full: featuredUrl, thumb: featuredUrl, alt: featuredMedia?.altText ?? '', mediaType: 'image' }
+      : fileFallback?.featuredImage ?? fileFallback?.gallery?.[0];
 
   const prependFeatured = (images: GalleryImage[]): GalleryImage[] => {
     if (!featuredImage?.full) return images;
@@ -193,17 +303,20 @@ function mapProduct(
     return [featuredImage, ...rest];
   };
 
-  const heroGallery: GalleryImage[] = prependFeatured(heroGalleryRaw);
+  // Hero-tagged media wins when present; featured image fills in only when no heroes exist.
+  const heroGallery: GalleryImage[] =
+    heroGalleryRaw.length > 0 ? heroGalleryRaw : featuredImage?.full ? [featuredImage] : [];
 
   const gallerySource = heroGallery.length
     ? heroGallery
     : prependFeatured(
         sortGalleryMedia(publicMedia.filter((m: any) => getMediaPlacement(m) === 'gallery' && m.mediaType === 'image'))
-          .filter((m: any) => resolveMediaUrl(m))
           .map((m: any) => {
             const url = resolveMediaUrl(m);
+            if (!url || !isUsablePublicMediaUrl(url)) return null;
             return { full: url, thumb: url, alt: m.altText ?? '' };
-          }),
+          })
+          .filter((g): g is GalleryImage => g !== null),
       );
 
   const gallery: GalleryImage[] = gallerySource;
@@ -257,16 +370,51 @@ function mapProduct(
     })
     .filter((v): v is VerdictItem => v !== null);
 
+  const overallVerdict = buildOverallVerdict(
+    dbProduct,
+    hasCalculatedScores ? overall : null,
+    fileFallback,
+  );
+  const dbCategoryVerdicts = structuredVerdicts.filter((v) => v.id !== 'overall');
+  const fileCategoryVerdicts = (fileFallback?.verdicts ?? []).filter((v) => v.id !== 'overall');
+  const categoryVerdicts =
+    dbCategoryVerdicts.length > 0 ? dbCategoryVerdicts : fileCategoryVerdicts;
+
   const verdicts: VerdictItem[] =
-    structuredVerdicts.length > 0
-      ? structuredVerdicts
-      : (review?.sections ?? []).find((s: any) => s.id === 'verdicts')?.items ??
-        fileFallback?.verdicts ??
-        [];
+    overallVerdict || categoryVerdicts.length > 0
+      ? [...(overallVerdict ? [overallVerdict] : []), ...categoryVerdicts]
+      : ((review?.sections ?? []).find((s: any) => s.id === 'verdicts')?.items ??
+          fileFallback?.verdicts ??
+          []) as VerdictItem[];
 
   const changelog: RatingChangelogEntry[] = fileFallback?.ratingChangelog ?? [];
 
   const methodologyVersion = snapshots[0]?.methodologyVersion ?? 'v3.1';
+
+  const derivedOverview = deriveOverview(dbProduct, monthlyPriceLabel);
+
+  // #region agent log
+  fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
+    body: JSON.stringify({
+      sessionId: '28e868',
+      runId: 'pre-fix',
+      hypothesisId: 'H5',
+      location: 'store.ts:characters',
+      message: 'Public character avatars mapped',
+      data: {
+        slug: dbProduct.slug,
+        characters: derivedOverview.characters.map((c) => ({
+          name: c.name,
+          avatar: c.avatar,
+          usable: isUsablePublicMediaUrl(c.avatar ?? ''),
+        })),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   return {
     slug: dbProduct.slug,
@@ -290,7 +438,7 @@ function mapProduct(
     ourTake: review?.ourTake ?? dbProduct.ourTake ?? fileFallback?.ourTake ?? '',
     safetyAudit,
     featureSpecs,
-    overview: mergeOverview(fileFallback?.overview, deriveOverview(dbProduct, monthlyPriceLabel)),
+    overview: mergeOverview(fileFallback?.overview, derivedOverview),
     ratingChangelog: changelog,
     categories:
       categories.length > 0
@@ -305,15 +453,38 @@ function mapProduct(
       typicalMonthly: typicalMonthly ?? fileFallback?.pricingDisplay.typicalMonthly ?? null,
       storeLabel: fileFallback?.pricingDisplay.storeLabel ?? 'Visit site',
     },
-    videoReview: dbProduct.youtubeReviewUrl
-      ? {
-          embedUrl: dbProduct.youtubeReviewUrl,
-          channelUrl: dbProduct.youtubeReviewUrl,
-        }
-      : fileFallback?.videoReview,
+    videoReview: (() => {
+      const embed = dbProduct.youtubeReviewUrl
+        ? youtubeEmbedUrl(String(dbProduct.youtubeReviewUrl))
+        : null;
+      if (embed) {
+        return {
+          embedUrl: embed,
+          channelUrl: String(dbProduct.youtubeReviewUrl),
+        };
+      }
+      return fileFallback?.slug === dbProduct.slug ? fileFallback.videoReview : undefined;
+    })(),
     reviewBlocks: Array.isArray(review?.blocks)
       ? (review.blocks as Product['reviewBlocks'])
       : fileFallback?.reviewBlocks ?? [],
+    reviewMediaById:
+      Object.keys(reviewMediaById).length > 0 ? reviewMediaById : fileFallback?.reviewMediaById,
+    directoryDescription: dbProduct.directoryDescription ?? fileFallback?.directoryDescription,
+    seo: {
+      seoTitle: dbProduct.seoTitle ?? fileFallback?.seo?.seoTitle,
+      seoDescription: dbProduct.seoDescription ?? fileFallback?.seo?.seoDescription,
+      h1Override: dbProduct.h1Override ?? fileFallback?.seo?.h1Override,
+      canonicalUrl: dbProduct.canonicalUrl ?? fileFallback?.seo?.canonicalUrl,
+      noindex: dbProduct.noindex ?? fileFallback?.seo?.noindex,
+      nofollow: dbProduct.nofollow ?? fileFallback?.seo?.nofollow,
+      ogTitle: dbProduct.ogTitle ?? fileFallback?.seo?.ogTitle,
+      ogDescription: dbProduct.ogDescription ?? fileFallback?.seo?.ogDescription,
+      ogImageUrl: dbProduct.ogImageUrl ?? fileFallback?.seo?.ogImageUrl,
+      socialImageUrl: dbProduct.socialImageUrl ?? fileFallback?.seo?.socialImageUrl,
+      searchExcerpt: dbProduct.searchExcerpt ?? fileFallback?.seo?.searchExcerpt,
+      breadcrumbLabel: dbProduct.breadcrumbLabel ?? fileFallback?.seo?.breadcrumbLabel,
+    },
   };
 }
 
@@ -457,7 +628,7 @@ export interface FeaturedIn {
  * Rendered on review pages as "Also featured in: …".
  */
 export async function getProductFeaturedIn(productSlug: string): Promise<FeaturedIn[]> {
-  if (!useDbContent()) return [];
+  if (!isDbConfigured()) return [];
   try {
     const db = getDb();
     const { roundupEntries } = await (db.query as any)({
@@ -492,7 +663,7 @@ export async function overlayRoundupWithDb<T extends {
   slug: string;
   picks: { slug: string; ribbon: string; overallSummary: string }[];
 }>(fileRoundup: T): Promise<T> {
-  if (!useDbContent()) return fileRoundup;
+  if (!isDbConfigured()) return fileRoundup;
   try {
     const db = getDb();
     const { roundups } = await (db.query as any)({
@@ -531,28 +702,34 @@ export async function overlayRoundupWithDb<T extends {
   }
 }
 
+const PUBLISHED_PRODUCTS_QUERY = {
+  review: { author: {}, factChecker: {} },
+  author: {},
+  factChecker: {},
+  media: { file: {} },
+  logo: {},
+  featuredImage: { file: {} },
+  subscriptionPlans: {},
+  affiliateLinks: {},
+  characters: { image: { file: {} }, affiliateLink: {}, storySlides: { media: { file: {} } } },
+  scoreSnapshots: { testRun: {} },
+  evidenceResults: { testRun: {}, evidenceDefinition: {}, attachments: { file: {} } },
+};
+
 /**
- * Load products: file data by default; DB-published products mapped over it
- * when USE_DB_CONTENT is enabled.
+ * Load all published products with scores from InstantDB when configured.
+ * File fallbacks fill gaps for products not yet published in the admin.
+ * Used for tooltips, nav, sitemap, and the global products catalog.
  */
-export async function loadProductsWithDb(fileProducts: Product[]): Promise<Product[]> {
-  if (!useDbContent()) return fileProducts;
+export async function loadPublishedProducts(fileProducts: Product[] = []): Promise<Product[]> {
+  if (!isDbConfigured()) return fileProducts;
+
   try {
     const db = getDb();
     const { products: dbProducts } = await (db.query as any)({
       products: {
         $: { where: { status: 'published' } },
-        review: { author: {}, factChecker: {} },
-        author: {},
-        factChecker: {},
-        media: { file: {} },
-        logo: {},
-        featuredImage: { file: {} },
-        subscriptionPlans: {},
-        affiliateLinks: {},
-        characters: { image: { file: {} }, affiliateLink: {}, storySlides: { media: { file: {} } } },
-        scoreSnapshots: { testRun: {} },
-        evidenceResults: { testRun: {}, evidenceDefinition: {}, attachments: { file: {} } },
+        ...PUBLISHED_PRODUCTS_QUERY,
       },
     });
 
@@ -568,21 +745,28 @@ export async function loadProductsWithDb(fileProducts: Product[]): Promise<Produ
         dbSlugs.add(dbProduct.slug);
       }
     }
-    // Keep file products that don't exist (published) in the DB yet.
     for (const fp of fileProducts) {
       if (!dbSlugs.has(fp.slug)) out.push(fp);
     }
     return out;
   } catch (error) {
-    console.error('[content] DB load failed — using file data', error);
+    console.error('[content] published products load failed — using file data', error);
     return fileProducts;
   }
+}
+
+/**
+ * Load products: file data by default; DB-published products when InstantDB
+ * is configured. USE_DB_CONTENT still gates roundup/homepage editorial overlays.
+ */
+export async function loadProductsWithDb(fileProducts: Product[]): Promise<Product[]> {
+  return loadPublishedProducts(fileProducts);
 }
 
 /** Slug and display-name → logo URL for products stored in InstantDB. */
 export async function loadProductLogoMap(): Promise<Map<string, string>> {
   const map = new Map<string, string>();
-  if (!useDbContent()) return map;
+  if (!isDbConfigured()) return map;
 
   try {
     const db = getDb();
@@ -797,6 +981,39 @@ async function roundupProductFallbackAsync(slug: string): Promise<Product | null
   } catch {
     return null;
   }
+}
+
+/**
+ * Load a published product for the live review route (/reviews/[slug]).
+ * Requires status=published in the DB and a published test-run score.
+ * Falls back to static file data when the DB is unavailable.
+ */
+export async function loadPublishedProductBySlug(slug: string): Promise<Product | null> {
+  const { getProduct } = await import('../../data/products');
+  const fileProduct = getProduct(slug);
+
+  if (!isDbConfigured()) {
+    return fileProduct ?? null;
+  }
+
+  try {
+    const db = getDb();
+    const { products: rows } = await (db.query as any)({
+      products: {
+        $: { where: { slug, status: 'published' } },
+        ...PREVIEW_PRODUCT_QUERY,
+      },
+    });
+    const dbProduct = (rows as any[])?.find((p) => !p.deletedAt);
+    if (dbProduct) {
+      const mapped = mapProduct(dbProduct, fileProduct ?? undefined);
+      if (mapped) return mapped;
+    }
+  } catch (error) {
+    console.error('[content] published product load failed — using file fallback', error);
+  }
+
+  return fileProduct ?? null;
 }
 
 /**

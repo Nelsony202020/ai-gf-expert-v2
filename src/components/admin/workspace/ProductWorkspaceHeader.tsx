@@ -5,7 +5,7 @@ import { Badge, Button, Icon, statusTone } from '../ui';
 import { useCan } from '../context';
 import { useWorkspace } from './context';
 import { WORKSPACE_TABS, fmtRelativeTime, workspaceTabPath, tabVisualStatus, type TabCompletion } from './completion';
-import { reviewPreviewPageUrl } from '../../../lib/slugs';
+import { reviewPageUrl, reviewPreviewPageUrl } from '../../../lib/slugs';
 
 function fmtMonthYear(ms?: number | null): string {
   if (!ms) return 'never';
@@ -33,7 +33,12 @@ export function ProductWorkspaceHeader() {
 
   const logoUrl = links.logo ? related.mediaAll.find((m) => m.id === links.logo)?.url : null;
   const status = String(fields.status ?? 'draft');
-  const previewUrl = fields.slug ? reviewPreviewPageUrl(String(fields.slug)) : null;
+  const isPublished = status === 'published';
+  const reviewUrl = fields.slug
+    ? isPublished
+      ? reviewPageUrl(String(fields.slug))
+      : reviewPreviewPageUrl(String(fields.slug))
+    : null;
   const overall = related.scoreHistory.find((h) => h.isCurrentPublished)?.overall ?? null;
   const requiredCount = completion.missingRequired.length;
 
@@ -105,10 +110,10 @@ export function ProductWorkspaceHeader() {
               <Icon name="check" className="!text-[14px]" /> Saved
             </span>
           )}
-          {previewUrl && (
-            <a href={previewUrl} target="_blank" rel="noreferrer">
+          {reviewUrl && (
+            <a href={reviewUrl} target="_blank" rel="noreferrer">
               <Button variant="secondary">
-                <Icon name="open_in_new" /> Preview review
+                <Icon name="open_in_new" /> {isPublished ? 'View live page' : 'Preview review'}
               </Button>
             </a>
           )}

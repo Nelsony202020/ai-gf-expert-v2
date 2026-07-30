@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { VerdictStepId } from '../../components/admin/workspace/verdict/types';
 import type { AiVerdictScope } from './config';
+import { enforceMaxWords, PRO_CON_MAX_WORDS } from './fieldPromptHelpers';
 import type { AiSuggestionOutput, KeyFinding } from './suggestionSchema';
 
 export const aiNotesSectionKeySchema = z.string().min(1);
@@ -135,7 +136,11 @@ export function normalizeFieldSuggestions(raw: Record<string, unknown>): Record<
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(raw)) {
     if (listKeys.has(key) || Array.isArray(value)) {
-      out[key] = normalizeListField(value);
+      let items = normalizeListField(value);
+      if (key === 'pros' || key === 'cons') {
+        items = items.map((s) => enforceMaxWords(s, PRO_CON_MAX_WORDS));
+      }
+      out[key] = items;
     } else {
       const text = normalizeScalarField(value);
       if (text) out[key] = text;
@@ -152,7 +157,7 @@ export function buildFieldSuggestions(
 ): Record<string, unknown> {
   const parsed = parseSectionKey(sectionKey);
   if (parsed.kind === 'category') {
-    return normalizeFieldSuggestions({
+    const out = normalizeFieldSuggestions({
       headline: output.category_verdict_headline,
       verdict: output.category_verdict,
       mainStrength: output.category_primary_strength,
@@ -160,6 +165,11 @@ export function buildFieldSuggestions(
       pros: output.category_pros,
       cons: output.category_cons,
     });
+    const pros = out.pros as string[] | undefined;
+    const cons = out.cons as string[] | undefined;
+    if (pros?.[0]) out.mainStrength = pros[0];
+    if (cons?.[0]) out.mainWeakness = cons[0];
+    return out;
   }
   switch (parsed.stepId) {
     case 'overall':

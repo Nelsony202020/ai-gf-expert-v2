@@ -21,6 +21,46 @@ import { assertRateLimit } from './rateLimit';
 import type { KeyFinding } from './suggestionSchema';
 import { validateEvidenceIds } from './suggestionSchema';
 
+function isSchemaMismatchError(error: unknown): boolean {
+  const parts: string[] = [];
+  if (error instanceof Error) parts.push(error.message);
+  if (error && typeof error === 'object') {
+    const body = (error as { body?: { message?: string } }).body?.message;
+    if (body) parts.push(body);
+  }
+  parts.push(String(error));
+  const msg = parts.join(' ');
+  return msg.includes('missing in your schema') || msg.includes('Attributes are missing');
+}
+
+const SCHEMA_OUT_OF_DATE_MSG =
+  'Database schema is out of date. Run `npm run db:push` in the project root, confirm the push, then try again.';
+
+async function findSavedNotes(
+  productId: string,
+  testRunId: string,
+  sectionKey: string,
+): Promise<any | null> {
+  const db = getDb();
+  try {
+    const { aiVerdictNotes } = await (db.query as any)({
+      aiVerdictNotes: {
+        $: { where: { sectionKey } },
+        product: {},
+        testRun: {},
+      },
+    });
+    const rows = (aiVerdictNotes as any[]).filter(
+      (r) => r.product?.id === productId && r.testRun?.id === testRunId,
+    );
+    rows.sort((a, b) => Number(b.updatedAt ?? b.generatedAt) - Number(a.updatedAt ?? a.generatedAt));
+    return rows[0] ?? null;
+  } catch (e: unknown) {
+    if (isSchemaMismatchError(e)) return null;
+    throw e;
+  }
+}
+
 function notesScopeForSection(sectionKey: string): {
   scope: 'overall' | 'category' | 'outline';
   categorySlug?: string;
@@ -35,26 +75,6 @@ function notesScopeForSection(sectionKey: string): {
     return { scope: 'overall' };
   }
   return { scope: cfg.scope === 'field' ? 'overall' : cfg.scope };
-}
-
-async function findSavedNotes(
-  productId: string,
-  testRunId: string,
-  sectionKey: string,
-): Promise<any | null> {
-  const db = getDb();
-  const { aiVerdictNotes } = await (db.query as any)({
-    aiVerdictNotes: {
-      $: { where: { sectionKey } },
-      product: {},
-      testRun: {},
-    },
-  });
-  const rows = (aiVerdictNotes as any[]).filter(
-    (r) => r.product?.id === productId && r.testRun?.id === testRunId,
-  );
-  rows.sort((a, b) => Number(b.updatedAt ?? b.generatedAt) - Number(a.updatedAt ?? a.generatedAt));
-  return rows[0] ?? null;
 }
 
 function formatNotesRow(row: any, stale: boolean): AiVerdictNotesDto {
@@ -201,40 +221,49 @@ export async function generateAiVerdictNotes(
   const existing = await findSavedNotes(body.productId, testRunId, body.sectionKey);
   const notesId = existing?.id ?? newId();
 
-  await db.transact([
-    db.tx.aiVerdictNotes[notesId].update({
-      sectionKey: body.sectionKey,
-      scope,
-      categorySlug,
-      promptVersion: NOTES_PROMPT_VERSION,
-      model: cfg.model,
-      evidenceIds: payload.evidenceIds,
-      inputHash: payload.inputHash,
-      keyFindings,
-      fieldSuggestions,
-      status: 'generated',
-      tokenUsage,
-      openaiRequestId: completion.id,
-      generatedBy: identity.email,
-      generatedAt: existing?.generatedAt ?? now,
-      updatedAt: now,
-    }),
-    db.tx.aiVerdictNotes[notesId].link({
-      product: body.productId,
-      testRun: testRunId,
-    }),
-    auditTx({
-      actorEmail: identity.email,
-      action: body.regenerate ? 'ai_suggest_regenerated' : 'ai_suggest_generated',
-      recordType: 'aiVerdictNotes',
-      recordId: notesId,
-      newValue: {
-        sectionKey: body.sectionKey,
-        testRunId,
-        findingCount: keyFindings.length,
-      },
-    }),
-  ]);
+  const notesFields = {
+    sectionKey: body.sectionKey,
+    scope,
+    categorySlug,
+    promptVersion: NOTES_PROMPT_VERSION,
+    model: cfg.model,
+    evidenceIds: payload.evidenceIds,
+    inputHash: payload.inputHash,
+    keyFindings,
+    fieldSuggestions,
+    status: 'generated',
+    tokenUsage,
+    openaiRequestId: completion.id,
+    generatedBy: identity.email,
+    generatedAt: existing?.generatedAt ?? now,
+    updatedAt: now,
+  };
+
+  try {
+    await db.transact([
+      db.tx.aiVerdictNotes[notesId].update(notesFields),
+      db.tx.aiVerdictNotes[notesId].link({
+        product: body.productId,
+        testRun: testRunId,
+      }),
+      auditTx({
+        actorEmail: identity.email,
+        action: body.regenerate ? 'ai_suggest_regenerated' : 'ai_suggest_generated',
+        recordType: 'aiVerdictNotes',
+        recordId: notesId,
+        newValue: {
+          sectionKey: body.sectionKey,
+          testRunId,
+          findingCount: keyFindings.length,
+        },
+      }),
+    ]);
+  } catch (e: unknown) {
+    if (isSchemaMismatchError(e)) {
+      throw new HttpError(400, SCHEMA_OUT_OF_DATE_MSG);
+    }
+    throw e;
+  }
 
   return formatNotesRow(
     {

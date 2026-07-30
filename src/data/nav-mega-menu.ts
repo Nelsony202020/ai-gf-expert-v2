@@ -1,6 +1,7 @@
-/** Explore mega menu — update links as content is published. */
+/** Explore mega menu — review links are filled from published DB products at render time. */
 
 import { buyingGuideSlug } from './buying-guide-content';
+import type { Product } from './products';
 
 export interface MegaMenuLink {
   label: string;
@@ -16,38 +17,13 @@ export interface MegaMenuColumn {
   viewAll: { label: string; href: string };
 }
 
-export const trustBadges = [
-  {
-    icon: 'verified_user',
-    title: '100% Independent',
-    sub: 'No sponsors. No bias.',
-  },
-  {
-    icon: 'science',
-    title: '200+ Hours Tested',
-    sub: 'Hands-on testing and research.',
-  },
-  {
-    icon: 'category',
-    title: '20+ Categories',
-    sub: 'Every detail that matters.',
-  },
-  {
-    icon: 'groups',
-    title: '50K+ Readers',
-    sub: 'Trusted by thousands worldwide.',
-  },
-] as const;
-
 export const megaMenuColumns: MegaMenuColumn[] = [
   {
     id: 'reviews',
     title: 'Reviews',
     icon: 'star',
     description: 'In-depth reviews and ratings of AI girlfriend platforms.',
-    links: [
-      { label: 'Aura AI Review', href: '/reviews/aura-ai' },
-    ],
+    links: [],
     viewAll: { label: 'View all reviews', href: '/reviews/' },
   },
   {
@@ -74,3 +50,17 @@ export const megaMenuColumns: MegaMenuColumn[] = [
     viewAll: { label: 'View all guides', href: '/guides' },
   },
 ];
+
+/** Mega menu with live review links from published products. */
+export function buildMegaMenuColumns(publishedProducts: Pick<Product, 'slug' | 'name'>[]): MegaMenuColumn[] {
+  const reviewLinks = [...publishedProducts]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((product) => ({
+      label: `${product.name} Review`,
+      href: `/reviews/${product.slug}`,
+    }));
+
+  return megaMenuColumns.map((column) =>
+    column.id === 'reviews' ? { ...column, links: reviewLinks } : column,
+  );
+}

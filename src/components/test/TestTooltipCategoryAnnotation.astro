@@ -1,10 +1,11 @@
 ---
-import { products } from '../../data/products';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 import CategoryScoreTooltipPanel from '../review/tooltips/CategoryScoreTooltipPanel.astro';
 import TestTooltipAnnotation from './TestTooltipAnnotation.astro';
 import { testTooltipsCategoryAnnotations } from '../../data/test-tooltips-content';
 
-const product = products[0];
+const comparisonProducts = await loadComparisonProducts();
+const product = comparisonProducts[0];
 const chatCategory = product.categories.find((category) => category.key === 'chat')!;
 ---
 

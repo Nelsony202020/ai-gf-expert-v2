@@ -15,6 +15,21 @@ export interface TestCategorySubscoreContent {
   methodologyLinkLabel: string;
 }
 
+export interface TestCategoryGoodLooksLikeRow {
+  slug: string;
+  name: string;
+  weight: number;
+  description: string;
+}
+
+export interface TestCategoryGoodLooksLikeContent {
+  title: string;
+  intro: string;
+  rows: TestCategoryGoodLooksLikeRow[];
+  goodOverall: string;
+  weakOverall: string;
+}
+
 export interface TestCategoryMethodologyContent {
   /** Intro paragraphs below the hero (replaces category.description when set). */
   intro: string[];
@@ -38,6 +53,8 @@ export interface TestCategoryMethodologyContent {
     title: string;
     paragraphs: string[];
   };
+  /** Compact subscore summary beside “Why we test” (replaces auto-synced benchmark panel). */
+  goodLooksLike?: TestCategoryGoodLooksLikeContent;
   related: { label: string; href: string }[];
 }
 
@@ -88,6 +105,33 @@ const characters: TestCategoryMethodologyContent = {
       'That is why we do not only count how many characters are available. We also check whether the library has enough variety, whether the characters are easy to find, and whether their profiles feel original and well made.',
       'A strong character library gives you more people to meet, more types of relationships and roleplays to explore, and less chance of getting bored with the app.',
     ],
+  },
+  goodLooksLike: {
+    title: 'What good Characters looks like',
+    intro: 'A strong character library delivers on three key areas.',
+    rows: [
+      {
+        slug: 'variety',
+        name: 'Variety',
+        weight: 34,
+        description:
+          'Enough choice to avoid repetition and support different personalities, styles, and scenarios.',
+      },
+      {
+        slug: 'discovery',
+        name: 'Discovery',
+        weight: 33,
+        description: 'Filters and search that make it easy to find the characters you want.',
+      },
+      {
+        slug: 'quality',
+        name: 'Quality',
+        weight: 33,
+        description: 'Profiles that feel original, detailed, and well made with minimal duplicates.',
+      },
+    ],
+    goodOverall: 'All three areas perform well.',
+    weakOverall: 'One area drags the library down.',
   },
   scoreCalculation: {
     title: 'How the Characters score is calculated',
@@ -178,6 +222,37 @@ const customization: TestCategoryMethodologyContent = {
       'That is why we do not only check whether customization exists. We check how much choice you get and how much real control you have over the final character.',
     ],
   },
+  goodLooksLike: {
+    title: 'What good Customization looks like',
+    intro:
+      'A strong character creator gives you enough freedom to build someone who actually matches your preferences.',
+    rows: [
+      {
+        slug: 'appearance',
+        name: 'Appearance',
+        weight: 34,
+        description:
+          'Enough choices for age, ethnicity, hair, body type, clothing, and other parts of the character\u2019s appearance.',
+      },
+      {
+        slug: 'personality',
+        name: 'Personality',
+        weight: 33,
+        description:
+          'Useful options for traits, interests, relationships, roles, and voice, so the character feels like more than a different profile picture.',
+      },
+      {
+        slug: 'control',
+        name: 'Control',
+        weight: 33,
+        description:
+          'Custom prompts, previews, and editing tools that let you create something specific and fix it later.',
+      },
+    ],
+    goodOverall: 'You can control both how the character looks and who she is.',
+    weakOverall:
+      'The creator relies on a few basic presets or gives you no way to customize the result properly.',
+  },
   scoreCalculation: {
     title: 'How the Customization score is calculated',
     intro: 'The Customization score is made up of three subscores.',
@@ -261,6 +336,37 @@ const chat: TestCategoryMethodologyContent = {
       'Some platforms also let you manually save or edit memories. We test those controls separately under Chat Features. On this page, we focus on whether the conversation itself remembers details and uses them naturally.',
       'That is why we test whether the AI understands you, feels human, stays in character, and works reliably over a longer conversation.',
     ],
+  },
+  goodLooksLike: {
+    title: 'What good Chat looks like',
+    intro:
+      'A strong chat understands you, feels natural, and continues working well across longer conversations.',
+    rows: [
+      {
+        slug: 'understanding',
+        name: 'Understanding',
+        weight: 34,
+        description:
+          'The AI remembers important details, answers your questions, follows instructions, and understands the roleplay.',
+      },
+      {
+        slug: 'realism',
+        name: 'Realism',
+        weight: 33,
+        description:
+          'Replies feel natural, match the character\u2019s personality, handle emotions well, and help move the conversation forward.',
+      },
+      {
+        slug: 'reliability',
+        name: 'Reliability',
+        weight: 33,
+        description:
+          'The chat responds quickly without constantly repeating itself, breaking, contradicting earlier messages, or refusing normal requests.',
+      },
+    ],
+    goodOverall: 'The conversation feels natural, remembers what matters, and stays consistent.',
+    weakOverall:
+      'The AI forgets details, breaks character, repeats itself, or regularly sends poor replies.',
   },
   scoreCalculation: {
     title: 'How the Chat score is calculated',
@@ -378,6 +484,45 @@ const chatFeatures: TestCategoryMethodologyContent = {
       'That does not mean every new feature is automatically good. Some sound impressive on the pricing page but barely work once you try them. That is why we test the features instead of only checking whether the app claims to have them.',
     ],
   },
+  goodLooksLike: {
+    title: 'What good Chat Features looks like',
+    intro:
+      'Strong chat features make the experience more immersive and give you more control over the conversation.',
+    rows: [
+      {
+        slug: 'media',
+        name: 'Media',
+        weight: 30,
+        description:
+          'Images, voice messages, videos, GIFs, and reactions work properly inside the chat.',
+      },
+      {
+        slug: 'interaction',
+        name: 'Interaction',
+        weight: 30,
+        description:
+          'Features such as voice calls, chat modes, group chats, double texting, and proactive messages make the conversation feel more alive.',
+      },
+      {
+        slug: 'controls',
+        name: 'Controls',
+        weight: 30,
+        description:
+          'You can edit, delete, regenerate, reset, and export conversations, while also managing saved memories.',
+      },
+      {
+        slug: 'platform-extras',
+        name: 'Platform Extras',
+        weight: 10,
+        description:
+          'Useful experiences beyond normal chat, such as live AI cam or other interactive features.',
+      },
+    ],
+    goodOverall:
+      'The app offers modern chat features that work reliably and improve the experience.',
+    weakOverall:
+      'Features are missing, regularly fail, or sound more impressive in marketing than they are in practice.',
+  },
   scoreCalculation: {
     title: 'How the Chat Features score is calculated',
     intro: 'The Chat Features score is made up of four subscores.',
@@ -482,6 +627,37 @@ const images: TestCategoryMethodologyContent = {
       'A good AI girlfriend app should not only create pretty images. It should create the image you asked for without making you waste half your tokens getting there.',
     ],
   },
+  goodLooksLike: {
+    title: 'What good Images looks like',
+    intro:
+      'A strong image generator creates good-looking images, follows your instructions, and does not waste your credits on constant retries.',
+    rows: [
+      {
+        slug: 'quality',
+        name: 'Quality',
+        weight: 34,
+        description:
+          'Images look polished, are framed properly, and avoid obvious problems such as broken faces, hands, or backgrounds.',
+      },
+      {
+        slug: 'accuracy',
+        name: 'Accuracy',
+        weight: 33,
+        description:
+          'The generator follows your prompt and keeps the same face, body, and visual style across different images and edits.',
+      },
+      {
+        slug: 'experience',
+        name: 'Experience',
+        weight: 33,
+        description:
+          'Images generate quickly, failures are rare, and the tools are easy to use without removing useful creative control.',
+      },
+    ],
+    goodOverall: 'The generator creates strong, accurate images quickly and consistently.',
+    weakOverall:
+      'Images regularly ignore the prompt, change the character, look broken, or require too many paid retries.',
+  },
   scoreCalculation: {
     title: 'How the Images score is calculated',
     intro: 'The Images score is made up of three subscores.',
@@ -579,6 +755,37 @@ const video: TestCategoryMethodologyContent = {
       'That is why video is worth testing as its own category. We want to show whether the feature is actually useful or whether it is just another shiny button added to the app so it looks more advanced.',
       'A good AI girlfriend video generator should give you enough control, create a usable result, and not make you waste credits retrying the same basic idea over and over again.',
     ],
+  },
+  goodLooksLike: {
+    title: 'What good Video looks like',
+    intro:
+      'A strong video generator gives you useful creative control and produces stable videos that keep the character looking consistent.',
+    rows: [
+      {
+        slug: 'capabilities',
+        name: 'Capabilities',
+        weight: 34,
+        description:
+          'The app supports useful options such as text-to-video, image-to-video, chat video, audio, longer clips, and good output resolution.',
+      },
+      {
+        slug: 'quality',
+        name: 'Quality',
+        weight: 33,
+        description:
+          'Movement looks natural, the prompt is followed, and the character stays recognizable from the first frame to the last.',
+      },
+      {
+        slug: 'experience',
+        name: 'Experience',
+        weight: 33,
+        description:
+          'Videos are easy to create, generation does not take forever, failures are limited, and bad results can be regenerated.',
+      },
+    ],
+    goodOverall: 'The generator offers real control and creates stable, usable videos.',
+    weakOverall:
+      'It only animates an image with one button, produces very short clips, or regularly creates warped and broken results.',
   },
   scoreCalculation: {
     title: 'How the Video score is calculated',
@@ -686,6 +893,45 @@ const privacy: TestCategoryMethodologyContent = {
       'Security matters just as much. We do not simply trust a sentence saying that an app is \u201csafe and secure.\u201d We check what protection the company actually confirms, whether you can protect your account with two-factor authentication, and whether there are any confirmed security incidents worth knowing about.',
       'A good AI girlfriend app should clearly explain what it does with your data, give you control over it, and protect the private information you share.',
     ],
+  },
+  goodLooksLike: {
+    title: 'What good Privacy looks like',
+    intro:
+      'A strong privacy result means the app clearly explains what happens to your data and gives you useful ways to protect or remove it.',
+    rows: [
+      {
+        slug: 'data-use',
+        name: 'Data Use',
+        weight: 31,
+        description:
+          'The company clearly explains whether chats and photos are used for AI training, reviewed by people, shared with other companies, or used for advertising.',
+      },
+      {
+        slug: 'user-control',
+        name: 'User Control',
+        weight: 28,
+        description:
+          'You can delete chats and your account, request the removal of personal data, opt out of training, and export your information.',
+      },
+      {
+        slug: 'security',
+        name: 'Security',
+        weight: 28,
+        description:
+          'The app protects accounts and payments, offers useful security controls, and has no serious recent security warning signs.',
+      },
+      {
+        slug: 'support',
+        name: 'Support',
+        weight: 13,
+        description:
+          'Customer support is easy to reach, replies within a reasonable time, and actually helps with the problem.',
+      },
+    ],
+    goodOverall:
+      'The app is clear about its data practices, protects your account, and gives you control over your information.',
+    weakOverall:
+      'Policies are vague, important data controls are missing, or the platform has serious security concerns.',
   },
   scoreCalculation: {
     title: 'How the Privacy score is calculated',
@@ -812,6 +1058,45 @@ const pricing: TestCategoryMethodologyContent = {
       'Free trials often do not help much either. Some are so limited that you cannot properly test the chat, images, or other important features before paying.',
       'That is why we look beyond the price shown on the homepage. We track what is included, what costs extra, and what you are likely to spend after using the app normally.',
     ],
+  },
+  goodLooksLike: {
+    title: 'What good Pricing looks like',
+    intro:
+      'Good pricing means the app gives you real value after normal use, not only a cheap-looking subscription on the homepage.',
+    rows: [
+      {
+        slug: 'plan-value',
+        name: 'Plan Value',
+        weight: 30,
+        description:
+          'The subscription price is reasonable and includes enough useful features, credits, and usage without constant extra payments.',
+      },
+      {
+        slug: 'usage-costs',
+        name: 'Usage Costs',
+        weight: 35,
+        description:
+          'Images, videos, voice, calls, and token top-ups remain affordable when you use the app regularly.',
+      },
+      {
+        slug: 'free-access',
+        name: 'Free Access',
+        weight: 20,
+        description:
+          'The free version gives you enough access to properly test the chat and important features before paying.',
+      },
+      {
+        slug: 'billing',
+        name: 'Billing',
+        weight: 15,
+        description:
+          'Prices, credit expiry, refunds, cancellation, and payment privacy are explained clearly before checkout.',
+      },
+    ],
+    goodOverall:
+      'The app is fairly priced, clearly explains its costs, and remains affordable during normal use.',
+    weakOverall:
+      'The subscription only unlocks the app, most features cost extra, and the real monthly spend is much higher than advertised.',
   },
   scoreCalculation: {
     title: 'How the Pricing score is calculated',

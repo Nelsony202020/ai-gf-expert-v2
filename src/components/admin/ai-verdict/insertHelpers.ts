@@ -3,10 +3,10 @@ export type InsertConflictChoice = 'append' | 'replace' | 'cancel';
 
 export function confirmInsertConflict(fieldLabel: string): InsertConflictChoice {
   const replace = window.confirm(
-    `${fieldLabel} already contains content.\n\nClick OK to replace it, or Cancel to choose append instead.`,
+    `${fieldLabel} already has text.\n\nOK = replace it with the AI version.\nCancel = keep what's there and choose another option.`,
   );
   if (replace) return 'replace';
-  const append = window.confirm('Append the suggestion to the existing content?');
+  const append = window.confirm('Add the AI text below what is already there?');
   if (append) return 'append';
   return 'cancel';
 }

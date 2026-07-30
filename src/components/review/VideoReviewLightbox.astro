@@ -8,10 +8,15 @@ interface Props {
 }
 
 const { product } = Astro.props;
+
+if (!product.videoReview?.embedUrl) {
+  return null;
+}
+
 const modalId = `video-review-${product.slug}`;
-const embedUrl = product.videoReview?.embedUrl ?? 'https://www.youtube.com/embed/dQw4w9WgXcQ';
-const channelUrl = product.videoReview?.channelUrl ?? 'https://www.youtube.com/@ai-girlfriend-expert';
-const channelLabel = product.videoReview?.channelLabel ?? 'AI Girlfriend Expert on YouTube';
+const embedUrl = product.videoReview.embedUrl;
+const channelUrl = product.videoReview.channelUrl ?? product.videoReview.embedUrl;
+const channelLabel = product.videoReview.channelLabel ?? 'AI Girlfriend Expert on YouTube';
 ---
 
 <div class="video-review-trigger-wrap">

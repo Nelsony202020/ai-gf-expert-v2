@@ -39,6 +39,7 @@ const { productSlug } = Astro.props;
 
   function restoreReviewScroll() {
     const hashTab = window.location.hash.replace('#', '');
+    if (hashTab.startsWith('ratings')) return;
     if (hashTab && document.querySelector(`[data-tab-panel="${hashTab}"]`)) {
       return;
     }

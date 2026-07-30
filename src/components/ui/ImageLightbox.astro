@@ -34,6 +34,12 @@
 
   <div class="image-lightbox__stage" data-lightbox-stage>
     <img data-lightbox-img class="image-lightbox__img max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" alt="" />
+    <video
+      data-lightbox-video
+      class="image-lightbox__video hidden max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+      controls
+      playsinline
+    />
   </div>
 
   <p data-lightbox-caption class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium text-center max-w-lg pointer-events-none"></p>
@@ -58,6 +64,21 @@
     transition:
       opacity 0.28s ease,
       transform 0.28s ease;
+  }
+
+  .image-lightbox__video {
+    transition:
+      opacity 0.28s ease,
+      transform 0.28s ease;
+  }
+
+  .image-lightbox__video.is-changing {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
+  .image-lightbox__video.hidden {
+    display: none;
   }
 
   .image-lightbox__img.is-changing {
@@ -134,11 +155,13 @@
     src: string;
     alt?: string;
     caption?: string;
+    type?: 'image' | 'video';
   }
 
   function initImageLightbox() {
     const lightbox = document.querySelector<HTMLElement>('[data-image-lightbox]');
     const img = document.querySelector<HTMLImageElement>('[data-lightbox-img]');
+    const video = document.querySelector<HTMLVideoElement>('[data-lightbox-video]');
     const caption = document.querySelector<HTMLElement>('[data-lightbox-caption]');
     const counter = document.querySelector<HTMLElement>('[data-lightbox-counter]');
     const closeBtn = document.querySelector<HTMLButtonElement>('[data-lightbox-close]');
@@ -170,32 +193,58 @@
       }
     }
 
+    function pauseVideo() {
+      if (!video) return;
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      video.classList.add('hidden');
+    }
+
     function renderItem(direction: 'left' | 'right' | 'none' = 'none') {
       const item = items[index];
-      if (!item) return;
+      if (!item || !img) return;
+      const isVideo = item.type === 'video';
 
-      if (direction !== 'none') {
-        img.classList.add('is-changing', direction === 'left' ? 'from-left' : 'from-right');
-        window.setTimeout(() => {
+      const apply = () => {
+        if (caption) caption.textContent = item.caption ?? item.alt ?? '';
+        if (isVideo && video) {
+          img.classList.add('hidden');
+          img.removeAttribute('src');
+          video.classList.remove('hidden');
+          video.src = item.src;
+          video.setAttribute('aria-label', item.alt ?? 'Gallery video');
+          void video.play().catch(() => {});
+        } else {
+          pauseVideo();
+          img.classList.remove('hidden');
           img.src = item.src;
           img.alt = item.alt ?? '';
-          if (caption) caption.textContent = item.caption ?? item.alt ?? '';
-          img.classList.remove('from-left', 'from-right');
-          void img.offsetWidth;
-          img.classList.remove('is-changing');
+        }
+        img.classList.remove('is-changing', 'from-left', 'from-right');
+        video?.classList.remove('is-changing', 'from-left', 'from-right');
+      };
+
+      if (direction !== 'none') {
+        const activeEl = isVideo ? video : img;
+        activeEl?.classList.add('is-changing', direction === 'left' ? 'from-left' : 'from-right');
+        window.setTimeout(() => {
+          apply();
         }, 140);
         return;
       }
 
-      img.classList.remove('is-changing', 'from-left', 'from-right');
-      img.src = item.src;
-      img.alt = item.alt ?? '';
-      if (caption) caption.textContent = item.caption ?? item.alt ?? '';
+      apply();
       updateNavUi();
     }
 
     function open(itemsList: LightboxItem[], startIndex = 0) {
-      items = itemsList.filter((item) => item.src);
+      items = itemsList
+        .filter((item) => item.src)
+        .map((item) => ({
+          ...item,
+          type: item.type ?? (/\.(mp4|webm|mov)(\?|#|$)/i.test(item.src) ? 'video' : 'image'),
+        }));
       index = Math.min(Math.max(startIndex, 0), Math.max(items.length - 1, 0));
       isOpen = true;
       lightbox!.classList.remove('hidden');
@@ -209,7 +258,9 @@
       isOpen = false;
       lightbox!.classList.add('hidden');
       lightbox!.classList.remove('flex');
+      pauseVideo();
       img.src = '';
+      img.classList.remove('hidden');
       items = [];
       index = 0;
       document.body.style.overflow = '';
@@ -242,6 +293,7 @@
           src: btn.dataset.full ?? '',
           alt: btn.dataset.alt ?? '',
           caption: btn.dataset.alt ?? '',
+          type: (btn.dataset.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
         }));
       }
 
@@ -266,6 +318,7 @@
           src: trigger.dataset.lightboxOpen ?? '',
           alt: trigger.dataset.lightboxAlt,
           caption: trigger.dataset.lightboxCaption ?? trigger.dataset.lightboxAlt,
+          type: trigger.dataset.lightboxType === 'video' ? 'video' : 'image',
         },
       ]);
     });

@@ -1,5 +1,6 @@
 ---
 import type { Product } from '../../data/products';
+import type { ProductPageHead } from '../../lib/seo/productMeta';
 import { getAuthor } from '../../data/authors';
 import Gallery from './Gallery.astro';
 import RatingSidebar from './RatingSidebar.astro';
@@ -13,10 +14,14 @@ import Breadcrumbs from '../ui/Breadcrumbs.astro';
 interface Props {
   product: Product;
   shareUrl?: string;
+  pageHead?: ProductPageHead;
 }
 
-const { product, shareUrl } = Astro.props;
-const shareTitle = `${product.name} Review — AI Girlfriend Expert`;
+const { product, shareUrl, pageHead } = Astro.props;
+const shareTitle = pageHead?.ogTitle ?? `${product.name} Review — AI Girlfriend Expert`;
+const breadcrumbLabel = product.seo?.breadcrumbLabel?.trim() || product.name;
+const h1IsOverride = pageHead?.h1IsOverride ?? false;
+const h1Text = pageHead?.h1 ?? `${product.name} Review`;
 ---
 
 <section class="section-container pt-8 md:pt-12 pb-10 px-4 md:px-8">
@@ -25,14 +30,20 @@ const shareTitle = `${product.name} Review — AI Girlfriend Expert`;
     <Breadcrumbs
       items={[
         { label: 'Home', href: '/' },
-        { label: 'Reviews', href: '/ai-girlfriend-apps' },
-        { label: product.name },
+        { label: 'Reviews', href: '/reviews/' },
+        { label: breadcrumbLabel },
       ]}
     />
 
-    <h1 class="text-4xl md:text-6xl font-black text-on-surface tracking-tight">
-      {product.name} <span class="font-serif italic font-normal text-on-surface">Review</span>
-    </h1>
+    {
+      h1IsOverride ? (
+        <h1 class="text-4xl md:text-6xl font-black text-on-surface tracking-tight">{h1Text}</h1>
+      ) : (
+        <h1 class="text-4xl md:text-6xl font-black text-on-surface tracking-tight">
+          {product.name} <span class="font-serif italic font-normal text-on-surface">Review</span>
+        </h1>
+      )
+    }
 
     <h2 class="sr-only">{product.name} Video Review</h2>
 
@@ -104,7 +115,6 @@ const shareTitle = `${product.name} Review — AI Girlfriend Expert`;
       <Gallery
         images={product.heroGallery?.length ? product.heroGallery : product.gallery}
         product={product}
-        heroImage={product.featuredImage}
       />
     </div>
     <div class="lg:w-[32%]">

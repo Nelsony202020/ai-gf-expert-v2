@@ -1,11 +1,10 @@
 ---
 import type { Subscore } from '../../../data/products';
-import { products } from '../../../data/products';
+import { loadComparisonProducts, subscoreScorePoints } from '../../../lib/content/comparisonProducts';
 import { fmtScore, getScoreChipClass } from '../../../lib/scores';
 import { getDraftScoreChipClass } from '../../../lib/draft-ratings/scoreBands';
 import { buildAllScoreBins } from '../../../lib/score-distribution';
 import type { EvidenceTooltipItem } from '../../../lib/ratings/evidenceTooltipItems';
-import { evidenceTooltipSummaryLine } from '../../../lib/ratings/evidenceTooltipItems';
 import TooltipActionLinks from './TooltipActionLinks.astro';
 import InlineTestLink from './InlineTestLink.astro';
 import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
@@ -64,23 +63,16 @@ const evidencePoints =
     ? evidenceItems.map((item) => ({
         label: item.label,
         internal: item.score,
-        summary: evidenceTooltipSummaryLine(item),
         drawerId: item.drawerId ?? drawerIdForContributor(item.label),
       }))
     : sub.contributors.map((c) => ({
         label: c.label,
         internal: c.internalScore ?? sub.score,
-        summary: c.value?.trim() || '—',
         drawerId: drawerIdForContributor(c.label),
       }));
 
-const scorePoints = products
-  .map((p) => {
-    const cat = p.categories.find((c) => c.key === categoryKey);
-    const matchSub = cat?.subscores.find((s) => s.name === sub.name);
-    return matchSub ? { slug: p.slug, name: p.name, score: matchSub.score } : null;
-  })
-  .filter((x): x is { slug: string; name: string; score: number } => !!x);
+const comparisonProducts = await loadComparisonProducts();
+const scorePoints = subscoreScorePoints(comparisonProducts, categoryKey, sub.name);
 
 const avgScore = scorePoints.length
   ? scorePoints.reduce((s, x) => s + x.score, 0) / scorePoints.length
@@ -176,7 +168,7 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
                       evidencePoints.map((c) => {
                         const chip = chipForScore(c.internal);
                         return (
-                          <div class="rt-comp-row rt-comp-row--stacked">
+                          <div class="rt-comp-row rt-comp-row--inline">
                             <div class="rt-comp-row__main">
                               <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(c.internal)}</span>
                               {
@@ -215,7 +207,6 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
                                 )
                               }
                             </div>
-                            <p class="rt-comp-summary">{c.summary}</p>
                           </div>
                         );
                       })
@@ -227,7 +218,7 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
           </div>
           <div class="ratings-tooltip-panel__distribution">
             <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-            <ScoreDistributionChart bins={bins} />
+            <ScoreDistributionChart bins={bins} categoryKey={categoryKey} subscoreName={sub.name} />
           </div>
         </div>
       )
@@ -252,7 +243,7 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
                 evidencePoints.map((c) => {
                   const chip = chipForScore(c.internal);
                   return (
-                    <div class="rt-comp-row rt-comp-row--stacked">
+                    <div class="rt-comp-row rt-comp-row--inline">
                       <div class="rt-comp-row__main">
                         <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(c.internal)}</span>
                         {
@@ -291,7 +282,6 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
                           )
                         }
                       </div>
-                      <p class="rt-comp-summary">{c.summary}</p>
                     </div>
                   );
                 })
@@ -303,7 +293,7 @@ const whatItIs = sub.description?.trim() || getSubscoreDescription(categoryKey, 
 
       <div>
         <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-        <ScoreDistributionChart bins={bins} />
+        <ScoreDistributionChart bins={bins} categoryKey={categoryKey} subscoreName={sub.name} />
       </div>
     </div>
       )

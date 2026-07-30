@@ -13,7 +13,7 @@ const { categories } = Astro.props;
     categories.map((cat) => (
       <article class="test-category-subscore test-hub-category-overview scroll-mt-24" id={`category-${cat.key}`}>
         <div class="test-category-subscore__weight-col">
-          <span class="test-category-subscore__weight">{cat.weight}%</span>
+          <span class="test-category-subscore__weight test-framework-cat__weight">{cat.weight}%</span>
         </div>
 
         <div class="test-category-subscore__divider" aria-hidden="true"></div>

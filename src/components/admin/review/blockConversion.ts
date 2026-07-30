@@ -244,21 +244,25 @@ export function blocksToDoc(blocks: ReviewBlock[], ctx?: ConversionContext): JSO
             legacyRow?.items ??
             [];
           if (layoutItems.length > 0) {
-            for (const raw of layoutItems) {
-              const item = raw as Record<string, unknown>;
-              content.push({
-                type: 'image',
-                attrs: {
-                  blockId: newBlockId(),
-                  src: String(item.src ?? ''),
-                  alt: String(item.alt ?? ''),
-                  caption: String(item.caption ?? ''),
-                  mediaId: item.mediaId ? String(item.mediaId) : null,
-                  widthPercent: Number(item.widthPercent ?? 100),
-                  borderRadiusPercent: Number(item.borderRadiusPercent ?? 0),
-                },
-              });
-            }
+            content.push({
+              type: 'imageRow',
+              attrs: {
+                blockId,
+                items: layoutItems.map((raw) => {
+                  const item = raw as Record<string, unknown>;
+                  const mediaId = item.mediaId ? String(item.mediaId) : null;
+                  const media = mediaId ? ctx?.mediaById?.[mediaId] : undefined;
+                  return {
+                    src: String(media?.url ?? item.src ?? ''),
+                    alt: String(item.alt ?? ''),
+                    caption: String(item.caption ?? ''),
+                    mediaId: item.mediaId ? String(item.mediaId) : null,
+                    widthPercent: Number(item.widthPercent ?? 100),
+                    borderRadiusPercent: Number(item.borderRadiusPercent ?? 0),
+                  };
+                }),
+              },
+            });
           } else {
             content.push(paragraphNode(dataToInline(d), blockId));
           }
@@ -290,7 +294,7 @@ export function blocksToDoc(blocks: ReviewBlock[], ctx?: ConversionContext): JSO
         content.push({
           type: 'image',
           attrs: {
-            src: String(d.src ?? media?.url ?? ''),
+            src: String(media?.url ?? d.src ?? ''),
             alt: String(d.alt ?? media?.altText ?? ''),
             caption: String(d.caption ?? ''),
             mediaId,
@@ -416,21 +420,36 @@ export function docToBlocks(doc: JSONDoc | null | undefined): ReviewBlock[] {
       case 'imageRow': {
         const rawColumns = node.attrs?.columns as { items?: unknown[] }[] | undefined;
         const legacyItems = node.attrs?.items as unknown[] | undefined;
-        const items = rawColumns?.flatMap((col) => (Array.isArray(col.items) ? col.items : [])) ?? legacyItems ?? [];
-        for (const raw of items) {
-          const item = raw as Record<string, unknown>;
-          const data: Record<string, unknown> = {
-            caption: String(item.caption ?? ''),
-          };
-          if (item.mediaId) data.mediaId = String(item.mediaId);
-          if (item.src) data.src = String(item.src);
-          if (item.alt) data.alt = String(item.alt);
-          const width = Number(item.widthPercent ?? 100);
-          if (width !== 100) data.widthPercent = width;
-          const radius = Number(item.borderRadiusPercent ?? 0);
-          if (radius > 0) data.borderRadiusPercent = radius;
-          blocks.push({ id: newBlockId(), type: 'image', data });
-        }
+        const items =
+          rawColumns?.flatMap((col) => (Array.isArray(col.items) ? col.items : [])) ??
+          legacyItems ??
+          [];
+        blocks.push({
+          id: takeId(node, seen),
+          type: 'paragraph',
+          data: {
+            layoutRow: {
+              columns: [
+                {
+                  items: items.map((raw) => {
+                    const item = raw as Record<string, unknown>;
+                    const stored: Record<string, unknown> = {
+                      caption: String(item.caption ?? ''),
+                    };
+                    if (item.mediaId) stored.mediaId = String(item.mediaId);
+                    if (item.src) stored.src = String(item.src);
+                    if (item.alt) stored.alt = String(item.alt);
+                    const width = Number(item.widthPercent ?? 100);
+                    if (width !== 100) stored.widthPercent = width;
+                    const radius = Number(item.borderRadiusPercent ?? 0);
+                    if (radius > 0) stored.borderRadiusPercent = radius;
+                    return stored;
+                  }),
+                },
+              ],
+            },
+          },
+        });
         break;
       }
       case 'heading': {

@@ -8,6 +8,8 @@ import TestHubSidebar from '../../../components/test/TestHubSidebar.astro';
 import TestCategoryMethodologyHero from '../../../components/test/TestCategoryMethodologyHero.astro';
 import TestCategoryMethodologyBody from '../../../components/test/TestCategoryMethodologyBody.astro';
 import TestCategoryMobileNavSheet from '../../../components/test/TestCategoryMobileNavSheet.astro';
+import TestPageBackLink from '../../../components/test/TestPageBackLink.astro';
+import ArticleUtilityRail from '../../../components/article/ArticleUtilityRail.astro';
 import RatingsTooltipInit from '../../../components/review/tooltips/RatingsTooltipInit.astro';
 import { getTestCategories, getTestCategory } from '../../../lib/test-framework';
 import { getTestCategoryMethodology } from '../../../data/test-category-methodology';
@@ -33,6 +35,7 @@ const methodology = getTestCategoryMethodology(category.key);
 const categories = getTestCategories();
 
 const pageTitle = `${category.name} Testing Methodology — AI Girlfriend Expert`;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 const introParagraphs = methodology?.intro?.length ? methodology.intro : [category.description];
 
 const tocItems = methodology
@@ -65,8 +68,6 @@ const tocItems = methodology
       slot="sidebar"
       categories={categories}
       tocSections={tocItems}
-      topAnchor="#test-category-top"
-      topSectionId="test-category-top"
     />
 
     {
@@ -113,16 +114,14 @@ const tocItems = methodology
               }
             </ul>
           </section>
-          <a class="test-inline-link test-page__back" href={testHubUrl()}>
-            <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-            Back to how we test
-          </a>
+          <TestPageBackLink href={testHubUrl()} label="how we test" />
         </div>
       )
     }
   </StandardContentLayout>
   <Footer />
   <TestCategoryMobileNavSheet category={category} active="how-we-test" />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
   <RatingsTooltipInit />
 
   <script>

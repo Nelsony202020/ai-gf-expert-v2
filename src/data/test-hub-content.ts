@@ -1,7 +1,14 @@
+import type { RoundupFaqItem } from './roundups/ai-girlfriend';
+
 export type TestHubTocSection = {
   id: string;
   label: string;
   children?: { id: string; label: string }[];
+};
+
+export type TestHubRelatedLink = {
+  label: string;
+  href: string;
 };
 
 export const testHubTocSections: TestHubTocSection[] = [
@@ -9,7 +16,7 @@ export const testHubTocSections: TestHubTocSection[] = [
   { id: 'overall-score', label: 'Overall performance score' },
   { id: 'category-scores', label: 'Our eight testing categories' },
   { id: 'subscores', label: 'How subscores work' },
-  { id: 'evidence', label: 'Evidence points' },
+  { id: 'evidence', label: 'Evidence groups' },
   { id: 'full-framework', label: 'Explore our full testing framework' },
   { id: 'in-practice', label: 'How we test AI girlfriend apps in practice' },
   {
@@ -43,10 +50,25 @@ export function buildTestHubTocSections(
   });
 }
 
-export const testHubRelatedMethodology = [
+export const testHubRelatedMethodology: TestHubRelatedLink[] = [
   { label: 'How score tooltips work', href: '/test/tooltips/' },
+  { label: 'Market data methodology', href: '/test/market-data/' },
   { label: 'Editorial standards', href: '/editorial-guidelines/' },
 ];
+
+/** Sidebar links on subscore methodology pages. */
+export function buildSubscoreRelatedMethodology(
+  category: { subscores: { name: string; slug: string; href: string }[] },
+  currentSubscoreSlug: string,
+): TestHubRelatedLink[] {
+  return [
+    { label: 'How We Test', href: '/test/' },
+    ...testHubRelatedMethodology,
+    ...category.subscores
+      .filter((sub) => sub.slug !== currentSubscoreSlug)
+      .map((sub) => ({ label: sub.name, href: sub.href })),
+  ];
+}
 
 export const testHubScoreLocations = [
   {
@@ -90,7 +112,7 @@ export const testHubProcessSteps = [
   },
   {
     title: 'We calculate the scores',
-    body: 'Evidence points contribute to subscores. Subscores create category scores, and the weighted category scores produce the overall performance score.',
+    body: 'Scored tests contribute to subscores. Subscores create category scores, and the weighted category scores produce the overall performance score.',
   },
   {
     title: 'We write and fact-check the review',
@@ -108,7 +130,7 @@ export const testHubProcessSteps = [
 
 export const testHubImportantTests = [
   { label: 'Memory test', href: '/test/chat/understanding/#memory', desc: 'Fixed facts recalled across later conversations.' },
-  { label: 'Reply speed test', href: '/test/chat/reliability/#speed', desc: 'Median response time across a fixed sample.' },
+  { label: 'Reply speed test', href: '/test/chat/reliability/#reply-speed', desc: 'Median response time across a fixed sample.' },
   { label: 'Conversation realism test', href: '/test/chat/realism/#naturalness', desc: 'Naturalness, personality, and roleplay quality.' },
   { label: 'Character consistency test', href: '/test/images/accuracy/#character-consistency', desc: 'Identity preserved across repeated generations.' },
   { label: 'Prompt accuracy test', href: '/test/images/accuracy/#prompt-accuracy', desc: 'How closely outputs match the request.' },
@@ -119,46 +141,67 @@ export const testHubImportantTests = [
   { label: 'Monthly spend test', href: '/test/pricing/usage-costs/#monthly-spend', desc: 'Estimated monthly spend for regular use.' },
 ];
 
-export const testHubFaq = [
+export const testHubFaq: RoundupFaqItem[] = [
   {
-    q: 'Do companies pay for higher ratings?',
-    a: 'No. Scores come from our testing framework only. Affiliate relationships do not influence ratings.',
+    question: 'Can companies pay for a higher score?',
+    answer:
+      'No. Companies cannot buy a better rating, change their test results, or pay to appear higher in our rankings. Scores come from the same testing method for every app. We may earn a commission when someone uses one of our links, but this does not affect the score.',
   },
   {
-    q: 'Do you use free or paid accounts?',
-    a: 'We test with paid accounts that match what regular customers can buy.',
+    question: 'Do you test free or paid accounts?',
+    answer:
+      'We mainly test paid accounts because they show what a regular customer receives after subscribing. We also test free access separately when an app offers a free plan or trial.',
   },
   {
-    q: 'How long do you test each app?',
-    a: 'Most apps are used for at least 30 days before a score is published, with ongoing retesting after launch.',
+    question: 'How long do you test each app?',
+    answer:
+      'We normally use an app for at least 30 days before publishing its score. This gives us enough time to test features such as memory, proactive messages, customer support, and account controls that cannot be judged in one day.',
   },
   {
-    q: 'How often are scores updated?',
-    a: 'When pricing, features, models, policies, or output quality change in ways that affect our evidence.',
+    question: 'How often do you update scores?',
+    answer:
+      'We update a score when an important part of the app changes. This may include its pricing, features, AI model, privacy policy, limits, or image and video quality. We also retest products over time to check whether their performance has improved or become worse.',
   },
   {
-    q: 'Why do some apps have no video score?',
-    a: 'If video generation is unavailable, we score the category as not offered rather than guessing.',
+    question: 'Why do some apps have no video score?',
+    answer:
+      'Some apps do not offer video generation. In that case, we mark Video as not available instead of giving the app a made-up score. The remaining available categories are then used to calculate the overall result.',
   },
   {
-    q: 'How is the overall score calculated?',
-    a: 'Eight weighted category scores combine into one overall performance score — not a simple average.',
+    question: 'How is the overall score calculated?',
+    answer: 'The overall score combines eight categories:',
+    answerList: [
+      'Characters',
+      'Customization',
+      'Chat',
+      'Chat Features',
+      'Images',
+      'Video',
+      'Privacy',
+      'Pricing',
+    ],
+    answerAfter:
+      'Each category has a different weight, so the overall score is not a simple average. More important categories have a larger effect on the final result.',
   },
   {
-    q: 'Are subjective judgments used?',
-    a: 'Some quality assessments require expert judgment, but they use fixed samples and written criteria.',
+    question: 'Are any scores based on opinion?',
+    answer:
+      'Some tests require human judgment, especially when we rate realism, writing quality, image errors, or video motion. To keep this fair, we use fixed sample sizes, the same testing steps, and written scoring rules for every app.',
   },
   {
-    q: 'What happens when information is unknown?',
-    a: 'Unknown privacy or policy information is not treated as a positive result.',
+    question: 'What happens when information is unclear or unknown?',
+    answer:
+      'We never treat missing information as proof that an app is safe or trustworthy. When we cannot confirm something, we mark it as Unknown and explain what information was missing.',
   },
   {
-    q: 'Can a product’s score decrease?',
-    a: 'Yes. Scores change when retesting shows worse results or when methodology is updated.',
+    question: 'Can an app\u2019s score go down?',
+    answer:
+      'Yes. A score can decrease when retesting shows worse performance, prices increase, features are removed, policies become less clear, or our methodology is improved.',
   },
   {
-    q: 'How do you prevent double scoring?',
-    a: 'Image and video costs are measured in their sections but affect the final rating under Pricing.',
+    question: 'How do you avoid counting the same feature twice?',
+    answer:
+      'We may test the same feature in more than one place because it can answer different questions. For example, we record image and video costs in their feature sections, but those costs only affect the final score under Pricing. This prevents one result from unfairly adding points or penalties more than once.',
   },
 ];
 
@@ -180,7 +223,7 @@ export const testHubEvidenceExamples = [
     title: 'Reply speed',
     body: 'We record response times across a fixed sample and calculate the median.',
     result: '3.8-second median response time',
-    href: '/test/chat/reliability/#speed',
+    href: '/test/chat/reliability/#reply-speed',
   },
   {
     title: 'Character consistency',

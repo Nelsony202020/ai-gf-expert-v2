@@ -59,6 +59,14 @@ const stickers: ({ emoji: string; position: 'tl' | 'tr' } | null)[] = [
               <div class="roundup-faq__answer-row">
                 <div class="roundup-faq__bubble roundup-faq__bubble--answer">
                   <p>{item.answer}</p>
+                  {
+                    item.answerList?.length ? (
+                      <ul class="roundup-faq__answer-list">
+                        {item.answerList.map((entry) => <li>{entry}</li>)}
+                      </ul>
+                    ) : null
+                  }
+                  {item.answerAfter && <p>{item.answerAfter}</p>}
                 </div>
                 <img class="roundup-faq__avatar" src={hermanAvatar} alt="Herman Carter" width="36" height="36" loading="lazy" />
               </div>

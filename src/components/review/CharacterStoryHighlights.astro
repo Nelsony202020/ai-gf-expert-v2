@@ -520,6 +520,27 @@ const headingText = heading ?? 'Featured characters';
       if (viewer.classList.contains('hidden')) return;
       if (e.key === 'Escape') closeViewer();
     });
+
+    root.querySelectorAll('.char-stories__avatar').forEach((img) => {
+      img.addEventListener('error', () => {
+        fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
+          body: JSON.stringify({
+            sessionId: '28e868',
+            runId: 'post-fix',
+            hypothesisId: 'H5',
+            location: 'CharacterStoryHighlights.astro:imgError',
+            message: 'Character avatar load error',
+            data: {
+              src: (img as HTMLImageElement).currentSrc || (img as HTMLImageElement).src || null,
+              alt: (img as HTMLImageElement).alt || null,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      });
+    });
   }
 
   initCharStories();

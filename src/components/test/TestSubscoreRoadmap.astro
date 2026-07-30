@@ -1,15 +1,18 @@
 ---
 import MethodologyDepthRoadmap from './MethodologyDepthRoadmap.astro';
+import type { MethodologyDepthLevel } from './MethodologyDepthRoadmap.astro';
 import type { TestCategoryNode, TestSubscoreNode } from '../../lib/test-framework';
 import { testHubUrl } from '../../lib/slugs';
 
 interface Props {
   category: TestCategoryNode;
   subscore: TestSubscoreNode;
+  activeLevel?: MethodologyDepthLevel;
+  evidenceCount?: number;
 }
 
-const { category, subscore } = Astro.props;
-const evidenceCount = subscore.contributors.length;
+const { category, subscore, activeLevel = 'subscore', evidenceCount = subscore.contributors.length } =
+  Astro.props;
 
 const steps = [
   {
@@ -32,10 +35,10 @@ const steps = [
   {
     level: 'evidence' as const,
     icon: 'description',
-    label: `${evidenceCount} ${evidenceCount === 1 ? 'evidence test' : 'evidence tests'}`,
-    href: '#evidence-we-measure',
+    label: `${evidenceCount} ${evidenceCount === 1 ? 'evidence group' : 'evidence groups'}`,
+    href: '#evidence-groups',
   },
 ];
 ---
 
-<MethodologyDepthRoadmap steps={steps} activeLevel="subscore" />
+<MethodologyDepthRoadmap steps={steps} activeLevel={activeLevel} />

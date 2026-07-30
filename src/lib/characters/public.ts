@@ -2,7 +2,7 @@
 
 import { appendReferralSuffix } from './destinationUrl';
 import { DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
-import { resolveMediaUrl } from '../media/url';
+import { resolveMediaUrl, isUsablePublicMediaUrl } from '../media/url';
 import type { StoryHighlightCharacter } from '../../data/products';
 
 type MediaLike = { id?: string; url?: unknown; file?: { url?: unknown } } | null | undefined;
@@ -41,7 +41,8 @@ function storySlideUrls(
       const mediaId = s.media?.id ? String(s.media.id) : '';
       return mediaId ? resolveMediaUrl(byId.get(mediaId)) : '';
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((url) => isUsablePublicMediaUrl(url));
 }
 
 export function mapCharacterForPublic(
@@ -61,6 +62,7 @@ export function mapCharacterForPublic(
 
   const storySlides = storySlideUrls(character.storySlides, productMedia);
   const avatar = resolveCharacterImageUrl(character.image, productMedia) || storySlides[0] || '';
+  const safeAvatar = avatar && isUsablePublicMediaUrl(avatar) ? avatar : '';
 
   const affiliateLinks = product?.affiliateLinks ?? character.product?.affiliateLinks ?? [];
   const activeProductLink = affiliateLinks.find((l: any) => l.active);
@@ -77,7 +79,7 @@ export function mapCharacterForPublic(
     name: String(character.name ?? ''),
     archetype: tags[0] ?? character.characterStyle ?? 'Featured',
     platform: (product?.name ?? character.product?.name) ? String(product?.name ?? character.product?.name) : undefined,
-    avatar,
+    avatar: safeAvatar,
     storySlides,
     profileUrl,
     profileRel: DEFAULT_AFFILIATE_REL,

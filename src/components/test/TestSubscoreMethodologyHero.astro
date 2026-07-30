@@ -10,19 +10,36 @@ interface Props {
   category: TestCategoryNode;
   subscore: TestSubscoreNode;
   intro: string[];
-  evidenceCount: number;
+  evidenceGroupCount?: number;
+  scoredTestCount?: number;
   subscoreWeight?: number;
+  evidenceHierarchy?: {
+    explanation: string;
+  };
 }
 
-const { breadcrumbs, category, subscore, intro, evidenceCount, subscoreWeight } = Astro.props;
+const {
+  breadcrumbs,
+  category,
+  subscore,
+  intro,
+  evidenceGroupCount,
+  scoredTestCount,
+  subscoreWeight,
+  evidenceHierarchy,
+} = Astro.props;
+
+function countLabel(count: number, singular: string, plural: string) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
 ---
 
 <header class="test-category-hero standard-content-hero">
   <TestBreadcrumbs items={breadcrumbs} />
-  <p class="test-hub__eyebrow">Subscore methodology</p>
+  <p class="test-hub__eyebrow">Subscore</p>
 
   <div class="test-category-hero__top">
-    <TestMethodologyTitle main={subscore.name} sub="Testing methodology" />
+    <TestMethodologyTitle main={subscore.name} />
 
     {
       subscoreWeight != null && (
@@ -44,14 +61,39 @@ const { breadcrumbs, category, subscore, intro, evidenceCount, subscoreWeight } 
     }
   </div>
 
-  <div class="test-category-hero__summary">
-    <span class="material-symbols-outlined test-category-hero__summary-icon" aria-hidden="true">
-      fact_check
-    </span>
-    <h2 class="test-category-hero__summary-title">
-      {evidenceCount} {evidenceCount === 1 ? 'evidence test' : 'evidence tests'}
-    </h2>
-  </div>
+  {
+    (evidenceGroupCount != null || scoredTestCount != null) && (
+      <div class="test-category-hero__summary" aria-label="Subscore summary">
+        <span class="material-symbols-outlined test-category-hero__summary-icon" aria-hidden="true">
+          fact_check
+        </span>
+        <ul class="test-category-hero__summary-metrics">
+          {
+            evidenceGroupCount != null && (
+              <li class="test-category-hero__summary-metric">
+                {countLabel(evidenceGroupCount, 'evidence group', 'evidence groups')}
+              </li>
+            )
+          }
+          {
+            scoredTestCount != null && (
+              <li class="test-category-hero__summary-metric">
+                {countLabel(scoredTestCount, 'scored test', 'scored tests')}
+              </li>
+            )
+          }
+        </ul>
+      </div>
+    )
+  }
+
+  {
+    evidenceHierarchy && (
+      <div class="test-category-hero__hierarchy-note">
+        <p class="test-category-hero__hierarchy-explanation">{evidenceHierarchy.explanation}</p>
+      </div>
+    )
+  }
 
   <TestSubscoreRoadmap category={category} subscore={subscore} />
 </header>

@@ -7,6 +7,7 @@ export interface MethodologyEvidenceItem {
   subscore: string;
   slug: string;
   name: string;
+  weight: number;
   displayOrder: number;
   measurementType: string;
   unit?: string;
@@ -19,6 +20,7 @@ export interface MethodologyEvidenceItem {
 type ExportEvidence = {
   slug: string;
   name: string;
+  weight: number;
   displayOrder: number;
   measurementType: string;
   unit?: string;
@@ -71,6 +73,7 @@ export function getSubscoreEvidenceList(
       subscore: subscoreSlug,
       slug: evidence.slug,
       name: evidence.name,
+      weight: evidence.weight,
       displayOrder: evidence.displayOrder,
       measurementType: evidence.measurementType,
       unit: evidence.unit,

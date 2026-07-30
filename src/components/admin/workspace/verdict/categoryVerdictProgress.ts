@@ -133,6 +133,24 @@ export function sanitizeCategoryVerdictDraft(v: CategoryVerdict): CategoryVerdic
   };
 }
 
+/** When AI fills pros/cons, mirror the first item into primary strength/limitation. */
+export function patchCategoryProsOrCons(
+  kind: 'pros' | 'cons',
+  items: string[],
+): Pick<CategoryVerdict, 'pros' | 'cons' | 'mainStrength' | 'mainWeakness'> {
+  const first = items.map((s) => s.trim()).find(Boolean);
+  if (kind === 'pros') {
+    return {
+      pros: items,
+      ...(first ? { mainStrength: first } : {}),
+    };
+  }
+  return {
+    cons: items,
+    ...(first ? { mainWeakness: first } : {}),
+  };
+}
+
 export function countCompleteCategories(
   slugs: string[],
   categoryVerdicts: Record<string, CategoryVerdict>,

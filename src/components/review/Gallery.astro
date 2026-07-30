@@ -5,16 +5,20 @@ import VideoReviewLightbox from './VideoReviewLightbox.astro';
 interface Props {
   images: GalleryImage[];
   product: Product;
-  heroImage?: GalleryImage;
 }
 
-const { images, product, heroImage } = Astro.props;
-const mergedImages = heroImage
-  ? [heroImage, ...images.filter((image) => image.full !== heroImage.full)]
-  : images;
-const hero = mergedImages[0];
+const { images, product } = Astro.props;
+const hero = images[0];
+const heroIsVideo = (hero?.mediaType ?? 'image') === 'video';
 const galleryLightboxItems = JSON.stringify(
-  mergedImages.map((image) => ({ src: image.full, alt: image.alt, caption: image.alt })),
+  images
+    .filter((image) => image.full)
+    .map((image) => ({
+      src: image.full,
+      alt: image.alt,
+      caption: image.alt,
+      type: image.mediaType ?? 'image',
+    })),
 );
 ---
 
@@ -25,48 +29,89 @@ const galleryLightboxItems = JSON.stringify(
       class="relative w-full h-full block group cursor-zoom-in"
       data-lightbox-open={hero?.full}
       data-lightbox-alt={hero?.alt}
+      data-lightbox-type={hero?.mediaType ?? 'image'}
       data-gallery-main-trigger
     >
       <img
-        data-gallery-main
+        data-gallery-main-img
         alt={hero?.alt ?? ''}
-        class="w-full h-full object-cover transition group-hover:scale-[1.01]"
-        src={hero?.full}
+        class:list={[
+          'w-full h-full object-cover transition group-hover:scale-[1.01]',
+          heroIsVideo ? 'hidden' : '',
+        ]}
+        src={heroIsVideo ? undefined : hero?.full}
       />
-      <span class="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/50 text-white text-[11px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-        <span class="material-symbols-outlined text-[14px]">zoom_in</span>
-        Enlarge
+      <video
+        data-gallery-main-video
+        src={heroIsVideo ? hero?.full : undefined}
+        class:list={['w-full h-full object-cover pointer-events-none', heroIsVideo ? '' : 'hidden']}
+        muted
+        playsinline
+        preload="metadata"
+        aria-hidden="true"
+      />
+      <span
+        data-gallery-play-overlay
+        class:list={[
+          'absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-black/35 transition-colors pointer-events-none',
+          heroIsVideo ? '' : 'hidden',
+        ]}
+      >
+        <span class="material-symbols-outlined text-white text-6xl drop-shadow-lg">play_circle</span>
+      </span>
+      <span
+        data-gallery-action-hint
+        class="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/50 text-white text-[11px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+      >
+        <span data-gallery-action-icon class="material-symbols-outlined text-[14px]">
+          {heroIsVideo ? 'play_arrow' : 'zoom_in'}
+        </span>
+        <span data-gallery-action-label>{heroIsVideo ? 'Play' : 'Enlarge'}</span>
       </span>
     </button>
     <VideoReviewLightbox product={product} />
   </div>
 
-  <div class="relative group">
+  <div class="relative">
     <div class="flex overflow-x-auto gap-2 pb-1 no-scrollbar" data-thumb-track>
       {
-        mergedImages.map((image, i) => (
-          <button
-            type="button"
-            data-thumb
-            data-full={image.full}
-            data-alt={image.alt}
-            aria-current={image.full === hero?.full ? 'true' : 'false'}
-            aria-label={`Show image ${i + 1}`}
-            class="thumb flex-none w-24 h-16 sm:w-28 sm:h-18 rounded-lg overflow-hidden"
-          >
-            <img alt={image.alt} class="w-full h-full object-cover" src={image.thumb} />
-          </button>
-        ))
+        images.map((image, i) => {
+          const isVideo = (image.mediaType ?? 'image') === 'video';
+          return (
+            <button
+              type="button"
+              data-thumb
+              data-full={image.full}
+              data-alt={image.alt}
+              data-media-type={image.mediaType ?? 'image'}
+              aria-current={image.full === hero?.full ? 'true' : 'false'}
+              aria-label={`Show ${isVideo ? 'video' : 'image'} ${i + 1}`}
+              class="thumb relative flex-none w-24 h-16 sm:w-28 sm:h-18 rounded-lg overflow-hidden"
+            >
+              {
+                isVideo ? (
+                  <>
+                    <video
+                      src={image.thumb}
+                      class="w-full h-full object-cover pointer-events-none"
+                      muted
+                      playsinline
+                      preload="metadata"
+                      aria-hidden="true"
+                    />
+                    <span class="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                      <span class="material-symbols-outlined text-white text-xl drop-shadow">play_circle</span>
+                    </span>
+                  </>
+                ) : (
+                  <img alt={image.alt} class="w-full h-full object-cover" src={image.thumb} loading="lazy" />
+                )
+              }
+            </button>
+          );
+        })
       }
     </div>
-    <button
-      type="button"
-      data-thumb-next
-      class="gallery-thumb-scroll absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 p-1.5 rounded-full shadow border border-surface-variant opacity-0 group-hover:opacity-100 transition-opacity"
-      aria-label="Scroll thumbnails"
-    >
-      <span class="material-symbols-outlined text-sm">chevron_right</span>
-    </button>
   </div>
 </div>
 
@@ -81,39 +126,109 @@ const galleryLightboxItems = JSON.stringify(
 </style>
 
 <script>
+  const DEBUG_ENDPOINT = 'http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1';
+  const DEBUG_SESSION = '28e868';
+
+  function debugLog(message: string, data: Record<string, unknown>, hypothesisId: string) {
+    fetch(DEBUG_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': DEBUG_SESSION },
+      body: JSON.stringify({
+        sessionId: DEBUG_SESSION,
+        runId: 'post-fix',
+        hypothesisId,
+        location: 'Gallery.astro',
+        message,
+        data,
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  }
+
   document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((root) => {
     if (root.dataset.bound === 'true') return;
     root.dataset.bound = 'true';
 
-    const main = root.querySelector<HTMLImageElement>('[data-gallery-main]');
-    const mainTrigger = root.querySelector<HTMLElement>('[data-gallery-main-trigger]');
+    const mainImg = root.querySelector<HTMLImageElement>('[data-gallery-main-img]');
+    const mainVideo = root.querySelector<HTMLVideoElement>('[data-gallery-main-video]');
+    const playOverlay = root.querySelector<HTMLElement>('[data-gallery-play-overlay]');
+    const actionIcon = root.querySelector<HTMLElement>('[data-gallery-action-icon]');
+    const actionLabel = root.querySelector<HTMLElement>('[data-gallery-action-label]');
+    const mainTrigger = root.querySelector<HTMLButtonElement>('[data-gallery-main-trigger]');
     const thumbs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-thumb]'));
-    const track = root.querySelector<HTMLElement>('[data-thumb-track]');
-    const next = root.querySelector<HTMLButtonElement>('[data-thumb-next]');
 
-    function setMain(full: string, alt: string) {
-      if (main) {
-        main.src = full;
-        main.alt = alt;
+    function setMain(full: string, alt: string, mediaType: string) {
+      const isVideo = mediaType === 'video';
+      if (mainImg) {
+        if (isVideo) {
+          mainImg.classList.add('hidden');
+          mainImg.removeAttribute('src');
+        } else {
+          mainImg.classList.remove('hidden');
+          mainImg.src = full;
+          mainImg.alt = alt;
+        }
       }
+      if (mainVideo) {
+        if (isVideo) {
+          mainVideo.classList.remove('hidden');
+          mainVideo.src = full;
+          mainVideo.setAttribute('aria-label', alt || 'Gallery video');
+        } else {
+          mainVideo.pause();
+          mainVideo.classList.add('hidden');
+          mainVideo.removeAttribute('src');
+        }
+      }
+      playOverlay?.classList.toggle('hidden', !isVideo);
+      if (actionIcon) actionIcon.textContent = isVideo ? 'play_arrow' : 'zoom_in';
+      if (actionLabel) actionLabel.textContent = isVideo ? 'Play' : 'Enlarge';
       if (mainTrigger) {
+        mainTrigger.disabled = false;
+        mainTrigger.classList.add('cursor-zoom-in');
+        mainTrigger.classList.remove('cursor-default');
         mainTrigger.dataset.lightboxOpen = full;
         mainTrigger.dataset.lightboxAlt = alt;
+        mainTrigger.dataset.lightboxType = mediaType;
       }
+
+      debugLog('Gallery main media switched', { full, alt, mediaType, isVideo }, 'H1');
     }
 
     thumbs.forEach((thumb) => {
       thumb.addEventListener('click', () => {
         const full = thumb.dataset.full ?? '';
         const alt = thumb.dataset.alt ?? '';
-        setMain(full, alt);
+        const mediaType = thumb.dataset.mediaType ?? 'image';
+        setMain(full, alt, mediaType);
         thumbs.forEach((t) => t.setAttribute('aria-current', 'false'));
         thumb.setAttribute('aria-current', 'true');
       });
     });
 
-    next?.addEventListener('click', () => {
-      track?.scrollBy({ left: 140, behavior: 'smooth' });
+    root.querySelectorAll('img, video').forEach((el) => {
+      debugLog(
+        'Gallery media mounted',
+        {
+          tag: el.tagName.toLowerCase(),
+          src: (el as HTMLImageElement | HTMLVideoElement).src || null,
+          hidden: el.classList.contains('hidden'),
+        },
+        'H1',
+      );
+
+      if (el.tagName.toLowerCase() !== 'img') return;
+      el.addEventListener('error', () => {
+        const img = el as HTMLImageElement;
+        debugLog(
+          'Gallery img load error',
+          {
+            src: img.currentSrc || img.src || null,
+            alt: img.alt || null,
+          },
+          'H1',
+        );
+      });
     });
   });
 </script>

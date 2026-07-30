@@ -1,0 +1,45 @@
+---
+import type { TestCategoryGoodLooksLikeContent } from '../../data/test-category-methodology';
+
+interface Props {
+  panel: TestCategoryGoodLooksLikeContent;
+}
+
+const { panel } = Astro.props;
+---
+
+<aside class="test-good-looks" aria-labelledby="test-good-looks-title">
+  <h2 id="test-good-looks-title" class="test-category-section-label">{panel.title}</h2>
+  <p class="test-good-looks__intro">{panel.intro}</p>
+
+  <div class="test-good-looks__rows">
+    {
+      panel.rows.map((row) => (
+        <article class="test-good-looks__row">
+          <span class="test-good-looks__weight">{row.weight}%</span>
+          <h3 class="test-good-looks__name">{row.name}</h3>
+          <p class="test-good-looks__text">{row.description}</p>
+        </article>
+      ))
+    }
+  </div>
+
+  <div class="test-good-looks__summary">
+    <p class="test-good-looks__summary-line">
+      <span class="material-symbols-outlined test-good-looks__summary-icon" aria-hidden="true">
+        check_circle
+      </span>
+      <span>
+        <strong>Good overall:</strong> {panel.goodOverall}
+      </span>
+    </p>
+    <p class="test-good-looks__summary-line">
+      <span class="material-symbols-outlined test-good-looks__summary-icon test-good-looks__summary-icon--warn" aria-hidden="true">
+        warning
+      </span>
+      <span>
+        <strong>Weak overall:</strong> {panel.weakOverall}
+      </span>
+    </p>
+  </div>
+</aside>

@@ -20,6 +20,7 @@ export interface GalleryImage {
   full: string;
   thumb: string;
   alt: string;
+  mediaType?: 'image' | 'video';
 }
 
 /** A labeled data point, optionally with a Material Symbols icon name. */
@@ -164,6 +165,22 @@ export interface ReviewBlock {
   data?: Record<string, unknown>;
 }
 
+/** SEO + social fields edited in the admin SEO tab. */
+export interface ProductSeo {
+  seoTitle?: string;
+  seoDescription?: string;
+  h1Override?: string;
+  canonicalUrl?: string;
+  noindex?: boolean;
+  nofollow?: boolean;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImageUrl?: string;
+  socialImageUrl?: string;
+  searchExcerpt?: string;
+  breadcrumbLabel?: string;
+}
+
 export interface Product {
   slug: string;
   name: string;
@@ -197,6 +214,12 @@ export interface Product {
   videoReview?: VideoReview;
   /** Saved review body blocks (admin editor). Empty when no draft exists. */
   reviewBlocks?: ReviewBlock[];
+  /** All product media ids → public URLs (review body image resolution). */
+  reviewMediaById?: Record<string, { url: string; altText?: string; mediaType?: 'image' | 'video' }>;
+  /** Short directory/listing blurb — also used as meta description fallback. */
+  directoryDescription?: string;
+  /** SEO + social fields from the admin SEO tab. */
+  seo?: ProductSeo;
 }
 
 const img = (seed: string, w: number, h: number) => `https://picsum.photos/seed/${seed}/${w}/${h}`;
@@ -406,9 +429,8 @@ const auraAi: Product = {
 
 /**
  * File-based products (fallback / pre-migration content).
- * The canonical source of truth is InstantDB: when USE_DB_CONTENT=1 is set,
- * published DB products (with published test-run scores) replace these at
- * build time via the content store. See src/lib/content/store.ts.
+ * Published DB products (with published test-run scores) are merged in at
+ * build/request time via loadPublishedProducts(). See src/lib/content/store.ts.
  */
 const fileProducts: Product[] = [auraAi];
 

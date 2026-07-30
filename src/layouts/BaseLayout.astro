@@ -10,6 +10,9 @@ interface Props {
   description?: string;
   image?: string;
   robots?: string;
+  canonical?: string;
+  ogTitle?: string;
+  ogDescription?: string;
 }
 
 const {
@@ -17,9 +20,14 @@ const {
   description = 'Independent, data-driven reviews of AI girlfriend and AI companion apps. Deep scoring, safety audits, and side-by-side specs.',
   image,
   robots,
+  canonical: canonicalOverride,
+  ogTitle,
+  ogDescription,
 } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+const canonical = canonicalOverride ?? new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+const ogTitleResolved = ogTitle ?? title;
+const ogDescriptionResolved = ogDescription ?? description;
 ---
 
 <!doctype html>
@@ -37,11 +45,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).to
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
+    <meta property="og:title" content={ogTitleResolved} />
+    <meta property="og:description" content={ogDescriptionResolved} />
     <meta property="og:url" content={canonical} />
     {image && <meta property="og:image" content={image} />}
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={ogTitleResolved} />
+    <meta name="twitter:description" content={ogDescriptionResolved} />
+    {image && <meta name="twitter:image" content={image} />}
 
     <!-- Fonts (from DESIGN.md: Hanken Grotesk / Inter / JetBrains Mono) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

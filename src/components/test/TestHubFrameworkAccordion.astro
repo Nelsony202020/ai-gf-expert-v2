@@ -1,7 +1,7 @@
 ---
 import { type TestCategoryNode } from '../../lib/test-framework';
 import { getTestCategoryMethodology } from '../../data/test-category-methodology';
-import { iconForEvidenceDef } from '../../lib/ratings/evidenceIcons';
+import { iconForMethodologyScoredTest } from '../../lib/ratings/evidenceIcons';
 
 interface Props {
   categories: TestCategoryNode[];
@@ -13,8 +13,8 @@ function countLabel(count: number, singular: string, plural: string) {
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
-function contributorIcon(categoryKey: string, subscoreSlug: string, contributorSlug: string, label: string) {
-  return iconForEvidenceDef(contributorSlug, label);
+function contributorIcon(_categoryKey: string, _subscoreSlug: string, _contributorSlug: string, _label: string) {
+  return iconForMethodologyScoredTest();
 }
 
 function chunkLabels(labels: string[], columns: number) {
@@ -32,7 +32,7 @@ function chunkLabels(labels: string[], columns: number) {
     <span class="test-framework-explorer__crumb-arrow" aria-hidden="true">→</span>
     <span>Subscore</span>
     <span class="test-framework-explorer__crumb-arrow" aria-hidden="true">→</span>
-    <span>Evidence test</span>
+    <span>Evidence group</span>
   </p>
 
   <div class="test-framework-accordion">
@@ -91,7 +91,7 @@ function chunkLabels(labels: string[], columns: number) {
                           <div class="test-framework-evidence-table">
                             <table class="test-framework-evidence-table__grid">
                               <caption class="test-framework-evidence-table__caption">
-                                {countLabel(evidenceContributors.length, 'evidence test', 'evidence tests')}
+                                {countLabel(evidenceContributors.length, 'evidence group', 'evidence groups')}
                               </caption>
                               <tbody>
                                 {

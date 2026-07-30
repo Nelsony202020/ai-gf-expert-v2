@@ -1,0 +1,69 @@
+---
+import type { TestSubscoreMethodologyContent } from '../../data/test-subscore-methodology';
+
+interface Props {
+  subscoreName: string;
+  categoryName: string;
+  subscoreWeight?: number;
+  scoreCalculation: TestSubscoreMethodologyContent['scoreCalculation'];
+}
+
+const { subscoreName, categoryName, subscoreWeight, scoreCalculation } = Astro.props;
+---
+
+<div class="test-subscore-weighted-calc">
+  {
+    scoreCalculation.paragraphs.map((paragraph, index) => (
+      <p class:list={['test-subscore-weighted-calc__intro', index > 0 && 'test-subscore-weighted-calc__intro--secondary']}>
+        {paragraph}
+        {
+          index === scoreCalculation.paragraphs.length - 1 && subscoreWeight != null && (
+            <>
+              {' '}
+              {subscoreName} makes up{' '}
+              <strong class="test-subscore-weighted-calc__share">{subscoreWeight}%</strong>{' '}of the {categoryName} score.
+            </>
+          )
+        }
+      </p>
+    ))
+  }
+
+  <ul class="test-subscore-weighted-calc__weights" aria-label="Evidence group weights">
+    {
+      scoreCalculation.evidenceWeights.map((item) => (
+        <li class="test-subscore-weighted-calc__weight-row">
+          <span class="test-subscore-weighted-calc__pct">{item.weight}%</span>
+          <span class="test-subscore-weighted-calc__label">{item.label}</span>
+          <span class="test-subscore-weighted-calc__bar" aria-hidden="true">
+            <span class="test-subscore-weighted-calc__bar-fill" style={`width: ${item.weight}%`}></span>
+          </span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <div class="test-subscore-weighted-calc__summary" aria-label="Score combination flow">
+    <span class="test-subscore-weighted-calc__summary-icon" aria-hidden="true">
+      <span class="material-symbols-outlined">balance</span>
+    </span>
+    <span class="test-subscore-weighted-calc__summary-text">
+      <strong>Weighted evidence groups</strong> (combined 100%)
+    </span>
+    <span class="test-subscore-weighted-calc__summary-arrow" aria-hidden="true">→</span>
+    <span class="test-subscore-weighted-calc__summary-chip">
+      <strong>{subscoreName} score</strong>
+    </span>
+    {
+      subscoreWeight != null && (
+        <>
+          <span class="test-subscore-weighted-calc__summary-arrow" aria-hidden="true">→</span>
+          <span class="test-subscore-weighted-calc__summary-chip">
+            <strong class="test-subscore-weighted-calc__share">{subscoreWeight}%</strong>
+            <span> of {categoryName} score</span>
+          </span>
+        </>
+      )
+    }
+  </div>
+</div>

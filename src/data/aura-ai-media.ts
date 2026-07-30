@@ -4,7 +4,7 @@ export type MediaFilter =
   | 'videos'
   | 'characters'
   | 'chat'
-  | 'image-generator'
+  | 'generator'
   | '18plus'
   | 'gallery';
 
@@ -105,7 +105,7 @@ export const auraAiMediaGallery: MediaItem[] = [
     thumb: img('img-gen-safe', 400, 300),
     alt: 'Image generator output',
     caption: 'Image generator — portrait',
-    filter: 'image-generator',
+    filter: 'generator',
   },
   {
     id: 'img-gen-2',
@@ -114,7 +114,7 @@ export const auraAiMediaGallery: MediaItem[] = [
     thumb: img('img-gen-style', 400, 300),
     alt: 'Anime style generation',
     caption: 'Image generator — anime style',
-    filter: 'image-generator',
+    filter: 'generator',
   },
   {
     id: 'img-gen-nsfw',
@@ -123,7 +123,7 @@ export const auraAiMediaGallery: MediaItem[] = [
     thumb: img('img-gen-nsfw', 400, 300),
     alt: 'NSFW generation sample',
     caption: 'Image generator — mature content',
-    filter: 'image-generator',
+    filter: 'generator',
     nsfw: true,
   },
   {

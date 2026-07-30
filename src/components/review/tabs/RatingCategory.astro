@@ -9,6 +9,7 @@ import DraftScorePill from '../DraftScorePill.astro';
 import EvidenceCategoryTable from '../EvidenceCategoryTable.astro';
 import SubscoreScoreTooltip from '../tooltips/SubscoreScoreTooltip.astro';
 import CategoryScoreTooltip from '../tooltips/CategoryScoreTooltip.astro';
+import { buildReviewRatingsHash } from '../../../lib/review/ratingsDeepLink';
 
 interface Props {
   category: RatingCategoryType;
@@ -62,6 +63,7 @@ const subscorePanels = category.subscores.map((sub, i) => {
     deferScores,
   };
 });
+const sectionHash = buildReviewRatingsHash(category.key);
 ---
 
 <div
@@ -70,6 +72,7 @@ const subscorePanels = category.subscores.map((sub, i) => {
     isFirst && 'ratings-accordion__item--first',
     isLast && 'ratings-accordion__item--last',
   ]}
+  id={sectionHash}
   data-category={category.key}
 >
   <div class="ratings-accordion__category-heading">

@@ -11,9 +11,11 @@ const { product } = Astro.props;
 const reviewBlocks = product.reviewBlocks ?? [];
 const hasSavedReview = reviewBlocks.length > 0;
 
-const mediaById: Record<string, { url?: string; altText?: string }> = {};
-for (const item of product.mediaItems ?? []) {
-  mediaById[item.id] = { url: item.src, altText: item.alt };
+const mediaById = product.reviewMediaById ?? {};
+if (Object.keys(mediaById).length === 0) {
+  for (const item of product.mediaItems ?? []) {
+    mediaById[item.id] = { url: item.src, altText: item.alt, mediaType: item.type };
+  }
 }
 
 const sections = hasSavedReview
@@ -85,7 +87,7 @@ const reviewVideoId = product.videoReview?.embedUrl
         {
           hasSavedReview ? (
             <>
-              <header class="mb-10">
+              <header class="mb-4">
                 <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-3">
                   {product.name} Hands-On Review
                 </h2>
@@ -113,7 +115,7 @@ const reviewVideoId = product.videoReview?.embedUrl
             </>
           ) : (
             <>
-              <header class="mb-10">
+              <header class="mb-4">
                 <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-3">
                   {product.name} Hands-On Review
                 </h2>
@@ -480,6 +482,12 @@ const reviewVideoId = product.videoReview?.embedUrl
     margin-top: 4px;
   }
 
+  .review-blocks .review-heading--h2:first-child,
+  .review-blocks > .review-heading--h2:first-child,
+  .review-blocks > h2:first-child {
+    margin-top: 0.25rem;
+  }
+
   .review-blocks .review-heading--h2,
   .review-blocks h2 {
     margin: 2rem 0 12px;
@@ -526,6 +534,8 @@ const reviewVideoId = product.videoReview?.embedUrl
   }
 
   .review-blocks .review-figure {
+    display: block;
+    box-sizing: border-box;
     margin: 0 0 1.25rem;
   }
 
@@ -569,6 +579,8 @@ const reviewVideoId = product.videoReview?.embedUrl
   }
 
   .review-blocks .review-figure img {
+    display: block;
+    width: 100%;
     max-width: 100%;
     height: auto;
     border-radius: 10px;

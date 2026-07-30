@@ -1,5 +1,5 @@
-import { products } from './products';
-import { megaMenuColumns } from './nav-mega-menu';
+import type { Product } from './products';
+import { megaMenuColumns, type MegaMenuColumn } from './nav-mega-menu';
 import { legalPages } from './legal-pages';
 
 export type SearchResultType = 'review' | 'roundup' | 'guide' | 'page';
@@ -43,8 +43,11 @@ function typeFromColumnId(id: string): SearchResultType {
 }
 
 /** Flat index for client-side header search. */
-export function buildSearchIndex(): SearchResult[] {
-  const fromMega = megaMenuColumns.flatMap((col) => {
+export function buildSearchIndex(
+  publishedProducts: Pick<Product, 'slug' | 'name'>[] = [],
+  columns: MegaMenuColumn[] = megaMenuColumns,
+): SearchResult[] {
+  const fromMega = columns.flatMap((col) => {
     const type = typeFromColumnId(col.id);
     const items: SearchResult[] = col.links
       .filter((link) => link.href && link.href !== '#' && !link.href.startsWith('#'))
@@ -65,7 +68,7 @@ export function buildSearchIndex(): SearchResult[] {
     return items;
   });
 
-  const fromProducts = products.map((p) => ({
+  const fromProducts = publishedProducts.map((p) => ({
     label: `${p.name} Review`,
     href: `/reviews/${p.slug}`,
     type: 'review' as const,

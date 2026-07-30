@@ -14,7 +14,12 @@ import {
 } from './format-from-rule';
 import { getMethodologySubscoreEvidenceCount } from './methodology-source';
 import { loadPricingMarketRows } from './pricing-market';
-import { categoryBenchmarkConfigs, getCategoryBenchmarkConfig } from '../../data/test-category-benchmarks';
+import {
+  categoryBenchmarkConfigs,
+  getCategoryBenchmarkConfig,
+  getSubscoreBenchmarkConfig,
+  subscoreBenchmarkConfigs,
+} from '../../data/test-category-benchmarks';
 
 function resolveMainRow(row: BenchmarkMainRowConfig): ResolvedBenchmarkMainRow {
   if (row.compositeRef?.kind === 'ynl-pass-count') {
@@ -114,6 +119,10 @@ export function hasCategoryBenchmarkPanel(categoryKey: string): boolean {
   return categoryKey in categoryBenchmarkConfigs;
 }
 
+export function hasSubscoreBenchmarkPanel(categoryKey: string, subscoreSlug: string): boolean {
+  return `${categoryKey}/${subscoreSlug}` in subscoreBenchmarkConfigs;
+}
+
 export async function loadCategoryBenchmarkPanel(
   categoryKey: string,
 ): Promise<ResolvedBenchmarkPanel | null> {
@@ -122,4 +131,18 @@ export async function loadCategoryBenchmarkPanel(
   return resolveConfig(config);
 }
 
-export { categoryBenchmarkConfigs };
+export async function loadSubscoreBenchmarkPanel(
+  categoryKey: string,
+  subscoreSlug: string,
+  introOverride?: string,
+): Promise<ResolvedBenchmarkPanel | null> {
+  const config = getSubscoreBenchmarkConfig(categoryKey, subscoreSlug);
+  if (!config) return null;
+  const panel = await resolveConfig(config);
+  if (introOverride) {
+    return { ...panel, intro: introOverride };
+  }
+  return panel;
+}
+
+export { categoryBenchmarkConfigs, subscoreBenchmarkConfigs };

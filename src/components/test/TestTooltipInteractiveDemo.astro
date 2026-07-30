@@ -1,5 +1,5 @@
 ---
-import { products } from '../../data/products';
+import { loadComparisonProducts, categoryScorePoints } from '../../lib/content/comparisonProducts';
 import { fmtScore, getScoreChipClass } from '../../lib/scores';
 import { buildAllScoreBins } from '../../lib/score-distribution';
 import ScoreDistributionChart from '../review/tooltips/ScoreDistributionChart.astro';
@@ -11,19 +11,15 @@ interface Props {
 
 const { variant, idPrefix } = Astro.props;
 
-const product = products[0];
+const comparisonProducts = await loadComparisonProducts();
+const product = comparisonProducts[0];
 const chatCategory = product.categories.find((c) => c.key === 'chat')!;
 const understanding = chatCategory.subscores.find((s) => s.name === 'Understanding')!;
 
 const chatChip = getScoreChipClass(chatCategory.score);
 const subChip = getScoreChipClass(understanding.score);
 
-const scorePoints = products
-  .map((p) => {
-    const cat = p.categories.find((c) => c.key === 'chat');
-    return cat ? { slug: p.slug, name: p.name, score: cat.score } : null;
-  })
-  .filter((x): x is { slug: string; name: string; score: number } => !!x);
+const scorePoints = categoryScorePoints(comparisonProducts, 'chat');
 
 const bins = buildAllScoreBins(scorePoints);
 const embedClass = 'ratings-tooltip-panel--embed';
@@ -73,7 +69,7 @@ function partId(n: number) {
           </div>
           <div class="test-tooltip-callout-target" id={partId(4)} data-callout="4">
             <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-            <ScoreDistributionChart bins={bins} />
+            <ScoreDistributionChart bins={bins} categoryKey="chat" />
           </div>
         </div>
       </div>
@@ -121,7 +117,7 @@ function partId(n: number) {
           </div>
           <div class="test-tooltip-callout-target" id={partId(4)} data-callout="4">
             <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-            <ScoreDistributionChart bins={bins} />
+            <ScoreDistributionChart bins={bins} categoryKey="chat" subscoreName={understanding.name} />
           </div>
         </div>
       </div>

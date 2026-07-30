@@ -56,7 +56,7 @@ export function testCategoryFeaturedImage(categoryKey: string): string {
 }
 
 export function testCategoryFeaturedImageAlt(categoryName: string): string {
-  return `${categoryName} testing methodology — scoring framework and evidence points`;
+  return `${categoryName} testing methodology — scoring framework and scored tests`;
 }
 
 export const testHubFeaturedImage = 'https://picsum.photos/seed/test-hub-hero/1600/640';

@@ -1,9 +1,18 @@
 ---
-import { megaMenuColumns, trustBadges } from '../data/nav-mega-menu';
+import { buildMegaMenuColumns } from '../data/nav-mega-menu';
 import { buildSearchIndex } from '../data/site-search';
+import { loadComparisonProducts } from '../lib/content/comparisonProducts';
 import ThemeToggle from './ui/ThemeToggle.astro';
 
-const searchIndex = buildSearchIndex();
+const publishedProducts = await loadComparisonProducts();
+const megaMenuColumns = buildMegaMenuColumns(publishedProducts);
+const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
+const mobileReviewLinks = [...publishedProducts]
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .map((product) => ({
+    label: `${product.name} Review`,
+    href: `/reviews/${product.slug}`,
+  }));
 ---
 
 <header class="site-header relative z-50" data-site-header>
@@ -112,7 +121,11 @@ const searchIndex = buildSearchIndex();
       <a href="/ai-girlfriend-apps" class="site-header__mobile-link">All Apps</a>
       <a href="/best/ai-girlfriend" class="site-header__mobile-link">Best AI Girlfriend Apps</a>
       <a href="/guides/how-to-choose-an-ai-girlfriend-app" class="site-header__mobile-link">How to Choose an AI Girlfriend App</a>
-      <a href="/reviews/aura-ai" class="site-header__mobile-link">Aura AI Review</a>
+      {
+        mobileReviewLinks.map((link) => (
+          <a href={link.href} class="site-header__mobile-link">{link.label}</a>
+        ))
+      }
       <a href="/test/" class="site-header__mobile-link">How We Review</a>
     </nav>
     <div class="site-header__mobile-actions">
@@ -134,22 +147,6 @@ const searchIndex = buildSearchIndex();
     aria-label="Explore"
   >
     <div class="section-container px-4 md:px-8">
-      <div class="site-header__mega-trust">
-        {
-          trustBadges.map((badge) => (
-            <div class="site-header__trust-item">
-              <span class="site-header__trust-icon">
-                <span class="material-symbols-outlined">{badge.icon}</span>
-              </span>
-              <div>
-                <p class="site-header__trust-title">{badge.title}</p>
-                <p class="site-header__trust-sub">{badge.sub}</p>
-              </div>
-            </div>
-          ))
-        }
-      </div>
-
       <div class="site-header__mega-grid">
         {
           megaMenuColumns.map((col) => (

@@ -26,6 +26,14 @@ function parseCount(value: string | null | undefined): number | null {
   return Number.isNaN(num) ? null : num;
 }
 
+const GENDER_COUNT_LABELS: Record<string, string> = {
+  'female-count': 'female',
+  'male-count': 'male',
+  'transgender-count': 'transgender',
+  'non-binary-count': 'non-binary',
+  'other-count': 'other',
+};
+
 function formatGroupValue(
   groupSlug: string,
   memberSlugs: string[],
@@ -34,6 +42,19 @@ function formatGroupValue(
 ): string {
   if (fileRow?.value?.trim() && fileRow.value !== '—') {
     return fileRow.value.trim();
+  }
+
+  if (groupSlug === 'genders') {
+    const parts = memberSlugs
+      .map((slug) => {
+        const result = resultBySlug.get(slug);
+        const val = parseCount(result?.publicResult);
+        if (val == null) return null;
+        const label = GENDER_COUNT_LABELS[slug] ?? slug;
+        return `${val} ${label}`;
+      })
+      .filter((part): part is string => part != null);
+    if (parts.length > 0) return parts.join(' · ');
   }
 
   if (memberSlugs.length === 1) {
@@ -48,15 +69,7 @@ function formatGroupValue(
   if (memberResults.length === 0) return '—';
 
   if (groupSlug === 'amount') {
-    const nonAnimeSlugs = new Set([
-      'female-count',
-      'male-count',
-      'transgender-count',
-      'non-binary-count',
-      'other-count',
-    ]);
-    const countSlugs = memberSlugs.filter((slug) => nonAnimeSlugs.has(slug) || !slug.includes('anime'));
-    const nums = countSlugs
+    const nums = memberSlugs
       .map((slug) => parseCount(resultBySlug.get(slug)?.publicResult))
       .filter((num): num is number => num != null);
     if (nums.length > 0) {

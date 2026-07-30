@@ -8,15 +8,11 @@ interface TocItem {
 interface Props {
   title?: string;
   items: TocItem[];
-  topAnchor?: string;
-  topLabel?: string;
 }
 
 const {
   title = 'On this page',
   items,
-  topAnchor,
-  topLabel = 'Top',
 } = Astro.props;
 ---
 
@@ -24,16 +20,6 @@ const {
   <nav class="roundup-toc" aria-label="Table of contents">
     <p class="roundup-toc__title">{title}</p>
     <ul class="roundup-toc__list">
-      {
-        topAnchor && (
-          <li>
-            <a class="roundup-toc__link roundup-toc__link--top" href={topAnchor}>
-              <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
-              {topLabel}
-            </a>
-          </li>
-        )
-      }
       {
         items.map((item) => (
           <li>

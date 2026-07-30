@@ -14,15 +14,19 @@ import {
   copyToClipboard,
 } from './insertHelpers';
 import { normalizeListField } from '../../../lib/ai-verdict/notesSchema';
+import {
+  enforceProsConsLines,
+  isProsConsListField,
+} from '../../../lib/ai-verdict/fieldPromptHelpers';
 
 type FieldMode = 'write' | 'rewrite' | 'shorten' | 'specific' | 'another';
 
 const MODE_LABELS: Record<FieldMode, string> = {
-  write: 'Write this field',
-  rewrite: 'Rewrite for clarity',
-  shorten: 'Shorten',
-  specific: 'Make more specific',
-  another: 'Give another version',
+  write: 'Write fresh',
+  rewrite: 'Easier to read',
+  shorten: 'Make shorter',
+  specific: 'More detail',
+  another: 'Another try',
 };
 
 export function AiFieldAssist({
@@ -72,7 +76,7 @@ export function AiFieldAssist({
         fieldMode: nextMode,
         notesContext: notesContext?.length ? notesContext : undefined,
       });
-      const text = res.suggestion.structuredOutput.field_suggestion?.text?.trim();
+      let text = res.suggestion.structuredOutput.field_suggestion?.text?.trim();
       if (!text) {
         const out = res.suggestion.structuredOutput;
         const hint =
@@ -81,6 +85,9 @@ export function AiFieldAssist({
             : out.warnings?.[0];
         setError(hint ?? 'No suggestion returned — try again.');
         return;
+      }
+      if (isListField && isProsConsListField(targetField)) {
+        text = enforceProsConsLines(text);
       }
       setPreview(text);
       setOpen(true);
@@ -148,7 +155,7 @@ export function AiFieldAssist({
         <div className="rounded-lg border border-pink-100 bg-pink-50/50 p-2.5 dark:border-pink-900/40 dark:bg-pink-950/20">
           {!preview && !loading && (
             <p className="mb-2 text-[11px] text-slate-500 dark:text-slate-400">
-              Choose how AI should write this field:
+              Pick what you want AI to do:
             </p>
           )}
           <div className="flex flex-wrap gap-1">
@@ -177,11 +184,11 @@ export function AiFieldAssist({
               <p className="whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-200">{preview}</p>
               <div className="flex flex-wrap gap-1.5">
                 <Button variant="secondary" className="!py-1 text-xs" onClick={() => applyPreview('replace')}>
-                  {hasText ? 'Replace' : 'Insert'}
+                  Use this
                 </Button>
                 {hasText && (
                   <Button variant="ghost" className="!py-1 text-xs" onClick={() => applyPreview('insert')}>
-                    Append
+                    Add below
                   </Button>
                 )}
                 <Button
@@ -196,7 +203,7 @@ export function AiFieldAssist({
                   className="!py-1 text-xs"
                   onClick={() => void runSuggest('another')}
                 >
-                  Try another
+                  Try again
                 </Button>
                 <Button
                   variant="ghost"
@@ -206,7 +213,7 @@ export function AiFieldAssist({
                     setOpen(false);
                   }}
                 >
-                  Dismiss
+                  Close
                 </Button>
               </div>
             </div>

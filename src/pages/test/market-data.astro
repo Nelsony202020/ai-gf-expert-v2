@@ -5,6 +5,8 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import StandardContentHero from '../../components/content/StandardContentHero.astro';
 import StandardContentToc from '../../components/content/StandardContentToc.astro';
+import TestPageBackLink from '../../components/test/TestPageBackLink.astro';
+import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import { marketDataSections } from '../../data/methodology-support-content';
 import { testHubUrl, toSlug } from '../../lib/slugs';
 import '../../styles/test-hub.css';
@@ -13,6 +15,8 @@ const sections = marketDataSections.map((section) => ({
   ...section,
   id: toSlug(section.title),
 }));
+const pageTitle = 'Market Data Methodology — AI Girlfriend Expert';
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 ---
 
 <BaseLayout
@@ -24,7 +28,6 @@ const sections = marketDataSections.map((section) => ({
     <StandardContentToc
       slot="sidebar"
       items={sections.map((section) => ({ id: section.id, label: section.title }))}
-      topAnchor="#test-market-data-top"
     />
 
     <StandardContentHero
@@ -54,11 +57,9 @@ const sections = marketDataSections.map((section) => ({
         Popularity and search demand provide useful context. They do not measure how well an app performs in hands-on testing and do not affect the overall performance score.
       </blockquote>
 
-      <a class="test-inline-link test-page__back" href={testHubUrl()}>
-        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-        Back to how we test
-      </a>
+      <TestPageBackLink href={testHubUrl()} label="how we test" />
     </div>
   </StandardContentLayout>
   <Footer />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal />
 </BaseLayout>

@@ -1,0 +1,17 @@
+---
+interface Props {
+  href: string;
+  label: string;
+  position?: 'top' | 'bottom';
+}
+
+const { href, label, position = 'bottom' } = Astro.props;
+---
+
+<a
+  class:list={['test-inline-link', 'test-page__back', position === 'top' && 'test-page__back--top']}
+  href={href}
+>
+  <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+  Back to {label}
+</a>

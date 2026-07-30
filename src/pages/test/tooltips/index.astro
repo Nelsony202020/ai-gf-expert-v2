@@ -12,6 +12,7 @@ import TestTooltipSubscoreAnnotation from '../../../components/test/TestTooltipS
 import TestHubSidebar from '../../../components/test/TestHubSidebar.astro';
 import TestTooltipUsageRow from '../../../components/test/TestTooltipUsageRow.astro';
 import RoundupFaq from '../../../components/roundup/RoundupFaq.astro';
+import ArticleUtilityRail from '../../../components/article/ArticleUtilityRail.astro';
 import { getTestCategories } from '../../../lib/test-framework';
 import {
   testTooltipsCategoryUsage,
@@ -33,6 +34,7 @@ const tooltipFaqItems = testTooltipsFaq.map((item) => ({
 }));
 
 const pageTitle = 'How Our Score Tooltips Work — AI Girlfriend Expert';
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 ---
 
 <BaseLayout
@@ -68,7 +70,7 @@ const pageTitle = 'How Our Score Tooltips Work — AI Girlfriend Expert';
           <section id="why-tooltips" class="test-hub__section">
             <h2 class="test-hub__h2">Why do we use tooltips?</h2>
             <p class="test-hub__lead">
-              Our reviews contain a lot of data. We have an overall performance score, eight category ratings, subscores, and dozens of individual evidence points.
+              Our reviews contain a lot of data. We have an overall performance score, eight category ratings, subscores, and dozens of individual scored tests.
             </p>
             <p class="test-hub__lead">
               This level of detail makes our reviews more helpful and accurate, but it can also feel overwhelming.
@@ -218,6 +220,7 @@ const pageTitle = 'How Our Score Tooltips Work — AI Girlfriend Expert';
     </div>
   </StandardContentLayout>
   <Footer />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
 
   <script>
     function initTestHubNav() {
@@ -369,6 +372,17 @@ const pageTitle = 'How Our Score Tooltips Work — AI Girlfriend Expert';
           if (hint) hint.hidden = false;
         }
 
+        function distAppHref(slug: string, chart: HTMLElement): string {
+          const categoryKey = chart.dataset.distLinkCategory || '';
+          const subscoreSlug = chart.dataset.distLinkSubscore || '';
+          let hash = 'ratings';
+          if (categoryKey) {
+            hash = `ratings--${categoryKey}`;
+            if (subscoreSlug) hash += `--${subscoreSlug}`;
+          }
+          return `/reviews/${slug}#${hash}`;
+        }
+
         function renderApps(selected: (typeof bins)[number]) {
           if (rangeLabel) rangeLabel.textContent = `${selected.start.toFixed(1)}–${selected.end.toFixed(1)}`;
           if (rangeRow) rangeRow.hidden = false;
@@ -383,7 +397,7 @@ const pageTitle = 'How Our Score Tooltips Work — AI Girlfriend Expert';
 
           selected.apps.forEach((app) => {
             const a = document.createElement('a');
-            a.href = `/reviews/${app.slug}#ratings`;
+            a.href = distAppHref(app.slug, chart);
             a.className = 'rt-dist-chart__app';
             a.innerHTML = `<span>${app.name}</span><span class="rt-score-chip ${scoreChipClass(app.score)}">${app.score.toFixed(1)}</span>`;
             appsEl!.appendChild(a);

@@ -1,6 +1,6 @@
 ---
 import type { Subscore } from '../../../data/products';
-import { products } from '../../../data/products';
+import { loadComparisonProducts, subscoreScorePoints } from '../../../lib/content/comparisonProducts';
 import { equalWeights, fmtScore, getScoreChipClass, weightedValue } from '../../../lib/scores';
 import { buildAllScoreBins } from '../../../lib/score-distribution';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
@@ -26,13 +26,8 @@ const contributorPoints = sub.contributors.map((c, i) => {
   return { ...c, internal, weight, contribution };
 });
 
-const scorePoints = products
-  .map((p) => {
-    const cat = p.categories.find((c) => c.key === categoryKey);
-    const matchSub = cat?.subscores.find((s) => s.name === sub.name);
-    return matchSub ? { slug: p.slug, name: p.name, score: matchSub.score } : null;
-  })
-  .filter((x): x is { slug: string; name: string; score: number } => !!x);
+const comparisonProducts = await loadComparisonProducts();
+const scorePoints = subscoreScorePoints(comparisonProducts, categoryKey, sub.name);
 
 const avgScore = scorePoints.length
   ? scorePoints.reduce((s, x) => s + x.score, 0) / scorePoints.length
@@ -101,7 +96,7 @@ const panelClass = [
 
     <div {...(annotate ? { 'data-annotation-target': '4' } : {})}>
       <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-      <ScoreDistributionChart bins={bins} />
+      <ScoreDistributionChart bins={bins} categoryKey={categoryKey} subscoreName={sub.name} />
     </div>
   </div>
 </div>

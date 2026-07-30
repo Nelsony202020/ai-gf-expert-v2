@@ -200,6 +200,31 @@ export function formatYnlPassCountTiers(count: number) {
   };
 }
 
+/** Index of the band a numeric count falls into (cumulative upTo thresholds). */
+export function bandIndexForCount(count: number, rule: ScoringRule): number | null {
+  if (rule.kind !== 'bands') return null;
+  const sorted = [...rule.bands].sort((a, b) => a.upTo - b.upTo);
+  const idx = sorted.findIndex((band) => count <= band.upTo);
+  return idx >= 0 ? idx : sorted.length - 1;
+}
+
+/** Score a numeric count using cumulative band thresholds (matches the scoring engine). */
+export function scoreFromBandsRule(count: number, rule: ScoringRule): number | null {
+  if (rule.kind !== 'bands') return null;
+  const sorted = [...rule.bands].sort((a, b) => a.upTo - b.upTo);
+  const band = sorted.find((b) => count <= b.upTo) ?? sorted[sorted.length - 1];
+  return band.score;
+}
+
+function bandRangeLabel(min: number, max: number): string {
+  if (max >= 999999) {
+    return min <= 0 ? '1+' : `${min}+`;
+  }
+  if (min === 0) return `${max} or fewer`;
+  if (min === max) return `${max}`;
+  return `${min}–${max}`;
+}
+
 /** Human-readable scoring band lines for methodology pages, e.g. "4 styles = 8/10". */
 export function formatScoringBandsForDisplay(
   rule: ScoringRule,
@@ -219,7 +244,7 @@ export function formatScoringBandsForDisplay(
     let rangeLabel: string;
 
     if (max >= 999999) {
-      rangeLabel = min <= 1 ? `${min === 0 ? 1 : min}+ ${plural}` : `${min + 1}+ ${plural}`;
+      rangeLabel = `${bandRangeLabel(min, max)} ${plural}`;
     } else if (min === max) {
       rangeLabel = `${max} ${max === 1 ? singular : plural}`;
     } else if (min === 0) {
@@ -233,6 +258,40 @@ export function formatScoringBandsForDisplay(
   }
 
   return lines;
+}
+
+export interface ScoringBandTableRow {
+  range: string;
+  score: number;
+  /** Row matching the example result shown on the card. */
+  isMatch?: boolean;
+}
+
+/** Compact table rows for scored-test methodology cards. */
+export function formatScoringBandsTableRows(
+  rule: ScoringRule,
+  options?: { matchBandIndex?: number | null },
+): ScoringBandTableRow[] {
+  if (rule.kind !== 'bands') return [];
+
+  const sorted = [...rule.bands].sort((a, b) => a.upTo - b.upTo);
+  const rows: ScoringBandTableRow[] = [];
+  let prev = -1;
+
+  for (let i = 0; i < sorted.length; i++) {
+    const band = sorted[i]!;
+    const min = prev + 1;
+    const max = band.upTo;
+
+    rows.push({
+      range: bandRangeLabel(min, max),
+      score: band.score,
+      isMatch: options?.matchBandIndex != null && options.matchBandIndex === i,
+    });
+    prev = max;
+  }
+
+  return rows;
 }
 
 export function formatSubscoreControlTiers(count: number) {

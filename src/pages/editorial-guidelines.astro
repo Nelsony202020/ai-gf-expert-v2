@@ -5,6 +5,8 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import StandardContentHero from '../components/content/StandardContentHero.astro';
 import StandardContentToc from '../components/content/StandardContentToc.astro';
+import TestPageBackLink from '../components/test/TestPageBackLink.astro';
+import ArticleUtilityRail from '../components/article/ArticleUtilityRail.astro';
 import { editorialGuidelinesSections } from '../data/methodology-support-content';
 import { testHubUrl, toSlug } from '../lib/slugs';
 import '../styles/test-hub.css';
@@ -13,6 +15,8 @@ const sections = editorialGuidelinesSections.map((section) => ({
   ...section,
   id: toSlug(section.title),
 }));
+const pageTitle = 'Editorial Guidelines — AI Girlfriend Expert';
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 ---
 
 <BaseLayout
@@ -24,7 +28,6 @@ const sections = editorialGuidelinesSections.map((section) => ({
     <StandardContentToc
       slot="sidebar"
       items={sections.map((section) => ({ id: section.id, label: section.title }))}
-      topAnchor="#editorial-guidelines-top"
     />
 
     <StandardContentHero
@@ -53,11 +56,9 @@ const sections = editorialGuidelinesSections.map((section) => ({
         <a class="test-inline-link" href="/legal/affiliate-disclosure/">affiliate disclosure</a>.
       </p>
 
-      <a class="test-inline-link test-page__back" href={testHubUrl()}>
-        <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-        Back to how we test
-      </a>
+      <TestPageBackLink href={testHubUrl()} label="how we test" />
     </div>
   </StandardContentLayout>
   <Footer />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal />
 </BaseLayout>

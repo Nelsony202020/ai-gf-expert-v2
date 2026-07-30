@@ -11,27 +11,24 @@ interface Props {
 
 const { categoryKey, subscoreSlug, section } = Astro.props;
 
+function bandLabels(slug: string): { singular?: string; plural?: string } {
+  if (slug.endsWith('-count')) {
+    return { singular: 'character', plural: 'characters' };
+  }
+  if (slug === 'styles') return { singular: 'style', plural: 'styles' };
+  if (slug === 'ethnicities') return { plural: 'categories' };
+  if (slug === 'personalities') return { plural: 'types' };
+  if (slug === 'scenarios') return { plural: 'scenarios' };
+  return {};
+}
+
 function scoringLines(section: TestEvidenceSectionContent): string[] {
   if (section.scoringLines?.length) return section.scoringLines;
 
   if (section.scoringEvidenceSlug) {
     const evidence = findEvidenceBySlug(categoryKey, subscoreSlug, section.scoringEvidenceSlug);
     if (evidence?.scoringRule) {
-      const unit = section.scoringEvidenceSlug === 'styles' ? 'style' : undefined;
-      const plural =
-        section.scoringEvidenceSlug === 'styles'
-          ? 'styles'
-          : section.scoringEvidenceSlug === 'ethnicities'
-            ? 'categories'
-            : section.scoringEvidenceSlug === 'personalities'
-              ? 'types'
-              : section.scoringEvidenceSlug === 'scenarios'
-                ? 'scenarios'
-                : undefined;
-      return formatScoringBandsForDisplay(evidence.scoringRule, {
-        singular: unit,
-        plural,
-      });
+      return formatScoringBandsForDisplay(evidence.scoringRule, bandLabels(section.scoringEvidenceSlug));
     }
   }
 

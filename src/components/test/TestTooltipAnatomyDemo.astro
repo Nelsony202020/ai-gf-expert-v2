@@ -1,11 +1,12 @@
 ---
-import { products } from '../../data/products';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 import { fmtScore, getScoreChipClass } from '../../lib/scores';
 import { getCategoryBrandIcon } from '../../lib/category-brand-icons';
 import { testTooltipsAnatomyCallouts } from '../../data/test-tooltips-content';
 import TestTooltipCalloutBadge from './TestTooltipCalloutBadge.astro';
 
-const product = products[0];
+const comparisonProducts = await loadComparisonProducts();
+const product = comparisonProducts[0];
 const chatCategory = product.categories.find((c) => c.key === 'chat')!;
 const chatChip = getScoreChipClass(chatCategory.score);
 const brandIcon = getCategoryBrandIcon('chat');

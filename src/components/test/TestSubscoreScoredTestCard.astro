@@ -1,0 +1,517 @@
+---
+import { findEvidenceBySlug } from '../../lib/test-methodology-evidence';
+import {
+  bandIndexForCount,
+  formatScoringBandsTableRows,
+  formatScoringBandsForDisplay,
+  scoreFromBandsRule,
+} from '../../lib/test-category-benchmarks/format-from-rule';
+import { formatScore } from '../../lib/test-subscore-exact-calculation';
+import { iconForMethodologyScoredTest } from '../../lib/ratings/evidenceIcons';
+import type { TestEvidenceSectionContent } from '../../data/test-subscore-methodology';
+
+interface Props {
+  categoryKey: string;
+  subscoreSlug: string;
+  section: TestEvidenceSectionContent;
+  sharePercent?: number;
+  /** Label for share context — the evidence group, e.g. Amount. */
+  shareOfLabel?: string;
+  /** Total public weight for the evidence group, e.g. 30 for Amount. */
+  shareGroupWeight?: number;
+  hideWhyItMatters?: boolean;
+}
+
+const { categoryKey, subscoreSlug, section, sharePercent, shareOfLabel, shareGroupWeight, hideWhyItMatters } =
+  Astro.props;
+
+function scoringTableMeta(
+  slug: string,
+  categoryKey?: string,
+  subscoreSlug?: string,
+): { columnLabel: string; scoreLabel: string } {
+  if (slug.endsWith('-count')) {
+    return { columnLabel: 'Characters', scoreLabel: 'Score' };
+  }
+  if (slug === 'styles') return { columnLabel: 'Styles', scoreLabel: 'Score' };
+  if (slug === 'ethnicities') return { columnLabel: 'Categories', scoreLabel: 'Score' };
+  if (slug === 'personalities') return { columnLabel: 'Types', scoreLabel: 'Score' };
+  if (slug === 'scenarios') return { columnLabel: 'Scenarios', scoreLabel: 'Score' };
+  if (slug === 'filters') return { columnLabel: 'Useful filters', scoreLabel: 'Score' };
+  if (slug === 'categories') return { columnLabel: 'Useful categories', scoreLabel: 'Score' };
+  if (slug === 'search') return { columnLabel: 'Search result', scoreLabel: 'Score' };
+  if (slug === 'duplicates') return { columnLabel: 'Duplicate rate', scoreLabel: 'Score' };
+  if (slug === 'originality') return { columnLabel: 'Characters that pass', scoreLabel: 'Score' };
+  if (slug === 'profile-quality' || slug === 'visual-quality') {
+    return { columnLabel: 'Checks passed', scoreLabel: 'Score' };
+  }
+  if (slug === 'age') return { columnLabel: 'Age options', scoreLabel: 'Score' };
+  if (slug === 'ethnicity') return { columnLabel: 'Ethnicity options', scoreLabel: 'Score' };
+  if (slug === 'eye-color') return { columnLabel: 'Eye colors', scoreLabel: 'Score' };
+  if (slug === 'body-type') return { columnLabel: 'Body types', scoreLabel: 'Score' };
+  if (slug === 'breast-size') return { columnLabel: 'Breast-size options', scoreLabel: 'Score' };
+  if (slug === 'hair-style') return { columnLabel: 'Hairstyles', scoreLabel: 'Score' };
+  if (slug === 'hair-color') return { columnLabel: 'Hair colors', scoreLabel: 'Score' };
+  if (slug === 'outfits') return { columnLabel: 'Outfits', scoreLabel: 'Score' };
+  if (slug === 'creator-personalities') return { columnLabel: 'Personality presets', scoreLabel: 'Score' };
+  if (slug === 'traits') return { columnLabel: 'Traits', scoreLabel: 'Score' };
+  if (slug === 'interests') return { columnLabel: 'Interests', scoreLabel: 'Score' };
+  if (slug === 'relationship') return { columnLabel: 'Relationship types', scoreLabel: 'Score' };
+  if (slug === 'role') return { columnLabel: 'Roles', scoreLabel: 'Score' };
+  if (slug === 'voice') return { columnLabel: 'Voices', scoreLabel: 'Score' };
+  if (slug === 'kink-options') return { columnLabel: 'Kink options', scoreLabel: 'Score' };
+  if (slug === 'custom-prompts' || slug === 'preview') return { columnLabel: 'Result', scoreLabel: 'Score' };
+  if (slug === 'editing') return { columnLabel: 'Editable areas', scoreLabel: 'Score' };
+  if (slug === 'memory') return { columnLabel: 'Facts remembered', scoreLabel: 'Score' };
+  if (slug === 'relevance') return { columnLabel: 'Direct answers', scoreLabel: 'Score' };
+  if (slug === 'context') return { columnLabel: 'Context tests passed', scoreLabel: 'Score' };
+  if (slug === 'instructions') return { columnLabel: 'Instructions followed', scoreLabel: 'Score' };
+  if (slug === 'roleplay-accuracy') return { columnLabel: 'Roleplay checks passed', scoreLabel: 'Score' };
+  if (slug === 'naturalness') return { columnLabel: 'Natural replies', scoreLabel: 'Score' };
+  if (slug === 'personality') return { columnLabel: 'Chats that pass', scoreLabel: 'Score' };
+  if (slug === 'roleplay') return { columnLabel: 'Roleplay checks passed', scoreLabel: 'Score' };
+  if (slug === 'initiative') return { columnLabel: 'Replies showing initiative', scoreLabel: 'Score' };
+  if (slug === 'emotion') return { columnLabel: 'Emotional moments handled well', scoreLabel: 'Score' };
+  if (slug === 'style') return { columnLabel: 'Replies matching the style', scoreLabel: 'Score' };
+  if (slug === 'repetition') return { columnLabel: 'Repetition problems per 50 replies', scoreLabel: 'Score' };
+  if (slug === 'refusals') return { columnLabel: 'Refusals per 50 prompts', scoreLabel: 'Score' };
+  if (slug === 'reply-speed') return { columnLabel: 'Median reply time', scoreLabel: 'Score' };
+  if (slug === 'errors') return { columnLabel: 'Errors per 50 replies', scoreLabel: 'Score' };
+  if (slug === 'consistency') return { columnLabel: 'Contradiction rate', scoreLabel: 'Score' };
+  if (slug === 'recovery') return { columnLabel: 'Recovery tests passed', scoreLabel: 'Score' };
+  if (slug === 'chat-modes') return { columnLabel: 'Chat modes', scoreLabel: 'Score' };
+  if (slug === 'double-texting') return { columnLabel: 'Double-texting moments per 100 messages', scoreLabel: 'Score' };
+  if (slug === 'mode-types') return { columnLabel: 'Mode rating', scoreLabel: 'Score' };
+  if (slug === 'realism') return { columnLabel: 'Average rating', scoreLabel: 'Score' };
+  if (slug === 'visual-errors') {
+    if (categoryKey === 'video' && subscoreSlug === 'quality') {
+      return { columnLabel: 'Videos with a major error', scoreLabel: 'Score' };
+    }
+    return { columnLabel: 'Images with major errors', scoreLabel: 'Score' };
+  }
+  if (slug === 'composition') return { columnLabel: 'Average rating', scoreLabel: 'Score' };
+  if (slug === 'resolution') return { columnLabel: 'Maximum resolution', scoreLabel: 'Score' };
+  if (slug === 'motion' || slug === 'accuracy' || slug === 'frame-consistency') {
+    return { columnLabel: 'Average rating', scoreLabel: 'Score' };
+  }
+  if (slug === 'character-consistency' && categoryKey === 'video' && subscoreSlug === 'quality') {
+    return { columnLabel: 'Average rating', scoreLabel: 'Score' };
+  }
+  if (slug === 'prompt-accuracy') return { columnLabel: 'Prompt details followed', scoreLabel: 'Score' };
+  if (slug === 'character-consistency') return { columnLabel: 'Overall consistency', scoreLabel: 'Score' };
+  if (slug === 'face-consistency') return { columnLabel: 'Images with the same face', scoreLabel: 'Score' };
+  if (slug === 'body-consistency') return { columnLabel: 'Images with the same body', scoreLabel: 'Score' };
+  if (slug === 'style-consistency') return { columnLabel: 'Images with the same style', scoreLabel: 'Score' };
+  if (slug === 'editing-accuracy') return { columnLabel: 'Editing checks passed', scoreLabel: 'Score' };
+  if (slug === 'speed') return { columnLabel: 'Median generation time', scoreLabel: 'Score' };
+  if (slug === 'failures') return { columnLabel: 'Failure rate', scoreLabel: 'Score' };
+  if (
+    slug === 'chat-generation' ||
+    slug === 'separate-generator' ||
+    slug === 'image-editing' ||
+    slug === 'nsfw-support' ||
+    slug === 'text-to-video' ||
+    slug === 'image-to-video' ||
+    slug === 'chat-video' ||
+    slug === 'audio'
+  ) {
+    return { columnLabel: 'Result', scoreLabel: 'Score' };
+  }
+  if (slug === 'maximum-length') return { columnLabel: 'Maximum length', scoreLabel: 'Score' };
+  if (slug === 'maximum-resolution') return { columnLabel: 'Maximum resolution', scoreLabel: 'Score' };
+  if (slug === 'ease-of-use') return { columnLabel: 'Average steps', scoreLabel: 'Score' };
+  if (slug === 'regeneration') return { columnLabel: 'Result', scoreLabel: 'Score' };
+  if (
+    slug === 'training' ||
+    slug === 'human-review' ||
+    slug === 'data-sharing' ||
+    slug === 'advertising'
+  ) {
+    return { columnLabel: 'Result', scoreLabel: 'Score' };
+  }
+  if (slug === 'policy-clarity') return { columnLabel: 'Questions clearly answered', scoreLabel: 'Score' };
+  if (slug === 'security-incidents') {
+    return { columnLabel: 'Confirmed incidents in the past five years', scoreLabel: 'Score' };
+  }
+  if (slug === 'encryption' || slug === 'two-factor-authentication' || slug === 'billing-descriptor') {
+    return { columnLabel: 'Result', scoreLabel: 'Score' };
+  }
+  if (slug === 'support-reach' || slug === 'support-speed' || slug === 'support-helpfulness') {
+    return { columnLabel: 'Rating', scoreLabel: 'Score' };
+  }
+  if (slug === 'monthly-price') return { columnLabel: 'Monthly price', scoreLabel: 'Score' };
+  if (slug === 'annual-price') return { columnLabel: 'Effective price', scoreLabel: 'Score' };
+  if (slug === 'included-features') return { columnLabel: 'Features included', scoreLabel: 'Score' };
+  if (slug === 'included-credits') return { columnLabel: 'Credits included', scoreLabel: 'Score' };
+  if (slug === 'plan-limits') return { columnLabel: 'Limits', scoreLabel: 'Score' };
+  if (slug === 'annual-discount') return { columnLabel: 'Annual discount', scoreLabel: 'Score' };
+  if (slug === 'image-cost') return { columnLabel: 'Cost per image', scoreLabel: 'Score' };
+  if (slug === 'video-cost') return { columnLabel: 'Cost per 10 seconds', scoreLabel: 'Score' };
+  if (slug === 'voice-cost') return { columnLabel: 'Cost per 10 seconds', scoreLabel: 'Score' };
+  if (slug === 'call-cost') return { columnLabel: 'Cost per minute', scoreLabel: 'Score' };
+  if (slug === 'top-up-value') return { columnLabel: 'Package value', scoreLabel: 'Score' };
+  if (slug === 'monthly-spend') return { columnLabel: 'Estimated spend', scoreLabel: 'Score' };
+  if (slug === 'free-chat') return { columnLabel: 'Free messages', scoreLabel: 'Score' };
+  if (slug === 'free-images') return { columnLabel: 'Free images', scoreLabel: 'Score' };
+  if (slug === 'free-video') return { columnLabel: 'Free videos', scoreLabel: 'Score' };
+  if (slug === 'free-voice') return { columnLabel: 'Free voice time', scoreLabel: 'Score' };
+  if (slug === 'free-characters') return { columnLabel: 'Characters', scoreLabel: 'Score' };
+  if (slug === 'free-value') return { columnLabel: 'Result', scoreLabel: 'Score' };
+  if (slug === 'restrictions') return { columnLabel: 'Restrictions', scoreLabel: 'Score' };
+  if (slug === 'pricing-clarity') return { columnLabel: 'Checks passed', scoreLabel: 'Score' };
+  if (slug === 'paywalls') return { columnLabel: 'Features paywalled', scoreLabel: 'Score' };
+  if (
+    slug === 'credit-expiry' ||
+    slug === 'refunds' ||
+    slug === 'cancellation' ||
+    slug === 'payment-privacy'
+  ) {
+    return { columnLabel: 'Result', scoreLabel: 'Score' };
+  }
+  return { columnLabel: 'Result', scoreLabel: 'Score' };
+}
+
+function parseDisplayedResult(text: string): { count: number; label: string } | null {
+  const match = text.match(/^(\d+)\s+(.+)$/);
+  if (!match) return null;
+  return { count: Number(match[1]), label: match[2]! };
+}
+
+const parsedResult = parseDisplayedResult(section.displayedResult);
+const evidenceForScoring = section.scoringEvidenceSlug
+  ? findEvidenceBySlug(categoryKey, subscoreSlug, section.scoringEvidenceSlug)
+  : null;
+const bandExampleScore =
+  parsedResult && evidenceForScoring?.scoringRule
+    ? scoreFromBandsRule(parsedResult.count, evidenceForScoring.scoringRule)
+    : null;
+
+function parseScoreFromFootnote(footnote?: string): number | null {
+  if (!footnote) return null;
+  const match = footnote.match(/scores?\s+(\d+(?:\.\d+)?)\/10/i);
+  return match ? Number(match[1]) : null;
+}
+
+function normalizeResultPrefix(text: string): string {
+  const dashSplit = text.split(/\s*[—–-]\s*/)[0];
+  return (dashSplit ?? text).trim().toLowerCase();
+}
+
+function rowMatchesDisplayedResult(range: string, displayedResult: string): boolean {
+  const resultPrefix = normalizeResultPrefix(displayedResult);
+  const rangePrefix = normalizeResultPrefix(range);
+  if (resultPrefix && rangePrefix && resultPrefix === rangePrefix) return true;
+  if (rangePrefix && resultPrefix.startsWith(rangePrefix)) return true;
+  const rangeCore = range.split('=')[0]?.trim().toLowerCase();
+  if (rangeCore && displayedResult.toLowerCase().includes(rangeCore)) return true;
+  return false;
+}
+
+function resolveExampleScore(): number | null {
+  if (section.exampleScore != null) return section.exampleScore;
+  const fromFootnote = parseScoreFromFootnote(section.scoringFootnote);
+  if (fromFootnote != null) return fromFootnote;
+  return bandExampleScore;
+}
+
+function parseScoringLine(line: string): { range: string; score: number | null; scoreLabel: string } | null {
+  const numeric = line.match(/^(.+?)\s*=\s*(\d+(?:\.\d+)?)\/10$/);
+  if (numeric) {
+    return {
+      range: numeric[1]!,
+      score: Number(numeric[2]),
+      scoreLabel: `${numeric[2]}/10`,
+    };
+  }
+  const notApplicable = line.match(/^(.+?)\s*=\s*Not Applicable$/i);
+  if (notApplicable) {
+    return {
+      range: notApplicable[1]!,
+      score: null,
+      scoreLabel: 'Not Applicable',
+    };
+  }
+  const excluded = line.match(/^(.+?)\s*=\s*Excluded$/i);
+  if (excluded) {
+    return {
+      range: excluded[1]!,
+      score: null,
+      scoreLabel: 'Excluded',
+    };
+  }
+  const rescaled = line.match(/^(.+?)\s*=\s*Removed and weights rescaled$/i);
+  if (rescaled) {
+    return {
+      range: rescaled[1]!,
+      score: null,
+      scoreLabel: 'Removed and weights rescaled',
+    };
+  }
+  return null;
+}
+
+function scoringRows() {
+  const exampleCount = parsedResult?.count ?? null;
+  const matchScore = resolveExampleScore();
+  const displayedResult = section.displayedResult;
+
+  if (section.scoringLines?.length) {
+    return section.scoringLines
+      .map((line) => parseScoringLine(line))
+      .filter((row): row is { range: string; score: number | null; scoreLabel: string } => row != null)
+      .map((row) => ({
+        range: row.range,
+        score: row.score ?? 0,
+        scoreLabel: row.scoreLabel,
+        isMatch:
+          rowMatchesDisplayedResult(row.range, displayedResult) ||
+          (row.score != null && matchScore != null && row.score === matchScore),
+      }));
+  }
+
+  if (evidenceForScoring?.scoringRule) {
+    const matchBandIndex =
+      exampleCount != null ? bandIndexForCount(exampleCount, evidenceForScoring.scoringRule) : null;
+    return formatScoringBandsTableRows(evidenceForScoring.scoringRule, { matchBandIndex });
+  }
+
+  return [];
+}
+
+const usesBandScoring = evidenceForScoring?.scoringRule?.kind === 'bands';
+const exampleScore = resolveExampleScore();
+const scoringFootnoteText =
+  section.scoringFootnote ??
+  (parsedResult && exampleScore != null
+    ? `A result of ${parsedResult.count} ${parsedResult.label} scores ${exampleScore}/10.`
+    : undefined);
+
+const tableMeta = scoringTableMeta(section.id, categoryKey, subscoreSlug);
+const bands = scoringRows();
+const showWhy = section.showWhyItMatters !== false && !hideWhyItMatters;
+
+function formatSharePercent(value: number): string {
+  const formatted = formatScore(value);
+  return formatted.endsWith('.00') ? formatted.slice(0, -3) : formatted;
+}
+
+function scoringIntroForSection(section: TestEvidenceSectionContent): string | undefined {
+  if (section.scoringIntro) return section.scoringIntro;
+
+  const slug = section.id;
+  if (slug.endsWith('-count')) {
+    return 'More characters means a higher score. We use the ranges below.';
+  }
+  if (slug === 'styles') {
+    return 'More styles means a higher score. We use the ranges below.';
+  }
+  if (slug === 'ethnicities') {
+    return 'More categories means a higher score. We use the ranges below.';
+  }
+  if (slug === 'personalities') {
+    return 'More personality types means a higher score. We use the ranges below.';
+  }
+  if (slug === 'scenarios') {
+    return 'More scenarios means a higher score. We use the ranges below.';
+  }
+  if (slug === 'filters') {
+    return 'More useful filters means a higher score. We use the ranges below.';
+  }
+  if (slug === 'categories') {
+    return 'More useful categories means a higher score. We use the ranges below.';
+  }
+
+  const firstLine = section.scoringLines?.[0] ?? '';
+  if (/^(Poor|Fair|Good|Very good|Excellent)\s*=/.test(firstLine)) {
+    return 'We use the ratings below.';
+  }
+  if (/^(Yes|No|Limited|Unknown)\s/i.test(firstLine)) {
+    return 'We use the result categories below.';
+  }
+  if (section.scoringLines?.length) {
+    return 'We use the ranges below.';
+  }
+
+  return undefined;
+}
+
+const scoringIntroText = scoringIntroForSection(section);
+const showScoringSection =
+  !section.referenceOnly &&
+  (bands.length > 0 || Boolean(scoringIntroText) || Boolean(section.scoringNote) || Boolean(section.scoringFootnote));
+const showReferenceScoring = section.referenceOnly && Boolean(section.scoringNote);
+---
+
+<article class="test-scored-test scroll-mt-24" id={section.id}>
+  <header class="test-scored-test__head">
+    <div class="test-scored-test__title-row">
+      <span class="material-symbols-outlined test-scored-test__icon" aria-hidden="true">
+        {iconForMethodologyScoredTest()}
+      </span>
+      <h4 class="test-scored-test__title">{section.title}</h4>
+    </div>
+    {
+      sharePercent != null && shareOfLabel && (
+        <div class="test-scored-test__share-wrap">
+          <span class="test-scored-test__share">{formatSharePercent(sharePercent)}%</span>
+          <span class="test-scored-test__share-context">
+            of {shareOfLabel}
+            {shareGroupWeight != null && ` (${formatSharePercent(shareGroupWeight)}% total)`}
+          </span>
+        </div>
+      )
+    }
+  </header>
+
+  <p class="test-scored-test__lead">{section.whatItMeasures}</p>
+
+  {
+    showWhy && (
+      <p class="test-scored-test__why">{section.whyItMatters}</p>
+    )
+  }
+
+  <div class="test-scored-test__grid">
+    <div class="test-scored-test__col">
+      <section class="test-scored-test__block">
+        <h5 class="test-scored-test__label">How we test</h5>
+        <p>{section.howWeTest}</p>
+      </section>
+
+      <div class="test-scored-test__details">
+        <div class="test-scored-test__details-counts">
+          <section class="test-scored-test__block">
+            <h5 class="test-scored-test__label">What counts</h5>
+            <ul class="test-scored-test__counts-list">
+              {section.whatWeCount.map((item) => <li>{item}</li>)}
+            </ul>
+          </section>
+
+          <section class="test-scored-test__block">
+            <h5 class="test-scored-test__label">What does not count</h5>
+            <ul class="test-scored-test__counts-list">
+              {section.whatWeDoNotCount.map((item) => <li>{item}</li>)}
+            </ul>
+          </section>
+        </div>
+
+        {
+          section.edgeCases && (
+            <aside class="test-scored-test__block test-scored-test__block--note">
+              <div class="test-scored-test__note">
+                <div class="test-scored-test__note-head">
+                  <span class="material-symbols-outlined test-scored-test__note-icon" aria-hidden="true">
+                    info
+                  </span>
+                  <h5 class="test-scored-test__note-title">Important note</h5>
+                </div>
+                <p class="test-scored-test__note-body">{section.edgeCases}</p>
+              </div>
+            </aside>
+          )
+        }
+      </div>
+    </div>
+
+    <div class="test-scored-test__col test-scored-test__col--results">
+      <section class="test-scored-test__block">
+        <h5 class="test-scored-test__label">Result shown</h5>
+        <p class="test-scored-test__result">{section.displayedResult}</p>
+        {
+          section.displayedResultExtra && (
+            <p class="test-scored-test__result-extra">{section.displayedResultExtra}</p>
+          )
+        }
+      </section>
+
+      {
+        (showScoringSection || showReferenceScoring) && (
+          <section class="test-scored-test__block">
+            <h5 class="test-scored-test__label">Scoring</h5>
+            {
+              showReferenceScoring ? (
+                <>
+                  <p class="test-scored-test__scoring-intro">
+                    <strong>Not scored</strong>
+                  </p>
+                  {section.scoringNote && <p class="test-scored-test__score-note">{section.scoringNote}</p>}
+                </>
+              ) : (
+                <>
+            {
+              scoringIntroText && (
+                <p class="test-scored-test__scoring-intro">{scoringIntroText}</p>
+              )
+            }
+            {
+              bands.length > 0 && (
+                <div class="test-scored-test__score-table-wrap">
+                  <table class="test-scored-test__score-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">{tableMeta.columnLabel}</th>
+                        <th scope="col">{tableMeta.scoreLabel}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {
+                        bands.map((band) => (
+                          <tr class:list={[band.isMatch && 'test-scored-test__score-row--match']}>
+                            <td>{band.range}</td>
+                            <td>{band.scoreLabel ?? `${band.score}/10`}</td>
+                          </tr>
+                        ))
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              )
+            }
+            {
+              scoringFootnoteText && (usesBandScoring || section.scoringFootnote || section.scoringLines?.length) && (
+                <p class="test-scored-test__score-footnote">{scoringFootnoteText}</p>
+              )
+            }
+            {
+              section.scoringDisclosure && (
+                <details class="test-scored-test__bands-disclosure">
+                  <summary>View all scoring bands</summary>
+                  <div class="test-scored-test__bands-disclosure-body">
+                    {
+                      section.scoringDisclosure.memberSlugs.map((member) => {
+                        const evidence = findEvidenceBySlug(categoryKey, subscoreSlug, member.slug);
+                        const lines =
+                          evidence?.scoringRule && evidence.scoringRule.kind === 'bands'
+                            ? formatScoringBandsForDisplay(evidence.scoringRule, {
+                                singular: 'character',
+                                plural: 'characters',
+                              })
+                            : [];
+                        return (
+                          lines.length > 0 && (
+                            <div>
+                              <p class="test-scored-test__bands-disclosure-label">{member.label}</p>
+                              <ul>
+                                {lines.map((line) => <li>{line}</li>)}
+                              </ul>
+                            </div>
+                          )
+                        );
+                      })
+                    }
+                  </div>
+                </details>
+              )
+            }
+            {
+              section.scoringNote && <p class="test-scored-test__score-note">{section.scoringNote}</p>
+            }
+                </>
+              )
+            }
+          </section>
+        )
+      }
+    </div>
+  </div>
+</article>

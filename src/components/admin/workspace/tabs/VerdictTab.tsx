@@ -28,7 +28,7 @@ import {
   computeVerdictProgress,
   VERDICT_STEPS,
 } from '../verdict/verdictSteps';
-import { sanitizeCategoryVerdictDraft } from '../verdict/categoryVerdictProgress';
+import { sanitizeCategoryVerdictDraft, patchCategoryProsOrCons } from '../verdict/categoryVerdictProgress';
 import { useVerdictTestingSummary, countCategoryRemainingRequired } from '../verdict/useVerdictTestingSummary';
 import { workspaceTabPath } from '../completion';
 
@@ -300,7 +300,11 @@ export function VerdictTab() {
     const normalized = normalizeListField(items);
     if (notesSectionKey?.startsWith('category:')) {
       const slug = notesSectionKey.slice(9);
-      setCategoryVerdict(slug, { [fieldKey]: normalized });
+      if (fieldKey === 'pros' || fieldKey === 'cons') {
+        setCategoryVerdict(slug, patchCategoryProsOrCons(fieldKey, normalized));
+      } else {
+        setCategoryVerdict(slug, { [fieldKey]: normalized });
+      }
       markAiAssisted([`categoryVerdicts.${slug}.${fieldKey}`]);
       return;
     }
@@ -613,7 +617,7 @@ export function VerdictTab() {
                   {renderAssist({
                     fieldKey: 'pros',
                     targetField:
-                      'pros — 3–5 specific pros based on test results, each under 120 characters',
+                      'pros — 3–5 pros, max 5 words each, short phrases not sentences',
                     hasText: pros.length > 0,
                     list: true,
                     onItems: (items) => set('pros', items),
@@ -637,7 +641,7 @@ export function VerdictTab() {
                   {renderAssist({
                     fieldKey: 'cons',
                     targetField:
-                      'cons — 2–4 honest cons based on test results, each under 120 characters',
+                      'cons — 2–4 cons, max 5 words each, short phrases not sentences',
                     hasText: cons.length > 0,
                     list: true,
                     onItems: (items) => set('cons', items),

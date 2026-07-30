@@ -5,6 +5,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { AdminErrorBoundary } from '../ErrorBoundary';
+import { lazyImport } from '../lazyImport';
 import { ErrorNote, Spinner } from '../ui';
 import { useToast } from '../Toast';
 import { WorkspaceProvider, useProductWorkspaceState, useWorkspace } from './context';
@@ -15,7 +16,10 @@ import { WORKSPACE_TABS, type WorkspaceTabId } from './completion';
 const SetupTab = lazy(() => import('./tabs/SetupTab').then((m) => ({ default: m.SetupTab })));
 const TestingTab = lazy(() => import('./tabs/TestingTab').then((m) => ({ default: m.TestingTab })));
 const VerdictTab = lazy(() => import('./tabs/VerdictTab').then((m) => ({ default: m.VerdictTab })));
-const ReviewTab = lazy(() => import('./tabs/ReviewTab').then((m) => ({ default: m.ReviewTab })));
+const ReviewTab = lazyImport(
+  () => import('./tabs/ReviewTab').then((m) => ({ default: m.ReviewTab })),
+  'ReviewTab',
+);
 const MediaTab = lazy(() => import('./tabs/MediaTab').then((m) => ({ default: m.MediaTab })));
 const CharactersTab = lazy(() =>
   import('./tabs/CharactersTab').then((m) => ({ default: m.CharactersTab })),

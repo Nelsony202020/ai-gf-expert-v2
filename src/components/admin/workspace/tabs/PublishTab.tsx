@@ -241,15 +241,6 @@ export function PublishTab() {
                 <Icon name="save" /> {actionBusy === 'save' ? 'Saving…' : 'Save draft'}
               </Button>
             )}
-            {canEdit && status === 'draft' && (
-              <Button
-                variant="secondary"
-                onClick={() => void setStatus('in_review', 'Submitted for review.')}
-                disabled={actionBusy !== null}
-              >
-                <Icon name="rate_review" /> Submit for review
-              </Button>
-            )}
             {canEdit && (status === 'in_review' || status === 'scheduled') && (
               <Button
                 variant="secondary"

@@ -37,6 +37,11 @@ export function iconForEvidenceDef(slug: string, label?: string): string {
   return EVIDENCE_DEF_ICONS[normalized] ?? 'analytics';
 }
 
+/** Single icon for all scored tests on methodology pages (subscore + category test hubs). */
+export function iconForMethodologyScoredTest(): string {
+  return 'analytics';
+}
+
 /** Products waiting on category benchmarks before pricing subscores are fully scored. */
 export const PRICING_BENCHMARK_PENDING_SLUGS = new Set(['candy-ai']);
 

@@ -1,10 +1,11 @@
 ---
-import { products } from '../../data/products';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 import SubscoreScoreTooltipPanel from '../review/tooltips/SubscoreScoreTooltipPanel.astro';
 import TestTooltipAnnotation from './TestTooltipAnnotation.astro';
 import { testTooltipsSubscoreAnnotations } from '../../data/test-tooltips-content';
 
-const product = products[0];
+const comparisonProducts = await loadComparisonProducts();
+const product = comparisonProducts[0];
 const chatCategory = product.categories.find((category) => category.key === 'chat')!;
 const understanding = chatCategory.subscores.find((subscore) => subscore.name === 'Understanding')!;
 ---

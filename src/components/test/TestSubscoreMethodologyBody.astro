@@ -1,84 +1,150 @@
 ---
 import type { TestCategoryNode, TestSubscoreNode } from '../../lib/test-framework';
 import type { TestSubscoreMethodologyContent } from '../../data/test-subscore-methodology';
+import TestSubscoreEvidenceGroups from './TestSubscoreEvidenceGroups.astro';
 import TestSubscoreEvidenceSection from './TestSubscoreEvidenceSection.astro';
+import TestSubscoreWeightedCalculation from './TestSubscoreWeightedCalculation.astro';
+import TestSubscoreExactCalculation from './TestSubscoreExactCalculation.astro';
+import TestSubscoreRoadmap from './TestSubscoreRoadmap.astro';
+import TestCategoryGoodLooksLike from './TestCategoryGoodLooksLike.astro';
+import TestPageBackLink from './TestPageBackLink.astro';
+import { getPublicEvidenceGroupDisplay } from '../../lib/test-subscore-public-evidence';
+import {
+  hasSubscoreBenchmarkPanel,
+  loadSubscoreBenchmarkPanel,
+} from '../../lib/test-category-benchmarks/load-panel';
 
 interface Props {
   category: TestCategoryNode;
   subscore: TestSubscoreNode;
   content: TestSubscoreMethodologyContent;
+  subscoreWeight?: number;
 }
 
-const { category, subscore, content } = Astro.props;
+const { category, subscore, content, subscoreWeight } = Astro.props;
+
+const highLowIntro = content.highLowScore.paragraphs.join(' ');
+
+const benchmarkPanel = hasSubscoreBenchmarkPanel(content.categoryKey, content.subscoreSlug)
+  ? await loadSubscoreBenchmarkPanel(content.categoryKey, content.subscoreSlug, highLowIntro)
+  : null;
+
+const evidenceGroups = getPublicEvidenceGroupDisplay(content.categoryKey, content.subscoreSlug);
+const evidenceGroupCount = evidenceGroups?.length ?? 0;
+const scoredTestCount = content.evidenceSections.length;
+const evidenceGroupsIntro =
+  content.evidenceHierarchy?.sectionIntro ??
+  `${subscore.name} has ${evidenceGroupCount} evidence groups made up of ${scoredTestCount} scored tests.`;
 ---
 
-<div id="test-subscore-top" class="test-subscore-methodology">
-  <section id="why-it-matters" class="test-page__section scroll-mt-24">
-    <h2 class="test-page__h2">{content.whyItMatters.title}</h2>
-    {
-      content.whyItMatters.paragraphs.map((paragraph) => (
-        <p class="test-methodology-prose">{paragraph}</p>
-      ))
-    }
+<div id="test-subscore-top" class="test-subscore-methodology test-hub__main">
+  <section id="score-calculation" class="test-category-calc scroll-mt-24">
+    <h2 class="test-category-section-label">{content.scoreCalculation.title}</h2>
+
+    <TestSubscoreWeightedCalculation
+      subscoreName={subscore.name}
+      categoryName={category.name}
+      subscoreWeight={subscoreWeight}
+      scoreCalculation={content.scoreCalculation}
+    />
+
+    <TestSubscoreExactCalculation
+      categoryKey={content.categoryKey}
+      subscoreSlug={content.subscoreSlug}
+      subscoreName={subscore.name}
+      categoryName={category.name}
+      subscoreWeight={subscoreWeight}
+      categoryWeight={category.weight}
+      scoreCalculation={content.scoreCalculation}
+    />
   </section>
 
-  <section id="how-we-test" class="test-page__section scroll-mt-24">
-    <h2 class="test-page__h2">{content.howWeTest.title}</h2>
-    {
-      content.howWeTest.paragraphs.map((paragraph) => (
-        <p class="test-methodology-prose">{paragraph}</p>
-      ))
-    }
-  </section>
-
-  <section id="high-low-score" class="test-page__section scroll-mt-24">
-    <h2 class="test-page__h2">{content.highLowScore.title}</h2>
-    {
-      content.highLowScore.paragraphs.map((paragraph) => (
-        <p class="test-methodology-prose">{paragraph}</p>
-      ))
-    }
-  </section>
-
-  <section id="score-calculation" class="test-page__section scroll-mt-24">
-    <h2 class="test-page__h2">{content.scoreCalculation.title}</h2>
-    {
-      content.scoreCalculation.paragraphs.map((paragraph) => (
-        <p class="test-methodology-prose">{paragraph}</p>
-      ))
-    }
-    <details class="test-subscore-methodology__calc-disclosure">
-      <summary>{content.scoreCalculation.exactCalculationTitle}</summary>
-      <p class="test-methodology-prose">{content.scoreCalculation.exactCalculationBody}</p>
-    </details>
-  </section>
-
-  <section id="evidence-we-measure" class="test-page__section scroll-mt-24">
-    <h2 class="test-page__h2">Evidence we measure</h2>
-    <div class="test-evidence-list">
+  <section id="why-it-matters" class="test-category-why scroll-mt-24">
+    <div class:list={['test-category-why-split', benchmarkPanel && 'test-category-why-split--with-benchmarks']}>
+      <div class="test-category-why-split__col">
+        <h2 class="test-category-section-label">{content.whyItMatters.title}</h2>
+        {
+          content.whyItMatters.paragraphs[0] && (
+            <p class="test-category-subscore__lead">{content.whyItMatters.paragraphs[0]}</p>
+          )
+        }
+        {
+          content.whyItMatters.paragraphs.slice(1).map((paragraph) => (
+            <p class="test-category-subscore__body">{paragraph}</p>
+          ))
+        }
+      </div>
       {
-        content.evidenceSections.map((section) => (
-          <TestSubscoreEvidenceSection
-            categoryKey={content.categoryKey}
-            subscoreSlug={content.subscoreSlug}
-            section={section}
-          />
+        benchmarkPanel && (
+          <div class="test-category-why-split__col test-category-why-split__col--benchmarks">
+            <TestCategoryGoodLooksLike panel={benchmarkPanel} />
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  <section id="how-we-test" class="test-category-split scroll-mt-24">
+    <div class="test-category-split__col">
+      <h2 class="test-category-section-label">{content.howWeTest.title}</h2>
+      {
+        content.howWeTest.paragraphs.map((paragraph) => (
+          <p class="test-methodology-prose">{paragraph}</p>
+        ))
+      }
+    </div>
+
+    <div class="test-category-split__col" id="limitations">
+      <h2 class="test-category-section-label">{content.limitations.title}</h2>
+      {
+        content.limitations.paragraphs.map((paragraph) => (
+          <p class="test-methodology-prose">{paragraph}</p>
         ))
       }
     </div>
   </section>
 
-  <section id="limitations" class="test-page__section scroll-mt-24">
-    <h2 class="test-page__h2">{content.limitations.title}</h2>
+  <section id="evidence-groups" class="test-evidence-groups-section scroll-mt-24">
+    <h2 class="test-page__h2 test-evidence-groups-section__title">Evidence groups</h2>
+    <p class="test-evidence-groups-section__intro">{evidenceGroupsIntro}</p>
     {
-      content.limitations.paragraphs.map((paragraph) => (
-        <p class="test-methodology-prose">{paragraph}</p>
-      ))
+      evidenceGroups && (
+        <>
+          <div class="test-evidence-groups-section__divider" role="presentation" />
+          <TestSubscoreRoadmap
+            category={category}
+            subscore={subscore}
+            activeLevel="evidence"
+            evidenceCount={evidenceGroups.length}
+          />
+        </>
+      )
+    }
+    {
+      evidenceGroups ? (
+        <TestSubscoreEvidenceGroups
+          categoryKey={content.categoryKey}
+          subscoreSlug={content.subscoreSlug}
+          groups={evidenceGroups}
+          sections={content.evidenceSections}
+          groupContent={content.evidenceGroupContent}
+          evidenceWeights={content.scoreCalculation.evidenceWeights}
+        />
+      ) : (
+        <div class="test-evidence-list">
+          {
+            content.evidenceSections.map((section) => (
+              <TestSubscoreEvidenceSection
+                categoryKey={content.categoryKey}
+                subscoreSlug={content.subscoreSlug}
+                section={section}
+              />
+            ))
+          }
+        </div>
+      )
     }
   </section>
 
-  <a class="test-inline-link test-page__back" href={category.href}>
-    <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-    Back to {category.name}
-  </a>
+  <TestPageBackLink href={category.href} label={category.name} />
 </div>

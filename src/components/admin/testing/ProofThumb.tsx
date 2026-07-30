@@ -2,6 +2,7 @@ import { useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { EntityRow } from '../api';
 import { Icon } from '../ui';
+import { resolveMediaUrl } from '../../../lib/media/url';
 import { proofMediaLabel } from './proofTags';
 
 function ImageHoverPreview({ url, anchorRect, isVideo = false }: { url: string; anchorRect: DOMRect; isVideo?: boolean }) {
@@ -36,7 +37,7 @@ function ImageHoverPreview({ url, anchorRect, isVideo = false }: { url: string; 
 }
 
 function ProofHoverPreview({ media, anchorRect }: { media: EntityRow; anchorRect: DOMRect }) {
-  const url = String(media.url ?? '');
+  const url = resolveMediaUrl(media);
   if (!url) return null;
   return <ImageHoverPreview url={url} anchorRect={anchorRect} isVideo={media.mediaType === 'video'} />;
 }
@@ -105,7 +106,7 @@ export function ProofThumb({
   const [hover, setHover] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const isVideo = media.mediaType === 'video';
-  const url = String(media.url ?? '');
+  const url = resolveMediaUrl(media);
   const title = proofMediaLabel(media.caption) || 'Proof';
   const dim = size === 'sm' ? 'h-8 w-8' : 'h-9 w-9';
   const iconSize = size === 'sm' ? '!text-[14px]' : '!text-[18px]';
@@ -124,6 +125,8 @@ export function ProofThumb({
       >
         {url && !isVideo ? (
           <img src={url} alt="" className="h-full w-full object-cover" />
+        ) : url && isVideo ? (
+          <video src={url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
         ) : isVideo ? (
           <div className="flex h-full w-full items-center justify-center bg-slate-900">
             <Icon name="play_arrow" className={`${iconSize} text-white/90`} />

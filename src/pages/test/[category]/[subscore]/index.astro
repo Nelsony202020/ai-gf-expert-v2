@@ -5,11 +5,15 @@ import Header from '../../../../components/Header.astro';
 import Footer from '../../../../components/Footer.astro';
 import TestSubscoreMethodologyBody from '../../../../components/test/TestSubscoreMethodologyBody.astro';
 import TestSubscoreMethodologyHero from '../../../../components/test/TestSubscoreMethodologyHero.astro';
+import TestPageBackLink from '../../../../components/test/TestPageBackLink.astro';
 import TestHubSidebar from '../../../../components/test/TestHubSidebar.astro';
+import ArticleUtilityRail from '../../../../components/article/ArticleUtilityRail.astro';
 import { findTestSubscore, getTestCategories } from '../../../../lib/test-framework';
 import { getMethodology } from '../../../../data/methodology';
 import { getTestSubscoreMethodology } from '../../../../data/test-subscore-methodology';
+import { getPublicEvidenceGroupDisplay } from '../../../../lib/test-subscore-public-evidence';
 import { getTestCategoryMethodology } from '../../../../data/test-category-methodology';
+import { buildSubscoreRelatedMethodology } from '../../../../data/test-hub-content';
 import { testCategoryUrl, testHubUrl } from '../../../../lib/slugs';
 import '../../../../styles/test-hub.css';
 
@@ -42,6 +46,7 @@ if (!match) {
 const { category: catNode, sub: subNode } = match;
 const richContent = getTestSubscoreMethodology(category!, subscore!);
 const pageTitle = `${subNode.name} — ${catNode.name} — How We Test`;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 
 const evidenceItems = subNode.contributors.map((contributor) => ({
   id: contributor.slug,
@@ -54,26 +59,27 @@ const subscoreWeight = categoryMethodology?.scoreCalculation.weights.find(
   (item) => item.name === subNode.name,
 )?.weight;
 
+const evidenceGroups = getPublicEvidenceGroupDisplay(category!, subscore!);
+
+const relatedMethodology = buildSubscoreRelatedMethodology(catNode, subNode.slug);
+
 const tocItems = richContent
   ? [
+      { id: 'score-calculation', label: richContent.scoreCalculation.title },
       { id: 'why-it-matters', label: richContent.whyItMatters.title },
       { id: 'how-we-test', label: richContent.howWeTest.title },
-      { id: 'high-low-score', label: richContent.highLowScore.title },
-      { id: 'score-calculation', label: richContent.scoreCalculation.title },
       {
-        id: 'evidence-we-measure',
-        label: 'Evidence we measure',
-        children: richContent.evidenceSections.map((section) => ({
-          id: section.id,
-          label: section.title,
-        })),
+        id: 'evidence-groups',
+        label: 'Evidence groups',
+        children: evidenceGroups
+          ? evidenceGroups.map((group) => ({ id: group.slug, label: group.label }))
+          : evidenceItems.map((item) => ({ id: item.id, label: item.label })),
       },
-      { id: 'limitations', label: richContent.limitations.title },
     ]
   : [
       {
-        id: 'evidence-we-measure',
-        label: 'Evidence we measure',
+        id: 'evidence-groups',
+        label: 'Evidence groups',
         children: evidenceItems.map((item) => ({ id: item.id, label: item.label })),
       },
     ];
@@ -89,9 +95,7 @@ const tocItems = richContent
       slot="sidebar"
       categories={categories}
       tocSections={tocItems}
-      relatedMethodology={categoryMethodology?.related}
-      topAnchor="#test-subscore-top"
-      topSectionId="test-subscore-top"
+      relatedMethodology={relatedMethodology}
     />
 
     <TestSubscoreMethodologyHero
@@ -105,19 +109,29 @@ const tocItems = richContent
       category={catNode}
       subscore={subNode}
       intro={richContent?.heroIntro ?? [subNode.description]}
-      evidenceCount={evidenceItems.length}
+      evidenceGroupCount={evidenceGroups?.length ?? subNode.contributors.length}
+      scoredTestCount={
+        richContent?.evidenceSections.filter((section) => !section.referenceOnly).length ??
+        richContent?.evidenceSections.length
+      }
       subscoreWeight={subscoreWeight}
+      evidenceHierarchy={richContent?.evidenceHierarchy}
     />
 
     {
       richContent ? (
-        <TestSubscoreMethodologyBody category={catNode} subscore={subNode} content={richContent} />
+        <TestSubscoreMethodologyBody
+          category={catNode}
+          subscore={subNode}
+          content={richContent}
+          subscoreWeight={subscoreWeight}
+        />
       ) : (
         <div id="test-subscore-top">
           {
             evidenceItems.length > 0 && (
-              <section id="evidence-we-measure" class="test-page__section scroll-mt-24">
-                <h2 class="test-page__h2">Evidence we measure</h2>
+              <section id="evidence-groups" class="test-page__section scroll-mt-24">
+                <h2 class="test-page__h2">Evidence groups</h2>
                 <div class="test-evidence-list">
                   {
                     evidenceItems.map((item) => {
@@ -140,7 +154,7 @@ const tocItems = richContent
                               </>
                             ) : (
                               <p class="test-evidence-item__body">
-                                Documentation for this evidence point is being added.
+                                Documentation for this scored test is being added.
                               </p>
                             )
                           }
@@ -153,15 +167,13 @@ const tocItems = richContent
             )
           }
 
-          <a class="test-inline-link test-page__back" href={catNode.href}>
-            <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-            Back to {catNode.name}
-          </a>
+          <TestPageBackLink href={catNode.href} label={catNode.name} />
         </div>
       )
     }
   </StandardContentLayout>
   <Footer />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal />
 
   <script>
     function initTestHubNav() {

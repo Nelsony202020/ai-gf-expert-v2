@@ -79,10 +79,15 @@ export const POST: APIRoute = handler(async ({ request }) => {
   const uploaded = await db.storage.uploadFile(path, buffer, { contentType });
 
   // Resolve the stored file's URL for caching on the media record.
-  const { $files } = await db.query({
-    $files: { $: { where: { id: uploaded.data.id } } },
-  });
-  const fileUrl = $files[0]?.url as string | undefined;
+  let fileUrl: string | undefined;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { $files } = await db.query({
+      $files: { $: { where: { id: uploaded.data.id } } },
+    });
+    fileUrl = $files[0]?.url as string | undefined;
+    if (fileUrl) break;
+    await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+  }
 
   const featuresTagged = form.get('features') === '1' || form.get('features') === 'true';
   const uploadRole = (form.get('role') as string) || 'gallery';
@@ -130,8 +135,19 @@ export const POST: APIRoute = handler(async ({ request }) => {
   const legacyFields = omitUndefined({
     url: fileUrl,
     mediaType: contentType.startsWith('video/') ? 'video' : 'image',
+    fileSize: file.size,
+    altText: (form.get('altText') as string) || undefined,
+    caption: (form.get('caption') as string) || undefined,
+    credit: (form.get('credit') as string) || undefined,
     adult: adultRaw === '1',
+    ageGated: adultRaw === '1',
+    role: uploadRole,
+    testCategory: (form.get('testCategory') as string) || undefined,
+    uploadedBy: identity.email,
+    approved: isHeroUpload ? true : undefined,
     createdAt: Date.now(),
+    width: form.get('width') ? Number(form.get('width')) : undefined,
+    height: form.get('height') ? Number(form.get('height')) : undefined,
   });
 
   function mediaChunk(fields: Record<string, unknown>) {

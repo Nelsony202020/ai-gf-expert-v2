@@ -156,7 +156,10 @@ const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Ast
     });
 
     topBtn?.addEventListener('click', () => {
-      const topTarget = document.querySelector('#roundup-top') ?? document.querySelector('main');
+      const topTarget =
+        document.querySelector('#roundup-top') ??
+        document.querySelector('[id$="-top"]') ??
+        document.querySelector('main');
       if (topTarget) {
         topTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } else {

@@ -16,12 +16,6 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
   <nav class="roundup-toc" aria-label="Table of contents">
     <p class="roundup-toc__title">Contents</p>
     <ul class="roundup-toc__list">
-      <li>
-        <a class="roundup-toc__link roundup-toc__link--top" href="#roundup-top">
-          <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
-          Top
-        </a>
-      </li>
       {
         mainSections.map((section) => (
           <li>

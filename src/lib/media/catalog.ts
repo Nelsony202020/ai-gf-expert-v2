@@ -1,5 +1,5 @@
 import type { MediaFilter, MediaItem } from '../../data/aura-ai-media';
-import { resolveMediaUrl } from './url';
+import { isUsablePublicMediaUrl, resolveMediaUrl } from './url';
 
 export type MediaPlacement = 'gallery' | 'proof';
 export type MediaTag = 'character' | 'chat' | 'image_generator' | 'hero' | 'features';
@@ -8,6 +8,7 @@ const LEGACY_TAG_ROLES: Record<string, MediaTag> = {
   character: 'character',
   chat: 'chat',
   image_generator: 'image_generator',
+  generator: 'image_generator',
   hero: 'hero',
 };
 
@@ -33,7 +34,14 @@ export interface MediaRowLike {
 export function parseMediaTags(raw: unknown): MediaTag[] {
   if (!Array.isArray(raw)) return [];
   const allowed = new Set<MediaTag>(['character', 'chat', 'image_generator', 'hero', 'features']);
-  return raw.filter((t): t is MediaTag => typeof t === 'string' && allowed.has(t as MediaTag));
+  const aliases: Record<string, MediaTag> = { generator: 'image_generator' };
+  const out = new Set<MediaTag>();
+  for (const entry of raw) {
+    if (typeof entry !== 'string') continue;
+    if (allowed.has(entry as MediaTag)) out.add(entry as MediaTag);
+    else if (aliases[entry]) out.add(aliases[entry]);
+  }
+  return [...out];
 }
 
 export function getMediaPlacement(row: MediaRowLike): MediaPlacement {
@@ -63,7 +71,8 @@ export function isHeroMedia(row: MediaRowLike): boolean {
 export function isPublicMedia(row: MediaRowLike): boolean {
   if (row.deletedAt) return false;
   if (isAssetMedia(row)) return false;
-  return Boolean(resolveMediaUrl(row));
+  const url = resolveMediaUrl(row);
+  return Boolean(url) && isUsablePublicMediaUrl(url);
 }
 
 /** All product-linked media rows (library + evidence attachments), deduped by id. */
@@ -100,16 +109,22 @@ export function productMediaItems(
 
 export function mediaFrontendFilter(row: MediaRowLike): Exclude<MediaFilter, 'all' | 'videos'> {
   const tags = getMediaTags(row);
+  const rawTags = Array.isArray(row.mediaTags)
+    ? row.mediaTags.filter((t): t is string => typeof t === 'string')
+    : [];
+  const hasGeneratorTag =
+    tags.includes('image_generator') ||
+    rawTags.some((t) => t === 'generator' || t === 'image_generator' || t === 'image-generator');
   if (getMediaPlacement(row) === 'proof') return 'proof';
   if (tags.includes('character')) return 'characters';
   if (tags.includes('chat')) return 'chat';
-  if (tags.includes('image_generator')) return 'image-generator';
+  if (hasGeneratorTag) return 'generator';
   return 'gallery';
 }
 
 export function toMediaItem(row: MediaRowLike): MediaItem | null {
   const url = resolveMediaUrl(row);
-  if (!isPublicMedia(row) || !url || !row.id) return null;
+  if (!url || !isUsablePublicMediaUrl(url) || !isPublicMedia(row) || !row.id) return null;
   const type = row.mediaType === 'video' ? 'video' : 'image';
   const label = String(row.altText ?? '').trim() || (type === 'video' ? 'Video' : 'Screenshot');
   const caption = String(row.caption ?? '').trim();
@@ -208,9 +223,31 @@ export function tagLabels(tags: MediaTag[]): string[] {
   const map: Record<MediaTag, string> = {
     character: 'Character',
     chat: 'Chat',
-    image_generator: 'Image generator',
+    image_generator: 'Generator',
     hero: 'Hero',
     features: 'Features',
   };
   return tags.map((t) => map[t]);
+}
+
+export interface MediaLookupEntry {
+  url: string;
+  altText?: string;
+  mediaType: 'image' | 'video';
+}
+
+/** Resolve all product-linked media rows to a stable id → public URL map for review rendering. */
+export function buildMediaLookup(rows: MediaRowLike[]): Record<string, MediaLookupEntry> {
+  const out: Record<string, MediaLookupEntry> = {};
+  for (const row of rows) {
+    const id = row.id ? String(row.id) : '';
+    const url = resolveMediaUrl(row);
+    if (!id || !url || !isUsablePublicMediaUrl(url)) continue;
+    out[id] = {
+      url,
+      altText: row.altText ? String(row.altText) : undefined,
+      mediaType: row.mediaType === 'video' ? 'video' : 'image',
+    };
+  }
+  return out;
 }

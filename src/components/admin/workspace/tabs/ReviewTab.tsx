@@ -5,11 +5,13 @@
 // the same block array on save, so server-side validation, revisions, and
 // public rendering keep working untouched.
 
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { dataApi } from '../../api';
 import { useCan, useMe } from '../../context';
 import { useToastError } from '../../Toast';
-import { Button, Icon, Spinner, fmtDate } from '../../ui';
+import { Button, Icon, fmtDate } from '../../ui';
+import { lazyImport } from '../../lazyImport';
+import { resolveMediaUrl } from '../../../../lib/media/url';
 import {
   analyzeDoc,
   blocksToDoc,
@@ -24,8 +26,7 @@ import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
 import { makeBlock, type ReviewBlock } from '../reviewBlocks';
 
-// TipTap and all its extensions load lazily so the admin bundle stays lean.
-const ReviewEditor = lazy(() => import('../../review/ReviewEditor'));
+const ReviewEditor = lazyImport(() => import('../../review/ReviewEditor'), 'ReviewEditor');
 
 const MAX_REVISIONS = 10;
 const READING_WPM = 200;
@@ -82,7 +83,11 @@ export function ReviewTab() {
   const conversionCtx = useMemo<ConversionContext>(() => {
     const mediaById: NonNullable<ConversionContext['mediaById']> = {};
     for (const m of ws.related.mediaAll) {
-      mediaById[m.id] = { url: m.url ? String(m.url) : undefined, altText: m.altText ? String(m.altText) : undefined };
+      const url = resolveMediaUrl(m);
+      mediaById[m.id] = {
+        url: url || undefined,
+        altText: m.altText ? String(m.altText) : undefined,
+      };
     }
     return { mediaById };
   }, [ws.related.mediaAll]);
@@ -292,7 +297,7 @@ export function ReviewTab() {
           </div>
         )}
 
-        <Suspense fallback={<Spinner />}>
+        <Suspense fallback={<div className="flex min-h-[240px] items-center justify-center py-12 text-sm text-slate-500">Loading editor…</div>}>
           <ReviewEditor
             content={doc}
             contentKey={contentKey}
@@ -354,6 +359,7 @@ export function ReviewTab() {
 
         {imageInspector && canEdit && editorUiRef.current && (
           <ImageInspectorPanel
+            key={`${imageInspector.kind}-${imageInspector.itemIndex ?? 0}-${String(imageInspector.attrs.src ?? '')}`}
             target={imageInspector}
             onClose={() => setImageInspector(null)}
             openImagePicker={editorUiRef.current.openImagePicker}

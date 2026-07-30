@@ -1462,7 +1462,7 @@ function MediaEditForm({
           ageGated: adult,
           role,
           mediaTags,
-          heroSortOrder: nextRoleState.hero ? heroSortOrder : null,
+          heroSortOrder: nextRoleState.hero ? heroSortOrder : wasHero ? null : undefined,
           testCategory: isProof ? testCategory || undefined : undefined,
           approved: true,
         },

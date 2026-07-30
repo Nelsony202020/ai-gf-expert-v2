@@ -46,6 +46,10 @@ export interface RoundupPick {
 export interface RoundupFaqItem {
   question: string;
   answer: string;
+  /** Optional bullet list rendered between the answer intro and answerAfter. */
+  answerList?: string[];
+  /** Optional closing paragraph after answerList. */
+  answerAfter?: string;
 }
 
 export interface RoundupConclusionAlternate {

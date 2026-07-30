@@ -24,10 +24,16 @@ export function testSubscoreUrl(category: string, subscore: string): string {
   return `/test/${toSlug(category)}/${toSlug(subscore)}/`;
 }
 
-/** Evidence points anchor on the subscore methodology page */
+/** Evidence group anchor on the subscore methodology page */
 export function testContributorUrl(category: string, subscore: string, contributor: string): string {
   return `${testSubscoreUrl(category, subscore)}#${toSlug(contributor)}`;
 }
+
+export {
+  buildReviewRatingsHash,
+  parseReviewRatingsHash,
+  reviewRatingsSectionUrl,
+} from './review/ratingsDeepLink';
 
 export function reviewRatingsUrl(productSlug: string): string {
   return `/reviews/${productSlug}#ratings`;

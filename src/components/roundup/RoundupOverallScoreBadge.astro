@@ -1,5 +1,5 @@
 ---
-import { getProduct } from '../../data/products';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 import { getScoreChipClass, fmtScore } from '../../lib/scores';
 import ScorePill from '../review/ScorePill.astro';
 import OverallScoreTooltip from '../review/tooltips/OverallScoreTooltip.astro';
@@ -14,7 +14,8 @@ interface Props {
 }
 
 const { pickSlug, pickName, overallScore, overallSummary, compact = false } = Astro.props;
-const fullProduct = getProduct(pickSlug);
+const comparisonProducts = await loadComparisonProducts();
+const fullProduct = comparisonProducts.find((product) => product.slug === pickSlug);
 const currentChip = getScoreChipClass(overallScore);
 ---
 

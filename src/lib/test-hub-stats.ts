@@ -11,6 +11,7 @@ type FrameworkCounts = {
   ratingCategories: number;
   subscores: number;
   evidencePoints: number;
+  evidenceLabel: string;
 };
 
 function countFromFramework(): FrameworkCounts {
@@ -29,6 +30,7 @@ function countFromFramework(): FrameworkCounts {
     ratingCategories: categories.length,
     subscores,
     evidencePoints,
+    evidenceLabel: 'evidence groups',
   };
 }
 
@@ -89,6 +91,7 @@ async function countFromActiveMethodology(): Promise<FrameworkCounts | null> {
       ratingCategories: categories.length,
       subscores,
       evidencePoints,
+      evidenceLabel: 'scored tests',
     };
   } catch (error) {
     console.error('[test-hub] methodology counts failed — using framework file', error);
@@ -126,7 +129,7 @@ export async function loadTestHubMetrics(): Promise<TestHubMetric[]> {
     {
       icon: 'fact_check',
       value: formatCount(counts.evidencePoints),
-      label: counts.evidencePoints === 1 ? 'evidence test' : 'evidence tests',
+      label: counts.evidencePoints === 1 ? counts.evidenceLabel.replace(/s$/, '') : counts.evidenceLabel,
     },
   ];
 }

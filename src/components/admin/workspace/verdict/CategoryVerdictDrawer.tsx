@@ -10,6 +10,7 @@ import {
   CATEGORY_REQUIRED_FIELDS,
   categoryHeaderStatusLabel,
   computeCategoryVerdictProgress,
+  patchCategoryProsOrCons,
   sanitizeCategoryVerdictDraft,
 } from './categoryVerdictProgress';
 import type { CategoryVerdict } from './types';
@@ -407,7 +408,7 @@ export function CategoryVerdictDrawer({
             />
             {renderFieldAssist?.({
               fieldKey: 'headline',
-              targetField: 'category verdict headline — short phrase summarizing performance in this category',
+              targetField: `${categoryName} category headline — short phrase, ${categoryName} only`,
               hasText: Boolean((draft.headline ?? '').trim()),
               currentText: draft.headline ?? '',
               onText: (text) => patch({ headline: text }),
@@ -437,8 +438,7 @@ export function CategoryVerdictDrawer({
             />
             {renderFieldAssist?.({
               fieldKey: 'verdict',
-              targetField:
-                'category verdict — 2–4 sentences explaining strongest result, main limitation, and what it means for users',
+              targetField: `${categoryName} category verdict — 2–4 sentences about ${categoryName} only, not other categories`,
               hasText: Boolean((draft.verdict ?? '').trim()),
               currentText: draft.verdict ?? '',
               onText: (text) => patch({ verdict: text }),
@@ -487,21 +487,21 @@ export function CategoryVerdictDrawer({
               renderProsAssist={() =>
                 renderFieldAssist?.({
                   fieldKey: 'pros',
-                  targetField: 'category pros — return one item per line, no bullets',
+                  targetField: `${categoryName} category pros — max 5 words per line, one per line, ${categoryName} only`,
                   hasText: Boolean(draft.pros?.some((p) => p.trim())),
                   currentText: (draft.pros ?? []).join('\n'),
                   list: true,
-                  onItems: (items) => patch({ pros: items }),
+                  onItems: (items) => patch(patchCategoryProsOrCons('pros', items)),
                 })
               }
               renderConsAssist={() =>
                 renderFieldAssist?.({
                   fieldKey: 'cons',
-                  targetField: 'category cons — return one item per line, no bullets',
+                  targetField: `${categoryName} category cons — max 5 words per line, one per line, ${categoryName} only`,
                   hasText: Boolean(draft.cons?.some((c) => c.trim())),
                   currentText: (draft.cons ?? []).join('\n'),
                   list: true,
-                  onItems: (items) => patch({ cons: items }),
+                  onItems: (items) => patch(patchCategoryProsOrCons('cons', items)),
                 })
               }
             />

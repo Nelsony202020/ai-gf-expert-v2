@@ -1,7 +1,6 @@
 ---
 import type { Product } from '../../../data/products';
 import type { FeaturedReviewVideo, MediaItem } from '../../../data/aura-ai-media';
-import { auraAiFeaturedVideo, auraAiMediaGallery } from '../../../data/aura-ai-media';
 import BrandIcon from '../../ui/BrandIcon.astro';
 import AgeRatingIcon from '../../ui/AgeRatingIcon.astro';
 import NsfwAgeGateModal from '../NsfwAgeGateModal.astro';
@@ -13,29 +12,40 @@ interface Props {
 
 const { product } = Astro.props;
 
-const featuredVideo: FeaturedReviewVideo = product.videoReview
+function youtubeIdFromUrl(url: string): string | null {
+  const m =
+    url.match(/[?&]v=([\w-]{6,})/) ??
+    url.match(/youtu\.be\/([\w-]{6,})/) ??
+    url.match(/\/embed\/([\w-]{6,})/);
+  return m?.[1] ?? null;
+}
+
+const featuredVideo: FeaturedReviewVideo | null = product.videoReview?.embedUrl
   ? {
-      youtubeId: product.videoReview.embedUrl.split('/embed/')[1]?.split('?')[0] ?? auraAiFeaturedVideo.youtubeId,
+      youtubeId: youtubeIdFromUrl(product.videoReview.embedUrl) ?? '',
       title: `${product.name} review video`,
       description: `My complete hands-on review of ${product.name} — chat, characters, images, video, and more.`,
     }
-  : auraAiFeaturedVideo;
+  : null;
 
 const mediaItems: MediaItem[] =
   product.mediaItems && product.mediaItems.length > 0
     ? product.mediaItems
-    : [
-        ...auraAiMediaGallery,
-        ...product.gallery.map((g, i) => ({
-          id: `product-gallery-${i}`,
-          type: 'image' as const,
-          src: g.full,
-          thumb: g.thumb,
-          alt: g.alt,
-          caption: g.alt,
-          filter: 'gallery' as const,
-        })),
-      ];
+    : product.gallery.map((g, i) => ({
+        id: `product-gallery-${i}`,
+        type: 'image' as const,
+        src: g.full,
+        thumb: g.thumb,
+        alt: g.alt,
+        caption: g.alt,
+        filter: 'gallery' as const,
+      }));
+
+const hasFeaturedVideo = Boolean(featuredVideo?.youtubeId);
+const hasMedia = mediaItems.length > 0;
+const youtubeWatchUrl = featuredVideo?.youtubeId
+  ? `https://www.youtube.com/watch?v=${featuredVideo.youtubeId}`
+  : null;
 
 const filters = [
   { id: 'all', label: 'All media', icon: 'grid_view' },
@@ -43,11 +53,9 @@ const filters = [
   { id: 'videos', label: 'Videos', icon: 'videocam' },
   { id: 'characters', label: 'Characters', icon: 'groups' },
   { id: 'chat', label: 'Chat', icon: 'chat_bubble' },
-  { id: 'image-generator', label: 'Image generator', icon: 'photo_library' },
+  { id: 'generator', label: 'Generator', icon: 'tune' },
   { id: '18plus', label: '18+', icon: 'no_adult_content' },
 ];
-
-const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtubeId}`;
 ---
 
 <section class="bg-white py-12 md:py-14" data-media-gallery-root>
@@ -90,47 +98,54 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
       </div>
     </div>
 
-    <div class="media-featured-box rounded-2xl border border-surface-variant overflow-hidden shadow-sm mb-6">
-      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-        <div class="relative aspect-video bg-black">
-          <iframe
-            src={`https://www.youtube.com/embed/${featuredVideo.youtubeId}`}
-            title={featuredVideo.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen
-            loading="lazy"
-            class="absolute inset-0 w-full h-full border-0"
-          />
-        </div>
-        <div class="p-5 md:p-6 flex flex-col justify-center bg-white">
-          <div class="flex items-center gap-2.5 mb-3">
-            <BrandIcon
-              src={brandIcons.youtube.dark}
-              srcLight={brandIcons.youtube.light}
-              width={44}
-              height={44}
-              class="shrink-0"
-            />
-            <span class="text-[11px] font-black uppercase tracking-widest text-accent">Featured video review</span>
+    {
+      hasFeaturedVideo && featuredVideo && youtubeWatchUrl && (
+        <div class="media-featured-box rounded-2xl border border-surface-variant overflow-hidden shadow-sm mb-6">
+          <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+            <div class="relative aspect-video bg-black">
+              <iframe
+                src={`https://www.youtube.com/embed/${featuredVideo.youtubeId}`}
+                title={featuredVideo.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+                loading="lazy"
+                class="absolute inset-0 w-full h-full border-0"
+              />
+            </div>
+            <div class="p-5 md:p-6 flex flex-col justify-center bg-white">
+              <div class="flex items-center gap-2.5 mb-3">
+                <BrandIcon
+                  src={brandIcons.youtube.dark}
+                  srcLight={brandIcons.youtube.light}
+                  width={44}
+                  height={44}
+                  class="shrink-0"
+                />
+                <span class="text-[11px] font-black uppercase tracking-widest text-accent">Featured video review</span>
+              </div>
+              <h3 class="text-xl font-black text-on-surface mb-2">{product.name} Review Video</h3>
+              <p class="text-sm text-on-surface-variant leading-relaxed mb-5">{featuredVideo.description}</p>
+              <a
+                href={youtubeWatchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2.5 self-start px-4 py-2.5 rounded-full border border-surface-variant bg-white text-sm font-bold text-on-surface hover:border-accent hover:text-accent transition-colors shadow-sm"
+              >
+                <svg class="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
+                  <path fill="#FFF" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                </svg>
+                Watch on YouTube
+              </a>
+            </div>
           </div>
-          <h3 class="text-xl font-black text-on-surface mb-2">{product.name} Review Video</h3>
-          <p class="text-sm text-on-surface-variant leading-relaxed mb-5">{featuredVideo.description}</p>
-          <a
-            href={youtubeWatchUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center gap-2.5 self-start px-4 py-2.5 rounded-full border border-surface-variant bg-white text-sm font-bold text-on-surface hover:border-accent hover:text-accent transition-colors shadow-sm"
-          >
-            <svg class="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" />
-              <path fill="#FFF" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-            </svg>
-            Watch on YouTube
-          </a>
         </div>
-      </div>
-    </div>
+      )
+    }
 
+    {
+      hasMedia ? (
+        <>
     <div class="media-section-header mb-5" data-media-section-header aria-live="polite">
       <div class="media-section-header__inner">
         <span class="material-symbols-outlined media-section-header__icon" data-media-section-icon aria-hidden="true">grid_view</span>
@@ -240,6 +255,15 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
     </nav>
 
     <p data-media-empty class="hidden text-center text-sm text-tertiary py-12">No media matches these filters.</p>
+        </>
+      ) : (
+        !hasFeaturedVideo && (
+          <p class="text-center text-sm text-tertiary py-12">
+            No photos or videos have been added for this review yet.
+          </p>
+        )
+      )
+    }
   </div>
 
   <NsfwAgeGateModal />
@@ -897,6 +921,30 @@ const youtubeWatchUrl = `https://www.youtube.com/watch?v=${featuredVideo.youtube
 
     applyFilters();
     updateSectionHeader();
+
+    items.forEach((item) => {
+      item.querySelectorAll('img').forEach((img) => {
+        img.addEventListener('error', () => {
+          fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
+            body: JSON.stringify({
+              sessionId: '28e868',
+              runId: 'post-fix',
+              hypothesisId: 'H1',
+              location: 'PhotosVideosTab.astro:imgError',
+              message: 'Photos tab img load error',
+              data: {
+                src: img.currentSrc || img.src || null,
+                alt: img.alt || null,
+                filter: item.dataset.filter ?? null,
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+        });
+      });
+    });
   }
 
   initMediaGallery();

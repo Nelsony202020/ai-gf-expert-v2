@@ -3,9 +3,11 @@ import type { NodeViewProps } from '@tiptap/react';
 import type { PickedMedia } from './MediaPickerModal';
 
 export type ImageInspectorTarget = {
-  kind: 'image';
+  kind: 'image' | 'imageRow';
   updateAttributes: NodeViewProps['updateAttributes'];
   attrs: Record<string, unknown>;
+  itemIndex?: number;
+  pairWithNext?: () => void;
 };
 
 export interface ReviewEditorUI {

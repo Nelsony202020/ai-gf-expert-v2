@@ -1,7 +1,7 @@
 ---
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
 import { ROUNDUP_CATEGORY_KEYS, toRatingCategory } from '../../data/roundups/ai-girlfriend';
-import { getProduct } from '../../data/products';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 import { fmtScore } from '../../lib/scores';
 import { getSegmentFill, getSegmentFillClass } from '../../lib/roundup-scores';
 import RoundupOverallScoreBadge from './RoundupOverallScoreBadge.astro';
@@ -16,9 +16,12 @@ interface Props {
 
 const { picks, defaultIds } = Astro.props;
 
+const comparisonProducts = await loadComparisonProducts();
+const hasPublishedReview = (slug: string) => comparisonProducts.some((product) => product.slug === slug);
+
 const specLabels = [...new Set(picks.flatMap((p) => p.specs.map((s) => s.label)))];
 const categoryKeys = ROUNDUP_CATEGORY_KEYS;
-const tooltipProductSlug = picks.find((p) => getProduct(p.slug))?.slug;
+const tooltipProductSlug = picks.find((p) => hasPublishedReview(p.slug))?.slug;
 
 const comparePayload = picks.map((p) => ({
   id: p.id,
@@ -27,7 +30,7 @@ const comparePayload = picks.map((p) => ({
   logo: p.logo,
   intro: p.intro,
   overallSummary: p.overallSummary,
-  tooltipTriggerId: getProduct(p.slug) ? `overall-${p.slug}` : `overall-roundup-${p.slug}`,
+  tooltipTriggerId: hasPublishedReview(p.slug) ? `overall-${p.slug}` : `overall-roundup-${p.slug}`,
   image: p.gallery[0]?.full ?? p.logo,
   imageAlt: p.gallery[0]?.alt ?? `${p.name} screenshot`,
   overallScore: p.overallScore,

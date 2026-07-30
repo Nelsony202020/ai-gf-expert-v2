@@ -15,7 +15,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Extension, type Editor } from '@tiptap/core';
+import { Extension, Node, type Editor } from '@tiptap/core';
 import { NodeSelection } from '@tiptap/pm/state';
 import {
   BubbleMenu,
@@ -111,10 +111,13 @@ function ImageView({ node, selected, editor, updateAttributes, deleteNode, getPo
                 kind: 'image',
                 attrs: node.attrs as Record<string, unknown>,
                 updateAttributes,
+                pairWithNext: editable
+                  ? () => pairImageWithNext(editor, typeof getPos === 'function' ? getPos() : undefined)
+                  : undefined,
               })
             }
           >
-            <img src={src} alt={String(node.attrs.alt ?? '')} className="block max-h-96 w-full object-contain" />
+            <img src={src} alt={String(node.attrs.alt ?? '')} className="block h-auto w-full" style={{ display: 'block', width: '100%', height: 'auto' }} />
           </button>
         ) : (
           <span className="flex h-32 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400 dark:bg-slate-800">
@@ -143,6 +146,223 @@ function ImageView({ node, selected, editor, updateAttributes, deleteNode, getPo
             <Icon name="delete" className="!text-[16px]" />
           </button>
         </span>
+      )}
+    </NodeViewWrapper>
+  );
+}
+
+type ReviewImageItem = {
+  src?: string;
+  alt?: string;
+  caption?: string;
+  mediaId?: string | null;
+  widthPercent?: number;
+  borderRadiusPercent?: number;
+};
+
+function imageAttrsToItem(attrs: Record<string, unknown>): ReviewImageItem {
+  return {
+    src: String(attrs.src ?? ''),
+    alt: String(attrs.alt ?? ''),
+    caption: String(attrs.caption ?? ''),
+    mediaId: attrs.mediaId ? String(attrs.mediaId) : null,
+    widthPercent: Math.min(100, Math.max(30, Number(attrs.widthPercent ?? 100))),
+    borderRadiusPercent: Math.min(50, Math.max(0, Number(attrs.borderRadiusPercent ?? 0))),
+  };
+}
+
+function pairImageWithNext(editor: Editor, pos: number | undefined) {
+  if (typeof pos !== 'number') return;
+  const doc = editor.state.doc;
+  const current = doc.nodeAt(pos);
+  if (!current || current.type.name !== 'image') return;
+
+  const $pos = doc.resolve(pos);
+  const parent = $pos.parent;
+  const index = $pos.index();
+  let nextIndex = -1;
+  for (let i = index + 1; i < parent.childCount; i += 1) {
+    if (parent.child(i).type.name === 'image') {
+      nextIndex = i;
+      break;
+    }
+  }
+  if (nextIndex === -1) return;
+
+  let nextPos = $pos.start();
+  for (let i = 0; i < nextIndex; i += 1) nextPos += parent.child(i).nodeSize;
+  const nextNode = parent.child(nextIndex);
+
+  const item1 = { ...imageAttrsToItem(current.attrs as Record<string, unknown>), widthPercent: 50 };
+  const item2 = { ...imageAttrsToItem(nextNode.attrs as Record<string, unknown>), widthPercent: 50 };
+  const from = pos;
+  const to = nextPos + nextNode.nodeSize;
+
+  editor
+    .chain()
+    .focus()
+    .deleteRange({ from, to })
+    .insertContentAt(from, { type: 'imageRow', attrs: { items: [item1, item2] } })
+    .run();
+}
+
+const ReviewImageRow = Node.create({
+  name: 'imageRow',
+  group: 'block',
+  atom: true,
+  draggable: true,
+
+  addAttributes() {
+    return {
+      items: { default: [] as ReviewImageItem[] },
+      blockId: { default: null },
+    };
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(ImageRowView);
+  },
+});
+
+function ImageRowView({ node, selected, editor, updateAttributes, deleteNode, getPos }: NodeViewProps) {
+  const ui = useContext(ReviewEditorUIContext);
+  const editable = editor.isEditable;
+  const items = Array.isArray(node.attrs.items) ? (node.attrs.items as ReviewImageItem[]) : [];
+
+  function updateItem(index: number, patch: Partial<ReviewImageItem>) {
+    const next = items.map((item, i) => (i === index ? { ...item, ...patch } : item));
+    updateAttributes({ items: next });
+  }
+
+  function removeItem(index: number) {
+    const next = items.filter((_, i) => i !== index);
+    if (next.length === 0) {
+      deleteNode();
+      return;
+    }
+    if (next.length === 1) {
+      const only = next[0];
+      const rowPos = typeof getPos === 'function' ? getPos() : undefined;
+      if (typeof rowPos !== 'number') {
+        updateAttributes({ items: next });
+        return;
+      }
+      editor
+        .chain()
+        .focus()
+        .command(({ tr, state }) => {
+          const imageType = state.schema.nodes.image;
+          if (!imageType) return false;
+          tr.replaceWith(
+            rowPos,
+            rowPos + node.nodeSize,
+            imageType.create({
+              src: only.src ?? '',
+              alt: only.alt ?? '',
+              caption: only.caption ?? '',
+              mediaId: only.mediaId ?? null,
+              widthPercent: only.widthPercent ?? 100,
+              borderRadiusPercent: only.borderRadiusPercent ?? 0,
+            }),
+          );
+          return true;
+        })
+        .run();
+      return;
+    }
+    updateAttributes({ items: next });
+  }
+
+  return (
+    <NodeViewWrapper
+      as="div"
+      className={`review-image-row-node my-4 flex flex-wrap gap-3 ${selected ? 'ring-2 ring-pink-400' : ''}`}
+      contentEditable={false}
+    >
+      {items.map((item, index) => {
+        const widthPercent = Math.min(100, Math.max(30, Number(item.widthPercent ?? 50)));
+        const radius = Math.min(50, Math.max(0, Number(item.borderRadiusPercent ?? 0)));
+        return (
+          <figure
+            key={`${item.src}-${index}`}
+            className="review-image-row-node__cell relative m-0 min-w-0"
+            style={{
+              flex: `0 0 calc(${widthPercent}% - 6px)`,
+              maxWidth: `calc(${widthPercent}% - 6px)`,
+              borderRadius: `${radius}%`,
+              overflow: 'hidden',
+            }}
+          >
+            {item.src ? (
+              <button
+                type="button"
+                className="block w-full cursor-pointer border-0 bg-transparent p-0"
+                onClick={() =>
+                  editable &&
+                  ui.openImageInspector({
+                    kind: 'imageRow',
+                    attrs: {
+                      alt: item.alt ?? '',
+                      caption: item.caption ?? '',
+                      widthPercent: item.widthPercent ?? 50,
+                      borderRadiusPercent: item.borderRadiusPercent ?? 0,
+                      src: item.src ?? '',
+                      mediaId: item.mediaId ?? null,
+                    },
+                    updateAttributes: (patch) => updateItem(index, patch as Partial<ReviewImageItem>),
+                    itemIndex: index,
+                  })
+                }
+              >
+                <img
+                  src={item.src}
+                  alt={item.alt ?? ''}
+                  className="block h-auto w-full"
+                  style={{ display: 'block', width: '100%', height: 'auto' }}
+                />
+              </button>
+            ) : (
+              <span className="flex h-32 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400 dark:bg-slate-800">
+                Image missing
+              </span>
+            )}
+            {editable && (
+              <button
+                type="button"
+                title="Remove from row"
+                onClick={() => removeItem(index)}
+                className="absolute right-2 top-2 rounded bg-black/60 p-1 text-white hover:bg-black/80"
+              >
+                <Icon name="close" className="!text-[14px]" />
+              </button>
+            )}
+          </figure>
+        );
+      })}
+      {editable && items.length < 4 && (
+        <button
+          type="button"
+          className="flex min-h-[8rem] flex-[0_0_calc(50%-6px)] items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs font-medium text-slate-500 hover:border-pink-400 hover:text-pink-600 dark:border-slate-700"
+          onClick={() =>
+            ui.openImagePicker((m) => {
+              updateAttributes({
+                items: [
+                  ...items,
+                  {
+                    src: m.url,
+                    alt: m.altText,
+                    mediaId: m.id,
+                    caption: '',
+                    widthPercent: items.length >= 1 ? 50 : 100,
+                    borderRadiusPercent: 0,
+                  },
+                ],
+              });
+            })
+          }
+        >
+          + Add image
+        </button>
       )}
     </NodeViewWrapper>
   );
@@ -534,6 +754,7 @@ export default function ReviewEditor({
       TableHeader,
       TableCell,
       ReviewImage,
+      ReviewImageRow,
       ReviewYoutube,
       DynamicBlockNode,
       BlockIdAttribute,
@@ -543,7 +764,7 @@ export default function ReviewEditor({
     content,
     onUpdate: ({ editor: e }) => onChangeRef.current(e.getJSON() as JSONDoc),
     onSelectionUpdate: ({ editor: e }) => {
-      if (e.isActive('image')) return;
+      if (e.isActive('image') || e.isActive('imageRow')) return;
       onImageInspectorChangeRef.current?.(null);
     },
   });

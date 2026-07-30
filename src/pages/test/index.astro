@@ -34,10 +34,7 @@ const categories = getTestCategories();
 const trustMetrics = await loadTestHubMetrics();
 const chatCategory = categories.find((c) => c.key === 'chat');
 const tocSections = buildTestHubTocSections(categories);
-const testFaqItems = testHubFaq.map((item) => ({
-  question: item.q,
-  answer: item.a,
-}));
+const testFaqItems = testHubFaq;
 const pageTitle = 'How We Test AI Girlfriend Apps — AI Girlfriend Expert';
 const canonical = new URL('/test/', Astro.site ?? Astro.url.origin).toString();
 ---
@@ -52,8 +49,6 @@ const canonical = new URL('/test/', Astro.site ?? Astro.url.origin).toString();
       slot="sidebar"
       categories={categories}
       tocSections={tocSections}
-      topAnchor="#test-hub-top"
-      topSectionId="test-hub-top"
       collapsibleToc
     />
 
@@ -142,9 +137,9 @@ const canonical = new URL('/test/', Astro.site ?? Astro.url.origin).toString();
       </section>
 
       <section id="evidence" class="test-hub__section">
-        <h2 class="test-hub__h2">Evidence points</h2>
+        <h2 class="test-hub__h2">Evidence groups</h2>
         <p class="test-hub__lead">
-          Evidence points are the individual measurements collected during testing. They are the foundation of every score. Some are simple yes/no checks; others use percentages, counts, timings, or structured quality assessments.
+          Evidence groups are the individual measurements collected during testing. They are the foundation of every score. Some are simple yes/no checks; others use percentages, counts, timings, or structured quality assessments.
         </p>
         <TestHubEvidenceSection />
       </section>

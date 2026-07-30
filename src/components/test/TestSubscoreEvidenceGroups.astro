@@ -1,0 +1,167 @@
+---
+import type { TestEvidenceGroupContent, TestEvidenceSectionContent } from '../../data/test-subscore-methodology';
+import type { PublicEvidenceGroupDisplay } from '../../lib/test-subscore-public-evidence';
+import { iconForMethodologyScoredTest } from '../../lib/ratings/evidenceIcons';
+import {
+  buildApportionedGroupShares,
+  buildExactCalculationData,
+  formatScore,
+} from '../../lib/test-subscore-exact-calculation';
+import TestSubscoreScoredTestCard from './TestSubscoreScoredTestCard.astro';
+
+interface Props {
+  categoryKey: string;
+  subscoreSlug: string;
+  groups: PublicEvidenceGroupDisplay[];
+  sections: TestEvidenceSectionContent[];
+  groupContent?: Record<string, TestEvidenceGroupContent>;
+  evidenceWeights?: { label: string; weight: number }[];
+}
+
+const { categoryKey, subscoreSlug, groups, sections, groupContent, evidenceWeights = [] } =
+  Astro.props;
+
+const sectionsById = new Map(sections.map((section) => [section.id, section]));
+const weightByLabel = new Map(evidenceWeights.map((item) => [item.label, item.weight]));
+
+const calcData = buildExactCalculationData(categoryKey, subscoreSlug);
+const apportionedShareBySlug = buildApportionedGroupShares(
+  groups,
+  calcData?.rows ?? [],
+  evidenceWeights,
+);
+---
+
+<div class="test-evidence-groups">
+  {
+    groups.map((group, index) => {
+      const memberSections = group.memberSectionIds
+        .map((id) => sectionsById.get(id))
+        .filter((section): section is TestEvidenceSectionContent => section != null);
+
+      const content = groupContent?.[group.slug];
+      const showOverview = memberSections.length > 1 && content;
+      const groupWeight = weightByLabel.get(group.label);
+      const testCount = memberSections.length;
+      const testCountLabel =
+        group.groupSubtitle ??
+        `${testCount} scored ${testCount === 1 ? 'test' : 'tests'}`;
+
+      return (
+        <section
+          class:list={['test-evidence-group scroll-mt-24', index > 0 && 'test-evidence-group--separated']}
+          id={group.slug}
+        >
+          {
+            index > 0 && (
+              <p class="test-evidence-group__index">
+                Evidence group {index + 1} of {groups.length}
+              </p>
+            )
+          }
+          <header class="test-evidence-group__header">
+            <div class="test-evidence-group__header-row">
+              <div class="test-evidence-group__title">
+                {
+                  groupWeight != null && (
+                    <span class="test-evidence-group__weight">{groupWeight}%</span>
+                  )
+                }
+                <h3 class="test-evidence-group__name">{group.label}</h3>
+              </div>
+              <p class="test-evidence-group__test-count">{testCountLabel}</p>
+            </div>
+          </header>
+
+          <div class="test-evidence-group__body">
+          {
+            content && (
+              <div class="test-evidence-group__intro">
+                {content.intro.map((paragraph) => <p>{paragraph}</p>)}
+                <p class="test-evidence-group__why">{content.whyItMatters}</p>
+              </div>
+            )
+          }
+
+          {
+            showOverview && (
+              <div class="test-evidence-group__overview-wrap">
+                <table class="test-evidence-group__overview">
+                  <thead>
+                    <tr>
+                      <th scope="col">Scored test</th>
+                      <th scope="col">How much it counts</th>
+                      <th scope="col">View</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {
+                      memberSections.map((section) => {
+                        const share = apportionedShareBySlug.get(section.id);
+                        return (
+                          <tr>
+                            <td>
+                              <span class="test-subscore-exact-calc__test-name">
+                                <span
+                                  class="material-symbols-outlined test-subscore-exact-calc__test-icon"
+                                  aria-hidden="true"
+                                >
+                                  {iconForMethodologyScoredTest()}
+                                </span>
+                                {section.title}
+                              </span>
+                            </td>
+                            <td>
+                              {share ? `${formatScore(share.sharePercent)}%` : '—'}
+                            </td>
+                            <td>
+                              <a
+                                class="test-evidence-group__overview-view"
+                                href={`#${section.id}`}
+                                aria-label={`View ${section.title}`}
+                              >
+                                View
+                                <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                              </a>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    }
+                  </tbody>
+                </table>
+                {
+                  groupWeight != null && (
+                    <p class="test-evidence-group__overview-note">
+                      These percentages add up to the {groupWeight}% {group.label} weight above.
+                    </p>
+                  )
+                }
+              </div>
+            )
+          }
+
+          <div class="test-evidence-group__tests">
+            {
+              memberSections.map((section) => {
+                const share = apportionedShareBySlug.get(section.id);
+                return (
+                  <TestSubscoreScoredTestCard
+                    categoryKey={categoryKey}
+                    subscoreSlug={subscoreSlug}
+                    section={section}
+                    sharePercent={share?.sharePercent}
+                    shareOfLabel={share?.groupLabel}
+                    shareGroupWeight={groupWeight}
+                    hideWhyItMatters={Boolean(content?.whyItMatters)}
+                  />
+                );
+              })
+            }
+          </div>
+          </div>
+        </section>
+      );
+    })
+  }
+</div>

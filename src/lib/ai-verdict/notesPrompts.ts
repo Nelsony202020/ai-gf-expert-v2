@@ -12,7 +12,9 @@ function sectionFieldInstructions(sectionKey: string): string {
 
   if (parsed.kind === 'category') {
     return `Generate writing suggestions for the "${cfg.label}" category:
-category_verdict_headline, category_verdict, category_primary_strength, category_primary_limitation, category_pros (3-5), category_cons (2-4).
+category_verdict_headline, category_verdict, category_primary_strength, category_primary_limitation, category_pros (3-5, max 5 words each), category_cons (2-4, max 5 words each).
+Stay focused on "${cfg.label}" only — do not mention other categories.
+The first pro should match category_primary_strength; the first con should match category_primary_limitation.
 Also return 3-6 key_findings specific to this category's test evidence.`;
   }
 
@@ -27,7 +29,7 @@ best_for (3-4 items), not_ideal_for (2-4 items).
 Also return 3-6 key_findings that help decide who should use this product.`;
     case 'pros-cons':
       return `Generate writing suggestions for Pros & cons:
-pros (3-5 items), cons (2-4 items).
+pros (3-5 items, max 5 words each), cons (2-4 items, max 5 words each). Short punchy phrases, not sentences.
 Also return 3-6 key_findings highlighting strengths and weaknesses.`;
     case 'expert':
       return `Generate writing suggestions for Expert opinion:

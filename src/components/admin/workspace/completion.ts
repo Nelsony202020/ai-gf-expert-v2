@@ -265,8 +265,8 @@ const PRICING_CHECKS: Check[] = [
 const SEO_CHECKS: Check[] = [
   { key: 'seoTitle', label: 'SEO title', severity: 'required', done: (i) => textFilled(i.fields.seoTitle) },
   { key: 'seoDescription', label: 'Meta description', severity: 'required', done: (i) => textFilled(i.fields.seoDescription) },
-  { key: 'ogTitle', label: 'Open Graph title', severity: 'recommended', done: (i) => textFilled(i.fields.ogTitle) },
-  { key: 'ogDescription', label: 'Open Graph description', severity: 'recommended', done: (i) => textFilled(i.fields.ogDescription) },
+  { key: 'ogTitle', label: 'Open Graph title', severity: 'recommended', done: (i) => textFilled(i.fields.ogTitle) || textFilled(i.fields.seoTitle) },
+  { key: 'ogDescription', label: 'Open Graph description', severity: 'recommended', done: (i) => textFilled(i.fields.ogDescription) || textFilled(i.fields.seoDescription) },
   {
     key: 'socialImage',
     label: 'Social sharing image',

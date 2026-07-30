@@ -202,7 +202,7 @@ const herman = getAuthor('herman-carter');
   }
 </style>
 
-<script define:vars={{ verdictMeta: verdictEntries.map((v) => ({ id: v.id, score: v.score, label: v.label, bg: getScoreVisual(v.score).bg, border: getScoreVisual(v.score).border, text: getScoreVisual(v.score).text })) }}>
+<script define:vars={{ verdictMeta: verdictEntries.map((v) => ({ id: v.id, score: v.score, label: v.label, bg: getScoreVisual(v.score).bg, border: getScoreVisual(v.score).border, text: getScoreVisual(v.score).text })), defaultVerdictId: defaultVerdict.id }}>
   function initVerdictSwitcher() {
     const root = document.querySelector('[data-verdict-root]');
     if (!root || root.dataset.verdictBound === 'true') return;
@@ -215,7 +215,7 @@ const herman = getAuthor('herman-carter');
     const headerLabel = root.querySelector('[data-verdict-header-label]');
     const meta = Object.fromEntries(verdictMeta.map((v) => [v.id, v]));
 
-    let activeId = 'overall';
+    let activeId = defaultVerdictId;
 
     function show(id) {
       activeId = id;
@@ -258,7 +258,7 @@ const herman = getAuthor('herman-carter');
       item.addEventListener('mouseenter', () => show(id));
     });
 
-    show('overall');
+    if (defaultVerdictId) show(defaultVerdictId);
   }
 
   initVerdictSwitcher();

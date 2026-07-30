@@ -105,13 +105,37 @@ function applyTimestampFields(
   }
 }
 
-async function transact(chunks: unknown[]) {
+function isSchemaMismatchError(error: unknown): boolean {
+  const parts: string[] = [];
+  if (error instanceof Error) parts.push(error.message);
+  if (error && typeof error === 'object') {
+    const body = (error as { body?: { message?: string } }).body?.message;
+    if (body) parts.push(body);
+  }
+  parts.push(String(error));
+  const msg = parts.join(' ');
+  return msg.includes('missing in your schema') || msg.includes('Attributes are missing');
+}
+
+/** Fields added locally that may not exist on InstantDB until `npm run db:push`. */
+const MEDIA_FIELDS_PENDING_SCHEMA = ['mediaTags', 'heroSortOrder'] as const;
+
+function stripMediaFieldsPendingSchema(fields: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...fields };
+  for (const key of MEDIA_FIELDS_PENDING_SCHEMA) delete out[key];
+  return out;
+}
+
+async function rawTransact(chunks: unknown[]) {
   const db = getDb();
+  await db.transact(chunks as any);
+}
+
+async function transact(chunks: unknown[]) {
   try {
-    await db.transact(chunks as any);
+    await rawTransact(chunks);
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (msg.includes('missing in your schema')) {
+    if (isSchemaMismatchError(e)) {
       throw new HttpError(
         400,
         'Database schema is out of date. Run `npm run db:push` in the project root, confirm the push, then try again.',
@@ -119,6 +143,29 @@ async function transact(chunks: unknown[]) {
     }
     throw e;
   }
+}
+
+function buildUpdateChunk(
+  cfg: EntityConfig,
+  recordId: string,
+  fields: Record<string, unknown>,
+  payload: WritePayload,
+  existing: Record<string, unknown>,
+) {
+  const db = getDb();
+  let chunk = (db.tx as any)[cfg.namespace][recordId].update(fields);
+  const linkMap: Record<string, string> = {};
+  const unlinkMap: Record<string, string> = {};
+  for (const [label, target] of Object.entries(payload.links ?? {})) {
+    if (target) {
+      linkMap[label] = target;
+    } else if ((existing as any)[label]?.id) {
+      unlinkMap[label] = (existing as any)[label].id;
+    }
+  }
+  if (Object.keys(linkMap).length > 0) chunk = chunk.link(linkMap);
+  if (Object.keys(unlinkMap).length > 0) chunk = chunk.unlink(unlinkMap);
+  return chunk;
 }
 
 export async function createEntity(
@@ -196,33 +243,49 @@ export async function updateEntity(
 
   applyTimestampFields(cfg, fields, 'update');
 
-  const db = getDb();
-  let chunk = (db.tx as any)[cfg.namespace][recordId].update(fields);
-  const linkMap: Record<string, string> = {};
-  const unlinkMap: Record<string, string> = {};
-  for (const [label, target] of Object.entries(payload.links ?? {})) {
-    if (target) {
-      linkMap[label] = target;
-    } else if (existing[label]?.id) {
-      unlinkMap[label] = existing[label].id;
+  const chunk = buildUpdateChunk(cfg, recordId, fields, payload, existing);
+  const { oldValue, newValue } = diffRecords(existing, fields);
+  const auditChunk = auditTx({
+    actorEmail: identity.email,
+    action: 'update',
+    recordType: cfg.namespace,
+    recordId,
+    oldValue,
+    newValue,
+  });
+  const chunks = [chunk, auditChunk];
+
+  try {
+    await rawTransact(chunks);
+  } catch (e: unknown) {
+    if (
+      entity === 'media' &&
+      isSchemaMismatchError(e) &&
+      MEDIA_FIELDS_PENDING_SCHEMA.some((key) => key in fields)
+    ) {
+      const stripped = stripMediaFieldsPendingSchema(fields);
+      const fallbackChunk = buildUpdateChunk(cfg, recordId, stripped, payload, existing);
+      const { oldValue: old2, newValue: new2 } = diffRecords(existing, stripped);
+      await transact([
+        fallbackChunk,
+        auditTx({
+          actorEmail: identity.email,
+          action: 'update',
+          recordType: cfg.namespace,
+          recordId,
+          oldValue: old2,
+          newValue: new2,
+        }),
+      ]);
+    } else if (isSchemaMismatchError(e)) {
+      throw new HttpError(
+        400,
+        'Database schema is out of date. Run `npm run db:push` in the project root, confirm the push, then try again.',
+      );
+    } else {
+      throw e;
     }
   }
-  if (Object.keys(linkMap).length > 0) chunk = chunk.link(linkMap);
-  if (Object.keys(unlinkMap).length > 0) chunk = chunk.unlink(unlinkMap);
-
-  const { oldValue, newValue } = diffRecords(existing, fields);
-
-  await transact([
-    chunk,
-    auditTx({
-      actorEmail: identity.email,
-      action: 'update',
-      recordType: cfg.namespace,
-      recordId,
-      oldValue,
-      newValue,
-    }),
-  ]);
 
   if (entity === 'characters' && 'featured' in fields) {
     await syncCharacterHomepageSlot(

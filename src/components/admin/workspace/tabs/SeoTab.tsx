@@ -6,11 +6,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { dataApi, type EntityRow } from '../../api';
+import { AiFieldAssist } from '../../ai-verdict/AiFieldAssist';
 import { useCan } from '../../context';
 import { CharCounter, FieldHint, PreviewViewToggle, ToggleWithHint } from '../../FieldHint';
 import { Badge, Field, Icon, TextArea, TextInput } from '../../ui';
+import { resolveProductSeoMeta } from '../../../../lib/seo/productMeta';
+import { SEO_TEMPLATE_TAGS } from '../../../../lib/seo/templateTags';
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
+import { useVerdictTestingSummary } from '../verdict/useVerdictTestingSummary';
 
 const SITE_HOST = 'aigirlfriendexpert.com';
 
@@ -18,7 +22,28 @@ export function SeoTab() {
   const ws = useWorkspace();
   const can = useCan();
   const canEdit = can('content.edit');
-  const { fields, set, links, related, completion } = ws;
+  const { fields, set, links, related, completion, productId } = ws;
+  const testing = useVerdictTestingSummary(related.testRuns);
+  const testRunId = testing.currentRun?.id ?? testing.publishedRun?.id;
+
+  const templateContext = useMemo(
+    () => ({ productName: String(fields.name ?? '').trim() }),
+    [fields.name],
+  );
+
+  const featuredImageUrl = useMemo(() => {
+    if (!links.featuredImage) return null;
+    return related.mediaAll.find((m) => m.id === links.featuredImage)?.url ?? null;
+  }, [links.featuredImage, related.mediaAll]);
+
+  const resolvedMeta = useMemo(
+    () =>
+      resolveProductSeoMeta(fields, {
+        ...templateContext,
+        featuredImageUrl,
+      }),
+    [fields, templateContext, featuredImageUrl],
+  );
 
   const publicPath = `/reviews/${fields.slug ?? ''}`;
   const seoTab = completion.tabById.seo;
@@ -84,13 +109,11 @@ export function SeoTab() {
           <div className="mt-3 grid gap-6 lg:grid-cols-2">
             <div className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
-                <LimitedField
-                  label="SEO title"
-                  hint="The blue clickable title in Google results. Keep it clear and under 60 characters."
-                  max={60}
+                <SeoTitleField
                   value={fields.seoTitle ?? ''}
+                  resolved={resolvedMeta.seoTitle}
+                  productName={templateContext.productName}
                   onChange={(v) => set('seoTitle', v)}
-                  placeholder="Product name — short benefit or verdict"
                   disabled={!canEdit}
                 />
                 <LimitedField
@@ -103,17 +126,35 @@ export function SeoTab() {
                   disabled={!canEdit}
                 />
               </div>
-              <LimitedField
-                label="Meta description"
-                hint="The gray snippet under your title in search results. Summarize the review in plain language."
-                max={160}
-                multiline
-                rows={3}
-                value={fields.seoDescription ?? ''}
-                onChange={(v) => set('seoDescription', v)}
-                placeholder="Brief summary shown in Google and other search engines."
-                disabled={!canEdit}
-              />
+              <div>
+                <LimitedField
+                  label="Meta description"
+                  hint="The gray snippet under your title in search results. Summarize the review in plain language."
+                  max={160}
+                  multiline
+                  rows={3}
+                  value={fields.seoDescription ?? ''}
+                  onChange={(v) => set('seoDescription', v)}
+                  placeholder="Brief summary shown in Google and other search engines."
+                  disabled={!canEdit}
+                />
+                {testRunId ? (
+                  <div className="mt-1.5">
+                    <AiFieldAssist
+                      productId={productId}
+                      testRunId={testRunId}
+                      targetField="meta description — max 155 characters for Google search, plain language overall review summary"
+                      currentText={String(fields.seoDescription ?? '')}
+                      hasText={Boolean(String(fields.seoDescription ?? '').trim())}
+                      onText={(text) => set('seoDescription', text.slice(0, 160))}
+                    />
+                  </div>
+                ) : (
+                  <p className="mt-1.5 text-[11px] text-slate-400">
+                    Add a test run on the Testing tab to use Write with AI for the meta description.
+                  </p>
+                )}
+              </div>
               <LimitedField
                 label="Search excerpt"
                 hint="Optional shorter blurb some internal search uses instead of the meta description."
@@ -126,7 +167,7 @@ export function SeoTab() {
                 disabled={!canEdit}
               />
             </div>
-            <SearchPreviewPanel fields={fields} />
+            <SearchPreviewPanel resolved={resolvedMeta} slug={String(fields.slug ?? 'product-slug')} />
           </div>
         </section>
 
@@ -259,41 +300,65 @@ export function SeoTab() {
             <div className="space-y-3">
               <LimitedField
                 label="Open Graph title"
-                hint="Title shown when someone shares this page on Facebook, X, Discord, etc. Falls back to the SEO title if empty."
+                hint="Title when this page is shared on social apps. Leave blank to use the SEO title."
                 max={95}
                 value={fields.ogTitle ?? ''}
                 onChange={(v) => set('ogTitle', v)}
-                placeholder="Catchy share headline"
+                placeholder={resolvedMeta.seoTitle || 'Uses SEO title when empty'}
                 disabled={!canEdit}
               />
+              {!String(fields.ogTitle ?? '').trim() && resolvedMeta.seoTitle && (
+                <p className="text-[11px] text-slate-400">
+                  Using SEO title: <span className="text-slate-600 dark:text-slate-300">{resolvedMeta.seoTitle}</span>
+                </p>
+              )}
               <Field
                 label={
                   <span className="inline-flex items-center">
                     Open Graph image URL
-                    <FieldHint text="Image displayed in link previews on social apps. Use a 1200×630 image for best results. Falls back to the featured image if empty." />
+                    <FieldHint text="Image in social link previews. Leave blank to use the product social/featured image." />
                   </span>
                 }
               >
                 <TextInput
                   value={fields.ogImageUrl ?? ''}
                   onChange={(e) => set('ogImageUrl', e.target.value)}
-                  placeholder="https://example.com/image.jpg"
+                  placeholder={
+                    resolvedMeta.ogImageUrl && !String(fields.ogImageUrl ?? '').trim()
+                      ? String(resolvedMeta.ogImageUrl)
+                      : 'Uses featured image when empty'
+                  }
                   disabled={!canEdit}
                 />
               </Field>
+              {!String(fields.ogImageUrl ?? '').trim() && resolvedMeta.ogImageUrl && (
+                <p className="text-[11px] text-slate-400">
+                  Using featured image: <span className="break-all text-slate-600 dark:text-slate-300">{resolvedMeta.ogImageUrl}</span>
+                </p>
+              )}
               <LimitedField
                 label="Open Graph description"
-                hint="Short description under the image in social previews. Falls back to the meta description if empty."
+                hint="Description under the image in social previews. Leave blank to use the meta description."
                 max={200}
                 multiline
                 rows={3}
                 value={fields.ogDescription ?? ''}
                 onChange={(v) => set('ogDescription', v)}
-                placeholder="What should people know when they see this link shared?"
+                placeholder={
+                  resolvedMeta.metaDescription
+                    ? resolvedMeta.metaDescription.slice(0, 120) + (resolvedMeta.metaDescription.length > 120 ? '…' : '')
+                    : 'Uses meta description when empty'
+                }
                 disabled={!canEdit}
               />
+              {!String(fields.ogDescription ?? '').trim() && resolvedMeta.metaDescription && (
+                <p className="text-[11px] text-slate-400">
+                  Using meta description:{' '}
+                  <span className="text-slate-600 dark:text-slate-300">{resolvedMeta.metaDescription.slice(0, 100)}{resolvedMeta.metaDescription.length > 100 ? '…' : ''}</span>
+                </p>
+              )}
             </div>
-            <SocialPreviewPanel fields={fields} links={links} mediaRows={related.mediaAll} />
+            <SocialPreviewPanel resolved={resolvedMeta} />
           </div>
         </section>
 
@@ -326,6 +391,64 @@ export function SeoTab() {
 // ---------------------------------------------------------------------------
 // Shared field + preview panels (adapted from the legacy SEO tab)
 // ---------------------------------------------------------------------------
+
+function SeoTitleField({
+  value,
+  resolved,
+  productName,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  resolved: string;
+  productName: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  const max = 60;
+  const clamp = (raw: string) => raw.slice(0, max);
+
+  function insertTag(tag: string) {
+    onChange(clamp(`${value}${value && !value.endsWith(' ') ? ' ' : ''}${tag}`));
+  }
+
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="inline-flex items-center text-xs font-medium text-slate-600 dark:text-slate-400">
+          SEO title
+          <FieldHint text="The blue clickable title in Google. You can use dynamic tags like %currentyear% — they update automatically." />
+        </span>
+        <CharCounter value={value} max={max} />
+      </div>
+      <TextInput
+        value={value}
+        placeholder={`${productName || 'Product'} Review (%currentyear%)`}
+        disabled={disabled}
+        onChange={(e) => onChange(clamp(e.target.value))}
+      />
+      <div className="mt-1.5 flex flex-wrap gap-1">
+        {SEO_TEMPLATE_TAGS.map(({ tag, label }) => (
+          <button
+            key={tag}
+            type="button"
+            disabled={disabled}
+            title={label}
+            onClick={() => insertTag(tag)}
+            className="rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-600 hover:border-pink-300 hover:text-pink-600 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
+      {value.trim() && (
+        <p className="mt-1 text-[11px] text-slate-400">
+          Preview: <span className="text-slate-600 dark:text-slate-300">{resolved}</span>
+        </p>
+      )}
+    </div>
+  );
+}
 
 function LimitedField({
   label,
@@ -378,16 +501,17 @@ function LimitedField({
   );
 }
 
-function SearchPreviewPanel({ fields }: { fields: Record<string, any> }) {
+function SearchPreviewPanel({
+  resolved,
+  slug,
+}: {
+  resolved: { seoTitle: string; metaDescription: string };
+  slug: string;
+}) {
   const [view, setView] = useState<'desktop' | 'mobile'>('desktop');
-  const slug = fields.slug ? String(fields.slug) : 'product-slug';
-  const title =
-    fields.seoTitle?.trim() || fields.name?.trim() || 'Example Product Title — Review & Rating';
+  const title = resolved.seoTitle || 'Example Product Title — Review & Rating';
   const description =
-    fields.seoDescription?.trim() ||
-    fields.searchExcerpt?.trim() ||
-    fields.directoryDescription?.trim() ||
-    fields.tagline?.trim() ||
+    resolved.metaDescription ||
     'Add a meta description to control how this product appears in Google search results.';
 
   const mobile = view === 'mobile';
@@ -420,24 +544,16 @@ function SearchPreviewPanel({ fields }: { fields: Record<string, any> }) {
 }
 
 function SocialPreviewPanel({
-  fields,
-  links,
-  mediaRows,
+  resolved,
 }: {
-  fields: Record<string, any>;
-  links: Record<string, string | null>;
-  mediaRows: EntityRow[];
+  resolved: { ogTitle: string; ogDescription: string; ogImageUrl: string | null };
 }) {
   const [view, setView] = useState<'desktop' | 'mobile'>('desktop');
   const mobile = view === 'mobile';
 
-  const title = fields.ogTitle?.trim() || fields.seoTitle?.trim() || fields.name?.trim() || 'Product title';
-  const description =
-    fields.ogDescription?.trim() ||
-    fields.seoDescription?.trim() ||
-    'Add an Open Graph description to control social share snippets.';
-  const featured = links.featuredImage ? mediaRows.find((m) => m.id === links.featuredImage)?.url : null;
-  const imageUrl = fields.ogImageUrl?.trim() || featured || null;
+  const title = resolved.ogTitle || 'Product title';
+  const description = resolved.ogDescription || 'Add a meta description to control social share snippets.';
+  const imageUrl = resolved.ogImageUrl;
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-800/30">

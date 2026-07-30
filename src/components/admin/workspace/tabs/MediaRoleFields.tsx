@@ -45,13 +45,13 @@ export function MediaRoleFields({
         <Toggle checked={value.hero} onChange={(hero) => patch({ hero })} label="Hero" />
       </div>
 
-      <Field label="Context (optional)" help="Pick one — tags the media for Chat or Image generator filters.">
+      <Field label="Context (optional)" help="Pick one — tags the media for Chat or Generator filters.">
         <div className="flex flex-wrap gap-4">
           {(
             [
               { id: '', label: 'None' },
               { id: 'chat', label: 'Chat' },
-              { id: 'image_generator', label: 'Image generator' },
+              { id: 'image_generator', label: 'Generator' },
             ] as const
           ).map((opt) => (
             <label key={opt.id || 'none'} className="inline-flex cursor-pointer items-center gap-2 text-sm">

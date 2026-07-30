@@ -67,6 +67,15 @@ export function ImageInspectorPanel({
             onChange={setWidthPercent}
           />
         </Field>
+        {target.kind === 'image' && target.pairWithNext && (
+          <button
+            type="button"
+            onClick={target.pairWithNext}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-medium text-slate-700 hover:border-pink-400 hover:text-pink-700 dark:border-slate-700 dark:text-slate-200"
+          >
+            Place side by side with next image
+          </button>
+        )}
         <Field label="Border rounding">
           <PercentPicker
             value={borderRadiusPercent}

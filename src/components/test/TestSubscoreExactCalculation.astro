@@ -1,0 +1,253 @@
+---
+import { iconForMethodologyScoredTest } from '../../lib/ratings/evidenceIcons';
+import {
+  buildExactCalculationData,
+  formatScore,
+} from '../../lib/test-subscore-exact-calculation';
+import type { TestSubscoreMethodologyContent } from '../../data/test-subscore-methodology';
+
+interface Props {
+  categoryKey: string;
+  subscoreSlug: string;
+  subscoreName: string;
+  categoryName: string;
+  subscoreWeight?: number;
+  categoryWeight?: number;
+  scoreCalculation: TestSubscoreMethodologyContent['scoreCalculation'];
+}
+
+const {
+  categoryKey,
+  subscoreSlug,
+  subscoreName,
+  categoryName,
+  subscoreWeight,
+  categoryWeight,
+  scoreCalculation,
+} = Astro.props;
+
+const calcData = buildExactCalculationData(categoryKey, subscoreSlug);
+const stepExample = calcData?.exampleRows[0];
+---
+
+{
+  calcData && (
+    <details class="test-subscore-methodology__calc-disclosure test-subscore-exact-calc">
+      <summary>
+        <span class="test-subscore-methodology__calc-disclosure-icon" aria-hidden="true">
+          <span class="material-symbols-outlined">calculate</span>
+        </span>
+        <span class="test-subscore-methodology__calc-disclosure-label">
+          {scoreCalculation.exactCalculationTitle}
+        </span>
+        <span class="test-subscore-methodology__calc-disclosure-chevron material-symbols-outlined" aria-hidden="true">
+          expand_more
+        </span>
+      </summary>
+
+      <div class="test-subscore-exact-calc__body">
+        <div class="test-subscore-exact-calc__intro">
+          <p>{scoreCalculation.exactCalculationBody}</p>
+          {
+            subscoreWeight != null && categoryWeight != null && (
+              <p>
+                {subscoreName} makes up{' '}
+                <strong class="test-subscore-weighted-calc__share">{subscoreWeight}%</strong>{' '}of the {categoryName}{' '}
+                score. {categoryName} makes up {categoryWeight}% of the overall performance score.
+              </p>
+            )
+          }
+        </div>
+
+        <div class="test-subscore-exact-calc__columns">
+          <div class="test-subscore-exact-calc__column test-subscore-exact-calc__column--weights">
+            <h3 class="test-subscore-exact-calc__column-title">Scored tests and weights</h3>
+
+            <div class="test-subscore-exact-calc__table-wrap">
+              <table class="test-subscore-exact-calc__table">
+                <thead>
+                  <tr>
+                    <th scope="col">Scored test</th>
+                    <th scope="col">How much it counts</th>
+                    <th scope="col">See scoring</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {
+                    calcData.rows.map((row) => (
+                      <tr>
+                        <td>
+                          <span class="test-subscore-exact-calc__test-name">
+                            <span class="material-symbols-outlined test-subscore-exact-calc__test-icon" aria-hidden="true">
+                              {iconForMethodologyScoredTest()}
+                            </span>
+                            {row.name}
+                          </span>
+                        </td>
+                        <td>{formatScore(row.sharePercent)}%</td>
+                        <td>
+                          <a
+                            class="test-subscore-exact-calc__view-link"
+                            href={`#${row.anchorId}`}
+                            aria-label={`See scoring for ${row.name}`}
+                          >
+                            View
+                            <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                          </a>
+                        </td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th scope="row">Total</th>
+                    <td>100%</td>
+                    <td aria-hidden="true"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div class="test-subscore-exact-calc__divider" aria-hidden="true"></div>
+
+          <div class="test-subscore-exact-calc__column test-subscore-exact-calc__column--flow">
+            <h3 class="test-subscore-exact-calc__column-title">How the score is calculated</h3>
+
+            <ol class="test-subscore-exact-calc__score-steps" aria-label="Score calculation steps">
+              <li class="test-subscore-exact-calc__score-step">
+                <div class="test-subscore-exact-calc__score-step-rail" aria-hidden="true">
+                  <span class="test-subscore-exact-calc__score-step-num">1</span>
+                  <span class="test-subscore-exact-calc__score-step-connector"></span>
+                </div>
+                <p class="test-subscore-exact-calc__score-step-text">
+                  Each test gets a score from <strong>0–10</strong>
+                </p>
+              </li>
+              <li class="test-subscore-exact-calc__score-step">
+                <div class="test-subscore-exact-calc__score-step-rail" aria-hidden="true">
+                  <span class="test-subscore-exact-calc__score-step-num">2</span>
+                  <span class="test-subscore-exact-calc__score-step-connector"></span>
+                </div>
+                <div class="test-subscore-exact-calc__score-step-copy">
+                  <p class="test-subscore-exact-calc__score-step-text">Test score × how much it counts</p>
+                  {
+                    stepExample && (
+                      <p class="test-subscore-exact-calc__score-step-example">
+                        Example: {formatScore(stepExample.exampleScore).replace(/\.00$/, '')} ×{' '}
+                        {formatScore(stepExample.sharePercent)}% = {formatScore(stepExample.weightedContribution)} points
+                      </p>
+                    )
+                  }
+                </div>
+              </li>
+              <li class="test-subscore-exact-calc__score-step">
+                <div class="test-subscore-exact-calc__score-step-rail" aria-hidden="true">
+                  <span class="test-subscore-exact-calc__score-step-num">3</span>
+                  <span class="test-subscore-exact-calc__score-step-connector"></span>
+                </div>
+                <p class="test-subscore-exact-calc__score-step-text">We do this for every test</p>
+              </li>
+              <li class="test-subscore-exact-calc__score-step">
+                <div class="test-subscore-exact-calc__score-step-rail" aria-hidden="true">
+                  <span class="test-subscore-exact-calc__score-step-num">4</span>
+                  <span class="test-subscore-exact-calc__score-step-connector"></span>
+                </div>
+                <p class="test-subscore-exact-calc__score-step-text">We add all the points together</p>
+              </li>
+              <li class="test-subscore-exact-calc__score-step test-subscore-exact-calc__score-step--last">
+                <div class="test-subscore-exact-calc__score-step-rail" aria-hidden="true">
+                  <span class="test-subscore-exact-calc__score-step-num">5</span>
+                </div>
+                <div class="test-subscore-exact-calc__score-step-copy">
+                  <p class="test-subscore-exact-calc__score-step-text">
+                    <strong>Final {subscoreName} score</strong>
+                  </p>
+                  {
+                    subscoreWeight != null && (
+                      <p class="test-subscore-exact-calc__score-step-sub">
+                        Counts for {subscoreWeight}% of {categoryName}
+                      </p>
+                    )
+                  }
+                </div>
+              </li>
+            </ol>
+
+            <h4 class="test-subscore-exact-calc__example-title">Example calculation</h4>
+            <p class="test-methodology-prose test-subscore-exact-calc__example-intro">
+              We multiply each test score by how much it counts. We then add all the points together.
+            </p>
+
+            <div class="test-subscore-exact-calc__table-wrap">
+              <table class="test-subscore-exact-calc__table test-subscore-exact-calc__table--example">
+                <thead>
+                  <tr>
+                    <th scope="col">Scored test</th>
+                    <th scope="col">Test score</th>
+                    <th scope="col">How much it counts</th>
+                    <th scope="col">Calculation</th>
+                    <th scope="col">Points added</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {
+                    calcData.exampleRows.map((row) => (
+                      <tr>
+                        <td>{row.name}</td>
+                        <td>{formatScore(row.exampleScore)}</td>
+                        <td>{formatScore(row.sharePercent)}%</td>
+                        <td>{row.calculation}</td>
+                        <td>{formatScore(row.weightedContribution)}</td>
+                      </tr>
+                    ))
+                  }
+                  {
+                    calcData.otherExampleSummary && (
+                      <tr class="test-subscore-exact-calc__example-other">
+                        <td>… other scored tests</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>Calculated same way</td>
+                        <td>{formatScore(calcData.otherExampleSummary.weightedContribution)}</td>
+                      </tr>
+                    )
+                  }
+                  <tr class="test-subscore-exact-calc__final-row">
+                    <th scope="row">Final {subscoreName} score</th>
+                    <td>—</td>
+                    <td>100%</td>
+                    <td>Add all points</td>
+                    <td>
+                      <strong>{formatScore(calcData.finalExampleScore)}/10</strong>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {
+          scoreCalculation.calculationNotes && (
+            <div class="test-subscore-exact-calc__notes">
+              <span class="test-subscore-exact-calc__notes-icon material-symbols-outlined" aria-hidden="true">
+                lightbulb
+              </span>
+              <h3 class="test-subscore-exact-calc__notes-title">{scoreCalculation.calculationNotes.title}</h3>
+              {
+                scoreCalculation.calculationNotes.items.map((item) => (
+                  <div class="test-subscore-exact-calc__notes-item">
+                    <h4>{item.title}</h4>
+                    <p>{item.body}</p>
+                  </div>
+                ))
+              }
+            </div>
+          )
+        }
+      </div>
+    </details>
+  )
+}

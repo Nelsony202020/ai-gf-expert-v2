@@ -32,6 +32,27 @@ const verdictEntries = product.verdicts.map((v) => ({
 const categoryByKey = Object.fromEntries(product.categories.map((c) => [c.key, c]));
 const defaultVerdict = verdictEntries.find((v) => v.id === 'overall') ?? verdictEntries[0];
 const herman = getAuthor('herman-carter');
+const showExpertOpinion = Boolean(product.expertOpinion?.trim());
+const showBestFor = overview.bestForList.length > 0;
+const showNotIdeal = overview.notIdealList.length > 0;
+const showDecisionSidebar = showBestFor || showNotIdeal;
+const showCharacters = overview.characters.length > 0;
+
+function verdictCmsField(
+  verdictId: string,
+  kind: 'headline' | 'verdict' | 'pros' | 'cons',
+): string {
+  if (verdictId === 'overall') {
+    if (kind === 'headline') return 'oneLineVerdict';
+    if (kind === 'verdict') return 'ourTake';
+    if (kind === 'pros') return 'pros';
+    return 'cons';
+  }
+  if (kind === 'headline') return `categoryVerdicts.${verdictId}.headline`;
+  if (kind === 'verdict') return `categoryVerdicts.${verdictId}.verdict`;
+  if (kind === 'pros') return `categoryVerdicts.${verdictId}.pros`;
+  return `categoryVerdicts.${verdictId}.cons`;
+}
 ---
 
 <section class="bg-white py-12 md:py-14 pb-16 md:pb-20" data-verdict-overview>
@@ -94,14 +115,18 @@ const herman = getAuthor('herman-carter');
                         }
                       </div>
                       {verdict.tagline && (
-                        <CmsField field={`categoryVerdicts.${verdict.id}.headline`} as="p" class="text-sm font-semibold text-tertiary mt-1">{verdict.tagline}</CmsField>
+                        <CmsField field={verdictCmsField(verdict.id, 'headline')} as="p" class="text-sm font-semibold text-tertiary mt-1">{verdict.tagline}</CmsField>
                       )}
                     </div>
                   </div>
 
-                  <CmsField field={`categoryVerdicts.${verdict.id}.verdict`} as="p" class="text-base text-on-surface-variant leading-relaxed mb-8 max-w-2xl">{verdict.summary}</CmsField>
+                  {verdict.summary && (
+                    <CmsField field={verdictCmsField(verdict.id, 'verdict')} as="p" class="text-base text-on-surface-variant leading-relaxed mb-8 max-w-2xl">{verdict.summary}</CmsField>
+                  )}
 
+                  {(verdict.pros.length > 0 || verdict.cons.length > 0) && (
                   <div class="grid md:grid-cols-2 gap-x-10 gap-y-6">
+                    {verdict.pros.length > 0 && (
                     <div>
                       <p class="font-black text-lg mb-4 text-on-surface m-0">Pros</p>
                       <ul class="space-y-3">
@@ -111,12 +136,14 @@ const herman = getAuthor('herman-carter');
                               <span class={`material-symbols-outlined shrink-0 mt-0.5 ${sv.text}`} style="font-variation-settings: 'FILL' 1;">
                                 add_circle
                               </span>
-                              <CmsField field={`categoryVerdicts.${verdict.id}.pros`} class="text-sm font-medium text-on-surface-variant leading-snug">{pro}</CmsField>
+                              <CmsField field={verdictCmsField(verdict.id, 'pros')} class="text-sm font-medium text-on-surface-variant leading-snug">{pro}</CmsField>
                             </li>
                           ))
                         }
                       </ul>
                     </div>
+                    )}
+                    {verdict.cons.length > 0 && (
                     <div>
                       <p class="font-black text-lg mb-4 text-on-surface m-0">Cons</p>
                       <ul class="space-y-3">
@@ -126,20 +153,22 @@ const herman = getAuthor('herman-carter');
                               <span class="material-symbols-outlined shrink-0 mt-0.5 text-red-600" style="font-variation-settings: 'FILL' 1;">
                                 remove_circle
                               </span>
-                              <CmsField field={`categoryVerdicts.${verdict.id}.cons`} class="text-sm font-medium text-on-surface-variant leading-snug">{con}</CmsField>
+                              <CmsField field={verdictCmsField(verdict.id, 'cons')} class="text-sm font-medium text-on-surface-variant leading-snug">{con}</CmsField>
                             </li>
                           ))
                         }
                       </ul>
                     </div>
+                    )}
                   </div>
+                  )}
                 </div>
               );
             })
           }
 
           {
-            herman && (
+            showExpertOpinion && herman && (
               <div class="mt-10 pt-8 border-t border-surface-variant">
                 <div class="rounded-xl bg-surface-container-low border border-surface-variant p-5 md:p-6">
                   <p class="text-[11px] font-black uppercase tracking-widest text-accent mb-4">
@@ -166,7 +195,11 @@ const herman = getAuthor('herman-carter');
         </div>
 
         <aside class="overview-sidebar-stack lg:sticky space-y-6 self-start">
+          {
+            showDecisionSidebar && (
           <div class="overview-sidebar-box p-5 rounded-xl border border-amber-200/80 bg-amber-50/60">
+            {showBestFor && (
+            <>
             <div class="flex items-center gap-2 mb-3">
               <span class="material-symbols-outlined text-accent text-[18px]" aria-hidden="true">thumb_up</span>
               <h3 class="text-sm font-extrabold text-on-surface m-0">Best for</h3>
@@ -181,6 +214,10 @@ const herman = getAuthor('herman-carter');
                 ))
               }
             </ul>
+            </>
+            )}
+            {showNotIdeal && (
+            <>
             <div class="flex items-center gap-2 mb-3">
               <span class="material-symbols-outlined text-tertiary text-[18px]" aria-hidden="true">remove_circle</span>
               <h3 class="text-sm font-extrabold text-on-surface m-0">Not ideal for</h3>
@@ -195,13 +232,21 @@ const herman = getAuthor('herman-carter');
                 ))
               }
             </ul>
+            </>
+            )}
           </div>
+            )
+          }
 
+          {
+            showCharacters && (
           <CharacterStoryHighlights
             characters={overview.characters}
             productName={product.name}
             heading="Featured characters"
           />
+            )
+          }
         </aside>
       </div>
     </div>
@@ -321,7 +366,7 @@ const herman = getAuthor('herman-carter');
   }
 </style>
 
-<script define:vars={{ verdictMeta: verdictEntries.map((v) => ({ id: v.id, label: v.label })) }}>
+<script define:vars={{ verdictMeta: verdictEntries.map((v) => ({ id: v.id, label: v.label })), defaultVerdictId: defaultVerdict.id }}>
   function initVerdictOverview() {
     const root = document.querySelector('[data-verdict-overview]');
     if (!root || root.dataset.bound === 'true') return;
@@ -349,7 +394,7 @@ const herman = getAuthor('herman-carter');
       btn.addEventListener('click', () => show(id));
     });
 
-    show('overall');
+    if (defaultVerdictId) show(defaultVerdictId);
   }
 
   initVerdictOverview();

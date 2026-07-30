@@ -1,6 +1,7 @@
 import type { AiVerdictScope } from '../config';
 import type { AssembledPayload } from '../assembleEvidence';
 import type { KeyFinding } from '../suggestionSchema';
+import { categoryFocusRule, listFieldExtraRules } from '../fieldPromptHelpers';
 
 export function buildSystemPrompt(scope: AiVerdictScope): string {
   return `You are an editorial assistant for AI GF Expert, an independent product review site.
@@ -57,7 +58,7 @@ export function buildUserPrompt(
       : payload.scope === 'category'
         ? `Generate category fields for "${payload.categorySlug}": category_verdict_headline, category_verdict, category_primary_strength, category_primary_limitation, category_pros, category_cons.`
         : payload.scope === 'field'
-          ? fieldModeInstruction(targetField, opts)
+          ? fieldModeInstruction(targetField, opts, payload.categorySlug)
           : `Generate expert_opinion_outline only — bullet prompts for the editor, not finished first-person copy.`;
 
   const schemaHint = schemaInstructions(payload.scope);
@@ -86,19 +87,26 @@ function fieldModeInstruction(
     currentText?: string;
     fieldMode?: 'write' | 'rewrite' | 'shorten' | 'specific' | 'another';
   },
+  categorySlug?: string,
 ): string {
-  const base = `Generate field_suggestion for target field "${targetField}".`;
+  const topic = categoryFocusRule(categorySlug);
+  const listRules = listFieldExtraRules(targetField);
+  const tf = (targetField ?? '').toLowerCase();
+  const seoMetaRules = tf.includes('meta description')
+    ? ' Write a Google meta description under 155 characters. Summarize the overall product review in plain language. Do not list category scores or unrelated features.'
+    : '';
+  const base = `Generate field_suggestion for target field "${targetField}". Use plain, easy-to-understand language — first-year high school reading level. Never sound technical or corporate.${topic}${listRules}${seoMetaRules}`;
   switch (opts?.fieldMode) {
     case 'rewrite':
-      return `${base} Smooth and lightly polish the current editor text. Preserve the author's voice, tone, and editorial integrity — do not make it sound corporate, stiff, or technical. Keep every factual detail and nuance from the original; only improve flow and readability.`;
+      return `${base} Rewrite the current editor text so it is much easier to understand. Keep every important detail, fact, and nuance. Keep the author's tone and editorial integrity — only simplify wording and improve flow. Do not make it stiff, jargon-heavy, or corporate.`;
     case 'shorten':
-      return `${base} Shorten the current editor text while keeping the key points.`;
+      return `${base} Make the current editor text shorter while keeping all important details. Cut filler and repetition, not facts. Stay easy to read and not technical.`;
     case 'specific':
-      return `${base} Make the suggestion more specific using concrete test details from the data.`;
+      return `${base} Add concrete test details from the data for this category only, but explain them in simple everyday language — not technical or corporate wording.`;
     case 'another':
-      return `${base} Provide a different version from any previous suggestion.`;
+      return `${base} Provide a different version from any previous suggestion. Same easy reading level and tone rules.`;
     default:
-      return base;
+      return `${base} Write fresh copy from the test evidence.`;
   }
 }
 
