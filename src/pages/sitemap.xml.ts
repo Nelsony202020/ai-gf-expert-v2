@@ -1,11 +1,11 @@
 import type { APIRoute } from 'astro';
-import { buildXmlSitemap } from '../lib/sitemap';
-import { loadComparisonProducts } from '../lib/content/comparisonProducts';
+import { buildXmlSitemapIndex } from '../lib/sitemap';
 
+// Sitemap index — the single URL submitted to Google. It points at the child
+// sitemaps (pages, reviews, methodology, guides, roundups).
 export const GET: APIRoute = async ({ site }) => {
   const origin = site?.toString().replace(/\/$/, '') ?? 'https://aigirlfriend.expert';
-  const publishedProducts = await loadComparisonProducts();
-  const body = buildXmlSitemap(origin, publishedProducts);
+  const body = buildXmlSitemapIndex(origin);
 
   return new Response(body, {
     headers: {

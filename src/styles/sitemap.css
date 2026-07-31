@@ -118,19 +118,27 @@
   padding: 8px 4px;
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--color-accent);
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
   text-decoration: none;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .sitemap-card__link:hover {
   background: rgb(219 39 119 / 6%);
+  color: var(--color-accent);
 }
 
 .sitemap-card__arrow {
   font-size: 16px;
   color: var(--color-tertiary);
+  opacity: 0.55;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.sitemap-card__link:hover .sitemap-card__arrow {
+  opacity: 1;
+  color: var(--color-accent);
 }
 
 /* Tests & Methodology — full-width multi-column */
@@ -258,6 +266,7 @@
 .sitemap-tests__sub-summary {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.375rem;
   padding: 0.25rem 0;
   cursor: pointer;
@@ -272,21 +281,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.125rem;
+  height: 1.125rem;
   border-radius: 4px;
-  background: rgb(219 39 119 / 8%);
-  color: var(--color-accent);
+  background: transparent;
+  color: var(--color-tertiary);
   flex-shrink: 0;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .sitemap-tests__sub-summary:hover .sitemap-tests__expand {
-  background: rgb(219 39 119 / 14%);
+  background: rgb(26 36 24 / 5%);
+  color: var(--color-on-surface-variant);
 }
 
 .sitemap-tests__expand .material-symbols-outlined {
-  font-size: 1rem;
+  font-size: 0.875rem;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
   transition: transform 0.15s ease;
 }
 
@@ -298,13 +309,19 @@
   flex: 1;
   min-width: 0;
   font-size: 0.8125rem;
-  font-weight: 700;
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.sitemap-tests__sub-link:hover {
   color: var(--color-accent);
   text-decoration: none;
 }
 
-.sitemap-tests__sub-link:hover {
-  text-decoration: underline;
+.sitemap-card--tests .sitemap-card__arrow {
+  font-size: 14px;
 }
 
 .sitemap-card__link--compact {
@@ -314,7 +331,7 @@
 
 .sitemap-tests__evidence {
   list-style: none;
-  margin: 0.25rem 0 0.375rem 1.625rem;
+  margin: 0.25rem 0 0.375rem 0.75rem;
   padding: 0;
 }
 
@@ -412,12 +429,25 @@
   color: var(--dark-muted);
 }
 
+[data-theme='dark'] .sitemap-card__link {
+  color: var(--dark-muted);
+}
+
 [data-theme='dark'] .sitemap-card__link:hover {
   background: rgb(219 39 119 / 10%);
+  color: #f472b6;
+}
+
+[data-theme='dark'] .sitemap-card__link:hover .sitemap-card__arrow {
+  color: #f472b6;
 }
 
 [data-theme='dark'] .sitemap-tests__sub-link {
-  color: var(--color-accent);
+  color: var(--dark-muted);
+}
+
+[data-theme='dark'] .sitemap-tests__sub-link:hover {
+  color: #f472b6;
 }
 
 [data-theme='dark'] .sitemap-tests__cat a {
@@ -425,5 +455,11 @@
 }
 
 [data-theme='dark'] .sitemap-tests__expand {
-  background: rgb(219 39 119 / 14%);
+  background: transparent;
+  color: var(--dark-muted);
+}
+
+[data-theme='dark'] .sitemap-tests__sub-summary:hover .sitemap-tests__expand {
+  background: rgb(255 255 255 / 6%);
+  color: #c8c8c8;
 }

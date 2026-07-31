@@ -1,5 +1,6 @@
 export type SitemapContentType =
   | 'home'
+  | 'hub'
   | 'review'
   | 'roundup'
   | 'guide'

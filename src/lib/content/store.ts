@@ -58,6 +58,7 @@ import { affiliateRel, DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
 import { buildGroupedContributors } from '../ratings/groupContributors';
 import type { Roundup, RoundupPick } from '../../data/roundups/ai-girlfriend';
 import { hydrateRoundupPicks } from './roundupPick';
+import { filterLaunchProducts, launchCompareDefaultIds } from './launchProducts';
 
 export function useDbContent(): boolean {
   const flag = env('USE_DB_CONTENT') ?? '';
@@ -348,6 +349,12 @@ function mapProduct(
 
   const derivedOverview = deriveOverview(dbProduct, monthlyPriceLabel);
 
+  const logoMediaUrl = resolveMediaUrl(dbProduct.logo);
+  const logo =
+    logoMediaUrl && isUsablePublicMediaUrl(logoMediaUrl)
+      ? logoMediaUrl
+      : fileFallback?.logo;
+
   return {
     slug: dbProduct.slug,
     name: dbProduct.name,
@@ -361,6 +368,7 @@ function mapProduct(
       ? `/go/${activeLink.cloakedSlug}`
       : dbProduct.websiteUrl ?? fileFallback?.affiliateUrl ?? '',
     affiliateRel: affiliateRel(activeLink?.relTags),
+    logo,
     featuredImage,
     gallery: gallery.length > 0 ? gallery : fileFallback?.gallery ?? [],
     heroGallery: heroGallery.length > 0 ? heroGallery : fileFallback?.heroGallery,
@@ -629,7 +637,15 @@ export async function loadRoundupForPublic(
   fileTemplate: Roundup,
 ): Promise<RoundupPublicLoad> {
   if (!isDbConfigured()) {
-    return { roundup: fileTemplate, isDraft: false };
+    const picks = filterLaunchProducts(fileTemplate.picks);
+    return {
+      roundup: {
+        ...fileTemplate,
+        picks,
+        compareDefaultIds: launchCompareDefaultIds(picks, fileTemplate.compareDefaultIds),
+      },
+      isDraft: false,
+    };
   }
 
   try {
@@ -651,6 +667,7 @@ export async function loadRoundupForPublic(
       picks = orderRoundupPicksFromDbEntries(fileTemplate.picks, dbRoundup.entries);
     }
     picks = hydrateRoundupPicks(picks, productsBySlug);
+    picks = filterLaunchProducts(picks);
 
     const roundup: Roundup = {
       ...fileTemplate,
@@ -662,6 +679,7 @@ export async function loadRoundupForPublic(
           }
         : {}),
       picks,
+      compareDefaultIds: launchCompareDefaultIds(picks, fileTemplate.compareDefaultIds),
     };
 
     return { roundup, isDraft };
@@ -682,6 +700,42 @@ export async function loadPublishedRoundupBySlug(
 ): Promise<Roundup | null> {
   const { roundup, isDraft } = await loadRoundupForPublic(slug, fileTemplate);
   return isDraft ? null : roundup;
+}
+
+/**
+ * Roundup slugs that have a live public route today. Only /best/ai-girlfriend.astro
+ * exists; when a dynamic /best/[slug] route is added, drop this gate so every
+ * published DB roundup gets a page and sitemap entry automatically.
+ */
+const ROUNDUP_PAGE_SLUGS = new Set(['ai-girlfriend']);
+
+export interface PublishedRoundupSummary {
+  title: string;
+  slug: string;
+}
+
+/**
+ * Published roundups with a live public route — feeds the HTML and XML sitemaps.
+ * Falls back to the file roundup when InstantDB is not configured.
+ */
+export async function loadPublishedRoundupSummaries(): Promise<PublishedRoundupSummary[]> {
+  const fallback: PublishedRoundupSummary[] = [
+    { title: 'Best AI Girlfriend Apps', slug: 'ai-girlfriend' },
+  ];
+  if (!isDbConfigured()) return fallback;
+
+  try {
+    const db = getDb();
+    const { roundups } = await (db.query as any)({
+      roundups: { $: { where: { status: 'published' } } },
+    });
+    return (roundups as any[])
+      .filter((r) => !r.deletedAt && r.slug && ROUNDUP_PAGE_SLUGS.has(String(r.slug)))
+      .map((r) => ({ title: String(r.title ?? r.slug), slug: String(r.slug) }));
+  } catch (error) {
+    console.error('[content] published roundups load failed — using file data', error);
+    return fallback;
+  }
 }
 
 /**
@@ -821,6 +875,7 @@ export async function loadProductLogoMap(): Promise<Map<string, string>> {
 export async function overlayExplorerAppsWithDb<
   T extends {
     slug: string;
+    logo: string;
     tagline: string;
     directoryDescription: string;
     bestFor: string;
@@ -838,6 +893,7 @@ export async function overlayExplorerAppsWithDb<
     const { products: dbProducts } = await (db.query as any)({
       products: {
         $: { where: { status: 'published' } },
+        logo: {},
         subscriptionPlans: {},
       },
     });
@@ -874,8 +930,13 @@ export async function overlayExplorerAppsWithDb<
         return ms > latest ? ms : latest;
       }, 0);
 
+      const logoUrl = resolveMediaUrl(dbProduct.logo);
+      const logo =
+        logoUrl && isUsablePublicMediaUrl(logoUrl) ? logoUrl : app.logo;
+
       return {
         ...app,
+        logo,
         tagline: dbProduct.tagline?.trim() || app.tagline,
         directoryDescription: dbProduct.directoryDescription?.trim() || app.directoryDescription,
         bestFor,

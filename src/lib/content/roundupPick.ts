@@ -21,7 +21,7 @@ export function productToRoundupPick(template: RoundupPick, product: Product): R
         .map((s) => ({ name: s.name, score: s.score! })),
     }));
 
-  const hero = product.featuredImage?.full ?? product.gallery[0]?.full ?? template.logo;
+  const logo = product.logo?.trim() || template.logo;
   const overall = product.verdicts.find((v) => v.id === 'overall');
 
   return {
@@ -29,7 +29,7 @@ export function productToRoundupPick(template: RoundupPick, product: Product): R
     slug: product.slug,
     id: template.id || product.slug,
     name: product.name,
-    logo: hero,
+    logo,
     overallScore: product.overallScore ?? template.overallScore,
     overallSummary: product.overallSummary?.trim() || template.overallSummary,
     intro: product.tagline?.trim() || template.intro,
@@ -61,7 +61,7 @@ export function minimalRoundupPickFromProduct(product: Product): RoundupPick {
       id: product.slug,
       slug: product.slug,
       name: product.name,
-      logo: product.featuredImage?.full ?? product.gallery[0]?.full ?? '',
+      logo: product.logo ?? '',
       ribbon: 'Featured',
       ribbonKey: 'overall',
       overallScore: product.overallScore ?? 0,

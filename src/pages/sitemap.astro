@@ -1,4 +1,8 @@
 ---
+// Server-rendered so newly published reviews/roundups appear immediately,
+// without waiting for a static rebuild.
+export const prerender = false;
+
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
@@ -7,9 +11,25 @@ import SitemapTestMethodology from '../components/sitemap/SitemapTestMethodology
 import SitemapResourcesLegal from '../components/sitemap/SitemapResourcesLegal.astro';
 import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
 import { buildFullHtmlSitemapPage } from '../lib/sitemap';
-import { loadComparisonProducts } from '../lib/content/comparisonProducts';
+import { loadPublishedProducts, loadPublishedRoundupSummaries } from '../lib/content/store';
+import { getDraftedPaths } from '../lib/seo/pageOverrides';
+import { products as fileProducts } from '../data/products';
 
-const page = buildFullHtmlSitemapPage(await loadComparisonProducts());
+const [publishedProducts, publishedRoundups, draftedPaths] = await Promise.all([
+  loadPublishedProducts(fileProducts),
+  loadPublishedRoundupSummaries(),
+  getDraftedPaths(),
+]);
+
+const page = buildFullHtmlSitemapPage({
+  products: publishedProducts,
+  roundups: publishedRoundups,
+  excludePaths: draftedPaths,
+});
+
+// Browsers always revalidate (publishes show up on refresh); CDN caches for
+// an hour and is purged on every deploy.
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600');
 ---
 
 <BaseLayout title="HTML Sitemap — AI Girlfriend Expert" description="Complete index of all reviews, roundups, guides, testing methodology, authors, resources, and legal pages.">

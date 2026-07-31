@@ -39,7 +39,17 @@ const {
 } = Astro.props;
 
 const displayChars = characters.slice(0, maxDisplay);
-const carouselChars = manualDrag || !staticCarousel ? [...displayChars, ...displayChars] : displayChars;
+
+function buildSeamlessLoopChars<T>(chars: T[], minItems = 12): T[] {
+  if (chars.length === 0) return [];
+  let expanded = [...chars];
+  while (expanded.length < minItems) {
+    expanded = [...expanded, ...chars];
+  }
+  return [...expanded, ...expanded];
+}
+
+const carouselChars = manualDrag || !staticCarousel ? buildSeamlessLoopChars(displayChars) : displayChars;
 const dataId = `char-stories-${productName.replace(/\s+/g, '-').toLowerCase()}`;
 const headingText = heading ?? 'Featured characters';
 ---
@@ -209,6 +219,19 @@ const headingText = heading ?? 'Featured characters';
     const chatInput = root.querySelector('[data-story-input]');
     const modal = root.querySelector('.char-stories__modal');
     if (!carousel || !track || !viewer || !slideEl || !modal) return;
+
+    const sourceCount = characters.length;
+    if (allowAutoScroll && sourceCount > 0) {
+      const minWidth = carousel.clientWidth * 2;
+      let guard = 0;
+      while (track.scrollWidth < minWidth && guard < 12) {
+        const items = Array.from(track.querySelectorAll('.char-stories__item'));
+        for (let i = 0; i < sourceCount && i < items.length; i++) {
+          track.appendChild(items[i].cloneNode(true));
+        }
+        guard += 1;
+      }
+    }
 
     let offset = 0;
     let velocity = 0;

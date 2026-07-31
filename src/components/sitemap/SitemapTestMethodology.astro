@@ -64,10 +64,10 @@ const columns = distributeTestCategoryColumns(categories);
                   cat.subscores.map((sub) => (
                     <details class="sitemap-tests__sub">
                       <summary class="sitemap-tests__sub-summary">
+                        <a href={sub.href} class="sitemap-tests__sub-link">{sub.name}</a>
                         <span class="sitemap-tests__expand" aria-hidden="true">
                           <span class="material-symbols-outlined">chevron_right</span>
                         </span>
-                        <a href={sub.href} class="sitemap-tests__sub-link">{sub.name}</a>
                       </summary>
                       <ul class="sitemap-tests__evidence">
                         {

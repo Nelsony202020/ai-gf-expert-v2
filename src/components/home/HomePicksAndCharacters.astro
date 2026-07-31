@@ -46,7 +46,7 @@ const { picks, characters } = Astro.props;
         {
           picks.map((pick, index) => {
             const reviewHref = pick.reviewUrl ?? `/reviews/${pick.slug}`;
-            const thumb = pick.gallery[0]?.full ?? pick.logo;
+            const thumb = pick.logo;
             const scoreVisual = getScoreVisual(pick.overallScore);
             const ribbonLabel = getRoundupRibbonLabel(pick);
             return (

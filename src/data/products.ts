@@ -195,6 +195,8 @@ export interface Product {
   affiliateUrl: string;
   /** Space-separated rel tokens on outbound affiliate CTAs. */
   affiliateRel: string;
+  /** Square product logo from admin Setup → Product logo. */
+  logo?: string;
   /** Hero image on the review page; falls back to gallery[0] when unset. */
   featuredImage?: GalleryImage;
   gallery: GalleryImage[];

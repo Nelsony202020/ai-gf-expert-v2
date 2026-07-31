@@ -1,3 +1,4 @@
+import { filterLaunchProducts } from './launchProducts';
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
 import type { HomeFeaturedCharacter, HomeGuide, HomeRecentUpdate } from '../../data/homepage';
 import { getDb, isDbConfigured } from '../db/server';
@@ -21,7 +22,11 @@ function fmtDisplayDate(ms?: number | string | null): string {
 export async function loadHomepageTopPicks(
   templatePicks: RoundupPick[],
 ): Promise<RoundupPick[]> {
-  if (!isDbConfigured()) return [];
+  const launchTemplates = filterLaunchProducts(templatePicks);
+
+  if (!isDbConfigured()) {
+    return launchTemplates.slice(0, 3);
+  }
 
   try {
     const db = getDb();
@@ -48,10 +53,11 @@ export async function loadHomepageTopPicks(
       const template = templatesBySlug.get(slug);
       out.push(template ? productToRoundupPick(template, product) : minimalRoundupPickFromProduct(product));
     }
-    return out;
+    const filtered = filterLaunchProducts(out);
+    return filtered.length > 0 ? filtered : launchTemplates.slice(0, 3);
   } catch (error) {
     console.error('[content] homepage top picks load failed', error);
-    return [];
+    return launchTemplates.slice(0, 3);
   }
 }
 
@@ -66,7 +72,7 @@ export async function loadHomepageFeaturedCharacters(
 
 /** Recent homepage updates from published reviews (no static placeholder links). */
 export async function loadHomepageRecentUpdates(): Promise<HomeRecentUpdate[]> {
-  const products = await loadPublishedProducts([]);
+  const products = filterLaunchProducts(await loadPublishedProducts([]));
   return products
     .filter((p) => p.overallScore != null)
     .slice(0, 4)
@@ -86,7 +92,7 @@ export async function loadHomepageRecentUpdates(): Promise<HomeRecentUpdate[]> {
 
 /** Guides / featured articles from published reviews only. */
 export async function loadHomepageGuides(): Promise<HomeGuide[]> {
-  const products = await loadPublishedProducts([]);
+  const products = filterLaunchProducts(await loadPublishedProducts([]));
   return products.slice(0, 6).map((p) => ({
     id: `guide-${p.slug}`,
     title: `${p.name} Review`,
@@ -103,7 +109,8 @@ export async function loadHomepageGuides(): Promise<HomeGuide[]> {
 export async function hydrateExplorerTemplatePicks(
   templatePicks: RoundupPick[],
 ): Promise<RoundupPick[]> {
-  const published = await loadPublishedProducts([]);
+  const launchTemplates = filterLaunchProducts(templatePicks);
+  const published = filterLaunchProducts(await loadPublishedProducts([]));
   const bySlug = new Map(published.map((p) => [p.slug, p]));
-  return hydrateRoundupPicks(templatePicks, bySlug);
+  return hydrateRoundupPicks(launchTemplates, bySlug);
 }

@@ -19,6 +19,7 @@ export async function loadComparisonProducts(): Promise<Product[]> {
   }
 
   const { products: fileProducts } = await import('../../data/products');
+  // Everything published in the admin is included — no hard-coded allowlist.
   cachedProducts = await loadPublishedProducts(fileProducts);
   cachedAt = now;
   return cachedProducts;

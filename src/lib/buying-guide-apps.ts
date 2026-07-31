@@ -27,7 +27,7 @@ export function resolveGuideAppExample(name: string, logoMap: Map<string, string
   const pick = findRoundupPick(name);
   const slug = pick?.slug ?? toSlug(name);
   const dbLogo = logoMap.get(slug) ?? logoMap.get(name.trim().toLowerCase());
-  const logo = pick?.logo ?? dbLogo ?? img(`${slug}-logo`);
+  const logo = dbLogo ?? pick?.logo ?? img(`${slug}-logo`);
 
   return {
     name: pick?.name ?? name,

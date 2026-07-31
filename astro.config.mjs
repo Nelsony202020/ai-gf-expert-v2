@@ -37,15 +37,6 @@ export default defineConfig({
   // Admin uses a Vite page script (admin-entry.tsx), not Astro React islands.
   // @astrojs/react forces broken Rolldown pre-bundling of React 19 in dev.
   integrations: [],
-  redirects: {
-    '/terms-of-service': '/legal/terms',
-    '/terms-of-service/privacy-policy': '/legal/privacy',
-    '/terms-of-service/affiliate-disclosure': '/legal/affiliate-disclosure',
-    '/terms-of-service/accessibility': '/legal/accessibility',
-    '/guides/how-to-choos-an-ai-girlfriend-app': '/guides/how-to-choose-an-ai-girlfriend-app',
-    '/faq': '/',
-    '/editorial-process': '/editorial-guidelines',
-  },
   vite: {
     plugins: [astroScriptTsPlugin(), tailwindcss(), react()],
     ssr: {

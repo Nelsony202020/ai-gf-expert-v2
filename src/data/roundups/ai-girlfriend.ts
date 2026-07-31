@@ -555,7 +555,7 @@ const fileRoundup: Roundup = {
         description: 'Ribbons and final order still reflect deal-breakers, long-term usability, and limits you will not see in a single number.',
       },
     ],
-    processHref: '/tests/customization',
+    processHref: '/test/customization/',
     processLabel: 'See our full selection process',
   },
   quickHeading: 'Quick overview',

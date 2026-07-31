@@ -1,17 +1,31 @@
-import type { HtmlSitemapFullPage, HtmlSitemapLink, HtmlSitemapSection, SitemapEntry } from '../types/sitemap';
+import type { HtmlSitemapFullPage, HtmlSitemapLink, SitemapEntry } from '../types/sitemap';
 import type { Product } from '../data/products';
 import { authors } from '../data/authors';
 import { guides } from '../data/guides';
-import { megaMenuColumns } from '../data/nav-mega-menu';
 import { products } from '../data/products';
 import { getTestCategories } from './test-framework';
 import { buyingGuideSlug } from '../data/buying-guide-content';
 import { testHubUrl } from './slugs';
 
-const HTML_PREVIEW_LIMIT = 5;
+export interface RoundupSummary {
+  title: string;
+  slug: string;
+}
 
-function isLiveHref(href: string): boolean {
-  return Boolean(href && href !== '#' && !href.startsWith('#'));
+/** Roundups shown when the DB list isn't loaded (file fallback). */
+const DEFAULT_ROUNDUPS: RoundupSummary[] = [
+  { title: 'Best AI Girlfriend Apps', slug: 'ai-girlfriend' },
+];
+
+/**
+ * Dynamic content feeding the sitemaps. Pages pass DB-loaded products and
+ * roundups; defaults keep build-time callers (no DB) working from file data.
+ */
+export interface SitemapInputs {
+  products?: Product[];
+  roundups?: RoundupSummary[];
+  /** Normalized paths set to draft from the admin (page overrides). */
+  excludePaths?: Set<string>;
 }
 
 function entry(
@@ -31,11 +45,13 @@ function entry(
 }
 
 /** All site pages derived from structured content — single source of truth. */
-export function getAllSitemapEntries(publishedProducts: Product[] = products): SitemapEntry[] {
+export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[] {
+  const publishedProducts = inputs.products ?? products;
+  const publishedRoundups = inputs.roundups ?? DEFAULT_ROUNDUPS;
   const entries: SitemapEntry[] = [];
   let order = 0;
 
-  const push = (e: Parameters<typeof entry>[0]) => {
+  const push = (e: Omit<Parameters<typeof entry>[0], 'sitemapOrder'> & { sitemapOrder?: number }) => {
     entries.push(entry({ ...e, sitemapOrder: e.sitemapOrder ?? order++ }));
   };
 
@@ -52,15 +68,13 @@ export function getAllSitemapEntries(publishedProducts: Product[] = products): S
     url: '/ai-girlfriend-apps',
     contentType: 'directory',
     sitemapSection: 'resources',
-    showInHtmlSitemap: false,
   });
 
   push({
-    title: 'Reviews',
+    title: 'All Reviews',
     url: '/reviews/',
     contentType: 'hub',
     sitemapSection: 'reviews',
-    showInHtmlSitemap: false,
   });
 
   push({
@@ -68,7 +82,6 @@ export function getAllSitemapEntries(publishedProducts: Product[] = products): S
     url: '/legal/',
     contentType: 'hub',
     sitemapSection: 'legal',
-    showInHtmlSitemap: false,
   });
 
   for (const product of publishedProducts) {
@@ -78,45 +91,30 @@ export function getAllSitemapEntries(publishedProducts: Product[] = products): S
       contentType: 'review',
       sitemapSection: 'reviews',
       parentCategory: 'reviews',
+      // Never submit noindex pages to Google.
+      includeInXmlSitemap: !product.seo?.noindex,
     });
   }
 
-  for (const col of megaMenuColumns) {
-    const section = col.id === 'reviews'
-      ? 'reviews'
-      : col.id === 'best-picks'
-        ? 'roundups'
-        : 'guides';
-    const contentType = col.id === 'reviews'
-      ? 'review'
-      : col.id === 'best-picks'
-        ? 'roundup'
-        : 'guide';
-
-    for (const link of col.links) {
-      if (!isLiveHref(link.href)) continue;
-      push({
-        title: link.label,
-        url: link.href,
-        contentType,
-        sitemapSection: section,
-        parentCategory: col.id,
-      });
-    }
-
-    if (isLiveHref(col.viewAll.href)) {
-      push({
-        title: col.viewAll.label,
-        url: col.viewAll.href,
-        contentType,
-        sitemapSection: section,
-        parentCategory: col.id,
-        showInHtmlSitemap: false,
-      });
-    }
+  // Roundups from InstantDB (published, with a live route). File fallback
+  // covers builds without DB access.
+  for (const roundup of publishedRoundups) {
+    push({
+      title: roundup.title,
+      url: `/best/${roundup.slug}`,
+      contentType: 'roundup',
+      sitemapSection: 'roundups',
+      parentCategory: 'best-picks',
+    });
   }
 
-  // Guides from Sanity (empty until the CMS has published guides)
+  push({
+    title: 'All Guides',
+    url: '/guides',
+    contentType: 'hub',
+    sitemapSection: 'guides',
+  });
+
   push({
     title: 'How to Choose an AI Girlfriend App',
     url: `/guides/${buyingGuideSlug}`,
@@ -125,25 +123,18 @@ export function getAllSitemapEntries(publishedProducts: Product[] = products): S
     parentCategory: 'guides',
   });
 
-  if (guides.length > 0) {
+  // Guides from Sanity (empty until the CMS has published guides)
+  for (const guide of guides) {
+    if (guide.slug === buyingGuideSlug) continue;
     push({
-      title: 'Guides',
-      url: '/guides',
+      title: guide.title,
+      url: `/guides/${guide.slug}`,
       contentType: 'guide',
       sitemapSection: 'guides',
-      showInHtmlSitemap: false,
+      parentCategory: 'guides',
+      includeInXmlSitemap: !guide.noindex,
+      showInHtmlSitemap: !guide.noindex,
     });
-    for (const guide of guides) {
-      push({
-        title: guide.title,
-        url: `/guides/${guide.slug}`,
-        contentType: 'guide',
-        sitemapSection: 'guides',
-        parentCategory: 'guides',
-        includeInXmlSitemap: !guide.noindex,
-        showInHtmlSitemap: !guide.noindex,
-      });
-    }
   }
 
   push({
@@ -258,21 +249,69 @@ export function getAllSitemapEntries(publishedProducts: Product[] = products): S
     .sort((a, b) => a.sitemapOrder - b.sitemapOrder);
 }
 
-export function getXmlSitemapEntries(publishedProducts: Product[] = products): SitemapEntry[] {
-  return getAllSitemapEntries(publishedProducts).filter((e) => e.includeInXmlSitemap);
+export function getXmlSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[] {
+  return getAllSitemapEntries(inputs).filter((e) => e.includeInXmlSitemap);
+}
+
+// ---------------------------------------------------------------------------
+// Child sitemaps: /sitemap.xml is a sitemap index pointing at one child
+// sitemap per content group. Google is given the index URL only.
+// ---------------------------------------------------------------------------
+
+export type ChildSitemapKey = 'pages' | 'reviews' | 'methodology' | 'guides' | 'roundups';
+
+export const CHILD_SITEMAPS: { key: ChildSitemapKey; path: string; label: string }[] = [
+  { key: 'pages', path: '/sitemap-pages.xml', label: 'General pages' },
+  { key: 'reviews', path: '/sitemap-reviews.xml', label: 'Reviews' },
+  { key: 'methodology', path: '/sitemap-methodology.xml', label: 'Methodology' },
+  { key: 'guides', path: '/sitemap-guides.xml', label: 'Guides' },
+  { key: 'roundups', path: '/sitemap-roundups.xml', label: 'Roundups' },
+];
+
+/** Which child sitemap a URL belongs to. */
+export function childSitemapFor(e: SitemapEntry): ChildSitemapKey {
+  const url = e.url !== '/' ? e.url.replace(/\/$/, '') : '/';
+  // Archives (/reviews/, /guides) belong to the general pages sitemap.
+  if (e.contentType === 'review' && url !== '/reviews') return 'reviews';
+  if (e.sitemapSection === 'tests') return 'methodology';
+  if (e.sitemapSection === 'roundups' && url !== '/best') return 'roundups';
+  if (e.contentType === 'guide' && url !== '/guides') return 'guides';
+  return 'pages';
+}
+
+function normalizePath(path: string): string {
+  const base = path.split('#')[0].split('?')[0];
+  const trimmed = base !== '/' ? base.replace(/\/$/, '') : '/';
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+}
+
+/**
+ * XML entries for one child sitemap, deduped by URL. `inputs.excludePaths`
+ * holds normalized paths set to draft from the admin (page overrides).
+ */
+export function getChildSitemapEntries(
+  key: ChildSitemapKey,
+  inputs: SitemapInputs = {},
+): SitemapEntry[] {
+  const seen = new Set<string>();
+  const result: SitemapEntry[] = [];
+  for (const e of getXmlSitemapEntries(inputs)) {
+    if (childSitemapFor(e) !== key) continue;
+    const norm = normalizePath(e.url);
+    if (seen.has(norm)) continue;
+    if (inputs.excludePaths?.has(norm)) continue;
+    seen.add(norm);
+    result.push(e);
+  }
+  return result;
 }
 
 function dedupeLinks(items: HtmlSitemapLink[]): HtmlSitemapLink[] {
-  return [...new Map(items.map((l) => [l.href, l])).values()];
+  return [...new Map(items.map((l) => [normalizePath(l.href), l])).values()];
 }
 
 function entriesToLinks(items: SitemapEntry[]): HtmlSitemapLink[] {
   return items.map((e) => ({ label: e.title, href: e.url }));
-}
-
-/** Drop mega-menu "View all …" rows from the HTML sitemap lists. */
-function filterNavLinks(links: HtmlSitemapLink[]): HtmlSitemapLink[] {
-  return links.filter((l) => !/^view all/i.test(l.label));
 }
 
 /** Distribute test categories across methodology columns (col 0 holds fewer cats). */
@@ -281,14 +320,13 @@ export function distributeTestCategoryColumns(categories: ReturnType<typeof getT
 
   if (categories.length === 0) return cols;
 
-  cols[0].push(categories[0]);
-  const remaining = categories.slice(1);
+  // Column 0 is reserved for main methodology links only — categories start in column 1.
   const bucketCount = cols.length - 1;
-  const perCol = Math.ceil(remaining.length / bucketCount);
+  const perCol = Math.ceil(categories.length / bucketCount);
 
   for (let c = 1; c < cols.length; c++) {
     const start = (c - 1) * perCol;
-    cols[c] = remaining.slice(start, start + perCol);
+    cols[c] = categories.slice(start, start + perCol);
   }
 
   return cols;
@@ -301,23 +339,30 @@ export const testMainMethodologyLinks: HtmlSitemapLink[] = [
 ];
 
 export const testSupportingLinks: HtmlSitemapLink[] = [
+  { label: 'All Tests Directory', href: '/test/all/' },
   { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
   { label: 'Market Data Methodology', href: '/test/market-data/' },
   { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
 ];
 
-/** Full HTML sitemap page data — every published link, no truncation. */
-export function buildFullHtmlSitemapPage(publishedProducts: Product[] = products): HtmlSitemapFullPage {
-  const all = getAllSitemapEntries(publishedProducts);
-
-  const reviews = dedupeLinks(
-    filterNavLinks(
-      entriesToLinks(all.filter((e) => e.sitemapSection === 'reviews' && e.contentType === 'review')),
-    ),
+/**
+ * Full HTML sitemap page data — every published, HTML-visible link. Pages set
+ * to draft from the admin (inputs.excludePaths) are dropped, matching the XML
+ * sitemaps.
+ */
+export function buildFullHtmlSitemapPage(inputs: SitemapInputs = {}): HtmlSitemapFullPage {
+  const excludePaths = inputs.excludePaths;
+  const everyEntry = getAllSitemapEntries(inputs).filter(
+    (e) => !excludePaths?.has(normalizePath(e.url)),
   );
+  // Card counts include deep pages (e.g. test subscores) even when the card
+  // itself only links to the parent level.
+  const testCount = everyEntry.filter((e) => e.sitemapSection === 'tests').length;
+  const all = everyEntry.filter((e) => e.showInHtmlSitemap);
 
-  const roundups = dedupeLinks(filterNavLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'roundups'))));
-  const guides = dedupeLinks(filterNavLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'guides'))));
+  const reviews = dedupeLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'reviews')));
+  const roundups = dedupeLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'roundups')));
+  const guides = dedupeLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'guides')));
   const authors = dedupeLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'authors')));
 
   const resources = dedupeLinks([
@@ -335,11 +380,8 @@ export function buildFullHtmlSitemapPage(publishedProducts: Product[] = products
 
   const legal = dedupeLinks([
     ...entriesToLinks(all.filter((e) => e.sitemapSection === 'legal')),
-    { label: 'About Us', href: '/about' },
-    { label: 'Contact Us', href: '/contact' },
+    ...entriesToLinks(all.filter((e) => e.sitemapSection === 'company' && e.url !== '/')),
   ]);
-
-  const testCount = all.filter((e) => e.sitemapSection === 'tests').length;
 
   return {
     reviews,
@@ -353,141 +395,23 @@ export function buildFullHtmlSitemapPage(publishedProducts: Product[] = products
   };
 }
 
-/** Curated HTML sitemap card sections — not every deep URL. */
-export function buildHtmlSitemapSections(): HtmlSitemapSection[] {
-  const all = getAllSitemapEntries();
-
-  const reviews = all.filter((e) => e.sitemapSection === 'reviews' && e.contentType === 'review');
-  const uniqueReviews = [...new Map(reviews.map((e) => [e.url, e])).values()];
-
-  const roundups = all.filter((e) => e.sitemapSection === 'roundups');
-  const guides = all.filter((e) => e.sitemapSection === 'guides');
-  const authorEntries = all.filter((e) => e.sitemapSection === 'authors');
-  const resources = all.filter(
-    (e) =>
-      e.sitemapSection === 'resources'
-      && e.showInHtmlSitemap
-      && e.contentType !== 'test-hub',
-  );
-  const legal = all.filter((e) => e.sitemapSection === 'legal');
-  const company = all.filter(
-    (e) => e.sitemapSection === 'company' && e.showInHtmlSitemap && e.url !== '/',
-  );
-
-  const testCategories = getTestCategories();
-  const testCount = all.filter((e) => e.sitemapSection === 'tests').length;
-
-  const testLinks: HtmlSitemapSection['links'] = [
-    { label: 'How We Test AI Girlfriend Apps', href: testHubUrl() },
-    ...testCategories.map((cat) => ({ label: cat.name, href: cat.href })),
-    { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
-    { label: 'Market Data Methodology', href: '/test/market-data/' },
-    { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
-  ];
-
-  const resourceLinks: HtmlSitemapSection['links'] = [
-    { label: 'How We Test', href: testHubUrl() },
-    { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
-    { label: 'Market Data Methodology', href: '/test/market-data/' },
-    ...resources.map((e) => ({ label: e.title, href: e.url })),
-  ];
-
-  const uniqueResourceLinks = [...new Map(resourceLinks.map((l) => [l.href, l])).values()].slice(0, 8);
-
-  return [
-    {
-      id: 'reviews',
-      title: 'Reviews',
-      count: uniqueReviews.length,
-      icon: 'star',
-      tone: 'amber',
-      links: uniqueReviews.slice(0, HTML_PREVIEW_LIMIT).map((e) => ({ label: e.title, href: e.url })),
-      viewAll: uniqueReviews.length > HTML_PREVIEW_LIMIT
-        ? { label: 'View all reviews', href: '/reviews/' }
-        : null,
-    },
-    {
-      id: 'roundups',
-      title: 'Roundups',
-      count: roundups.length,
-      icon: 'checklist',
-      tone: 'lime',
-      links: roundups.slice(0, HTML_PREVIEW_LIMIT).map((e) => ({ label: e.title, href: e.url })),
-      viewAll: roundups.length > 0
-        ? { label: 'View all roundups', href: '/best/ai-girlfriend' }
-        : null,
-    },
-    {
-      id: 'guides',
-      title: 'Guides',
-      count: guides.length,
-      icon: 'menu_book',
-      tone: 'green',
-      links: guides.slice(0, HTML_PREVIEW_LIMIT).map((e) => ({ label: e.title, href: e.url })),
-      viewAll: guides.length > HTML_PREVIEW_LIMIT
-        ? { label: 'View all guides', href: '/guides/how-to-choose-an-ai-girlfriend-app' }
-        : null,
-    },
-    {
-      id: 'tests',
-      title: 'Tests & Methodology',
-      count: testCount,
-      icon: 'science',
-      tone: 'green',
-      links: testLinks,
-      viewAll: { label: 'View all tests', href: '/test/all/' },
-    },
-    {
-      id: 'authors',
-      title: 'Authors',
-      count: authorEntries.length,
-      icon: 'person',
-      tone: 'amber',
-      links: authorEntries.map((e) => ({ label: e.title, href: e.url })),
-      viewAll: authorEntries.length > 1
-        ? { label: 'View all authors', href: authorEntries[0]?.url ?? '/author/herman-carter' }
-        : null,
-    },
-    {
-      id: 'resources',
-      title: 'Resources',
-      count: uniqueResourceLinks.length,
-      icon: 'folder',
-      tone: 'lime',
-      links: uniqueResourceLinks,
-      viewAll: { label: 'View all resources', href: testHubUrl() },
-    },
-    {
-      id: 'legal',
-      title: 'Legal & Info',
-      count: legal.length,
-      icon: 'shield',
-      tone: 'lime',
-      links: legal.slice(0, 8).map((e) => ({ label: e.title, href: e.url })),
-      viewAll: legal.length > 0
-        ? { label: 'View all legal pages', href: '/legal/' }
-        : null,
-    },
-    {
-      id: 'company',
-      title: 'Company',
-      count: company.length + 1,
-      icon: 'apartment',
-      tone: 'green',
-      links: [
-        ...company.map((e) => ({ label: e.title, href: e.url })),
-        { label: 'HTML Sitemap', href: '/sitemap' },
-      ],
-      viewAll: null,
-    },
-  ];
+/** The sitemap index served at /sitemap.xml — the only URL submitted to Google. */
+export function buildXmlSitemapIndex(siteOrigin: string): string {
+  const origin = siteOrigin.replace(/\/$/, '');
+  const nodes = CHILD_SITEMAPS
+    .map((s) => `  <sitemap>\n    <loc>${escapeXml(`${origin}${s.path}`)}</loc>\n  </sitemap>`)
+    .join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${nodes}\n</sitemapindex>\n`;
 }
 
-export function buildXmlSitemap(siteOrigin: string, publishedProducts: Product[] = products): string {
-  const urls = getXmlSitemapEntries(publishedProducts);
+/** One child sitemap (urlset) — e.g. /sitemap-reviews.xml. */
+export function buildChildXmlSitemap(
+  siteOrigin: string,
+  key: ChildSitemapKey,
+  inputs: SitemapInputs = {},
+): string {
   const origin = siteOrigin.replace(/\/$/, '');
-
-  const urlNodes = urls
+  const urlNodes = getChildSitemapEntries(key, inputs)
     .map((entry) => {
       const loc = `${origin}${entry.url.startsWith('/') ? entry.url : `/${entry.url}`}`;
       const lastmod = entry.lastmod ? `\n    <lastmod>${entry.lastmod}</lastmod>` : '';

@@ -1,62 +1,75 @@
 ---
-// NOTE: Site footer — dark brand background, social links, dark mode toggle.
 import { authors } from '../data/authors';
-import { loadComparisonProducts } from '../lib/content/comparisonProducts';
-import { megaMenuColumns } from '../data/nav-mega-menu';
 import { legalPages } from '../data/legal-pages';
-import SocialTooltip from './ui/SocialTooltip.astro';
+import { loadComparisonProducts } from '../lib/content/comparisonProducts';
+import SocialIcon from './ui/SocialIcon.astro';
 import ThemeToggle from './ui/ThemeToggle.astro';
 
 const publishedProducts = await loadComparisonProducts();
 const herman = authors['herman-carter'];
 const year = new Date().getFullYear();
 
-const roundupLinks = megaMenuColumns.find((col) => col.id === 'best-picks')?.links ?? [
-  { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend' },
+const reviewLinks = [
+  { label: 'All Reviews', href: '/reviews/' },
+  ...publishedProducts.map((product) => ({
+    label: `${product.name} Review`,
+    href: `/reviews/${product.slug}/`,
+  })),
 ];
 
-const reviewLinks = publishedProducts.map((product) => ({
-  label: `${product.name} Review`,
-  href: `/reviews/${product.slug}/`,
-}));
+const legalBySlug = Object.fromEntries(legalPages.map((page) => [page.slug, page]));
 
 const columns = [
   {
-    title: 'Roundups',
-    links: roundupLinks,
+    title: 'Explore',
+    links: [
+      { label: 'AI Girlfriend App Directory', href: '/ai-girlfriend-apps/' },
+      { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend/' },
+      { label: 'Guides', href: '/guides/' },
+      { label: 'Comparisons', href: '/best/ai-girlfriend/#roundup-compare' },
+    ],
   },
   {
     title: 'Reviews',
     links: reviewLinks,
   },
   {
-    title: 'Tools',
-    links: [{ label: 'AI Girlfriend App Directory', href: '/ai-girlfriend-apps/' }],
-  },
-  {
-    title: 'Resources',
+    title: 'How We Test',
     links: [
       { label: 'Our Methodology', href: '/test/' },
+      { label: 'All Testing Categories', href: '/test/all/' },
       { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
+      { label: 'Market Data Methodology', href: '/test/market-data/' },
+      { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
     ],
   },
   {
     title: 'Company',
     links: [
       { label: 'About Us', href: '/about/' },
+      { label: 'Herman Carter', href: '/author/herman-carter/' },
       { label: 'Contact', href: '/contact/' },
+      { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure/' },
+    ],
+  },
+  {
+    title: 'Legal',
+    links: [
+      { label: legalBySlug.privacy?.title ?? 'Privacy Policy', href: legalBySlug.privacy?.href ?? '/legal/privacy/' },
+      { label: legalBySlug.terms?.title ?? 'Terms of Service', href: legalBySlug.terms?.href ?? '/legal/terms/' },
+      { label: legalBySlug.accessibility?.title ?? 'Accessibility', href: legalBySlug.accessibility?.href ?? '/legal/accessibility/' },
+      { label: legalBySlug.copyright?.title ?? 'Copyright Policy', href: legalBySlug.copyright?.href ?? '/legal/copyright/' },
+      { label: legalBySlug.disclaimer?.title ?? 'Disclaimer', href: legalBySlug.disclaimer?.href ?? '/legal/disclaimer/' },
     ],
   },
 ];
 ---
 
 <footer class="site-footer">
-  <div class="site-footer__accent" aria-hidden="true" />
-
-  <div class="section-container px-4 md:px-8 relative z-[1]">
+  <div class="section-container px-4 md:px-8">
     <div class="site-footer__main">
       <div class="site-footer__brand">
-        <a href="/" class="site-logo-link site-footer__logo-link mb-5">
+        <a href="/" class="site-logo-link site-footer__logo-link">
           <img
             src="/brand/ai-gf-logo-light.png"
             alt="AI Girlfriend Expert"
@@ -77,16 +90,37 @@ const columns = [
             aria-hidden="true"
           />
         </a>
+
         <p class="site-footer__tagline">
           Independent AI companion reviews — tested honestly, scored transparently, updated regularly.
         </p>
+
+        <a href="/test/" class="site-footer__method-link">
+          See how we test
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+        </a>
+
         {
-          herman && (
-            <div class="mt-6">
+          herman?.socials?.length ? (
+            <div class="site-footer__social-block">
               <p class="site-footer__label">Follow us</p>
-              <SocialTooltip items={herman.socials} variant="light" class="site-footer__socials" />
+              <ul class="site-footer__socials">
+                {herman.socials.map((item) => (
+                  <li>
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="site-footer__social-link"
+                      aria-label={item.platform}
+                    >
+                      <SocialIcon platform={item.icon} class="site-footer__social-icon" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
-          )
+          ) : null
         }
       </div>
 
@@ -107,16 +141,8 @@ const columns = [
     </div>
 
     <div class="site-footer__bottom">
-      <p>&copy; {year} Nelson Digital FZ LLC. All rights reserved.</p>
-      <div class="site-footer__legal">
-        <ThemeToggle variant="footer" />
-        {
-          legalPages.map((page) => (
-            <a href={page.href}>{page.shortLabel ?? page.title}</a>
-          ))
-        }
-        <a href="/sitemap/">Sitemap</a>
-      </div>
+      <p class="site-footer__copyright">&copy; {year} Nelson Digital FZ LLC. All rights reserved.</p>
+      <ThemeToggle variant="footer" />
     </div>
   </div>
 </footer>
