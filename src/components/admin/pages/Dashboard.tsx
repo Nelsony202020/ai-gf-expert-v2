@@ -332,7 +332,7 @@ export function Dashboard() {
             />
           </ul>
           <Link
-            to="/seo/metadata"
+            to="/seo/overview"
             className="mt-4 inline-block text-xs font-medium text-pink-600 hover:underline"
           >
             View full site health
@@ -502,7 +502,7 @@ function buildIssues(data: DashboardData): AttentionIssue[] {
       description: 'Published pages need title and description.',
       priority: 'Medium',
       actionLabel: 'Fix metadata',
-      to: '/seo/metadata',
+      to: '/seo/pages?issue=missing-description',
     });
   }
   if (data.problemLinks.length > 0) {

@@ -43,11 +43,17 @@ const RedirectsPage = lazy(() =>
 const AffiliateLinksPage = lazy(() =>
   import('./pages/AffiliateLinks').then((m) => ({ default: m.AffiliateLinksPage })),
 );
-const SeoMetadataPage = lazy(() =>
-  import('./pages/Seo').then((m) => ({ default: m.SeoMetadataPage })),
+const SeoOverviewPage = lazy(() =>
+  import('./pages/seo/Overview').then((m) => ({ default: m.SeoOverviewPage })),
+);
+const SeoPagesPage = lazy(() =>
+  import('./pages/seo/Pages').then((m) => ({ default: m.SeoPagesPage })),
 );
 const SeoIndexingPage = lazy(() =>
-  import('./pages/Seo').then((m) => ({ default: m.SeoIndexingPage })),
+  import('./pages/seo/Indexing').then((m) => ({ default: m.SeoIndexingPage })),
+);
+const SeoSitemapsPage = lazy(() =>
+  import('./pages/seo/Sitemaps').then((m) => ({ default: m.SeoSitemapsPage })),
 );
 const AuditPage = lazy(() => import('./pages/Audit').then((m) => ({ default: m.AuditPage })));
 const RolesPage = lazy(() => import('./pages/Roles').then((m) => ({ default: m.RolesPage })));
@@ -141,9 +147,11 @@ const NAV: NavGroup[] = [
     icon: 'travel_explore',
     permission: 'seo.edit',
     items: [
-      { to: '/seo/metadata', label: 'Metadata' },
+      { to: '/seo/overview', label: 'Overview' },
+      { to: '/seo/pages', label: 'Pages' },
       { to: '/seo/redirects', label: 'Redirects', permission: 'redirects.edit' },
-      { to: '/seo/indexing', label: 'Canonicals & indexing' },
+      { to: '/seo/indexing', label: 'Indexing' },
+      { to: '/seo/sitemaps', label: 'Sitemaps' },
     ],
   },
   {
@@ -498,9 +506,12 @@ export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
           <Route path="/content/roundups/:id" element={<Navigate to="/" replace />} />
           <Route path="/content/authors" element={<EntityPage config={authorsModule} />} />
 
-          <Route path="/seo/metadata" element={<SeoMetadataPage />} />
+          <Route path="/seo/overview" element={<SeoOverviewPage />} />
+          <Route path="/seo/pages" element={<SeoPagesPage />} />
+          <Route path="/seo/metadata" element={<Navigate to="/seo/overview" replace />} />
           <Route path="/seo/redirects" element={<RedirectsPage />} />
           <Route path="/seo/indexing" element={<SeoIndexingPage />} />
+          <Route path="/seo/sitemaps" element={<SeoSitemapsPage />} />
 
           <Route path="/monetization/affiliate-links" element={<AffiliateLinksPage />} />
           <Route

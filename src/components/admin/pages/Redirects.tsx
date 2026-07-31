@@ -1,6 +1,8 @@
-// Redirect manager with live loop/chain/destination validation.
+// Redirect manager with live loop/chain/destination validation, registry-based
+// issue detection, and suggested redirects (never auto-created).
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, dataApi, type EntityRow } from '../api';
 import {
   Button,
@@ -18,12 +20,19 @@ import {
   fmtDate,
   Icon,
 } from '../ui';
+import { invalidateRegistryCache, useUrlRegistry } from './seo/registry';
+import type { RegistryIssue } from '../../../lib/seo/urlRegistry';
+
+type TabId = 'active' | 'suggested';
 
 export function RedirectsPage() {
   const [rows, setRows] = useState<EntityRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<EntityRow | null | 'new'>(null);
+  const [prefill, setPrefill] = useState<{ sourcePath?: string; destinationPath?: string } | null>(null);
   const [search, setSearch] = useState('');
+  const [tab, setTab] = useState<TabId>('active');
+  const { registry, reload: reloadRegistry } = useUrlRegistry();
 
   function reload() {
     dataApi
@@ -33,10 +42,30 @@ export function RedirectsPage() {
   }
   useEffect(reload, []);
 
+  // Issues per redirect record, detected by the URL registry.
+  const issuesById = useMemo(() => {
+    const map = new Map<string, RegistryIssue[]>();
+    if (!registry) return map;
+    for (const url of registry.urls) {
+      if (url.entity === 'redirects' && url.recordId && url.issues.length > 0) {
+        map.set(url.recordId, url.issues);
+      }
+    }
+    return map;
+  }, [registry]);
+
+  const suggestions = registry?.suggestedRedirects ?? [];
+
   async function remove(row: EntityRow) {
     if (!confirm(`Delete redirect ${row.sourcePath} → ${row.destinationPath}?`)) return;
     await dataApi.remove('redirects', row.id).catch((e) => setError(e.message));
+    afterChange();
+  }
+
+  function afterChange() {
     reload();
+    invalidateRegistryCache();
+    void reloadRegistry(true);
   }
 
   const filtered = rows?.filter(
@@ -49,13 +78,18 @@ export function RedirectsPage() {
         <div>
           <h2 className="text-lg font-bold">Redirects</h2>
           <p className="text-sm text-slate-500">
-            One centralized redirect system for the whole site (slug changes auto-create 301s
-            here). Loops and chains are validated before saving.
+            Redirect rules you manage here (slug changes auto-create 301s). Loops and chains are
+            validated before saving. Redirects built into the code (legacy URL cleanups) are listed
+            under{' '}
+            <Link to="/seo/pages?view=redirects" className="text-pink-600 hover:underline">
+              Pages → Missing &amp; redirects
+            </Link>
+            .
           </p>
         </div>
         <div className="flex gap-2">
           <TextInput placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-56" />
-          <Button onClick={() => setEditing('new')}>
+          <Button onClick={() => { setPrefill(null); setEditing('new'); }}>
             <Icon name="add" /> Add redirect
           </Button>
         </div>
@@ -63,59 +97,142 @@ export function RedirectsPage() {
 
       {error && <ErrorNote message={error} />}
 
-      <Card>
-        {!filtered ? (
-          <Spinner />
-        ) : filtered.length === 0 ? (
-          <EmptyState message="No redirects." />
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-400">
-                <th className="px-2 py-2">Source</th>
-                <th className="px-2 py-2">Destination</th>
-                <th className="px-2 py-2">Type</th>
-                <th className="px-2 py-2">Active</th>
-                <th className="px-2 py-2">Hits</th>
-                <th className="px-2 py-2">Created</th>
-                <th className="px-2 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r) => (
-                <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="px-2 py-2 font-mono text-xs">{r.sourcePath}</td>
-                  <td className="px-2 py-2 font-mono text-xs">{r.destinationPath}</td>
-                  <td className="px-2 py-2">
-                    <Badge tone={r.redirectType === 301 ? 'blue' : 'amber'}>{r.redirectType}</Badge>
-                  </td>
-                  <td className="px-2 py-2">
-                    {r.active ? <Icon name="check" className="text-green-600" /> : <Icon name="close" className="text-slate-300" />}
-                  </td>
-                  <td className="px-2 py-2">{r.hitCount ?? 0}</td>
-                  <td className="px-2 py-2">{fmtDate(r.createdAt)}</td>
-                  <td className="px-2 py-2 text-right whitespace-nowrap">
-                    <button className="mr-2 text-slate-400 hover:text-pink-600" onClick={() => setEditing(r)}>
-                      <Icon name="edit" />
-                    </button>
-                    <button className="text-slate-400 hover:text-red-600" onClick={() => remove(r)}>
-                      <Icon name="delete" />
-                    </button>
-                  </td>
+      <div className="flex gap-1 border-b border-slate-200 dark:border-slate-800">
+        {(
+          [
+            { id: 'active' as TabId, label: `Active redirects${rows ? ` (${rows.length})` : ''}` },
+            { id: 'suggested' as TabId, label: `Suggested (${suggestions.length})` },
+          ]
+        ).map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              tab === t.id
+                ? 'border-pink-600 text-pink-700 dark:text-pink-300'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'active' ? (
+        <Card>
+          {!filtered ? (
+            <Spinner />
+          ) : filtered.length === 0 ? (
+            <EmptyState message="No redirects." />
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-400">
+                  <th className="px-2 py-2">Source</th>
+                  <th className="px-2 py-2">Destination</th>
+                  <th className="px-2 py-2">Type</th>
+                  <th className="px-2 py-2">Active</th>
+                  <th className="px-2 py-2">Hits</th>
+                  <th className="px-2 py-2">Created</th>
+                  <th className="px-2 py-2">Issues</th>
+                  <th className="px-2 py-2" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Card>
+              </thead>
+              <tbody>
+                {filtered.map((r) => {
+                  const issues = issuesById.get(r.id) ?? [];
+                  return (
+                    <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="px-2 py-2 font-mono text-xs">{r.sourcePath}</td>
+                      <td className="px-2 py-2 font-mono text-xs">{r.destinationPath}</td>
+                      <td className="px-2 py-2">
+                        <Badge tone={r.redirectType === 301 ? 'blue' : 'amber'}>{r.redirectType}</Badge>
+                      </td>
+                      <td className="px-2 py-2">
+                        {r.active ? <Icon name="check" className="text-green-600" /> : <Icon name="close" className="text-slate-300" />}
+                      </td>
+                      <td className="px-2 py-2">{r.hitCount ?? 0}</td>
+                      <td className="px-2 py-2">{fmtDate(r.createdAt)}</td>
+                      <td className="px-2 py-2">
+                        {issues.length === 0 ? (
+                          <span className="text-slate-300">—</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {issues.map((i) => (
+                              <Badge key={i.code} tone={i.severity === 'error' ? 'red' : 'amber'}>
+                                {i.label}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-2 py-2 text-right whitespace-nowrap">
+                        <button className="mr-2 text-slate-400 hover:text-pink-600" onClick={() => { setPrefill(null); setEditing(r); }}>
+                          <Icon name="edit" />
+                        </button>
+                        <button className="text-slate-400 hover:text-red-600" onClick={() => remove(r)}>
+                          <Icon name="delete" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </Card>
+      ) : (
+        <Card>
+          <p className="mb-3 text-sm text-slate-500">
+            URLs that probably need a redirect (e.g. deleted records whose old URLs now 404).
+            Nothing is created automatically — review each suggestion first.
+          </p>
+          {suggestions.length === 0 ? (
+            <EmptyState message="No suggested redirects — every known gap is covered." />
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-400">
+                  <th className="px-2 py-2">Source</th>
+                  <th className="px-2 py-2">Suggested destination</th>
+                  <th className="px-2 py-2">Reason</th>
+                  <th className="px-2 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {suggestions.map((s) => (
+                  <tr key={s.sourcePath} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="px-2 py-2 font-mono text-xs">{s.sourcePath}</td>
+                    <td className="px-2 py-2 font-mono text-xs">{s.suggestedDestination ?? '—'}</td>
+                    <td className="px-2 py-2 text-xs text-slate-500">{s.reason}</td>
+                    <td className="px-2 py-2 text-right">
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          setPrefill({ sourcePath: s.sourcePath, destinationPath: s.suggestedDestination });
+                          setEditing('new');
+                        }}
+                      >
+                        Create redirect
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Card>
+      )}
 
       {editing !== null && (
         <RedirectModal
           redirect={editing === 'new' ? null : editing}
+          initial={editing === 'new' ? (prefill ?? undefined) : undefined}
           onClose={() => setEditing(null)}
           onDone={() => {
             setEditing(null);
-            reload();
+            afterChange();
           }}
         />
       )}
@@ -123,22 +240,27 @@ export function RedirectsPage() {
   );
 }
 
-function RedirectModal({
+export function RedirectModal({
   redirect,
+  initial,
   onClose,
   onDone,
 }: {
   redirect: EntityRow | null;
+  /** Prefill for new redirects (e.g. "Create redirect" from the Pages drawer). */
+  initial?: { sourcePath?: string; destinationPath?: string };
   onClose: () => void;
   onDone: () => void;
 }) {
-  const [sourcePath, setSourcePath] = useState(redirect?.sourcePath ?? '');
-  const [destinationPath, setDestinationPath] = useState(redirect?.destinationPath ?? '');
+  const [sourcePath, setSourcePath] = useState(redirect?.sourcePath ?? initial?.sourcePath ?? '');
+  const [destinationPath, setDestinationPath] = useState(
+    redirect?.destinationPath ?? initial?.destinationPath ?? '',
+  );
   const [redirectType, setRedirectType] = useState(String(redirect?.redirectType ?? 301));
   const [active, setActive] = useState(redirect ? Boolean(redirect.active) : true);
   const [notes, setNotes] = useState(redirect?.notes ?? '');
   const [validation, setValidation] = useState<{ errors: string[]; warnings: string[] } | null>(null);
-  const { busy, error, setError, run } = useAsync();
+  const { busy, error, run } = useAsync();
 
   async function validate(): Promise<{ errors: string[]; warnings: string[] } | undefined> {
     return run(() =>
