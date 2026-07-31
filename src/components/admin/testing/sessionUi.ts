@@ -2,7 +2,7 @@
 
 import type { EntityRow } from '../api';
 import type { RawValue } from './EvidenceInput';
-import { formatChecklistAnswer } from '../../lib/testing/evidenceExport';
+import { formatChecklistAnswer } from '../../../lib/testing/evidenceExport';
 import { testerQuestion } from './presentation';
 
 export interface SessionItem {

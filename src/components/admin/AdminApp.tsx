@@ -31,7 +31,11 @@ export default function AdminApp({ appId }: { appId: string }) {
     setChecking(true);
     api
       .get<Me>('/api/admin/me')
-      .then(setMe)
+      .then((loaded) => {
+        setMe(loaded);
+        // Unlock /reviews/preview/* in this browser (HttpOnly cookie).
+        api.post('/api/admin/preview-session', {}).catch(() => {});
+      })
       .catch((e) => {
         setMeError(e.message);
       })

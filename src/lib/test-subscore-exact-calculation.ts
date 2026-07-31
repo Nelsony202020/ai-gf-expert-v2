@@ -689,11 +689,14 @@ export function buildExactCalculationData(
   }
   const finalExampleScore = Math.round((weightedSum / totalWeight) * 100) / 100;
 
-  const exampleRows: ExampleCalculationRow[] = exampleTableSlugs.map((slug) => {
-    const item = evidence.find((entry) => entry.slug === slug);
-    if (!item) {
-      throw new Error(`Missing example evidence slug: ${slug}`);
-    }
+  // Skip configured slugs missing from the live methodology export — content
+  // changes in the admin must never break a page render or the build.
+  const presentTableSlugs = exampleTableSlugs.filter((slug) =>
+    evidence.some((entry) => entry.slug === slug),
+  );
+
+  const exampleRows: ExampleCalculationRow[] = presentTableSlugs.map((slug) => {
+    const item = evidence.find((entry) => entry.slug === slug)!;
     const exampleScore = exampleScores[slug] ?? 7.0;
     const sharePercent = formatShare(item.weight, totalWeight);
     const weightedContribution =

@@ -15,7 +15,7 @@ import {
   testerInstructions,
   testerQuestion,
 } from './presentation';
-import { formatChecklistAnswer } from '../../lib/testing/evidenceExport';
+import { formatChecklistAnswer } from '../../../lib/testing/evidenceExport';
 
 export function EvidenceResultForm({
   def,

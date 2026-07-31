@@ -17,7 +17,7 @@ import {
   unitLabel,
   allowsUnableToVerify,
 } from './presentation';
-import { formatChecklistAnswer } from '../../lib/testing/evidenceExport';
+import { formatChecklistAnswer } from '../../../lib/testing/evidenceExport';
 
 export type RawValue =
   | { value: number; detail?: Record<string, unknown> }
