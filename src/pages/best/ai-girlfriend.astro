@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
@@ -20,9 +22,11 @@ import RoundupScoreBarAnimate from '../../components/roundup/RoundupScoreBarAnim
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import ArticleFeedbackLink from '../../components/article/ArticleFeedbackLink.astro';
-import { aiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
+import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
+import { loadRoundupForPublic } from '../../lib/content/store';
 
-const roundup = aiGirlfriendRoundup;
+const { roundup, isDraft } = await loadRoundupForPublic('ai-girlfriend', fileAiGirlfriendRoundup);
+
 const monthYear = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 const pageTitle = `${roundup.title} (${monthYear}) — AI Girlfriend Expert`;
 const canonical = new URL('/best/ai-girlfriend', Astro.site ?? Astro.url.origin).toString();
@@ -32,6 +36,7 @@ const canonical = new URL('/best/ai-girlfriend', Astro.site ?? Astro.url.origin)
   title={pageTitle}
   description={roundup.metaDescription}
   image={roundup.featuredImage}
+  robots={isDraft ? 'noindex, nofollow' : undefined}
 >
   <Header />
   <main class="roundup-page" id="roundup-top" data-roundup-root data-reading-length="skim">

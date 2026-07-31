@@ -288,7 +288,7 @@
     max-width: none;
   }
 
-  .roundup-main > :not(.roundup-compare) {
+  .roundup-main > * {
     max-width: var(--roundup-content-max);
   }
 }
@@ -2493,23 +2493,24 @@ body.roundup-sheet-open {
 
 /* Compare table */
 .roundup-compare {
-  --compare-cols: minmax(7rem, 0.85fr) repeat(3, minmax(0, 1fr));
+  --compare-label-width: 5.5rem;
+  --compare-value-cols: repeat(3, minmax(0, 1fr));
   --compare-gap: 0.75rem;
   margin-top: 3rem;
   margin-bottom: 3rem;
 }
 
+@media (min-width: 768px) {
+  .roundup-compare {
+    --compare-label-width: 6rem;
+    --compare-gap: 1rem;
+  }
+}
+
 @media (min-width: 1024px) {
   .roundup-compare {
-    --compare-cols: minmax(9rem, 11rem) repeat(3, minmax(0, 1fr));
+    --compare-label-width: 6.25rem;
     --compare-gap: 1.125rem;
-    width: 100%;
-  }
-
-  .roundup-compare__pickers,
-  .roundup-compare__grid,
-  .roundup-compare__row {
-    width: 100%;
   }
 
   .roundup-compare__grid {
@@ -2535,19 +2536,19 @@ body.roundup-sheet-open {
 
 .roundup-compare__pickers {
   display: grid;
-  grid-template-columns: var(--compare-cols);
+  grid-template-columns: var(--compare-value-cols);
   gap: var(--compare-gap);
   margin-bottom: 1.25rem;
 }
 
-.roundup-compare__label-spacer {
-  display: none;
+@media (min-width: 768px) {
+  .roundup-compare__pickers {
+    padding-left: calc(var(--compare-label-width) + var(--compare-gap));
+  }
 }
 
-@media (min-width: 768px) {
-  .roundup-compare__label-spacer {
-    display: block;
-  }
+.roundup-compare__label-spacer {
+  display: none;
 }
 
 @media (max-width: 767px) {
@@ -2685,10 +2686,16 @@ body.roundup-sheet-open {
 
 .roundup-compare__grid {
   display: grid;
-  grid-template-columns: var(--compare-cols);
+  grid-template-columns: var(--compare-value-cols);
   gap: var(--compare-gap);
   margin-bottom: 2rem;
   align-items: stretch;
+}
+
+@media (min-width: 768px) {
+  .roundup-compare__grid {
+    padding-left: calc(var(--compare-label-width) + var(--compare-gap));
+  }
 }
 
 @media (max-width: 767px) {
@@ -2810,7 +2817,7 @@ body.roundup-sheet-open {
 
 .roundup-compare__row {
   display: grid;
-  grid-template-columns: var(--compare-cols);
+  grid-template-columns: var(--compare-label-width) var(--compare-value-cols);
   gap: var(--compare-gap);
   align-items: center;
   padding: 0.625rem 0;
@@ -2819,7 +2826,7 @@ body.roundup-sheet-open {
 
 @media (max-width: 767px) {
   .roundup-compare__row {
-    grid-template-columns: minmax(4.5rem, 0.7fr) repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(4.25rem, 5rem) repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
     align-items: start;
   }
@@ -2864,11 +2871,13 @@ body.roundup-sheet-open {
   gap: 0.25rem;
   font-size: 0.6875rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--color-on-surface-variant);
   min-width: 0;
   line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .roundup-compare__row-label > span:first-child {

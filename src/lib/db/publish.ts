@@ -119,8 +119,25 @@ export async function publishProduct(productId: string, identity: AdminIdentity)
 
 export async function unpublishProduct(productId: string, identity: AdminIdentity, reason?: string) {
   const db = getDb();
-  await db.transact([
-    db.tx.products[productId].update({ status: 'draft', updatedAt: Date.now() }),
+  const { products } = await db.query({
+    products: {
+      $: { where: { id: productId } },
+      homepageSlots: {},
+      characters: { homepageSlots: {} },
+      roundupEntries: {},
+    },
+  });
+  const product = products[0];
+  if (!product) throw new HttpError(404, 'Product not found');
+
+  const now = Date.now();
+  const txs: Parameters<typeof db.transact>[0] = [
+    db.tx.products[productId].update({
+      status: 'draft',
+      publishedInDirectory: false,
+      editorsPick: false,
+      updatedAt: now,
+    }),
     auditTx({
       actorEmail: identity.email,
       action: 'unpublish',
@@ -128,7 +145,40 @@ export async function unpublishProduct(productId: string, identity: AdminIdentit
       recordId: productId,
       reason,
     }),
-  ]);
+  ];
+
+  for (const slot of product.homepageSlots ?? []) {
+    if (slot.active !== false) {
+      txs.push(
+        db.tx.homepageSlots[slot.id].update({ active: false, updatedAt: now }),
+      );
+    }
+  }
+
+  for (const character of product.characters ?? []) {
+    if (character.featured) {
+      txs.push(
+        db.tx.characters[character.id].update({ featured: false, updatedAt: now }),
+      );
+    }
+    for (const slot of character.homepageSlots ?? []) {
+      if (slot.kind === 'featured_character' && slot.active !== false) {
+        txs.push(
+          db.tx.homepageSlots[slot.id].update({ active: false, updatedAt: now }),
+        );
+      }
+    }
+  }
+
+  for (const entry of product.roundupEntries ?? []) {
+    if (entry.included) {
+      txs.push(
+        db.tx.roundupEntries[entry.id].update({ included: false, updatedAt: now }),
+      );
+    }
+  }
+
+  await db.transact(txs);
   await triggerRebuild(`product ${productId} unpublished`);
 }
 

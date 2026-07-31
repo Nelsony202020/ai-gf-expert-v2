@@ -9,6 +9,7 @@ import { TestingHint } from './TestingHint';
 import { EvidenceInput, type RawValue } from './EvidenceInput';
 import { QuestionLabel } from './QuestionLabel';
 import { renderPublicResult } from './presentation';
+import { formatChecklistAnswer } from '../../lib/testing/evidenceExport';
 import type { AutofillSuggestion } from './pricingAutofill';
 import { SessionAnswerTable } from './SessionAnswerTable';
 import { SessionProofZone } from './SessionProofZone';
@@ -672,17 +673,28 @@ export const SessionForm = forwardRef<SessionFormHandle, {
 
             let publicResult = (existing?.publicResult as string | undefined) ?? undefined;
             if (!draft.na && draft.raw && !publicResult) {
-              const rawVal =
-                'value' in draft.raw
-                  ? draft.raw.value
-                  : 'text' in draft.raw
-                    ? draft.raw.text
-                    : 'status' in draft.raw
-                      ? draft.raw.status
-                      : null;
-              if (rawVal !== null) {
-                const templated = renderPublicResult(def, rawVal);
-                if (templated) publicResult = templated;
+              const checklistLabel =
+                def.slug === 'included-features'
+                  ? 'features included'
+                  : def.slug === 'pricing-clarity'
+                    ? 'features'
+                    : 'items';
+              const checklistText = formatChecklistAnswer(draft.raw, { itemLabel: checklistLabel });
+              if (checklistText) {
+                publicResult = checklistText;
+              } else {
+                const rawVal =
+                  'value' in draft.raw
+                    ? draft.raw.value
+                    : 'text' in draft.raw
+                      ? draft.raw.text
+                      : 'status' in draft.raw
+                        ? draft.raw.status
+                        : null;
+                if (rawVal !== null) {
+                  const templated = renderPublicResult(def, rawVal);
+                  if (templated) publicResult = templated;
+                }
               }
             }
 

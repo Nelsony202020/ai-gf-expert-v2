@@ -145,6 +145,7 @@ export function TestingTab() {
 
   const [subscores, setSubscores] = useState<EntityRow[]>([]);
   const [definitions, setDefinitions] = useState<EntityRow[]>([]);
+  const [mvCategories, setMvCategories] = useState<EntityRow[]>([]);
   const [results, setResults] = useState<EntityRow[]>([]);
   const [structureLoading, setStructureLoading] = useState(true);
   const [tree, setTree] = useState<ScoreTreeDto | null>(null);
@@ -161,16 +162,21 @@ export function TestingTab() {
   const canExportEvidence = can('content.view') || can('testing.edit');
 
   async function loadStructure() {
+    if (!currentRun) return;
     setStructureLoading(true);
     try {
-      const [subs, defs, allResults] = await Promise.all([
-        dataApi.list('subscores'),
-        dataApi.list('evidenceDefinitions'),
+      const [structure, allResults] = await Promise.all([
+        api.get<{
+          categories: EntityRow[];
+          subscores: EntityRow[];
+          definitions: EntityRow[];
+        }>(`/api/admin/test-runs/${currentRun.id}/structure`),
         dataApi.list('evidenceResults'),
       ]);
-      setSubscores(subs.rows.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)));
-      setDefinitions(defs.rows.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)));
-      setResults(allResults.rows.filter((r) => r.testRun?.id === currentRun?.id));
+      setMvCategories(structure.categories);
+      setSubscores(structure.subscores);
+      setDefinitions(structure.definitions);
+      setResults(allResults.rows.filter((r) => r.testRun?.id === currentRun.id));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -186,9 +192,14 @@ export function TestingTab() {
 
   useEffect(() => {
     if (currentRun) void loadStructure();
-    else setStructureLoading(false);
+    else {
+      setStructureLoading(false);
+      setMvCategories([]);
+      setSubscores([]);
+      setDefinitions([]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentRun?.id]);
+  }, [currentRun?.id, currentRun?.methodologyVersion?.id]);
 
   async function calculate(notifyOnError = false): Promise<ScoreTreeDto | null> {
     if (!currentRun) return null;
@@ -288,7 +299,7 @@ export function TestingTab() {
   // categoryId -> { sub, defs }[] (active only, in display order)
   const structureByCategory = useMemo(() => {
     const map = new Map<string, { sub: EntityRow; defs: EntityRow[] }[]>();
-    for (const cat of ws.related.categories) {
+    for (const cat of mvCategories) {
       const subs = subscores.filter((s) => s.active && s.category?.id === cat.id);
       map.set(
         cat.id,
@@ -299,14 +310,14 @@ export function TestingTab() {
       );
     }
     return map;
-  }, [ws.related.categories, subscores, definitions]);
+  }, [mvCategories, subscores, definitions]);
 
   // Sessions: groups of tests completed with the same work. Built per
   // category from the session config; the guided-mode sequence is the flat
   // ordered list of all sessions.
   const sessionsByCategory = useMemo(() => {
     const map = new Map<string, GuidedSession[]>();
-    for (const cat of ws.related.categories) {
+    for (const cat of mvCategories) {
       const groups = structureByCategory.get(cat.id) ?? [];
       const subByDefId = new Map<string, EntityRow>();
       const defs: EntityRow[] = [];
@@ -336,7 +347,7 @@ export function TestingTab() {
       );
     }
     return map;
-  }, [ws.related.categories, structureByCategory, resultByDef, ws.fields]);
+  }, [mvCategories, structureByCategory, resultByDef, ws.fields]);
 
   // Suggested answers computed from the Pricing tab data (plan prices, credit
   // packages, feature costs), keyed by evidence-definition id.
@@ -349,7 +360,7 @@ export function TestingTab() {
     });
     const map = new Map<string, AutofillSuggestion>();
     if (bySlugKey.size === 0) return map;
-    for (const cat of ws.related.categories) {
+    for (const cat of mvCategories) {
       const groups = structureByCategory.get(cat.id) ?? [];
       for (const { defs } of groups) {
         for (const def of defs) {
@@ -364,7 +375,7 @@ export function TestingTab() {
     ws.related.packages,
     ws.related.featureCosts,
     ws.related.paymentProfile,
-    ws.related.categories,
+    mvCategories,
     structureByCategory,
     ws.fields,
   ]);
@@ -414,9 +425,9 @@ export function TestingTab() {
 
   const orderedSessions: GuidedSession[] = useMemo(() => {
     const list: GuidedSession[] = [];
-    for (const cat of ws.related.categories) list.push(...(sessionsByCategory.get(cat.id) ?? []));
+    for (const cat of mvCategories) list.push(...(sessionsByCategory.get(cat.id) ?? []));
     return list;
-  }, [ws.related.categories, sessionsByCategory]);
+  }, [mvCategories, sessionsByCategory]);
 
   const runProgress = useMemo(
     () =>
@@ -589,7 +600,7 @@ export function TestingTab() {
   });
 
   const selectedCat = selectedCategory
-    ? ws.related.categories.find((c) => c.slug === selectedCategory) ?? null
+    ? mvCategories.find((c) => c.slug === selectedCategory) ?? null
     : null;
   const selectedSessions = selectedCat ? sessionsByCategory.get(selectedCat.id) ?? [] : [];
   const resumeSessionSnapshot =
@@ -776,7 +787,7 @@ export function TestingTab() {
               >
                 <Icon name="arrow_back" className="!text-[14px]" /> All categories
               </button>
-              {ws.related.categories.map((cat) => {
+              {mvCategories.map((cat) => {
                 const catSessions = sessionsByCategory.get(cat.id) ?? [];
                 const sessionsDone = catSessions.filter((s) =>
                   sessionRequiredComplete(s.session.id, s.items, progressCtx),
@@ -868,7 +879,7 @@ export function TestingTab() {
               Categories
             </h3>
             <div className="grid gap-2 sm:grid-cols-2">
-              {ws.related.categories.map((cat) => {
+              {mvCategories.map((cat) => {
                 const catSessions = sessionsByCategory.get(cat.id) ?? [];
                 const sessionsDone = catSessions.filter((s) =>
                   sessionRequiredComplete(s.session.id, s.items, progressCtx),

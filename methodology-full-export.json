@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-07-29T10:56:24.462Z",
+  "exportedAt": "2026-07-31T04:22:48.485Z",
   "methodologyVersion": "v3.1",
   "source": "InstantDB (active methodology version)",
   "calculationVersion": "calc-1.0",
@@ -1377,6 +1377,44 @@
               "publicResultTemplate": "{value}"
             },
             {
+              "id": "8c223ec4-5493-43ba-aa40-b4e974a1fc96",
+              "slug": "amount",
+              "name": "Amount",
+              "required": true,
+              "weight": 17,
+              "displayOrder": 1,
+              "measurementType": "count",
+              "unit": "count",
+              "publicDescription": "total number of available characters",
+              "internalInstructions": "Record the total number shown by the platform. If no total is shown, count all visible character listings. If this is not possible, report Unknown.",
+              "resultFormat": "Number of characters.",
+              "scoringRule": {
+                "kind": "bands",
+                "bands": [
+                  {
+                    "upTo": 25,
+                    "score": 2
+                  },
+                  {
+                    "upTo": 50,
+                    "score": 4
+                  },
+                  {
+                    "upTo": 99,
+                    "score": 6
+                  },
+                  {
+                    "upTo": 200,
+                    "score": 8
+                  },
+                  {
+                    "upTo": 999999,
+                    "score": 10
+                  }
+                ]
+              }
+            },
+            {
               "id": "2535f498-322a-4e03-88f1-dd193e58fc1d",
               "slug": "styles",
               "name": "Styles",
@@ -1517,6 +1555,40 @@
                 ]
               },
               "publicResultTemplate": "{value}"
+            },
+            {
+              "id": "0c1c70c9-7b29-46c7-a948-574a74cfb7ef",
+              "slug": "genders",
+              "name": "Genders",
+              "required": true,
+              "weight": 17,
+              "displayOrder": 3,
+              "measurementType": "count",
+              "unit": "count",
+              "publicDescription": "female, male, trans and nonbinary characters",
+              "internalInstructions": "Count the gender categories shown by the platform.",
+              "resultFormat": "Number of gender categories and a list of the available categories.",
+              "scoringRule": {
+                "kind": "bands",
+                "bands": [
+                  {
+                    "upTo": 1,
+                    "score": 2
+                  },
+                  {
+                    "upTo": 2,
+                    "score": 5
+                  },
+                  {
+                    "upTo": 3,
+                    "score": 8
+                  },
+                  {
+                    "upTo": 999999,
+                    "score": 10
+                  }
+                ]
+              }
             },
             {
               "id": "61722e0f-c229-440b-90bb-a7fd099acc74",
@@ -2071,6 +2143,40 @@
           "active": true,
           "evidence": [
             {
+              "id": "3affa329-16bf-49af-ba6b-fa54e4c75550",
+              "slug": "gender",
+              "name": "Gender",
+              "required": true,
+              "weight": 15,
+              "displayOrder": 1,
+              "measurementType": "count",
+              "unit": "count",
+              "publicDescription": "available gender options",
+              "internalInstructions": "Create a new character and count all selectable gender options.",
+              "resultFormat": "Number of options and a list of the available options.",
+              "scoringRule": {
+                "kind": "bands",
+                "bands": [
+                  {
+                    "upTo": 1,
+                    "score": 2
+                  },
+                  {
+                    "upTo": 2,
+                    "score": 4
+                  },
+                  {
+                    "upTo": 3,
+                    "score": 7
+                  },
+                  {
+                    "upTo": 999999,
+                    "score": 10
+                  }
+                ]
+              }
+            },
+            {
               "id": "280714ee-ebc2-4e15-ab9e-ed0d2fa1b153",
               "slug": "age",
               "name": "Age",
@@ -2233,6 +2339,44 @@
               "publicResultTemplate": "{value}"
             },
             {
+              "id": "7909004b-7089-4130-97fb-319222a64b5c",
+              "slug": "face",
+              "name": "Face",
+              "required": true,
+              "weight": 14,
+              "displayOrder": 4,
+              "measurementType": "count",
+              "unit": "count",
+              "publicDescription": "number of face options",
+              "internalInstructions": "Count all face presets and separate face controls.\nExamples include face shape, eye shape, nose and lips.",
+              "resultFormat": "Number of presets and number of separate controls.",
+              "scoringRule": {
+                "kind": "bands",
+                "bands": [
+                  {
+                    "upTo": 0,
+                    "score": 0
+                  },
+                  {
+                    "upTo": 3,
+                    "score": 4
+                  },
+                  {
+                    "upTo": 8,
+                    "score": 6
+                  },
+                  {
+                    "upTo": 15,
+                    "score": 8
+                  },
+                  {
+                    "upTo": 999999,
+                    "score": 10
+                  }
+                ]
+              }
+            },
+            {
               "id": "d360705b-f83f-48b0-9e53-20936211a10a",
               "slug": "breast-size",
               "name": "Breast size",
@@ -2270,6 +2414,44 @@
                 ]
               },
               "publicResultTemplate": "{value}"
+            },
+            {
+              "id": "70495302-6e0f-490c-942d-41a68b51741a",
+              "slug": "hair",
+              "name": "Hair",
+              "required": true,
+              "weight": 14,
+              "displayOrder": 5,
+              "measurementType": "count",
+              "unit": "count",
+              "publicDescription": "available colors and styles",
+              "internalInstructions": "Count the available hairstyles and hair colors.",
+              "resultFormat": "Number of hairstyles and number of hair colors.",
+              "scoringRule": {
+                "kind": "bands",
+                "bands": [
+                  {
+                    "upTo": 5,
+                    "score": 2
+                  },
+                  {
+                    "upTo": 15,
+                    "score": 4
+                  },
+                  {
+                    "upTo": 30,
+                    "score": 6
+                  },
+                  {
+                    "upTo": 50,
+                    "score": 8
+                  },
+                  {
+                    "upTo": 999999,
+                    "score": 10
+                  }
+                ]
+              }
             },
             {
               "id": "4dabd488-0cee-4fb6-9614-713f0c2366e2",
@@ -2311,6 +2493,44 @@
               "publicResultTemplate": "{value}"
             },
             {
+              "id": "b295c9ea-8e04-4d8c-a81a-485e50fa209d",
+              "slug": "body",
+              "name": "Body",
+              "required": true,
+              "weight": 14,
+              "displayOrder": 6,
+              "measurementType": "count",
+              "unit": "count",
+              "publicDescription": "body types and proportions",
+              "internalInstructions": "Count the body presets and separate body controls.\nExamples include height, body type, chest, waist, hips and glutes.",
+              "resultFormat": "Number of body presets and number of separate controls.",
+              "scoringRule": {
+                "kind": "bands",
+                "bands": [
+                  {
+                    "upTo": 0,
+                    "score": 0
+                  },
+                  {
+                    "upTo": 3,
+                    "score": 4
+                  },
+                  {
+                    "upTo": 8,
+                    "score": 6
+                  },
+                  {
+                    "upTo": 15,
+                    "score": 8
+                  },
+                  {
+                    "upTo": 999999,
+                    "score": 10
+                  }
+                ]
+              }
+            },
+            {
               "id": "d166ed1c-32e8-49fa-bdf2-2e70a5f922fc",
               "slug": "hair-color",
               "name": "Hair color",
@@ -2348,6 +2568,44 @@
                 ]
               },
               "publicResultTemplate": "{value}"
+            },
+            {
+              "id": "1bb414db-c5d9-42f7-b8a6-cb15c8be9f3c",
+              "slug": "clothing",
+              "name": "Clothing",
+              "required": true,
+              "weight": 14,
+              "displayOrder": 7,
+              "measurementType": "count",
+              "unit": "count",
+              "publicDescription": "number and variety of clothing options",
+              "internalInstructions": "Count all available clothing items.\nAlso count the number of clothing categories, such as casual, formal, lingerie, fantasy and uniforms.",
+              "resultFormat": "Number of clothing items and number of clothing categories.",
+              "scoringRule": {
+                "kind": "bands",
+                "bands": [
+                  {
+                    "upTo": 10,
+                    "score": 2
+                  },
+                  {
+                    "upTo": 30,
+                    "score": 4
+                  },
+                  {
+                    "upTo": 60,
+                    "score": 6
+                  },
+                  {
+                    "upTo": 100,
+                    "score": 8
+                  },
+                  {
+                    "upTo": 999999,
+                    "score": 10
+                  }
+                ]
+              }
             },
             {
               "id": "e0ecc1c6-e42e-48ef-a9b9-3e89a067a7b7",
@@ -2640,6 +2898,44 @@
               },
               "questionLabel": "Creator: voice options?",
               "helpText": "Count voice choices for characters."
+            },
+            {
+              "id": "cd66457c-9061-4abe-83c6-089ca6ae8216",
+              "slug": "creator-personalities",
+              "name": "Personalities",
+              "required": true,
+              "weight": 16,
+              "displayOrder": 7,
+              "measurementType": "count",
+              "unit": "count",
+              "publicDescription": "personality options in the creator",
+              "internalInstructions": "Count the selectable personality presets available when creating a character.\nInclude named archetypes, moods, and relationship-style presets.",
+              "resultFormat": "Number of personality options.",
+              "scoringRule": {
+                "kind": "bands",
+                "bands": [
+                  {
+                    "upTo": 3,
+                    "score": 2
+                  },
+                  {
+                    "upTo": 8,
+                    "score": 4
+                  },
+                  {
+                    "upTo": 15,
+                    "score": 6
+                  },
+                  {
+                    "upTo": 25,
+                    "score": 8
+                  },
+                  {
+                    "upTo": 999999,
+                    "score": 10
+                  }
+                ]
+              }
             },
             {
               "id": "0a5173e5-bc7f-4703-9a44-8afee24d7645",
@@ -5560,42 +5856,6 @@
           "active": true,
           "evidence": [
             {
-              "id": "5ee014f6-cbda-4b33-b7da-511569484f23",
-              "slug": "image-cost",
-              "name": "Image Cost",
-              "required": true,
-              "weight": 20,
-              "displayOrder": 1,
-              "measurementType": "currency",
-              "unit": "USD",
-              "publicDescription": "estimated cost per image",
-              "internalInstructions": "Calculate how many credits one standard image costs.\nCalculate the price of those credits using the cheapest credit package available to normal users.\nDisplay as cost per image.",
-              "resultFormat": "Cost per standard image.",
-              "scoringRule": {
-                "kind": "manual"
-              },
-              "questionLabel": "Pricing: image cost?",
-              "helpText": "USD cost for one image."
-            },
-            {
-              "id": "9967c1b4-be3d-4bd2-97ef-9938c1b75d78",
-              "slug": "video-cost",
-              "name": "Video Cost",
-              "required": true,
-              "weight": 25,
-              "displayOrder": 2,
-              "measurementType": "currency",
-              "unit": "USD",
-              "publicDescription": "estimated cost per 10 seconds of video",
-              "internalInstructions": "Calculate the dollar cost for the standard video length configured in the Pricing tab.\nNormalize to cost per 10 seconds (e.g. 5 sec at $1.20 → $2.40 / 10 sec).",
-              "resultFormat": "Cost per 10 seconds of video.",
-              "scoringRule": {
-                "kind": "manual"
-              },
-              "questionLabel": "Pricing: video cost?",
-              "helpText": "USD cost for one video."
-            },
-            {
               "id": "4659a08f-71c2-4a7e-b823-71f872765b80",
               "slug": "voice-cost",
               "name": "Voice Cost",
@@ -5667,7 +5927,7 @@
           "name": "Free Access",
           "weight": 20,
           "displayOrder": 3,
-          "description": "What users can do without paying: free chat, images, video, voice, characters, overall free value, and restrictions.",
+          "description": "What users can do without paying: free chat, images, video, voice, characters, and free trial without credit card.",
           "active": true,
           "evidence": [
             {
@@ -5791,7 +6051,7 @@
           "name": "Billing",
           "weight": 15,
           "displayOrder": 4,
-          "description": "Pricing clarity, paywalls, credit expiry, refunds, cancellation, and payment privacy.",
+          "description": "Pricing clarity, credit expiry, refunds, easy cancellation, and payment privacy (from Pricing tab).",
           "active": true,
           "evidence": [
             {

@@ -1,8 +1,10 @@
 // All products — filterable list with table/grid views and pagination.
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useSearchParams } from 'react-router-dom';
-import { dataApi, type EntityRow } from '../api';
+import { api, dataApi, type EntityRow } from '../api';
+import { ConfirmDialog } from '../ConfirmDialog';
 import { useCan } from '../context';
 import {
   Badge,
@@ -45,8 +47,11 @@ export function ProductsListPage() {
   const [pageSize, setPageSize] = useState(PAGE_SIZE_DEFAULT);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [draftConfirmProduct, setDraftConfirmProduct] = useState<EntityRow | null>(null);
+  const [unpublishingId, setUnpublishingId] = useState<string | null>(null);
   const can = useCan();
   const canDelete = can('records.delete');
+  const canPublish = can('content.publish');
 
   function reloadProducts() {
     setError(null);
@@ -174,6 +179,20 @@ export function ProductsListPage() {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function moveToDraft(product: EntityRow) {
+    setDraftConfirmProduct(null);
+    setMenuOpen(null);
+    setUnpublishingId(product.id);
+    try {
+      await api.del(`/api/admin/products/${product.id}/publish`);
+      await reloadProducts();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setUnpublishingId(null);
     }
   }
 
@@ -319,10 +338,16 @@ export function ProductsListPage() {
                     product={p}
                     menuOpen={menuOpen === p.id}
                     deleting={deletingId === p.id}
+                    unpublishing={unpublishingId === p.id}
                     canDelete={canDelete}
+                    canPublish={canPublish}
                     onMenuToggle={() => setMenuOpen(menuOpen === p.id ? null : p.id)}
                     onMenuClose={() => setMenuOpen(null)}
                     onDelete={() => deleteProduct(p)}
+                    onMoveToDraft={() => {
+                      setMenuOpen(null);
+                      setDraftConfirmProduct(p);
+                    }}
                   />
                 ))}
               </tbody>
@@ -383,6 +408,26 @@ export function ProductsListPage() {
           </div>
         )}
       </div>
+
+      {draftConfirmProduct && (
+        <ConfirmDialog
+          title={`Move "${draftConfirmProduct.name}" to draft?`}
+          message="This will remove the product from all public placements. The review page and admin record will remain — you can republish later."
+          confirmLabel={unpublishingId ? 'Moving…' : 'Move to draft'}
+          danger
+          onCancel={() => setDraftConfirmProduct(null)}
+          onConfirm={() => void moveToDraft(draftConfirmProduct)}
+        >
+          <ul className="list-disc space-y-1.5 pl-4 text-sm text-slate-600 dark:text-slate-400">
+            <li>Public review page removed from the site</li>
+            <li>Removed from the app directory</li>
+            <li>Removed from homepage top picks</li>
+            <li>Featured characters removed from the homepage</li>
+            <li>Removed from roundup / best-of pages</li>
+            <li>Editor&apos;s pick badge cleared</li>
+          </ul>
+        </ConfirmDialog>
+      )}
     </div>
   );
 }
@@ -404,18 +449,24 @@ function ProductRow({
   product: p,
   menuOpen,
   deleting,
+  unpublishing,
   canDelete,
+  canPublish,
   onMenuToggle,
   onMenuClose,
   onDelete,
+  onMoveToDraft,
 }: {
   product: EntityRow;
   menuOpen: boolean;
   deleting: boolean;
+  unpublishing: boolean;
   canDelete: boolean;
+  canPublish: boolean;
   onMenuToggle: () => void;
   onMenuClose: () => void;
   onDelete: () => void;
+  onMoveToDraft: () => void;
 }) {
   const reviewUrl = p.status === 'published' && p.slug ? `/reviews/${p.slug}` : null;
 
@@ -477,67 +528,163 @@ function ProductRow({
               <Icon name="open_in_new" className="!text-[18px]" />
             </span>
           )}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={onMenuToggle}
-              className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-              aria-label="More actions"
-            >
-              <Icon name="more_vert" className="!text-[20px]" />
-            </button>
-            {menuOpen && (
+          <ProductActionsMenu
+            open={menuOpen}
+            onToggle={onMenuToggle}
+            onClose={onMenuClose}
+          >
+            <MenuLink to={`/products/${p.id}`} icon="edit" onClick={onMenuClose}>
+              Edit product
+            </MenuLink>
+            <MenuLink to={`/testing/runs?product=${p.id}`} icon="science" onClick={onMenuClose}>
+              Test runs
+            </MenuLink>
+            <MenuLink to={`/products/${p.id}/pricing`} icon="payments" onClick={onMenuClose}>
+              Pricing
+            </MenuLink>
+            <MenuLink to={`/products/${p.id}/media`} icon="perm_media" onClick={onMenuClose}>
+              Media
+            </MenuLink>
+            {reviewUrl && (
+              <li>
+                <a
+                  href={reviewUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                  onClick={onMenuClose}
+                >
+                  <Icon name="open_in_new" className="!text-[16px]" /> View live page
+                </a>
+              </li>
+            )}
+            {canPublish && p.status === 'published' && (
               <>
-                <div className="fixed inset-0 z-10" onClick={onMenuClose} aria-hidden />
-                <ul className="absolute right-0 z-20 mt-1 min-w-[10rem] rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-                  <MenuLink to={`/products/${p.id}`} icon="edit" onClick={onMenuClose}>
-                    Edit product
-                  </MenuLink>
-                  <MenuLink to={`/testing/runs?product=${p.id}`} icon="science" onClick={onMenuClose}>
-                    Test runs
-                  </MenuLink>
-                  <MenuLink to={`/products/${p.id}/pricing`} icon="payments" onClick={onMenuClose}>
-                    Pricing
-                  </MenuLink>
-                  <MenuLink to={`/products/${p.id}/media`} icon="perm_media" onClick={onMenuClose}>
-                    Media
-                  </MenuLink>
-                  {reviewUrl && (
-                    <li>
-                      <a
-                        href={reviewUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
-                        onClick={onMenuClose}
-                      >
-                        <Icon name="open_in_new" className="!text-[16px]" /> View live page
-                      </a>
-                    </li>
-                  )}
-                  {canDelete && (
-                    <>
-                      <li className="my-1 border-t border-slate-100 dark:border-slate-800" aria-hidden />
-                      <li>
-                        <button
-                          type="button"
-                          disabled={deleting}
-                          onClick={onDelete}
-                          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                        >
-                          <Icon name="delete" className="!text-[16px]" />
-                          {deleting ? 'Deleting…' : 'Delete product'}
-                        </button>
-                      </li>
-                    </>
-                  )}
-                </ul>
+                <li className="my-1 border-t border-slate-100 dark:border-slate-800" aria-hidden />
+                <li>
+                  <button
+                    type="button"
+                    disabled={unpublishing}
+                    onClick={onMoveToDraft}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-amber-700 hover:bg-amber-50 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                  >
+                    <Icon name="undo" className="!text-[16px]" />
+                    {unpublishing ? 'Moving to draft…' : 'Move to draft'}
+                  </button>
+                </li>
               </>
             )}
-          </div>
+            {canDelete && (
+              <>
+                <li className="my-1 border-t border-slate-100 dark:border-slate-800" aria-hidden />
+                <li>
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={onDelete}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                  >
+                    <Icon name="delete" className="!text-[16px]" />
+                    {deleting ? 'Deleting…' : 'Delete product'}
+                  </button>
+                </li>
+              </>
+            )}
+          </ProductActionsMenu>
         </div>
       </td>
     </tr>
+  );
+}
+
+function ProductActionsMenu({
+  open,
+  onToggle,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties | null>(null);
+
+  const reposition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const gap = 4;
+    const estimatedMenu = 240;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openAbove = spaceBelow < estimatedMenu && rect.top > spaceBelow;
+
+    setMenuStyle({
+      position: 'fixed',
+      top: openAbove ? rect.top - gap : rect.bottom + gap,
+      right: window.innerWidth - rect.right,
+      zIndex: 100,
+      transform: openAbove ? 'translateY(-100%)' : undefined,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    reposition();
+    function onMove() {
+      reposition();
+    }
+    window.addEventListener('scroll', onMove, true);
+    window.addEventListener('resize', onMove);
+    return () => {
+      window.removeEventListener('scroll', onMove, true);
+      window.removeEventListener('resize', onMove);
+    };
+  }, [open, reposition]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      onClose();
+    }
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open, onClose]);
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={onToggle}
+        className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+        aria-label="More actions"
+        aria-expanded={open}
+      >
+        <Icon name="more_vert" className="!text-[20px]" />
+      </button>
+      {open &&
+        menuStyle &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-[90]" onClick={onClose} aria-hidden />
+            <ul
+              ref={menuRef}
+              style={menuStyle}
+              className="min-w-[10rem] rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900"
+            >
+              {children}
+            </ul>
+          </>,
+          document.body,
+        )}
+    </>
   );
 }
 

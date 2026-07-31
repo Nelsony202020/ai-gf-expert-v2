@@ -14,17 +14,23 @@ import HomeFinalCta from '../components/home/HomeFinalCta.astro';
 import {
   loadExplorerApps,
   loadFeaturedCharactersShowcase,
-  featuredGuides,
   homeMeta,
-  recentUpdates,
-  topPicks,
+  fileAiGirlfriendRoundup,
 } from '../data/homepage';
+import {
+  loadHomepageGuides,
+  loadHomepageRecentUpdates,
+  loadHomepageTopPicks,
+} from '../lib/content/homepageLoaders';
 
 // SSR so admin homepage slots appear without a full rebuild.
 export const prerender = false;
 
 const apps = await loadExplorerApps();
 const featuredCharactersShowcase = await loadFeaturedCharactersShowcase();
+const topPicks = await loadHomepageTopPicks(fileAiGirlfriendRoundup.picks);
+const recentUpdates = await loadHomepageRecentUpdates();
+const featuredGuides = await loadHomepageGuides();
 ---
 
 <BaseLayout title={homeMeta.title} description={homeMeta.description} image={homeMeta.heroImage}>

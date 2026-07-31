@@ -11,12 +11,15 @@
     "preview": "astro preview",
     "astro": "astro",
     "seed": "tsx scripts/seed/run.ts",
+    "seed:aura-ai": "tsx scripts/backfill-aura-ai-full.ts",
     "seed:validate": "tsx scripts/seed/validate.ts",
+    "diagnose:aura-ai": "tsx scripts/diagnose-aura-ai.ts",
     "admin:bootstrap": "tsx scripts/bootstrap-admin.ts",
     "db:push": "npx instant-cli@latest push",
     "db:push:yes": "npx instant-cli@latest push --yes",
     "test:ai-verdict": "tsx scripts/test-ai-verdict-schema.ts",
-    "export:methodology": "tsx scripts/export-methodology.ts"
+    "export:methodology": "tsx scripts/export-methodology.ts",
+    "export:urls": "tsx scripts/export-site-urls.ts"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.1",

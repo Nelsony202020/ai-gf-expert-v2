@@ -1,4 +1,4 @@
-import type { MediaFilter, MediaItem } from '../../data/aura-ai-media';
+import type { MediaFilter, MediaGalleryTag, MediaItem } from '../../data/aura-ai-media';
 import { isUsablePublicMediaUrl, resolveMediaUrl } from './url';
 
 export type MediaPlacement = 'gallery' | 'proof';
@@ -31,17 +31,39 @@ export interface MediaRowLike {
   file?: { url?: unknown } | null;
 }
 
+function normalizeMediaTagsInput(raw: unknown): unknown[] {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      return trimmed.split(/[,|]/).map((s) => s.trim()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
 export function parseMediaTags(raw: unknown): MediaTag[] {
-  if (!Array.isArray(raw)) return [];
   const allowed = new Set<MediaTag>(['character', 'chat', 'image_generator', 'hero', 'features']);
   const aliases: Record<string, MediaTag> = { generator: 'image_generator' };
   const out = new Set<MediaTag>();
-  for (const entry of raw) {
+  for (const entry of normalizeMediaTagsInput(raw)) {
     if (typeof entry !== 'string') continue;
     if (allowed.has(entry as MediaTag)) out.add(entry as MediaTag);
     else if (aliases[entry]) out.add(aliases[entry]);
   }
   return [...out];
+}
+
+/** Gallery tag fields from admin upload forms (character toggle + chat context). */
+export function galleryTagsFromRoleState(state: Pick<MediaRoleState, 'character' | 'contextTag'>): MediaTag[] {
+  const tags: MediaTag[] = [];
+  if (state.character) tags.push('character');
+  if (state.contextTag === 'chat') tags.push('chat');
+  return tags;
 }
 
 export function getMediaPlacement(row: MediaRowLike): MediaPlacement {
@@ -102,27 +124,20 @@ export function productMediaItems(
   },
 ): MediaItem[] {
   return collectProductMediaRows(dbProduct)
-    .filter((m) => isPublicMedia(m))
+    .filter((m) => isPublicMedia(m) && getMediaPlacement(m) !== 'proof')
     .map((m) => toMediaItem(m))
     .filter((item): item is MediaItem => Boolean(item));
 }
 
-export function mediaFrontendFilter(row: MediaRowLike): Exclude<MediaFilter, 'all' | 'videos'> {
+export function mediaFrontendFilter(row: MediaRowLike): MediaGalleryTag {
   const tags = getMediaTags(row);
-  const rawTags = Array.isArray(row.mediaTags)
-    ? row.mediaTags.filter((t): t is string => typeof t === 'string')
-    : [];
-  const hasGeneratorTag =
-    tags.includes('image_generator') ||
-    rawTags.some((t) => t === 'generator' || t === 'image_generator' || t === 'image-generator');
-  if (getMediaPlacement(row) === 'proof') return 'proof';
   if (tags.includes('character')) return 'characters';
   if (tags.includes('chat')) return 'chat';
-  if (hasGeneratorTag) return 'generator';
   return 'gallery';
 }
 
 export function toMediaItem(row: MediaRowLike): MediaItem | null {
+  if (getMediaPlacement(row) === 'proof') return null;
   const url = resolveMediaUrl(row);
   if (!url || !isUsablePublicMediaUrl(url) || !isPublicMedia(row) || !row.id) return null;
   const type = row.mediaType === 'video' ? 'video' : 'image';
@@ -154,30 +169,29 @@ export function sortGalleryMedia<T extends MediaRowLike>(rows: T[]): T[] {
 }
 
 export interface MediaRoleState {
-  placement: MediaPlacement;
   character: boolean;
-  contextTag: '' | 'chat' | 'image_generator';
+  contextTag: '' | 'chat';
   hero: boolean;
 }
 
 export function readMediaRoleState(row: MediaRowLike): MediaRoleState {
   const tags = getMediaTags(row);
-  const contextTag = tags.includes('chat') ? 'chat' : tags.includes('image_generator') ? 'image_generator' : '';
   return {
-    placement: getMediaPlacement(row),
     character: tags.includes('character'),
-    contextTag,
+    contextTag: tags.includes('chat') ? 'chat' : '',
     hero: tags.includes('hero'),
   };
 }
 
-export function writeMediaRoleState(state: MediaRoleState): { role: MediaPlacement; mediaTags: MediaTag[] } {
+export function writeMediaRoleState(
+  state: MediaRoleState,
+  opts?: { placement?: MediaPlacement },
+): { role: MediaPlacement; mediaTags: MediaTag[] } {
   const mediaTags: MediaTag[] = [];
   if (state.character) mediaTags.push('character');
   if (state.contextTag === 'chat') mediaTags.push('chat');
-  if (state.contextTag === 'image_generator') mediaTags.push('image_generator');
   if (state.hero) mediaTags.push('hero');
-  return { role: state.placement, mediaTags };
+  return { role: opts?.placement ?? 'gallery', mediaTags };
 }
 
 /** Re-order hero slots so `newHeroId` is first; existing heroes shift down. */

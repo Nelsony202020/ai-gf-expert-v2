@@ -1,13 +1,14 @@
 ---
 import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
-import { buildExplorerApps } from '../../data/homepage';
+import { loadExplorerApps } from '../../data/homepage';
 import ProductBrandTooltipPanel from '../review/tooltips/ProductBrandTooltipPanel.astro';
 import TestTooltipAnnotation from './TestTooltipAnnotation.astro';
 import { testTooltipsProductAnnotations } from '../../data/test-tooltips-content';
 
 const comparisonProducts = await loadComparisonProducts();
 const product = comparisonProducts[0];
-const app = buildExplorerApps().find((entry) => entry.slug === product.slug) ?? buildExplorerApps()[0];
+const explorerApps = await loadExplorerApps();
+const app = explorerApps.find((entry) => entry.slug === product.slug) ?? explorerApps[0];
 ---
 
 <TestTooltipAnnotation

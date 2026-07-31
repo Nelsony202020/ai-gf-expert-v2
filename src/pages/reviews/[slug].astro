@@ -9,7 +9,6 @@ import TabBar from '../../components/review/TabBar.astro';
 import type { Tab } from '../../components/review/TabBar.astro';
 import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
 import ReviewArticleTab from '../../components/review/tabs/ReviewArticleTab.astro';
-import MarketDataTab from '../../components/review/tabs/MarketDataTab.astro';
 import RatingsSpecsTab from '../../components/review/tabs/RatingsSpecsTab.astro';
 import PlaceholderTab from '../../components/review/tabs/PlaceholderTab.astro';
 import PhotosVideosTab from '../../components/review/tabs/PhotosVideosTab.astro';
@@ -37,7 +36,6 @@ const tabs: Tab[] = [
   { id: 'review', label: 'Review' },
   { id: 'photos', label: 'Photos & Videos' },
   { id: 'pricing', label: 'Pricing' },
-  { id: 'market-data', label: 'Market Data' },
 ];
 
 const shareUrl = head.canonical;
@@ -94,9 +92,6 @@ const shareUrl = head.canonical;
           icon="sell"
           description="A detailed breakdown of every plan, what each tier unlocks, and how the value compares to competitors is coming soon."
         />
-      </div>
-      <div data-tab-panel="market-data" class="hidden">
-        <MarketDataTab product={product} />
       </div>
     </div>
   </main>

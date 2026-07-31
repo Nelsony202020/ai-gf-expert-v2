@@ -86,9 +86,28 @@ function joinList(values: unknown): string {
   return values.map((v) => String(v)).filter(Boolean).join(', ');
 }
 
+/** Checklist answers stored as percentage + detail.checked — show "N of M" per methodology. */
+export function formatChecklistAnswer(
+  raw: unknown,
+  opts?: { itemLabel?: string },
+): string | null {
+  if (!raw || typeof raw !== 'object' || !('value' in raw)) return null;
+  const detail =
+    'detail' in raw && raw.detail && typeof raw.detail === 'object'
+      ? (raw.detail as Record<string, unknown>)
+      : null;
+  if (!detail) return null;
+  const checked = Array.isArray(detail.checked) ? detail.checked : null;
+  const total = typeof detail.total === 'number' ? detail.total : null;
+  if (!checked || !total || total <= 0) return null;
+  const n = checked.length;
+  const label = opts?.itemLabel ?? 'items';
+  return `${n} of ${total} ${label}`;
+}
+
 /** Human-readable primary answer from rawValue + flags. */
 export function formatEvidenceAnswer(
-  def: { unit?: string; measurementType?: string },
+  def: { unit?: string; measurementType?: string; slug?: string },
   raw: unknown,
   notApplicable: boolean,
   isUnknown: boolean,
@@ -97,6 +116,12 @@ export function formatEvidenceAnswer(
   if (isUnknown) return 'Unknown';
   if (!raw || typeof raw !== 'object') return '';
   const rv = raw as RawValue;
+
+  const checklistLabel =
+    def.slug === 'included-features' || def.slug === 'pricing-clarity' ? 'features' : 'items';
+  const checklistText = formatChecklistAnswer(raw, { itemLabel: checklistLabel });
+  if (checklistText) return checklistText;
+
   if ('status' in rv) {
     const map: Record<string, string> = {
       na: 'N/A',

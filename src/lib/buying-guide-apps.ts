@@ -1,5 +1,5 @@
 import type { BuyingGuideUserType } from '../data/buying-guide-content';
-import { aiGirlfriendRoundup } from '../data/roundups/ai-girlfriend';
+import { fileAiGirlfriendRoundup } from '../data/roundups/ai-girlfriend';
 import { loadProductLogoMap } from './content/store';
 import { toSlug } from './slugs';
 
@@ -18,7 +18,7 @@ export interface EnrichedBuyingGuideUserType extends BuyingGuideUserType {
 function findRoundupPick(name: string) {
   const normalized = name.trim().toLowerCase();
   const slug = toSlug(name);
-  return aiGirlfriendRoundup.picks.find(
+  return fileAiGirlfriendRoundup.picks.find(
     (pick) => pick.name.toLowerCase() === normalized || pick.slug === slug,
   );
 }

@@ -17,6 +17,7 @@ import {
   unitLabel,
   allowsUnableToVerify,
 } from './presentation';
+import { formatChecklistAnswer } from '../../lib/testing/evidenceExport';
 
 export type RawValue =
   | { value: number; detail?: Record<string, unknown> }
@@ -358,6 +359,16 @@ export function EvidenceInput({
       const detail = (value && 'detail' in value ? value.detail : undefined) ?? {};
       const checked = new Set(Array.isArray(detail.checked) ? (detail.checked as string[]) : []);
       const total = items.length;
+      const passed = items.filter((i) => checked.has(i)).length;
+      const checklistLabel =
+        def.slug === 'included-features' || def.slug === 'pricing-clarity' ? 'features' : 'items';
+      const resultLabel =
+        total > 0
+          ? (formatChecklistAnswer(
+              { value: total > 0 ? Math.round((passed / total) * 1000) / 10 : 0, detail: { checked: items.filter((i) => checked.has(i)), total } },
+              { itemLabel: checklistLabel },
+            ) ?? '—')
+          : '—';
 
       function toggle(item: string) {
         const next = new Set(checked);
@@ -372,22 +383,32 @@ export function EvidenceInput({
 
       return (
         <div className={compact ? 'w-full min-w-[18rem]' : 'space-y-2'}>
-          <ul className={`grid gap-x-3 gap-y-1 ${compact ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
-            {items.map((item) => (
-              <li key={item}>
-                <label className="flex cursor-pointer items-start gap-1.5 text-xs text-slate-700 dark:text-slate-300">
-                  <input
-                    type="checkbox"
-                    className="testing-checkbox mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-slate-300"
-                    checked={checked.has(item)}
-                    disabled={disabled}
-                    onChange={() => toggle(item)}
-                  />
-                  <span className="min-w-0 leading-snug">{item}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
+          <div className={`flex flex-wrap items-start gap-3 ${compact ? '' : ''}`}>
+            <ul className={`grid flex-1 gap-x-3 gap-y-1 ${compact ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
+              {items.map((item) => (
+                <li key={item}>
+                  <label className="flex cursor-pointer items-start gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      className="testing-checkbox mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-slate-300"
+                      checked={checked.has(item)}
+                      disabled={disabled}
+                      onChange={() => toggle(item)}
+                    />
+                    <span className="min-w-0 leading-snug">{item}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+            <div className="shrink-0 text-right">
+              <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                Result
+              </span>
+              <span className="text-base font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                {resultLabel}
+              </span>
+            </div>
+          </div>
         </div>
       );
     }

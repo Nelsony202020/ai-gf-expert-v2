@@ -15,6 +15,7 @@ import {
   testerInstructions,
   testerQuestion,
 } from './presentation';
+import { formatChecklistAnswer } from '../../lib/testing/evidenceExport';
 
 export function EvidenceResultForm({
   def,
@@ -83,6 +84,20 @@ export function EvidenceResultForm({
   function updateRawValue(next: RawValue | undefined) {
     setRawValue(next);
     if (!next) return;
+    const checklistLabel =
+      def.slug === 'included-features'
+        ? 'features included'
+        : def.slug === 'pricing-clarity'
+          ? 'features'
+          : 'items';
+    const checklistText = formatChecklistAnswer(next, { itemLabel: checklistLabel });
+    if (checklistText) {
+      const previousChecklist = rawValue ? formatChecklistAnswer(rawValue, { itemLabel: checklistLabel }) : null;
+      if (publicResult === '' || publicResult === previousChecklist) {
+        setPublicResult(checklistText);
+      }
+      return;
+    }
     const raw =
       'value' in next ? next.value : 'text' in next ? next.text : 'status' in next ? next.status : null;
     if (raw === null) return;

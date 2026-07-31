@@ -240,18 +240,20 @@ export function TestRunDetail() {
 
   async function reload() {
     try {
-      const [runRes, cats, subs, defs, allResults] = await Promise.all([
+      const [runRes, allResults] = await Promise.all([
         dataApi.get('testRuns', id!),
-        dataApi.list('categories'),
-        dataApi.list('subscores'),
-        dataApi.list('evidenceDefinitions'),
         dataApi.list('evidenceResults'),
       ]);
       setRun(runRes.row);
-      setCategories(cats.rows.sort((a, b) => a.displayOrder - b.displayOrder));
-      setSubscores(subs.rows.sort((a, b) => a.displayOrder - b.displayOrder));
-      setDefinitions(defs.rows.sort((a, b) => a.displayOrder - b.displayOrder));
       setResults(allResults.rows.filter((r) => r.testRun?.id === id));
+      const structure = await api.get<{
+        categories: EntityRow[];
+        subscores: EntityRow[];
+        definitions: EntityRow[];
+      }>(`/api/admin/test-runs/${id}/structure`);
+      setCategories(structure.categories);
+      setSubscores(structure.subscores);
+      setDefinitions(structure.definitions);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }

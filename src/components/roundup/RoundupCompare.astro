@@ -68,7 +68,6 @@ function barHtml(score: number) {
   <h2 class="roundup-compare__heading">Compare the best AI girlfriend apps</h2>
 
   <div class="roundup-compare__pickers" data-compare-pickers>
-    <div class="roundup-compare__label-spacer" aria-hidden="true"></div>
     {
       defaultIds.map((id, slot) => {
         const pick = picks.find((p) => p.id === id)!;
@@ -113,7 +112,6 @@ function barHtml(score: number) {
   </div>
 
   <div class="roundup-compare__grid" data-compare-grid>
-    <div class="roundup-compare__label-spacer" aria-hidden="true"></div>
     {
       defaultIds.map((id) => {
         const pick = picks.find((p) => p.id === id)!;

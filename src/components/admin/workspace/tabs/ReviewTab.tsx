@@ -363,6 +363,7 @@ export function ReviewTab() {
             target={imageInspector}
             onClose={() => setImageInspector(null)}
             openImagePicker={editorUiRef.current.openImagePicker}
+            productId={ws.productId}
           />
         )}
       </div>

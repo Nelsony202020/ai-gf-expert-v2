@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { dataApi, type EntityRow } from '../../api';
+import { api, dataApi, type EntityRow } from '../../api';
 
 export interface CategoryEvidenceEntry {
   id: string;
@@ -35,16 +35,18 @@ export function useCategoryEvidence(
     setLoading(true);
     void (async () => {
       try {
-        const [subs, defs, results] = await Promise.all([
-          dataApi.list('subscores'),
-          dataApi.list('evidenceDefinitions'),
+        const [structure, results] = await Promise.all([
+          api.get<{
+            subscores: EntityRow[];
+            definitions: EntityRow[];
+          }>(`/api/admin/test-runs/${testRunId}/structure`),
           dataApi.list('evidenceResults'),
         ]);
         if (cancelled) return;
         const subIds = new Set(
-          subs.rows.filter((s) => s.active && s.category?.id === categoryId).map((s) => s.id),
+          structure.subscores.filter((s) => s.active && s.category?.id === categoryId).map((s) => s.id),
         );
-        const categoryDefs = defs.rows.filter((d) => d.active && subIds.has(d.subscore?.id));
+        const categoryDefs = structure.definitions.filter((d) => d.active && subIds.has(d.subscore?.id));
         const resultByDef = new Map<string, EntityRow>();
         for (const r of results.rows) {
           if (r.testRun?.id === testRunId && r.evidenceDefinition?.id) {

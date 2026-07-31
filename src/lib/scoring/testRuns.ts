@@ -42,6 +42,72 @@ export async function loadRunContext(testRunId: string) {
   return run;
 }
 
+/** Flatten a methodology version tree for admin UI (same source as calculateRun). */
+export function flattenMethodologyStructure(mv: {
+  id?: string;
+  version?: string;
+  categories?: any[];
+}) {
+  const categories: Record<string, unknown>[] = [];
+  const subscores: Record<string, unknown>[] = [];
+  const definitions: Record<string, unknown>[] = [];
+
+  for (const c of (mv.categories ?? []).filter((x: any) => x.active !== false)) {
+    categories.push({
+      id: c.id,
+      slug: c.slug,
+      name: c.name,
+      active: c.active,
+      displayOrder: c.displayOrder,
+      weight: c.weight,
+      methodologyVersion: { id: mv.id, version: mv.version },
+    });
+    for (const s of (c.subscores ?? []).filter((x: any) => x.active !== false)) {
+      subscores.push({
+        id: s.id,
+        slug: s.slug,
+        name: s.name,
+        active: s.active,
+        displayOrder: s.displayOrder,
+        weight: s.weight,
+        category: { id: c.id, slug: c.slug },
+      });
+      for (const d of (s.evidenceDefinitions ?? []).filter((x: any) => x.active !== false)) {
+        definitions.push({
+          id: d.id,
+          slug: d.slug,
+          name: d.name,
+          active: d.active,
+          displayOrder: d.displayOrder,
+          weight: d.weight,
+          required: d.required,
+          measurementType: d.measurementType,
+          subscore: { id: s.id, slug: s.slug, category: { id: c.id, slug: c.slug } },
+        });
+      }
+    }
+  }
+
+  categories.sort((a, b) => Number(a.displayOrder ?? 0) - Number(b.displayOrder ?? 0));
+  subscores.sort((a, b) => Number(a.displayOrder ?? 0) - Number(b.displayOrder ?? 0));
+  definitions.sort((a, b) => Number(a.displayOrder ?? 0) - Number(b.displayOrder ?? 0));
+
+  return { categories, subscores, definitions };
+}
+
+export async function loadRunMethodologyStructure(testRunId: string) {
+  const run = await loadRunContext(testRunId);
+  const flat = flattenMethodologyStructure(run.methodologyVersion!);
+  return {
+    runId: run.id,
+    methodologyVersion: {
+      id: run.methodologyVersion!.id,
+      version: run.methodologyVersion!.version,
+    },
+    ...flat,
+  };
+}
+
 async function loadProductPricing(productId: string) {
   const db = getDb();
   const { products } = await db.query({

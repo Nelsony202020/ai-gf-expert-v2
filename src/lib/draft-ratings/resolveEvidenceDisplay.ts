@@ -1,4 +1,4 @@
-import { formatEvidenceAnswer } from '../testing/evidenceExport';
+import { formatEvidenceAnswer, formatChecklistAnswer } from '../testing/evidenceExport';
 import { fmtMoney } from '../pricing/calc';
 import { renderPublicResult } from '../../components/admin/testing/presentation';
 
@@ -145,13 +145,21 @@ export function formatBonusFeaturesSummaryLine(listRaw: unknown, liveRaw?: unkno
 
 /** Public-facing display string — prefers saved publicResult, falls back to rawValue formatting. */
 export function resolveEvidenceDisplayValue(def: EvidenceDef, row: EvidenceRow): string {
+  const raw = row.rawValue;
+  const checklistFromRaw = formatChecklistAnswer(raw, {
+    itemLabel: def.slug === 'included-features' ? 'features included' : 'items',
+  });
+
   const published = row.publicResult?.trim();
-  if (published && !published.startsWith('{')) return published;
+  if (published && !published.startsWith('{')) {
+    // Stale "90%" public lines — prefer checklist count when raw has detail.
+    if (checklistFromRaw && /^\d+(\.\d+)?%$/.test(published)) return checklistFromRaw;
+    return published;
+  }
 
   if (row.notApplicable) return 'Not applicable';
   if (row.isUnknown || row.unableToVerify) return 'Could not verify';
 
-  const raw = row.rawValue;
   if (def.slug === 'platform-extras-list' && raw) {
     const formatted = formatPlatformExtrasDisplay(raw);
     if (formatted) return formatted;

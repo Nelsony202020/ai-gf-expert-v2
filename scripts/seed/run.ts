@@ -261,6 +261,9 @@ async function main() {
         priceCurrency: 'USD',
         seoTitle: `${aura.name} Review (2026) — Tested & Scored`,
         seoDescription: aura.tagline,
+        noindex: true,
+        expertOpinion: aura.expertOpinion,
+        typicalMonthlyCost: 31,
         // capabilities inferred from the mock's feature specs
         capFreePlan: true,
         capNsfw: true,

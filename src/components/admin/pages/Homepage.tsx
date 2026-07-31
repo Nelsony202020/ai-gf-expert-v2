@@ -1,9 +1,8 @@
-// Homepage editor: ordered brands (top picks), featured characters, and topics.
-// Drag to reorder locally, then save — max 3 brands, 12 characters, 12 topics.
+// Homepage editor: ordered brands (top picks) and featured characters.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { api, dataApi, type EntityRow } from '../api';
+import { dataApi, type EntityRow } from '../api';
 import { useCan } from '../context';
 import {
   Button,
@@ -13,15 +12,13 @@ import {
   Modal,
   Spinner,
   TextInput,
-  Toggle,
   useAsync,
 } from '../ui';
 
 const MAX_BRANDS = 3;
 const MAX_CHARACTERS = 12;
-const MAX_TOPICS = 12;
 
-type SlotKind = 'top_pick' | 'featured_character' | 'topic';
+type SlotKind = 'top_pick' | 'featured_character';
 type EditTarget =
   | { kind: SlotKind; slot: EntityRow | null }
   | null;
@@ -262,15 +259,7 @@ function DraggableSlotRow({
   const isCharacter = kind === 'featured_character';
   const title = isBrand
     ? product?.name ?? slot.product?.name ?? 'Unknown product'
-    : isCharacter
-      ? character?.name ?? slot.character?.name ?? 'Unknown character'
-      : slot.label ?? 'Untitled topic';
-  const subtitle =
-    isCharacter && character
-      ? characterPlatform(character)
-      : isBrand
-        ? 'Brand'
-        : 'Topic';
+    : character?.name ?? slot.character?.name ?? 'Unknown character';
 
   const avatarUrl = isBrand
     ? productLogoUrl(product ?? slot.product)
@@ -305,21 +294,15 @@ function DraggableSlotRow({
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
         {position}
       </span>
-      {kind === 'topic' ? (
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pink-50 dark:bg-pink-950/40">
-          <Icon name="tag" className="!text-[20px] text-pink-600" />
-        </div>
-      ) : (
-        <SlotAvatar
-          url={avatarUrl}
-          fallbackIcon={isBrand ? 'storefront' : 'person'}
-          alt=""
-        />
-      )}
+      <SlotAvatar
+        url={avatarUrl}
+        fallbackIcon={isBrand ? 'storefront' : 'person'}
+        alt=""
+      />
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-slate-900 dark:text-slate-100">{title}</p>
-        {isCharacter && (
-          <p className="truncate text-xs text-slate-500">({subtitle})</p>
+        {isCharacter && character && (
+          <p className="truncate text-xs text-slate-500">({characterPlatform(character)})</p>
         )}
         {isBrand && <p className="truncate text-xs text-slate-400">Top pick</p>}
       </div>
@@ -478,8 +461,6 @@ function SlotModal({
   const { kind, slot } = target;
   const [productId, setProductId] = useState(slot?.product?.id ?? '');
   const [characterId, setCharacterId] = useState(slot?.character?.id ?? '');
-  const [topicLabel, setTopicLabel] = useState(slot?.label ?? '');
-  const [active, setActive] = useState(slot ? Boolean(slot.active) : true);
   const { busy, error, run } = useAsync();
 
   const sortedProducts = useMemo(
@@ -501,11 +482,8 @@ function SlotModal({
     const fields: Record<string, unknown> = {
       kind,
       position: slot?.position ?? nextPosition,
-      active,
+      active: true,
     };
-    if (kind === 'topic') {
-      fields.label = topicLabel.trim();
-    }
     const links = {
       product: kind === 'top_pick' ? productId || null : null,
       character: kind === 'featured_character' ? characterId || null : null,
@@ -523,13 +501,9 @@ function SlotModal({
       ? slot
         ? 'Edit brand slot'
         : 'Add brand'
-      : kind === 'featured_character'
-        ? slot
-          ? 'Edit character slot'
-          : 'Add character'
-        : slot
-          ? 'Edit topic'
-          : 'Add topic';
+      : slot
+        ? 'Edit character slot'
+        : 'Add character';
 
   return (
     <Modal title={title} onClose={onClose}>
@@ -588,19 +562,6 @@ function SlotModal({
           </Field>
         )}
 
-        {kind === 'topic' && (
-          <Field label="Topic label" required>
-            <TextInput
-              value={topicLabel}
-              onChange={(e) => setTopicLabel(e.target.value)}
-              placeholder="e.g. Realism & conversations"
-              required
-            />
-          </Field>
-        )}
-
-        <Toggle checked={active} onChange={setActive} label="Show on homepage" />
-
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
@@ -610,8 +571,7 @@ function SlotModal({
             disabled={
               busy ||
               (kind === 'top_pick' && !productId) ||
-              (kind === 'featured_character' && !characterId) ||
-              (kind === 'topic' && !topicLabel.trim())
+              (kind === 'featured_character' && !characterId)
             }
           >
             {busy ? 'Saving…' : 'Save'}
@@ -636,10 +596,8 @@ export function HomepagePage() {
   const [editTarget, setEditTarget] = useState<EditTarget>(null);
   const [draftPicks, setDraftPicks] = useState<EntityRow[]>([]);
   const [draftCharacters, setDraftCharacters] = useState<EntityRow[]>([]);
-  const [draftTopics, setDraftTopics] = useState<EntityRow[]>([]);
   const [dirtyPicks, setDirtyPicks] = useState(false);
   const [dirtyCharacters, setDirtyCharacters] = useState(false);
-  const [dirtyTopics, setDirtyTopics] = useState(false);
   const { busy: saving, run: saveRun } = useAsync();
 
   const reload = useCallback(() => {
@@ -659,27 +617,26 @@ export function HomepagePage() {
 
   useEffect(() => {
     reload();
-    if (canEdit) {
-      void api.post('/api/admin/homepage/sync-featured-characters').then(() => reload()).catch(() => {});
-    }
-  }, [reload, canEdit]);
+  }, [reload]);
+
+  const publishedProducts = useMemo(
+    () => products.filter((p) => p.status === 'published'),
+    [products],
+  );
 
   const picks = useMemo(() => (slots ?? []).filter((s) => s.kind === 'top_pick'), [slots]);
   const featured = useMemo(
     () => (slots ?? []).filter((s) => s.kind === 'featured_character'),
     [slots],
   );
-  const topics = useMemo(() => (slots ?? []).filter((s) => s.kind === 'topic'), [slots]);
 
   useEffect(() => {
     if (!slots) return;
     setDraftPicks(picks);
     setDraftCharacters(featured);
-    setDraftTopics(topics);
     setDirtyPicks(false);
     setDirtyCharacters(false);
-    setDirtyTopics(false);
-  }, [slots, picks, featured, topics]);
+  }, [slots, picks, featured]);
 
   const productMap = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
   const characterMap = useMemo(() => new Map(characters.map((c) => [c.id, c])), [characters]);
@@ -708,8 +665,7 @@ export function HomepagePage() {
   }
 
   function nextPositionFor(kind: SlotKind): number {
-    const list =
-      kind === 'top_pick' ? draftPicks : kind === 'featured_character' ? draftCharacters : draftTopics;
+    const list = kind === 'top_pick' ? draftPicks : draftCharacters;
     return list.length + 1;
   }
 
@@ -720,8 +676,8 @@ export function HomepagePage() {
       <div>
         <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Homepage</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Drag items to reorder, then click Save order. Up to {MAX_BRANDS} brands, {MAX_CHARACTERS}{' '}
-          characters, and {MAX_TOPICS} topics.
+          Drag items to reorder, then click Save order. Add a brand to show it on the homepage — up to{' '}
+          {MAX_BRANDS} brands and {MAX_CHARACTERS} characters.
         </p>
       </div>
 
@@ -729,7 +685,7 @@ export function HomepagePage() {
 
       <HomepageSection
         title="Top brands"
-        description="The three apps shown in “Our top picks” — position 1 is featured largest."
+        description="Shown in “Our top picks”. Adding a product here publishes it to the homepage."
         kind="top_pick"
         maxItems={MAX_BRANDS}
         draftSlots={draftPicks}
@@ -769,31 +725,10 @@ export function HomepagePage() {
         saving={saving}
       />
 
-      <HomepageSection
-        title="Topics"
-        description="Short topic chips in the “Find your perfect match” section."
-        kind="topic"
-        maxItems={MAX_TOPICS}
-        draftSlots={draftTopics}
-        dirty={dirtyTopics}
-        canEdit={canEdit}
-        productMap={productMap}
-        characterMap={characterMap}
-        onDraftChange={(next) => {
-          setDraftTopics(next);
-          setDirtyTopics(true);
-        }}
-        onSave={() => saveOrder('topic', draftTopics, setDirtyTopics)}
-        onAdd={() => setEditTarget({ kind: 'topic', slot: null })}
-        onEdit={(slot) => setEditTarget({ kind: 'topic', slot })}
-        onRemove={removeSlot}
-        saving={saving}
-      />
-
       {editTarget && (
         <SlotModal
           target={editTarget}
-          products={products}
+          products={publishedProducts}
           characters={characters}
           nextPosition={nextPositionFor(editTarget.kind)}
           onClose={() => setEditTarget(null)}

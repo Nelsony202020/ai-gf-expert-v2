@@ -352,7 +352,7 @@ function ImageRowView({ node, selected, editor, updateAttributes, deleteNode, ge
                     src: m.url,
                     alt: m.altText,
                     mediaId: m.id,
-                    caption: '',
+                    caption: m.caption ?? '',
                     widthPercent: items.length >= 1 ? 50 : 100,
                     borderRadiusPercent: 0,
                   },
@@ -672,6 +672,7 @@ export default function ReviewEditor({
   const pasteUploadingRef = useRef(false);
   const toastRef = useRef(toast);
   toastRef.current = toast;
+  const openUploadedInspectorRef = useRef<(uploaded: { id: string; url: string; altText: string }) => void>(() => {});
 
   const clipboardPasteExtension = useMemo(
     () =>
@@ -689,6 +690,7 @@ export default function ReviewEditor({
           setPasteUploading(false);
         },
         onError: (message) => toastRef.current('error', 'Paste upload failed', { message }),
+        onUploaded: (uploaded) => openUploadedInspectorRef.current(uploaded),
       })),
     [],
   );
@@ -769,6 +771,23 @@ export default function ReviewEditor({
     },
   });
   editorRef.current = editor;
+
+  useEffect(() => {
+    if (!editor) return;
+    openUploadedInspectorRef.current = (uploaded) => {
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name !== 'image') return;
+        if (String(node.attrs.mediaId ?? '') !== uploaded.id) return;
+        onImageInspectorChangeRef.current?.({
+          kind: 'image',
+          attrs: { ...(node.attrs as Record<string, unknown>) },
+          updateAttributes: (patch) => {
+            editor.chain().focus().setNodeSelection(pos).updateAttributes('image', patch).run();
+          },
+        });
+      });
+    };
+  }, [editor]);
 
   // Replace the document when the parent swaps content (template / restore).
   const appliedKey = useRef(contentKey);

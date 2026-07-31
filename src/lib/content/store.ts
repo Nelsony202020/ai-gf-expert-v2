@@ -56,6 +56,8 @@ import { formatAudienceList, splitLegacyLines } from '../cms/format';
 import { mapCharacterForPublic, selectPublicHighlightCharacters } from '../characters/public';
 import { affiliateRel, DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
 import { buildGroupedContributors } from '../ratings/groupContributors';
+import type { Roundup, RoundupPick } from '../../data/roundups/ai-girlfriend';
+import { hydrateRoundupPicks } from './roundupPick';
 
 export function useDbContent(): boolean {
   const flag = env('USE_DB_CONTENT') ?? '';
@@ -226,29 +228,6 @@ function mapProduct(
   const mediaItems = productMediaItems(dbProduct);
   const reviewMediaById = buildMediaLookup(collectProductMediaRows(dbProduct));
 
-  // #region agent log
-  fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
-    body: JSON.stringify({
-      sessionId: '28e868',
-      runId: 'pre-fix',
-      hypothesisId: 'H2',
-      location: 'store.ts:reviewMediaById',
-      message: 'Review media lookup built',
-      data: {
-        slug: dbProduct.slug,
-        lookupCount: Object.keys(reviewMediaById).length,
-        mediaItemsCount: mediaItems.length,
-        sample: Object.entries(reviewMediaById)
-          .slice(0, 8)
-          .map(([id, v]) => ({ id, url: v.url, mediaType: v.mediaType })),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   const heroGalleryRaw: GalleryImage[] = sortHeroMedia(publicMedia.filter((m: any) => isHeroMedia(m)))
     .map((m: any) => {
       const url = resolveMediaUrl(m);
@@ -261,34 +240,6 @@ function mapProduct(
       } satisfies GalleryImage;
     })
     .filter((g): g is GalleryImage => g !== null);
-
-  // #region agent log
-  fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
-    body: JSON.stringify({
-      sessionId: '28e868',
-      runId: 'pre-fix',
-      hypothesisId: 'H1',
-      location: 'store.ts:heroGalleryRaw',
-      message: 'Hero gallery source rows',
-      data: {
-        slug: dbProduct.slug,
-        heroRows: sortHeroMedia(publicMedia.filter((m: any) => isHeroMedia(m))).map((m: any) => ({
-          id: m.id,
-          mediaType: m.mediaType,
-          resolvedUrl: resolveMediaUrl(m),
-          resolvedUsable: isUsablePublicMediaUrl(resolveMediaUrl(m)),
-          urlField: m.url ?? null,
-          fileUrl: m.file?.url ?? null,
-          alt: m.altText ?? '',
-        })),
-        heroGalleryRaw: heroGalleryRaw.map((g) => ({ full: g.full, alt: g.alt, mediaType: g.mediaType })),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 
   const featuredMedia = dbProduct.featuredImage;
   const featuredUrl = resolveMediaUrl(featuredMedia);
@@ -303,9 +254,13 @@ function mapProduct(
     return [featuredImage, ...rest];
   };
 
-  // Hero-tagged media wins when present; featured image fills in only when no heroes exist.
+  // Featured image first, then hero-tagged media (deduped). Fall back to featured-only when no heroes.
   const heroGallery: GalleryImage[] =
-    heroGalleryRaw.length > 0 ? heroGalleryRaw : featuredImage?.full ? [featuredImage] : [];
+    heroGalleryRaw.length > 0
+      ? prependFeatured(heroGalleryRaw)
+      : featuredImage?.full
+        ? [featuredImage]
+        : [];
 
   const gallerySource = heroGallery.length
     ? heroGallery
@@ -392,29 +347,6 @@ function mapProduct(
   const methodologyVersion = snapshots[0]?.methodologyVersion ?? 'v3.1';
 
   const derivedOverview = deriveOverview(dbProduct, monthlyPriceLabel);
-
-  // #region agent log
-  fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
-    body: JSON.stringify({
-      sessionId: '28e868',
-      runId: 'pre-fix',
-      hypothesisId: 'H5',
-      location: 'store.ts:characters',
-      message: 'Public character avatars mapped',
-      data: {
-        slug: dbProduct.slug,
-        characters: derivedOverview.characters.map((c) => ({
-          name: c.name,
-          avatar: c.avatar,
-          usable: isUsablePublicMediaUrl(c.avatar ?? ''),
-        })),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 
   return {
     slug: dbProduct.slug,
@@ -654,14 +586,111 @@ export async function getProductFeaturedIn(productSlug: string): Promise<Feature
   }
 }
 
+function orderRoundupPicksFromDbEntries(
+  filePicks: RoundupPick[],
+  entries: any[],
+): RoundupPick[] {
+  const bySlug = new Map(filePicks.map((p) => [p.slug, p]));
+  const ordered = entries
+    .filter((e) => e.included && e.product?.slug && bySlug.has(e.product.slug))
+    .sort(
+      (a, b) =>
+        (a.publishedPosition ?? a.calculatedPosition ?? 999) -
+        (b.publishedPosition ?? b.calculatedPosition ?? 999),
+    )
+    .map((e) => {
+      const pick = { ...bySlug.get(e.product.slug)! };
+      if (e.awardLabel) pick.ribbon = e.awardLabel;
+      if (e.reason) pick.overallSummary = e.reason;
+      return pick;
+    });
+  if (ordered.length === 0) return filePicks;
+  const orderedSlugs = new Set(ordered.map((p) => p.slug));
+  for (const pick of filePicks) {
+    if (!orderedSlugs.has(pick.slug)) ordered.push(pick);
+  }
+  return ordered;
+}
+
+export interface RoundupPublicLoad {
+  roundup: Roundup;
+  /** True when the DB roundup is missing, draft, or otherwise not published. */
+  isDraft: boolean;
+}
+
 /**
- * Overlay DB roundup entries (order, awards, reasons) onto the file roundup.
- * Pick content still comes from the file until those products are published
- * in the DB; ranking control moves to the admin immediately.
+ * Load a roundup for a public page. Always starts from the static file template
+ * so progress bar, compare defaults, FAQ, and all template picks remain present.
+ * Overlays DB metadata when a roundup record exists and hydrates individual picks
+ * from published products where available.
+ */
+export async function loadRoundupForPublic(
+  slug: string,
+  fileTemplate: Roundup,
+): Promise<RoundupPublicLoad> {
+  if (!isDbConfigured()) {
+    return { roundup: fileTemplate, isDraft: false };
+  }
+
+  try {
+    const db = getDb();
+    const { roundups } = await (db.query as any)({
+      roundups: {
+        $: { where: { slug } },
+        entries: { product: {} },
+      },
+    });
+    const dbRoundup = (roundups as any[])?.find((r) => !r.deletedAt);
+    const isDraft = !dbRoundup || dbRoundup.status !== 'published';
+
+    const publishedProducts = await loadPublishedProducts([]);
+    const productsBySlug = new Map(publishedProducts.map((p) => [p.slug, p]));
+
+    let picks = fileTemplate.picks;
+    if (dbRoundup?.entries?.length) {
+      picks = orderRoundupPicksFromDbEntries(fileTemplate.picks, dbRoundup.entries);
+    }
+    picks = hydrateRoundupPicks(picks, productsBySlug);
+
+    const roundup: Roundup = {
+      ...fileTemplate,
+      ...(dbRoundup
+        ? {
+            title: dbRoundup.title ?? fileTemplate.title,
+            metaDescription: dbRoundup.seoDescription ?? fileTemplate.metaDescription,
+            featuredImage: dbRoundup.ogImageUrl ?? fileTemplate.featuredImage,
+          }
+        : {}),
+      picks,
+    };
+
+    return { roundup, isDraft };
+  } catch (error) {
+    console.error('[content] roundup public load failed — using file template', error);
+    return { roundup: fileTemplate, isDraft: true };
+  }
+}
+
+/**
+ * Load a published roundup for the live site. Returns null → 404 when the DB
+ * roundup exists but is not published, or when the DB is configured and no
+ * published roundup record exists.
+ */
+export async function loadPublishedRoundupBySlug(
+  slug: string,
+  fileTemplate: Roundup,
+): Promise<Roundup | null> {
+  const { roundup, isDraft } = await loadRoundupForPublic(slug, fileTemplate);
+  return isDraft ? null : roundup;
+}
+
+/**
+ * @deprecated Prefer loadPublishedRoundupBySlug for public pages.
+ * Overlays DB entry order onto file picks and hydrates scores from published products.
  */
 export async function overlayRoundupWithDb<T extends {
   slug: string;
-  picks: { slug: string; ribbon: string; overallSummary: string }[];
+  picks: RoundupPick[];
 }>(fileRoundup: T): Promise<T> {
   if (!isDbConfigured()) return fileRoundup;
   try {
@@ -675,27 +704,12 @@ export async function overlayRoundupWithDb<T extends {
     const dbRoundup = (roundups as any[])[0];
     if (!dbRoundup?.entries?.length) return fileRoundup;
 
-    const bySlug = new Map(fileRoundup.picks.map((p) => [p.slug, p]));
-    const ordered = (dbRoundup.entries as any[])
-      .filter((e) => e.included && e.product?.slug && bySlug.has(e.product.slug))
-      .sort(
-        (a, b) =>
-          (a.publishedPosition ?? a.calculatedPosition ?? 999) -
-          (b.publishedPosition ?? b.calculatedPosition ?? 999),
-      )
-      .map((e) => {
-        const pick = { ...bySlug.get(e.product.slug)! };
-        if (e.awardLabel) pick.ribbon = e.awardLabel;
-        if (e.reason) pick.overallSummary = e.reason;
-        return pick;
-      });
-    if (ordered.length === 0) return fileRoundup;
-    // Keep any file picks missing from the DB at the end (safety).
-    const orderedSlugs = new Set(ordered.map((p) => p.slug));
-    for (const pick of fileRoundup.picks) {
-      if (!orderedSlugs.has(pick.slug)) ordered.push(pick);
-    }
-    return { ...fileRoundup, picks: ordered };
+    const publishedProducts = await loadPublishedProducts([]);
+    const productsBySlug = new Map(publishedProducts.map((p) => [p.slug, p]));
+    const ordered = orderRoundupPicksFromDbEntries(fileRoundup.picks, dbRoundup.entries);
+    const picks = hydrateRoundupPicks(ordered, productsBySlug);
+
+    return { ...fileRoundup, picks };
   } catch (error) {
     console.error('[content] roundup overlay failed — using file data', error);
     return fileRoundup;
@@ -737,6 +751,18 @@ export async function loadPublishedProducts(fileProducts: Product[] = []): Promi
     const out: Product[] = [];
     const dbSlugs = new Set<string>();
 
+    const allSlugsInDb = new Set<string>();
+    try {
+      const { products: allRows } = await (db.query as any)({
+        products: { $: { where: {} } },
+      });
+      for (const row of allRows as any[]) {
+        if (!row.deletedAt && row.slug) allSlugsInDb.add(String(row.slug));
+      }
+    } catch {
+      /* optional */
+    }
+
     for (const dbProduct of dbProducts as any[]) {
       if (dbProduct.deletedAt) continue;
       const mapped = mapProduct(dbProduct, bySlug.get(dbProduct.slug));
@@ -746,7 +772,7 @@ export async function loadPublishedProducts(fileProducts: Product[] = []): Promi
       }
     }
     for (const fp of fileProducts) {
-      if (!dbSlugs.has(fp.slug)) out.push(fp);
+      if (!dbSlugs.has(fp.slug) && !allSlugsInDb.has(fp.slug)) out.push(fp);
     }
     return out;
   } catch (error) {
@@ -1000,17 +1026,19 @@ export async function loadPublishedProductBySlug(slug: string): Promise<Product 
     const db = getDb();
     const { products: rows } = await (db.query as any)({
       products: {
-        $: { where: { slug, status: 'published' } },
+        $: { where: { slug } },
         ...PREVIEW_PRODUCT_QUERY,
       },
     });
     const dbProduct = (rows as any[])?.find((p) => !p.deletedAt);
     if (dbProduct) {
+      if (dbProduct.status !== 'published') return null;
       const mapped = mapProduct(dbProduct, fileProduct ?? undefined);
       if (mapped) return mapped;
+      return null;
     }
   } catch (error) {
-    console.error('[content] published product load failed — using file fallback', error);
+    console.error('[content] published product load failed', error);
   }
 
   return fileProduct ?? null;

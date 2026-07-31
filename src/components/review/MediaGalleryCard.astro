@@ -1,0 +1,104 @@
+---
+import type { MediaItem } from '../../data/aura-ai-media';
+import AgeRatingIcon from '../ui/AgeRatingIcon.astro';
+
+interface Props {
+  item: MediaItem;
+  aspect?: 'portrait' | 'landscape';
+}
+
+const { item, aspect = 'portrait' } = Astro.props;
+const showCaption = Boolean(item.caption?.trim());
+const aspectClass = aspect === 'landscape' ? 'media-card--landscape' : 'media-card--portrait';
+---
+
+<figure
+  class:list={['media-card group relative rounded-xl overflow-hidden border border-surface-variant bg-surface-container-low', aspectClass]}
+  data-media-item
+  data-filter={item.filter}
+  data-media-type={item.type}
+  data-nsfw={item.nsfw ? 'true' : 'false'}
+  data-lightbox-src={item.type === 'image' ? item.src : undefined}
+  data-lightbox-alt={item.alt}
+  data-lightbox-caption={item.caption}
+>
+  {
+    item.type === 'video' ? (
+      <video
+        src={item.src}
+        muted
+        playsinline
+        preload="metadata"
+        class="media-card__img w-full h-full object-cover"
+      />
+    ) : (
+      <button
+        type="button"
+        class="media-card__open absolute inset-0 w-full h-full cursor-zoom-in"
+        data-media-lightbox-trigger
+        aria-label={showCaption ? `Enlarge ${item.caption}` : 'Enlarge image'}
+      >
+        <img src={item.thumb} alt={item.alt} loading="lazy" class="media-card__img w-full h-full object-cover" />
+        <span class="absolute bottom-10 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/50 text-white text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <span class="material-symbols-outlined text-[14px]">zoom_in</span>
+          Enlarge
+        </span>
+      </button>
+    )
+  }
+  {
+    item.type === 'video' && (
+      <span class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span class="media-card__play material-symbols-outlined text-white drop-shadow-md">play_circle</span>
+      </span>
+    )
+  }
+  {
+    item.nsfw && (
+      <button type="button" class="media-card__nsfw absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50 backdrop-blur-md text-white p-3 text-center">
+        <AgeRatingIcon size={40} />
+        <span class="text-[10px] font-black uppercase tracking-widest">18+ Preview</span>
+        <span class="text-xs font-bold">Tap to reveal</span>
+      </button>
+    )
+  }
+  {
+    showCaption && (
+      <figcaption class="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/75 to-transparent pointer-events-none">
+        <p class="text-[11px] font-bold text-white leading-tight">{item.caption}</p>
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  .media-card--portrait {
+    aspect-ratio: 4 / 5;
+  }
+
+  .media-card--landscape {
+    aspect-ratio: 16 / 10;
+  }
+
+  .media-card__play {
+    font-size: 2.75rem;
+  }
+
+  .media-card--hidden {
+    display: none;
+  }
+
+  .media-card--revealed .media-card__nsfw {
+    display: none;
+  }
+
+  .media-card__open {
+    border: none;
+    padding: 0;
+    background: transparent;
+  }
+
+  .media-card__nsfw {
+    z-index: 2;
+  }
+</style>

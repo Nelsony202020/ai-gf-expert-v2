@@ -122,27 +122,6 @@ function resolveMediaItem(
     };
   }
 
-  // #region agent log
-  fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
-    body: JSON.stringify({
-      sessionId: '28e868',
-      runId: 'pre-fix',
-      hypothesisId: 'H4',
-      location: 'renderReviewBlocks.ts:resolveMediaItem',
-      message: 'Unresolved review media item',
-      data: {
-        mediaId: mediaId || null,
-        storedSrc: stored || null,
-        hasCatalog: Boolean(fromCatalog),
-        alt: data.alt ?? null,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   return { src: '', mediaType: 'image' };
 }
 

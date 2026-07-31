@@ -16,12 +16,15 @@ export interface ClipboardPasteOptions {
   onUploadStart?: () => void;
   onUploadEnd?: () => void;
   onError?: (message: string) => void;
+  /** Called after a pasted image is uploaded and inserted — use to open the image inspector. */
+  onUploaded?: (result: PastedImageResult) => void;
 }
 
 async function uploadPastedFile(
   file: File,
   productId: string,
   altText: string,
+  mediaTags: string[] = [],
 ): Promise<PastedImageResult> {
   const normalized = fileWithInferredMime(file);
   const form = new FormData();
@@ -29,7 +32,7 @@ async function uploadPastedFile(
   form.set('adult', '0');
   form.set('altText', altText);
   form.set('role', 'gallery');
-  form.set('mediaTags', '[]');
+  form.set('mediaTags', JSON.stringify(mediaTags));
   form.set('productId', productId);
   const created = await api.upload<{ id: string; url?: string }>('/api/admin/media/upload', form);
   return { id: created.id, url: created.url ?? '', altText };
@@ -111,7 +114,7 @@ export function createClipboardImagePaste(getOptions: () => ClipboardPasteOption
               // Direct image paste (screenshot, file copy).
               if (imageFiles.length > 0 && htmlImgs.length === 0) {
                 event.preventDefault();
-                const { productId, onUploadStart, onUploadEnd, onError } = getOptions();
+                const { productId, onUploadStart, onUploadEnd, onError, onUploaded } = getOptions();
                 onUploadStart?.();
                 void (async () => {
                   try {
@@ -131,6 +134,7 @@ export function createClipboardImagePaste(getOptions: () => ClipboardPasteOption
                           },
                         })
                         .run();
+                      onUploaded?.(uploaded);
                     }
                   } catch (e) {
                     onError?.(e instanceof Error ? e.message : 'Image upload failed');

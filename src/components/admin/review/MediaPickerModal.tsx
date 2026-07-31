@@ -5,11 +5,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, dataApi, type EntityRow } from '../api';
 import { Button, ErrorNote, Field, Icon, Modal, Spinner, TextInput, Toggle } from '../ui';
+import { MediaRoleFields } from '../workspace/tabs/MediaRoleFields';
+import {
+  galleryTagsFromRoleState,
+  writeMediaRoleState,
+  type MediaRoleState,
+} from '../../../lib/media/catalog';
 
 export interface PickedMedia {
   id: string;
   url: string;
   altText: string;
+  caption?: string;
 }
 
 export function MediaPickerModal({
@@ -26,10 +33,16 @@ export function MediaPickerModal({
   const [search, setSearch] = useState('');
   const [productOnly, setProductOnly] = useState(true);
 
-  // Upload form state
   const fileRef = useRef<HTMLInputElement>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploadAlt, setUploadAlt] = useState('');
+  const [uploadCaption, setUploadCaption] = useState('');
   const [uploadAdult, setUploadAdult] = useState(false);
+  const [roleState, setRoleState] = useState<MediaRoleState>({
+    character: false,
+    contextTag: '',
+    hero: false,
+  });
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -65,8 +78,41 @@ export function MediaPickerModal({
     return String(m.altText || m.caption || 'Untitled image');
   }
 
+  function altFromFilename(name: string): string {
+    return name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
+  }
+
+  async function applyGalleryTags(mediaId: string, patch?: { altText?: string; caption?: string }) {
+    const { role, mediaTags } = writeMediaRoleState(roleState, { placement: 'gallery' });
+    await dataApi.update('media', mediaId, {
+      role,
+      mediaTags,
+      approved: true,
+      ...(patch?.altText?.trim() ? { altText: patch.altText.trim() } : {}),
+      ...(patch?.caption?.trim() ? { caption: patch.caption.trim() } : {}),
+    });
+  }
+
+  async function pickExisting(m: EntityRow) {
+    setError(null);
+    try {
+      await applyGalleryTags(String(m.id), {
+        altText: uploadAlt || String(m.altText ?? ''),
+        caption: uploadCaption || String(m.caption ?? ''),
+      });
+      onSelect({
+        id: String(m.id),
+        url: String(m.url),
+        altText: uploadAlt || String(m.altText ?? ''),
+        caption: uploadCaption || String(m.caption ?? ''),
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not apply gallery tags');
+    }
+  }
+
   async function upload() {
-    const file = fileRef.current?.files?.[0];
+    const file = pendingFile ?? fileRef.current?.files?.[0];
     if (!file) {
       setError('Choose a file to upload.');
       return;
@@ -78,15 +124,27 @@ export function MediaPickerModal({
       form.set('file', file);
       form.set('adult', uploadAdult ? '1' : '0');
       form.set('altText', uploadAlt);
+      form.set('caption', uploadCaption);
       form.set('role', 'gallery');
+      form.set('mediaTags', JSON.stringify(galleryTagsFromRoleState(roleState)));
       form.set('productId', productId);
       const created = await api.upload<{ id: string; url?: string }>('/api/admin/media/upload', form);
-      onSelect({ id: created.id, url: created.url ?? '', altText: uploadAlt });
+      onSelect({
+        id: created.id,
+        url: created.url ?? '',
+        altText: uploadAlt,
+        caption: uploadCaption,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
       setUploading(false);
     }
+  }
+
+  function onFileChosen(file: File | null) {
+    setPendingFile(file);
+    if (file && !uploadAlt.trim()) setUploadAlt(altFromFilename(file.name));
   }
 
   return (
@@ -101,11 +159,7 @@ export function MediaPickerModal({
             placeholder="Search by alt text, caption, credit…"
             className="max-w-xs"
           />
-          <Toggle
-            checked={productOnly}
-            onChange={setProductOnly}
-            label="This product only"
-          />
+          <Toggle checked={productOnly} onChange={setProductOnly} label="This product only" />
         </div>
 
         {rows === null ? (
@@ -121,9 +175,7 @@ export function MediaPickerModal({
                 key={m.id}
                 type="button"
                 title={mediaLabel(m)}
-                onClick={() =>
-                  onSelect({ id: m.id, url: String(m.url), altText: String(m.altText ?? '') })
-                }
+                onClick={() => void pickExisting(m)}
                 className="group relative aspect-square overflow-hidden rounded-md border border-slate-200 hover:border-pink-400 focus:border-pink-500 focus:outline-none dark:border-slate-700"
               >
                 <img
@@ -149,28 +201,54 @@ export function MediaPickerModal({
           <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
             <Icon name="upload" className="!text-[15px]" /> Upload new image
           </p>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="space-y-3">
             <input
               ref={fileRef}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
               className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200 dark:text-slate-300 dark:file:bg-slate-800 dark:file:text-slate-200"
+              onChange={(e) => onFileChosen(e.target.files?.[0] ?? null)}
             />
-            <Field label="Alt text (describes the image)">
-              <TextInput
-                value={uploadAlt}
-                onChange={(e) => setUploadAlt(e.target.value)}
-                placeholder="e.g. Character creation screen"
-              />
-            </Field>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Field label="Alt text" help="Describes the image for accessibility and SEO.">
+                <TextInput
+                  value={uploadAlt}
+                  onChange={(e) => setUploadAlt(e.target.value)}
+                  placeholder="e.g. Character creation screen"
+                />
+              </Field>
+              <Field label="Caption" help="Optional label shown on the public gallery card.">
+                <TextInput
+                  value={uploadCaption}
+                  onChange={(e) => setUploadCaption(e.target.value)}
+                  placeholder="e.g. Chat interface at night"
+                />
+              </Field>
+            </div>
+            <MediaRoleFields
+              value={roleState}
+              onChange={setRoleState}
+              showHero={false}
+              radioName="review-media-context"
+            />
           </div>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <Toggle checked={uploadAdult} onChange={setUploadAdult} label="Adult content (18+)" />
-            <Button onClick={() => void upload()} disabled={uploading} className="text-xs">
+            <Button onClick={() => void upload()} disabled={uploading || !pendingFile} className="text-xs">
               {uploading ? 'Uploading…' : 'Upload and insert'}
             </Button>
           </div>
+          {pendingFile && (
+            <p className="mt-2 text-xs text-slate-500">
+              Selected: {pendingFile.name}. Add alt text, caption, and gallery tags before uploading.
+            </p>
+          )}
         </div>
+
+        <p className="text-xs text-slate-400">
+          Gallery tags apply to uploads and to images picked from the library above. Character and chat tags control
+          which Photos &amp; Videos overview sections show the image.
+        </p>
       </div>
     </Modal>
   );

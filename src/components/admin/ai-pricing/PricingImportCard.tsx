@@ -6,8 +6,9 @@ import { useRef, useState } from 'react';
 import { api, dataApi } from '../api';
 import { Button, ErrorNote, Icon } from '../ui';
 import { ImageHoverThumb } from '../testing/ProofThumb';
+import { MediaRoleFields } from '../workspace/tabs/MediaRoleFields';
+import { galleryTagsFromRoleState, PRICING_PROOF_CAPTION, type MediaRoleState } from '../../../lib/media/catalog';
 import type { PricingDraftClient } from './PricingReviewModal';
-import { PRICING_PROOF_CAPTION } from '../../../lib/media/catalog';
 
 interface UploadedShot {
   mediaId: string;
@@ -31,6 +32,11 @@ export function PricingImportCard({
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [addToGallery, setAddToGallery] = useState(false);
+  const [galleryRoleState, setGalleryRoleState] = useState<MediaRoleState>({
+    character: false,
+    contextTag: '',
+    hero: false,
+  });
   const fileInput = useRef<HTMLInputElement>(null);
 
   async function addFiles(files: File[]) {
@@ -48,11 +54,15 @@ export function PricingImportCard({
         form.set('caption', PRICING_PROOF_CAPTION);
         form.set('testCategory', 'pricing');
         form.set('productId', productId);
+        if (addToGallery) {
+          form.set('mediaTags', JSON.stringify(galleryTagsFromRoleState(galleryRoleState)));
+        }
         const created = await api.upload<{ id: string; url?: string }>('/api/admin/media/upload', form);
         if (addToGallery) {
           await dataApi.update('media', created.id, {
             approved: true,
             role: 'gallery',
+            mediaTags: galleryTagsFromRoleState(galleryRoleState),
             caption: PRICING_PROOF_CAPTION,
             testCategory: 'pricing',
           });
@@ -134,8 +144,18 @@ export function PricingImportCard({
             onChange={(e) => setAddToGallery(e.target.checked)}
             className="rounded border-slate-300"
           />
-          Also add screenshots to the media gallery as pricing proof
+          Also add screenshots to the public Photos &amp; Videos gallery
         </label>
+        {addToGallery && (
+          <div className="mt-3 text-left">
+            <MediaRoleFields
+              value={galleryRoleState}
+              onChange={setGalleryRoleState}
+              showHero={false}
+              radioName="pricing-gallery-context"
+            />
+          </div>
+        )}
         <input
           ref={fileInput}
           type="file"

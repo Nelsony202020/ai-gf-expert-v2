@@ -1,5 +1,6 @@
 import type { RoundupPick } from './roundups/ai-girlfriend';
-import { aiGirlfriendRoundup } from './roundups/ai-girlfriend';
+import { fileAiGirlfriendRoundup } from './roundups/ai-girlfriend';
+export { fileAiGirlfriendRoundup } from './roundups/ai-girlfriend';
 import { getProduct } from './products';
 import type { StoryHighlightCharacter } from './products';
 import { buildSearchIndex, type SearchResult } from './site-search';
@@ -228,7 +229,7 @@ export const explorerQuickSortOptions = [
   { id: 'rating', label: 'Highest rated', icon: 'emoji_events' },
 ] as const;
 
-export const explorerLastUpdated = aiGirlfriendRoundup.modifiedDate;
+export const explorerLastUpdated = fileAiGirlfriendRoundup.modifiedDate;
 
 export interface HomeRecentUpdate {
   id: string;
@@ -414,7 +415,7 @@ export function getRoundupRibbonLabel(pick: RoundupPick): string {
 }
 
 export function getRoundupRibbonHref(pick: RoundupPick): string {
-  return `/best/${aiGirlfriendRoundup.slug}#pick-${pick.id}`;
+  return `/best/${fileAiGirlfriendRoundup.slug}#pick-${pick.id}`;
 }
 
 const BRAND_LINERS: Record<string, string> = {
@@ -497,8 +498,8 @@ function quickStatsFor(pick: RoundupPick): DirectoryQuickStat[] {
   ];
 }
 
-export function buildExplorerApps(): HomeExplorerApp[] {
-  return aiGirlfriendRoundup.picks.map((pick) => ({
+export function buildExplorerAppsFromPicks(picks: RoundupPick[]): HomeExplorerApp[] {
+  return picks.map((pick) => ({
     ...pick,
     reviewUrl: pick.reviewUrl ?? reviewPageUrl(pick.slug),
     hasReview: Boolean(pick.reviewUrl ?? getProduct(pick.slug)),
@@ -522,9 +523,11 @@ export function buildExplorerApps(): HomeExplorerApp[] {
   }));
 }
 
-/** Explorer apps with admin editorial fields overlaid when the DB is configured. */
+/** Explorer apps with published DB scores overlaid onto roundup templates. */
 export async function loadExplorerApps(): Promise<HomeExplorerApp[]> {
-  const apps = buildExplorerApps();
+  const { hydrateExplorerTemplatePicks } = await import('../lib/content/homepageLoaders');
+  const picks = await hydrateExplorerTemplatePicks(fileAiGirlfriendRoundup.picks);
+  const apps = buildExplorerAppsFromPicks(picks);
   const { overlayExplorerAppsWithDb } = await import('../lib/content/store');
   return overlayExplorerAppsWithDb(apps);
 }
@@ -564,9 +567,10 @@ export function buildExplorerPriceHistogram(apps: HomeExplorerApp[]): number[] {
   return buckets.map((count) => Math.round((count / max) * 100));
 }
 
-export const explorerMaxPrice = Math.max(...aiGirlfriendRoundup.picks.map((p) => p.priceMonthly), 30);
+export const explorerMaxPrice = Math.max(...fileAiGirlfriendRoundup.picks.map((p) => p.priceMonthly), 30);
 
-export const topPicks = aiGirlfriendRoundup.picks.slice(0, 3);
+/** @deprecated Use loadHomepageTopPicks() on the homepage. */
+export const topPicks = fileAiGirlfriendRoundup.picks.slice(0, 3);
 
 export const charactersOfWeek: HomeFeaturedCharacter[] = [
   {
@@ -693,12 +697,10 @@ const fileFeaturedCharacters: HomeFeaturedCharacter[] = [
   charactersOfWeek[5], // Maya
 ];
 
-/** Featured homepage carousel — loaded from admin homepage slots when DB is configured. */
+/** Featured homepage carousel — admin slots only when DB is configured. */
 export async function loadFeaturedCharactersShowcase(): Promise<HomeFeaturedCharacter[]> {
-  const { loadFeaturedCharactersFromDb } = await import('../lib/homepage/featuredCharacters');
-  const dbCharacters = await loadFeaturedCharactersFromDb();
-  if (dbCharacters && dbCharacters.length > 0) return dbCharacters;
-  return fileFeaturedCharacters;
+  const { loadHomepageFeaturedCharacters } = await import('../lib/content/homepageLoaders');
+  return loadHomepageFeaturedCharacters(fileFeaturedCharacters);
 }
 
 /** @deprecated Use loadFeaturedCharactersShowcase() — static file fallback only. */
@@ -709,7 +711,7 @@ export const recentUpdates: HomeRecentUpdate[] = [
     id: 'aura-retest',
     title: 'Aura AI Review',
     href: '/reviews/aura-ai',
-    image: getProduct('aura-ai')?.gallery[0]?.full ?? aiGirlfriendRoundup.picks[3].gallery[0].full,
+    image: getProduct('aura-ai')?.gallery[0]?.full ?? fileAiGirlfriendRoundup.picks[3].gallery[0].full,
     imageAlt: 'Aura AI review update',
     date: 'Jul 22, 2026',
     summary: 'Overview & ratings UI refresh — comparison charts, search trends, and character story highlights updated.',
@@ -721,8 +723,8 @@ export const recentUpdates: HomeRecentUpdate[] = [
     id: 'roundup-refresh',
     title: 'Best AI Girlfriend Apps',
     href: '/best/ai-girlfriend',
-    image: aiGirlfriendRoundup.featuredImage,
-    imageAlt: aiGirlfriendRoundup.featuredImageAlt,
+    image: fileAiGirlfriendRoundup.featuredImage,
+    imageAlt: fileAiGirlfriendRoundup.featuredImageAlt,
     date: 'Jul 21, 2026',
     summary: 'New side-by-side compare tool and refreshed 2026 rankings. Candy AI holds #1 overall.',
     type: 'roundup',
@@ -732,7 +734,7 @@ export const recentUpdates: HomeRecentUpdate[] = [
     id: 'candy-retest',
     title: 'Candy AI retested',
     href: '/best/ai-girlfriend#pick-candy-ai',
-    image: aiGirlfriendRoundup.picks[0].gallery[0].full,
+    image: fileAiGirlfriendRoundup.picks[0].gallery[0].full,
     imageAlt: 'Candy AI retest',
     date: 'Jun 28, 2026',
     summary: 'Major memory upgrade in v4.2 — chat reliability improved after a two-week retest.',
@@ -759,7 +761,7 @@ export const featuredGuides: HomeGuide[] = [
     title: 'Best AI Girlfriend Apps in 2026',
     excerpt: 'Our ranked list of the eight apps that survived 30+ days of hands-on testing.',
     href: '/best/ai-girlfriend',
-    image: aiGirlfriendRoundup.featuredImage,
+    image: fileAiGirlfriendRoundup.featuredImage,
     imageAlt: 'Best AI girlfriend apps roundup',
     date: 'Jul 21, 2026',
     type: 'roundup',
@@ -769,7 +771,7 @@ export const featuredGuides: HomeGuide[] = [
     title: 'Aura AI Review — Full Breakdown',
     excerpt: 'Eight category scores, safety audit, and video generation deep dive from our lead reviewer.',
     href: '/reviews/aura-ai',
-    image: getProduct('aura-ai')?.gallery[0]?.full ?? aiGirlfriendRoundup.picks[3].gallery[0].full,
+    image: getProduct('aura-ai')?.gallery[0]?.full ?? fileAiGirlfriendRoundup.picks[3].gallery[0].full,
     imageAlt: 'Aura AI full review',
     date: 'Oct 25, 2024',
     type: 'guide',
@@ -779,7 +781,7 @@ export const featuredGuides: HomeGuide[] = [
     title: 'Kindroid vs Candy AI: Voice Quality',
     excerpt: 'Side-by-side voice call tests — latency, emotion, and realism scored with the same rubric.',
     href: '/best/ai-girlfriend#roundup-compare',
-    image: aiGirlfriendRoundup.picks[1].gallery[0].full,
+    image: fileAiGirlfriendRoundup.picks[1].gallery[0].full,
     imageAlt: 'Voice quality comparison',
     date: 'Jun 12, 2026',
     type: 'comparison',
@@ -789,7 +791,7 @@ export const featuredGuides: HomeGuide[] = [
     title: 'How We Score AI Companion Apps',
     excerpt: 'Transparent weights, measured evidence, and why we buy every plan ourselves.',
     href: '/test/',
-    image: aiGirlfriendRoundup.testing.videoPoster,
+    image: fileAiGirlfriendRoundup.testing.videoPoster,
     imageAlt: 'Testing methodology',
     date: 'May 3, 2026',
     type: 'guide',
@@ -804,6 +806,6 @@ export const homeMeta = {
   title: 'AI Girlfriend Expert — Independent AI Companion Reviews',
   description:
     'We purchase, test, score, and compare AI girlfriend apps so you can choose with confidence. Browse 24+ tested apps, expert reviews, and side-by-side comparisons.',
-  heroImage: aiGirlfriendRoundup.featuredImage,
+  heroImage: fileAiGirlfriendRoundup.featuredImage,
   heroImageAlt: 'Editorial collage of AI companion apps tested by AI Girlfriend Expert',
 };

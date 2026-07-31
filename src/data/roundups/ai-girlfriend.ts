@@ -634,11 +634,11 @@ const fileRoundup: Roundup = {
   ],
 };
 
-// DB overlay: when USE_DB_CONTENT=1, the admin-managed roundup entries
-// control pick order, award labels, and reasons. See src/lib/content/store.ts.
-const { overlayRoundupWithDb } = await import('../../lib/content/store');
+// Static template — public pages must call loadRoundupForPublic().
+export const fileAiGirlfriendRoundup: Roundup = fileRoundup;
 
-export const aiGirlfriendRoundup: Roundup = await overlayRoundupWithDb(fileRoundup);
+/** @deprecated Template only; use loadRoundupForPublic for live pages. */
+export const aiGirlfriendRoundup: Roundup = fileRoundup;
 
 export function getRoundupSortScore(pick: RoundupPick, sortKey: string): number {
   if (sortKey === 'overall') return pick.overallScore;

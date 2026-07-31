@@ -6,7 +6,7 @@ import { auraAiCategories } from './aura-ai-categories';
 import { auraAiVerdicts, auraAiExpertOpinion } from './aura-ai-verdict';
 import { computeOverallScore } from '../lib/scores';
 
-import type { MediaItem } from './aura-ai-media';
+import { auraAiMediaGallery, type MediaItem } from './aura-ai-media';
 
 export interface Author {
   name: string;
@@ -83,6 +83,8 @@ export interface OverviewCharacter {
   archetype: string;
   avatar: string;
   storySlides: string[];
+  /** Image-only story slide URLs (excludes videos) for `<img>` previews. */
+  storyImageSlides?: string[];
   /** Placeholder profile URL — edit when character pages exist */
   profileUrl?: string;
   /** rel tokens for profileUrl when it is an outbound affiliate link */
@@ -420,6 +422,7 @@ const auraAi: Product = {
   verdicts: auraAiVerdicts,
   expertOpinion: auraAiExpertOpinion,
   pricingDisplay: { monthly: '$12.99 / mo', storeLabel: 'Aura AI' },
+  mediaItems: auraAiMediaGallery,
   videoReview: {
     embedUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     channelUrl: 'https://www.youtube.com/@ai-girlfriend-expert',
@@ -433,6 +436,9 @@ const auraAi: Product = {
  * build/request time via loadPublishedProducts(). See src/lib/content/store.ts.
  */
 const fileProducts: Product[] = [auraAi];
+
+/** Static file product before DB merge — used by migration scripts. */
+export const fileAuraAi: Product = auraAi;
 
 const { loadProductsWithDb } = await import('../lib/content/store');
 

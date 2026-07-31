@@ -3,6 +3,7 @@ import type { Product } from '../../../data/products';
 import type { FeaturedReviewVideo, MediaItem } from '../../../data/aura-ai-media';
 import BrandIcon from '../../ui/BrandIcon.astro';
 import AgeRatingIcon from '../../ui/AgeRatingIcon.astro';
+import MediaGalleryCard from '../MediaGalleryCard.astro';
 import NsfwAgeGateModal from '../NsfwAgeGateModal.astro';
 import { brandIcons } from '../../../lib/brand-icons';
 
@@ -48,14 +49,52 @@ const youtubeWatchUrl = featuredVideo?.youtubeId
   : null;
 
 const filters = [
-  { id: 'all', label: 'All media', icon: 'grid_view' },
-  { id: 'proof', label: 'Proof', icon: 'fact_check' },
-  { id: 'videos', label: 'Videos', icon: 'videocam' },
+  { id: 'all', label: 'Overview', icon: 'grid_view' },
   { id: 'characters', label: 'Characters', icon: 'groups' },
+  { id: 'images', label: 'Images', icon: 'photo_library' },
+  { id: 'videos', label: 'Videos', icon: 'videocam' },
   { id: 'chat', label: 'Chat', icon: 'chat_bubble' },
-  { id: 'generator', label: 'Generator', icon: 'tune' },
   { id: '18plus', label: '18+', icon: 'no_adult_content' },
 ];
+
+function matchesOverviewGroup(item: MediaItem, groupId: string): boolean {
+  if (groupId === '18plus') return Boolean(item.nsfw);
+  if (groupId === 'videos') return item.type === 'video';
+  if (groupId === 'images') return item.type === 'image' && item.filter === 'gallery';
+  if (groupId === 'characters') return item.filter === 'characters';
+  if (groupId === 'chat') return item.filter === 'chat';
+  return false;
+}
+
+const overviewSections = [
+  { id: '18plus', title: '18+', limit: 3, aspect: 'landscape' as const, filterTarget: '18plus' },
+  {
+    id: 'characters',
+    title: 'Characters',
+    limit: 4,
+    aspect: 'portrait' as const,
+    filterTarget: 'characters',
+  },
+  { id: 'chat', title: 'Chat & voice', limit: 3, aspect: 'landscape' as const, filterTarget: 'chat' },
+  { id: 'images', title: 'Image results', limit: 4, aspect: 'portrait' as const, filterTarget: 'images' },
+  {
+    id: 'videos',
+    title: 'Video results',
+    limit: 5,
+    aspect: 'landscape' as const,
+    filterTarget: 'videos',
+    fullWidth: true,
+  },
+];
+
+const overviewGroups = overviewSections.map((section) => {
+  const groupItems = mediaItems.filter((item) => matchesOverviewGroup(item, section.id));
+  return {
+    ...section,
+    items: groupItems.slice(0, section.limit),
+    total: groupItems.length,
+  };
+});
 ---
 
 <section class="bg-white py-12 md:py-14" data-media-gallery-root>
@@ -64,7 +103,7 @@ const filters = [
       <div class="min-w-0">
         <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-3">Photos &amp; Videos</h2>
         <p class="text-on-surface-variant text-base md:text-lg max-w-2xl">
-          Screenshots, test proof, and video from our {product.name} review — including media we captured during ratings tests.
+          Screenshots and video from our {product.name} review — characters, chat, and general gallery media from testing.
         </p>
       </div>
 
@@ -93,7 +132,7 @@ const filters = [
         </div>
         <p class="media-nsfw-status" data-nsfw-status>
           <span class="material-symbols-outlined text-[14px]">lock</span>
-          <span data-nsfw-status-text>18+ content is hidden</span>
+          <span data-nsfw-status-text>18+ content is blurred</span>
         </p>
       </div>
     </div>
@@ -149,7 +188,7 @@ const filters = [
     <div class="media-section-header mb-5" data-media-section-header aria-live="polite">
       <div class="media-section-header__inner">
         <span class="material-symbols-outlined media-section-header__icon" data-media-section-icon aria-hidden="true">grid_view</span>
-        <span class="media-section-header__label" data-media-section-label>All media</span>
+        <span class="media-section-header__label" data-media-section-label>Overview</span>
       </div>
       <span class="media-section-header__divider" aria-hidden="true"></span>
     </div>
@@ -173,75 +212,56 @@ const filters = [
       }
     </div>
 
+    <div class="media-overview" data-media-overview>
+      <div class="media-overview__grid">
+        {
+          overviewGroups.map((group) => (
+            <section
+              class:list={['media-overview__panel', group.fullWidth && 'media-overview__panel--full']}
+              data-overview-panel={group.id}
+            >
+              <header class="media-overview__header">
+                <div class="media-overview__heading">
+                  <h3 class="media-overview__title">{group.title}</h3>
+                  <p class="media-overview__count">{group.total} {group.total === 1 ? 'item' : 'items'}</p>
+                </div>
+                <button
+                  type="button"
+                  class="media-overview__view-all"
+                  data-media-filter-jump={group.filterTarget}
+                >
+                  View all
+                </button>
+              </header>
+              {
+                group.items.length > 0 ? (
+                  <div
+                    class:list={[
+                      'media-overview__previews',
+                      group.aspect === 'landscape' ? 'media-overview__previews--landscape' : 'media-overview__previews--portrait',
+                    ]}
+                  >
+                    {group.items.map((item) => (
+                      <MediaGalleryCard item={item} aspect={group.aspect} />
+                    ))}
+                  </div>
+                ) : (
+                  <p class="media-overview__empty">No items yet</p>
+                )
+              }
+            </section>
+          ))
+        }
+      </div>
+    </div>
+
     <div
-      class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4"
+      class="hidden grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4"
       data-media-grid
       data-gallery
       data-gallery-images="[]"
     >
-      {
-        mediaItems.map((item) => {
-          const showCaption = Boolean(item.caption?.trim());
-          return (
-          <figure
-            class="media-card group relative rounded-xl overflow-hidden border border-surface-variant bg-surface-container-low aspect-[4/5]"
-            data-media-item
-            data-filter={item.filter}
-            data-media-type={item.type}
-            data-nsfw={item.nsfw ? 'true' : 'false'}
-            data-lightbox-src={item.type === 'image' ? item.src : undefined}
-            data-lightbox-alt={item.alt}
-            data-lightbox-caption={item.caption}
-          >
-            {
-              item.type === 'video' ? (
-                <video
-                  src={item.src}
-                  muted
-                  playsinline
-                  preload="metadata"
-                  class="media-card__img w-full h-full object-cover"
-                />
-              ) : (
-                <button
-                  type="button"
-                  class="media-card__open absolute inset-0 w-full h-full cursor-zoom-in"
-                  data-media-lightbox-trigger
-                  aria-label={showCaption ? `Enlarge ${item.caption}` : 'Enlarge image'}
-                >
-                  <img src={item.thumb} alt={item.alt} loading="lazy" class="media-card__img w-full h-full object-cover" />
-                  <span class="absolute bottom-10 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/50 text-white text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    <span class="material-symbols-outlined text-[14px]">zoom_in</span>
-                    Enlarge
-                  </span>
-                </button>
-              )
-            }
-            {
-              item.type === 'video' && (
-                <span class="absolute top-2 left-2 material-symbols-outlined text-white drop-shadow-md text-xl">play_circle</span>
-              )
-            }
-            {
-              item.nsfw && (
-                <button type="button" class="media-card__nsfw absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50 backdrop-blur-md text-white p-3 text-center">
-                  <AgeRatingIcon size={40} />
-                  <span class="text-[10px] font-black uppercase tracking-widest">18+ Preview</span>
-                  <span class="text-xs font-bold">Tap to reveal</span>
-                </button>
-              )
-            }
-            {
-              showCaption && (
-                <figcaption class="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/75 to-transparent pointer-events-none">
-                  <p class="text-[11px] font-bold text-white leading-tight">{item.caption}</p>
-                </figcaption>
-              )
-            }
-          </figure>
-          );
-        })
-      }
+      {mediaItems.map((item) => <MediaGalleryCard item={item} aspect="portrait" />)}
     </div>
 
     <nav class="media-pagination hidden mt-6" data-media-pagination aria-label="Media gallery pages">
@@ -395,7 +415,9 @@ const filters = [
     gap: 16px;
   }
 
-  .media-pagination.hidden {
+  .media-pagination.hidden,
+  .media-overview__empty.hidden,
+  .media-overview__previews.hidden {
     display: none;
   }
 
@@ -429,6 +451,124 @@ const filters = [
     color: var(--color-on-surface-variant);
     min-width: 7rem;
     text-align: center;
+  }
+
+  .media-overview__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .media-overview__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .media-overview__panel {
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 1rem;
+    background: #fff;
+    padding: 1rem 1.125rem 1.125rem;
+    min-width: 0;
+  }
+
+  .media-overview__panel--full {
+    grid-column: 1 / -1;
+  }
+
+  .media-overview__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .media-overview__title {
+    font-size: 1.125rem;
+    font-weight: 900;
+    color: var(--color-on-surface);
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .media-overview__count {
+    margin: 0.2rem 0 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-tertiary);
+  }
+
+  .media-overview__view-all {
+    flex-shrink: 0;
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: var(--color-accent);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .media-overview__view-all:hover {
+    text-decoration: underline;
+  }
+
+  .media-overview__previews {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .media-overview__previews--landscape {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .media-overview__previews--portrait {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: 640px) {
+    .media-overview__previews--landscape {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .media-overview__previews--portrait {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .media-overview__panel--full .media-overview__previews--landscape {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: 640px) {
+    .media-overview__panel--full .media-overview__previews--landscape {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+
+  .media-overview__empty {
+    margin: 0;
+    padding: 1.5rem 0;
+    text-align: center;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-tertiary);
+  }
+
+  .media-card--portrait {
+    aspect-ratio: 4 / 5;
+  }
+
+  .media-card--landscape {
+    aspect-ratio: 16 / 10;
+  }
+
+  .media-card__play {
+    font-size: 2.75rem;
   }
 </style>
 
@@ -508,6 +648,11 @@ const filters = [
     background: var(--dark-elevated);
     border-color: var(--dark-border-subtle);
     color: var(--dark-muted);
+  }
+
+  [data-theme='dark'] .media-overview__panel {
+    background: var(--dark-elevated);
+    border-color: var(--dark-border-subtle);
   }
 </style>
 
@@ -625,12 +770,17 @@ const filters = [
     if (!root || root.dataset.bound === 'true') return;
     root.dataset.bound = 'true';
 
-    const items = Array.from(root.querySelectorAll<HTMLElement>('[data-media-item]'));
+    const items = Array.from(root.querySelectorAll<HTMLElement>('[data-media-grid] [data-media-item]'));
+    const overviewItems = Array.from(root.querySelectorAll<HTMLElement>('[data-media-overview] [data-media-item]'));
+    const allInteractiveItems = Array.from(root.querySelectorAll<HTMLElement>('[data-media-item]'));
     const filterBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-media-filter]'));
+    const filterJumpBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-media-filter-jump]'));
     const nsfwBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-nsfw-mode]'));
     const statusText = root.querySelector<HTMLElement>('[data-nsfw-status-text]');
     const emptyEl = root.querySelector<HTMLElement>('[data-media-empty]');
+    const overviewEl = root.querySelector<HTMLElement>('[data-media-overview]');
     const galleryRoot = root.querySelector<HTMLElement>('[data-gallery]');
+    const gridEl = root.querySelector<HTMLElement>('[data-media-grid]');
     const paginationEl = root.querySelector<HTMLElement>('[data-media-pagination]');
     const pagePrev = root.querySelector<HTMLButtonElement>('[data-media-page-prev]');
     const pageNext = root.querySelector<HTMLButtonElement>('[data-media-page-next]');
@@ -665,7 +815,7 @@ const filters = [
       const activeBtn =
         btn ?? filterBtns.find((b) => b.dataset.mediaFilter === activeFilter) ?? filterBtns[0];
       if (!activeBtn) return;
-      const label = activeBtn.dataset.filterLabel ?? 'All media';
+      const label = activeBtn.dataset.filterLabel ?? 'Overview';
       const icon = activeBtn.dataset.filterIcon ?? 'grid_view';
       if (sectionLabel) sectionLabel.textContent = label;
       if (sectionIcon) sectionIcon.textContent = icon;
@@ -681,7 +831,7 @@ const filters = [
 
       if (statusText) {
         statusText.textContent =
-          nsfwMode === 'safe' ? '18+ content is hidden' : '18+ content is visible';
+          nsfwMode === 'safe' ? '18+ content is blurred' : '18+ content is visible';
       }
     }
 
@@ -692,13 +842,13 @@ const filters = [
         return;
       }
 
-      items.forEach((item) => {
+      allInteractiveItems.forEach((item) => {
         if (item.dataset.nsfw === 'true') item.classList.add('media-card--revealed');
       });
     }
 
     function hideNsfwItems() {
-      items.forEach((item) => {
+      allInteractiveItems.forEach((item) => {
         if (item.dataset.nsfw === 'true') item.classList.remove('media-card--revealed');
       });
     }
@@ -720,7 +870,13 @@ const filters = [
     }
 
     function visibleImageItems(): HTMLElement[] {
-      return items.filter((item) => {
+      const scope =
+        activeFilter === 'all'
+          ? root.querySelector('[data-media-overview]')
+          : root.querySelector('[data-media-grid]');
+      const scopedItems = Array.from(scope?.querySelectorAll<HTMLElement>('[data-media-item]') ?? []);
+
+      return scopedItems.filter((item) => {
         if (item.classList.contains('media-card--hidden')) return false;
         if (item.dataset.mediaType !== 'image') return false;
         if (item.dataset.nsfw === 'true' && nsfwMode === 'safe') return false;
@@ -758,6 +914,34 @@ const filters = [
     }
 
     function applyFilters() {
+      const isOverview = activeFilter === 'all';
+      overviewEl?.classList.toggle('hidden', !isOverview);
+      gridEl?.classList.toggle('hidden', isOverview);
+
+      if (isOverview) {
+        overviewItems.forEach((item) => {
+          const isNsfw = item.dataset.nsfw === 'true';
+          // Safe mode: show blurred previews (not display:none) so overview panels stay populated.
+          item.classList.remove('media-card--hidden');
+          if (isNsfw && nsfwMode === 'safe') item.classList.remove('media-card--revealed');
+        });
+        overviewEl?.querySelectorAll<HTMLElement>('[data-overview-panel]').forEach((panel) => {
+          const visibleInPanel = Array.from(panel.querySelectorAll<HTMLElement>('[data-media-item]')).filter(
+            (item) => !item.classList.contains('media-card--hidden'),
+          );
+          const emptyEl = panel.querySelector<HTMLElement>('.media-overview__empty');
+          const previewsEl = panel.querySelector<HTMLElement>('.media-overview__previews');
+          if (emptyEl && previewsEl) {
+            emptyEl.classList.toggle('hidden', visibleInPanel.length > 0);
+            previewsEl.classList.toggle('hidden', visibleInPanel.length === 0);
+          }
+        });
+        if (emptyEl) emptyEl.classList.add('hidden');
+        if (paginationEl) paginationEl.classList.add('hidden');
+        syncLightboxGallery();
+        return;
+      }
+
       const matching: HTMLElement[] = [];
       items.forEach((item) => {
         const filter = item.dataset.filter ?? '';
@@ -770,6 +954,8 @@ const filters = [
           matchFilter = isNsfw;
         } else if (activeFilter === 'videos') {
           matchFilter = mediaType === 'video';
+        } else if (activeFilter === 'images') {
+          matchFilter = mediaType === 'image' && filter === 'gallery';
         } else {
           matchFilter = filter === activeFilter;
         }
@@ -854,6 +1040,14 @@ const filters = [
       });
     });
 
+    filterJumpBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.mediaFilterJump;
+        const targetBtn = filterBtns.find((b) => b.dataset.mediaFilter === targetId);
+        targetBtn?.click();
+      });
+    });
+
     pagePrev?.addEventListener('click', () => {
       if (currentPage <= 1) return;
       currentPage -= 1;
@@ -885,7 +1079,7 @@ const filters = [
       });
     });
 
-    items.forEach((item) => {
+    allInteractiveItems.forEach((item) => {
       if (item.dataset.nsfw !== 'true') return;
 
       const overlay = item.querySelector<HTMLButtonElement>('.media-card__nsfw');
@@ -896,7 +1090,7 @@ const filters = [
       });
     });
 
-    items.forEach((item) => {
+    allInteractiveItems.forEach((item) => {
       if (item.dataset.mediaType !== 'image') return;
       const trigger = item.querySelector<HTMLButtonElement>('[data-media-lightbox-trigger]');
       trigger?.addEventListener('click', (e) => {
@@ -921,30 +1115,6 @@ const filters = [
 
     applyFilters();
     updateSectionHeader();
-
-    items.forEach((item) => {
-      item.querySelectorAll('img').forEach((img) => {
-        img.addEventListener('error', () => {
-          fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
-            body: JSON.stringify({
-              sessionId: '28e868',
-              runId: 'post-fix',
-              hypothesisId: 'H1',
-              location: 'PhotosVideosTab.astro:imgError',
-              message: 'Photos tab img load error',
-              data: {
-                src: img.currentSrc || img.src || null,
-                alt: img.alt || null,
-                filter: item.dataset.filter ?? null,
-              },
-              timestamp: Date.now(),
-            }),
-          }).catch(() => {});
-        });
-      });
-    });
   }
 
   initMediaGallery();

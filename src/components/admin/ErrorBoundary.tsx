@@ -19,24 +19,6 @@ export class AdminErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Admin panel error:', error, info);
-    // #region agent log
-    fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '28e868' },
-      body: JSON.stringify({
-        sessionId: '28e868',
-        runId: 'pre-fix',
-        hypothesisId: 'H2',
-        location: 'ErrorBoundary.tsx:componentDidCatch',
-        message: 'Admin error boundary caught error',
-        data: {
-          errorMessage: error.message,
-          componentStack: info.componentStack?.slice(0, 500) ?? null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }
 
   render() {

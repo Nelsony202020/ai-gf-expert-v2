@@ -1,12 +1,7 @@
-export type MediaFilter =
-  | 'all'
-  | 'proof'
-  | 'videos'
-  | 'characters'
-  | 'chat'
-  | 'generator'
-  | '18plus'
-  | 'gallery';
+/** Tag-based grouping for gallery cards (image/video type is separate on MediaItem.type). */
+export type MediaGalleryTag = 'gallery' | 'characters' | 'chat';
+
+export type MediaFilter = MediaGalleryTag | 'all' | 'images' | 'videos' | '18plus';
 
 export interface MediaItem {
   id: string;
@@ -15,7 +10,7 @@ export interface MediaItem {
   thumb: string;
   alt: string;
   caption: string;
-  filter: Exclude<MediaFilter, 'all'>;
+  filter: MediaGalleryTag;
   nsfw?: boolean;
 }
 
@@ -63,40 +58,13 @@ export const auraAiMediaGallery: MediaItem[] = [
     filter: 'chat',
   },
   {
-    id: 'proof-char-lib',
-    type: 'image',
-    src: img('char-lib', 900, 1200),
-    thumb: img('char-lib', 400, 300),
-    alt: 'Character library proof',
-    caption: 'Character Library',
-    filter: 'proof',
-  },
-  {
-    id: 'proof-filters',
-    type: 'image',
-    src: img('char-filters', 900, 1200),
-    thumb: img('char-filters', 400, 300),
-    alt: 'Filter panel proof',
-    caption: 'Discovery filters',
-    filter: 'proof',
-  },
-  {
-    id: 'proof-browse',
-    type: 'video',
-    src: img('char-browse-vid', 900, 1200),
-    thumb: img('char-browse', 400, 300),
-    alt: 'Browsing test recording',
-    caption: 'Browsing test (video)',
-    filter: 'proof',
-  },
-  {
     id: 'video-review-clip',
     type: 'video',
     src: img('aura-review-clip', 1280, 720),
     thumb: img('aura-review-clip', 400, 300),
     alt: 'Review clip',
     caption: 'Review clip excerpt',
-    filter: 'videos',
+    filter: 'gallery',
   },
   {
     id: 'img-gen-1',
@@ -105,7 +73,7 @@ export const auraAiMediaGallery: MediaItem[] = [
     thumb: img('img-gen-safe', 400, 300),
     alt: 'Image generator output',
     caption: 'Image generator — portrait',
-    filter: 'generator',
+    filter: 'gallery',
   },
   {
     id: 'img-gen-2',
@@ -114,7 +82,7 @@ export const auraAiMediaGallery: MediaItem[] = [
     thumb: img('img-gen-style', 400, 300),
     alt: 'Anime style generation',
     caption: 'Image generator — anime style',
-    filter: 'generator',
+    filter: 'gallery',
   },
   {
     id: 'img-gen-nsfw',
@@ -123,7 +91,7 @@ export const auraAiMediaGallery: MediaItem[] = [
     thumb: img('img-gen-nsfw', 400, 300),
     alt: 'NSFW generation sample',
     caption: 'Image generator — mature content',
-    filter: 'generator',
+    filter: 'gallery',
     nsfw: true,
   },
   {

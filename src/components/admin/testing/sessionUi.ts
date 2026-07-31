@@ -2,6 +2,7 @@
 
 import type { EntityRow } from '../api';
 import type { RawValue } from './EvidenceInput';
+import { formatChecklistAnswer } from '../../lib/testing/evidenceExport';
 import { testerQuestion } from './presentation';
 
 export interface SessionItem {
@@ -24,6 +25,14 @@ export function formatAnswerSummary(def: EntityRow, raw: RawValue | undefined, n
     return String(raw.status);
   }
   if ('value' in raw) {
+    const checklistLabel =
+      def.slug === 'included-features'
+        ? 'features'
+        : def.slug === 'pricing-clarity'
+          ? 'features'
+          : 'items';
+    const checklist = formatChecklistAnswer(raw, { itemLabel: checklistLabel });
+    if (checklist) return checklist;
     const unit = def.unit ? ` ${def.unit}` : '';
     if (def.measurementType === 'percentage') return `${raw.value}%`;
     return `${raw.value}${unit}`;

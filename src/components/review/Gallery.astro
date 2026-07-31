@@ -126,25 +126,6 @@ const galleryLightboxItems = JSON.stringify(
 </style>
 
 <script>
-  const DEBUG_ENDPOINT = 'http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1';
-  const DEBUG_SESSION = '28e868';
-
-  function debugLog(message: string, data: Record<string, unknown>, hypothesisId: string) {
-    fetch(DEBUG_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': DEBUG_SESSION },
-      body: JSON.stringify({
-        sessionId: DEBUG_SESSION,
-        runId: 'post-fix',
-        hypothesisId,
-        location: 'Gallery.astro',
-        message,
-        data,
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }
-
   document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((root) => {
     if (root.dataset.bound === 'true') return;
     root.dataset.bound = 'true';
@@ -192,7 +173,6 @@ const galleryLightboxItems = JSON.stringify(
         mainTrigger.dataset.lightboxType = mediaType;
       }
 
-      debugLog('Gallery main media switched', { full, alt, mediaType, isVideo }, 'H1');
     }
 
     thumbs.forEach((thumb) => {
@@ -206,29 +186,5 @@ const galleryLightboxItems = JSON.stringify(
       });
     });
 
-    root.querySelectorAll('img, video').forEach((el) => {
-      debugLog(
-        'Gallery media mounted',
-        {
-          tag: el.tagName.toLowerCase(),
-          src: (el as HTMLImageElement | HTMLVideoElement).src || null,
-          hidden: el.classList.contains('hidden'),
-        },
-        'H1',
-      );
-
-      if (el.tagName.toLowerCase() !== 'img') return;
-      el.addEventListener('error', () => {
-        const img = el as HTMLImageElement;
-        debugLog(
-          'Gallery img load error',
-          {
-            src: img.currentSrc || img.src || null,
-            alt: img.alt || null,
-          },
-          'H1',
-        );
-      });
-    });
   });
 </script>

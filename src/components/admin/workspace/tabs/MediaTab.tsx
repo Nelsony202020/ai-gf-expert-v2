@@ -83,16 +83,6 @@ function sectionBadgeTone(section: MediaSection): 'pink' | 'blue' | 'gray' {
 }
 
 // Videos are not a category — mediaType === 'video' is detected automatically.
-const ROLE_OPTIONS = [
-  { value: 'gallery', label: 'Gallery' },
-  { value: 'proof', label: 'Proof' },
-];
-
-function roleLabel(role: string | null | undefined): string {
-  const known = ROLE_OPTIONS.find((r) => r.value === role);
-  if (known) return known.label;
-  return role ? role.replace(/_/g, ' ') : 'gallery';
-}
 
 type AltFilter = 'all' | 'no-alt' | 'adult' | 'safe';
 type ViewMode = 'grid' | 'list';
@@ -217,9 +207,8 @@ export function MediaTab() {
     }
   }
 
-  async function applyBulkEdit(patch: { role?: string; altText?: string; caption?: string }) {
+  async function applyBulkEdit(patch: { altText?: string; caption?: string }) {
     const fields: Record<string, unknown> = {};
-    if (patch.role) fields.role = patch.role;
     if (patch.altText?.trim()) fields.altText = patch.altText.trim();
     if (patch.caption?.trim()) fields.caption = patch.caption.trim();
     if (Object.keys(fields).length === 0) return;
@@ -1277,9 +1266,8 @@ function BulkEditModal({
 }: {
   count: number;
   onClose: () => void;
-  onApply: (patch: { role?: string; altText?: string; caption?: string }) => Promise<void>;
+  onApply: (patch: { altText?: string; caption?: string }) => Promise<void>;
 }) {
-  const [role, setRole] = useState('character');
   const [altText, setAltText] = useState('');
   const [caption, setCaption] = useState('');
   const [busy, setBusy] = useState(false);
@@ -1289,16 +1277,8 @@ function BulkEditModal({
       <div className="space-y-4">
         <p className="text-xs text-slate-500">
           Fill in only the fields you want to change. Empty alt text and caption fields are skipped.
+          Character, chat, and proof tags are set per item or automatically from evidence uploads.
         </p>
-        <Field label="Category">
-          <Select value={role} onChange={(e) => setRole(e.target.value)}>
-            {ROLE_OPTIONS.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
         <Field label="Alt text" help="Applied to all selected items when filled in.">
           <TextInput
             value={altText}
@@ -1322,7 +1302,6 @@ function BulkEditModal({
             onClick={() => {
               setBusy(true);
               void onApply({
-                role,
                 altText,
                 caption,
               }).finally(() => setBusy(false));
@@ -1419,7 +1398,7 @@ function MediaEditForm({
   const toast = useToast();
   const { busy, run } = useAsyncToast();
 
-  const isProof = roleState.placement === 'proof';
+  const isProof = getMediaPlacement(row) === 'proof';
 
   async function aiAltText() {
     setAiBusy(true);
@@ -1441,7 +1420,9 @@ function MediaEditForm({
   async function save(e: React.FormEvent) {
     e.preventDefault();
     const nextRoleState = roleState;
-    const { role, mediaTags } = writeMediaRoleState(nextRoleState);
+    const { role, mediaTags } = writeMediaRoleState(nextRoleState, {
+      placement: isProof ? 'proof' : 'gallery',
+    });
     const wasHero = isHeroMedia(row);
     const becomingHero = nextRoleState.hero && !wasHero;
     const heroSortOrder =

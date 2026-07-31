@@ -1,5 +1,6 @@
 ---
 import type { HomeFeaturedCharacter } from '../../data/homepage';
+import { pickCharacterDisplayImage } from '../../lib/characters/public';
 import CharacterStoryHighlights from '../review/CharacterStoryHighlights.astro';
 
 interface Props {
@@ -10,7 +11,14 @@ const { characters } = Astro.props;
 const carouselChars = characters.slice(0, 6);
 /** Spotlight card uses the first admin featured character (position 1). */
 const spotlight: HomeFeaturedCharacter | null = characters[0] ?? null;
-const portrait = spotlight?.storySlides[0] ?? spotlight?.avatar ?? '';
+const portrait = spotlight
+  ? pickCharacterDisplayImage(
+      spotlight.avatar,
+      spotlight.storySlides,
+      'avatar-first',
+      spotlight.storyImageSlides,
+    )
+  : '';
 ---
 
 <div class="home-featured-chars">

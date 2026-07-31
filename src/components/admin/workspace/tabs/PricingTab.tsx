@@ -25,7 +25,7 @@ import {
   withDefaultTokenExpiration,
   type CreditCurrencyLike,
 } from '../../../../lib/pricing/credit-currency';
-import { PRICING_PROOF_CAPTION, pricingProofMediaPatch } from '../../../../lib/media/catalog';
+import { PRICING_PROOF_CAPTION, pricingProofMediaPatch, galleryTagsFromRoleState, type MediaRoleState } from '../../../../lib/media/catalog';
 import { useAsyncToast, useToastError } from '../../Toast';
 import {
   Badge,
@@ -44,6 +44,7 @@ import { UsageScenariosPanel } from './UsageScenariosPanel';
 import { PricingImportCard } from '../../ai-pricing/PricingImportCard';
 import { PricingReviewModal, type PricingDraftClient } from '../../ai-pricing/PricingReviewModal';
 import { ProofThumb } from '../../testing/ProofThumb';
+import { MediaRoleFields } from './MediaRoleFields';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -1201,6 +1202,12 @@ function PricingEvidence({
   const [error, setError] = useState<string | null>(null);
   useToastError(error, () => setError(null));
   const fileInput = useRef<HTMLInputElement>(null);
+  const [addToGallery, setAddToGallery] = useState(false);
+  const [galleryRoleState, setGalleryRoleState] = useState<MediaRoleState>({
+    character: false,
+    contextTag: '',
+    hero: false,
+  });
   const ids: string[] = Array.isArray(row.evidenceMediaIds) ? row.evidenceMediaIds : [];
   const mediaById = new Map(ws.related.mediaAll.map((m) => [m.id, m]));
 
@@ -1225,12 +1232,24 @@ function PricingEvidence({
         const form = new FormData();
         form.set('file', file);
         form.set('adult', '0');
-        form.set('role', 'proof');
+        form.set('role', addToGallery ? 'gallery' : 'proof');
         form.set('caption', PRICING_PROOF_CAPTION);
         form.set('testCategory', 'pricing');
         form.set('altText', altText);
         form.set('productId', ws.productId);
+        if (addToGallery) {
+          form.set('mediaTags', JSON.stringify(galleryTagsFromRoleState(galleryRoleState)));
+        }
         const created = await api.upload<{ id: string }>('/api/admin/media/upload', form);
+        if (addToGallery) {
+          await dataApi.update('media', created.id, {
+            approved: true,
+            role: 'gallery',
+            mediaTags: galleryTagsFromRoleState(galleryRoleState),
+            caption: PRICING_PROOF_CAPTION,
+            testCategory: 'pricing',
+          });
+        }
         newIds.push(created.id);
       }
       await patch(newIds);
@@ -1305,6 +1324,29 @@ function PricingEvidence({
         )}
         {!canEdit && ids.length === 0 && <span className="text-xs text-slate-400">none</span>}
       </div>
+      {canEdit && (
+        <div className={compact ? 'mt-1.5' : 'mt-2'}>
+          <label className="inline-flex cursor-pointer items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+            <input
+              type="checkbox"
+              checked={addToGallery}
+              onChange={(e) => setAddToGallery(e.target.checked)}
+              className="rounded border-slate-300"
+            />
+            Also add to Photos &amp; Videos gallery
+          </label>
+          {addToGallery && (
+            <div className="mt-2">
+              <MediaRoleFields
+                value={galleryRoleState}
+                onChange={setGalleryRoleState}
+                showHero={false}
+                radioName={`pricing-evidence-gallery-${row.id}`}
+              />
+            </div>
+          )}
+        </div>
+      )}
       {error && <p className="mt-1 text-[10px] text-red-500">{error}</p>}
       <input
         ref={fileInput}
@@ -1325,11 +1367,22 @@ function PricingEvidence({
             setShowPicker(false);
             void (async () => {
               try {
-                await dataApi.update('media', id, pricingProofMediaPatch(altText));
+                if (addToGallery) {
+                  await dataApi.update('media', id, {
+                    approved: true,
+                    role: 'gallery',
+                    mediaTags: galleryTagsFromRoleState(galleryRoleState),
+                    caption: PRICING_PROOF_CAPTION,
+                    testCategory: 'pricing',
+                    altText: altText.trim() || undefined,
+                  });
+                } else {
+                  await dataApi.update('media', id, pricingProofMediaPatch(altText));
+                }
                 await ws.refreshRelated();
                 await patch([...ids, id]);
               } catch (e) {
-                setError(e instanceof Error ? e.message : 'Could not tag media as pricing proof');
+                setError(e instanceof Error ? e.message : 'Could not attach pricing evidence');
               }
             })();
           }}
