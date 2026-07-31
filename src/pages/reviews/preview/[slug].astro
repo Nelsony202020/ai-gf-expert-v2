@@ -20,6 +20,17 @@ import RoundupAffiliateFineprint from '../../../components/roundup/RoundupAffili
 import { getProductFeaturedIn, loadProductPreviewBySlug } from '../../../lib/content/store';
 import { loadDraftRatingsViewModel } from '../../../lib/draft-ratings/loadDraftRatingsData';
 import { resolveProductPageHead } from '../../../lib/seo/productMeta';
+import { verifyPreviewToken, PREVIEW_COOKIE_NAME } from '../../../lib/previewSession';
+
+// Previews expose unpublished products, so production requires the editor
+// cookie issued by /api/admin/preview-session (set automatically on admin
+// sign-in). Without it the URL behaves like any unknown page.
+if (import.meta.env.PROD && !verifyPreviewToken(Astro.cookies.get(PREVIEW_COOKIE_NAME)?.value)) {
+  return new Response('Not found', {
+    status: 404,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  });
+}
 
 const { slug } = Astro.params;
 const product = slug ? await loadProductPreviewBySlug(slug) : null;

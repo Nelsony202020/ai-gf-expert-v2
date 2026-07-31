@@ -15,12 +15,28 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+.env.local
+.env.*.local
+
+# vercel build output / project link
+.vercel/
+
+# one-off export artifacts
+# (methodology-full-export.json is NOT ignored — the /test pages read it at build)
+site-url-export*.csv
+site-url-export*.json
+site-url-export*.md
+methodology-export*.md
+methodology-full-export.md
 
 # macOS
 .DS_Store
 
 # jetbrains / vscode
 .idea/
+
+# cursor agent scratch
+.cursor/
 
 # local screenshot / headless-browser scratch
 .shots/
