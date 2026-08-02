@@ -3,10 +3,14 @@ import { resolveMediaUrl } from '../media/url';
 import type { Product } from '../../data/products';
 import { buildDraftRatingsViewModel } from './buildDraftRatingsViewModel';
 import { resolveEvidenceDisplayValue } from './resolveEvidenceDisplay';
+import { loadApprovedExplanationMapBySlug } from '../ai-explanations/publicExplanations';
+import { loadApprovedTakeawayMapBySlug } from '../subscore-takeaways/publicTakeaways';
+import { LEGACY_AGGREGATE_EVIDENCE_SLUGS } from '../ratings/evidenceIndex';
 import type { DraftRatingsDbContext, DraftRatingsViewModel, DraftProofItem } from './types';
 
 function mapProof(media: any[]): DraftProofItem[] {
   return (media ?? [])
+    .filter((m) => !m.deletedAt)
     .map((m) => {
       const url = resolveMediaUrl(m);
       if (!url) return null;
@@ -93,15 +97,27 @@ export async function loadDraftRatingsDbContext(slug: string, preview = false): 
       (product.scoreSnapshots ?? []).find((s: any) => s.testRun?.isCurrentPublished)?.methodologyVersion ??
       testRun?.methodologyVersion;
 
-    const evidenceResults = evidenceRows.map((r: any) => {
+    const approvedExplanations = await loadApprovedExplanationMapBySlug(slug);
+    const approvedSubscoreTakeaways = await loadApprovedTakeawayMapBySlug(slug);
+
+    const evidenceResults = evidenceRows
+      .filter((r: any) => {
+        const def = r.evidenceDefinition ?? {};
+        if (def.active === false) return false;
+        const slug = String(def.slug ?? '');
+        if (LEGACY_AGGREGATE_EVIDENCE_SLUGS.has(slug)) return false;
+        return true;
+      })
+      .map((r: any) => {
       const def = r.evidenceDefinition ?? {};
       const sub = def.subscore ?? {};
       const cat = sub.category ?? {};
       const proof = mapProof(r.attachments ?? []);
+      const notApplicable = Boolean(r.notApplicable);
       const displayValue = resolveEvidenceDisplayValue(def, {
         publicResult: r.publicResult,
         rawValue: r.rawValue,
-        notApplicable: r.notApplicable,
+        notApplicable,
         isUnknown: r.isUnknown,
         unableToVerify: r.unableToVerify,
       });
@@ -113,9 +129,9 @@ export async function loadDraftRatingsDbContext(slug: string, preview = false): 
         subscoreSlug: sub.slug ? String(sub.slug) : undefined,
         publicResult: displayValue || null,
         rawValue: r.rawValue ?? null,
-        normalizedScore: r.normalizedScore ?? null,
+        normalizedScore: notApplicable ? null : r.normalizedScore ?? null,
         required: Boolean(def.required),
-        notApplicable: Boolean(r.notApplicable),
+        notApplicable,
         isUnknown: Boolean(r.isUnknown),
         unableToVerify: Boolean(r.unableToVerify),
         verificationStatus: r.verificationStatus ?? null,
@@ -140,6 +156,8 @@ export async function loadDraftRatingsDbContext(slug: string, preview = false): 
         : null,
       evidenceResults,
       subscoresByCategory,
+      approvedExplanations,
+      approvedSubscoreTakeaways,
     };
   } catch (error) {
     console.error('[draft-ratings] DB context load failed', error);

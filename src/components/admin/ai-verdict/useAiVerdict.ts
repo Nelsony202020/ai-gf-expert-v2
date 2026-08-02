@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { api } from '../api';
-import type { AiVerdictScope } from '../../../lib/ai-verdict/config';
+import type { AiVerdictScope } from '../../../lib/ai-verdict/types';
 import type { AiSuggestionOutput, KeyFinding } from '../../../lib/ai-verdict/suggestionSchema';
 
 export interface AiSuggestionDto {

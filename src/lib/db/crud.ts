@@ -25,27 +25,56 @@ function config(entity: string): EntityConfig {
   return cfg;
 }
 
+/**
+ * Link includes for reads. Media rows cache a signed storage URL in `url`
+ * that expires, so any media link (and the media namespace itself) must also
+ * include the `file` link — its `url` is re-signed by InstantDB on each query.
+ */
+function readLinkIncludes(cfg: EntityConfig): Record<string, object> {
+  const linkIncludes: Record<string, object> = {};
+  for (const [label, target] of Object.entries(cfg.links ?? {})) {
+    linkIncludes[label] = target === 'media' ? { file: {} } : {};
+  }
+  if (cfg.namespace === 'media') linkIncludes.file = {};
+  return linkIncludes;
+}
+
+/** Overwrite a media row's cached (expiring) `url` with the fresh storage URL. */
+function refreshMediaUrl(mediaRow: any) {
+  if (mediaRow && typeof mediaRow === 'object' && mediaRow.file?.url) {
+    mediaRow.url = mediaRow.file.url;
+  }
+}
+
+function refreshRowMediaUrls(row: any, cfg: EntityConfig) {
+  if (cfg.namespace === 'media') refreshMediaUrl(row);
+  for (const [label, target] of Object.entries(cfg.links ?? {})) {
+    if (target !== 'media') continue;
+    const linked = row?.[label];
+    if (Array.isArray(linked)) linked.forEach(refreshMediaUrl);
+    else refreshMediaUrl(linked);
+  }
+}
+
 export async function listEntities(entity: string, includeDeleted = false) {
   const cfg = config(entity);
   const db = getDb();
-  const linkIncludes: Record<string, object> = {};
-  for (const label of Object.keys(cfg.links ?? {})) linkIncludes[label] = {};
-  const result = await (db.query as any)({ [cfg.namespace]: { ...linkIncludes } });
+  const result = await (db.query as any)({ [cfg.namespace]: { ...readLinkIncludes(cfg) } });
   let rows = (result as any)[cfg.namespace] as any[];
   if (cfg.softDelete && !includeDeleted) rows = rows.filter((r) => !r.deletedAt);
+  for (const row of rows) refreshRowMediaUrls(row, cfg);
   return rows;
 }
 
 export async function getEntity(entity: string, recordId: string) {
   const cfg = config(entity);
   const db = getDb();
-  const linkIncludes: Record<string, object> = {};
-  for (const label of Object.keys(cfg.links ?? {})) linkIncludes[label] = {};
   const result = await (db.query as any)({
-    [cfg.namespace]: { $: { where: { id: recordId } }, ...linkIncludes },
+    [cfg.namespace]: { $: { where: { id: recordId } }, ...readLinkIncludes(cfg) },
   });
   const row = (result as any)[cfg.namespace]?.[0];
   if (!row) throw new HttpError(404, `${entity} not found`);
+  refreshRowMediaUrls(row, cfg);
   return row;
 }
 

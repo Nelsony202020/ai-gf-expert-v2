@@ -9,7 +9,7 @@ import { TestingHint } from './TestingHint';
 import { EvidenceInput, type RawValue } from './EvidenceInput';
 import { QuestionLabel } from './QuestionLabel';
 import { renderPublicResult } from './presentation';
-import { formatChecklistAnswer } from '../../../lib/testing/evidenceExport';
+import { formatChecklistAnswer } from '../../../lib/testing/evidenceFormat';
 import type { AutofillSuggestion } from './pricingAutofill';
 import { SessionAnswerTable } from './SessionAnswerTable';
 import { SessionProofZone } from './SessionProofZone';

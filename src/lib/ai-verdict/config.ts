@@ -1,8 +1,7 @@
 import { env } from '../env';
 
+export type { AiVerdictScope } from './types';
 export const PROMPT_VERSION = 'v1';
-
-export type AiVerdictScope = 'overall' | 'category' | 'field' | 'outline';
 
 export function aiVerdictConfig() {
   return {

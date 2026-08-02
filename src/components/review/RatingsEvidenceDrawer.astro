@@ -1,6 +1,11 @@
 ---
 import type { DraftEvidenceCategory } from '../../lib/draft-ratings/types';
-import { proofShortCaption } from '../../lib/draft-ratings/evidenceDrawerContent';
+import { proofShortCaption, enhancedScopeDescription } from '../../lib/draft-ratings/evidenceDrawerContent';
+import {
+  getEvidenceMethodology,
+  getSubscoreMethodology,
+} from '../../data/evidence-drawer-methodology';
+import { getSubscoreDescription } from '../../data/subscore-descriptions';
 import { fmtScore } from '../../lib/scores';
 import { getDraftScoreChipClass } from '../../lib/draft-ratings/scoreBands';
 import DraftScorePill from './DraftScorePill.astro';
@@ -18,6 +23,8 @@ interface SubscoreCalcItem {
 
 interface SubscoreCalc {
   drawerId: string;
+  categorySlug: string;
+  subscoreSlug: string;
   categoryName: string;
   subscoreName: string;
   subscoreScore: number | null;
@@ -57,6 +64,7 @@ function interpClass(tone?: string): string {
   if (tone === 'good') return 'ratings-drawer-interp-text ratings-drawer-interp-text--good';
   if (tone === 'fair') return 'ratings-drawer-interp-text ratings-drawer-interp-text--fair';
   if (tone === 'poor') return 'ratings-drawer-interp-text ratings-drawer-interp-text--poor';
+  if (tone === 'na') return 'ratings-drawer-interp-text ratings-drawer-interp-text--na';
   return 'ratings-drawer-interp-text';
 }
 
@@ -104,6 +112,14 @@ function breadcrumbParts(breadcrumb: string): string[] {
         Boolean(ec.liveCamProof?.length);
       const showBonusSection = showLiveCam || Boolean(ec.bonusExtras?.length);
       const nav = drawerNavById[ec.drawerId] ?? {};
+      const methodology = getEvidenceMethodology(
+        ec.categorySlug ?? '',
+        ec.subscoreSlug ?? '',
+        ec.slug,
+      );
+      const whatItMeasures =
+        methodology?.whatItMeasures ?? enhancedScopeDescription(ec.slug);
+      const howWeTested = methodology?.howWeTested;
 
       return (
         <template data-ratings-drawer-template={ec.drawerId}>
@@ -179,9 +195,9 @@ function breadcrumbParts(breadcrumb: string): string[] {
 
             <hr class="ratings-drawer-divider" />
 
-            {(ec.scopeDescription || ec.whatThisMeans) && (
+            {(whatItMeasures || ec.whatThisMeans) && (
               <div class="ratings-drawer-dual-cards">
-                {ec.scopeDescription && (
+                {whatItMeasures && (
                   <section class="ratings-drawer-card ratings-drawer-card--measures">
                     <p class="ratings-drawer-card__label">
                       <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
@@ -189,7 +205,7 @@ function breadcrumbParts(breadcrumb: string): string[] {
                       </span>
                       What this measures
                     </p>
-                    <p class="ratings-drawer-card__text">{ec.scopeDescription}</p>
+                    <p class="ratings-drawer-card__text">{whatItMeasures}</p>
                   </section>
                 )}
                 {ec.whatThisMeans && (
@@ -310,10 +326,10 @@ function breadcrumbParts(breadcrumb: string): string[] {
               </section>
             )}
 
-            {ec.howWeTested && (
+            {howWeTested && (
               <section class="ratings-drawer-section">
                 <p class="ratings-drawer-section__label">How we tested</p>
-                <p class="ratings-drawer-section__text">{ec.howWeTested}</p>
+                <p class="ratings-drawer-section__text">{howWeTested}</p>
                 {ec.methodologyUrl && (
                   <a href={ec.methodologyUrl} class="ratings-drawer-method-link">
                     View full {ec.name} methodology
@@ -440,6 +456,11 @@ function breadcrumbParts(breadcrumb: string): string[] {
 
   {
     subscoreCalcs.map((calc) => {
+      const subscoreMethodology = getSubscoreMethodology(calc.categorySlug, calc.subscoreSlug);
+      const calcWhatItMeasures =
+        subscoreMethodology?.whatItMeasures ??
+        getSubscoreDescription(calc.categorySlug, calc.subscoreName);
+      const scoreCalculation = subscoreMethodology?.scoreCalculation;
       const parts = calc.items
         .filter((i) => i.contribution != null)
         .map((i) => i.contribution!.toFixed(2));
@@ -501,7 +522,7 @@ function breadcrumbParts(breadcrumb: string): string[] {
                   </span>
                   What this measures
                 </p>
-                <p class="ratings-drawer-card__text">{calc.scopeDescription}</p>
+                <p class="ratings-drawer-card__text">{calcWhatItMeasures}</p>
               </section>
               <section class="ratings-drawer-card ratings-drawer-card--finding">
                 <p class="ratings-drawer-card__label">
@@ -516,13 +537,6 @@ function breadcrumbParts(breadcrumb: string): string[] {
 
             <section class="ratings-drawer-section ratings-drawer-section--calc">
               <p class="ratings-drawer-section__label">Breakdown</p>
-              {
-                calc.excludedNote && (
-                  <p class="ratings-drawer-calc__excluded-note" role="note">
-                    {calc.excludedNote}
-                  </p>
-                )
-              }
               <div class="ratings-drawer-table-wrap">
                 <table class="ratings-drawer-results ratings-drawer-results--calc">
                   <thead>
@@ -583,10 +597,10 @@ function breadcrumbParts(breadcrumb: string): string[] {
             </section>
 
             <section class="ratings-drawer-section ratings-drawer-section--calc-footer">
-              <p class="ratings-drawer-section__label">About the calculation</p>
+              <p class="ratings-drawer-section__label">How the score is calculated</p>
               <p class="ratings-drawer-section__text">
-                Each evidence category is scored on a 0–10 scale, weighted, and combined for the
-                final {calc.subscoreName} score.
+                {scoreCalculation ??
+                  `Each evidence category is scored on a 0–10 scale, weighted, and combined for the final ${calc.subscoreName} score.`}
               </p>
             </section>
 

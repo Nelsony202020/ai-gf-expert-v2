@@ -1,69 +1,101 @@
 import { toSlug } from '../lib/slugs';
 
-/** Plain-language “What it is” copy for each subscore (methodology v3.1). */
+/** “What it is” copy for overall performance score tooltips (methodology v3.1). */
+export const OVERALL_TOOLTIP_DESCRIPTION =
+  'Shows how well the app performs across all eight testing areas, with more important areas counting more toward the final result.';
+
+/** “What it is” copy for category score tooltips. */
+const CATEGORY_TOOLTIP_DESCRIPTIONS: Record<string, string> = {
+  characters:
+    'Shows how good the ready-made character library is, including choice, discovery, and character quality.',
+  customization:
+    'Shows how much control users have when creating their own AI character.',
+  chat:
+    'Shows how well the AI understands users, feels human, and performs reliably during conversations.',
+  'chat-features':
+    'Shows what users can do inside the chat beyond sending normal text messages.',
+  images:
+    'Shows how good the generated images are and how well the image tools work.',
+  video:
+    'Shows what video features the app offers and how good the generated videos are.',
+  privacy:
+    'Shows how well the app protects personal data, chats, accounts, and billing information.',
+  pricing:
+    'Shows what users receive for their money and what the app really costs during regular use.',
+};
+
+/** “What it is” copy for each subscore tooltip. */
 const SUBSCORE_DESCRIPTIONS: Record<string, string> = {
   'characters/variety':
-    'How many ready-made characters the app offers, and how much variety you get in styles, genders, personalities, and roleplay types.',
+    'Measures how much real choice the library offers across character numbers, styles, identities, personalities, and scenarios.',
   'characters/discovery':
-    'How easy it is to find a character that fits what you want — filters, categories, search, and browsing.',
+    'Measures how easily users can find characters that match their interests using search, filters, categories, and browsing.',
   'characters/quality':
-    'How good the character library is overall: duplicates, originality, profile completeness, and image quality.',
+    'Measures whether characters feel original, complete, visually polished, and different from one another.',
 
   'customization/appearance':
-    'How many appearance options you get when creating a character — face, hair, body, clothing, and related controls.',
+    'Measures the range of physical features, styles, clothing, and other appearance options available.',
   'customization/personality':
-    'How much you can shape a character’s personality — traits, interests, communication style, relationship type, and voice.',
+    'Measures how deeply users can shape the character’s personality, interests, relationship, role, voice, and preferences.',
   'customization/control':
-    'How much control you have over creation — custom prompts, editing after creation, detail level, and previews.',
+    'Measures how much freedom users have to add custom instructions, edit their character, and preview the result.',
 
   'chat/understanding':
-    'How well the AI understands you — memory, staying on topic, following instructions, and keeping roleplay accurate.',
+    'Measures how well the AI remembers details, follows instructions, understands context, and stays accurate during roleplay.',
   'chat/realism':
-    'How natural the conversation feels — realistic wording, consistent personality, emotion, and initiative.',
+    'Measures how natural, emotional, consistent, and believable the AI feels while chatting.',
   'chat/reliability':
-    'How dependable chat is day to day — repetition, refusals, reply speed, errors, and recovery from mistakes.',
+    'Measures how consistently the chat works without repetition, refusals, errors, slow replies, or broken conversations.',
 
-  'chat-features/media':
-    'What media you can send and receive in chat — images, voice messages, video, GIFs, and reactions.',
-  'chat-features/interaction':
-    'Interactive chat features — voice calls, chat modes, group chat, double texting, and proactive messages.',
-  'chat-features/controls':
-    'Controls you have in chat — edit or delete messages, regenerate replies, manage memory, reset, and export.',
   'chat-features/platform-extras':
-    'Optional experiences beyond standard chat. Live cam and named bonus features each contribute half the subscore when present; missing extras are not penalized.',
+    'Measures special experiences outside standard chat, such as live cam features and other unique tools.',
+  'chat-features/media':
+    'Measures the images, videos, voice messages, GIFs, and reactions users can send or receive in chat.',
+  'chat-features/interaction':
+    'Measures features that make conversations more active, such as calls, chat modes, group chats, and proactive messages.',
+  'chat-features/controls':
+    'Measures how much control users have over conversations, including editing, deleting, regenerating, saving memories, resetting, and exporting chats.',
 
   'images/quality':
-    'How good generated images look — realism, detail, composition, visual errors, and maximum resolution.',
+    'Measures realism, detail, composition, resolution, and visible image errors.',
   'images/accuracy':
-    'How well images match your prompts and stay consistent with the character’s face, body, and style.',
+    'Measures how closely images follow the prompt and preserve the character’s face, body, identity, and style.',
   'images/experience':
-    'What using the image generator feels like — speed, failures, where you can generate, editing, and cost.',
+    'Measures how fast, reliable, flexible, and easy the image generator is to use.',
 
-  'video/capabilities':
-    'What video features exist — text-to-video, image-to-video, chat video, audio, length, and resolution limits.',
   'video/quality':
-    'How good generated videos look — realism, motion, prompt accuracy, consistency, and visual errors.',
+    'Measures motion, accuracy, character consistency, frame stability, and visible video errors.',
   'video/experience':
-    'What using video generation feels like — speed, failures, ease of use, controls, regeneration, and cost.',
+    'Measures how fast, reliable, and easy the video generator is to use, including failures and regeneration options.',
+  'video/capabilities':
+    'Measures what the video system can create, including text-to-video, image-to-video, audio, resolution, and maximum length.',
 
-  'privacy/data-use':
-    'How your data is used — AI training, human review, third-party sharing, ads, retention, and policy clarity.',
   'privacy/user-control':
-    'Your control over your data — deleting chats and accounts, opt-outs, exports, and consent settings.',
+    'Measures whether users can delete, export, or manage their chats, account, personal data, and training preferences.',
   'privacy/security':
-    'Account and payment security — encryption, login protections, two-factor auth, and billing privacy.',
+    'Measures account protection, encryption, two-factor authentication, billing privacy, and known security incidents.',
+  'privacy/data-use':
+    'Measures how clearly the app explains data retention, sharing, advertising, AI training, and human review.',
   'privacy/support':
-    'How easy it is to reach support, how fast they respond, and how helpful they are.',
+    'Measures how easy it is to contact support and how quickly and helpfully the company responds.',
 
   'pricing/plan-value':
-    'What the cheapest monthly subscription costs and includes — price, credits, basic-plan feature access, limits, and annual discount.',
+    'Measures the subscription price, included features, credits, limits, and annual savings.',
   'pricing/usage-costs':
-    'Per-use costs — monthly spend estimate, credit top-ups, voice messages, voice calls, images, and video.',
+    'Measures the real cost of images, video, voice, calls, top-ups, and regular monthly use.',
   'pricing/free-access':
-    'What you can try for free — messages, custom characters, images, video, voice, and free trial without credit card.',
+    'Measures how much users can genuinely test before paying, including free chat, media, characters, and restrictions.',
   'pricing/billing':
-    'Billing transparency — pricing clarity, credit expiry, refunds, easy cancellation, and payment privacy.',
+    'Measures how clearly and fairly the app handles prices, paywalls, credit expiry, refunds, cancellation, and payment privacy.',
 };
+
+export function getOverallTooltipDescription(): string {
+  return OVERALL_TOOLTIP_DESCRIPTION;
+}
+
+export function getCategoryTooltipDescription(categoryKey: string): string {
+  return CATEGORY_TOOLTIP_DESCRIPTIONS[toSlug(categoryKey)] ?? '';
+}
 
 export function getSubscoreDescription(categoryKey: string, subscoreName: string): string {
   const key = `${toSlug(categoryKey)}/${toSlug(subscoreName)}`;

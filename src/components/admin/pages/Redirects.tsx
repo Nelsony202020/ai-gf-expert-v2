@@ -21,7 +21,7 @@ import {
   Icon,
 } from '../ui';
 import { invalidateRegistryCache, useUrlRegistry } from './seo/registry';
-import type { RegistryIssue } from '../../../lib/seo/urlRegistry';
+import type { RegistryIssue } from '../../../lib/seo/urlRegistryTypes';
 
 type TabId = 'active' | 'suggested';
 

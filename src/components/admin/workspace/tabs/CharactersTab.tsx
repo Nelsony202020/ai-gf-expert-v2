@@ -13,6 +13,7 @@ import { DEFAULT_AFFILIATE_REL } from '../../../../lib/affiliate/rel';
 import { resolveCharacterDestination } from '../../../../lib/characters/destinationUrl';
 import { MAX_CHARACTER_STORY_SLIDES } from '../../../../lib/characters/limits';
 import { fileWithInferredMime } from '../../../../lib/media/mime';
+import { resolveMediaUrl } from '../../../../lib/media/url';
 import { Badge, Button, Field, Icon, Modal, TextInput, Toggle } from '../../ui';
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
@@ -103,7 +104,10 @@ export function CharactersTab() {
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {characters.map((c) => {
-              const img = c.image?.url ?? ws.related.mediaAll.find((m) => m.id === c.image?.id)?.url;
+              const img =
+                resolveMediaUrl(c.image) ||
+                resolveMediaUrl(ws.related.mediaAll.find((m) => m.id === c.image?.id)) ||
+                undefined;
               const slides = slideCounts.get(c.id) ?? 0;
               return (
                 <CharacterCard

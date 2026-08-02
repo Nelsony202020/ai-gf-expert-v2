@@ -23,6 +23,7 @@ export interface MediaRowLike {
   url?: string | null;
   altText?: string | null;
   caption?: string | null;
+  testCategory?: string | null;
   adult?: boolean | null;
   approved?: boolean | null;
   deletedAt?: unknown;
@@ -66,8 +67,16 @@ export function galleryTagsFromRoleState(state: Pick<MediaRoleState, 'character'
   return tags;
 }
 
+export const PRICING_PROOF_CAPTION = 'Pricing proof';
+export const PRICING_PROOF_TEST_CATEGORY = 'pricing';
+
+export function isPricingProofMedia(row: MediaRowLike): boolean {
+  if (row.testCategory === PRICING_PROOF_TEST_CATEGORY) return true;
+  return String(row.caption ?? '').trim().toLowerCase() === PRICING_PROOF_CAPTION.toLowerCase();
+}
+
 export function getMediaPlacement(row: MediaRowLike): MediaPlacement {
-  if (row.role === 'proof' || row.evidenceResult) return 'proof';
+  if (row.role === 'proof' || row.evidenceResult || isPricingProofMedia(row)) return 'proof';
   return 'gallery';
 }
 
@@ -206,13 +215,6 @@ export function heroSortOrderUpdates<T extends MediaRowLike>(
   ];
 }
 
-export const PRICING_PROOF_CAPTION = 'Pricing proof';
-export const PRICING_PROOF_TEST_CATEGORY = 'pricing';
-
-export function isPricingProofMedia(row: MediaRowLike): boolean {
-  if (row.testCategory === PRICING_PROOF_TEST_CATEGORY) return true;
-  return String(row.caption ?? '').trim().toLowerCase() === PRICING_PROOF_CAPTION.toLowerCase();
-}
 
 /** Fields applied to media linked from the Pricing tab or AI pricing import. */
 export function pricingProofMediaPatch(altText?: string): {

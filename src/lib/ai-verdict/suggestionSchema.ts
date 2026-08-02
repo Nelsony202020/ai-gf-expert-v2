@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { AiVerdictScope } from './config';
+import type { AiVerdictScope } from './types';
 
 export const aiVerdictScopeSchema = z.enum(['overall', 'category', 'field', 'outline']);
 

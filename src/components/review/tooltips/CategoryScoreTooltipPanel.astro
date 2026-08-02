@@ -6,6 +6,7 @@ import { buildAllScoreBins } from '../../../lib/score-distribution';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
 import { getCategoryBrandIcon, getCategoryBrandIconLight } from '../../../lib/category-brand-icons';
 import BrandIcon from '../../ui/BrandIcon.astro';
+import { getCategoryTooltipDescription } from '../../../data/subscore-descriptions';
 
 interface Props {
   category: RatingCategory;
@@ -29,6 +30,7 @@ const bins = buildAllScoreBins(scorePoints);
 const brandIcon = getCategoryBrandIcon(category.key);
 const brandIconLight = getCategoryBrandIconLight(category.key);
 const useDarkBrandIconOnly = category.key === 'customization' || category.key === 'chat';
+const categoryWhatItIs = getCategoryTooltipDescription(category.key);
 
 const panelClass = [
   'ratings-tooltip-panel',
@@ -47,7 +49,7 @@ const panelClass = [
       <div class="ratings-tooltip-panel__what-block min-w-0">
         <p class="ratings-tooltip-panel__section-title">What it is</p>
         <div class="ratings-tooltip-panel__what-row">
-          <p class="ratings-tooltip-panel__desc">{category.description}</p>
+          <p class="ratings-tooltip-panel__desc">{categoryWhatItIs}</p>
           {
             brandIcon && (
               <div class="ratings-tooltip-panel__brand-slot" aria-hidden="true">

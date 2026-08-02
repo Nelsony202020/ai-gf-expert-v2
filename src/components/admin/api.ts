@@ -15,13 +15,22 @@ export class ApiError extends Error {
   }
 }
 
+/** Normalize API paths to trailing-slash form (defensive; trailingSlash is 'ignore'). */
+function withTrailingSlash(path: string): string {
+  const q = path.indexOf('?');
+  if (q === -1) return path.endsWith('/') ? path : `${path}/`;
+  const base = path.slice(0, q);
+  const query = path.slice(q);
+  return `${base.endsWith('/') ? base : `${base}/`}${query}`;
+}
+
   async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (refreshToken) headers.set('Authorization', `Bearer ${refreshToken}`);
   if (init.body && typeof init.body === 'string') headers.set('Content-Type', 'application/json');
   let res: Response;
   try {
-    res = await fetch(path, { ...init, headers });
+    res = await fetch(withTrailingSlash(path), { ...init, headers });
   } catch {
     throw new ApiError(0, 'Network error — check your connection and try again.');
   }
@@ -44,7 +53,7 @@ export const api = {
     if (refreshToken) headers.set('Authorization', `Bearer ${refreshToken}`);
     let res: Response;
     try {
-      res = await fetch(path, { headers });
+      res = await fetch(withTrailingSlash(path), { headers });
     } catch {
       throw new ApiError(0, 'Network error — check your connection and try again.');
     }

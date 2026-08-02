@@ -33,7 +33,7 @@
   </button>
 
   <div class="image-lightbox__stage" data-lightbox-stage>
-    <img data-lightbox-img class="image-lightbox__img max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" alt="" />
+    <img id="site-image-lightbox-img" data-lightbox-img class="image-lightbox__img max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" alt="" />
     <video
       data-lightbox-video
       class="image-lightbox__video hidden max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
@@ -162,18 +162,17 @@
 
   function initImageLightbox() {
     const lightbox = document.querySelector<HTMLElement>('[data-image-lightbox]');
-    const img = document.querySelector<HTMLImageElement>('[data-lightbox-img]');
-    const video = document.querySelector<HTMLVideoElement>('[data-lightbox-video]');
-    const caption = document.querySelector<HTMLElement>('[data-lightbox-caption]');
-    const counter = document.querySelector<HTMLElement>('[data-lightbox-counter]');
-    const closeBtn = document.querySelector<HTMLButtonElement>('[data-lightbox-close]');
-    const prevBtn = document.querySelector<HTMLButtonElement>('[data-lightbox-prev]');
-    const nextBtn = document.querySelector<HTMLButtonElement>('[data-lightbox-next]');
-    if (!lightbox || !img) return;
+    if (!lightbox || lightbox.dataset.bound === 'true') return;
+    lightbox.dataset.bound = 'true';
 
-    const html = document.documentElement;
-    if (html.dataset.imageLightboxBound === 'true') return;
-    html.dataset.imageLightboxBound = 'true';
+    const img = lightbox.querySelector<HTMLImageElement>('[data-lightbox-img]');
+    const video = lightbox.querySelector<HTMLVideoElement>('[data-lightbox-video]');
+    const caption = lightbox.querySelector<HTMLElement>('[data-lightbox-caption]');
+    const counter = lightbox.querySelector<HTMLElement>('[data-lightbox-counter]');
+    const closeBtn = lightbox.querySelector<HTMLButtonElement>('[data-lightbox-close]');
+    const prevBtn = lightbox.querySelector<HTMLButtonElement>('[data-lightbox-prev]');
+    const nextBtn = lightbox.querySelector<HTMLButtonElement>('[data-lightbox-next]');
+    if (!img) return;
 
     let items: LightboxItem[] = [];
     let index = 0;
@@ -205,7 +204,7 @@
 
     function renderItem(direction: 'left' | 'right' | 'none' = 'none') {
       const item = items[index];
-      if (!item || !img) return;
+      if (!item) return;
       const isVideo = item.type === 'video';
 
       const apply = () => {
@@ -249,8 +248,8 @@
         }));
       index = Math.min(Math.max(startIndex, 0), Math.max(items.length - 1, 0));
       isOpen = true;
-      lightbox!.classList.remove('hidden');
-      lightbox!.classList.add('flex');
+      lightbox.classList.remove('hidden');
+      lightbox.classList.add('flex');
       document.body.style.overflow = 'hidden';
       renderItem('none');
       updateNavUi();
@@ -258,11 +257,10 @@
 
     function close() {
       isOpen = false;
-      lightbox!.classList.add('hidden');
-      lightbox!.classList.remove('flex');
+      lightbox.classList.add('hidden');
+      lightbox.classList.remove('flex');
       pauseVideo();
-      img.src = '';
-      img.classList.remove('hidden');
+      img.classList.remove('hidden', 'is-changing', 'from-left', 'from-right');
       items = [];
       index = 0;
       document.body.style.overflow = '';
@@ -304,11 +302,7 @@
       return { items: parsed, index: foundIndex >= 0 ? foundIndex : 0 };
     }
 
-    document.addEventListener('click', (e) => {
-      const trigger = (e.target as HTMLElement).closest<HTMLElement>('[data-lightbox-open]');
-      if (!trigger) return;
-      e.preventDefault();
-
+    function openFromTrigger(trigger: HTMLElement) {
       const galleryData = collectGalleryItems(trigger);
       if (galleryData && galleryData.items.length > 0) {
         open(galleryData.items, galleryData.index);
@@ -323,6 +317,41 @@
           type: trigger.dataset.lightboxType === 'video' ? 'video' : 'image',
         },
       ]);
+    }
+
+    document.addEventListener('click', (e) => {
+      if (isOpen) return;
+      const trigger = (e.target as HTMLElement).closest<HTMLElement>('[data-lightbox-open]');
+      if (!trigger || lightbox.contains(trigger)) return;
+      e.preventDefault();
+      openFromTrigger(trigger);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (isOpen) {
+        if (e.key === 'Escape') {
+          close();
+          return;
+        }
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          step(-1);
+          return;
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          step(1);
+        }
+        return;
+      }
+
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-lightbox-open]')) return;
+      const trigger = target.closest<HTMLElement>('[data-lightbox-open]');
+      if (!trigger || trigger.tagName === 'BUTTON' || lightbox.contains(trigger)) return;
+      e.preventDefault();
+      openFromTrigger(trigger);
     });
 
     closeBtn?.addEventListener('click', close);
@@ -331,23 +360,6 @@
 
     lightbox.addEventListener('click', (e) => {
       if (e.target === lightbox) close();
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (!isOpen) return;
-      if (e.key === 'Escape') {
-        close();
-        return;
-      }
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        step(-1);
-        return;
-      }
-      if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        step(1);
-      }
     });
 
     document.addEventListener(

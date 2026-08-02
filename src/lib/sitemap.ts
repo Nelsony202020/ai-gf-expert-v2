@@ -6,6 +6,7 @@ import { products } from '../data/products';
 import { getTestCategories } from './test-framework';
 import { buyingGuideSlug } from '../data/buying-guide-content';
 import { testHubUrl } from './slugs';
+import { pathMatchKey, publicPagePath } from './urls';
 
 export interface RoundupSummary {
   title: string;
@@ -44,6 +45,14 @@ function entry(
   };
 }
 
+function canonicalSitemapUrl(url: string): string {
+  const hashIdx = url.indexOf('#');
+  if (hashIdx >= 0) {
+    return publicPagePath(url.slice(0, hashIdx)) + url.slice(hashIdx);
+  }
+  return publicPagePath(url);
+}
+
 /** All site pages derived from structured content — single source of truth. */
 export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[] {
   const publishedProducts = inputs.products ?? products;
@@ -52,7 +61,7 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
   let order = 0;
 
   const push = (e: Omit<Parameters<typeof entry>[0], 'sitemapOrder'> & { sitemapOrder?: number }) => {
-    entries.push(entry({ ...e, sitemapOrder: e.sitemapOrder ?? order++ }));
+    entries.push(entry({ ...e, url: canonicalSitemapUrl(e.url), sitemapOrder: e.sitemapOrder ?? order++ }));
   };
 
   push({
@@ -280,9 +289,7 @@ export function childSitemapFor(e: SitemapEntry): ChildSitemapKey {
 }
 
 function normalizePath(path: string): string {
-  const base = path.split('#')[0].split('?')[0];
-  const trimmed = base !== '/' ? base.replace(/\/$/, '') : '/';
-  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return pathMatchKey(path);
 }
 
 /**

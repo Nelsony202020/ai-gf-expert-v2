@@ -284,9 +284,9 @@ export async function resolveTestRunId(productId: string, testRunId?: string): P
   if (testRunId) return testRunId;
   const db = getDb();
   const { testRuns } = await (db.query as any)({
-    testRuns: { $: {}, product: {} },
+    testRuns: { $: { where: { 'product.id': productId } }, product: {} },
   });
-  const runs = (testRuns as any[]).filter((r) => r.product?.id === productId);
+  const runs = (testRuns as any[]) ?? [];
   const published = runs.find((r) => r.isCurrentPublished && r.status === 'published');
   if (published) return published.id;
   const inProgress = runs

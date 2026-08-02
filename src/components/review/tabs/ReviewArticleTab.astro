@@ -539,6 +539,32 @@ const reviewVideoId = product.videoReview?.embedUrl
     margin: 0 0 1.25rem;
   }
 
+  .review-blocks .review-figure__zoom {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: zoom-in;
+    text-align: inherit;
+    border-radius: inherit;
+    overflow: hidden;
+    outline: none;
+  }
+
+  .review-blocks .review-figure__zoom:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .review-blocks .review-figure__zoom:hover img {
+    opacity: 0.96;
+  }
+
+  .review-blocks .review-figure__zoom img {
+    pointer-events: none;
+  }
+
   .review-blocks .review-image-row {
     display: flex;
     flex-wrap: wrap;
@@ -569,6 +595,7 @@ const reviewVideoId = product.videoReview?.embedUrl
     width: 100%;
     height: auto;
     border-radius: 10px;
+    transition: opacity 0.15s ease;
   }
 
   .review-blocks .review-image-row__cell figcaption {
@@ -584,6 +611,15 @@ const reviewVideoId = product.videoReview?.embedUrl
     max-width: 100%;
     height: auto;
     border-radius: 10px;
+    transition: opacity 0.15s ease;
+  }
+
+  .review-blocks .review-video-native--preview {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    background: #000;
   }
 
   .review-blocks .review-figure figcaption {

@@ -5,10 +5,10 @@ import { getScoreChipClass, fmtScore } from '../../../lib/scores';
 import { buildAllScoreBins } from '../../../lib/score-distribution';
 import TooltipActionLinks from './TooltipActionLinks.astro';
 import InlineTestLink from './InlineTestLink.astro';
-import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
 import { getCategoryBrandIcon, getCategoryBrandIconLight } from '../../../lib/category-brand-icons';
 import BrandIcon from '../../ui/BrandIcon.astro';
+import { getCategoryTooltipDescription } from '../../../data/subscore-descriptions';
 import InfoIcon from '../../ui/InfoIcon.astro';
 
 interface Props {
@@ -55,6 +55,7 @@ const bins = buildAllScoreBins(scorePoints);
 const brandIcon = getCategoryBrandIcon(category.key);
 const brandIconLight = getCategoryBrandIconLight(category.key);
 const useDarkBrandIconOnly = category.key === 'customization' || category.key === 'chat';
+const categoryWhatItIs = getCategoryTooltipDescription(category.key);
 ---
 
 <span
@@ -77,10 +78,10 @@ const useDarkBrandIconOnly = category.key === 'customization' || category.key ==
           <p class="ratings-tooltip-panel__section-title">What it is</p>
           {
             compareTableOnly ? (
-              <p class="ratings-tooltip-panel__desc">{category.description}</p>
+              <p class="ratings-tooltip-panel__desc">{categoryWhatItIs}</p>
             ) : (
               <div class="ratings-tooltip-panel__what-row">
-                <p class="ratings-tooltip-panel__desc">{category.description}</p>
+                <p class="ratings-tooltip-panel__desc">{categoryWhatItIs}</p>
                 {
                   brandIcon && (
                     <div class="ratings-tooltip-panel__brand-slot" aria-hidden="true">
@@ -151,28 +152,27 @@ const useDarkBrandIconOnly = category.key === 'customization' || category.key ==
     {
       !compareTableOnly && compact && !compareAverageOnly && (
         <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
-          <div class="ratings-tooltip-panel__split">
-            <div class="ratings-tooltip-panel__split-col">
-              <p class="ratings-tooltip-panel__section-title">Where this sits</p>
-              <RatingHierarchyPipeline
-                highlight="category"
-                brandName={brandName}
-                categoryName={category.name}
-                showTitle={false}
-              />
-            </div>
-            <div class="ratings-tooltip-panel__split-col">
-              <p class="ratings-tooltip-panel__section-title">Subscores</p>
-              <div class="rt-comp-list rt-comp-list--dense">
-                {
-                  category.subscores.map((sub) => {
-                    const chip = getScoreChipClass(sub.score);
-                    return (
-                      <div class="rt-comp-row rt-comp-row--inline">
-                        <div class="rt-comp-row__main">
-                          <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(sub.score)}</span>
-                          {
-                            inlineTestLinks ? (
+          <div>
+            <p class="ratings-tooltip-panel__section-title">Subscores</p>
+            <div class="rt-comp-list rt-comp-list--dense">
+              {
+                category.subscores.map((sub) => {
+                  const chip = getScoreChipClass(sub.score);
+                  return (
+                    <div class="rt-comp-row rt-comp-row--inline">
+                      <div class="rt-comp-row__main">
+                        <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(sub.score)}</span>
+                        {
+                          inlineTestLinks ? (
+                            <InlineTestLink
+                              categoryKey={category.key}
+                              subscoreName={sub.name}
+                              class="rt-comp-name rt-comp-name--truncate"
+                            >
+                              {sub.name}
+                            </InlineTestLink>
+                          ) : (
+                            <>
                               <InlineTestLink
                                 categoryKey={category.key}
                                 subscoreName={sub.name}
@@ -180,34 +180,24 @@ const useDarkBrandIconOnly = category.key === 'customization' || category.key ==
                               >
                                 {sub.name}
                               </InlineTestLink>
-                            ) : (
-                              <>
-                                <InlineTestLink
-                                  categoryKey={category.key}
-                                  subscoreName={sub.name}
-                                  class="rt-comp-name rt-comp-name--truncate"
-                                >
-                                  {sub.name}
-                                </InlineTestLink>
-                                {
-                                  !linksMethodologyOnly && (
-                                    <TooltipActionLinks
-                                      categoryKey={category.key}
-                                      subscoreName={sub.name}
-                                      compact
-                                      resultsOnly
-                                    />
-                                  )
-                                }
-                              </>
-                            )
-                          }
-                        </div>
+                              {
+                                !linksMethodologyOnly && (
+                                  <TooltipActionLinks
+                                    categoryKey={category.key}
+                                    subscoreName={sub.name}
+                                    compact
+                                    resultsOnly
+                                  />
+                                )
+                              }
+                            </>
+                          )
+                        }
                       </div>
-                    );
-                  })
-                }
-              </div>
+                    </div>
+                  );
+                })
+              }
             </div>
           </div>
           {!compareAverageOnly && (

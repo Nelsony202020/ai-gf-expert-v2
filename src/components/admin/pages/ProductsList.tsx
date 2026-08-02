@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { createPortal } from 'react-dom';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, dataApi, type EntityRow } from '../api';
+import { resolveMediaUrl } from '../../../lib/media/url';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { useCan } from '../context';
 import {
@@ -433,7 +434,7 @@ export function ProductsListPage() {
 }
 
 function ProductLogo({ product }: { product: EntityRow }) {
-  const url = product.logo?.url as string | undefined;
+  const url = resolveMediaUrl(product.logo) || undefined;
   return (
     <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
       {url ? (

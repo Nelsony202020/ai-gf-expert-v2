@@ -8,6 +8,8 @@ import { astroScriptTsPlugin } from './vite/astro-script-ts-plugin.mjs';
 // https://astro.build/config
 export default defineConfig({
   site: process.env.PUBLIC_SITE_URL || 'https://aigirlfriend.expert',
+  // 'ignore' so /admin and /admin/ both work in dev (trailingSlash: 'always' 404s bare /admin).
+  trailingSlash: 'ignore',
   env: {
     schema: {
       PUBLIC_INSTANT_APP_ID: envField.string({ context: 'client', access: 'public', optional: true }),

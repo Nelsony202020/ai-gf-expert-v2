@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api';
-import type { UrlRegistry, RegistryUrl } from '../../../../lib/seo/urlRegistry';
+import type { UrlRegistry, RegistryUrl } from '../../../../lib/seo/urlRegistryTypes';
 
 export type { UrlRegistry, RegistryUrl };
 

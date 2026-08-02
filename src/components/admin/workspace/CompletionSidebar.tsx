@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../ui';
+import { confirmLeaveExplanationsIfNeeded } from '../testing/explanations/explanationLeaveGuard';
 import { useWorkspace } from './context';
 import { workspaceTabPath } from './completion';
 import { statusTone, type SidebarContext, workflowStatusLabel } from './sidebar/nextActions';
@@ -36,7 +37,13 @@ function WorkflowList({ onNavigate }: { onNavigate?: () => void }) {
             <li key={tab.id}>
               <Link
                 to={workspaceTabPath(ws.productId, tab.id)}
-                onClick={onNavigate}
+                onClick={(e) => {
+                  if (!confirmLeaveExplanationsIfNeeded(workspaceTabPath(ws.productId, tab.id))) {
+                    e.preventDefault();
+                    return;
+                  }
+                  onNavigate?.();
+                }}
                 className="flex items-baseline justify-between gap-3 rounded px-1 py-0.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/70"
               >
                 <span className="font-medium text-slate-800 dark:text-slate-200">{tab.label}</span>

@@ -1,13 +1,21 @@
 ---
-import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
+import { loadPublishedProductBySlug, loadPublishedProducts } from '../../lib/content/store';
+import { products as fileProducts } from '../../data/products';
 import { getScoreVisual, fmtScore } from '../../lib/scores';
 import ScorePill from '../review/ScorePill.astro';
 
-const comparisonProducts = await loadComparisonProducts();
-const product = comparisonProducts.find((p) => p.slug === 'aura-ai') ?? comparisonProducts[0];
+/** Live review used as the methodology page score example — loaded from InstantDB. */
+const EXAMPLE_REVIEW_SLUG = 'candy-ai';
+
+let product =
+  (await loadPublishedProductBySlug(EXAMPLE_REVIEW_SLUG))
+  ?? (await loadPublishedProducts(fileProducts)).find((p) => p.slug === EXAMPLE_REVIEW_SLUG)
+  ?? null;
 
 if (!product) {
-  throw new Error('TestHubScoreExample requires at least one product in the catalog.');
+  throw new Error(
+    `TestHubScoreExample requires a published ${EXAMPLE_REVIEW_SLUG} review in the admin.`,
+  );
 }
 
 const overall = getScoreVisual(product.overallScore);

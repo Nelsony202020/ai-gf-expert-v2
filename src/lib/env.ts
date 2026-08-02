@@ -40,5 +40,12 @@ export function env(name: string): string | undefined {
   const metaEnv = (import.meta as any).env;
   if (metaEnv?.[name]) return String(metaEnv[name]);
 
+  // Vercel exposes server secrets on process.env; some Astro builds only inline
+  // PUBLIC_* into import.meta.env. Mirror common secret names from globalThis.
+  if (typeof globalThis !== 'undefined') {
+    const vercelEnv = (globalThis as any).process?.env;
+    if (vercelEnv?.[name]) return String(vercelEnv[name]);
+  }
+
   return undefined;
 }

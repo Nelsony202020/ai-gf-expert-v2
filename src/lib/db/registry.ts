@@ -24,6 +24,7 @@ import {
   evidenceDefinitionSchema,
   testRunSchema,
   evidenceResultSchema,
+  evidenceExplanationSchema,
   roundupSchema,
   roundupEntrySchema,
   homepageSlotSchema,
@@ -212,6 +213,14 @@ export const ENTITIES: Record<string, EntityConfig> = {
       evidenceDefinition: 'evidenceDefinitions',
       product: 'products',
     },
+    timestampFields: ['updatedAt'],
+  },
+  evidenceExplanations: {
+    namespace: 'evidenceExplanations',
+    schema: evidenceExplanationSchema,
+    readPermission: 'content.view',
+    writePermission: 'testing.edit',
+    links: { product: 'products' },
     timestampFields: ['updatedAt'],
   },
   roundups: {

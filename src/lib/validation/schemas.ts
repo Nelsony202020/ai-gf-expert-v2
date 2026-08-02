@@ -705,6 +705,34 @@ export const evidenceResultSchema = z.object({
     .optional(),
 });
 
+export const evidenceExplanationSchema = z.object({
+  groupKey: z.string().min(1).max(120),
+  categorySlug: z.string().min(1).max(80),
+  subscoreSlug: z.string().min(1).max(80),
+  groupSlug: z.string().min(1).max(80),
+  groupName: z.string().min(1).max(200),
+  whatThisMeans: z.string().max(2000).optional(),
+  explanationStatus: z.enum([
+    'not_generated',
+    'draft',
+    'needs_review',
+    'approved',
+    'outdated',
+    'error',
+  ]),
+  inputHash: z.string().max(128).optional(),
+  generatedFromMethodologyVersion: z.string().max(40).optional(),
+  reviewerNote: z.string().max(2000).optional(),
+  generationError: z.string().max(2000).optional(),
+  promptVersion: z.string().max(40).optional(),
+  model: z.string().max(80).optional(),
+  tokenUsage: z.record(z.string(), z.unknown()).optional(),
+  generatedAt: dateMs.optional(),
+  generatedBy: z.string().email().optional(),
+  approvedAt: dateMs.optional(),
+  approvedBy: z.string().email().optional(),
+});
+
 export const rankingMetricSchema = z.object({
   // What to rank by: overall score, a category score, a subscore, or a
   // specific evidence result.

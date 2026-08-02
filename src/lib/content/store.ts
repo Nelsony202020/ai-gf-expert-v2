@@ -18,7 +18,7 @@ import type {
   RatingChangelogEntry,
   VerdictItem,
 } from '../../data/products';
-import { getSubscoreDescription } from '../../data/subscore-descriptions';
+import { getSubscoreDescription, getCategoryTooltipDescription } from '../../data/subscore-descriptions';
 import { getDb, isDbConfigured } from '../db/server';
 import { env } from '../env';
 import { lowestPlainMonthlyPrice } from '../pricing/calc';
@@ -146,8 +146,20 @@ function mapProduct(
 ): Product | null {
   const preview = opts?.preview ?? false;
   const allSnapshots: any[] = dbProduct.scoreSnapshots ?? [];
-  const publishedSnapshots = allSnapshots.filter((s: any) => s.testRun?.isCurrentPublished);
-  const snapshots = preview && publishedSnapshots.length === 0 ? allSnapshots : publishedSnapshots;
+  const publishedRun = (dbProduct.testRuns ?? []).find((r: any) => r.isCurrentPublished);
+
+  let publishedSnapshots = allSnapshots.filter((s: any) => s.testRun?.isCurrentPublished);
+
+  // Snapshots are linked at publish time; if the nested testRun join is missing,
+  // match snapshots to the current published run by id before dropping the product.
+  if (publishedSnapshots.length === 0 && publishedRun && !preview) {
+    publishedSnapshots = allSnapshots.filter(
+      (s: any) => s.testRun?.id === publishedRun.id || s.testRunId === publishedRun.id,
+    );
+  }
+
+  const snapshots =
+    preview && publishedSnapshots.length === 0 ? allSnapshots : publishedSnapshots;
 
   let overall = snapshots.find((s: any) => s.kind === 'overall')?.score ?? null;
   const hasCalculatedScores = overall != null && !Number.isNaN(overall);
@@ -186,7 +198,12 @@ function mapProduct(
         const resultBySlug = new Map<string, any>();
         for (const r of evidenceResults) {
           const slug = r.evidenceDefinition?.slug;
-          if (slug) resultBySlug.set(String(slug), r);
+          const cat = r.evidenceDefinition?.subscore?.category?.slug;
+          const sub = r.evidenceDefinition?.subscore?.slug;
+          if (slug) {
+            resultBySlug.set(String(slug), r);
+            if (cat && sub) resultBySlug.set(`${cat}/${sub}/${slug}`, r);
+          }
         }
         const subName = sub.detail?.name ?? titleCase(sub.refSlug);
         const fileSub = fileCat?.subscores.find(
@@ -216,7 +233,7 @@ function mapProduct(
       name: fileCat?.name ?? titleCase(cat.refSlug),
       score: cat.score,
       weight: cat.weight ?? 10,
-      description: fileCat?.description ?? '',
+      description: fileCat?.description || getCategoryTooltipDescription(String(cat.refSlug)) || '',
       subscores: subs.length > 0 ? subs : [],
       evidence: fileCat?.evidence ?? [],
       proof: fileCat?.proof ?? [],
@@ -775,13 +792,14 @@ const PUBLISHED_PRODUCTS_QUERY = {
   author: {},
   factChecker: {},
   media: { file: {} },
-  logo: {},
+  logo: { file: {} },
   featuredImage: { file: {} },
   subscriptionPlans: {},
   affiliateLinks: {},
   characters: { image: { file: {} }, affiliateLink: {}, storySlides: { media: { file: {} } } },
+  testRuns: {},
   scoreSnapshots: { testRun: {} },
-  evidenceResults: { testRun: {}, evidenceDefinition: {}, attachments: { file: {} } },
+  evidenceResults: { testRun: {}, evidenceDefinition: { subscore: { category: {} } }, attachments: { file: {} } },
 };
 
 /**
@@ -851,12 +869,12 @@ export async function loadProductLogoMap(): Promise<Map<string, string>> {
   try {
     const db = getDb();
     const { products: dbProducts } = await (db.query as any)({
-      products: { logo: {} },
+      products: { logo: { file: {} } },
     });
 
     for (const product of dbProducts as any[]) {
       if (product.deletedAt) continue;
-      const url = product.logo?.url;
+      const url = resolveMediaUrl(product.logo);
       if (!url) continue;
       map.set(product.slug, url);
       if (product.name) map.set(String(product.name).toLowerCase(), url);
@@ -876,6 +894,7 @@ export async function overlayExplorerAppsWithDb<
   T extends {
     slug: string;
     logo: string;
+    payments: string[];
     tagline: string;
     directoryDescription: string;
     bestFor: string;
@@ -889,12 +908,14 @@ export async function overlayExplorerAppsWithDb<
   if (!isDbConfigured()) return apps;
 
   try {
+    const { buildExplorerPaymentsFromProfile } = await import('../directory/payments');
     const db = getDb();
     const { products: dbProducts } = await (db.query as any)({
       products: {
         $: { where: { status: 'published' } },
-        logo: {},
+        logo: { file: {} },
         subscriptionPlans: {},
+        paymentProfile: {},
       },
     });
 
@@ -934,9 +955,14 @@ export async function overlayExplorerAppsWithDb<
       const logo =
         logoUrl && isUsablePublicMediaUrl(logoUrl) ? logoUrl : app.logo;
 
+      const payments = dbProduct.paymentProfile
+        ? buildExplorerPaymentsFromProfile(dbProduct.paymentProfile)
+        : app.payments;
+
       return {
         ...app,
         logo,
+        payments,
         tagline: dbProduct.tagline?.trim() || app.tagline,
         directoryDescription: dbProduct.directoryDescription?.trim() || app.directoryDescription,
         bestFor,
@@ -958,13 +984,14 @@ const PREVIEW_PRODUCT_QUERY = {
   author: {},
   factChecker: {},
   media: { file: {} },
-  logo: {},
+  logo: { file: {} },
   featuredImage: { file: {} },
   subscriptionPlans: {},
   affiliateLinks: {},
   characters: { image: { file: {} }, affiliateLink: {}, storySlides: { media: { file: {} } } },
+  testRuns: {},
   scoreSnapshots: { testRun: {} },
-  evidenceResults: { testRun: {}, evidenceDefinition: {}, attachments: { file: {} } },
+  evidenceResults: { testRun: {}, evidenceDefinition: { subscore: { category: {} } }, attachments: { file: {} } },
 };
 
 /** Build a minimal review Product from a roundup pick (placeholder content). */
@@ -1096,6 +1123,11 @@ export async function loadPublishedProductBySlug(slug: string): Promise<Product 
       if (dbProduct.status !== 'published') return null;
       const mapped = mapProduct(dbProduct, fileProduct ?? undefined);
       if (mapped) return mapped;
+      console.error('[content] published product mapping failed — using catalog fallback if available', {
+        slug,
+        productId: dbProduct.id,
+      });
+      if (fileProduct) return fileProduct;
       return null;
     }
   } catch (error) {
@@ -1103,6 +1135,13 @@ export async function loadPublishedProductBySlug(slug: string): Promise<Product 
   }
 
   return fileProduct ?? null;
+}
+
+/** Slugs for prerendering live review pages at build time. */
+export async function loadPublishedReviewSlugs(): Promise<string[]> {
+  const { fileProductsBaseline } = await import('../../data/products');
+  const products = await loadPublishedProducts(fileProductsBaseline);
+  return products.map((p) => p.slug);
 }
 
 /**

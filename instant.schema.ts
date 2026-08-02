@@ -638,6 +638,53 @@ const _schema = i.schema({
       updatedAt: i.date(),
     }),
 
+    // Product-scoped "What this means" copy per public evidence group (review drawer).
+    evidenceExplanations: i.entity({
+      groupKey: i.string().indexed(), // characters/variety/amount
+      categorySlug: i.string().indexed(),
+      subscoreSlug: i.string().indexed(),
+      groupSlug: i.string().indexed(),
+      groupName: i.string(),
+      whatThisMeans: i.string().optional(),
+      // not_generated | draft | needs_review | approved | outdated | error
+      explanationStatus: i.string().indexed(),
+      inputHash: i.string().optional().indexed(),
+      generatedFromMethodologyVersion: i.string().optional(),
+      reviewerNote: i.string().optional(),
+      generationError: i.string().optional(),
+      promptVersion: i.string().optional(),
+      model: i.string().optional(),
+      tokenUsage: i.json().optional(),
+      generatedAt: i.date().optional(),
+      generatedBy: i.string().optional(),
+      approvedAt: i.date().optional(),
+      approvedBy: i.string().optional(),
+      updatedAt: i.date(),
+    }),
+
+    // Product-scoped "Key takeaway" copy per subscore calculation drawer.
+    subscoreTakeaways: i.entity({
+      subscoreKey: i.string().indexed(), // characters/variety
+      categorySlug: i.string().indexed(),
+      subscoreSlug: i.string().indexed(),
+      categoryName: i.string(),
+      subscoreName: i.string(),
+      keyTakeaway: i.string().optional(),
+      // not_generated | draft | needs_review | approved | outdated | error
+      takeawayStatus: i.string().indexed(),
+      inputHash: i.string().optional().indexed(),
+      reviewerNote: i.string().optional(),
+      generationError: i.string().optional(),
+      promptVersion: i.string().optional(),
+      model: i.string().optional(),
+      tokenUsage: i.json().optional(),
+      generatedAt: i.date().optional(),
+      generatedBy: i.string().optional(),
+      approvedAt: i.date().optional(),
+      approvedBy: i.string().optional(),
+      updatedAt: i.date(),
+    }),
+
     // ------------------------------------------------------------------
     // Roundups & rankings
     // ------------------------------------------------------------------
@@ -892,6 +939,14 @@ const _schema = i.schema({
     aiVerdictNotesTestRun: {
       forward: { on: 'aiVerdictNotes', has: 'one', label: 'testRun' },
       reverse: { on: 'testRuns', has: 'many', label: 'aiVerdictNotes' },
+    },
+    evidenceExplanationProduct: {
+      forward: { on: 'evidenceExplanations', has: 'one', label: 'product' },
+      reverse: { on: 'products', has: 'many', label: 'evidenceExplanations' },
+    },
+    subscoreTakeawayProduct: {
+      forward: { on: 'subscoreTakeaways', has: 'one', label: 'product' },
+      reverse: { on: 'products', has: 'many', label: 'subscoreTakeaways' },
     },
 
     // Roundups

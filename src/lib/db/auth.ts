@@ -107,11 +107,32 @@ async function withInstantRetry<T>(fn: (db: ReturnType<typeof getDb>) => Promise
  * Bootstrap: if the verified email matches ADMIN_OWNER_EMAIL and no adminUser
  * record exists yet, the owner account is auto-provisioned.
  */
+const IDENTITY_CACHE_MS = 60_000;
+const identityCache = new Map<string, { identity: AdminIdentity; expiresAt: number }>();
+
+function cacheKeyForToken(token: string): string {
+  return token.slice(-24);
+}
+
 export async function resolveIdentity(request: Request): Promise<AdminIdentity | null> {
   const header = request.headers.get('authorization') ?? '';
   const token = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
   if (!token) return null;
 
+  const cacheKey = cacheKeyForToken(token);
+  const cached = identityCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.identity;
+  }
+
+  const identity = await resolveIdentityUncached(token);
+  if (identity) {
+    identityCache.set(cacheKey, { identity, expiresAt: Date.now() + IDENTITY_CACHE_MS });
+  }
+  return identity;
+}
+
+async function resolveIdentityUncached(token: string): Promise<AdminIdentity | null> {
   let db;
   try {
     db = getDb();

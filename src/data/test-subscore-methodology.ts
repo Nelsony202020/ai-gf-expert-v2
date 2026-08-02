@@ -389,10 +389,12 @@ const charactersVariety: TestSubscoreMethodologyContent = {
     {
       id: 'scenarios',
       title: 'Scenarios',
-      whatItMeasures: 'The number of relationship, story, and roleplay types available in the library.',
+      whatItMeasures:
+        'Checks if there are different roleplay scenarios or chat modes besides the regular chat.',
       whyItMatters:
         'Scenarios give users different reasons to start a conversation. Without them, a large library can still feel like the same basic chat repeated with different profile pictures.',
-      howWeTest: 'We count the relationship, story, and roleplay categories shown by the platform.',
+      howWeTest:
+        'We counted all chat modes and roleplay scenarios users can select. This includes both the character library and the custom AI character section.',
       whatWeCount: [
         'Girlfriend or boyfriend',
         'Friend or spouse',

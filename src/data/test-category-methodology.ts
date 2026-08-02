@@ -83,7 +83,7 @@ const characters: TestCategoryMethodologyContent = {
       lead: 'How good is the character library?',
       body: 'Some platforms add a huge number of characters just to make their library look impressive. This often leads to duplicate profiles, weak descriptions, broken images, and characters that feel almost identical.',
       bodyExtra:
-        'We review a fixed sample of 50 characters and check how original, complete, and visually polished they are.',
+        'We review a fixed sample of 25 characters and check how original, complete, and visually polished they are.',
       measures: ['Duplicates', 'Originality', 'Profile Quality', 'Visual Quality'],
       methodologyLinkLabel: 'View Quality methodology',
     },

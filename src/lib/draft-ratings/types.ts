@@ -45,8 +45,8 @@ export interface DraftMeasurement {
   normalizedScore?: number | null;
   /** Plain-English interpretation for drawer tables. */
   interpretation?: string;
-  /** good / fair / poor for colored interpretation labels. */
-  interpretationTone?: 'good' | 'fair' | 'poor' | 'neutral';
+  /** good / fair / poor / na for colored interpretation labels. */
+  interpretationTone?: 'good' | 'fair' | 'poor' | 'neutral' | 'na';
 }
 
 export interface DraftEvidenceCalculationRow {
@@ -89,7 +89,6 @@ export interface DraftTestGroupDrawerSections {
   whatWeTested?: string;
   whyItMatters?: string;
   howWeTested?: string;
-  whatWeFound?: string;
   scoreCalculation?: string;
   technicalDetails?: string;
 }
@@ -127,7 +126,6 @@ export interface DraftTestGroup {
   proofLabel: string;
   sampleSize?: number;
   whatWeTested?: string;
-  whatWeFound?: string;
   drawerSections: DraftTestGroupDrawerSections;
 }
 
@@ -168,8 +166,6 @@ export interface DraftEvidenceCategory {
   scoreCalculation?: string;
   technicalDetails?: string;
   mainResult?: string;
-  /** Editorial interpretation for the drawer — not shown in the main table. */
-  whatWeFound?: string;
   /** Plain-English “what this means for you” copy in the drawer. */
   whatThisMeans?: string;
   /** Caveats about scope and timing. */
@@ -257,6 +253,7 @@ export interface DraftRatingsViewModel {
   categories: DraftCategory[];
   detailLevelDefault: DraftDetailLevel;
   experimental: boolean;
+  approvedSubscoreTakeaways?: Map<string, string>;
 }
 
 export interface DraftRatingsDbContext {
@@ -289,4 +286,8 @@ export interface DraftRatingsDbContext {
     proof: DraftProofItem[];
   }>;
   subscoresByCategory: Map<string, Array<{ slug: string; name: string; displayOrder: number }>>;
+  /** groupKey → approved whatThisMeans (characters/variety/amount) */
+  approvedExplanations?: Map<string, string>;
+  /** subscoreKey → approved keyTakeaway (characters/variety) */
+  approvedSubscoreTakeaways?: Map<string, string>;
 }

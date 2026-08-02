@@ -1,6 +1,4 @@
 ---
-export const prerender = false;
-
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
@@ -16,8 +14,18 @@ import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipI
 import ReviewScrollRestore from '../../components/review/ReviewScrollRestore.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import RoundupAffiliateFineprint from '../../components/roundup/RoundupAffiliateFineprint.astro';
-import { getProductFeaturedIn, loadPublishedProductBySlug } from '../../lib/content/store';
+import {
+  getProductFeaturedIn,
+  loadPublishedProductBySlug,
+  loadPublishedReviewSlugs,
+} from '../../lib/content/store';
 import { resolveProductPageHead } from '../../lib/seo/productMeta';
+
+/** Prerender published reviews at build so Vercel static output matches the admin publish state. */
+export async function getStaticPaths() {
+  const slugs = await loadPublishedReviewSlugs();
+  return slugs.map((slug) => ({ params: { slug } }));
+}
 
 const { slug } = Astro.params;
 const product = slug ? await loadPublishedProductBySlug(slug) : null;

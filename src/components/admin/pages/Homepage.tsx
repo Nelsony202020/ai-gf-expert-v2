@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { dataApi, type EntityRow } from '../api';
+import { resolveMediaUrl } from '../../../lib/media/url';
 import { useCan } from '../context';
 import {
   Button,
@@ -34,11 +35,11 @@ function reorderList<T extends { id: string }>(items: T[], fromId: string, toId:
 }
 
 function productLogoUrl(product: EntityRow | null | undefined): string | null {
-  return product?.logo?.url ?? null;
+  return resolveMediaUrl(product?.logo) || null;
 }
 
 function characterAvatarUrl(character: EntityRow | null | undefined): string | null {
-  return character?.image?.url ?? null;
+  return resolveMediaUrl(character?.image) || null;
 }
 
 function characterPlatform(character: EntityRow | null | undefined): string {

@@ -7,7 +7,7 @@ import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
 import TooltipActionLinks from './TooltipActionLinks.astro';
 import InlineTestLink from './InlineTestLink.astro';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
-import CmsField from '../../cms/CmsField.astro';
+import { getOverallTooltipDescription } from '../../../data/subscore-descriptions';
 
 interface Props {
   product: Product;
@@ -51,7 +51,7 @@ const panelClass = [
           class="ratings-tooltip-panel__desc"
           {...(annotate ? { 'data-annotation-target': '1' } : {})}
         >
-          <CmsField field="oneLineVerdict">{product.overallSummary}</CmsField>
+          {getOverallTooltipDescription()}
         </p>
       </div>
       <div

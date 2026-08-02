@@ -10,10 +10,9 @@ import { loadDraftRatingsViewModel } from '../../../lib/draft-ratings/loadDraftR
 import {
   buildSubscoreCalcHeadline,
   buildSubscoreCalcScope,
-  buildSubscoreKeyTakeaways,
 } from '../../../lib/draft-ratings/evidenceDrawerContent';
 import { getSubscoreDescription } from '../../../data/subscore-descriptions';
-import { buildRedistributedCalcItems, equalWeights } from '../../../lib/scores';
+import { buildSubscoreCalcDrawer } from '../../../lib/ratings/evidenceGroupScoring';
 import { buildDrawerNavChain } from '../../../lib/draft-ratings/drawerNav';
 import { deferPayAsYouGoScores, iconForEvidenceDef, PRICING_BENCHMARK_PENDING_NOTE } from '../../../lib/ratings/evidenceIcons';
 import '../testing-credentials.css';
@@ -59,6 +58,8 @@ const displayCategories = product.categories.map((cat) =>
 
 const drawerNavById = buildDrawerNavChain(ratingsModel.categories);
 
+const approvedTakeaways = ratingsModel.approvedSubscoreTakeaways ?? new Map<string, string>();
+
 const allEvidenceCategories = ratingsModel.categories.flatMap((c) =>
   c.subscores.flatMap((s) => s.evidenceCategories),
 );
@@ -71,13 +72,11 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
       (productSub?.contributors ?? []).map((c) => [c.label, c.icon ?? 'analytics']),
     );
     const deferScores = deferPayAsYouGoScores(product.slug, sub.slug);
-    const nominalWeights = equalWeights(sub.evidenceCategories.length || sub.testGroups.length || 1);
-    const { rows, excludedNames } = buildRedistributedCalcItems(
-      sub.evidenceCategories.map((ec, i) => ({
-        name: ec.name,
-        score: deferScores ? null : ec.score,
-        nominalWeight: nominalWeights[i] ?? 0,
-      })),
+    const { rows, excludedNames, computedScore } = buildSubscoreCalcDrawer(
+      cat.slug,
+      sub.slug,
+      sub.evidenceCategories.map((ec) => ({ name: ec.name, score: ec.score })),
+      { deferScores },
     );
     const items = rows.map((row, i) => ({
       name: row.name,
@@ -88,11 +87,7 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
       excluded: row.excluded,
     }));
     const excludedNote =
-      deferScores && excludedNames.length === 0
-        ? PRICING_BENCHMARK_PENDING_NOTE
-        : excludedNames.length > 0
-          ? `Excluded from score (no penalty): ${excludedNames.join(', ')}. Remaining weights scaled to 100%.`
-          : undefined;
+      deferScores && excludedNames.length === 0 ? PRICING_BENCHMARK_PENDING_NOTE : undefined;
     const scopeSource =
       sub.scopeDescription ||
       productSub?.description ||
@@ -101,16 +96,14 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
     const nav = drawerNavById.get(calcId) ?? {};
     return {
       drawerId: calcId,
+      categorySlug: cat.slug,
+      subscoreSlug: sub.slug,
       categoryName: cat.name,
       subscoreName: sub.name,
-      subscoreScore: sub.score,
+      subscoreScore: computedScore ?? sub.score,
       scopeDescription: buildSubscoreCalcScope(product.name, sub.name, scopeSource),
       headlineConclusion: buildSubscoreCalcHeadline(sub.name, items),
-      keyTakeaways: buildSubscoreKeyTakeaways(
-        product.name,
-        items,
-        sub.explanation || sub.finding || productSub?.description,
-      ),
+      keyTakeaways: approvedTakeaways.get(`${cat.slug}/${sub.slug}`) ?? '—',
       items,
       excludedNote,
       ...nav,

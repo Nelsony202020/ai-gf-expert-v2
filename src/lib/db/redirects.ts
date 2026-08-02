@@ -4,13 +4,10 @@
 import { getDb, id as newId } from './server';
 import { HttpError, type AdminIdentity } from './auth';
 import { auditTx } from './audit';
+import { pathMatchKey } from '../urls';
 
 export function normalizePath(path: string): string {
-  let p = path.trim();
-  if (!p.startsWith('/')) p = `/${p}`;
-  // strip trailing slash except root
-  if (p.length > 1 && p.endsWith('/')) p = p.slice(0, -1);
-  return p;
+  return pathMatchKey(path);
 }
 
 export interface RedirectValidation {
@@ -93,23 +90,23 @@ export async function validateRedirect(
 const STATIC_PATHS = new Set(
   [
     '/',
-    '/ai-girlfriend-apps',
-    '/about',
-    '/contact',
-    '/sitemap',
-    '/reviews',
-    '/legal',
-    '/editorial-guidelines',
-    '/test',
-    '/test/all',
-    '/test/tooltips',
-    '/test/market-data',
-    '/legal/terms',
-    '/legal/privacy',
-    '/legal/accessibility',
-    '/legal/affiliate-disclosure',
-    '/legal/copyright',
-    '/legal/disclaimer',
+    '/ai-girlfriend-apps/',
+    '/about/',
+    '/contact/',
+    '/sitemap/',
+    '/reviews/',
+    '/legal/',
+    '/editorial-guidelines/',
+    '/test/',
+    '/test/all/',
+    '/test/tooltips/',
+    '/test/market-data/',
+    '/legal/terms/',
+    '/legal/privacy/',
+    '/legal/accessibility/',
+    '/legal/affiliate-disclosure/',
+    '/legal/copyright/',
+    '/legal/disclaimer/',
   ].map(normalizePath),
 );
 
@@ -120,14 +117,14 @@ async function destinationExists(path: string): Promise<boolean> {
   if (p.startsWith('/legal/')) return true;
 
   const db = getDb();
-  const reviewMatch = p.match(/^\/reviews\/([a-z0-9-]+)$/);
+  const reviewMatch = p.match(/^\/reviews\/([a-z0-9-]+)\/$/);
   if (reviewMatch) {
     const { products } = await db.query({
       products: { $: { where: { slug: reviewMatch[1] } } },
     });
     return products.length > 0;
   }
-  const bestMatch = p.match(/^\/best\/([a-z0-9-]+)$/);
+  const bestMatch = p.match(/^\/best\/([a-z0-9-]+)\/$/);
   if (bestMatch) {
     const { roundups } = await db.query({
       roundups: { $: { where: { slug: bestMatch[1] } } },
@@ -141,7 +138,7 @@ async function destinationExists(path: string): Promise<boolean> {
     });
     return affiliateLinks.length > 0;
   }
-  const guideMatch = p.match(/^\/guides\/([a-z0-9-]+)$/);
+  const guideMatch = p.match(/^\/guides\/([a-z0-9-]+)\/$/);
   if (guideMatch) return true; // owned by Sanity; verified at build time
 
   return false;
@@ -190,9 +187,12 @@ export async function findRedirect(
   const db = getDb();
   const source = normalizePath(path);
   const { redirects } = await db.query({
-    redirects: { $: { where: { sourcePath: source, active: true } } },
+    redirects: { $: { where: { active: true } } },
   });
-  const hit = redirects[0];
+  const bySource = new Map<string, (typeof redirects)[0]>(
+    redirects.map((r: any) => [normalizePath(r.sourcePath), r]),
+  );
+  const hit = bySource.get(source);
   if (!hit) return null;
   return {
     destinationPath: hit.destinationPath,

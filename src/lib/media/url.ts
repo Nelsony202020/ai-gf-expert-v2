@@ -1,10 +1,11 @@
 // Resolve a public URL for a media record (cached url or linked storage file).
 
 export function resolveMediaUrl(
-  media: { url?: unknown; file?: { url?: unknown } } | null | undefined,
+  media: { url?: unknown; file?: { url?: unknown } } | Record<string, any> | null | undefined,
 ): string {
   if (!media) return '';
-  const url = media.file?.url ?? media.url;
+  const m = media as { url?: unknown; file?: { url?: unknown } | null };
+  const url = m.file?.url ?? m.url;
   return url ? String(url) : '';
 }
 

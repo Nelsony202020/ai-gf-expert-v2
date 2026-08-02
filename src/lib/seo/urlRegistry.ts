@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { getAllSitemapEntries, childSitemapFor } from '../sitemap';
 import { getPageOverrides, normalizeOverridePath } from './pageOverrides';
+import { pathMatchKey, publicPagePath } from '../urls';
 import { getTestCategories } from '../test-framework';
 import { loadPublishedProducts, loadPublishedRoundupSummaries } from '../content/store';
 import { isDbConfigured, getDb } from '../db/server';
@@ -16,129 +17,33 @@ import { isSanityConfigured, sanityQuery } from '../sanity/client';
 import { authors } from '../../data/authors';
 import { products as fileProducts } from '../../data/products';
 import { buyingGuideSlug } from '../../data/buying-guide-content';
+import type {
+  RegistryIssue,
+  RegistryUrl,
+  RegistryView,
+  UrlRegistry,
+  IssueGroup,
+  RegistrySummary,
+  SuggestedRedirect,
+} from './urlRegistryTypes';
 
 // ---------------------------------------------------------------------------
-// Types
+// Types (shared with the admin client via urlRegistryTypes.ts)
 // ---------------------------------------------------------------------------
 
-export type RegistrySource = 'instantdb' | 'code' | 'generated' | 'redirect-map' | 'sanity';
-
-export type RegistryStatus =
-  | 'published'
-  | 'draft'
-  | 'preview'
-  | 'redirect'
-  | 'affiliate'
-  | 'admin'
-  | 'api'
-  | 'legacy'
-  | 'noindex';
-
-export type RegistryIndexing = 'index' | 'noindex' | 'blocked' | 'canonicalized' | 'unknown';
-
-/**
- * Which admin view a URL belongs to:
- * - search: real HTML pages users and Google can see
- * - redirects: source URLs that send visitors elsewhere
- * - technical: admin, API, affiliate, preview, and sitemap-file routes
- */
-export type RegistryView = 'search' | 'redirects' | 'technical';
-
-export type IssueSeverity = 'error' | 'warning';
-
-export interface RegistryIssue {
-  code: string;
-  label: string;
-  severity: IssueSeverity;
-  /** Optional plain-language explanation with the concrete URLs involved. */
-  detail?: string;
-}
-
-export interface RegistryUrl {
-  path: string;
-  title: string;
-  contentType: string;
-  /** Beginner-friendly page type label, e.g. "Review", "Reviews page", "API route". */
-  pageType: string;
-  /** Which admin view this URL belongs to. */
-  view: RegistryView;
-  source: RegistrySource;
-  /** Precise origin, e.g. "instantdb:products" or "astro.config.mjs". */
-  sourceDetail: string;
-  /** For code-managed pages: the file that renders this route. */
-  sourceFile?: string;
-  status: RegistryStatus;
-  /** Underlying record status (e.g. product.status) when different from `status`. */
-  recordStatus?: string;
-  indexing: RegistryIndexing;
-  /** Whether the route requires authentication. */
-  access: 'public' | 'authenticated';
-  /** In-page jump-link anchors (e.g. "#overview") — sections of this page, not separate URLs. */
-  sections?: string[];
-  /** Other registered URL variants of the same page (e.g. trailing-slash version). */
-  altPaths?: string[];
-  seoTitle?: string;
-  seoDescription?: string;
-  h1Override?: string;
-  canonicalUrl?: string;
-  ogTitle?: string;
-  ogDescription?: string;
-  ogImage?: string;
-  noindexFlag?: boolean;
-  nofollowFlag?: boolean;
-  inXmlSitemap?: boolean;
-  /** Child sitemap this URL is submitted in: pages | reviews | methodology | guides | roundups. */
-  sitemapSection?: string;
-  /** True when the page was set to draft from the admin (page override). */
-  draftOverride?: boolean;
-  destination?: string;
-  redirectType?: number;
-  redirectActive?: boolean;
-  issues: RegistryIssue[];
-  updatedAt?: number;
-  /** Admin SPA route for editing this record (relative to /admin). */
-  editHref?: string;
-  entity?: 'products' | 'roundups' | 'redirects' | 'affiliateLinks';
-  recordId?: string;
-  notes?: string;
-}
-
-export interface SuggestedRedirect {
-  sourcePath: string;
-  suggestedDestination?: string;
-  reason: string;
-}
-
-export interface RegistrySummary {
-  /** Real HTML pages (search view). */
-  searchPages: number;
-  indexable: number;
-  noindex: number;
-  needsAttention: number;
-  redirects: number;
-  notFound: number;
-  totalUrls: number;
-}
-
-export interface IssueGroup {
-  code: string;
-  label: string;
-  severity: IssueSeverity;
-  count: number;
-  paths: string[];
-  /** The view where most affected URLs live (for deep links). */
-  view: RegistryView;
-}
-
-export interface UrlRegistry {
-  generatedAt: string;
-  siteOrigin: string;
-  urls: RegistryUrl[];
-  summary: RegistrySummary;
-  issueGroups: IssueGroup[];
-  suggestedRedirects: SuggestedRedirect[];
-  robotsTxt: string | null;
-}
+export type {
+  RegistrySource,
+  RegistryStatus,
+  RegistryIndexing,
+  RegistryView,
+  IssueSeverity,
+  RegistryIssue,
+  RegistryUrl,
+  SuggestedRedirect,
+  RegistrySummary,
+  IssueGroup,
+  UrlRegistry,
+} from './urlRegistryTypes';
 
 // ---------------------------------------------------------------------------
 // Static route data (code-managed)
@@ -154,34 +59,31 @@ interface StaticPageDef {
 
 const STATIC_PAGES: StaticPageDef[] = [
   { path: '/', title: 'Home', contentType: 'home', sourceFile: 'src/pages/index.astro', notes: 'SSR at runtime' },
-  { path: '/about', title: 'About Us', contentType: 'company', sourceFile: 'src/pages/about.astro' },
-  { path: '/contact', title: 'Contact Us', contentType: 'company', sourceFile: 'src/pages/contact.astro' },
-  { path: '/editorial-guidelines', title: 'Editorial Guidelines', contentType: 'methodology', sourceFile: 'src/pages/editorial-guidelines.astro' },
+  { path: '/about/', title: 'About Us', contentType: 'company', sourceFile: 'src/pages/about.astro' },
+  { path: '/contact/', title: 'Contact Us', contentType: 'company', sourceFile: 'src/pages/contact.astro' },
   { path: '/editorial-guidelines/', title: 'Editorial Guidelines', contentType: 'methodology', sourceFile: 'src/pages/editorial-guidelines.astro' },
-  { path: '/ai-girlfriend-apps', title: 'App Directory', contentType: 'directory', sourceFile: 'src/pages/ai-girlfriend-apps.astro', notes: 'Supports ?page= and ?sort= query params' },
+  { path: '/ai-girlfriend-apps/', title: 'App Directory', contentType: 'directory', sourceFile: 'src/pages/ai-girlfriend-apps.astro', notes: 'Supports ?page= and ?sort= query params' },
   { path: '/reviews/', title: 'All Reviews', contentType: 'hub', sourceFile: 'src/pages/reviews/index.astro' },
-  { path: '/guides', title: 'All Guides', contentType: 'hub', sourceFile: 'src/pages/guides/index.astro' },
   { path: '/guides/', title: 'All Guides', contentType: 'hub', sourceFile: 'src/pages/guides/index.astro' },
-  { path: `/guides/${buyingGuideSlug}`, title: 'How to Choose an AI Girlfriend App', contentType: 'guide', sourceFile: 'src/pages/guides/how-to-choose-an-ai-girlfriend-app.astro' },
   { path: `/guides/${buyingGuideSlug}/`, title: 'How to Choose an AI Girlfriend App', contentType: 'guide', sourceFile: 'src/pages/guides/how-to-choose-an-ai-girlfriend-app.astro' },
   { path: '/legal/', title: 'Legal Pages', contentType: 'hub', sourceFile: 'src/pages/legal/index.astro' },
-  { path: '/legal/privacy', title: 'Privacy Policy', contentType: 'legal', sourceFile: 'src/pages/legal/privacy.astro' },
-  { path: '/legal/terms', title: 'Terms of Service', contentType: 'legal', sourceFile: 'src/pages/legal/terms.astro' },
-  { path: '/legal/accessibility', title: 'Accessibility', contentType: 'legal', sourceFile: 'src/pages/legal/accessibility.astro' },
-  { path: '/legal/copyright', title: 'Copyright Policy', contentType: 'legal', sourceFile: 'src/pages/legal/copyright.astro' },
-  { path: '/legal/disclaimer', title: 'Disclaimer', contentType: 'legal', sourceFile: 'src/pages/legal/disclaimer.astro' },
-  { path: '/legal/affiliate-disclosure', title: 'Affiliate Disclosure', contentType: 'legal', sourceFile: 'src/pages/legal/affiliate-disclosure.astro' },
-  { path: '/sitemap', title: 'HTML Sitemap', contentType: 'utility', sourceFile: 'src/pages/sitemap.astro' },
+  { path: '/legal/privacy/', title: 'Privacy Policy', contentType: 'legal', sourceFile: 'src/pages/legal/privacy.astro' },
+  { path: '/legal/terms/', title: 'Terms of Service', contentType: 'legal', sourceFile: 'src/pages/legal/terms.astro' },
+  { path: '/legal/accessibility/', title: 'Accessibility', contentType: 'legal', sourceFile: 'src/pages/legal/accessibility.astro' },
+  { path: '/legal/copyright/', title: 'Copyright Policy', contentType: 'legal', sourceFile: 'src/pages/legal/copyright.astro' },
+  { path: '/legal/disclaimer/', title: 'Disclaimer', contentType: 'legal', sourceFile: 'src/pages/legal/disclaimer.astro' },
+  { path: '/legal/affiliate-disclosure/', title: 'Affiliate Disclosure', contentType: 'legal', sourceFile: 'src/pages/legal/affiliate-disclosure.astro' },
+  { path: '/sitemap/', title: 'HTML Sitemap', contentType: 'utility', sourceFile: 'src/pages/sitemap.astro' },
   { path: '/sitemap.xml', title: 'XML Sitemap', contentType: 'utility', sourceFile: 'src/pages/sitemap.xml.ts' },
   { path: '/test/', title: 'How We Test', contentType: 'test-hub', sourceFile: 'src/pages/test/index.astro' },
   { path: '/test/all/', title: 'All Tests Directory', contentType: 'test-archive', sourceFile: 'src/pages/test/all/index.astro' },
   { path: '/test/tooltips/', title: 'How Score Tooltips Work', contentType: 'methodology', sourceFile: 'src/pages/test/tooltips/index.astro' },
   { path: '/test/market-data/', title: 'Market Data Methodology', contentType: 'methodology', sourceFile: 'src/pages/test/market-data.astro' },
-  { path: '/best/ai-girlfriend', title: 'Best AI Girlfriend Apps', contentType: 'roundup', sourceFile: 'src/pages/best/ai-girlfriend.astro', notes: 'Only roundup with a public page file' },
+  { path: '/best/ai-girlfriend/', title: 'Best AI Girlfriend Apps', contentType: 'roundup', sourceFile: 'src/pages/best/ai-girlfriend.astro', notes: 'Only roundup with a public page file' },
 ];
 
 const PREVIEW_PAGES: StaticPageDef[] = [
-  { path: '/guides/preview', title: 'Guide draft preview', contentType: 'guide-preview', sourceFile: 'src/pages/guides/preview.astro', notes: 'Requires ?secret= and ?slug= query params' },
+  { path: '/guides/preview/', title: 'Guide draft preview', contentType: 'guide-preview', sourceFile: 'src/pages/guides/preview.astro', notes: 'Requires ?secret= and ?slug= query params' },
 ];
 
 const ADMIN_STATIC = [
@@ -289,10 +191,14 @@ function makeIssue(code: string, detail?: string): RegistryIssue {
 // ---------------------------------------------------------------------------
 
 function normalize(path: string): string {
-  let p = path.trim();
-  if (!p.startsWith('/')) p = `/${p}`;
-  if (p.length > 1 && p.endsWith('/')) p = p.slice(0, -1);
-  return p;
+  return pathMatchKey(path);
+}
+
+/** Canonical registry path — trailing slash on public HTML routes. */
+function registryPath(path: string, status: RegistryStatus): string {
+  if (path.includes('?')) return path;
+  if (status === 'api' || status === 'admin' || status === 'affiliate') return path;
+  return publicPagePath(path);
 }
 
 function isExternal(url: string): boolean {
@@ -310,16 +216,16 @@ function friendlyPageType(row: Pick<RegistryUrl, 'path' | 'contentType' | 'statu
   const p = normalize(row.path.split('#')[0].split('?')[0]);
   const BY_PATH: Record<string, string> = {
     '/': 'Homepage',
-    '/ai-girlfriend-apps': 'App Directory',
-    '/reviews': 'Reviews page',
-    '/guides': 'Guides page',
-    '/test': 'Testing page',
-    '/test/all': 'All Tests page',
-    '/legal': 'Legal',
-    '/editorial-guidelines': 'Editorial Guidelines',
-    '/about': 'About',
-    '/contact': 'Contact',
-    '/sitemap': 'HTML Sitemap',
+    '/ai-girlfriend-apps/': 'App Directory',
+    '/reviews/': 'Reviews page',
+    '/guides/': 'Guides page',
+    '/test/': 'Testing page',
+    '/test/all/': 'All Tests page',
+    '/legal/': 'Legal',
+    '/editorial-guidelines/': 'Editorial Guidelines',
+    '/about/': 'About',
+    '/contact/': 'Contact',
+    '/sitemap/': 'HTML Sitemap',
     '/sitemap.xml': 'XML Sitemap',
   };
   if (BY_PATH[p]) return BY_PATH[p];
@@ -451,36 +357,24 @@ export async function buildUrlRegistry(): Promise<UrlRegistry> {
   }
 
   function add(row: AddRow) {
-    const key = keyFor(row.path, row.status);
+    const path = registryPath(row.path, row.status);
+    const rowCanon = { ...row, path };
+    const key = keyFor(path, row.status);
     const existing = byPath.get(key);
     if (existing) {
-      const hadSitemapFlag = Boolean(existing.inXmlSitemap);
       // Merge enrichment onto the first-seen row.
-      if (row.recordStatus && !existing.recordStatus) existing.recordStatus = row.recordStatus;
-      if (row.destination && !existing.destination) existing.destination = row.destination;
-      if (row.notes && !existing.notes) existing.notes = row.notes;
-      if (row.inXmlSitemap !== undefined && existing.inXmlSitemap === undefined) {
-        existing.inXmlSitemap = row.inXmlSitemap;
+      if (rowCanon.recordStatus && !existing.recordStatus) existing.recordStatus = rowCanon.recordStatus;
+      if (rowCanon.destination && !existing.destination) existing.destination = rowCanon.destination;
+      if (rowCanon.notes && !existing.notes) existing.notes = rowCanon.notes;
+      if (rowCanon.inXmlSitemap !== undefined && existing.inXmlSitemap === undefined) {
+        existing.inXmlSitemap = rowCanon.inXmlSitemap;
       }
-      if (row.sitemapSection && !existing.sitemapSection) existing.sitemapSection = row.sitemapSection;
-      if (row.sourceFile && !existing.sourceFile) existing.sourceFile = row.sourceFile;
-      if (row.sections?.length && !existing.sections?.length) existing.sections = row.sections;
-      // Trailing-slash variant of the same page.
-      if (row.path !== existing.path) {
-        // Prefer the variant submitted in the XML sitemap as the display URL.
-        if (row.inXmlSitemap && !hadSitemapFlag) {
-          existing.altPaths = [
-            ...new Set([...(existing.altPaths ?? []), existing.path].filter((p) => p !== row.path)),
-          ];
-          existing.path = row.path;
-          existing.inXmlSitemap = true;
-        } else {
-          existing.altPaths = [...new Set([...(existing.altPaths ?? []), row.path])];
-        }
-      }
+      if (rowCanon.sitemapSection && !existing.sitemapSection) existing.sitemapSection = rowCanon.sitemapSection;
+      if (rowCanon.sourceFile && !existing.sourceFile) existing.sourceFile = rowCanon.sourceFile;
+      if (rowCanon.sections?.length && !existing.sections?.length) existing.sections = rowCanon.sections;
       return;
     }
-    const partial = { ...row, indexing: row.indexing ?? ('unknown' as RegistryIndexing) };
+    const partial = { ...rowCanon, indexing: rowCanon.indexing ?? ('unknown' as RegistryIndexing) };
     const pageType = friendlyPageType(partial);
     const full: RegistryUrl = {
       ...partial,
@@ -966,14 +860,7 @@ export async function buildUrlRegistry(): Promise<UrlRegistry> {
     }
 
     // Two registered URL versions of the same page (with/without trailing slash)
-    if (row.altPaths?.length && row.view === 'search') {
-      row.issues.push(
-        makeIssue(
-          'duplicate-url-variant',
-          `Both ${row.path} and ${row.altPaths[0]} are accessible. The sitemap only submits ${row.path}.`,
-        ),
-      );
-    }
+    // — eliminated by registryPath() canonicalization; no issue emitted.
 
     // Content checks (only for editable DB pages with public routes)
     if (row.status === 'published' && (row.entity === 'products' || row.entity === 'roundups')) {
@@ -992,10 +879,6 @@ export async function buildUrlRegistry(): Promise<UrlRegistry> {
             row.issues.push(makeIssue('canonical-points-to-redirect'));
           } else if (!pagePaths.has(np)) {
             row.issues.push(makeIssue('canonical-target-unknown'));
-          }
-          // Same page but trailing slash differs → canonical/URL mismatch
-          if (cp !== row.path && np === normalize(row.path)) {
-            row.issues.push(makeIssue('canonical-trailing-slash'));
           }
         }
       }

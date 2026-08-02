@@ -439,6 +439,9 @@ const auraAi: Product = {
  */
 const fileProducts: Product[] = [auraAi];
 
+/** Static file products before DB merge — used by getStaticPaths and loaders. */
+export const fileProductsBaseline: Product[] = fileProducts;
+
 /** Static file product before DB merge — used by migration scripts. */
 export const fileAuraAi: Product = auraAi;
 

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { VerdictStepId } from '../../components/admin/workspace/verdict/types';
-import type { AiVerdictScope } from './config';
+import type { AiVerdictScope } from './types';
 import { enforceMaxWords, PRO_CON_MAX_WORDS } from './fieldPromptHelpers';
 import type { AiSuggestionOutput, KeyFinding } from './suggestionSchema';
 

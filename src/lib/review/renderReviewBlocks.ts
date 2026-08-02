@@ -125,12 +125,50 @@ function resolveMediaItem(
   return { src: '', mediaType: 'image' };
 }
 
+function escapeAttr(value: string): string {
+  return escapeHtml(value).replace(/'/g, '&#39;');
+}
+
+interface ReviewLightboxItem {
+  src: string;
+  alt: string;
+  caption: string;
+  type: 'image' | 'video';
+}
+
+function reviewLightboxItem(
+  item: Record<string, unknown>,
+  src: string,
+  mediaType: 'image' | 'video',
+  mediaById?: Record<string, MediaLookupEntry>,
+): ReviewLightboxItem {
+  const mediaId = item.mediaId ? String(item.mediaId) : '';
+  const alt = String(item.alt ?? mediaById?.[mediaId]?.altText ?? '');
+  const caption = String(item.caption ?? '').trim();
+  return {
+    src,
+    alt,
+    caption: caption || alt,
+    type: mediaType,
+  };
+}
+
+function renderLightboxTrigger(payload: ReviewLightboxItem, innerHtml: string): string {
+  const captionAttr = payload.caption
+    ? ` data-lightbox-caption="${escapeAttr(payload.caption)}"`
+    : '';
+  return `<div role="button" tabindex="0" class="review-figure__zoom" data-lightbox-open="${escapeAttr(payload.src)}" data-lightbox-alt="${escapeAttr(payload.alt)}" data-lightbox-type="${payload.type}"${captionAttr} aria-label="Enlarge ${payload.type}">${innerHtml}</div>`;
+}
+
 function renderImageFigure(
   item: Record<string, unknown>,
-  opts?: { mediaById?: Record<string, MediaLookupEntry>; rowCell?: boolean },
-): string {
+  opts?: {
+    mediaById?: Record<string, MediaLookupEntry>;
+    rowCell?: boolean;
+  },
+): { html: string; lightboxItem: ReviewLightboxItem | null } {
   const { src, mediaType } = resolveMediaItem(item, opts?.mediaById);
-  if (!src) return '';
+  if (!src) return { html: '', lightboxItem: null };
   const mediaId = item.mediaId ? String(item.mediaId) : '';
   const alt = escapeHtml(
     String(item.alt ?? opts?.mediaById?.[mediaId]?.altText ?? ''),
@@ -142,14 +180,16 @@ function renderImageFigure(
   const widthStyle = opts?.rowCell
     ? `flex:0 0 calc(${width}% - 6px);max-width:calc(${width}% - 6px);`
     : `width:${width}%;max-width:100%;margin-inline:${width < 100 ? 'auto' : '0'};`;
-  const mediaTag =
+  const payload = reviewLightboxItem(item, src, mediaType, opts?.mediaById);
+  const innerMedia =
     mediaType === 'video'
-      ? `<video class="review-video-native" src="${escapeHtml(src)}" controls preload="metadata" style="width:100%;height:auto;display:block"></video>`
+      ? `<video class="review-video-native review-video-native--preview" src="${escapeHtml(src)}" muted playsinline preload="metadata" style="width:100%;height:auto;display:block;pointer-events:none"></video>`
       : `<img src="${escapeHtml(src)}" alt="${alt}" loading="lazy" style="width:100%;height:auto;display:block" />`;
-  let html = `<figure class="${cellClass}" style="${widthStyle}border-radius:${radius}%;overflow:hidden">${mediaTag}`;
+  const mediaHtml = renderLightboxTrigger(payload, innerMedia);
+  let html = `<figure class="${cellClass}" style="${widthStyle}border-radius:${radius}%;overflow:hidden">${mediaHtml}`;
   if (caption) html += `<figcaption>${escapeHtml(caption)}</figcaption>`;
   html += '</figure>';
-  return html;
+  return { html, lightboxItem: payload };
 }
 
 export function buildReviewToc(blocks: ReviewBlockPublic[]): ReviewTocEntry[] {
@@ -235,11 +275,23 @@ export function renderReviewBlocksHtml(
         const flatItems =
           layoutRow?.flatMap((col) => (Array.isArray(col.items) ? col.items : [])) ?? rowItems ?? [];
         if (flatItems.length > 0) {
+          const rowLightbox: ReviewLightboxItem[] = [];
           const figures = flatItems
-            .map((raw) => renderImageFigure(raw as Record<string, unknown>, { mediaById: opts?.mediaById, rowCell: true }))
+            .map((raw) => {
+              const rendered = renderImageFigure(raw as Record<string, unknown>, {
+                mediaById: opts?.mediaById,
+                rowCell: true,
+              });
+              if (rendered.lightboxItem) rowLightbox.push(rendered.lightboxItem);
+              return rendered.html;
+            })
             .filter(Boolean);
           if (figures.length > 0) {
-            parts.push(`<div class="review-image-row">${figures.join('')}</div>`);
+            const galleryAttr =
+              rowLightbox.length > 1
+                ? ` data-gallery data-gallery-images="${escapeAttr(JSON.stringify(rowLightbox))}"`
+                : '';
+            parts.push(`<div class="review-image-row"${galleryAttr}>${figures.join('')}</div>`);
           }
           break;
         }
@@ -284,8 +336,8 @@ export function renderReviewBlocksHtml(
         break;
       }
       case 'image': {
-        const html = renderImageFigure(data, { mediaById: opts?.mediaById });
-        if (html) parts.push(html);
+        const rendered = renderImageFigure(data, { mediaById: opts?.mediaById });
+        if (rendered.html) parts.push(rendered.html);
         break;
       }
       case 'video': {
@@ -298,8 +350,18 @@ export function renderReviewBlocksHtml(
           html += '</figure>';
           parts.push(html);
         } else if (url) {
+          const payload: ReviewLightboxItem = {
+            src: url,
+            alt: caption || 'Review video',
+            caption: caption || 'Review video',
+            type: 'video',
+          };
+          const videoBtn = renderLightboxTrigger(
+            payload,
+            `<video class="review-video-native review-video-native--preview" src="${escapeHtml(url)}" muted playsinline preload="metadata"></video>`,
+          );
           parts.push(
-            `<figure class="review-figure review-video"><video class="review-video-native" src="${escapeHtml(url)}" controls preload="metadata"></video>${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ''}</figure>`,
+            `<figure class="review-figure review-video">${videoBtn}${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ''}</figure>`,
           );
         }
         break;

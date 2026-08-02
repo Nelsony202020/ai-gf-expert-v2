@@ -1,11 +1,18 @@
 import { testContributorUrl } from '../slugs';
 import { weightedValue } from '../scores';
+import { buildMemberWeightsInGroup } from '../ratings/evidenceGroupScoring';
 import type {
   DraftEvidenceCalculation,
   DraftEvidenceCalculationRow,
   DraftMeasurement,
   DraftProofItem,
 } from './types';
+import {
+  buildNotApplicableWhatThisMeans,
+  isNotApplicableCategory,
+  isNotApplicableMeasurement,
+  type NotApplicableExplanationInput,
+} from './notApplicableExplanation';
 
 const ENHANCED_SCOPE: Record<string, string> = {
   // Characters — Variety
@@ -176,6 +183,58 @@ function parseCount(value: string): number | null {
   return Number.isNaN(num) ? null : num;
 }
 
+const UNAVAILABLE_VALUE_LABELS: Record<string, string> = {
+  'not available': 'Not available',
+  'not offered': 'Not offered',
+  'not applicable': 'Not applicable',
+  'could not verify': 'Unknown',
+  unknown: 'Unknown',
+};
+
+/** True when a row should not use score bands (missing, N/A, not offered, etc.). */
+export function isUnavailableMeasurement(
+  m: Pick<DraftMeasurement, 'status' | 'value'>,
+): boolean {
+  if (
+    m.status === 'not-applicable' ||
+    m.status === 'not-offered' ||
+    m.status === 'could-not-verify' ||
+    m.status === 'not-tested' ||
+    m.status === 'missing' ||
+    m.status === 'test-failed'
+  ) {
+    return true;
+  }
+  const lower = m.value.trim().toLowerCase();
+  if (!lower || lower === '—' || lower === '-') return true;
+  return lower in UNAVAILABLE_VALUE_LABELS;
+}
+
+function availabilityInterpretation(m: DraftMeasurement): string | undefined {
+  if (m.status === 'not-applicable') return 'Not applicable';
+  if (m.status === 'not-offered') return 'Not offered';
+  if (m.status === 'could-not-verify' || m.status === 'not-tested') return 'Unknown';
+  if (m.status === 'missing' || m.status === 'test-failed') return 'Not scored';
+
+  const lower = m.value.trim().toLowerCase();
+  if (!lower || lower === '—' || lower === '-') return 'Not scored';
+  if (UNAVAILABLE_VALUE_LABELS[lower]) return UNAVAILABLE_VALUE_LABELS[lower];
+
+  return undefined;
+}
+
+/** Short drawer label from a normalized 0–10 score. */
+export function interpretScoreBand(score: number): string {
+  if (score >= 9.0) return 'Excellent';
+  if (score >= 8.0) return 'Very good';
+  if (score >= 7.0) return 'Good';
+  if (score >= 6.0) return 'Fair';
+  if (score >= 5.0) return 'Mixed';
+  if (score >= 3.0) return 'Limited';
+  if (score >= 1.0) return 'Very limited';
+  return 'None found';
+}
+
 function scoreVerdict(score: number | null | undefined): string | undefined {
   if (score == null || Number.isNaN(score)) return undefined;
   if (score >= 6.5) return 'Overall: good — a strong result in our tests.';
@@ -191,36 +250,50 @@ function measurementVerdict(results: DraftMeasurement[]): string | undefined {
 }
 
 export function interpretMeasurement(m: DraftMeasurement): string | undefined {
-  const count = parseCount(m.value);
-  if (count === 0) return 'None found';
-  if (count != null) {
-    if (count >= 100) return 'Lots to choose from';
-    if (count >= 40) return 'Good choice';
-    if (count >= 15) return 'Okay choice';
-    if (count >= 1) return 'Not many options';
-    return 'None found';
+  const availability = availabilityInterpretation(m);
+  if (availability) return availability;
+
+  const lower = m.value.trim().toLowerCase();
+  const labelLower = m.label.toLowerCase();
+
+  if (lower === 'yes' && m.normalizedScore === 0) {
+    if (labelLower.includes('human review')) return 'Human review allowed';
+    if (labelLower.includes('expir') || m.slug.includes('expir')) return 'Credits expire';
+    return 'Concerning';
+  }
+  if (lower === 'no' && m.normalizedScore === 0) {
+    if (labelLower.includes('encrypt')) return 'Not confirmed';
+    return 'Not available';
+  }
+
+  const INVERTED_SLUGS = new Set(['consistency', 'repetition', 'refusals', 'errors', 'duplicates']);
+  if (INVERTED_SLUGS.has(m.slug) && m.normalizedScore != null) {
+    return interpretScoreBand(m.normalizedScore);
   }
 
   if (m.normalizedScore != null) {
-    if (m.normalizedScore >= 7.6) return 'Strong';
-    if (m.normalizedScore >= 5.1) return 'Okay';
-    if (m.normalizedScore > 0) return 'Weak';
-    return 'None found';
+    return interpretScoreBand(m.normalizedScore);
   }
 
-  const lower = m.value.toLowerCase();
-  if (lower === 'yes' || lower === 'available' || lower === 'supported') return 'Available';
-  if (lower === 'no' || lower === 'none' || lower === 'not available') return 'None found';
-  if (m.value && m.value !== '—') return 'Recorded';
+  const count = parseCount(m.value);
+  if (count === 0) return 'None found';
+
+  if (lower === 'no' || lower === 'none') return 'Not available';
+  if (m.value && m.value !== '—') return 'Not scored';
+
   return undefined;
 }
 
 export function buildHeadlineConclusion(
   name: string,
   results: DraftMeasurement[],
-  _whatWeFound?: string,
+  naContext?: Omit<NotApplicableExplanationInput, 'testResults'>,
 ): string | undefined {
-  const verified = results.filter((m) => m.value && m.value !== '—');
+  if (naContext && isNotApplicableCategory(results)) {
+    return buildNotApplicableWhatThisMeans({ ...naContext, testResults: results, evidenceName: name });
+  }
+
+  const verified = results.filter((m) => m.value && m.value !== '—' && !isNotApplicableMeasurement(m));
   if (verified.length === 0) return undefined;
 
   const counts = verified
@@ -239,10 +312,6 @@ export function buildHeadlineConclusion(
     if (weak.length > 0 && top.count >= 40) {
       return `Good overall numbers, but some groups have very little choice.`;
     }
-  }
-
-  if (verified.length === 1) {
-    return `${name}: we recorded ${verified[0].value} for ${verified[0].label.toLowerCase()}.`;
   }
 
   return undefined;
@@ -388,6 +457,12 @@ export function buildEvidenceCalculation(
   name: string,
   score: number | null,
   results: DraftMeasurement[],
+  opts?: {
+    categorySlug?: string;
+    subscoreSlug?: string;
+    groupLabel?: string;
+    memberSlugs?: string[];
+  },
 ): DraftEvidenceCalculation | undefined {
   const scored = results.filter((m) => m.normalizedScore != null);
   if (score == null || scored.length === 0) return undefined;
@@ -418,16 +493,32 @@ export function buildEvidenceCalculation(
     };
   }
 
-  // Grouped categories (e.g. Amount) use an equal-weight average of member scores.
-  const weight = round2(100 / scored.length);
-  const rows: DraftEvidenceCalculationRow[] = scored.map((m) => ({
-    label: m.label,
-    measuredValue: m.value,
-    internalScore: m.normalizedScore ?? null,
-    weight,
-    contribution:
-      m.normalizedScore != null ? round2(weightedValue(m.normalizedScore, weight)) : null,
-  }));
+  const memberSlugs = opts?.memberSlugs ?? scored.map((m) => m.slug);
+  const allWeights =
+    opts?.categorySlug && opts?.subscoreSlug
+      ? buildMemberWeightsInGroup(
+          opts.categorySlug,
+          opts.subscoreSlug,
+          opts.groupLabel ?? name,
+          memberSlugs,
+        )
+      : memberSlugs.map(() => round2(100 / memberSlugs.length));
+  const weightBySlug = new Map(memberSlugs.map((slug, i) => [slug, allWeights[i] ?? 0]));
+
+  const rows: DraftEvidenceCalculationRow[] = scored.map((m) => {
+    const weight =
+      weightBySlug.get(m.slug) ??
+      weightBySlug.get(memberSlugs.find((s) => s === m.slug) ?? '') ??
+      round2(100 / scored.length);
+    return {
+      label: m.label,
+      measuredValue: m.value,
+      internalScore: m.normalizedScore ?? null,
+      weight,
+      contribution:
+        m.normalizedScore != null ? round2(weightedValue(m.normalizedScore, weight)) : null,
+    };
+  });
 
   const formulaParts = rows
     .map((r) => r.contribution)
@@ -503,23 +594,18 @@ export function methodologyLinkForEvidence(
   return testContributorUrl(categorySlug, subscoreSlug, evidenceName);
 }
 
-export function interpretationTone(m: DraftMeasurement): 'good' | 'fair' | 'poor' | 'neutral' {
+export function interpretationTone(
+  m: DraftMeasurement,
+): 'good' | 'fair' | 'poor' | 'neutral' | 'na' {
+  if (isNotApplicableMeasurement(m)) return 'na';
+
   const label = m.interpretation ?? interpretMeasurement(m);
   if (!label) return 'neutral';
 
   const lower = label.toLowerCase();
-  if (
-    lower.includes('lots') ||
-    lower === 'strong' ||
-    lower === 'available' ||
-    lower.includes('good choice')
-  ) {
-    return 'good';
-  }
-  if (lower.includes('okay') || lower.includes('not many') || lower === 'weak' || lower === 'recorded') {
-    return 'fair';
-  }
-  if (lower.includes('none') || lower.includes('not available')) return 'poor';
+  if (lower === 'excellent' || lower === 'very good' || lower === 'good') return 'good';
+  if (lower === 'fair' || lower === 'mixed') return 'fair';
+  if (lower === 'limited' || lower === 'very limited' || lower === 'none found') return 'poor';
   return 'neutral';
 }
 
@@ -527,6 +613,7 @@ export function interpretationBadgeClass(tone?: string): string {
   if (tone === 'good') return 'ratings-drawer-status-badge ratings-drawer-status-badge--good';
   if (tone === 'fair') return 'ratings-drawer-status-badge ratings-drawer-status-badge--limited';
   if (tone === 'poor') return 'ratings-drawer-status-badge ratings-drawer-status-badge--na';
+  if (tone === 'na') return 'ratings-drawer-status-badge ratings-drawer-status-badge--neutral';
   return 'ratings-drawer-status-badge';
 }
 
@@ -636,22 +723,28 @@ export function buildSubscoreCalcScope(
 
 export function buildSubscoreCalcHeadline(
   subscoreName: string,
-  items: Array<{ name: string; score: number | null }>,
+  items: Array<{ name: string; score: number | null; contribution?: number | null }>,
 ): string {
   const scored = items.filter((i) => i.score != null);
   if (scored.length === 0) {
     return `Weighted combination of evidence categories for the final ${subscoreName} score.`;
   }
-  if (scored.length === 1) {
-    return `Based on ${scored[0].name.toLowerCase()} and how it performed in testing.`;
-  }
+  const totalContrib = items.reduce((sum, i) => sum + (i.contribution ?? 0), 0);
+  const avgScore =
+    totalContrib > 0
+      ? totalContrib
+      : scored.reduce((sum, i) => sum + i.score!, 0) / scored.length;
+  const band = interpretScoreBand(avgScore);
   const sorted = [...scored].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   const highest = sorted[0];
   const lowest = sorted[sorted.length - 1];
-  if ((highest.score ?? 0) - (lowest.score ?? 0) >= 0.75) {
-    return `Strong overall ${subscoreName.toLowerCase()} with room to improve ${lowest.name.toLowerCase()}.`;
+  if (avgScore >= 7) {
+    return `${band} ${subscoreName.toLowerCase()} — strongest on ${highest.name.toLowerCase()}.`;
   }
-  return `Solid ${subscoreName.toLowerCase()} performance across the tested evidence categories.`;
+  if (avgScore >= 5) {
+    return `${band} ${subscoreName.toLowerCase()} — ${highest.name} leads; ${lowest.name.toLowerCase()} pulls it down.`;
+  }
+  return `${band} ${subscoreName.toLowerCase()} — ${lowest.name.toLowerCase()} is the main weak spot.`;
 }
 
 export function buildSubscoreKeyTakeaways(

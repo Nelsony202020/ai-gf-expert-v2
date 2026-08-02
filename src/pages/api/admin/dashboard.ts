@@ -4,6 +4,7 @@ import type { APIRoute } from 'astro';
 import { handler, json } from '../../../lib/api';
 import { requirePermission } from '../../../lib/db/auth';
 import { getDb } from '../../../lib/db/server';
+import { resolveMediaUrl } from '../../../lib/media/url';
 
 const DAY = 24 * 60 * 60 * 1000;
 const STALE_PRICE_DAYS = 60;
@@ -95,8 +96,8 @@ export const GET: APIRoute = handler(async ({ request }) => {
     db.query({ affiliateLinks: { product: {} } }),
     db.query({
       homepageSlots: {
-        product: { logo: {} },
-        character: { image: {} },
+        product: { logo: { file: {} } },
+        character: { image: { file: {} } },
       },
     }),
     db.query({
@@ -265,8 +266,8 @@ export const GET: APIRoute = handler(async ({ request }) => {
       endAt: s.endAt,
       avatarUrl:
         s.kind === 'featured_character'
-          ? (s.character?.image?.url ?? null)
-          : (s.product?.logo?.url ?? null),
+          ? resolveMediaUrl(s.character?.image) || null
+          : resolveMediaUrl(s.product?.logo) || null,
     }));
   const expiringSoon = featuredNow.filter(
     (s) => s.endAt && s.endAt - now < EXPIRY_WINDOW_DAYS * DAY,

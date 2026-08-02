@@ -14,6 +14,7 @@
 
 import { readdirSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
+import { pathMatchKey } from '../src/lib/urls';
 
 const PAGES_DIR = resolve(process.cwd(), 'src/pages');
 
@@ -22,7 +23,7 @@ const IGNORED_PREFIXES = ['/api/', '/admin', '/go/'];
 
 /** Exact routes that are intentionally not in the sitemap. */
 const IGNORED_ROUTES = new Set([
-  '/guides/preview', // draft preview, requires ?secret=
+  '/guides/preview/', // draft preview, requires ?secret=
   '/sitemap.xml',
 ]);
 
@@ -55,9 +56,7 @@ function fileToRoute(file: string): string | null {
 }
 
 function normalize(path: string): string {
-  const base = path.split('#')[0].split('?')[0];
-  const trimmed = base !== '/' ? base.replace(/\/+$/, '') : '/';
-  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return pathMatchKey(path);
 }
 
 const { getAllSitemapEntries } = await import('../src/lib/sitemap');

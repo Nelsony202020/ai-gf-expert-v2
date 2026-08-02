@@ -10,6 +10,7 @@ import { AiFieldAssist } from '../../ai-verdict/AiFieldAssist';
 import { useCan } from '../../context';
 import { CharCounter, FieldHint, PreviewViewToggle, ToggleWithHint } from '../../FieldHint';
 import { Badge, Field, Icon, TextArea, TextInput } from '../../ui';
+import { resolveMediaUrl } from '../../../../lib/media/url';
 import { resolveProductSeoMeta } from '../../../../lib/seo/productMeta';
 import { SEO_TEMPLATE_TAGS } from '../../../../lib/seo/templateTags';
 import { useWorkspace } from '../context';
@@ -33,7 +34,7 @@ export function SeoTab() {
 
   const featuredImageUrl = useMemo(() => {
     if (!links.featuredImage) return null;
-    return related.mediaAll.find((m) => m.id === links.featuredImage)?.url ?? null;
+    return resolveMediaUrl(related.mediaAll.find((m) => m.id === links.featuredImage)) || null;
   }, [links.featuredImage, related.mediaAll]);
 
   const resolvedMeta = useMemo(

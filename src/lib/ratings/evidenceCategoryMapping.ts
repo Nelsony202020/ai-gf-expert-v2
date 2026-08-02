@@ -1,5 +1,9 @@
 import { toSlug } from '../slugs';
 import { findEvidenceSlugByName } from '../test-methodology-evidence';
+import {
+  getPublicEvidenceGroupDisplay,
+  listPublicEvidenceSubscoreKeys,
+} from '../test-subscore-public-evidence';
 import { iconForEvidenceDef } from './evidenceIcons';
 
 export interface EvidenceCategoryGroupDef {
@@ -8,135 +12,24 @@ export interface EvidenceCategoryGroupDef {
   memberSlugs: string[];
 }
 
-/** Evidence category groups per category/subscore — drives public hierarchy. */
-export const SUBSCORE_EVIDENCE_GROUPS: Record<string, EvidenceCategoryGroupDef[]> = {
-  'characters/variety': [
-    {
-      slug: 'amount',
-      name: 'Amount',
-      memberSlugs: [
-        'female-count',
-        'male-count',
-        'transgender-count',
-        'non-binary-count',
-        'other-count',
-      ],
-    },
-    { slug: 'styles', name: 'Styles', memberSlugs: ['styles'] },
-    {
-      slug: 'genders',
-      name: 'Genders',
-      memberSlugs: [
-        'female-count',
-        'male-count',
-        'transgender-count',
-        'non-binary-count',
-        'other-count',
-      ],
-    },
-    { slug: 'ethnicities', name: 'Ethnicities', memberSlugs: ['ethnicities'] },
-    { slug: 'personalities', name: 'Personalities', memberSlugs: ['personalities'] },
-    { slug: 'scenarios', name: 'Scenarios', memberSlugs: ['scenarios'] },
-  ],
-  'characters/discovery': [
-    { slug: 'filters', name: 'Filters', memberSlugs: ['filters'] },
-    { slug: 'categories', name: 'Categories', memberSlugs: ['categories'] },
-    { slug: 'search', name: 'Search', memberSlugs: ['search'] },
-    { slug: 'browsing', name: 'Browsing', memberSlugs: ['browsing'] },
-  ],
-  'characters/quality': [
-    { slug: 'duplicates', name: 'Duplicates', memberSlugs: ['duplicates'] },
-    { slug: 'originality', name: 'Originality', memberSlugs: ['originality'] },
-    { slug: 'profile-quality', name: 'Profile Quality', memberSlugs: ['profile-quality'] },
-    { slug: 'visual-quality', name: 'Visual Quality', memberSlugs: ['visual-quality'] },
-  ],
-  'customization/appearance': [
-    { slug: 'age', name: 'Age', memberSlugs: ['age'] },
-    { slug: 'ethnicity', name: 'Ethnicity', memberSlugs: ['ethnicity'] },
-    { slug: 'eye-color', name: 'Eye color', memberSlugs: ['eye-color'] },
-    { slug: 'body-type', name: 'Body type', memberSlugs: ['body-type'] },
-    { slug: 'breast-size', name: 'Breast size', memberSlugs: ['breast-size'] },
-    { slug: 'hair-style', name: 'Hair style', memberSlugs: ['hair-style'] },
-    { slug: 'hair-color', name: 'Hair color', memberSlugs: ['hair-color'] },
-    { slug: 'outfits', name: 'Outfits', memberSlugs: ['outfits'] },
-    {
-      slug: 'personality-presets',
-      name: 'Personality Presets',
-      memberSlugs: ['creator-personalities'],
-    },
-  ],
-  'customization/personality': [
-    { slug: 'traits', name: 'Traits', memberSlugs: ['traits'] },
-    { slug: 'interests', name: 'Interests', memberSlugs: ['interests'] },
-    { slug: 'relationship', name: 'Relationship', memberSlugs: ['relationship'] },
-    { slug: 'role', name: 'Role', memberSlugs: ['role'] },
-    { slug: 'voice', name: 'Voice', memberSlugs: ['voice'] },
-    { slug: 'kink-options', name: 'Kink Options', memberSlugs: ['kink-options'] },
-  ],
-  'chat-features/platform-extras': [
-    {
-      slug: 'platform-extras',
-      name: 'Bonus features',
-      memberSlugs: ['live-cam', 'platform-extras-list'],
-    },
-  ],
-  'chat/understanding': [
-    { slug: 'memory', name: 'Memory', memberSlugs: ['memory'] },
-    { slug: 'relevance', name: 'Relevance', memberSlugs: ['relevance'] },
-    { slug: 'context', name: 'Context', memberSlugs: ['context'] },
-    { slug: 'instructions', name: 'Instructions', memberSlugs: ['instructions'] },
-    { slug: 'roleplay-accuracy', name: 'Roleplay Accuracy', memberSlugs: ['roleplay-accuracy'] },
-  ],
-  'chat/realism': [
-    { slug: 'naturalness', name: 'Naturalness', memberSlugs: ['naturalness'] },
-    { slug: 'personality', name: 'Personality', memberSlugs: ['personality'] },
-    { slug: 'roleplay', name: 'Roleplay', memberSlugs: ['roleplay'] },
-    { slug: 'initiative', name: 'Initiative', memberSlugs: ['initiative'] },
-    { slug: 'emotion', name: 'Emotion', memberSlugs: ['emotion'] },
-    { slug: 'style', name: 'Style', memberSlugs: ['style'] },
-  ],
-  'chat/reliability': [
-    { slug: 'repetition', name: 'Repetition', memberSlugs: ['repetition'] },
-    { slug: 'refusals', name: 'Refusals', memberSlugs: ['refusals'] },
-    { slug: 'reply-speed', name: 'Reply Speed', memberSlugs: ['reply-speed'] },
-    { slug: 'errors', name: 'Errors', memberSlugs: ['errors'] },
-    { slug: 'consistency', name: 'Consistency', memberSlugs: ['consistency'] },
-    { slug: 'recovery', name: 'Recovery', memberSlugs: ['recovery'] },
-  ],
-  'pricing/plan-value': [
-    { slug: 'monthly-price', name: 'Monthly price', memberSlugs: ['monthly-price'] },
-    { slug: 'annual-price', name: 'Annual price', memberSlugs: ['annual-price'] },
-    { slug: 'included-features', name: 'Basic plan features', memberSlugs: ['included-features'] },
-    { slug: 'included-credits', name: 'Included credits', memberSlugs: ['included-credits'] },
-    { slug: 'plan-limits', name: 'Plan limits', memberSlugs: ['plan-limits'] },
-    { slug: 'annual-discount', name: 'Annual discount', memberSlugs: ['annual-discount'] },
-  ],
-  'pricing/usage-costs': [
-    { slug: 'monthly-spend', name: 'Monthly spend', memberSlugs: ['monthly-spend'] },
-    { slug: 'top-up-value', name: 'Top-up value', memberSlugs: ['top-up-value'] },
-    { slug: 'voice-cost', name: 'Voice messages', memberSlugs: ['voice-cost'] },
-    { slug: 'call-cost', name: 'Voice calls', memberSlugs: ['call-cost'] },
-    { slug: 'image-cost', name: 'Image cost', memberSlugs: ['image-cost'] },
-    { slug: 'video-cost', name: 'Video cost', memberSlugs: ['video-cost'] },
-  ],
-  'pricing/free-access': [
-    { slug: 'free-chat', name: 'Free messages', memberSlugs: ['free-chat'] },
-    { slug: 'free-characters', name: 'Custom character', memberSlugs: ['free-characters'] },
-    { slug: 'free-images', name: 'Free images', memberSlugs: ['free-images'] },
-    { slug: 'free-video', name: 'Free video', memberSlugs: ['free-video'] },
-    { slug: 'free-voice', name: 'Free voice message', memberSlugs: ['free-voice'] },
-    { slug: 'free-value', name: 'Free trial without credit card', memberSlugs: ['free-value'] },
-    { slug: 'restrictions', name: 'Restrictions', memberSlugs: ['restrictions'] },
-  ],
-  'pricing/billing': [
-    { slug: 'pricing-clarity', name: 'Pricing clarity', memberSlugs: ['pricing-clarity'] },
-    { slug: 'paywalls', name: 'Paywalls', memberSlugs: ['paywalls'] },
-    { slug: 'credit-expiry', name: 'Credit expiry', memberSlugs: ['credit-expiry'] },
-    { slug: 'refunds', name: 'Refunds', memberSlugs: ['refunds'] },
-    { slug: 'cancellation', name: 'Easy cancellation', memberSlugs: ['cancellation'] },
-    { slug: 'payment-privacy', name: 'Payment privacy', memberSlugs: ['payment-privacy'] },
-  ],
-};
+function buildSubscoreEvidenceGroups(): Record<string, EvidenceCategoryGroupDef[]> {
+  const result: Record<string, EvidenceCategoryGroupDef[]> = {};
+  for (const key of listPublicEvidenceSubscoreKeys()) {
+    const [categorySlug, subscoreSlug] = key.split('/');
+    const groups = getPublicEvidenceGroupDisplay(categorySlug, subscoreSlug);
+    if (!groups?.length) continue;
+    result[key] = groups.map((group) => ({
+      slug: group.slug,
+      name: group.label,
+      memberSlugs: group.memberSectionIds,
+    }));
+  }
+  return result;
+}
+
+/** Evidence category groups per category/subscore — derived from methodology display tree. */
+export const SUBSCORE_EVIDENCE_GROUPS: Record<string, EvidenceCategoryGroupDef[]> =
+  buildSubscoreEvidenceGroups();
 
 /** Material Symbols icon names for evidence category rows. */
 export const CONTRIBUTOR_ICONS: Record<string, string> = {
@@ -162,6 +55,7 @@ export const CONTRIBUTOR_ICONS: Record<string, string> = {
   'hair-style': 'content_cut',
   'hair-color': 'palette',
   outfits: 'checkroom',
+  'creator-personalities': 'mood',
   'personality-presets': 'mood',
   traits: 'psychology',
   interests: 'favorite',
@@ -169,6 +63,9 @@ export const CONTRIBUTOR_ICONS: Record<string, string> = {
   role: 'theater_comedy',
   voice: 'record_voice_over',
   'kink-options': 'lock_open',
+  'custom-prompts': 'edit_note',
+  editing: 'edit',
+  preview: 'preview',
   memory: 'psychology',
   relevance: 'target',
   context: 'forum',
@@ -186,6 +83,74 @@ export const CONTRIBUTOR_ICONS: Record<string, string> = {
   errors: 'error',
   consistency: 'sync',
   recovery: 'restart_alt',
+  'images-sent': 'send',
+  'images-received': 'image',
+  'voice-sent': 'mic',
+  'voice-received': 'record_voice_over',
+  'chat-video': 'videocam',
+  gifs: 'gif_box',
+  reactions: 'add_reaction',
+  'voice-calls': 'call',
+  'chat-modes': 'tune',
+  'mode-types': 'category',
+  'group-chat': 'groups',
+  'double-texting': 'forum',
+  'proactive-messages': 'notifications_active',
+  'edit-messages': 'edit',
+  'delete-messages': 'delete',
+  'regenerate-replies': 'refresh',
+  'save-memories': 'bookmark',
+  'edit-memories': 'edit_note',
+  'reset-chat': 'restart_alt',
+  'export-chat': 'download',
+  'live-cam': 'videocam',
+  'other-extras': 'extension',
+  realism: 'photo_camera',
+  'visual-errors': 'bug_report',
+  composition: 'crop',
+  resolution: 'hd',
+  'prompt-accuracy': 'target',
+  'character-consistency': 'face',
+  'face-consistency': 'face',
+  'body-consistency': 'accessibility_new',
+  'style-consistency': 'palette',
+  'editing-accuracy': 'edit',
+  speed: 'speed',
+  failures: 'error',
+  'chat-generation': 'chat',
+  'separate-generator': 'apps',
+  'image-editing': 'edit',
+  'nsfw-support': 'lock_open',
+  'text-to-video': 'movie',
+  'image-to-video': 'movie_filter',
+  audio: 'volume_up',
+  'maximum-length': 'timer',
+  'maximum-resolution': 'hd',
+  motion: 'animation',
+  accuracy: 'target',
+  'frame-consistency': 'view_carousel',
+  'ease-of-use': 'touch_app',
+  regeneration: 'refresh',
+  training: 'school',
+  'human-review': 'person_search',
+  'data-sharing': 'share',
+  advertising: 'campaign',
+  retention: 'schedule',
+  'policy-clarity': 'description',
+  'delete-chats': 'delete',
+  'delete-account': 'person_remove',
+  'delete-personal-data': 'delete_forever',
+  'training-opt-out': 'block',
+  'export-data': 'download',
+  encryption: 'lock',
+  'two-factor-authentication': 'security',
+  'billing-descriptor': 'receipt',
+  'security-incidents': 'warning',
+  'support-available': 'support_agent',
+  'support-channels': 'forum',
+  'support-reach': 'contact_support',
+  'support-speed': 'speed',
+  'support-helpfulness': 'thumb_up',
   'monthly-price': 'payments',
   'annual-price': 'calendar_month',
   'included-features': 'checklist',

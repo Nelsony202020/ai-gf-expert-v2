@@ -32,7 +32,7 @@ export async function loadHomepageTopPicks(
     const db = getDb();
     const { homepageSlots } = await (db.query as any)({
       homepageSlots: {
-        product: { logo: {}, featuredImage: {} },
+        product: { logo: { file: {} }, featuredImage: { file: {} } },
       },
     });
 

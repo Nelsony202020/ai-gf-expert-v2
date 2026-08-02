@@ -793,6 +793,17 @@
   color: var(--color-on-surface);
 }
 
+.ratings-drawer-card__label--secondary {
+  margin-top: 0.75rem;
+}
+
+.ratings-drawer-card__subtext {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--color-on-surface-variant);
+}
+
 .ratings-drawer-trust-badge {
   display: inline-flex;
   align-items: center;
@@ -854,6 +865,11 @@
   color: #b91c1c;
 }
 
+.ratings-drawer-interp-text--na {
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+}
+
 .ratings-drawer-status-badge {
   display: inline-flex;
   align-items: center;
@@ -878,6 +894,11 @@
 .ratings-drawer-status-badge--na {
   background: rgb(254 226 226 / 95%);
   color: #b91c1c;
+}
+
+.ratings-drawer-status-badge--neutral {
+  background: rgb(241 245 249 / 95%);
+  color: var(--color-on-surface-variant);
 }
 
 .ratings-drawer-blockquote {

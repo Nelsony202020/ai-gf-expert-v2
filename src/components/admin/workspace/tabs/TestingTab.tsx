@@ -48,6 +48,7 @@ import {
 } from '../../ui';
 import { useWorkspace } from '../context';
 import { workspaceTabPath } from '../completion';
+import { ReviewCopyPanel } from '../../testing/ReviewCopyPanel';
 
 interface ScoreTreeDto {
   overall: number | null;
@@ -150,6 +151,13 @@ export function TestingTab() {
   const [structureLoading, setStructureLoading] = useState(true);
   const [tree, setTree] = useState<ScoreTreeDto | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
+  const viewParam = searchParams.get('view');
+  const view =
+    viewParam === 'explanations' || viewParam === 'takeaways' || viewParam === 'review'
+      ? 'review'
+      : 'testing';
+  const reviewCopyTab =
+    viewParam === 'takeaways' ? 'takeaways' : ('explanations' as 'explanations' | 'takeaways');
   const [guidedStart, setGuidedStart] = useState<number | null>(null);
   const [guidedFocusDefId, setGuidedFocusDefId] = useState<string | null>(null);
   const [guidedFocusNonce, setGuidedFocusNonce] = useState(0);
@@ -268,6 +276,15 @@ export function TestingTab() {
     setSelectedCategory(slug);
     if (slug) searchParams.set('category', slug);
     else searchParams.delete('category');
+    setSearchParams(searchParams, { replace: true });
+  }
+
+  function setTestingView(next: 'testing' | 'review', copyTab?: 'explanations' | 'takeaways') {
+    if (next === 'review') {
+      searchParams.set('view', copyTab === 'takeaways' ? 'takeaways' : 'review');
+    } else {
+      searchParams.delete('view');
+    }
     setSearchParams(searchParams, { replace: true });
   }
 
@@ -728,6 +745,16 @@ export function TestingTab() {
             <Icon name={primary.icon} />
             {primary.label}
           </Button>
+          {testingComplete && (
+            <Button
+              variant="secondary"
+              className="shrink-0"
+              onClick={() => setTestingView('review')}
+            >
+              <Icon name="description" />
+              Review copy
+            </Button>
+          )}
           <RunActionsMenu
             canTest={canTest}
             showRunEditor={showRunEditor}
@@ -773,8 +800,15 @@ export function TestingTab() {
         </p>
       )}
 
-      {/* Categories → sessions */}
-        {structureLoading ? (
+      {/* Categories → sessions OR result explanations */}
+      {view === 'review' ? (
+        <ReviewCopyPanel
+          productId={ws.productId}
+          testingComplete={testingComplete}
+          initialTab={reviewCopyTab}
+          onBack={() => setTestingView('testing')}
+        />
+      ) : structureLoading ? (
           <Spinner />
         ) : selectedCat ? (
           <div className="grid gap-3 md:grid-cols-[210px_1fr]">

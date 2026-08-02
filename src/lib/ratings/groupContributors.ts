@@ -3,13 +3,22 @@ import {
   evidenceGroupsForSubscore,
   iconForContributor,
 } from './evidenceCategoryMapping';
+import { DUPLICATE_EVIDENCE_SLUGS } from './evidenceIndex';
+import { resolveDbEvidenceSlug } from './evidenceGroupScoring';
 import { deferPayAsYouGoScores, iconForEvidenceDef } from './evidenceIcons';
 
 type StoredEvidenceResult = {
   publicResult?: string | null;
   normalizedScore?: number | null;
+  notApplicable?: boolean;
   evidenceDefinition?: { slug?: string; name?: string };
 };
+
+function isStoredNotApplicable(result: StoredEvidenceResult | undefined): boolean {
+  if (!result) return false;
+  if (result.notApplicable) return true;
+  return result.publicResult?.trim().toLowerCase() === 'not applicable';
+}
 
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
@@ -29,14 +38,34 @@ function parseCount(value: string | null | undefined): number | null {
 const GENDER_COUNT_LABELS: Record<string, string> = {
   'female-count': 'female',
   'male-count': 'male',
+  'anime-female-count': 'anime female',
+  'anime-male-count': 'anime male',
   'transgender-count': 'transgender',
   'non-binary-count': 'non-binary',
   'other-count': 'other',
 };
 
+function storedResult(
+  slug: string,
+  categorySlug: string,
+  subscoreSlug: string,
+  resultBySlug: Map<string, StoredEvidenceResult>,
+): StoredEvidenceResult | undefined {
+  const dbSlug = resolveDbEvidenceSlug(slug);
+  return (
+    resultBySlug.get(`${categorySlug}/${subscoreSlug}/${slug}`) ??
+    resultBySlug.get(`${categorySlug}/${subscoreSlug}/${dbSlug}`) ??
+    (!DUPLICATE_EVIDENCE_SLUGS.has(slug) && !DUPLICATE_EVIDENCE_SLUGS.has(dbSlug)
+      ? resultBySlug.get(slug) ?? resultBySlug.get(dbSlug)
+      : undefined)
+  );
+}
+
 function formatGroupValue(
   groupSlug: string,
   memberSlugs: string[],
+  categorySlug: string,
+  subscoreSlug: string,
   resultBySlug: Map<string, StoredEvidenceResult>,
   fileRow?: DataRow,
 ): string {
@@ -47,7 +76,7 @@ function formatGroupValue(
   if (groupSlug === 'genders') {
     const parts = memberSlugs
       .map((slug) => {
-        const result = resultBySlug.get(slug);
+        const result = storedResult(slug, categorySlug, subscoreSlug, resultBySlug);
         const val = parseCount(result?.publicResult);
         if (val == null) return null;
         const label = GENDER_COUNT_LABELS[slug] ?? slug;
@@ -58,19 +87,21 @@ function formatGroupValue(
   }
 
   if (memberSlugs.length === 1) {
-    const result = resultBySlug.get(memberSlugs[0]);
+    const result = storedResult(memberSlugs[0], categorySlug, subscoreSlug, resultBySlug);
     return result?.publicResult?.trim() || '—';
   }
 
   const memberResults = memberSlugs
-    .map((slug) => resultBySlug.get(slug))
+    .map((slug) => storedResult(slug, categorySlug, subscoreSlug, resultBySlug))
     .filter((result): result is StoredEvidenceResult => Boolean(result?.publicResult?.trim()));
 
   if (memberResults.length === 0) return '—';
 
   if (groupSlug === 'amount') {
     const nums = memberSlugs
-      .map((slug) => parseCount(resultBySlug.get(slug)?.publicResult))
+      .map((slug) =>
+        parseCount(storedResult(slug, categorySlug, subscoreSlug, resultBySlug)?.publicResult),
+      )
       .filter((num): num is number => num != null);
     if (nums.length > 0) {
       return nums.reduce((sum, num) => sum + num, 0).toLocaleString();
@@ -81,7 +112,11 @@ function formatGroupValue(
 }
 
 function groupHasData(memberSlugs: string[], contributorSlugs: string[]): boolean {
-  return memberSlugs.some((slug) => contributorSlugs.includes(slug));
+  return memberSlugs.some(
+    (slug) =>
+      contributorSlugs.includes(slug) ||
+      contributorSlugs.includes(resolveDbEvidenceSlug(slug)),
+  );
 }
 
 /**
@@ -113,7 +148,10 @@ export function buildGroupedContributors(
         {
           label,
           value: result.publicResult ?? '—',
-          internalScore: hideScores ? undefined : result.normalizedScore ?? fileMatch?.internalScore,
+          internalScore:
+            hideScores || isStoredNotApplicable(result)
+              ? undefined
+              : result.normalizedScore ?? fileMatch?.internalScore,
           icon: fileMatch?.icon ?? iconForEvidenceDef(slug, label),
         },
       ];
@@ -126,14 +164,29 @@ export function buildGroupedContributors(
 
       const fileRow = fileByLabel.get(group.name.toLowerCase());
       const memberScores = group.memberSlugs
-        .map((slug) => resultBySlug.get(slug)?.normalizedScore)
+        .map((slug) => {
+          const result = storedResult(slug, categorySlug, subscoreSlug, resultBySlug);
+          if (isStoredNotApplicable(result)) return null;
+          return result?.normalizedScore ?? null;
+        })
         .filter((score): score is number => score != null);
+
+      const allNotApplicable = group.memberSlugs.every((slug) =>
+        isStoredNotApplicable(storedResult(slug, categorySlug, subscoreSlug, resultBySlug)),
+      );
 
       return {
         label: group.name,
-        value: formatGroupValue(group.slug, group.memberSlugs, resultBySlug, fileRow),
+        value: formatGroupValue(
+          group.slug,
+          group.memberSlugs,
+          categorySlug,
+          subscoreSlug,
+          resultBySlug,
+          fileRow,
+        ),
         icon: fileRow?.icon ?? iconForContributor(group.slug, group.name),
-        internalScore: hideScores
+        internalScore: hideScores || allNotApplicable
           ? undefined
           : averageScore(memberScores) ?? fileRow?.internalScore,
       } satisfies DataRow;

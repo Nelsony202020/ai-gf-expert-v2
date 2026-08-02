@@ -63,7 +63,7 @@ export const authors: Record<string, AuthorProfile> = {
     title: 'M.A. in AI Ethics & Society · CEO · Lead Tester',
     avatar: '/brand/herman-main-icon.svg',
     email: 'herman@aigirlfriend.expert',
-    profileUrl: '/author/herman-carter',
+    profileUrl: '/author/herman-carter/',
     bio: 'Herman Carter is one of the leading experts on AI girlfriends, having tested over 100 AI girlfriend apps and reviewed more than 50 on his blog and YouTube channel. With a Master’s in AI Ethics from Cambridge, Herman provides straightforward insights to help users find the right AI tools.',
     intro: [
       'Herman Carter is an expert on AI and dating apps, providing helpful advice and tips. Herman is the CEO, lead tester and face of AI Girlfriend Expert. He shares easy-to-follow guides to help readers navigate AI girlfriend apps with confidence.',
@@ -130,7 +130,7 @@ export const authors: Record<string, AuthorProfile> = {
     title: 'Developer & Team Leader',
     avatar: '/authors/ajit.png',
     email: 'ajit2042@gmail.com',
-    profileUrl: '/author/ajit',
+    profileUrl: '/author/ajit/',
     bio: 'Ajit is the main developer behind AI Girlfriend Expert, with a career focused on building top-notch websites. He ensures the site looks great and runs smoothly, always finding new ways to improve the user experience for readers.',
     intro: [
       'Ajit is a passionate and dedicated web developer from Sangli, India. His journey in web development began over a decade ago, during which he has cultivated a robust skill set and deep knowledge of modern web platforms.',

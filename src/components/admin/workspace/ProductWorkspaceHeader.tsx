@@ -4,8 +4,10 @@ import { Link, NavLink } from 'react-router-dom';
 import { Badge, Button, Icon, statusTone } from '../ui';
 import { useCan } from '../context';
 import { useWorkspace } from './context';
+import { confirmLeaveExplanationsIfNeeded } from '../testing/explanations/explanationLeaveGuard';
 import { WORKSPACE_TABS, fmtRelativeTime, workspaceTabPath, tabVisualStatus, type TabCompletion } from './completion';
 import { reviewPageUrl, reviewPreviewPageUrl } from '../../../lib/slugs';
+import { resolveMediaUrl } from '../../../lib/media/url';
 
 function fmtMonthYear(ms?: number | null): string {
   if (!ms) return 'never';
@@ -31,7 +33,9 @@ export function ProductWorkspaceHeader() {
   const can = useCan();
   const { fields, links, related, completion } = ws;
 
-  const logoUrl = links.logo ? related.mediaAll.find((m) => m.id === links.logo)?.url : null;
+  const logoUrl = links.logo
+    ? resolveMediaUrl(related.mediaAll.find((m) => m.id === links.logo)) || null
+    : null;
   const status = String(fields.status ?? 'draft');
   const isPublished = status === 'published';
   const reviewUrl = fields.slug
@@ -48,6 +52,9 @@ export function ProductWorkspaceHeader() {
         <div className="flex min-w-0 items-center gap-3">
           <Link
             to="/products"
+            onClick={(e) => {
+              if (!confirmLeaveExplanationsIfNeeded('/products')) e.preventDefault();
+            }}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
             aria-label="Back to all products"
           >
@@ -147,6 +154,11 @@ export function ProductWorkspaceHeader() {
             <NavLink
               key={t.id}
               to={workspaceTabPath(ws.productId, t.id)}
+              onClick={(e) => {
+                if (!confirmLeaveExplanationsIfNeeded(workspaceTabPath(ws.productId, t.id))) {
+                  e.preventDefault();
+                }
+              }}
               className={({ isActive }) =>
                 `flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
                   isActive

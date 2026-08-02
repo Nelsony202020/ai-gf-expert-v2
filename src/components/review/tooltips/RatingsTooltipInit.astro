@@ -51,7 +51,7 @@
     const maxWidth = panel.classList.contains('ratings-tooltip-panel--overall')
       ? 420
       : panel.classList.contains('ratings-tooltip-panel--category')
-      ? 420
+      ? 360
       : panel.classList.contains('ratings-tooltip-panel--split')
       ? 420
       : panel.classList.contains('ratings-tooltip-panel--wide')
@@ -59,7 +59,7 @@
       : panel.classList.contains('ratings-tooltip-panel--compact')
         ? panel.classList.contains('ratings-tooltip-panel--split') ||
           panel.classList.contains('ratings-tooltip-panel--category')
-          ? 420
+          ? 360
           : panel.classList.contains('ratings-tooltip-panel--pipeline')
             ? 280
             : 260

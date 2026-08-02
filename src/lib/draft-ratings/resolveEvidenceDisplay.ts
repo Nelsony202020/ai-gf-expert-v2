@@ -1,4 +1,4 @@
-import { formatEvidenceAnswer, formatChecklistAnswer } from '../testing/evidenceExport';
+import { formatEvidenceAnswer, formatChecklistAnswer } from '../testing/evidenceFormat';
 import { fmtMoney } from '../pricing/calc';
 import { renderPublicResult } from '../../components/admin/testing/presentation';
 
@@ -170,6 +170,21 @@ export function resolveEvidenceDisplayValue(def: EvidenceDef, row: EvidenceRow):
   if (typeof raw === 'object' && raw !== null) {
     const freeAccess = formatFreeAccessValue(def.slug, raw);
     if (freeAccess) return freeAccess;
+
+    if (def.slug === 'annual-price' && 'value' in raw && typeof (raw as { value: unknown }).value === 'number') {
+      const effective = (raw as { value: number }).value;
+      const detail =
+        'detail' in raw ? (raw as { detail?: { annualTotal?: number } }).detail : undefined;
+      const annualTotal = detail?.annualTotal;
+      if (annualTotal != null) {
+        return `${fmtMoney(annualTotal)}/year (${fmtMoney(effective)}/month effective)`;
+      }
+      return `${fmtMoney(effective)}/month effective`;
+    }
+
+    if (def.slug === 'ease-of-use' && 'value' in raw && typeof (raw as { value: unknown }).value === 'number') {
+      return `${(raw as { value: number }).value} steps`;
+    }
 
     if ('value' in raw && typeof (raw as { value: unknown }).value === 'number') {
       const num = (raw as { value: number }).value;

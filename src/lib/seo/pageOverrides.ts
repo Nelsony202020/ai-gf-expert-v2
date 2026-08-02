@@ -18,11 +18,11 @@ const CACHE_TTL_MS = 15_000;
 
 let cache: { data: PageOverrides; at: number } | null = null;
 
-/** Consistent key: no hash/query, no trailing slash (except root). */
+import { pathMatchKey } from '../urls';
+
+/** Consistent key: canonical trailing-slash form (except root, files, /api, /go, /admin). */
 export function normalizeOverridePath(path: string): string {
-  const base = path.split('#')[0].split('?')[0];
-  const trimmed = base !== '/' ? base.replace(/\/+$/, '') : '/';
-  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return pathMatchKey(path);
 }
 
 export async function getPageOverrides(force = false): Promise<PageOverrides> {
@@ -34,7 +34,12 @@ export async function getPageOverrides(force = false): Promise<PageOverrides> {
       siteSettings: { $: { where: { key: SETTINGS_KEY } } },
     });
     const row = result.siteSettings?.[0];
-    const data = ((row?.value ?? {}) as PageOverrides) || {};
+    const raw = ((row?.value ?? {}) as PageOverrides) || {};
+    // Migrate legacy keys stored without trailing slashes.
+    const data: PageOverrides = {};
+    for (const [k, v] of Object.entries(raw)) {
+      data[pathMatchKey(k)] = v;
+    }
     cache = { data, at: Date.now() };
     return data;
   } catch (error) {

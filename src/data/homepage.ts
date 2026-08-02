@@ -308,25 +308,9 @@ function buildFilters(pick: RoundupPick): string[] {
   return [...filters];
 }
 
-function buildPayments(pick: RoundupPick): string[] {
-  const payments = new Set<string>(['pay-card']);
-  const specText = pick.specs.map((s) => `${s.label} ${s.value}`).join(' ').toLowerCase();
-
-  if (['candy-ai', 'crushon-ai', 'dreamgf', 'replika', 'character-ai'].includes(pick.id)) {
-    payments.add('pay-paypal');
-  }
-  if (['kindroid', 'aura-ai', 'nectar-ai'].includes(pick.id)) {
-    payments.add('pay-crypto');
-  }
-  if (pick.id === 'nectar-ai') {
-    payments.delete('pay-card');
-    payments.add('pay-crypto-only');
-  }
-  if (pick.id === 'replika' || specText.includes('discreet')) {
-    payments.add('pay-discreet');
-  }
-
-  return [...payments];
+function buildPayments(_pick: RoundupPick): string[] {
+  // Payment badges come from the admin payment profile when the app is overlaid with DB data.
+  return [];
 }
 
 function buildPlatforms(pick: RoundupPick): string[] {
