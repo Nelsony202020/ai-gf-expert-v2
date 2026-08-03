@@ -7,6 +7,7 @@ import TabBar from '../../components/review/TabBar.astro';
 import type { Tab } from '../../components/review/TabBar.astro';
 import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
 import ReviewArticleTab from '../../components/review/tabs/ReviewArticleTab.astro';
+import MarketDataTab from '../../components/review/tabs/MarketDataTab.astro';
 import RatingsSpecsTab from '../../components/review/tabs/RatingsSpecsTab.astro';
 import PlaceholderTab from '../../components/review/tabs/PlaceholderTab.astro';
 import PhotosVideosTab from '../../components/review/tabs/PhotosVideosTab.astro';
@@ -16,27 +17,39 @@ import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astr
 import RoundupAffiliateFineprint from '../../components/roundup/RoundupAffiliateFineprint.astro';
 import {
   getProductFeaturedIn,
-  loadPublishedProductBySlug,
   loadPublishedReviewSlugs,
+  loadReviewPageProduct,
 } from '../../lib/content/store';
+import { loadDraftRatingsViewModel } from '../../lib/draft-ratings/loadDraftRatingsData';
+import { DEV_REVIEW_SLUGS, hasMarketDataTab } from '../../lib/content/reviewDevProducts';
 import { resolveProductPageHead } from '../../lib/seo/productMeta';
 
 /** Prerender published reviews at build so Vercel static output matches the admin publish state. */
 export async function getStaticPaths() {
   const slugs = await loadPublishedReviewSlugs();
+  if (import.meta.env.DEV) {
+    for (const slug of DEV_REVIEW_SLUGS) {
+      if (!slugs.includes(slug)) slugs.push(slug);
+    }
+  }
   return slugs.map((slug) => ({ params: { slug } }));
 }
 
 const { slug } = Astro.params;
-const product = slug ? await loadPublishedProductBySlug(slug) : null;
+const pageLoad = slug ? await loadReviewPageProduct(slug) : null;
 
-if (!product) {
+if (!pageLoad) {
   return new Response(null, { status: 404, statusText: 'Not Found' });
 }
 
+const { product, isDraft, useDraftRatings } = pageLoad;
 const featuredIn = await getProductFeaturedIn(product.slug);
+const ratingsModel = useDraftRatings
+  ? await loadDraftRatingsViewModel(product, { preview: true })
+  : undefined;
 const origin = Astro.site?.toString() ?? Astro.url.origin;
-const head = resolveProductPageHead(product, { origin });
+const head = resolveProductPageHead(product, { origin, draft: isDraft });
+const showMarketDataTab = hasMarketDataTab(product.slug) && (import.meta.env.DEV || isDraft);
 
 const tabs: Tab[] = [
   { id: 'overview', label: 'Overview' },
@@ -45,6 +58,9 @@ const tabs: Tab[] = [
   { id: 'photos', label: 'Photos & Videos' },
   { id: 'pricing', label: 'Pricing' },
 ];
+if (showMarketDataTab) {
+  tabs.push({ id: 'market-data', label: 'Market Data' });
+}
 
 const shareUrl = head.canonical;
 ---
@@ -59,13 +75,27 @@ const shareUrl = head.canonical;
   robots={head.robots}
 >
   <Header />
+  {
+    isDraft && (
+      <div
+        class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200"
+        role="status"
+      >
+        Draft — not published. This page is only for localhost testing and is not indexed.
+        Publish the product in admin for the live URL at
+        <a href={`/reviews/${product.slug}`} class="font-medium underline underline-offset-2">
+          /reviews/{product.slug}
+        </a>.
+      </div>
+    )
+  }
   <main>
     <div class="roundup-affiliate-bar">
       <div class="section-container px-4 md:px-8">
         <RoundupAffiliateFineprint />
       </div>
     </div>
-    <ReviewHero product={product} shareUrl={shareUrl} pageHead={head} />
+    <ReviewHero product={product} shareUrl={shareUrl} pageHead={head} isDraft={isDraft} />
     {featuredIn.length > 0 && (
       <div class="mx-auto max-w-6xl px-4 pt-3 text-sm text-white/60">
         Also featured in:{' '}
@@ -86,7 +116,11 @@ const shareUrl = head.canonical;
         <OverviewTab product={product} />
       </div>
       <div data-tab-panel="ratings" class="hidden">
-        <RatingsSpecsTab product={product} />
+        <RatingsSpecsTab
+          product={product}
+          preview={useDraftRatings}
+          ratingsModel={ratingsModel}
+        />
       </div>
       <div data-tab-panel="review" class="hidden">
         <ReviewArticleTab product={product} />
@@ -101,6 +135,13 @@ const shareUrl = head.canonical;
           description="A detailed breakdown of every plan, what each tier unlocks, and how the value compares to competitors is coming soon."
         />
       </div>
+      {
+        showMarketDataTab && (
+          <div data-tab-panel="market-data" class="hidden">
+            <MarketDataTab product={product} />
+          </div>
+        )
+      }
     </div>
   </main>
   <Footer />

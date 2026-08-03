@@ -1,5 +1,17 @@
 /** Shared capability gating for evidence tests (UI + scoring). */
 
+import {
+  filterGenderGatedItems,
+  isGenderCountApplicable,
+} from './genderCountGating';
+
+export {
+  filterGenderGatedItems,
+  GENDER_COUNT_SLUGS,
+  isGenderCountApplicable,
+  parseGenderGroupsFromRaw,
+} from './genderCountGating';
+
 export type ProductCapabilityName =
   | 'capVoiceCalls'
   | 'capVoiceMessages'
@@ -65,6 +77,11 @@ export function filterApplicableItems<T extends { def: { slug?: unknown } }>(
   categorySlug: string | undefined,
   items: T[],
   productFields: Record<string, unknown>,
+  gendersRaw?: unknown,
 ): T[] {
-  return items.filter(({ def }) => isEvidenceApplicable(categorySlug, def, productFields));
+  return filterGenderGatedItems(
+    categorySlug,
+    items.filter(({ def }) => isEvidenceApplicable(categorySlug, def, productFields)),
+    gendersRaw,
+  );
 }

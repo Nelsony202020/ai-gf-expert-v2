@@ -4,10 +4,17 @@
 import { getDb, id as newId } from './server';
 import { HttpError, type AdminIdentity } from './auth';
 import { auditTx } from './audit';
-import { pathMatchKey } from '../urls';
+import { pathMatchKey, publicPagePath } from '../urls';
 
 export function normalizePath(path: string): string {
   return pathMatchKey(path);
+}
+
+/** Normalize redirect destination — preserves #hash and ?query on internal paths. */
+export function normalizeRedirectDestination(path: string): string {
+  if (!path || path === '—' || path === '-') return '';
+  if (/^https?:\/\//.test(path)) return path;
+  return publicPagePath(path);
 }
 
 export interface RedirectValidation {
@@ -26,12 +33,27 @@ export async function validateRedirect(
   sourcePath: string,
   destinationPath: string,
   excludeId?: string,
+  redirectType: number = 301,
 ): Promise<RedirectValidation> {
   const errors: string[] = [];
   const warnings: string[] = [];
   const source = normalizePath(sourcePath);
+  const is410 = redirectType === 410;
+
+  if (is410) {
+    const db = getDb();
+    const { redirects } = await db.query({ redirects: {} });
+    const active = redirects.filter((r: any) => r.active && r.id !== excludeId);
+    const bySource = new Map<string, any>(active.map((r: any) => [normalizePath(r.sourcePath), r]));
+    if (bySource.has(source)) {
+      errors.push(`A redirect from "${source}" already exists.`);
+    }
+    return { errors, warnings };
+  }
+
   const isExternal = /^https?:\/\//.test(destinationPath);
-  const dest = isExternal ? destinationPath : normalizePath(destinationPath);
+  const dest = isExternal ? destinationPath : normalizeRedirectDestination(destinationPath);
+  const destPathKey = isExternal ? dest : normalizePath(dest);
 
   if (!isExternal && source === dest) {
     errors.push('Source and destination are identical (self-redirect).');
@@ -50,10 +72,11 @@ export async function validateRedirect(
   if (!isExternal) {
     // Follow the chain from dest; if we ever come back to source -> loop.
     const seen = new Set<string>([source]);
-    let cursor = dest;
+    let cursor = destPathKey;
     let hops = 0;
     while (bySource.has(cursor)) {
       const next = bySource.get(cursor)!;
+      if (next.redirectType === 410) break;
       const nextDest = /^https?:\/\//.test(next.destinationPath)
         ? null
         : normalizePath(next.destinationPath);
@@ -72,14 +95,14 @@ export async function validateRedirect(
     }
     if (hops > 0) {
       warnings.push(
-        `Destination "${dest}" is itself redirected (${hops} hop${hops > 1 ? 's' : ''}). Consider pointing directly at the final URL.`,
+        `Destination "${destPathKey}" is itself redirected (${hops} hop${hops > 1 ? 's' : ''}). Consider pointing directly at the final URL.`,
       );
     }
 
     // Does the destination exist as content?
     const exists = await destinationExists(cursor);
     if (!exists) {
-      warnings.push(`Destination "${cursor}" does not match any known page or record slug.`);
+      warnings.push(`Destination "${destPathKey}" does not match any known page or record slug.`);
     }
   }
 
@@ -101,6 +124,7 @@ const STATIC_PATHS = new Set(
     '/test/all/',
     '/test/tooltips/',
     '/test/market-data/',
+    '/best/ai-girlfriend/',
     '/legal/terms/',
     '/legal/privacy/',
     '/legal/accessibility/',
@@ -151,8 +175,8 @@ export async function createSlugChangeRedirect(
   identity: AdminIdentity,
 ): Promise<{ created: boolean; warnings: string[] }> {
   const source = normalizePath(oldPath);
-  const dest = normalizePath(newPath);
-  const { errors, warnings } = await validateRedirect(source, dest);
+  const dest = normalizeRedirectDestination(newPath);
+  const { errors, warnings } = await validateRedirect(source, dest, undefined, 301);
   if (errors.length > 0) {
     throw new HttpError(409, `Cannot create redirect: ${errors.join(' ')}`);
   }
@@ -194,9 +218,10 @@ export async function findRedirect(
   );
   const hit = bySource.get(source);
   if (!hit) return null;
+  const type = hit.redirectType ?? 301;
   return {
-    destinationPath: hit.destinationPath,
-    redirectType: hit.redirectType ?? 301,
+    destinationPath: type === 410 ? '' : hit.destinationPath,
+    redirectType: type,
     id: hit.id,
   };
 }

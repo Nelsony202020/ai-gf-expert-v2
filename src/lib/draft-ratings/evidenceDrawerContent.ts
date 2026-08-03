@@ -1,6 +1,10 @@
 import { testContributorUrl } from '../slugs';
 import { weightedValue } from '../scores';
-import { buildMemberWeightsInGroup } from '../ratings/evidenceGroupScoring';
+import {
+  buildMemberWeightsInGroup,
+  getMemberNominalWeights,
+} from '../ratings/evidenceGroupScoring';
+import { buildRedistributedCalcItems } from '../scores';
 import type {
   DraftEvidenceCalculation,
   DraftEvidenceCalculationRow,
@@ -494,6 +498,59 @@ export function buildEvidenceCalculation(
   }
 
   const memberSlugs = opts?.memberSlugs ?? scored.map((m) => m.slug);
+
+  if (opts?.categorySlug && opts?.subscoreSlug && memberSlugs.length > 1) {
+    const nominalWeights = getMemberNominalWeights(
+      opts.categorySlug,
+      opts.subscoreSlug,
+      memberSlugs,
+    );
+    const weightBySlug = new Map(memberSlugs.map((slug, i) => [slug, nominalWeights[i] ?? 0]));
+    const calcItems = memberSlugs
+      .map((slug) => {
+        const measurement = scored.find((m) => m.slug === slug);
+        if (!measurement) return null;
+        return {
+          name: measurement.label,
+          score: measurement.normalizedScore,
+          nominalWeight: weightBySlug.get(slug) ?? 0,
+          measurement,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item != null);
+
+    const { rows: calcRows } = buildRedistributedCalcItems(
+      calcItems.map((item) => ({
+        name: item.name,
+        score: item.score,
+        nominalWeight: item.nominalWeight,
+      })),
+    );
+
+    const rows: DraftEvidenceCalculationRow[] = calcItems.map((item, index) => ({
+      label: item.measurement.label,
+      measuredValue: item.measurement.value,
+      internalScore: item.measurement.normalizedScore ?? null,
+      weight: calcRows[index]?.weight ?? 0,
+      contribution: calcRows[index]?.contribution ?? null,
+    }));
+
+    const formulaParts = rows
+      .map((r) => r.contribution)
+      .filter((v): v is number => v != null)
+      .map((v) => v.toFixed(2));
+    const formulaTotal = round2(formulaParts.reduce((sum, p) => sum + Number.parseFloat(p), 0));
+
+    return {
+      intro,
+      method: 'average',
+      rows,
+      formulaParts,
+      formulaTotal,
+      finalScore: score ?? (formulaTotal > 0 ? Math.round(formulaTotal * 10) / 10 : null),
+    };
+  }
+
   const allWeights =
     opts?.categorySlug && opts?.subscoreSlug
       ? buildMemberWeightsInGroup(

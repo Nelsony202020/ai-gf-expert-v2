@@ -220,6 +220,9 @@ const _schema = i.schema({
       cryptoOnly: i.boolean().optional(), // stored separately: important restriction
       applePay: i.boolean().optional(),
       googlePay: i.boolean().optional(),
+      wechatPay: i.boolean().optional(),
+      alipay: i.boolean().optional(),
+      discoverPay: i.boolean().optional(),
       discreetBilling: i.boolean().optional(),
       billingDescriptor: i.string().optional(),
       notes: i.string().optional(),
@@ -747,7 +750,7 @@ const _schema = i.schema({
     redirects: i.entity({
       sourcePath: i.string().unique().indexed(),
       destinationPath: i.string(),
-      redirectType: i.number(), // 301 | 302
+      redirectType: i.number(), // 301 | 302 | 410
       active: i.boolean(),
       createdBy: i.string().optional(),
       notes: i.string().optional(),
@@ -869,6 +872,14 @@ const _schema = i.schema({
     productFeaturedImage: {
       forward: { on: 'products', has: 'one', label: 'featuredImage' },
       reverse: { on: 'media', has: 'one', label: 'featuredImageOfProduct' },
+    },
+    productSecondaryLogo: {
+      forward: { on: 'products', has: 'one', label: 'secondaryLogo' },
+      reverse: { on: 'media', has: 'one', label: 'secondaryLogoOfProduct' },
+    },
+    productFeaturedIcon: {
+      forward: { on: 'products', has: 'one', label: 'featuredIcon' },
+      reverse: { on: 'media', has: 'one', label: 'featuredIconOfProduct' },
     },
 
     // Characters -> affiliate link

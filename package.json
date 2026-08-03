@@ -21,7 +21,10 @@
     "db:push:yes": "npx instant-cli@latest push --yes",
     "test:ai-verdict": "tsx scripts/test-ai-verdict-schema.ts",
     "export:methodology": "tsx scripts/export-methodology.ts",
-    "export:urls": "tsx scripts/export-site-urls.ts"
+    "export:urls": "tsx scripts/export-site-urls.ts",
+    "migrate:media-bunny": "tsx scripts/migrate-media-to-bunny.ts",
+    "upload:public-bunny": "tsx scripts/upload-public-to-bunny.ts",
+    "import:redirects": "tsx scripts/import-wordpress-redirects.ts"
   },
   "dependencies": {
     "@astrojs/vercel": "^11.0.3",

@@ -8,13 +8,13 @@
 // same work, all saved from one form). "Continue testing" opens guided mode
 // (one session at a time).
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, dataApi, type EntityRow } from '../../api';
 import { useCan, useMe } from '../../context';
 import { useAsyncToast, useToast } from '../../Toast';
 import { reviewPageUrl } from '../../../../lib/slugs';
-import { GuidedTestingMode, type GuidedSession } from '../../testing/GuidedTestingMode';
+import { GuidedTestingMode, type GuidedSession, type ProofUploadedEvent } from '../../testing/GuidedTestingMode';
 import { filterApplicableItems, isSessionApplicable } from '../../testing/capabilityGating';
 import { computePricingSuggestions, type AutofillSuggestion } from '../../testing/pricingAutofill';
 import {
@@ -165,6 +165,9 @@ export function TestingTab() {
   const [showDeleteRun, setShowDeleteRun] = useState(false);
   const [calcError, setCalcError] = useState(false);
   const { busy, setError, run: exec } = useAsyncToast();
+  const calculateTimerRef = useRef<number | null>(null);
+  const mediaRefreshTimerRef = useRef<number | null>(null);
+  const lastReloadWasProofOnlyRef = useRef(false);
 
   const canTest = can('testing.edit');
   const canExportEvidence = can('content.view') || can('testing.edit');
@@ -193,10 +196,50 @@ export function TestingTab() {
   }
 
   /** Reload results only (used after each save; keeps guided mode open). */
-  async function reloadResults() {
+  async function reloadResults(opts?: { proofOnly?: boolean; refreshResults?: boolean }) {
+    if (opts?.proofOnly && !opts?.refreshResults) {
+      if (mediaRefreshTimerRef.current != null) window.clearTimeout(mediaRefreshTimerRef.current);
+      mediaRefreshTimerRef.current = window.setTimeout(() => {
+        mediaRefreshTimerRef.current = null;
+        void ws.refreshProductMedia();
+      }, 800);
+      return;
+    }
+
+    lastReloadWasProofOnlyRef.current = Boolean(opts?.proofOnly);
     const allResults = await dataApi.list('evidenceResults');
     setResults(allResults.rows.filter((r) => r.testRun?.id === currentRun?.id));
   }
+
+  async function handleProofUploaded(event: ProofUploadedEvent) {
+    ws.appendProductMedia({
+      id: event.id,
+      url: event.url,
+      evidenceResult: { id: event.evidenceResultId },
+      product: { id: ws.productId },
+    } as EntityRow);
+
+    if (event.createdResult) {
+      await reloadResults({ proofOnly: true, refreshResults: true });
+    } else {
+      void reloadResults({ proofOnly: true });
+    }
+  }
+
+  function scheduleCalculate(delayMs = 400) {
+    if (calculateTimerRef.current != null) window.clearTimeout(calculateTimerRef.current);
+    calculateTimerRef.current = window.setTimeout(() => {
+      calculateTimerRef.current = null;
+      void calculate(false);
+    }, delayMs);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (calculateTimerRef.current != null) window.clearTimeout(calculateTimerRef.current);
+      if (mediaRefreshTimerRef.current != null) window.clearTimeout(mediaRefreshTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (currentRun) void loadStructure();
@@ -228,9 +271,12 @@ export function TestingTab() {
     }
   }
 
-  // Keep preview score up to date whenever answers change (no toast on failure).
+  // Keep preview score up to date whenever answers change (debounced; proof-only reloads wait longer).
   useEffect(() => {
-    if (currentRun && !structureLoading) void calculate(false);
+    if (currentRun && !structureLoading) {
+      scheduleCalculate(lastReloadWasProofOnlyRef.current ? 5000 : 400);
+      lastReloadWasProofOnlyRef.current = false;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRun?.id, structureLoading, results]);
 
@@ -331,6 +377,12 @@ export function TestingTab() {
 
   // Sessions: groups of tests completed with the same work. Built per
   // category from the session config; the guided-mode sequence is the flat
+  const gendersRaw = useMemo(() => {
+    const gendersDef = definitions.find((d) => String(d.slug) === 'genders');
+    if (!gendersDef) return undefined;
+    return resultByDef.get(gendersDef.id)?.rawValue;
+  }, [definitions, resultByDef]);
+
   // ordered list of all sessions.
   const sessionsByCategory = useMemo(() => {
     const map = new Map<string, GuidedSession[]>();
@@ -354,6 +406,7 @@ export function TestingTab() {
               String(cat.slug),
               sessionDefs.map((def): SessionItem => ({ def, sub: subByDefId.get(def.id)! })),
               ws.fields,
+              gendersRaw,
             ),
           }))
           .filter(
@@ -364,7 +417,7 @@ export function TestingTab() {
       );
     }
     return map;
-  }, [mvCategories, structureByCategory, resultByDef, ws.fields]);
+  }, [mvCategories, structureByCategory, resultByDef, ws.fields, gendersRaw]);
 
   // Suggested answers computed from the Pricing tab data (plan prices, credit
   // packages, feature costs), keyed by evidence-definition id.
@@ -980,6 +1033,7 @@ export function TestingTab() {
             await calculate();
           }}
           onResultSaved={reloadResults}
+          onProofUploaded={handleProofUploaded}
         />
       )}
       {showNewRun && (

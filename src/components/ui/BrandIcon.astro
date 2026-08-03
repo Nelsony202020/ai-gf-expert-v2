@@ -1,4 +1,6 @@
 ---
+import { cdnAsset } from '../../lib/media/cdn';
+
 interface Props {
   /** Dark-mode / default asset path */
   src: string;
@@ -19,7 +21,8 @@ const {
   class: className = '',
 } = Astro.props;
 
-const light = srcLight ?? src;
+const light = cdnAsset(srcLight ?? src);
+const dark = cdnAsset(src);
 ---
 
 <span class={`brand-icon-pair inline-flex shrink-0 ${className}`}>
@@ -32,7 +35,7 @@ const light = srcLight ?? src;
     class="brand-icon brand-icon--light object-contain"
   />
   <img
-    src={src}
+    src={dark}
     alt={alt}
     width={width}
     height={height}

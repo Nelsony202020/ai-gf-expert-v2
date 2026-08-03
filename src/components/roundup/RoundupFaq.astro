@@ -1,5 +1,6 @@
 ---
 import type { RoundupFaqItem } from '../../data/roundups/ai-girlfriend';
+import { cdnAsset } from '../../lib/media/cdn';
 
 interface Props {
   items: RoundupFaqItem[];
@@ -17,7 +18,7 @@ const {
   sectionClass = '',
 } = Astro.props;
 
-const hermanAvatar = '/brand/herman-main-icon.svg';
+const hermanAvatar = cdnAsset('/brand/herman-main-icon.svg');
 
 const stickers: ({ emoji: string; position: 'tl' | 'tr' } | null)[] = [
   { emoji: '❤️', position: 'tr' },

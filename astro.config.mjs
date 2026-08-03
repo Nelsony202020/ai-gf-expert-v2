@@ -14,6 +14,7 @@ export default defineConfig({
     schema: {
       PUBLIC_INSTANT_APP_ID: envField.string({ context: 'client', access: 'public', optional: true }),
       PUBLIC_SITE_URL: envField.string({ context: 'client', access: 'public', optional: true }),
+      PUBLIC_CDN_URL: envField.string({ context: 'client', access: 'public', optional: true }),
       PUBLIC_SANITY_PROJECT_ID: envField.string({ context: 'client', access: 'public', optional: true }),
       PUBLIC_SANITY_DATASET: envField.string({ context: 'client', access: 'public', optional: true }),
       INSTANT_APP_ADMIN_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),

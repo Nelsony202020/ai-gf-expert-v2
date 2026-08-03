@@ -312,6 +312,24 @@ export function PublishTab() {
               {fields.publishedAt ? ` · published ${new Date(Number(fields.publishedAt)).toLocaleString()}` : ''}
             </p>
           )}
+
+          {status !== 'published' && fields.slug && (
+            <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-amber-800 dark:border-slate-800 dark:text-amber-300">
+              <Badge tone="amber" className="mr-1.5 align-middle">
+                Draft
+              </Badge>
+              Not on the live site. Test at{' '}
+              <a
+                href={`/reviews/${fields.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-pink-600 hover:underline dark:text-pink-400"
+              >
+                /reviews/{fields.slug}
+              </a>{' '}
+              on localhost only.
+            </p>
+          )}
         </div>
       </div>
 

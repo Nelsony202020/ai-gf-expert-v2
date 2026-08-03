@@ -27,6 +27,8 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
       intro: 'Open the character library once. Count characters in each category below.',
       icon: 'groups',
       slugs: [
+        'amount',
+        'genders',
         'female-count',
         'male-count',
         'anime-female-count',

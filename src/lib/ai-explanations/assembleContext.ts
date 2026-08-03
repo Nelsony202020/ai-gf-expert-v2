@@ -6,6 +6,7 @@ import { getEvidenceMethodology } from '../../data/evidence-drawer-methodology';
 import { enhancedScopeDescription } from '../draft-ratings/evidenceDrawerContent';
 import { resolveEvidenceDisplayValue } from '../draft-ratings/resolveEvidenceDisplay';
 import { buildPublicHowWeTested } from '../draft-ratings/evidenceDrawerContent';
+import { computeWeightedGroupScore } from '../ratings/evidenceGroupScoring';
 import { buildEvidenceIndex, type EvidenceIndex } from '../ratings/evidenceIndex';
 import {
   findEvidenceGroup,
@@ -19,15 +20,19 @@ import type {
   ExplanationProductBundle,
 } from './types';
 
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
-}
 
-function averageScore(results: ExplanationMemberResult[]): number | null {
-  const scored = results.filter((r) => r.normalizedScore != null);
-  if (scored.length === 0) return null;
-  const sum = scored.reduce((acc, r) => acc + r.normalizedScore!, 0);
-  return round1(sum / scored.length);
+function groupScoreFromResults(
+  categorySlug: string,
+  subscoreSlug: string,
+  groupName: string,
+  memberSlugs: string[],
+  results: ExplanationMemberResult[],
+): number | null {
+  const members = memberSlugs.map((slug) => {
+    const row = results.find((r) => r.slug === slug);
+    return { slug, score: row?.normalizedScore ?? null };
+  });
+  return computeWeightedGroupScore(categorySlug, subscoreSlug, groupName, members);
 }
 
 function hasUsableResult(row: any): boolean {
@@ -226,7 +231,13 @@ export function assembleExplanationContextFromBundle(
   return {
     product: bundle.product,
     group,
-    score: averageScore(results),
+    score: groupScoreFromResults(
+      group.categorySlug,
+      group.subscoreSlug,
+      group.groupName,
+      memberSlugs,
+      results,
+    ),
     methodology,
     results,
     reviewerNote: opts?.reviewerNote,

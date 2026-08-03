@@ -145,9 +145,17 @@ export function RedirectsPage() {
                   return (
                     <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="px-2 py-2 font-mono text-xs">{r.sourcePath}</td>
-                      <td className="px-2 py-2 font-mono text-xs">{r.destinationPath}</td>
+                      <td className="px-2 py-2 font-mono text-xs">
+                        {r.redirectType === 410 ? '—' : r.destinationPath}
+                      </td>
                       <td className="px-2 py-2">
-                        <Badge tone={r.redirectType === 301 ? 'blue' : 'amber'}>{r.redirectType}</Badge>
+                        <Badge
+                          tone={
+                            r.redirectType === 410 ? 'red' : r.redirectType === 301 ? 'blue' : 'amber'
+                          }
+                        >
+                          {r.redirectType}
+                        </Badge>
                       </td>
                       <td className="px-2 py-2">
                         {r.active ? <Icon name="check" className="text-green-600" /> : <Icon name="close" className="text-slate-300" />}
@@ -263,10 +271,21 @@ export function RedirectModal({
   const { busy, error, run } = useAsync();
 
   async function validate(): Promise<{ errors: string[]; warnings: string[] } | undefined> {
+    if (Number(redirectType) === 410 && !destinationPath.trim()) {
+      return run(() =>
+        api.post<{ errors: string[]; warnings: string[] }>('/api/admin/redirects/validate', {
+          sourcePath,
+          destinationPath: '',
+          redirectType: 410,
+          excludeId: redirect?.id,
+        }),
+      );
+    }
     return run(() =>
       api.post<{ errors: string[]; warnings: string[] }>('/api/admin/redirects/validate', {
         sourcePath,
         destinationPath,
+        redirectType: Number(redirectType),
         excludeId: redirect?.id,
       }),
     );
@@ -279,9 +298,10 @@ export function RedirectModal({
     setValidation(result);
     if (result.errors.length > 0) return;
 
+    const is410 = Number(redirectType) === 410;
     const fields = {
       sourcePath,
-      destinationPath,
+      destinationPath: is410 ? '' : destinationPath,
       redirectType: Number(redirectType),
       active,
       notes: notes || undefined,
@@ -315,14 +335,29 @@ export function RedirectModal({
         <Field label="Source path" required help="e.g. /reviews/old-name">
           <TextInput value={sourcePath} onChange={(e) => setSourcePath(e.target.value)} required />
         </Field>
-        <Field label="Destination" required help="Internal path (/reviews/new-name) or full URL">
-          <TextInput value={destinationPath} onChange={(e) => setDestinationPath(e.target.value)} required />
+        <Field
+          label="Destination"
+          required={Number(redirectType) !== 410}
+          help={
+            Number(redirectType) === 410
+              ? 'Not used for 410 Gone entries.'
+              : 'Internal path (/reviews/new-name) or full URL'
+          }
+        >
+          <TextInput
+            value={destinationPath}
+            onChange={(e) => setDestinationPath(e.target.value)}
+            required={Number(redirectType) !== 410}
+            disabled={Number(redirectType) === 410}
+            placeholder={Number(redirectType) === 410 ? '—' : undefined}
+          />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Type">
             <Select value={redirectType} onChange={(e) => setRedirectType(e.target.value)}>
               <option value="301">301 (permanent)</option>
               <option value="302">302 (temporary)</option>
+              <option value="410">410 (gone)</option>
             </Select>
           </Field>
           <div className="flex items-end pb-1">

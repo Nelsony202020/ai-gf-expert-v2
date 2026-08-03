@@ -1,7 +1,7 @@
 // Proof attachments for one evidence result: upload, drag-drop, pick existing, alt/caption.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, dataApi, type EntityRow } from '../api';
+import { dataApi, type EntityRow } from '../api';
 import { Button, Icon, TextInput } from '../ui';
 import { MediaPickerModal } from '../MediaPicker';
 import { ProofThumb } from './ProofThumb';
@@ -12,15 +12,7 @@ import {
   proofTagCaption,
 } from './proofTags';
 import { evidenceRequirements } from './presentation';
-
-const ACCEPTED_TYPES = [
-  'image/png',
-  'image/jpeg',
-  'image/webp',
-  'image/gif',
-  'video/mp4',
-  'video/webm',
-];
+import { PROOF_ACCEPTED_TYPES, uploadProofFilesParallel } from './proofUpload';
 
 export function EvidenceAttachments({
   def,
@@ -95,7 +87,9 @@ export function EvidenceAttachments({
   }
 
   async function handleFiles(fileList: FileList | File[]) {
-    const files = Array.from(fileList).filter((f) => ACCEPTED_TYPES.includes(f.type));
+    const files = Array.from(fileList).filter((f) =>
+      (PROOF_ACCEPTED_TYPES as readonly string[]).includes(f.type),
+    );
     const skipped = Array.from(fileList).length - files.length;
     if (files.length === 0) {
       if (skipped > 0) setError('Only PNG/JPEG/WebP/GIF images and MP4/WebM videos are supported.');
@@ -106,23 +100,21 @@ export function EvidenceAttachments({
     const failures: string[] = [];
     try {
       const id = await resolveResultId();
-      for (let i = 0; i < files.length; i++) {
-        setUploadProgress({ done: i, total: files.length });
-        try {
-          const form = new FormData();
-          form.set('file', files[i]);
-          form.set('adult', '0');
-          form.set('role', 'proof');
-          if (captionTag) form.set('caption', proofTagCaption(captionTag));
-          form.set('evidenceResultId', id);
-          if (productId) form.set('productId', productId);
-          await api.upload<{ id: string }>('/api/admin/media/upload', form);
-        } catch (e) {
-          failures.push(`${files[i].name}: ${e instanceof Error ? e.message : 'upload failed'}`);
-        }
-      }
-      await reload(id);
-      onUploaded?.();
+      const uploaded = await uploadProofFilesParallel(files, id, productId);
+      setUploadProgress({ done: files.length, total: files.length });
+      setAttachments((prev) => [
+        ...prev,
+        ...uploaded.map(
+          (row) =>
+            ({
+              id: row.id,
+              url: row.url,
+              evidenceResult: { id },
+            }) as EntityRow,
+        ),
+      ]);
+      void onUploaded?.();
+      void reload(id);
     } catch (e) {
       failures.push(e instanceof Error ? e.message : 'Upload failed');
     } finally {
@@ -375,7 +367,7 @@ export function EvidenceAttachments({
         ref={fileInput}
         type="file"
         multiple
-        accept={ACCEPTED_TYPES.join(',')}
+        accept={PROOF_ACCEPTED_TYPES.join(',')}
         className="hidden"
         onChange={(e) => {
           if (e.target.files && e.target.files.length > 0) void handleFiles(e.target.files);

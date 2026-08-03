@@ -5,6 +5,7 @@ import { getDb, id as newId } from './server';
 import { HttpError, type AdminIdentity } from './auth';
 import { auditTx, diffRecords } from './audit';
 import { getEntityConfig, type EntityConfig } from './registry';
+import { isPermanentCdnUrl } from '../media/permanentUrl';
 import { formatValidationError } from '../validation/formatError';
 import { schemaForPartialUpdate } from '../validation/partialUpdate';
 import { deleteAffiliateLinkCascade, deleteProductCascade } from './cascade-delete';
@@ -39,9 +40,12 @@ function readLinkIncludes(cfg: EntityConfig): Record<string, object> {
   return linkIncludes;
 }
 
-/** Overwrite a media row's cached (expiring) `url` with the fresh storage URL. */
+/** Refresh expiring InstantDB signed URLs; leave permanent CDN URLs untouched. */
 function refreshMediaUrl(mediaRow: any) {
-  if (mediaRow && typeof mediaRow === 'object' && mediaRow.file?.url) {
+  if (!mediaRow || typeof mediaRow !== 'object') return;
+  const cached = mediaRow.url ? String(mediaRow.url) : '';
+  if (isPermanentCdnUrl(cached)) return;
+  if (mediaRow.file?.url) {
     mediaRow.url = mediaRow.file.url;
   }
 }

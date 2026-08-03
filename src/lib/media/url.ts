@@ -1,12 +1,16 @@
 // Resolve a public URL for a media record (cached url or linked storage file).
 
+import { isPermanentCdnUrl } from './permanentUrl';
+
 export function resolveMediaUrl(
   media: { url?: unknown; file?: { url?: unknown } } | Record<string, any> | null | undefined,
 ): string {
   if (!media) return '';
   const m = media as { url?: unknown; file?: { url?: unknown } | null };
-  const url = m.file?.url ?? m.url;
-  return url ? String(url) : '';
+  const cached = m.url ? String(m.url) : '';
+  if (isPermanentCdnUrl(cached)) return cached;
+  const fileUrl = m.file?.url ?? m.url;
+  return fileUrl ? String(fileUrl) : '';
 }
 
 /** URLs safe to embed on the public site (excludes blob/data/admin-only paths). */

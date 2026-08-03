@@ -2,6 +2,7 @@
 import { authors } from '../data/authors';
 import { legalPages } from '../data/legal-pages';
 import { loadComparisonProducts } from '../lib/content/comparisonProducts';
+import { cdnAsset } from '../lib/media/cdn';
 import SocialIcon from './ui/SocialIcon.astro';
 import ThemeToggle from './ui/ThemeToggle.astro';
 
@@ -71,7 +72,7 @@ const columns = [
       <div class="site-footer__brand">
         <a href="/" class="site-logo-link site-footer__logo-link">
           <img
-            src="/brand/ai-gf-logo-light.png"
+            src={cdnAsset('/brand/ai-gf-logo-light.png')}
             alt="AI Girlfriend Expert"
             class="site-footer__logo site-footer__logo--light"
             width="127"
@@ -80,7 +81,7 @@ const columns = [
             decoding="async"
           />
           <img
-            src="/brand/ai-gf-logo-white.png"
+            src={cdnAsset('/brand/ai-gf-logo-white.png')}
             alt=""
             class="site-footer__logo site-footer__logo--dark"
             width="127"

@@ -10,7 +10,9 @@ import { HttpError, type AdminIdentity } from '../db/auth';
 import { getOpenAIClient } from '../ai-verdict/openaiClient';
 import { assertRateLimit } from '../ai-verdict/rateLimit';
 
-export const PRICING_PROMPT_VERSION = 'v1';
+import { EXTRACT_FEATURE_CATEGORIES, normalizeExtractedVariant } from '../pricing/featureCostGroups';
+
+export const PRICING_PROMPT_VERSION = 'v2';
 
 export function aiPricingConfig() {
   return {
@@ -82,6 +84,17 @@ const extractedFeatureCostSchema = z.object({
   customLabel: z.string().max(120).nullish(),
   tokenCost: z.number().nonnegative(),
   unit: z.enum(EXTRACT_UNITS).default('per_generation'),
+  model: z.string().max(60).nullish(),
+  durationSeconds: z.number().positive().nullish(),
+});
+
+const extractedFeatureCostVariantSchema = z.object({
+  category: z.enum(EXTRACT_FEATURE_CATEGORIES),
+  model: z.string().max(60).nullish(),
+  durationSeconds: z.number().positive().nullish(),
+  label: z.string().max(120).nullish(),
+  tokenCost: z.number().nonnegative(),
+  unit: z.enum(EXTRACT_UNITS).default('per_generation'),
 });
 
 const extractedPromotionSchema = z.object({
@@ -108,6 +121,7 @@ export const aiPricingExtractionSchema = z.object({
   plans: z.array(extractedPlanSchema).default([]),
   packages: z.array(extractedPackageSchema).default([]),
   featureCosts: z.array(extractedFeatureCostSchema).default([]),
+  featureCostVariants: z.array(extractedFeatureCostVariantSchema).default([]),
   promotions: z.array(extractedPromotionSchema).default([]),
   /** True when the app clearly uses a token/credit system. */
   usesTokens: z.boolean().nullish(),
@@ -151,13 +165,18 @@ For EACH image (in the order provided, 1-based index) classify it as one of:
 Then extract, merging data across images and de-duplicating:
 - plans: each subscription tier with name, monthlyPrice (price per month when billed monthly), quarterlyTotalPrice (total charged every 3 months), annualMonthlyPrice (per-month price when billed annually), annualTotalPrice (total charged per year), currency (ISO code like USD), includedTokensPerMonth, freeTrial, trialLength. One tier per subscription level — billing intervals are fields on the same plan, not separate plan names like "3 months".
 - packages: each token top-up package with name (if any), price, currency, baseCredits (tokens included before bonus), bonusCredits (extra/bonus tokens)
-- featureCosts: token cost per feature. Each entry MUST include tokenCost as a number (the tokens/credits charged — e.g. "5 gems per image" → tokenCost: 5). featureType must be one of: ${EXTRACT_FEATURE_TYPES.join(', ')}. unit must be one of: ${EXTRACT_UNITS.join(', ')}. Use "custom" with customLabel when nothing fits. Omit entries where the cost number is not visible.
+- featureCostVariants: PREFERRED for tiered or table-based pricing. Extract EVERY distinct price point as its own variant row — do not collapse to one row per feature. category must be one of: ${EXTRACT_FEATURE_CATEGORIES.join(', ')}.
+  * For video pricing TABLES (e.g. Lite Model 5s = 30, Pro Model 10s = 60): one variant per cell/row. Use model = exact model name from UI (e.g. "Lite", "Pro"). Use durationSeconds when clip length is shown (5, 10). unit = "per_generation" when a flat coin/token cost is shown per clip (most common).
+  * For single popups (e.g. "Video with audio costs 80 coins for 5 seconds"): one variant with label = short description, durationSeconds if shown, no model.
+  * Apps may have 1 model or 6+ models — extract however many rows the screenshot shows.
+  * Preserve exact model names from the UI; do not normalize to Lite/Pro unless that is what the screenshot says.
+- featureCosts: use ONLY for simple single-price features with no model/duration table (e.g. "5 coins per image", "2 coins per message"). Each entry MUST include tokenCost as a number. featureType must be one of: ${EXTRACT_FEATURE_TYPES.join(', ')}. unit must be one of: ${EXTRACT_UNITS.join(', ')}. Do NOT use featureCosts for video model×duration matrices — use featureCostVariants instead.
 - promotions: name, promotionType (plan_discount | package_discount | bonus_credits | free_trial | holiday | coupon | custom), discountPercent, couponCode, startAt/endAt as YYYY-MM-DD only if dates are visible, publicNote (short description)
 - usesTokens: true if the app clearly has a token/credit system
 - tokenName: what the app calls tokens (e.g. "Gems", "Tokens", "Coins") if visible
 
 Prices: numbers only, no currency symbols (e.g. 9.99). Respond with a single JSON object:
-{"images":[{"index":1,"classification":"plans"}],"plans":[],"packages":[],"featureCosts":[],"promotions":[],"usesTokens":false,"tokenName":null,"notes":null}`;
+{"images":[{"index":1,"classification":"plans"}],"plans":[],"packages":[],"featureCosts":[],"featureCostVariants":[],"promotions":[],"usesTokens":false,"tokenName":null,"notes":null}`;
 
 // ---------------------------------------------------------------------------
 // Extraction
@@ -172,39 +191,259 @@ function parseCostNumber(value: unknown): number | undefined {
   return undefined;
 }
 
-/** Map common AI field aliases and drop feature rows without a usable cost. */
+const IMAGE_CLASSIFICATIONS = ['plans', 'packages', 'feature_costs', 'promotion', 'unknown'] as const;
+type ImageClassification = (typeof IMAGE_CLASSIFICATIONS)[number];
+
+function slugifyKey(raw: unknown): string {
+  return String(raw ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+}
+
+function coerceImageClassification(raw: unknown): ImageClassification {
+  const s = slugifyKey(raw);
+  if (!s) return 'unknown';
+  if (IMAGE_CLASSIFICATIONS.includes(s as ImageClassification)) return s as ImageClassification;
+  if (s.includes('plan') || s.includes('subscription') || s.includes('tier')) return 'plans';
+  if (
+    s.includes('package') ||
+    s.includes('coin') ||
+    s.includes('credit') ||
+    s.includes('token') ||
+    s.includes('top_up') ||
+    s.includes('topup') ||
+    s.includes('buy')
+  ) {
+    return 'packages';
+  }
+  if (s.includes('promo') || s.includes('discount') || s.includes('coupon') || s.includes('sale')) {
+    return 'promotion';
+  }
+  if (
+    s.includes('feature') ||
+    s.includes('cost') ||
+    s.includes('video') ||
+    s.includes('pricing') ||
+    s.includes('generation') ||
+    s.includes('popup') ||
+    s.includes('modal')
+  ) {
+    return 'feature_costs';
+  }
+  return 'unknown';
+}
+
+function coerceFeatureCategory(raw: unknown): (typeof EXTRACT_FEATURE_CATEGORIES)[number] {
+  const s = slugifyKey(raw);
+  if (EXTRACT_FEATURE_CATEGORIES.includes(s as (typeof EXTRACT_FEATURE_CATEGORIES)[number])) {
+    return s as (typeof EXTRACT_FEATURE_CATEGORIES)[number];
+  }
+  if (s.includes('video')) return 'video_generation';
+  if (s.includes('image')) return 'standard_image';
+  if (s.includes('voice') && s.includes('call')) return 'voice_call';
+  if (s.includes('voice')) return 'voice_message';
+  return 'custom';
+}
+
+function coerceFeatureType(raw: unknown): (typeof EXTRACT_FEATURE_TYPES)[number] {
+  const s = slugifyKey(raw);
+  if (EXTRACT_FEATURE_TYPES.includes(s as (typeof EXTRACT_FEATURE_TYPES)[number])) {
+    return s as (typeof EXTRACT_FEATURE_TYPES)[number];
+  }
+  if (s === 'video_generation' || s === 'video' || s.includes('video')) return 'standard_video';
+  if (s.includes('image')) return 'standard_image';
+  if (s.includes('voice') && s.includes('call')) return 'voice_call';
+  if (s.includes('voice')) return 'voice_message';
+  return 'custom';
+}
+
+function coerceUnit(raw: unknown): (typeof EXTRACT_UNITS)[number] {
+  const s = slugifyKey(raw);
+  if (EXTRACT_UNITS.includes(s as (typeof EXTRACT_UNITS)[number])) {
+    return s as (typeof EXTRACT_UNITS)[number];
+  }
+  if (s.includes('generation') || s.includes('clip')) return 'per_generation';
+  if (s.includes('second')) return 'per_second';
+  if (s.includes('minute')) return 'per_minute';
+  if (s.includes('image')) return 'per_image';
+  if (s.includes('message')) return 'per_message';
+  if (s.includes('video')) return 'per_video';
+  return 'per_generation';
+}
+
+function featureCostRowToVariant(item: Record<string, unknown>): Record<string, unknown> | null {
+  const tokenCost = parseCostNumber(variantCostSources(item));
+  if (tokenCost == null) return null;
+  const featureType = slugifyKey(item.featureType);
+  const category =
+    featureType === 'video_generation' || featureType.includes('video')
+      ? 'video_generation'
+      : featureType.includes('image')
+        ? 'standard_image'
+        : featureType.includes('voice') && featureType.includes('call')
+          ? 'voice_call'
+          : featureType.includes('voice')
+            ? 'voice_message'
+            : coerceFeatureCategory(item.category);
+  return {
+    category,
+    model: (() => {
+      const c = normalizeExtractedVariant({
+        model: (item.model ?? item.qualityTier) as string | null,
+        label: (item.label ?? item.customLabel) as string | null,
+        durationSeconds:
+          parseCostNumber(item.durationSeconds) ?? parseCostNumber(item.duration) ?? parseCostNumber(item.durationProduced),
+      });
+      return c.model || null;
+    })(),
+    durationSeconds:
+      parseCostNumber(item.durationSeconds) ?? parseCostNumber(item.duration) ?? parseCostNumber(item.durationProduced),
+    label: (() => {
+      const c = normalizeExtractedVariant({
+        model: (item.model ?? item.qualityTier) as string | null,
+        label: (item.label ?? item.customLabel) as string | null,
+        durationSeconds:
+          parseCostNumber(item.durationSeconds) ?? parseCostNumber(item.duration) ?? parseCostNumber(item.durationProduced),
+      });
+      return c.label || null;
+    })(),
+    tokenCost,
+    unit: coerceUnit(item.unit),
+  };
+}
+
+function variantCostSources(item: Record<string, unknown>): unknown {
+  return (
+    item.tokenCost ??
+    item.token_cost ??
+    item.cost ??
+    item.credits ??
+    item.creditCost ??
+    item.credit_cost ??
+    item.tokens ??
+    item.coins ??
+    item.coinCost ??
+    item.coin_cost ??
+    item.price ??
+    item.amount ??
+    item.value
+  );
+}
+
+/** Map common AI field aliases, coerce enums, and drop rows without a usable cost. */
 function normalizeExtractionPayload(parsed: unknown): unknown {
   if (!parsed || typeof parsed !== 'object') return parsed;
-  const root = parsed as Record<string, unknown>;
-  if (!Array.isArray(root.featureCosts)) return parsed;
+  const root = { ...(parsed as Record<string, unknown>) };
 
-  root.featureCosts = root.featureCosts
-    .map((row) => {
-      if (!row || typeof row !== 'object') return null;
+  if (Array.isArray(root.images)) {
+    root.images = root.images
+      .map((row) => {
+        if (!row || typeof row !== 'object') return null;
+        const item = { ...(row as Record<string, unknown>) };
+        item.classification = coerceImageClassification(item.classification);
+        return item;
+      })
+      .filter(Boolean);
+  }
+
+  const variantRows: Record<string, unknown>[] = [];
+
+  function normalizeVariantRow(row: unknown): Record<string, unknown> | null {
+    if (!row || typeof row !== 'object') return null;
+    const item = { ...(row as Record<string, unknown>) };
+    const tokenCost = parseCostNumber(variantCostSources(item));
+    if (tokenCost == null) return null;
+    item.tokenCost = tokenCost;
+    if (item.durationSeconds == null && item.duration != null) {
+      item.durationSeconds = parseCostNumber(item.duration);
+    }
+    if (item.label == null && item.customLabel != null) item.label = item.customLabel;
+    if (item.model == null && item.qualityTier != null) item.model = item.qualityTier;
+    const cleaned = normalizeExtractedVariant({
+      model: item.model as string | null,
+      label: item.label as string | null,
+      durationSeconds: parseCostNumber(item.durationSeconds) ?? null,
+    });
+    item.model = cleaned.model || null;
+    item.label = cleaned.label || null;
+    item.durationSeconds = cleaned.durationSeconds ? Number(cleaned.durationSeconds) : item.durationSeconds;
+    item.category = coerceFeatureCategory(item.category);
+    item.unit = coerceUnit(item.unit);
+    return item;
+  }
+
+  if (Array.isArray(root.featureCostVariants)) {
+    for (const row of root.featureCostVariants) {
+      const normalized = normalizeVariantRow(row);
+      if (normalized) variantRows.push(normalized);
+    }
+  }
+
+  const keptFeatureCosts: Record<string, unknown>[] = [];
+
+  if (Array.isArray(root.featureCosts)) {
+    for (const row of root.featureCosts) {
+      if (!row || typeof row !== 'object') continue;
       const item = { ...(row as Record<string, unknown>) };
       if (item.tokenCost == null) {
         const alt =
-          item.cost ??
-          item.credits ??
-          item.creditCost ??
-          item.tokens ??
-          item.price ??
-          item.amount ??
-          item.value;
+          item.cost ?? item.credits ?? item.creditCost ?? item.tokens ?? item.price ?? item.amount ?? item.value;
         const n = parseCostNumber(alt);
         if (n != null) item.tokenCost = n;
       } else {
         const n = parseCostNumber(item.tokenCost);
         if (n != null) item.tokenCost = n;
-        else delete item.tokenCost;
+        else continue;
       }
-      if (item.unit == null || item.unit === '') item.unit = 'per_generation';
-      return item;
-    })
-    .filter((row) => {
-      if (!row || typeof row !== 'object') return false;
-      return parseCostNumber((row as Record<string, unknown>).tokenCost) != null;
-    });
+
+      item.unit = coerceUnit(item.unit);
+      if (item.durationSeconds == null && item.durationProduced != null) {
+        item.durationSeconds = parseCostNumber(item.durationProduced);
+      }
+      if (item.model == null && item.qualityTier != null) item.model = item.qualityTier;
+
+      const rawType = slugifyKey(item.featureType);
+      const hasMatrixFields =
+        Boolean(String(item.model ?? '').trim()) ||
+        parseCostNumber(item.durationSeconds) != null ||
+        Boolean(String(item.label ?? item.customLabel ?? '').trim());
+
+      if (
+        rawType === 'video_generation' ||
+        rawType === 'video' ||
+        (rawType.includes('video') && hasMatrixFields) ||
+        (hasMatrixFields && (rawType.includes('video') || rawType.includes('generation')))
+      ) {
+        const variant = featureCostRowToVariant(item);
+        if (variant) variantRows.push(variant);
+        continue;
+      }
+
+      item.featureType = coerceFeatureType(item.featureType);
+      if (item.featureType === 'custom' && !String(item.customLabel ?? '').trim()) {
+        item.customLabel = 'Custom feature';
+      }
+      keptFeatureCosts.push(item);
+    }
+  }
+
+  root.featureCosts = keptFeatureCosts;
+
+  const seenVariants = new Set<string>();
+  root.featureCostVariants = variantRows.filter((row) => {
+    if (parseCostNumber(row.tokenCost) == null) return false;
+    const key = [
+      row.category,
+      row.model ?? '',
+      row.durationSeconds ?? '',
+      row.label ?? '',
+      row.tokenCost,
+    ].join('|');
+    if (seenVariants.has(key)) return false;
+    seenVariants.add(key);
+    return true;
+  });
 
   return root;
 }

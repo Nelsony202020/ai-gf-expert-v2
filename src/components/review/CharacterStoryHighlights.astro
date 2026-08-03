@@ -1,6 +1,7 @@
 ---
 import type { StoryHighlightCharacter } from '../../../data/products';
 import { pickCharacterDisplayImage } from '../../lib/characters/public';
+import { cdnAsset } from '../../lib/media/cdn';
 import VerifiedCheck from '../ui/VerifiedCheck.astro';
 
 export type { StoryHighlightCharacter };
@@ -71,7 +72,7 @@ const headingText = heading ?? 'Featured characters';
   {
     !hideHeading && (
       <div class="char-stories__heading">
-        <img src="/brand/herman-in-love-icon.svg" alt="" class="char-stories__heading-icon" width="44" height="44" aria-hidden="true" />
+        <img src={cdnAsset('/brand/herman-in-love-icon.svg')} alt="" class="char-stories__heading-icon" width="44" height="44" aria-hidden="true" />
         <h3 class="char-stories__heading-text">
           {headingText}
           {badge && <span class="char-stories__badge">{badge}</span>}

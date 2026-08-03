@@ -12,6 +12,27 @@ function joinList(values: unknown): string {
   return values.map((v) => String(v)).filter(Boolean).join(', ');
 }
 
+function parseOtherEntries(detail: Record<string, unknown> | null): string[] {
+  if (!detail) return [];
+  if (Array.isArray(detail.otherEntries)) {
+    return (detail.otherEntries as unknown[])
+      .map((v) => (typeof v === 'string' ? v.trim() : ''))
+      .filter(Boolean);
+  }
+  const legacy = typeof detail.other === 'string' ? detail.other : '';
+  return legacy
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function joinMultiSelectLabels(detail: Record<string, unknown> | null): string {
+  if (!detail) return '';
+  const selected = joinList(detail.selected);
+  const other = joinList(parseOtherEntries(detail));
+  return [selected, other].filter(Boolean).join(', ');
+}
+
 /** Checklist answers stored as percentage + detail.checked — show "N of M" per methodology. */
 export function formatChecklistAnswer(
   raw: unknown,
@@ -69,8 +90,8 @@ export function formatEvidenceAnswer(
       'detail' in rv && rv.detail && typeof rv.detail === 'object'
         ? (rv.detail as Record<string, unknown>)
         : null;
-    const selected = detail && Array.isArray(detail.selected) ? joinList(detail.selected) : '';
-    if (selected) return `${base} (${selected})`;
+    const labels = joinMultiSelectLabels(detail);
+    if (labels) return `${base} (${labels})`;
     return base;
   }
   if ('text' in rv && typeof rv.text === 'string') return rv.text.trim();
@@ -105,7 +126,7 @@ export function formatEvidenceDetailReadable(raw: unknown): string {
     rv.detail && typeof rv.detail === 'object' ? (rv.detail as Record<string, unknown>) : null;
 
   if (detail) {
-    const selected = joinList(detail.selected);
+    const selected = joinMultiSelectLabels(detail);
     if (selected) parts.push(`Selected: ${selected}`);
     const checked = joinList(detail.checked);
     if (checked) parts.push(`Checked: ${checked}`);

@@ -1,5 +1,6 @@
 // Lists required answers still blocking publish — each row jumps to the field.
 
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../ui';
 
@@ -21,15 +22,29 @@ export function TestingMissingRequiredPanel({
   onJumpToSession: (sessionIndex: number, defId: string) => void;
   pricingTabHref?: string;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   if (items.length === 0) return null;
 
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-3 dark:border-amber-900/50 dark:bg-amber-950/25">
-      <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-900 dark:text-amber-200">
-        <Icon name="error_outline" className="!text-[16px]" />
-        {items.length} required answer{items.length === 1 ? '' : 's'} still needed
-      </p>
-      <ul className="mt-2 space-y-1">
+      <button
+        type="button"
+        className="flex w-full items-center gap-1.5 text-left text-xs font-semibold text-amber-900 dark:text-amber-200"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((open) => !open)}
+      >
+        <Icon name="error_outline" className="!text-[16px] shrink-0" />
+        <span className="flex-1">
+          {items.length} required answer{items.length === 1 ? '' : 's'} still needed
+        </span>
+        <Icon
+          name={expanded ? 'expand_less' : 'expand_more'}
+          className="!text-[18px] shrink-0 text-amber-700 dark:text-amber-300"
+        />
+      </button>
+      {expanded && (
+        <ul className="mt-2 space-y-1">
         {items.map((item) => {
           const key = item.defId ?? item.label;
           if (item.source === 'pricing' && pricingTabHref) {
@@ -78,7 +93,8 @@ export function TestingMissingRequiredPanel({
             </li>
           );
         })}
-      </ul>
+        </ul>
+      )}
     </div>
   );
 }

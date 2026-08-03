@@ -43,6 +43,7 @@ export function SessionAnswerTable({
   onDragOverRow,
   onDragLeaveTable,
   onDropFiles,
+  uploadingProofDefs,
   productFields,
   fixedDenominatorFor,
   modeTypesDef,
@@ -86,6 +87,7 @@ export function SessionAnswerTable({
   onDragOverRow?: (defId: string) => void;
   onDragLeaveTable?: () => void;
   onDropFiles?: (defId: string, files: FileList) => void;
+  uploadingProofDefs?: Set<string>;
 }) {
   useEffect(() => {
     if (!activeDefId) return;
@@ -369,7 +371,11 @@ export function SessionAnswerTable({
                       onClick={() => onOpenProof(def.id)}
                       title="Upload proof"
                     >
-                      <Icon name="attach_file" className="!text-[15px]" />
+                      {uploadingProofDefs?.has(def.id) ? (
+                        <Icon name="progress_activity" className="!text-[15px] animate-spin" />
+                      ) : (
+                        <Icon name="attach_file" className="!text-[15px]" />
+                      )}
                       {proofN > 0 ? proofN : ''}
                     </button>
                   </div>

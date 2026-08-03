@@ -2,8 +2,8 @@
 
 import type { EntityRow } from '../api';
 import type { RawValue } from './EvidenceInput';
-import { formatChecklistAnswer } from '../../../lib/testing/evidenceFormat';
-import { testerQuestion } from './presentation';
+import { formatChecklistAnswer, formatEvidenceAnswer } from '../../../lib/testing/evidenceFormat';
+import { controlKind, testerQuestion } from './presentation';
 
 export interface SessionItem {
   def: EntityRow;
@@ -33,6 +33,11 @@ export function formatAnswerSummary(def: EntityRow, raw: RawValue | undefined, n
           : 'items';
     const checklist = formatChecklistAnswer(raw, { itemLabel: checklistLabel });
     if (checklist) return checklist;
+    if (controlKind(def) === 'multi_select') {
+      const summary = formatEvidenceAnswer(def, raw, false, false);
+      const paren = summary.match(/\((.+)\)$/);
+      if (paren?.[1]) return paren[1];
+    }
     const unit = def.unit ? ` ${def.unit}` : '';
     if (def.measurementType === 'percentage') return `${raw.value}%`;
     return `${raw.value}${unit}`;

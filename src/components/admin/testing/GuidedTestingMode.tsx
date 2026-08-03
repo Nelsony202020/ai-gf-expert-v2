@@ -16,7 +16,7 @@ import {
   sessionRequiredComplete,
   type ProgressContext,
 } from './progress';
-import { SessionForm, type SessionFormHandle, type SessionItem, type SessionLayout } from './SessionForm';
+import { SessionForm, type SessionFormHandle, type SessionItem, type SessionLayout, type ProofUploadedEvent } from './SessionForm';
 import type { TestSessionDef } from './sessions';
 import {
   markSessionSkipped,
@@ -31,7 +31,7 @@ import { categoryCheckpoints, checkpointAfterSession } from './categoryBoundarie
 import './testing-ui.css';
 import { WORKSHEETS } from './worksheets';
 
-export type { SessionItem };
+export type { SessionItem, ProofUploadedEvent };
 
 export interface GuidedSession {
   cat: EntityRow;
@@ -107,6 +107,7 @@ export function GuidedTestingMode({
   evidenceDefs,
   onClose,
   onResultSaved,
+  onProofUploaded,
 }: {
   productName: string;
   runName: string;
@@ -128,7 +129,8 @@ export function GuidedTestingMode({
   /** All evidence definitions (for cross-session slug lookups). */
   evidenceDefs?: EntityRow[];
   onClose: () => void;
-  onResultSaved: () => Promise<void> | void;
+  onResultSaved: (opts?: { proofOnly?: boolean; refreshResults?: boolean }) => Promise<void> | void;
+  onProofUploaded?: (event: ProofUploadedEvent) => void | Promise<void>;
 }) {
   const [index, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(sessions.length - 1, 0)));
   const [focusDefId, setFocusDefId] = useState<string | null>(initialFocusDefId ?? null);
@@ -448,6 +450,7 @@ export function GuidedTestingMode({
                 productFields={productFields}
                 productSlug={productSlug}
                 suggestions={suggestions}
+                productMedia={media}
                 initialFocusDefId={
                   focusDefId && current.items.some(({ def }) => def.id === focusDefId)
                     ? focusDefId
@@ -458,6 +461,7 @@ export function GuidedTestingMode({
                 submitLabel={isLast ? 'Save and finish' : 'Save and continue →'}
                 onBusyChange={setSaving}
                 onDirtyChange={setSessionDirty}
+                onProofUploaded={onProofUploaded}
                 onSaved={async () => {
                   await onResultSaved();
                   setSessionDirty(false);

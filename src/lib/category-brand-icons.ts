@@ -1,5 +1,7 @@
+import { cdnAsset } from './media/cdn';
+
 /** Maps rating category keys to branded icon assets in /public/brand/branded/ */
-export const categoryBrandIcons: Record<string, string> = {
+const rawCategoryBrandIcons: Record<string, string> = {
   characters: '/brand/branded/branded-characters.svg',
   customization: '/brand/branded/branded-customization.png',
   chat: '/brand/branded/branded-chat.png',
@@ -9,6 +11,10 @@ export const categoryBrandIcons: Record<string, string> = {
   privacy: '/brand/branded/branded-privacy.svg',
   pricing: '/brand/branded/branded-pricing.svg',
 };
+
+export const categoryBrandIcons: Record<string, string> = Object.fromEntries(
+  Object.entries(rawCategoryBrandIcons).map(([key, path]) => [key, cdnAsset(path)]),
+);
 
 export const categoryBrandIconsLight: Record<string, string> = {};
 

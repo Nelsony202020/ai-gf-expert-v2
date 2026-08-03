@@ -47,6 +47,8 @@ export function SeoTab() {
   );
 
   const publicPath = `/reviews/${fields.slug ?? ''}`;
+  const publishStatus = String(fields.status ?? 'draft');
+  const isPublished = publishStatus === 'published';
   const seoTab = completion.tabById.seo;
   const missing = [...seoTab.missingRequired, ...seoTab.missingRecommended];
 
@@ -189,11 +191,20 @@ export function SeoTab() {
                 />
               </Field>
               <div>
-                <p className="mb-1 text-xs font-medium text-slate-600 dark:text-slate-400">URL preview</p>
+                <p className="mb-1 flex items-center justify-between gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+                  <span>URL preview</span>
+                  {!isPublished && <Badge tone="amber">Draft — not live</Badge>}
+                </p>
                 <p className="truncate rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-mono text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
                   https://{SITE_HOST}
                   <span className="text-slate-900 dark:text-slate-100">{publicPath}</span>
                 </p>
+                {!isPublished && (
+                  <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                    This URL returns 404 in production until the product is published. On localhost, dev test
+                    reviews stay reachable for editing.
+                  </p>
+                )}
               </div>
             </div>
 

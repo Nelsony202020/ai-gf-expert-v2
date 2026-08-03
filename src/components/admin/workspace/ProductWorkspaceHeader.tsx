@@ -7,6 +7,7 @@ import { useWorkspace } from './context';
 import { confirmLeaveExplanationsIfNeeded } from '../testing/explanations/explanationLeaveGuard';
 import { WORKSPACE_TABS, fmtRelativeTime, workspaceTabPath, tabVisualStatus, type TabCompletion } from './completion';
 import { reviewPageUrl, reviewPreviewPageUrl } from '../../../lib/slugs';
+import { isDevReviewSlug } from '../../../lib/content/reviewDevProducts';
 import { resolveMediaUrl } from '../../../lib/media/url';
 
 function fmtMonthYear(ms?: number | null): string {
@@ -41,7 +42,9 @@ export function ProductWorkspaceHeader() {
   const reviewUrl = fields.slug
     ? isPublished
       ? reviewPageUrl(String(fields.slug))
-      : reviewPreviewPageUrl(String(fields.slug))
+      : isDevReviewSlug(String(fields.slug))
+        ? reviewPageUrl(String(fields.slug))
+        : reviewPreviewPageUrl(String(fields.slug))
     : null;
   const overall = related.scoreHistory.find((h) => h.isCurrentPublished)?.overall ?? null;
   const requiredCount = completion.missingRequired.length;
@@ -120,7 +123,7 @@ export function ProductWorkspaceHeader() {
           {reviewUrl && (
             <a href={reviewUrl} target="_blank" rel="noreferrer">
               <Button variant="secondary">
-                <Icon name="open_in_new" /> {isPublished ? 'View live page' : 'Preview review'}
+                <Icon name="open_in_new" /> {isPublished ? 'View live page' : isDevReviewSlug(String(fields.slug ?? '')) ? 'Open draft page' : 'Preview review'}
               </Button>
             </a>
           )}

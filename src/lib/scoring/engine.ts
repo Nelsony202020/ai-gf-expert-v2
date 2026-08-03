@@ -362,7 +362,9 @@ export function normalizeEvidence(input: EvidenceInput): {
     }
     // Boolean yes/no stored as status when scoring rule was not migrated yet.
     if (
-      (input.measurementType === 'boolean' || input.slug === 'encryption') &&
+      (input.measurementType === 'boolean' ||
+        input.slug === 'encryption' ||
+        input.slug === 'editing') &&
       (status === 'yes' || status === 'no')
     ) {
       const score = status === 'yes' ? 10 : 0;

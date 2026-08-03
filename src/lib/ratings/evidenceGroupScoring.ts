@@ -41,9 +41,57 @@ export function getMethodologyEvidenceWeights(
   subscoreSlug: string,
 ): { label: string; weight: number }[] {
   return (
-    getTestSubscoreMethodology(categorySlug, subscoreSlug)?.weightedCalculation?.evidenceWeights ??
+    getTestSubscoreMethodology(categorySlug, subscoreSlug)?.scoreCalculation?.evidenceWeights ??
     []
   );
+}
+
+/** Methodology test weights from the export (e.g. female-count = 18, male-count = 7). */
+export function getMemberNominalWeights(
+  categorySlug: string,
+  subscoreSlug: string,
+  memberSlugs: string[],
+): number[] {
+  const calcData = buildExactCalculationData(categorySlug, subscoreSlug);
+  const weightBySlug = new Map(
+    (calcData?.rows ?? []).map((row) => [row.slug, row.weight]),
+  );
+  return memberSlugs.map((slug) => {
+    const dbSlug = resolveDbEvidenceSlug(slug);
+    return weightBySlug.get(dbSlug) ?? weightBySlug.get(slug) ?? 0;
+  });
+}
+
+function round1(n: number): number {
+  return Math.round(n * 10) / 10;
+}
+
+/**
+ * Weighted group score from member slugs — matches methodology apportioned weights,
+ * redistributing when some members are unscored or N/A.
+ */
+export function computeWeightedGroupScore(
+  categorySlug: string,
+  subscoreSlug: string,
+  groupLabel: string,
+  members: Array<{ slug: string; score: number | null }>,
+): number | null {
+  const scored = members.filter((m): m is { slug: string; score: number } => m.score != null);
+  if (scored.length === 0) return null;
+  if (scored.length === 1) return round1(scored[0].score);
+
+  const memberSlugs = members.map((m) => m.slug);
+  const nominalWeights = getMemberNominalWeights(categorySlug, subscoreSlug, memberSlugs);
+  const { rows } = buildRedistributedCalcItems(
+    members.map((member, index) => ({
+      name: member.slug,
+      score: member.score,
+      nominalWeight: nominalWeights[index] ?? 0,
+    })),
+  );
+
+  const total = rows.reduce((sum, row) => sum + (row.contribution ?? 0), 0);
+  return total > 0 ? round1(total) : null;
 }
 
 export function buildSubscoreNominalWeights(

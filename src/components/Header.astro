@@ -2,6 +2,7 @@
 import { buildMegaMenuColumns } from '../data/nav-mega-menu';
 import { buildSearchIndex } from '../data/site-search';
 import { loadComparisonProducts } from '../lib/content/comparisonProducts';
+import { cdnAsset } from '../lib/media/cdn';
 import ThemeToggle from './ui/ThemeToggle.astro';
 
 const publishedProducts = await loadComparisonProducts();
@@ -20,7 +21,7 @@ const mobileReviewLinks = [...publishedProducts]
     <div class="site-header__left">
       <a href="/" class="site-logo-link site-header__logo-link shrink-0">
         <img
-          src="/brand/ai-gf-logo-light.png"
+          src={cdnAsset('/brand/ai-gf-logo-light.png')}
           alt="AI Girlfriend Expert"
           class="site-header__logo site-header__logo--light"
           width="127"
@@ -29,7 +30,7 @@ const mobileReviewLinks = [...publishedProducts]
           decoding="async"
         />
         <img
-          src="/brand/ai-gf-logo-white.png"
+          src={cdnAsset('/brand/ai-gf-logo-white.png')}
           alt=""
           class="site-header__logo site-header__logo--dark"
           width="127"

@@ -1,7 +1,7 @@
 // Combined chat-modes + mode-types tester flow:
-// Yes/No → count → name & rate two modes (3-level rubric).
+// Yes/No dropdown → count → name & rate two modes (3-level rubric).
 
-import { TextInput } from '../ui';
+import { Select, TextInput } from '../ui';
 import type { RawValue } from './EvidenceInput';
 
 export type ModeRating = 'good' | 'partial' | 'poor';
@@ -55,8 +55,10 @@ export function chatModesToRaw(
 ): RawValue | undefined {
   if (hasModes === 'no') return { status: 'no' };
   if (hasModes !== 'yes') return undefined;
-  const n = count.trim() === '' ? undefined : Math.max(0, Number(count));
-  if (n === undefined || Number.isNaN(n)) return undefined;
+  const trimmed = count.trim();
+  if (trimmed === '') return { status: 'yes' };
+  const n = Math.max(0, Number(trimmed));
+  if (Number.isNaN(n)) return { status: 'yes' };
   return { status: 'yes', detail: { count: n } };
 }
 
@@ -106,38 +108,24 @@ export function ChatModesField({
 
   return (
     <div className="space-y-4 testing-input-wide w-full min-w-[14rem]">
-      <fieldset className="space-y-2">
-        <legend className="text-xs font-medium text-slate-600 dark:text-slate-300">
-          Does the app offer different chat modes?
-        </legend>
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              { v: 'yes' as const, label: 'Yes' },
-              { v: 'no' as const, label: 'No' },
-            ] as const
-          ).map(({ v, label }) => (
-            <label
-              key={v}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                parsed.hasModes === v
-                  ? 'border-pink-400 bg-pink-50 text-pink-700 dark:border-pink-600 dark:bg-pink-950/40 dark:text-pink-300'
-                  : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900'
-              }`}
-            >
-              <input
-                type="radio"
-                name="chat-modes-has"
-                className="sr-only"
-                disabled={disabled}
-                checked={parsed.hasModes === v}
-                onChange={() => sync(v, parsed.count, parsed.modes)}
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">
+          Different chat modes?
+        </label>
+        <Select
+          value={parsed.hasModes}
+          disabled={disabled}
+          className="!py-2 text-sm"
+          onChange={(e) => {
+            const v = e.target.value as 'yes' | 'no' | '';
+            sync(v, v === 'yes' ? parsed.count : '', parsed.modes);
+          }}
+        >
+          <option value="">Choose…</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </Select>
+      </div>
 
       {parsed.hasModes === 'yes' && (
         <>

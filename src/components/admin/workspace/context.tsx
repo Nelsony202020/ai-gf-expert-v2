@@ -79,6 +79,10 @@ export interface ProductWorkspaceState {
   related: WorkspaceRelated;
   relatedLoading: boolean;
   refreshRelated: () => Promise<void>;
+  /** Merge one uploaded proof row without reloading the whole library. */
+  appendProductMedia: (row: EntityRow) => void;
+  /** Refresh product media only (lighter than refreshRelated). */
+  refreshProductMedia: () => Promise<void>;
   completion: ProductCompletion;
   slugAuto: boolean;
   markSlugManual: () => void;
@@ -133,6 +137,8 @@ function extractLinks(row: EntityRow): Record<string, string | null> {
     factChecker: row.factChecker?.id ?? null,
     logo: row.logo?.id ?? null,
     featuredImage: row.featuredImage?.id ?? null,
+    secondaryLogo: row.secondaryLogo?.id ?? null,
+    featuredIcon: row.featuredIcon?.id ?? null,
   };
 }
 
@@ -220,6 +226,31 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
       });
     } finally {
       setRelatedLoading(false);
+    }
+  }
+
+  function appendProductMedia(row: EntityRow) {
+    setRelated((prev) => {
+      const without = (rows: EntityRow[]) => rows.filter((m) => m.id !== row.id);
+      return {
+        ...prev,
+        media: [...without(prev.media), row],
+        mediaAll: [...without(prev.mediaAll), row],
+      };
+    });
+  }
+
+  async function refreshProductMedia() {
+    try {
+      const media = await dataApi.list('media');
+      const byProduct = media.rows.filter((r) => r.product?.id === productId);
+      setRelated((prev) => ({
+        ...prev,
+        mediaAll: media.rows,
+        media: byProduct,
+      }));
+    } catch {
+      /* optional */
     }
   }
 
@@ -419,6 +450,8 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
     related,
     relatedLoading,
     refreshRelated,
+    appendProductMedia,
+    refreshProductMedia,
     completion,
     slugAuto,
     markSlugManual: () => setSlugAuto(false),

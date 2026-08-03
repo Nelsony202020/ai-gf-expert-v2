@@ -142,7 +142,7 @@ export function NewProductPage() {
         <div>
           <ProductMediaField
             label="Product logo"
-            hint="Shown on review cards and directory listings."
+            hint="This is the product — the main logo of the product."
             supportedText="PNG, JPG, JPEG, or SVG • Max 2MB"
             role="logo"
             accept="image/png,image/jpeg,image/svg+xml,image/webp"

@@ -195,11 +195,7 @@ export function PricingTab() {
         {snapshot && (
           <>
             {canEdit && (
-              <PricingImportCard
-                productId={ws.productId}
-                onDraft={setAiDraft}
-                onGalleryUpdated={() => void ws.refreshRelated()}
-              />
+              <PricingImportCard productId={ws.productId} onDraft={setAiDraft} />
             )}
 
             {/* Compact pricing-model selector */}
@@ -347,6 +343,9 @@ export function PricingTab() {
                   { label: 'Apple Pay', on: Boolean(profile.applePay) },
                   { label: 'Google Pay', on: Boolean(profile.googlePay) },
                   { label: 'Bank transfer', on: Boolean(profile.bankTransfer) },
+                  { label: 'WeChat Pay', on: Boolean(profile.wechatPay) },
+                  { label: 'Alipay', on: Boolean(profile.alipay) },
+                  { label: 'Discover Pay', on: Boolean(profile.discoverPay) },
                 ].map((b) => (
                   <Badge key={b.label} tone={b.on ? 'green' : 'gray'}>
                     {b.label}
@@ -1503,6 +1502,9 @@ const PAYMENT_METHODS = [
   { key: 'applePay', label: 'Apple Pay', icon: 'phone_iphone' },
   { key: 'googlePay', label: 'Google Pay', icon: 'wallet' },
   { key: 'bankTransfer', label: 'Bank transfer', icon: 'account_balance' },
+  { key: 'wechatPay', label: 'WeChat Pay', icon: 'qr_code_2' },
+  { key: 'alipay', label: 'Alipay', icon: 'payments' },
+  { key: 'discoverPay', label: 'Discover Pay', icon: 'explore' },
 ] as const;
 
 type PaymentMethodKey = (typeof PAYMENT_METHODS)[number]['key'];
@@ -1525,6 +1527,9 @@ function PaymentProfileModal({
     if (profile?.applePay) initial.add('applePay');
     if (profile?.googlePay) initial.add('googlePay');
     if (profile?.bankTransfer) initial.add('bankTransfer');
+    if (profile?.wechatPay) initial.add('wechatPay');
+    if (profile?.alipay) initial.add('alipay');
+    if (profile?.discoverPay) initial.add('discoverPay');
     return initial;
   });
   const [cryptoOnly, setCryptoOnly] = useState(Boolean(profile?.cryptoOnly));
@@ -1553,6 +1558,9 @@ function PaymentProfileModal({
       applePay: methods.has('applePay'),
       googlePay: methods.has('googlePay'),
       bankTransfer: methods.has('bankTransfer'),
+      wechatPay: methods.has('wechatPay'),
+      alipay: methods.has('alipay'),
+      discoverPay: methods.has('discoverPay'),
       cryptoOnly,
       discreetBilling,
       billingDescriptor: discreetBilling ? billingDescriptor.trim() || undefined : undefined,

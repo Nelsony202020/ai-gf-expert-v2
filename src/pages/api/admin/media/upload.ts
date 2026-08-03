@@ -7,6 +7,7 @@ import { getDb, id as newId } from '../../../../lib/db/server';
 import { auditTx } from '../../../../lib/db/audit';
 import { inferImageMimeType } from '../../../../lib/media/mime';
 import { heroSortOrderUpdates, parseMediaTags } from '../../../../lib/media/catalog';
+import { isBunnyConfigured, uploadToBunny } from '../../../../lib/media/cdn';
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
 const ALLOWED_TYPES = new Set([
@@ -76,17 +77,24 @@ export const POST: APIRoute = handler(async ({ request }) => {
   const path = `media/${Date.now()}-${safeName}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const uploaded = await db.storage.uploadFile(path, buffer, { contentType });
-
-  // Resolve the stored file's URL for caching on the media record.
+  const useBunny = isBunnyConfigured();
   let fileUrl: string | undefined;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const { $files } = await db.query({
-      $files: { $: { where: { id: uploaded.data.id } } },
-    });
-    fileUrl = $files[0]?.url as string | undefined;
-    if (fileUrl) break;
-    await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+  let instantFileId: string | undefined;
+
+  if (useBunny) {
+    fileUrl = await uploadToBunny(path, buffer, contentType);
+  } else {
+    const uploaded = await db.storage.uploadFile(path, buffer, { contentType });
+    instantFileId = uploaded.data.id;
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const { $files } = await db.query({
+        $files: { $: { where: { id: uploaded.data.id } } },
+      });
+      fileUrl = $files[0]?.url as string | undefined;
+      if (fileUrl) break;
+      await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+    }
   }
 
   const featuresTagged = form.get('features') === '1' || form.get('features') === 'true';
@@ -151,7 +159,8 @@ export const POST: APIRoute = handler(async ({ request }) => {
   });
 
   function mediaChunk(fields: Record<string, unknown>) {
-    let chunk = db.tx.media[mediaId].update(fields).link({ file: uploaded.data.id });
+    let chunk = db.tx.media[mediaId].update(fields);
+    if (instantFileId) chunk = chunk.link({ file: instantFileId });
     if (productId) chunk = chunk.link({ product: productId });
     if (evidenceResultId) chunk = chunk.link({ evidenceResult: evidenceResultId });
     return chunk;

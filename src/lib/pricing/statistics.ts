@@ -112,6 +112,9 @@ export async function collectPricingStats(): Promise<IndustryPricingStats> {
               ['apple_pay', profile.applePay],
               ['google_pay', profile.googlePay],
               ['bank_transfer', profile.bankTransfer],
+              ['wechat_pay', profile.wechatPay],
+              ['alipay', profile.alipay],
+              ['discover_pay', profile.discoverPay],
             ] as [string, boolean][]
           )
             .filter(([, on]) => on)

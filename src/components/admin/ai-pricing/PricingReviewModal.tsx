@@ -3,9 +3,18 @@
 // as "will update" or "will create". Apply writes through the normal CRUD API
 // and attaches the source screenshots as evidence. Nothing is ever deleted.
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { dataApi, type EntityRow } from '../api';
 import { Badge, Button, ErrorNote, Icon, Modal, Select, TextInput } from '../ui';
+import {
+  FEATURE_COST_FAMILIES,
+  costRowHumanSummary,
+  flattenExtractedFeatureCosts,
+  matchExistingVariant,
+  normalizeExtractedVariant,
+  variantFieldsToFeatureCost,
+  type ExtractFeatureCategory,
+} from '../../../lib/pricing/featureCostGroups';
 
 // Mirrors PricingDraft from src/lib/ai-pricing/extract.ts (client-side shape).
 export interface PricingDraftClient {
@@ -32,6 +41,17 @@ export interface PricingDraftClient {
   featureCosts: Array<{
     featureType: string;
     customLabel?: string | null;
+    tokenCost: number;
+    unit: string;
+    model?: string | null;
+    durationSeconds?: number | null;
+    category?: string | null;
+  }>;
+  featureCostVariants?: Array<{
+    category: string;
+    model?: string | null;
+    durationSeconds?: number | null;
+    label?: string | null;
     tokenCost: number;
     unit: string;
   }>;
@@ -78,11 +98,50 @@ interface PackageRow {
 
 interface CostRow {
   key: number;
+  category: ExtractFeatureCategory | 'custom';
   featureType: string;
+  model: string;
+  durationSeconds: string;
   customLabel: string;
   tokenCost: string;
   unit: string;
   matchId: string | null;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  standard_image: 'Standard image',
+  video_generation: 'Video generation',
+  voice_message: 'Voice message',
+  voice_call: 'Phone / voice call',
+  custom: 'Other',
+};
+
+function flatCostToCandidate(row: CostRow): EntityRow {
+  return {
+    id: row.matchId ?? '',
+    featureType: row.featureType,
+    qualityTier: row.model.trim() || null,
+    durationProduced: row.durationSeconds.trim() ? Number(row.durationSeconds) : null,
+    customLabel: row.customLabel.trim() || null,
+  } as EntityRow;
+}
+
+function patchCostRow(
+  setCosts: Dispatch<SetStateAction<CostRow[]>>,
+  existingFeatureCosts: EntityRow[],
+  key: number,
+  patch: Partial<CostRow>,
+) {
+  setCosts((p) =>
+    p.map((r) => {
+      if (r.key !== key) return r;
+      const next = { ...r, ...patch };
+      return {
+        ...next,
+        matchId: matchExistingVariant(existingFeatureCosts, flatCostToCandidate(next))?.id ?? null,
+      };
+    }),
+  );
 }
 
 interface PromoRow {
@@ -191,17 +250,37 @@ export function PricingReviewModal({
       };
     }),
   );
-  const [costs, setCosts] = useState<CostRow[]>(() =>
-    draft.featureCosts.map((c) => ({
-      key: keyCounter++,
-      featureType: c.featureType,
-      customLabel: c.customLabel ?? '',
-      tokenCost: c.tokenCost != null ? String(c.tokenCost) : '',
-      unit: c.unit,
-      matchId:
-        existingFeatureCosts.find((r) => String(r.featureType ?? '') === c.featureType)?.id ?? null,
-    })),
-  );
+  const [costs, setCosts] = useState<CostRow[]>(() => {
+    const flat = flattenExtractedFeatureCosts({
+      featureCosts: draft.featureCosts as Array<Record<string, unknown>>,
+      featureCostVariants: (draft.featureCostVariants ?? []) as Array<Record<string, unknown>>,
+    });
+    return flat.map((c) => {
+      const cleaned = normalizeExtractedVariant({
+        model: c.model,
+        label: c.customLabel,
+        durationSeconds: c.durationSeconds,
+      });
+      const candidate = {
+        featureType: c.featureType,
+        qualityTier: cleaned.model || null,
+        durationProduced: cleaned.durationSeconds ? Number(cleaned.durationSeconds) : null,
+        customLabel: cleaned.label || null,
+      } as EntityRow;
+      const match = matchExistingVariant(existingFeatureCosts, candidate);
+      return {
+        key: keyCounter++,
+        category: (c.category ?? 'custom') as ExtractFeatureCategory | 'custom',
+        featureType: c.featureType,
+        model: cleaned.model,
+        durationSeconds: cleaned.durationSeconds,
+        customLabel: cleaned.label,
+        tokenCost: String(c.tokenCost),
+        unit: c.unit,
+        matchId: match?.id ?? null,
+      };
+    });
+  });
   const [promos, setPromos] = useState<PromoRow[]>(() =>
     draft.promotions.map((p) => ({
       key: keyCounter++,
@@ -312,14 +391,29 @@ export function PricingReviewModal({
         const cost = num(row.tokenCost);
         if (cost == null) continue;
         const existing = byId(existingFeatureCosts, row.matchId);
+        const family =
+          FEATURE_COST_FAMILIES.find((f) => f.key === row.category) ??
+          FEATURE_COST_FAMILIES.find((f) => f.featureTypes.includes(row.featureType));
+        const duration = num(row.durationSeconds);
+        const mapped = family
+          ? variantFieldsToFeatureCost(family, {
+              model: row.model.trim() || null,
+              durationSeconds: duration ?? null,
+              label: row.customLabel.trim() || null,
+              creditCost: cost,
+              unit: row.unit,
+            })
+          : {
+              featureType: row.featureType,
+              customLabel: row.customLabel.trim() || undefined,
+              creditCost: cost,
+              unit: row.unit,
+            };
         const fields: Record<string, unknown> = {
-          featureType: row.featureType,
-          customLabel: row.customLabel.trim() || undefined,
-          creditCost: cost,
+          ...mapped,
           minCost: undefined,
           maxCost: undefined,
           costType: 'fixed',
-          unit: row.unit,
           active: true,
           sortOrder: existing?.sortOrder ?? existingFeatureCosts.length + i,
           evidenceMediaIds: mergeEvidence(existing?.evidenceMediaIds, mediaIds),
@@ -394,11 +488,14 @@ export function PricingReviewModal({
             <p className="mb-2 text-[11px] text-slate-400">
               One row = one subscription tier. Enter monthly, 3-month total, and annual total — not separate tiers per interval.
             </p>
-            <div className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_0.8fr_0.7fr_0.8fr_auto_auto] items-center gap-x-2 gap-y-1.5">
-              <HeaderCells labels={['Name', 'Monthly $', '3-mo total', 'Annual $/mo', 'Annual total', 'Currency', 'Tokens/mo']} />
+            <div className="grid grid-cols-1 gap-y-1.5">
+              <div className="col-span-full grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_0.8fr_0.7fr_0.8fr_auto_auto] items-center gap-x-2">
+                <HeaderCells labels={['Name', 'Monthly $', '3-mo total', 'Annual $/mo', 'Annual total', 'Currency', 'Tokens/mo']} />
+              </div>
               {plans.map((row) => (
                 <RowCells
                   key={row.key}
+                  gridClass="grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_0.8fr_0.7fr_0.8fr_auto_auto]"
                   status={row.matchId ? 'update' : 'create'}
                   onRemove={() => setPlans((p) => p.filter((r) => r.key !== row.key))}
                 >
@@ -417,11 +514,14 @@ export function PricingReviewModal({
 
         {packages.length > 0 && (
           <ReviewSection title="Token top-up packages">
-            <div className="grid grid-cols-[1.2fr_0.8fr_0.7fr_0.9fr_0.9fr_auto_auto] items-center gap-x-2 gap-y-1.5">
-              <HeaderCells labels={['Name', 'Price', 'Currency', 'Base credits', 'Bonus credits']} />
+            <div className="grid grid-cols-1 gap-y-1.5">
+              <div className="col-span-full grid grid-cols-[1.2fr_0.8fr_0.7fr_0.9fr_0.9fr_auto_auto] items-center gap-x-2">
+                <HeaderCells labels={['Name', 'Price', 'Currency', 'Base credits', 'Bonus credits']} />
+              </div>
               {packages.map((row) => (
                 <RowCells
                   key={row.key}
+                  gridClass="grid-cols-[1.2fr_0.8fr_0.7fr_0.9fr_0.9fr_auto_auto]"
                   status={row.matchId ? 'update' : 'create'}
                   onRemove={() => setPackages((p) => p.filter((r) => r.key !== row.key))}
                 >
@@ -438,40 +538,44 @@ export function PricingReviewModal({
 
         {costs.length > 0 && (
           <ReviewSection title="Feature costs">
-            <div className="grid grid-cols-[1.4fr_0.8fr_1fr_auto_auto] items-center gap-x-2 gap-y-1.5">
-              <HeaderCells labels={['Feature', 'Token cost', 'Unit']} />
-              {costs.map((row) => (
-                <RowCells
-                  key={row.key}
-                  status={row.matchId ? 'update' : 'create'}
-                  onRemove={() => setCosts((p) => p.filter((r) => r.key !== row.key))}
-                >
-                  <div className="text-xs text-slate-700 dark:text-slate-300">
-                    {row.featureType === 'custom' ? (
-                      <TextInput className={inputCls} value={row.customLabel} placeholder="Custom feature" onChange={(e) => setCosts((p) => p.map((r) => (r.key === row.key ? { ...r, customLabel: e.target.value } : r)))} />
-                    ) : (
-                      row.featureType.replace(/_/g, ' ')
-                    )}
-                  </div>
-                  <TextInput className={inputCls} inputMode="decimal" value={row.tokenCost} onChange={(e) => setCosts((p) => p.map((r) => (r.key === row.key ? { ...r, tokenCost: e.target.value } : r)))} />
-                  <Select className={inputCls} value={row.unit} onChange={(e) => setCosts((p) => p.map((r) => (r.key === row.key ? { ...r, unit: e.target.value } : r)))}>
-                    {UNIT_OPTIONS.map((u) => (
-                      <option key={u} value={u}>{u.replace(/_/g, ' ')}</option>
+            <p className="mb-3 text-[11px] text-slate-400">
+              Check each price point below. Expand a row only if something looks wrong.
+            </p>
+            {(['video_generation', 'standard_image', 'voice_message', 'voice_call', 'custom'] as const).map((cat) => {
+              const rows = costs.filter((r) => r.category === cat);
+              if (rows.length === 0) return null;
+              return (
+                <div key={cat} className="mb-4 last:mb-0">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    {CATEGORY_LABELS[cat] ?? cat}
+                  </p>
+                  <ul className="space-y-2">
+                    {rows.map((row) => (
+                      <FeatureCostReviewCard
+                        key={row.key}
+                        row={row}
+                        inputCls={inputCls}
+                        onPatch={(patch) => patchCostRow(setCosts, existingFeatureCosts, row.key, patch)}
+                        onRemove={() => setCosts((p) => p.filter((r) => r.key !== row.key))}
+                      />
                     ))}
-                  </Select>
-                </RowCells>
-              ))}
-            </div>
+                  </ul>
+                </div>
+              );
+            })}
           </ReviewSection>
         )}
 
         {promos.length > 0 && (
           <ReviewSection title="Promotions">
-            <div className="grid grid-cols-[1.2fr_1fr_0.6fr_0.8fr_0.9fr_0.9fr_auto_auto] items-center gap-x-2 gap-y-1.5">
-              <HeaderCells labels={['Name', 'Type', '%', 'Coupon', 'Starts', 'Ends']} />
+            <div className="grid grid-cols-1 gap-y-1.5">
+              <div className="col-span-full grid grid-cols-[1.2fr_1fr_0.6fr_0.8fr_0.9fr_0.9fr_auto_auto] items-center gap-x-2">
+                <HeaderCells labels={['Name', 'Type', '%', 'Coupon', 'Starts', 'Ends']} />
+              </div>
               {promos.map((row) => (
                 <RowCells
                   key={row.key}
+                  gridClass="grid-cols-[1.2fr_1fr_0.6fr_0.8fr_0.9fr_0.9fr_auto_auto]"
                   status={row.matchId ? 'update' : 'create'}
                   onRemove={() => setPromos((p) => p.filter((r) => r.key !== row.key))}
                 >
@@ -528,9 +632,105 @@ function HeaderCells({ labels }: { labels: string[] }) {
           {l}
         </span>
       ))}
-      <span />
-      <span />
+      <span aria-hidden="true" />
+      <span aria-hidden="true" />
     </>
+  );
+}
+
+function FeatureCostReviewCard({
+  row,
+  inputCls,
+  onPatch,
+  onRemove,
+}: {
+  row: CostRow;
+  inputCls: string;
+  onPatch: (patch: Partial<CostRow>) => void;
+  onRemove: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const summary = costRowHumanSummary(row);
+  const isMatrix = row.category === 'video_generation' || row.category === 'standard_image';
+  const showDuration = row.category === 'video_generation';
+
+  return (
+    <li className="rounded-lg border border-slate-200 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-800/30">
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        <p className="min-w-0 flex-1 text-sm font-medium text-slate-800 dark:text-slate-100">{summary}</p>
+        <Badge tone={row.matchId ? 'blue' : 'green'}>{row.matchId ? 'will update' : 'will create'}</Badge>
+        <Button variant="ghost" className="text-xs" type="button" onClick={() => setExpanded((v) => !v)}>
+          {expanded ? 'Hide' : 'Edit'}
+        </Button>
+        <button
+          type="button"
+          aria-label="Remove row"
+          className="text-slate-300 transition-colors hover:text-red-500"
+          onClick={onRemove}
+        >
+          <Icon name="close" className="!text-[14px]" />
+        </button>
+      </div>
+      {expanded && (
+        <div className="grid gap-2 border-t border-slate-200 px-3 py-2.5 sm:grid-cols-2 dark:border-slate-700">
+          {isMatrix && (
+            <>
+              <label className="block">
+                <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">Model</span>
+                <TextInput
+                  className={inputCls}
+                  value={row.model}
+                  placeholder="Lite"
+                  onChange={(e) => onPatch({ model: e.target.value })}
+                />
+              </label>
+              {showDuration && (
+                <label className="block">
+                  <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">Seconds</span>
+                  <TextInput
+                    className={inputCls}
+                    inputMode="numeric"
+                    value={row.durationSeconds}
+                    placeholder="5"
+                    onChange={(e) => onPatch({ durationSeconds: e.target.value })}
+                  />
+                </label>
+              )}
+              <label className={`block ${showDuration ? 'sm:col-span-2' : ''}`}>
+                <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">
+                  Label (only if no model — e.g. Video with audio)
+                </span>
+                <TextInput
+                  className={inputCls}
+                  value={row.customLabel}
+                  placeholder="Video with audio"
+                  onChange={(e) => onPatch({ customLabel: e.target.value })}
+                />
+              </label>
+            </>
+          )}
+          <label className="block">
+            <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">Cost</span>
+            <TextInput
+              className={inputCls}
+              inputMode="decimal"
+              value={row.tokenCost}
+              onChange={(e) => onPatch({ tokenCost: e.target.value })}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">Unit</span>
+            <Select className={inputCls} value={row.unit} onChange={(e) => onPatch({ unit: e.target.value })}>
+              {UNIT_OPTIONS.map((u) => (
+                <option key={u} value={u}>
+                  {u.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </Select>
+          </label>
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -538,13 +738,15 @@ function RowCells({
   status,
   onRemove,
   children,
+  gridClass,
 }: {
   status: 'create' | 'update';
   onRemove: () => void;
   children: React.ReactNode;
+  gridClass: string;
 }) {
   return (
-    <>
+    <div className={`col-span-full grid ${gridClass} items-center gap-x-2 gap-y-1.5`}>
       {children}
       <Badge tone={status === 'create' ? 'green' : 'blue'}>
         {status === 'create' ? 'will create' : 'will update'}
@@ -557,6 +759,6 @@ function RowCells({
       >
         <Icon name="close" className="!text-[14px]" />
       </button>
-    </>
+    </div>
   );
 }

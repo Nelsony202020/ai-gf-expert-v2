@@ -1,5 +1,6 @@
 ---
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
+import { cdnAsset } from '../../lib/media/cdn';
 import RoundupMediaCarousel from './RoundupMediaCarousel.astro';
 import RoundupCategoryScores from './RoundupCategoryScores.astro';
 import RoundupSpecsCarousel from './RoundupSpecsCarousel.astro';
@@ -123,7 +124,7 @@ const { pick, rank } = Astro.props;
 
   <section class="roundup-pick__our-take" data-reading-tier="medium">
     <button type="button" class="roundup-pick__our-take-toggle" data-our-take-toggle aria-expanded="false">
-      <img src="/brand/herman-main-icon.svg" alt="" class="roundup-pick__our-take-avatar" width="32" height="32" />
+      <img src={cdnAsset('/brand/herman-main-icon.svg')} alt="" class="roundup-pick__our-take-avatar" width="32" height="32" />
       <span class="roundup-pick__our-take-heading">Our take</span>
       <span class="material-symbols-outlined roundup-pick__our-take-chevron" aria-hidden="true">expand_more</span>
     </button>

@@ -10,7 +10,7 @@ interface ProductMediaFieldProps {
   label: string;
   hint?: string;
   supportedText: string;
-  role: 'logo' | 'featured';
+  role: 'logo' | 'featured' | 'secondaryLogo' | 'featuredIcon';
   accept: string;
   productId?: string;
   productName?: string;

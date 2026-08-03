@@ -64,6 +64,8 @@ export const ENTITIES: Record<string, EntityConfig> = {
       factChecker: 'authors',
       logo: 'media',
       featuredImage: 'media',
+      secondaryLogo: 'media',
+      featuredIcon: 'media',
     },
     softDelete: true,
     timestampFields: ['createdAt', 'updatedAt'],

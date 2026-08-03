@@ -18,6 +18,7 @@ import {
   allowsUnableToVerify,
 } from './presentation';
 import { formatChecklistAnswer } from '../../../lib/testing/evidenceFormat';
+import { MultiSelectField } from './MultiSelectField';
 
 export type RawValue =
   | { value: number; detail?: Record<string, unknown> }
@@ -414,67 +415,14 @@ export function EvidenceInput({
     }
 
     case 'multi_select': {
-      const options = defOptions(def);
-      const detail = (value && 'detail' in value ? value.detail : undefined) ?? {};
-      const selected = new Set(Array.isArray(detail.selected) ? (detail.selected as string[]) : []);
-      const other = typeof detail.other === 'string' ? detail.other : '';
-
-      function emit(nextSelected: Set<string>, nextOther: string) {
-        const extra = nextOther
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean);
-        if (nextSelected.size === 0 && extra.length === 0) {
-          onChange(undefined);
-          return;
-        }
-        onChange({
-          value: nextSelected.size + extra.length,
-          detail: {
-            selected: options.map((o) => o.label).filter((l) => nextSelected.has(l)),
-            ...(nextOther.trim() ? { other: nextOther } : {}),
-          },
-        });
-      }
-
       return (
-        <div className={compact ? 'w-full min-w-[18rem]' : 'space-y-2'}>
-          <ul className="grid grid-cols-2 gap-1">
-            {options.map((o) => (
-              <li key={String(o.value)}>
-                <label
-                  className={`flex cursor-pointer items-center gap-1.5 rounded border px-2 py-1.5 text-xs transition-colors ${
-                    selected.has(o.label)
-                      ? 'border-pink-300 bg-pink-50 dark:border-pink-700 dark:bg-pink-950/25'
-                      : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900'
-                  } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
-                  title={o.description}
-                >
-                  <input
-                    type="checkbox"
-                    className="testing-checkbox h-3.5 w-3.5 shrink-0 rounded"
-                    checked={selected.has(o.label)}
-                    disabled={disabled}
-                    onChange={() => {
-                      const next = new Set(selected);
-                      if (next.has(o.label)) next.delete(o.label);
-                      else next.add(o.label);
-                      emit(next, other);
-                    }}
-                  />
-                  <span className="truncate font-medium">{o.label}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-          <TextInput
-            value={other}
-            disabled={disabled}
-            placeholder="Other (comma separated)"
-            className={wide}
-            onChange={(e) => emit(selected, e.target.value)}
-          />
-        </div>
+        <MultiSelectField
+          options={defOptions(def)}
+          value={value}
+          disabled={disabled}
+          compact={compact}
+          onChange={onChange}
+        />
       );
     }
 

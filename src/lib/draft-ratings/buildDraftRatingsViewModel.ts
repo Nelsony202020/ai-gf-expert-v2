@@ -20,7 +20,7 @@ import {
 import { mediaMatchesProofTag, bonusExtraCaption, LIVE_CAM_PROOF_TAG } from '../../components/admin/testing/proofTags';
 import { formatBonusFeaturesSummaryLine } from './resolveEvidenceDisplay';
 import { evidenceGroupsForSubscore, scopeForContributor } from '../ratings/evidenceCategoryMapping';
-import { resolveDbEvidenceSlug, buildSubscoreCalcDrawer } from '../ratings/evidenceGroupScoring';
+import { resolveDbEvidenceSlug, buildSubscoreCalcDrawer, computeWeightedGroupScore } from '../ratings/evidenceGroupScoring';
 import { buildEvidenceIndex, type EvidenceIndex } from '../ratings/evidenceIndex';
 import { deferPayAsYouGoScores } from '../ratings/evidenceIcons';
 import { toSlug } from '../slugs';
@@ -257,6 +257,29 @@ function averageEvidenceScore(measurements: DraftMeasurement[]): number | null {
   if (scored.length === 0) return null;
   const sum = scored.reduce((acc, m) => acc + m.normalizedScore!, 0);
   return round1(sum / scored.length);
+}
+
+function weightedEvidenceScore(
+  measurements: DraftMeasurement[],
+  categorySlug: string,
+  subscoreSlug: string,
+  groupName: string,
+  memberSlugs: string[],
+): number | null {
+  if (memberSlugs.length <= 1) {
+    return averageEvidenceScore(measurements);
+  }
+  const members = memberSlugs.map((slug) => {
+    const measurement = measurements.find((m) => m.slug === slug);
+    return {
+      slug,
+      score:
+        measurement && !isUnavailableMeasurement(measurement)
+          ? measurement.normalizedScore ?? null
+          : null,
+    };
+  });
+  return computeWeightedGroupScore(categorySlug, subscoreSlug, groupName, members);
 }
 
 function buildCategorySummary(
@@ -661,7 +684,15 @@ function buildEvidenceCategories(
             name: group.name,
           score: resolveCategoryScore(
             testResults,
-            productContributor?.internalScore ?? averageEvidenceScore(verifiedResults) ?? null,
+            productContributor?.internalScore ??
+              weightedEvidenceScore(
+                verifiedResults,
+                catSlug,
+                sub.slug,
+                group.name,
+                group.memberSlugs,
+              ) ??
+              null,
           ),
             summary: productContributor
               ? buildCategorySummary(productContributor, verifiedResults, {

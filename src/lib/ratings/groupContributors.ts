@@ -4,7 +4,7 @@ import {
   iconForContributor,
 } from './evidenceCategoryMapping';
 import { DUPLICATE_EVIDENCE_SLUGS } from './evidenceIndex';
-import { resolveDbEvidenceSlug } from './evidenceGroupScoring';
+import { computeWeightedGroupScore, resolveDbEvidenceSlug } from './evidenceGroupScoring';
 import { deferPayAsYouGoScores, iconForEvidenceDef } from './evidenceIcons';
 
 type StoredEvidenceResult = {
@@ -20,13 +20,20 @@ function isStoredNotApplicable(result: StoredEvidenceResult | undefined): boolea
   return result.publicResult?.trim().toLowerCase() === 'not applicable';
 }
 
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
-}
 
-function averageScore(scores: number[]): number | undefined {
-  if (scores.length === 0) return undefined;
-  return round1(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+function weightedGroupScore(
+  categorySlug: string,
+  subscoreSlug: string,
+  groupName: string,
+  memberSlugs: string[],
+  resultBySlug: Map<string, StoredEvidenceResult>,
+): number | undefined {
+  const members = memberSlugs.map((slug) => {
+    const result = storedResult(slug, categorySlug, subscoreSlug, resultBySlug);
+    if (isStoredNotApplicable(result)) return { slug, score: null as number | null };
+    return { slug, score: result?.normalizedScore ?? null };
+  });
+  return computeWeightedGroupScore(categorySlug, subscoreSlug, groupName, members) ?? undefined;
 }
 
 function parseCount(value: string | null | undefined): number | null {
@@ -163,14 +170,6 @@ export function buildGroupedContributors(
       if (!groupHasData(group.memberSlugs, contributorSlugs)) return null;
 
       const fileRow = fileByLabel.get(group.name.toLowerCase());
-      const memberScores = group.memberSlugs
-        .map((slug) => {
-          const result = storedResult(slug, categorySlug, subscoreSlug, resultBySlug);
-          if (isStoredNotApplicable(result)) return null;
-          return result?.normalizedScore ?? null;
-        })
-        .filter((score): score is number => score != null);
-
       const allNotApplicable = group.memberSlugs.every((slug) =>
         isStoredNotApplicable(storedResult(slug, categorySlug, subscoreSlug, resultBySlug)),
       );
@@ -188,7 +187,13 @@ export function buildGroupedContributors(
         icon: fileRow?.icon ?? iconForContributor(group.slug, group.name),
         internalScore: hideScores || allNotApplicable
           ? undefined
-          : averageScore(memberScores) ?? fileRow?.internalScore,
+          : weightedGroupScore(
+              categorySlug,
+              subscoreSlug,
+              group.name,
+              group.memberSlugs,
+              resultBySlug,
+            ) ?? fileRow?.internalScore,
       } satisfies DataRow;
     })
     .filter((row): row is DataRow => row != null);

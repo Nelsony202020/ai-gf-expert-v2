@@ -3,6 +3,7 @@ import { loadExplanationProductBundle } from '../ai-explanations/assembleContext
 import { HttpError } from '../db/auth';
 import { deferPayAsYouGoScores } from '../ratings/evidenceIcons';
 import { evidenceGroupsForSubscore } from '../ratings/evidenceCategoryMapping';
+import { computeWeightedGroupScore, buildSubscoreCalcItems } from '../ratings/evidenceGroupScoring';
 import { fmtScore } from '../scores';
 import { findSubscore, parseSubscoreKey } from './subscores';
 import type { AssembledSubscoreTakeawayContext, BreakdownItem } from './types';
@@ -11,21 +12,22 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
-function averageMemberScore(
+function weightedMemberScore(
+  groupName: string,
   memberSlugs: string[],
   categorySlug: string,
   subscoreSlug: string,
   index: import('../ratings/evidenceIndex').EvidenceIndex<unknown>,
 ): number | null {
-  const scores: number[] = [];
-  for (const slug of memberSlugs) {
+  const members = memberSlugs.map((slug) => {
     const row = index.get(categorySlug, subscoreSlug, slug) as any;
-    if (row?.normalizedScore != null && !row.notApplicable && !row.isUnknown) {
-      scores.push(Number(row.normalizedScore));
-    }
-  }
-  if (scores.length === 0) return null;
-  return round1(scores.reduce((a, b) => a + b, 0) / scores.length);
+    if (row?.notApplicable || row?.isUnknown) return { slug, score: null as number | null };
+    return {
+      slug,
+      score: row?.normalizedScore != null ? Number(row.normalizedScore) : null,
+    };
+  });
+  return computeWeightedGroupScore(categorySlug, subscoreSlug, groupName, members);
 }
 
 function buildBreakdown(
@@ -41,7 +43,7 @@ function buildBreakdown(
 
   return groupDefs.map((group) => ({
     name: group.name,
-    score: averageMemberScore(group.memberSlugs, categorySlug, subscoreSlug, index),
+    score: weightedMemberScore(group.name, group.memberSlugs, categorySlug, subscoreSlug, index),
   }));
 }
 

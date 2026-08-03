@@ -39,6 +39,7 @@ export const POST: APIRoute = handler(async ({ request }) => {
           plans: draft.plans.length,
           packages: draft.packages.length,
           featureCosts: draft.featureCosts.length,
+          featureCostVariants: draft.featureCostVariants.length,
           promotions: draft.promotions.length,
         },
       }),

@@ -15,9 +15,11 @@ interface Props {
   product: Product;
   shareUrl?: string;
   pageHead?: ProductPageHead;
+  /** When true, show draft status instead of a published date in the meta row. */
+  isDraft?: boolean;
 }
 
-const { product, shareUrl, pageHead } = Astro.props;
+const { product, shareUrl, pageHead, isDraft = false } = Astro.props;
 const shareTitle = pageHead?.ogTitle ?? `${product.name} Review — AI Girlfriend Expert`;
 const breadcrumbLabel = product.seo?.breadcrumbLabel?.trim() || product.name;
 const h1IsOverride = pageHead?.h1IsOverride ?? false;
@@ -48,7 +50,15 @@ const h1Text = pageHead?.h1 ?? `${product.name} Review`;
     <h2 class="sr-only">{product.name} Video Review</h2>
 
     <div class="article-meta-row mb-0">
-      <span>Published {product.reviewedDate}</span>
+      {
+        isDraft ? (
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">
+            Draft — not published
+          </span>
+        ) : (
+          <span>Published {product.reviewedDate}</span>
+        )
+      }
       <span class="article-meta-row__sep" aria-hidden="true">·</span>
       <span>Updated {product.modifiedDate}</span>
       <span class="article-meta-row__sep" aria-hidden="true">·</span>

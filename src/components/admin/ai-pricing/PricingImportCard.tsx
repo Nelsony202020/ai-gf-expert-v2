@@ -3,11 +3,10 @@
 // them as proof media, then one AI call classifies + extracts everything.
 
 import { useRef, useState } from 'react';
-import { api, dataApi } from '../api';
+import { api } from '../api';
 import { Button, ErrorNote, Icon } from '../ui';
 import { ImageHoverThumb } from '../testing/ProofThumb';
-import { MediaRoleFields } from '../workspace/tabs/MediaRoleFields';
-import { galleryTagsFromRoleState, PRICING_PROOF_CAPTION, type MediaRoleState } from '../../../lib/media/catalog';
+import { PRICING_PROOF_CAPTION } from '../../../lib/media/catalog';
 import type { PricingDraftClient } from './PricingReviewModal';
 
 interface UploadedShot {
@@ -19,24 +18,15 @@ interface UploadedShot {
 export function PricingImportCard({
   productId,
   onDraft,
-  onGalleryUpdated,
 }: {
   productId: string;
   onDraft: (draft: PricingDraftClient) => void;
-  /** Called after screenshots are approved into the public gallery. */
-  onGalleryUpdated?: () => void;
 }) {
   const [shots, setShots] = useState<UploadedShot[]>([]);
   const [uploading, setUploading] = useState(0);
   const [extracting, setExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [addToGallery, setAddToGallery] = useState(false);
-  const [galleryRoleState, setGalleryRoleState] = useState<MediaRoleState>({
-    character: false,
-    contextTag: '',
-    hero: false,
-  });
   const fileInput = useRef<HTMLInputElement>(null);
 
   async function addFiles(files: File[]) {
@@ -49,25 +39,12 @@ export function PricingImportCard({
         const form = new FormData();
         form.set('file', file);
         form.set('adult', '0');
-        form.set('role', addToGallery ? 'gallery' : 'proof');
+        form.set('role', 'proof');
         form.set('altText', 'Pricing screenshot');
         form.set('caption', PRICING_PROOF_CAPTION);
         form.set('testCategory', 'pricing');
         form.set('productId', productId);
-        if (addToGallery) {
-          form.set('mediaTags', JSON.stringify(galleryTagsFromRoleState(galleryRoleState)));
-        }
         const created = await api.upload<{ id: string; url?: string }>('/api/admin/media/upload', form);
-        if (addToGallery) {
-          await dataApi.update('media', created.id, {
-            approved: true,
-            role: 'gallery',
-            mediaTags: galleryTagsFromRoleState(galleryRoleState),
-            caption: PRICING_PROOF_CAPTION,
-            testCategory: 'pricing',
-          });
-          onGalleryUpdated?.();
-        }
         setShots((prev) => [
           ...prev,
           { mediaId: created.id, url: created.url ?? URL.createObjectURL(file), name: file.name },
@@ -137,25 +114,6 @@ export function PricingImportCard({
           </button>
           .
         </p>
-        <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-          <input
-            type="checkbox"
-            checked={addToGallery}
-            onChange={(e) => setAddToGallery(e.target.checked)}
-            className="rounded border-slate-300"
-          />
-          Also add screenshots to the public Photos &amp; Videos gallery
-        </label>
-        {addToGallery && (
-          <div className="mt-3 text-left">
-            <MediaRoleFields
-              value={galleryRoleState}
-              onChange={setGalleryRoleState}
-              showHero={false}
-              radioName="pricing-gallery-context"
-            />
-          </div>
-        )}
         <input
           ref={fileInput}
           type="file"

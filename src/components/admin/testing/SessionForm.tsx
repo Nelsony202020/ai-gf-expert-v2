@@ -1,8 +1,8 @@
 // Session form: compact answers (table or step view), proof in a side drawer,
 // optional session-level bulk proof. One Save all for answers.
 
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useState, type ReactNode } from 'react';
-import { api, dataApi, type EntityRow } from '../api';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from 'react';
+import { dataApi, type EntityRow } from '../api';
 import { Button, ErrorNote, Icon, TextInput, useAsync } from '../ui';
 import { ChatUnderstandingGrid } from './ChatUnderstandingGrid';
 import { TestingHint } from './TestingHint';
@@ -25,9 +25,10 @@ import { ChatModesField, parseChatModesDraft } from './ChatModesField';
 import { BonusFeaturesField, formatBonusFeaturesSummary } from './BonusExtrasField';
 import { migrateBrowsingDraft } from './browsingMigration';
 import { SupportContactField, parseSupportContactDraft } from './SupportContactField';
-import { parseProofLinks } from './proofLinks';
+import { buildProofCountMap } from './proofCounts';
+import { PROOF_ACCEPTED_TYPES, uploadProofFilesParallel } from './proofUpload';
 import { COMBINED_EVIDENCE_SLUGS, type TestSessionDef } from './sessions';
-import { readImageEditingStatus } from './capabilityGating';
+import { readImageEditingStatus, isGenderCountApplicable } from './capabilityGating';
 import './testing-ui.css';
 import { WorksheetGrid } from './WorksheetGrid';
 import { WorksheetStepView } from './WorksheetStepView';
@@ -67,6 +68,14 @@ export type SessionFormHandle = {
   saveWithoutContinue: () => Promise<boolean>;
 };
 
+export type ProofUploadedEvent = {
+  id: string;
+  url?: string;
+  evidenceResultId: string;
+  defId: string;
+  createdResult: boolean;
+};
+
 export const SessionForm = forwardRef<SessionFormHandle, {
   session: TestSessionDef;
   items: SessionItem[];
@@ -76,7 +85,9 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   productId?: string;
   categorySlug?: string;
   onSaved: () => Promise<void> | void;
-  onRowSaved?: () => Promise<void> | void;
+  onRowSaved?: (opts?: { proofOnly?: boolean; refreshResults?: boolean }) => Promise<void> | void;
+  onProofUploaded?: (event: ProofUploadedEvent) => void | Promise<void>;
+  productMedia?: EntityRow[];
   suggestions?: Map<string, AutofillSuggestion>;
   layout?: SessionLayout;
   submitLabel?: string;
@@ -100,6 +111,8 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     categorySlug,
     onSaved,
     onRowSaved,
+    onProofUploaded,
+    productMedia,
     suggestions,
     layout = 'batch',
     submitLabel = 'Save all results',
@@ -123,7 +136,9 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   const [activeDefId, setActiveDefId] = useState<string | null>(null);
   const [highlightDefId, setHighlightDefId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
+  const appliedFocusKeyRef = useRef<string | null>(null);
   const [proofCounts, setProofCounts] = useState<Map<string, number>>(new Map());
+  const [uploadingProofDefs, setUploadingProofDefs] = useState<Set<string>>(new Set());
   const [dropTargetDefId, setDropTargetDefId] = useState<string | null>(null);
   const sampleStorageKey = `testing-sample:${runId}:${session.id}`;
   const [sampleSize, setSampleSize] = useState<number>(() => {
@@ -136,7 +151,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     }
     return session.sampleSizeField.default ?? 25;
   });
-  const { busy, error, run } = useAsync();
+  const { busy, error, setError, run } = useAsync();
   const [saving, setSaving] = useState(false);
 
   const isBlocked = saving || busy;
@@ -184,30 +199,17 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resultByDef]);
 
-  async function reloadProofCounts() {
-    try {
-      const res = await dataApi.list('media');
-      const counts = new Map<string, number>();
-      for (const m of res.rows) {
-        const rid = m.evidenceResult?.id;
-        if (rid && !m.deletedAt) counts.set(rid, (counts.get(rid) ?? 0) + 1);
-      }
-      for (const result of resultByDef.values()) {
-        if (!result?.id) continue;
-        const linkCount = parseProofLinks(result.proofLinks).length;
-        if (linkCount > 0) {
-          counts.set(result.id, (counts.get(result.id) ?? 0) + linkCount);
-        }
-      }
-      setProofCounts(counts);
-    } catch {
-      /* optional */
-    }
-  }
-
   useEffect(() => {
-    void reloadProofCounts();
-  }, [resultByDef]);
+    setProofCounts(buildProofCountMap(productMedia ?? [], resultByDef.values()));
+  }, [productMedia, resultByDef]);
+
+  function bumpProofCount(resultId: string, by = 1) {
+    setProofCounts((prev) => {
+      const next = new Map(prev);
+      next.set(resultId, (next.get(resultId) ?? 0) + by);
+      return next;
+    });
+  }
 
   const dirtyCount = useMemo(
     () => items.filter(({ def }) => drafts[def.id]?.dirty || drafts[def.id]?.notesDirty).length,
@@ -272,14 +274,23 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     return Boolean(d.raw && 'status' in d.raw && d.raw.status === 'no');
   }, [items, drafts, resultByDef]);
 
+  const gendersRaw = useMemo(() => {
+    const gendersDef = items.find(({ def }) => String(def.slug) === 'genders')?.def;
+    if (!gendersDef) return undefined;
+    const draft = drafts[gendersDef.id];
+    if (draft?.raw !== undefined) return draft.raw;
+    return resultByDef.get(gendersDef.id)?.rawValue;
+  }, [items, drafts, resultByDef]);
+
   const visibleStandaloneItems = useMemo(
     () =>
       standaloneItems.filter(({ def }) => {
         if (COMBINED_EVIDENCE_SLUGS.has(String(def.slug ?? ''))) return false;
         if (supportUnavailable && SUPPORT_RATING_SLUGS.has(String(def.slug ?? ''))) return false;
+        if (!isGenderCountApplicable(categorySlug, String(def.slug ?? ''), gendersRaw)) return false;
         return true;
       }),
-    [standaloneItems, supportUnavailable],
+    [standaloneItems, supportUnavailable, categorySlug, gendersRaw],
   );
 
   const worksheetItems = useMemo(
@@ -290,7 +301,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     [items, worksheet, worksheetDefs, worksheetDefIds],
   );
 
-  const useTable = layout === 'batch' && visibleStandaloneItems.length >= 3 && !worksheet;
+  const useTable = layout === 'batch' && visibleStandaloneItems.length >= 1 && !worksheet;
 
   const initialWorksheetRows = useMemo(() => {
     if (!worksheet) return undefined;
@@ -332,8 +343,13 @@ export const SessionForm = forwardRef<SessionFormHandle, {
 
   useEffect(() => {
     if (!initialFocusDefId) return;
+    const focusKey = `${initialFocusDefId}:${focusNonce}`;
+    if (appliedFocusKeyRef.current === focusKey) return;
+
     const inSession = items.some(({ def }) => def.id === initialFocusDefId);
     if (!inSession) return;
+
+    appliedFocusKeyRef.current = focusKey;
 
     if (layout === 'step') {
       const idx = stepItems.findIndex(({ def }) => def.id === initialFocusDefId);
@@ -351,7 +367,17 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     });
     const timer = window.setTimeout(() => setHighlightDefId(null), 4000);
     return () => window.clearTimeout(timer);
-  }, [initialFocusDefId, focusNonce, layout, stepItems, items]);
+  }, [initialFocusDefId, focusNonce, layout, items, stepItems]);
+
+  function openQuestion(defId: string) {
+    setHighlightDefId(null);
+    setActiveDefId(defId);
+  }
+
+  function goToStep(nextIndex: number) {
+    setHighlightDefId(null);
+    setStepIndex(nextIndex);
+  }
 
   useEffect(() => {
     if (useTable && !activeDefId && standaloneItems[0]) {
@@ -360,6 +386,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   }, [useTable, activeDefId, standaloneItems]);
 
   function focusNextRow(fromDefId?: string | null) {
+    setHighlightDefId(null);
     const ids = standaloneItems.map(({ def }) => def.id);
     const idx = fromDefId ? ids.indexOf(fromDefId) : ids.indexOf(activeDefId ?? '');
     const next = idx >= 0 && idx < ids.length - 1 ? ids[idx + 1] : ids[0];
@@ -390,34 +417,49 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   async function uploadFilesToDef(defId: string, files: FileList | File[]) {
     const item = standaloneItems.find(({ def }) => def.id === defId);
     if (!item) return;
-    const def = item.def;
-    const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
-    const accepted = Array.from(files).filter((f) => ACCEPTED.includes(f.type));
+    const accepted = Array.from(files).filter((f) =>
+      (PROOF_ACCEPTED_TYPES as readonly string[]).includes(f.type),
+    );
     if (accepted.length === 0) return;
-    setDrawerDefId(defId);
-    await run(async () => {
-      let resultId = resultByDef.get(defId)?.id;
-      if (!resultId) {
-        const created = await dataApi.create(
-          'evidenceResults',
-          { testDate: Date.now() },
-          { testRun: runId, evidenceDefinition: defId, product: productId ?? null },
-        );
-        resultId = created.id;
+
+    setUploadingProofDefs((prev) => new Set(prev).add(defId));
+    setDropTargetDefId(null);
+
+    let resultId: string | undefined;
+    let optimisticBump = 0;
+
+    try {
+      const ensured = await ensureResultForDef(defId, { notify: false });
+      resultId = ensured.id;
+      optimisticBump = accepted.length;
+      bumpProofCount(resultId, optimisticBump);
+
+      const uploaded = await uploadProofFilesParallel(accepted, resultId, productId);
+      for (const row of uploaded) {
+        void onProofUploaded?.({
+          id: row.id,
+          url: row.url,
+          evidenceResultId: resultId,
+          defId,
+          createdResult: ensured.created,
+        });
       }
-      for (const file of accepted) {
-        const form = new FormData();
-        form.set('file', file);
-        form.set('adult', '0');
-        form.set('role', 'proof');
-        form.set('evidenceResultId', resultId);
-        if (productId) form.set('productId', productId);
-        await api.upload('/api/admin/media/upload', form);
+
+      if (ensured.created) {
+        await onRowSaved?.({ proofOnly: true, refreshResults: true });
+      } else {
+        void onRowSaved?.({ proofOnly: true });
       }
-      await reloadProofCounts();
-      await (onRowSaved ?? onSaved)();
-      return true;
-    });
+    } catch (e) {
+      if (resultId && optimisticBump > 0) bumpProofCount(resultId, -optimisticBump);
+      setError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploadingProofDefs((prev) => {
+        const next = new Set(prev);
+        next.delete(defId);
+        return next;
+      });
+    }
   }
 
   async function uploadWorksheetProof(files: File[]): Promise<{ id: string; url?: string }[]> {
@@ -429,27 +471,30 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         : ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
     const accepted = files.filter((f) => ACCEPTED.includes(f.type));
     if (accepted.length === 0) return [];
-    let resultId = resultByDef.get(def.id)?.id;
-    if (!resultId) {
-      const created = await dataApi.create(
-        'evidenceResults',
-        { testDate: Date.now() },
-        { testRun: runId, evidenceDefinition: def.id, product: productId ?? null },
-      );
-      resultId = created.id;
+
+    const ensured = await ensureResultForDef(def.id, { notify: false });
+    bumpProofCount(ensured.id, accepted.length);
+    try {
+      const uploaded = await uploadProofFilesParallel(accepted, ensured.id, productId);
+      for (const row of uploaded) {
+        void onProofUploaded?.({
+          id: row.id,
+          url: row.url,
+          evidenceResultId: ensured.id,
+          defId: def.id,
+          createdResult: ensured.created,
+        });
+      }
+      if (ensured.created) {
+        await onRowSaved?.({ proofOnly: true, refreshResults: true });
+      } else {
+        void onRowSaved?.({ proofOnly: true });
+      }
+      return uploaded;
+    } catch (e) {
+      bumpProofCount(ensured.id, -accepted.length);
+      throw e;
     }
-    const uploaded: { id: string; url?: string }[] = [];
-    for (const file of accepted) {
-      const form = new FormData();
-      form.set('file', file);
-      form.set('adult', '0');
-      form.set('role', 'proof');
-      form.set('evidenceResultId', resultId);
-      if (productId) form.set('productId', productId);
-      uploaded.push(await api.upload<{ id: string; url?: string }>('/api/admin/media/upload', form));
-    }
-    void reloadProofCounts();
-    return uploaded;
   }
 
   async function markUndone(defId: string) {
@@ -770,18 +815,21 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     if (supportChannelsDef) patchDraft(supportChannelsDef.id, { raw: channelsRaw });
   }
 
-  async function ensureResultForDef(defId: string): Promise<string> {
-    let resultId = resultByDef.get(defId)?.id;
-    if (!resultId) {
-      const created = await dataApi.create(
-        'evidenceResults',
-        { testDate: Date.now() },
-        { testRun: runId, evidenceDefinition: defId, product: productId ?? null },
-      );
-      resultId = created.id;
+  async function ensureResultForDef(
+    defId: string,
+    opts?: { notify?: boolean },
+  ): Promise<{ id: string; created: boolean }> {
+    const existing = resultByDef.get(defId)?.id;
+    if (existing) return { id: existing, created: false };
+    const created = await dataApi.create(
+      'evidenceResults',
+      { testDate: Date.now() },
+      { testRun: runId, evidenceDefinition: defId, product: productId ?? null },
+    );
+    if (opts?.notify !== false) {
       await (onRowSaved ?? onSaved)?.();
     }
-    return resultId;
+    return { id: created.id, created: true };
   }
 
   function renderEvidenceControl(def: EntityRow, draft: { raw: RawValue | undefined; na: boolean }) {
@@ -922,7 +970,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
             type="button"
             variant="secondary"
             disabled={stepIndex === 0}
-            onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
+            onClick={() => goToStep(Math.max(0, stepIndex - 1))}
           >
             ← Previous question
           </Button>
@@ -930,7 +978,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
             type="button"
             variant="ghost"
             disabled={stepIndex >= stepItems.length - 1}
-            onClick={() => setStepIndex((i) => Math.min(stepItems.length - 1, i + 1))}
+            onClick={() => goToStep(Math.min(stepItems.length - 1, stepIndex + 1))}
           >
             Next question →
           </Button>
@@ -1098,13 +1146,14 @@ export const SessionForm = forwardRef<SessionFormHandle, {
           onPatchChatModesMode={patchChatModesMode}
           onPatchLiveCam={patchLiveCam}
           onPatchSupportChannels={patchSupportChannels}
-          ensureResultForDef={ensureResultForDef}
-          onProofUploaded={() => void reloadProofCounts()}
+          ensureResultForDef={(defId) => ensureResultForDef(defId).then((r) => r.id)}
+          uploadingProofDefs={uploadingProofDefs}
+          onProofUploaded={() => undefined}
           onPatch={patchDraftWithCascade}
           editMemoriesBlocked={isEditMemoriesBlocked()}
           onOpenProof={setDrawerDefId}
           onOpenNote={setNoteDefId}
-          onFocusRow={setActiveDefId}
+          onFocusRow={openQuestion}
           onDragOverRow={setDropTargetDefId}
           onDragLeaveTable={() => setDropTargetDefId(null)}
           onDropFiles={(defId, files) => void uploadFilesToDef(defId, files)}
@@ -1166,7 +1215,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                         ? 'border-amber-400 bg-amber-50 ring-2 ring-amber-400 dark:border-amber-600 dark:bg-amber-950/30'
                         : 'border-slate-200'
                     }`}
-                    onClick={() => setActiveDefId(def.id)}
+                    onClick={() => openQuestion(def.id)}
                   >
                     {String(def.slug) !== 'platform-extras-list' ? (
                       <span className={statusDotClass(state)} />
@@ -1177,7 +1226,12 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                       <QuestionLabel def={def} categorySlug={categorySlug} className="truncate" />{' '}
                       <span className="text-slate-500">— {summary}</span>
                     </span>
-                    {proofN > 0 && <Icon name="attach_file" className="!text-[14px] testing-icon-accent" />}
+                    {(proofN > 0 || uploadingProofDefs.has(def.id)) &&
+                      (uploadingProofDefs.has(def.id) ? (
+                        <Icon name="progress_activity" className="!text-[14px] animate-spin text-pink-500" />
+                      ) : (
+                        <Icon name="attach_file" className="!text-[14px] testing-icon-accent" />
+                      ))}
                   </button>
                 );
               }
@@ -1254,7 +1308,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         )
       )}
 
-      {layout === 'batch' && standaloneItems.length >= 2 && (
+      {layout === 'batch' && standaloneItems.length >= 2 && !useTable && (
         <SessionProofZone
           items={standaloneItems}
           categorySlug={categorySlug}
@@ -1263,7 +1317,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
           resultByDef={resultByDef}
           drafts={drafts}
           liveCamDef={liveCamDef}
-          onUploaded={() => void reloadProofCounts().then(() => onRowSaved?.())}
+          onUploaded={() => void onRowSaved?.({ proofOnly: true })}
         />
       )}
 
@@ -1310,8 +1364,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
           }
           onClose={() => setDrawerDefId(null)}
           onSaved={async () => {
-            await reloadProofCounts();
-            await (onRowSaved ?? onSaved)();
+            void onRowSaved?.({ proofOnly: true });
           }}
         />
       )}

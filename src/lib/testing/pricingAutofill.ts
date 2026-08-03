@@ -16,6 +16,7 @@ import {
   type FeatureCostLike,
   type PlanTierLike,
 } from '../pricing/calc';
+import { findCheapestCost } from '../pricing/featureCostGroups';
 import type { RawValue } from '../scoring/engine';
 
 export interface AutofillSuggestion {
@@ -67,8 +68,7 @@ export function computePricingSuggestions(source: PricingSourceData): Map<string
   const packages = source.packages.filter((p) => p.active !== false) as unknown as CreditPackageLike[];
   const costs = source.featureCosts.filter((c) => c.active !== false) as unknown as FeatureCostLike[];
 
-  const findCost = (...types: string[]) =>
-    costs.find((c) => types.includes(String(c.featureType ?? ''))) ?? null;
+  const findCost = (...types: string[]) => findCheapestCost(costs, types);
   const bestPkg = bestValuePackage(packages);
 
   const plainMonthly = lowestPlainMonthlyPrice(tiers);
@@ -143,7 +143,14 @@ export function computePricingSuggestions(source: PricingSourceData): Map<string
     }
   }
 
-  const videoCost = findCost('standard_video', 'text_to_video', 'image_to_video');
+  const videoCost = findCost(
+    'standard_video',
+    'premium_video',
+    'text_to_video',
+    'image_to_video',
+    'live_cam_video',
+    'custom',
+  );
   if (videoCost && bestPkg) {
     const money = estimatedFeatureMoneyCost(bestPkg, videoCost);
     if (money) {

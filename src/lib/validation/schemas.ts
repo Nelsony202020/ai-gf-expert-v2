@@ -251,6 +251,9 @@ export const paymentProfileSchema = z.object({
   cryptoOnly: z.boolean().optional(),
   applePay: z.boolean().optional(),
   googlePay: z.boolean().optional(),
+  wechatPay: z.boolean().optional(),
+  alipay: z.boolean().optional(),
+  discoverPay: z.boolean().optional(),
   discreetBilling: z.boolean().optional(),
   billingDescriptor: z.string().max(120).optional(),
   notes: z.string().optional(),
@@ -780,13 +783,23 @@ export const homepageSlotSchema = z.object({
   active: z.boolean(),
 });
 
-export const redirectSchema = z.object({
-  sourcePath: pathString,
-  destinationPath: z.union([pathString, httpUrl]),
-  redirectType: z.union([z.literal(301), z.literal(302)]),
-  active: z.boolean(),
-  notes: z.string().optional(),
-});
+export const redirectSchema = z
+  .object({
+    sourcePath: pathString,
+    destinationPath: z.union([pathString, httpUrl]).optional(),
+    redirectType: z.union([z.literal(301), z.literal(302), z.literal(410)]),
+    active: z.boolean(),
+    notes: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.redirectType !== 410 && !data.destinationPath?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Destination is required for 301/302 redirects.',
+        path: ['destinationPath'],
+      });
+    }
+  });
 
 export const adminUserSchema = z.object({
   email: z.string().email(),

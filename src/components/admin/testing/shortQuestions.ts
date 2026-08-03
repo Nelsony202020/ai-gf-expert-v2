@@ -8,8 +8,8 @@ export interface ShortQuestion {
 
 export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   "characters|amount": {
-    "q": "Characters: how many total?",
-    "hint": "Legacy — use the category counts below instead."
+    "q": "How many total characters?",
+    "hint": "Count all ready-made characters shown in the library."
   },
   "characters|female-count": {
     "q": "Characters: how many female?",
@@ -44,8 +44,8 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Tick each style offered (realistic, anime, 2D, etc.)."
   },
   "characters|genders": {
-    "q": "Characters: which genders?",
-    "hint": "Tick each gender option in the library."
+    "q": "Which gender groups are offered?",
+    "hint": "Tick each gender category in the library. Add any others in the text field."
   },
   "characters|ethnicities": {
     "q": "Characters: which ethnicities?",
@@ -180,8 +180,8 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Make 5 characters from your own written description. Count how many matched what you asked for."
   },
   "customization|editing": {
-    "q": "Creator: edit after creating?",
-    "hint": "Make 5 characters, then try to change them. Count how many let you edit."
+    "q": "Can you edit after creating?",
+    "hint": "Create a character, then try to change appearance, personality, or other details."
   },
   "customization|detail-level": {
     "q": "Creator: how much control?",
@@ -192,8 +192,8 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Make 5 characters using preset buttons AND your own text. Count successes."
   },
   "customization|preview": {
-    "q": "Creator: preview before save?",
-    "hint": "Make 5 characters. Before finishing each one, check if you can see a picture or description first — without burning all your tokens."
+    "q": "Preview before save?",
+    "hint": "Start creating a character and check whether you can see a preview before confirming."
   },
   "chat|memory": {
     "q": "Chat: remembers facts?",
@@ -296,8 +296,8 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Start three voice calls on three different days."
   },
   "chat-features|chat-modes": {
-    "q": "Chat: different chat modes?",
-    "hint": "Yes/No first. If yes, count how many modes exist, then test and rate two of them."
+    "q": "Different chat modes?",
+    "hint": "Yes or No. If yes, count how many modes exist, then test and rate two of them."
   },
   "chat-features|mode-types": {
     "q": "Chat: how well do modes work?",

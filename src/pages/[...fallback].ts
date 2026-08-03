@@ -18,6 +18,15 @@ export const GET: APIRoute = async ({ params }) => {
       const hit = await findRedirect(path);
       if (hit) {
         recordRedirectHit(hit.id);
+        if (hit.redirectType === 410) {
+          return new Response(
+            `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Gone · AI Girlfriend Expert</title><meta name="robots" content="noindex"></head>
+<body style="font-family:system-ui;display:grid;place-items:center;min-height:100vh;margin:0;background:#fafaf9;color:#1c1917">
+<div style="text-align:center"><h1 style="font-size:3rem;margin:0">410</h1><p>This page has been permanently removed.</p><a href="/" style="color:#db2777">Back to the homepage</a></div>
+</body></html>`,
+            { status: 410, headers: { 'Content-Type': 'text/html' } },
+          );
+        }
         return new Response(null, {
           status: hit.redirectType === 302 ? 302 : 301,
           headers: { Location: hit.destinationPath },

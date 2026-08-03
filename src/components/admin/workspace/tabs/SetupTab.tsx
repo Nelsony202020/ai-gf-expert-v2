@@ -195,6 +195,15 @@ export function SetupTab() {
                     onChange={(value) => set('referralSuffix', value)}
                   />
                 </Field>
+                <Field label="YouTube review URL" hint="Link to your review or overview video.">
+                  <InputWithPrefix prefix={<YouTubeIcon className="h-[18px] w-[18px] text-red-600" />}>
+                    <InsetTextInput
+                      value={fields.youtubeReviewUrl ?? ''}
+                      onChange={(e) => set('youtubeReviewUrl', e.target.value)}
+                      placeholder="https://youtube.com/watch?v=..."
+                    />
+                  </InputWithPrefix>
+                </Field>
               </div>
               <AffiliateLinksPanel />
             </div>
@@ -204,19 +213,20 @@ export function SetupTab() {
             <div className="grid gap-3 sm:grid-cols-2">
               <ProductMediaField
                 label="Product logo"
-                hint="Shown on review cards, comparisons, and directory listings."
+                hint="This is the product — the main logo of the product."
                 supportedText="PNG, JPG, JPEG, or SVG • Max 2MB"
                 role="logo"
                 accept="image/png,image/jpeg,image/svg+xml,image/webp"
                 productId={ws.productId}
                 value={links.logo ?? null}
                 mediaRows={related.mediaAll}
+                linkedMedia={ws.original?.logo}
                 onChange={(id) => setLinks((p) => ({ ...p, logo: id }))}
                 onUploaded={() => void ws.refreshRelated()}
               />
               <ProductMediaField
                 label="Featured image"
-                hint="Hero image on the review page and social previews."
+                hint="This is the featured image for the review."
                 supportedText="JPG or PNG • Recommended 16:9 • Max 5MB"
                 role="featured"
                 accept="image/png,image/jpeg,image/webp"
@@ -228,27 +238,32 @@ export function SetupTab() {
                 onChange={(id) => setLinks((p) => ({ ...p, featuredImage: id }))}
                 onUploaded={() => void ws.refreshRelated()}
               />
-              <Field
-                label="Open Graph image URL"
-                hint="Shown in social link previews (1200×630 recommended). Falls back to the featured image."
-              >
-                <InputWithPrefix prefix={<Icon name="share" className="!text-[18px]" />}>
-                  <InsetTextInput
-                    value={fields.ogImageUrl ?? ''}
-                    onChange={(e) => set('ogImageUrl', e.target.value)}
-                    placeholder="https://example.com/social.jpg"
-                  />
-                </InputWithPrefix>
-              </Field>
-              <Field label="YouTube review URL" hint="Link to your review or overview video.">
-                <InputWithPrefix prefix={<YouTubeIcon className="h-[18px] w-[18px] text-red-600" />}>
-                  <InsetTextInput
-                    value={fields.youtubeReviewUrl ?? ''}
-                    onChange={(e) => set('youtubeReviewUrl', e.target.value)}
-                    placeholder="https://youtube.com/watch?v=..."
-                  />
-                </InputWithPrefix>
-              </Field>
+              <ProductMediaField
+                label="Secondary logo"
+                hint="Optional secondary logo for the platform, if one exists (e.g. wordmark or alternate mark)."
+                supportedText="PNG, JPG, JPEG, or SVG • Max 2MB"
+                role="secondaryLogo"
+                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                productId={ws.productId}
+                value={links.secondaryLogo ?? null}
+                mediaRows={related.mediaAll}
+                linkedMedia={ws.original?.secondaryLogo}
+                onChange={(id) => setLinks((p) => ({ ...p, secondaryLogo: id }))}
+                onUploaded={() => void ws.refreshRelated()}
+              />
+              <ProductMediaField
+                label="Featured icon"
+                hint="This should be a branded icon of Herman."
+                supportedText="PNG, JPG, JPEG, or SVG • Max 2MB"
+                role="featuredIcon"
+                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                productId={ws.productId}
+                value={links.featuredIcon ?? null}
+                mediaRows={related.mediaAll}
+                linkedMedia={ws.original?.featuredIcon}
+                onChange={(id) => setLinks((p) => ({ ...p, featuredIcon: id }))}
+                onUploaded={() => void ws.refreshRelated()}
+              />
             </div>
           </ProductFormSection>
 

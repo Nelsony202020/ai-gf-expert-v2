@@ -111,12 +111,27 @@ export function checklistConfig(def: EntityRow): ChecklistConfig | null {
   return c && c.kind === 'checklist' && Array.isArray(c.items) && c.items.length > 0 ? c : null;
 }
 
+const GENDER_GROUP_OPTIONS: DefOption[] = [
+  { value: 'Female', label: 'Female' },
+  { value: 'Male', label: 'Male' },
+  { value: 'Transgender', label: 'Transgender' },
+  { value: 'Non-binary', label: 'Non-binary' },
+];
+
 export function defOptions(def: EntityRow): DefOption[] {
-  return Array.isArray(def.options) ? (def.options as DefOption[]) : [];
+  const existing = Array.isArray(def.options) ? (def.options as DefOption[]) : [];
+  if (String(def.slug) === 'genders') {
+    return existing.length > 0 ? existing : GENDER_GROUP_OPTIONS;
+  }
+  return existing;
 }
 
 /** Which input control the tester sees. Derived from measurementType with optional inputType hint. */
 export function controlKind(def: EntityRow): ControlKind {
+  if (String(def.slug) === 'genders' && defOptions(def).length > 0) return 'multi_select';
+  // Character creator: simple availability checks, not percentage or limited.
+  if (String(def.slug) === 'editing' || String(def.slug) === 'preview') return 'boolean';
+
   const hint = typeof def.inputType === 'string' ? def.inputType : '';
   if (hint === 'ratio' && ratioConfig(def)) return 'ratio';
   if (hint === 'checklist' && checklistConfig(def)) return 'checklist';

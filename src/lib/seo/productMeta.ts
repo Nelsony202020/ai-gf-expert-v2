@@ -126,7 +126,7 @@ function absolutizeUrl(url: string | null | undefined, origin: string): string |
 /** Resolved `<head>` + hero heading values for a live or preview review page. */
 export function resolveProductPageHead(
   product: ProductSeoSource,
-  opts: { origin: string; preview?: boolean } = { origin: '' },
+  opts: { origin: string; preview?: boolean; draft?: boolean } = { origin: '' },
 ): ProductPageHead {
   const seo = product.seo ?? {};
   const featuredImageUrl = product.featuredImage?.full ?? null;
@@ -152,7 +152,11 @@ export function resolveProductPageHead(
 
   const fallbackTitle = `${product.name} Review — AI Girlfriend Expert`;
   const baseTitle = resolved.seoTitle || fallbackTitle;
-  const title = opts.preview ? `[Preview] ${baseTitle}` : baseTitle;
+  const title = opts.preview
+    ? `[Preview] ${baseTitle}`
+    : opts.draft
+      ? `[Draft] ${baseTitle}`
+      : baseTitle;
 
   const h1Override = String(seo.h1Override ?? '').trim();
   const h1 = h1Override || `${product.name} Review`;
@@ -160,7 +164,7 @@ export function resolveProductPageHead(
   const defaultCanonical = new URL(`/reviews/${product.slug}`, opts.origin || 'https://example.com').toString();
   const canonical = String(seo.canonicalUrl ?? '').trim() || defaultCanonical;
 
-  const robots = opts.preview
+  const robots = opts.preview || opts.draft
     ? 'noindex, nofollow'
     : robotsDirective(seo.noindex, seo.nofollow);
 

@@ -55,10 +55,14 @@ function categorySortKey(slug: string, detail?: { displayOrder?: number }): numb
 import { formatAudienceList, splitLegacyLines } from '../cms/format';
 import { mapCharacterForPublic, selectPublicHighlightCharacters } from '../characters/public';
 import { affiliateRel, DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
+import { cdnAsset } from '../media/cdn';
 import { buildGroupedContributors } from '../ratings/groupContributors';
 import type { Roundup, RoundupPick } from '../../data/roundups/ai-girlfriend';
 import { hydrateRoundupPicks } from './roundupPick';
 import { filterLaunchProducts, launchCompareDefaultIds } from './launchProducts';
+import { isDevReviewSlug } from './reviewDevProducts';
+
+export type ProductDbPublishStatus = 'published' | 'draft' | 'missing';
 
 export function useDbContent(): boolean {
   const flag = env('USE_DB_CONTENT') ?? '';
@@ -132,7 +136,7 @@ function mapAuthor(a: any): Author {
   return {
     name: a?.name ?? 'Editorial Team',
     role: a?.role ?? 'Reviewer',
-    avatar: a?.avatarUrl ?? '/brand/herman-main-icon.svg',
+    avatar: a?.avatarUrl ? String(a.avatarUrl) : cdnAsset('/brand/herman-main-icon.svg'),
     verified: a?.verified ?? undefined,
     slug: a?.slug ?? undefined,
   };
@@ -1040,7 +1044,7 @@ function productFromRoundupPick(pick: {
       {
         name: 'Herman Carter',
         role: 'Lead Reviewer',
-        avatar: '/brand/herman-main-icon.svg',
+        avatar: cdnAsset('/brand/herman-main-icon.svg'),
         verified: true,
         slug: 'herman-carter',
       },
@@ -1177,4 +1181,66 @@ export async function loadProductPreviewBySlug(slug: string): Promise<Product | 
   }
 
   return fileProduct ?? roundupFallback;
+}
+
+/** DB publish state for a product slug (missing when no row or DB off). */
+export async function getProductDbPublishStatus(slug: string): Promise<ProductDbPublishStatus> {
+  if (!isDbConfigured()) return 'missing';
+
+  try {
+    const db = getDb();
+    const { products: rows } = await (db.query as any)({
+      products: { $: { where: { slug } } },
+    });
+    const dbProduct = (rows as any[])?.find((p) => !p.deletedAt);
+    if (!dbProduct) return 'missing';
+    return dbProduct.status === 'published' ? 'published' : 'draft';
+  } catch {
+    return 'missing';
+  }
+}
+
+export interface ReviewPageLoad {
+  product: Product;
+  /** True when the product is not published — dev test pages only on localhost. */
+  isDraft: boolean;
+  /** Use draft ratings view model (preview scores, unpublished test runs). */
+  useDraftRatings: boolean;
+}
+
+/**
+ * Load a review page product for /reviews/[slug].
+ * Published products use live data. Draft dev test slugs (e.g. aura-ai) stay
+ * reachable on localhost with preview data.
+ */
+export async function loadReviewPageProduct(slug: string): Promise<ReviewPageLoad | null> {
+  const dbStatus = await getProductDbPublishStatus(slug);
+  const isDev = import.meta.env.DEV;
+
+  if (dbStatus === 'published') {
+    const product = await loadPublishedProductBySlug(slug);
+    if (product) {
+      return { product, isDraft: false, useDraftRatings: false };
+    }
+  }
+
+  if (isDev && isDevReviewSlug(slug)) {
+    const product = await loadProductPreviewBySlug(slug);
+    if (product) {
+      return {
+        product,
+        isDraft: dbStatus !== 'published',
+        useDraftRatings: true,
+      };
+    }
+  }
+
+  if (dbStatus === 'missing') {
+    const product = await loadPublishedProductBySlug(slug);
+    if (product) {
+      return { product, isDraft: false, useDraftRatings: false };
+    }
+  }
+
+  return null;
 }

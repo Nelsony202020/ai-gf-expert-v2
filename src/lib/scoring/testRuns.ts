@@ -12,6 +12,7 @@ import {
 } from './engine';
 import { triggerRebuild } from '../db/publish';
 import { isEvidenceApplicable } from '../testing/capabilityGating';
+import { isGenderCountApplicable } from '../testing/genderCountGating';
 import { computePricingSuggestions } from '../testing/pricingAutofill';
 import { PRICING_AUTOFILL_SLUGS } from '../testing/pricingEvidenceSlugs';
 import { repairChatModesRaw } from '../testing/evidenceComplete';
@@ -251,6 +252,7 @@ export async function calculateRun(testRunId: string): Promise<{
 
   const productFields = (run.product ?? {}) as Record<string, unknown>;
   const productSlug = String(run.product?.slug ?? '');
+  const gendersRaw = resultBySlug.get('genders')?.rawValue;
 
   const evidence: EvidenceInput[] = (mv.categories ?? [])
     .sort((a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
@@ -265,6 +267,9 @@ export async function calculateRun(testRunId: string): Promise<{
             .map((d: any) => {
               const result = resultByDef.get(d.id);
               const capabilityGated = !isEvidenceApplicable(c.slug, d, productFields);
+              const genderGated =
+                c.slug === 'characters' &&
+                !isGenderCountApplicable(c.slug, String(d.slug ?? ''), gendersRaw);
               return {
                 definitionId: d.id,
                 slug: d.slug,
@@ -280,6 +285,7 @@ export async function calculateRun(testRunId: string): Promise<{
                 notApplicable:
                   result?.notApplicable ||
                   capabilityGated ||
+                  genderGated ||
                   deferUsageCostScores(productSlug, s.slug) ||
                   (c.slug === 'images' &&
                     d.slug === 'editing-accuracy' &&

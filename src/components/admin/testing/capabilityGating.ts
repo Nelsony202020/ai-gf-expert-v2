@@ -7,7 +7,15 @@ import {
   isEvidenceApplicable,
 } from '../../../lib/testing/capabilityGating';
 
-export { FEATURE_ITEM_CAP, filterApplicableItems, isEvidenceApplicable };
+export {
+  FEATURE_ITEM_CAP,
+  filterApplicableItems,
+  filterGenderGatedItems,
+  GENDER_COUNT_SLUGS,
+  isEvidenceApplicable,
+  isGenderCountApplicable,
+  parseGenderGroupsFromRaw,
+} from '../../../lib/testing/capabilityGating';
 
 /** Privacy policy questions where the middle option is Optional (opt-out available). */
 export const PRIVACY_OPTIONAL_SLUGS = new Set(['data-sharing', 'advertising', 'retention']);

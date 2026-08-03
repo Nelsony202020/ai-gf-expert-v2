@@ -1,5 +1,5 @@
 /** Products shown on public launch pages (directory, homepage, roundup). */
-export const LAUNCH_PRODUCT_SLUGS = new Set(['candy-ai', 'aura-ai']);
+export const LAUNCH_PRODUCT_SLUGS = new Set(['candy-ai']);
 
 export function isLaunchProduct(slug: string): boolean {
   return LAUNCH_PRODUCT_SLUGS.has(slug);

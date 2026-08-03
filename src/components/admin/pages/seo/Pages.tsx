@@ -734,8 +734,13 @@ function PageDetailDrawer({
   }
 
   const livePath = row.path.split('#')[0];
+  const isDraftReview = row.status === 'draft' && row.contentType === 'review';
   const isOpenable =
-    !row.path.includes('{') && (row.status === 'published' || row.status === 'noindex' || row.status === 'preview');
+    !row.path.includes('{') &&
+    (row.status === 'published' ||
+      row.status === 'noindex' ||
+      row.status === 'preview' ||
+      isDraftReview);
   const isDrafted = Boolean(row.draftOverride);
 
   return (
@@ -951,7 +956,12 @@ function PageDetailDrawer({
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-pink-300 hover:text-pink-700 dark:border-slate-700 dark:text-slate-300"
                 >
-                  <Icon name="open_in_new" className="!text-[16px]" /> Open live page
+                  <Icon name="open_in_new" className="!text-[16px]" />{' '}
+                  {row.status === 'draft'
+                    ? 'Open draft page'
+                    : row.status === 'preview'
+                      ? 'Open preview'
+                      : 'Open live page'}
                 </a>
               )}
               {row.editHref && (
