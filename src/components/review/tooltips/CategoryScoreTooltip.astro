@@ -123,7 +123,7 @@ const categoryWhatItIs = getCategoryTooltipDescription(category.key);
             ) : (
               <div class="ratings-tooltip-panel__score-block">
                 <div class="ratings-tooltip-panel__score-row">
-                  <span class={`rt-score-chip rt-score-chip--outline ${currentChip}`}>{fmtScore(currentScore)}</span>
+                  <span class={`rt-score-chip ${currentChip}`}>{fmtScore(currentScore)}</span>
                   {
                     inlineTestLinks ? (
                       <InlineTestLink categoryKey={category.key} class="ratings-tooltip-panel__score-label">

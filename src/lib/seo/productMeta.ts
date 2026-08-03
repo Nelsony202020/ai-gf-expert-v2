@@ -150,7 +150,7 @@ export function resolveProductPageHead(
     featuredImageUrl,
   });
 
-  const fallbackTitle = `${product.name} Review — AI Girlfriend Expert`;
+  const fallbackTitle = `${product.name} Review`;
   const baseTitle = resolved.seoTitle || fallbackTitle;
   const title = opts.preview
     ? `[Preview] ${baseTitle}`

@@ -18,10 +18,12 @@ const { picks, characters } = Astro.props;
   <div class="home-picks-characters__layout">
     <div class="home-picks-characters__picks-head">
       <div class="home-section__intro">
-        <h2 id="home-top-picks-title" class="home-section__title home-section__title--icon">
+        <div class="home-section__title-row">
           <span class="material-symbols-outlined home-section__title-icon" aria-hidden="true">star</span>
-          Our top picks
-        </h2>
+          <h2 id="home-top-picks-title" class="home-section__title">
+            Our top picks
+          </h2>
+        </div>
         <p class="home-section__subtitle">
           The best AI girlfriend apps, chosen after testing 24+ platforms.
         </p>
@@ -31,10 +33,12 @@ const { picks, characters } = Astro.props;
     <div class="home-picks-characters__divider" aria-hidden="true"></div>
 
     <div class="home-picks-characters__characters-head">
-      <h2 id="home-characters-title" class="home-section__title home-section__title--icon">
+      <div class="home-section__title-row">
         <span class="material-symbols-outlined home-section__title-icon" aria-hidden="true">groups</span>
-        Featured characters
-      </h2>
+        <h2 id="home-characters-title" class="home-section__title">
+          Featured characters
+        </h2>
+      </div>
       <span class="home-characters__badge">
         <span class="material-symbols-outlined home-characters__badge-icon" aria-hidden="true">auto_awesome</span>
         New picks this week

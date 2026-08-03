@@ -19,6 +19,7 @@ import {
 } from './presentation';
 import { formatChecklistAnswer } from '../../../lib/testing/evidenceFormat';
 import { MultiSelectField } from './MultiSelectField';
+import { nearestRubricValue } from './rubricOptions';
 
 export type RawValue =
   | { value: number; detail?: Record<string, unknown> }
@@ -362,14 +363,18 @@ export function EvidenceInput({
       const total = items.length;
       const passed = items.filter((i) => checked.has(i)).length;
       const checklistLabel =
-        def.slug === 'included-features' || def.slug === 'pricing-clarity' ? 'features' : 'items';
+        def.slug === 'included-features' || def.slug === 'paywalls' ? 'features' : 'items';
+      const hideChecklistResult =
+        def.slug === 'included-features' || def.slug === 'paywalls';
       const resultLabel =
-        total > 0
+        total > 0 && !hideChecklistResult
           ? (formatChecklistAnswer(
               { value: total > 0 ? Math.round((passed / total) * 1000) / 10 : 0, detail: { checked: items.filter((i) => checked.has(i)), total } },
               { itemLabel: checklistLabel },
             ) ?? '—')
-          : '—';
+          : hideChecklistResult
+            ? null
+            : '—';
 
       function toggle(item: string) {
         const next = new Set(checked);
@@ -401,14 +406,16 @@ export function EvidenceInput({
                 </li>
               ))}
             </ul>
-            <div className="shrink-0 text-right">
-              <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                Result
-              </span>
-              <span className="text-base font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-                {resultLabel}
-              </span>
-            </div>
+            {resultLabel !== null && (
+              <div className="shrink-0 text-right">
+                <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                  Result
+                </span>
+                <span className="text-base font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                  {resultLabel}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -432,12 +439,16 @@ export function EvidenceInput({
       const numeric =
         kind === 'rubric' &&
         ['count', 'percentage', 'seconds', 'currency', 'scale'].includes(String(def.measurementType));
-      const current =
+      let current =
         value && 'value' in value
           ? String(value.value)
           : value && 'text' in value
             ? String(value.text)
             : '';
+      if (!current && value && 'value' in value && typeof value.value === 'number') {
+        const nearest = nearestRubricValue(slug, value.value);
+        if (nearest !== undefined) current = String(nearest);
+      }
 
       return (
         <StatusSelect
@@ -449,7 +460,7 @@ export function EvidenceInput({
           value={current}
           disabled={disabled}
           className={wide}
-          placeholder="Pick an answer…"
+          placeholder="Choose an answer…"
           onChange={(v) => {
             if (!v) {
               onChange(undefined);
@@ -458,6 +469,8 @@ export function EvidenceInput({
             const opt = options.find((o) => String(o.value) === v);
             if (!opt) return;
             if (numeric && typeof opt.value === 'number') {
+              onChange({ value: opt.value, detail: { rubric: opt.label } });
+            } else if (typeof opt.value === 'number') {
               onChange({ value: opt.value, detail: { rubric: opt.label } });
             } else {
               onChange({ text: String(opt.value), detail: { rubric: opt.label } });

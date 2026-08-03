@@ -26,6 +26,15 @@ import {
   type CreditCurrencyLike,
 } from '../../../../lib/pricing/credit-currency';
 import { PRICING_PROOF_CAPTION, pricingProofMediaPatch, galleryTagsFromRoleState, type MediaRoleState } from '../../../../lib/media/catalog';
+import {
+  countUnverifiedPricingProof,
+  pricingProofVisibleInLibrary,
+} from '../../../../lib/media/pricingProofLibrary';
+import {
+  incrementPricingUnverifiedUploads,
+  decrementPricingUnverifiedUploads,
+  setPricingUnverifiedUploadCount,
+} from '../../testing/pricingLeaveGuard';
 import { useAsyncToast, useToastError } from '../../Toast';
 import {
   Badge,
@@ -181,6 +190,12 @@ export function PricingTab() {
       setError(e instanceof Error ? e.message : String(e));
     }
   }
+
+  useEffect(() => {
+    setPricingUnverifiedUploadCount(
+      countUnverifiedPricingProof(related.mediaAll, snapshots),
+    );
+  }, [related.mediaAll, snapshots]);
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
@@ -1220,6 +1235,27 @@ function PricingEvidence({
     }
   }
 
+  async function detachEvidence(id: string) {
+    const removed = mediaById.get(id);
+    await patch(ids.filter((x) => x !== id));
+    if (
+      removed &&
+      !addToGallery &&
+      !pricingProofVisibleInLibrary(removed, ws.related.pricingSnapshots)
+    ) {
+      try {
+        await dataApi.update('media', id, { deletedAt: Date.now() });
+        decrementPricingUnverifiedUploads(1);
+        await ws.refreshRelated();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      }
+    }
+    setPricingUnverifiedUploadCount(
+      countUnverifiedPricingProof(ws.related.mediaAll, ws.related.pricingSnapshots),
+    );
+  }
+
   async function handleFiles(files: FileList | File[]) {
     const images = Array.from(files).filter((f) => f.type.startsWith('image/'));
     if (images.length === 0) return;
@@ -1252,6 +1288,12 @@ function PricingEvidence({
         newIds.push(created.id);
       }
       await patch(newIds);
+      if (!addToGallery) {
+        incrementPricingUnverifiedUploads(images.length);
+        setPricingUnverifiedUploadCount(
+          countUnverifiedPricingProof(ws.related.mediaAll, ws.related.pricingSnapshots) + images.length,
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
@@ -1297,7 +1339,7 @@ function PricingEvidence({
               key={id}
               media={m}
               disabled={!canEdit}
-              onDetach={canEdit ? () => void patch(ids.filter((x) => x !== id)) : undefined}
+              onDetach={canEdit ? () => void detachEvidence(id) : undefined}
             />
           );
         })}

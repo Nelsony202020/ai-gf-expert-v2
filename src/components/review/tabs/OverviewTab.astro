@@ -55,7 +55,7 @@ function verdictCmsField(
 }
 ---
 
-<section class="bg-white py-12 md:py-14 pb-16 md:pb-20" data-verdict-overview>
+<section class="bg-background py-12 md:py-14 pb-16 md:pb-20" data-verdict-overview>
   <div class="section-container px-4 md:px-8">
     <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-8 md:mb-10">Our Verdict</h2>
 
@@ -290,7 +290,7 @@ function verdictCmsField(
     flex-shrink: 0;
     border: 1px solid var(--color-surface-variant);
     border-radius: 10px;
-    background: #fff;
+    background: transparent;
     color: var(--color-on-surface);
     cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
@@ -312,7 +312,7 @@ function verdictCmsField(
     transform: translateY(-50%);
     padding: 5px 10px;
     border-radius: 8px;
-    background: #fff;
+    background: var(--color-surface-container-lowest);
     color: var(--color-on-surface);
     border: 1px solid var(--color-surface-variant);
     box-shadow: 0 4px 14px rgb(0 0 0 / 8%);
@@ -348,7 +348,7 @@ function verdictCmsField(
   }
 
   [data-theme='dark'] .verdict-icon-nav__btn {
-    background: var(--dark-elevated);
+    background: transparent;
     border-color: var(--dark-border-subtle);
     color: var(--color-on-surface);
   }

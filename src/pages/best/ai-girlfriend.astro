@@ -28,7 +28,7 @@ import { loadRoundupForPublic } from '../../lib/content/store';
 const { roundup, isDraft } = await loadRoundupForPublic('ai-girlfriend', fileAiGirlfriendRoundup);
 
 const monthYear = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-const pageTitle = `${roundup.title} (${monthYear}) — AI Girlfriend Expert`;
+const pageTitle = `${roundup.title} (${monthYear})`;
 const canonical = new URL('/best/ai-girlfriend', Astro.site ?? Astro.url.origin).toString();
 ---
 

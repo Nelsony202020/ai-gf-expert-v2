@@ -17,7 +17,7 @@ if (!guide) {
   return Astro.redirect('/404');
 }
 
-const title = `${guide.seoTitle ?? guide.title} — AI Girlfriend Expert`;
+const title = `${guide.seoTitle ?? guide.title}`;
 const description = guide.seoDescription ?? guide.excerpt ?? guide.title;
 const faqs = extractGuideFaqs(guide.body);
 

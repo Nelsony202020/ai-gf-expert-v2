@@ -52,7 +52,7 @@
 
 .roundup-reading-trigger:hover {
   border-color: rgb(219 39 119 / 35%);
-  background: #fff;
+  background: var(--color-surface-container-lowest);
 }
 
 .roundup-reading-trigger__label {
@@ -73,7 +73,7 @@
 /* Hub sub-navigation — in document flow (not sticky) */
 .roundup-hub-nav {
   margin: 0 0 0.75rem;
-  background: #fff;
+  background: transparent;
   border-bottom: 1px solid rgb(26 36 24 / 10%);
 }
 
@@ -239,7 +239,7 @@
   padding-top: 0.625rem;
   padding-bottom: 0.625rem;
   border-bottom: 1px solid var(--color-surface-variant);
-  background: #f0f2ec;
+  background: var(--color-header-surface);
 }
 
 .roundup-affiliate-bar .section-container {
@@ -521,7 +521,7 @@
 }
 
 .roundup-segment__option input:checked + span {
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   color: var(--color-accent);
   box-shadow: 0 1px 4px rgb(0 0 0 / 8%);
 }
@@ -561,7 +561,7 @@
   padding: 0.45rem 0.75rem 0.45rem 0.875rem;
   border: 1px solid rgb(26 36 24 / 12%);
   border-radius: 10px;
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   font-size: 0.8125rem;
   font-weight: 700;
   color: var(--color-on-surface);
@@ -596,7 +596,7 @@
   padding: 0.375rem;
   border: 1px solid var(--color-surface-variant);
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   box-shadow: 0 8px 24px rgb(0 0 0 / 10%);
 }
 
@@ -821,7 +821,7 @@ body.roundup-sheet-open {
   overflow: auto;
   padding: 0.5rem 1rem max(1rem, env(safe-area-inset-bottom));
   border-radius: 20px 20px 0 0;
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   box-shadow: 0 -8px 32px rgb(0 0 0 / 14%);
   animation: roundup-sheet-up 0.28s ease;
 }
@@ -1088,7 +1088,7 @@ body.roundup-sheet-open {
 
 .roundup-sort-trigger:hover {
   border-color: rgb(219 39 119 / 35%);
-  background: #fff;
+  background: var(--color-surface-container-lowest);
 }
 
 .roundup-sort-trigger__chevron {
@@ -1544,7 +1544,7 @@ body.roundup-sheet-open {
 }
 
 [data-theme='dark'] .roundup-affiliate-bar {
-  background: var(--color-surface-container-low);
+  background: var(--color-header-surface);
   border-bottom-color: rgb(255 255 255 / 10%);
 }
 
@@ -2407,7 +2407,7 @@ body.roundup-sheet-open {
 }
 
 [data-theme='dark'] .roundup-hub-nav {
-  background: var(--color-surface-container-low);
+  background: transparent;
   border-bottom-color: var(--color-surface-variant);
 }
 

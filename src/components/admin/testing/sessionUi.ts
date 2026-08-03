@@ -25,6 +25,8 @@ export function formatAnswerSummary(def: EntityRow, raw: RawValue | undefined, n
     return String(raw.status);
   }
   if ('value' in raw) {
+    const detail = 'detail' in raw ? (raw.detail as Record<string, unknown> | undefined) : undefined;
+    if (detail?.rubric && typeof detail.rubric === 'string') return detail.rubric;
     const checklistLabel =
       def.slug === 'included-features'
         ? 'features'

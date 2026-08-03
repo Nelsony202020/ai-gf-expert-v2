@@ -7,6 +7,7 @@ import { EvidenceInput, type RawValue } from './EvidenceInput';
 import { ChatModesField, parseChatModesDraft } from './ChatModesField';
 import { BonusFeaturesField, formatBonusFeaturesSummary } from './BonusExtrasField';
 import { SupportContactField, parseSupportContactDraft } from './SupportContactField';
+import { FreeAccessDetailsField, formatFreeAccessDetailsSummary, parseFreeAccessDetails } from './FreeAccessDetailsField';
 import {
   formatAnswerSummary,
   rowState,
@@ -15,6 +16,7 @@ import {
 } from './sessionUi';
 import { QuestionLabel } from './QuestionLabel';
 import { testerQuestion } from './presentation';
+import { allowsNaToggle } from './rubricOptions';
 import type { SessionItem } from './sessionUi';
 import './testing-ui.css';
 
@@ -148,7 +150,7 @@ export function SessionAnswerTable({
                       draft.raw,
                       drafts[liveCamDef.id]?.raw,
                     )
-                  : String(def.slug) === 'support-available' && supportChannelsDef
+                    : String(def.slug) === 'support-available' && supportChannelsDef
                     ? (() => {
                         const channelsDraft = drafts[supportChannelsDef.id];
                         const p = parseSupportContactDraft(draft.raw, channelsDraft?.raw);
@@ -159,6 +161,8 @@ export function SessionAnswerTable({
                         }
                         return '—';
                       })()
+                    : String(def.slug) === 'restrictions'
+                      ? formatFreeAccessDetailsSummary(parseFreeAccessDetails(draft.raw))
                     : formatAnswerSummary(def, draft.raw, draft.na);
             const isActive = activeDefId === def.id;
             const isHighlighted = highlightDefId === def.id;
@@ -300,6 +304,16 @@ export function SessionAnswerTable({
                           />
                         );
                       })()
+                    ) : String(def.slug) === 'restrictions' ? (
+                      <FreeAccessDetailsField
+                        disabled={busy}
+                        raw={
+                          draft.raw && 'status' in draft.raw && draft.raw.status === 'na'
+                            ? undefined
+                            : draft.raw
+                        }
+                        onChange={(v) => onPatch(def.id, { raw: v })}
+                      />
                     ) : (
                       <EvidenceInput
                         def={def}
@@ -333,14 +347,18 @@ export function SessionAnswerTable({
                   )}
                 </td>
                 <td className="px-1 py-2 text-center align-top" onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    className="testing-checkbox h-3.5 w-3.5 cursor-pointer rounded border-slate-300"
-                    checked={draft.na}
-                    disabled={busy}
-                    aria-label={`Not applicable: ${testerQuestion(def, categorySlug)}`}
-                    onChange={(e) => onPatch(def.id, { na: e.target.checked })}
-                  />
+                  {allowsNaToggle(def) ? (
+                    <input
+                      type="checkbox"
+                      className="testing-checkbox h-3.5 w-3.5 cursor-pointer rounded border-slate-300"
+                      checked={draft.na}
+                      disabled={busy}
+                      aria-label={`Not applicable: ${testerQuestion(def, categorySlug)}`}
+                      onChange={(e) => onPatch(def.id, { na: e.target.checked })}
+                    />
+                  ) : (
+                    <span className="text-slate-300">—</span>
+                  )}
                 </td>
                 <td className="px-1 py-2 text-center align-top" onClick={(e) => e.stopPropagation()}>
                   <div className="inline-flex items-center justify-center gap-0.5">

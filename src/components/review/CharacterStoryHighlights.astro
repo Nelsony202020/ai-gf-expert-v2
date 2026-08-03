@@ -41,6 +41,27 @@ const {
 
 const displayChars = characters.slice(0, maxDisplay);
 
+type ModalCharacter = StoryHighlightCharacter & {
+  displayAvatar: string;
+  modalSlides: string[];
+};
+
+function modalSlidesFor(char: StoryHighlightCharacter): string[] {
+  if (char.storyImageSlides?.length) return char.storyImageSlides;
+  return char.storySlides.filter((url) => url && !/\.(mp4|webm|mov)(\?|#|$)/i.test(url));
+}
+
+const modalChars: ModalCharacter[] = displayChars.map((char) => ({
+  ...char,
+  displayAvatar: pickCharacterDisplayImage(
+    char.avatar,
+    char.storySlides,
+    'avatar-first',
+    char.storyImageSlides,
+  ),
+  modalSlides: modalSlidesFor(char),
+}));
+
 function buildSeamlessLoopChars<T>(chars: T[], minItems = 12): T[] {
   if (chars.length === 0) return [];
   let expanded = [...chars];
@@ -50,7 +71,7 @@ function buildSeamlessLoopChars<T>(chars: T[], minItems = 12): T[] {
   return [...expanded, ...expanded];
 }
 
-const carouselChars = manualDrag || !staticCarousel ? buildSeamlessLoopChars(displayChars) : displayChars;
+const carouselChars = manualDrag || !staticCarousel ? buildSeamlessLoopChars(modalChars) : modalChars;
 const dataId = `char-stories-${productName.replace(/\s+/g, '-').toLowerCase()}`;
 const headingText = heading ?? 'Featured characters';
 ---
@@ -86,8 +107,8 @@ const headingText = heading ?? 'Featured characters';
       <div class="char-stories__track" data-char-track>
         {
           carouselChars.map((char, i) => {
-            const origIndex = i % displayChars.length;
-            const slideCount = char.storySlides.length;
+            const origIndex = i % modalChars.length;
+            const slideCount = char.modalSlides.length;
             const hasStory = slideCount > 0;
             const thumb = hasStory
               ? pickCharacterDisplayImage(
@@ -147,7 +168,7 @@ const headingText = heading ?? 'Featured characters';
     </div>
   </div>
 
-  <script type="application/json" id={`${dataId}-data`} set:html={JSON.stringify(displayChars)} />
+  <script type="application/json" id={`${dataId}-data`} set:html={JSON.stringify(modalChars)} />
 
   <div class="char-stories__viewer hidden" data-story-viewer aria-hidden="true">
     <div class="char-stories__backdrop" data-story-close />
@@ -387,7 +408,10 @@ const headingText = heading ?? 'Featured characters';
         }
       }
       if (typeEl) typeEl.textContent = char.archetype;
-      if (avatarEl) { avatarEl.src = char.avatar; avatarEl.alt = char.name; }
+      if (avatarEl) {
+        avatarEl.src = char.displayAvatar || char.avatar || '';
+        avatarEl.alt = char.name;
+      }
     }
 
     function goToNextCharacter() {
@@ -402,14 +426,14 @@ const headingText = heading ?? 'Featured characters';
         if (likeBtn) likeBtn.classList.remove('is-liked');
 
         const char = characters[charIndex];
-        if (!char?.storySlides?.length) {
+        if (!char?.modalSlides?.length) {
           modal.classList.remove('is-char-switching');
           return;
         }
 
-        slideEl.src = char.storySlides[0];
+        slideEl.src = char.modalSlides[0];
         updateHeader(char);
-        renderBars(char.storySlides.length, 0);
+        renderBars(char.modalSlides.length, 0);
 
         modal.classList.remove('is-char-switching');
         modal.classList.add('is-char-entering');
@@ -423,9 +447,9 @@ const headingText = heading ?? 'Featured characters';
 
     function advanceSlide() {
       const char = characters[charIndex];
-      if (!char?.storySlides?.length) return;
+      if (!char?.modalSlides?.length) return;
       slideIndex++;
-      if (slideIndex >= char.storySlides.length) {
+      if (slideIndex >= char.modalSlides.length) {
         goToNextCharacter();
         return;
       }
@@ -454,13 +478,13 @@ const headingText = heading ?? 'Featured characters';
 
     function showSlide() {
       const char = characters[charIndex];
-      if (!char?.storySlides?.length) return;
-      if (slideIndex >= char.storySlides.length) slideIndex = 0;
-      if (slideIndex < 0) slideIndex = char.storySlides.length - 1;
+      if (!char?.modalSlides?.length) return;
+      if (slideIndex >= char.modalSlides.length) slideIndex = 0;
+      if (slideIndex < 0) slideIndex = char.modalSlides.length - 1;
       modal.classList.remove('is-char-switching', 'is-char-entering');
-      slideEl.src = char.storySlides[slideIndex];
+      slideEl.src = char.modalSlides[slideIndex];
       updateHeader(char);
-      renderBars(char.storySlides.length, slideIndex);
+      renderBars(char.modalSlides.length, slideIndex);
       updateNavArrows();
       startSlideTimer();
     }
@@ -502,7 +526,7 @@ const headingText = heading ?? 'Featured characters';
       btn.addEventListener('click', () => {
         const i = Number(btn.getAttribute('data-story-open'));
         const char = characters[i];
-        if (!char?.storySlides?.length) return;
+        if (!char?.modalSlides?.length) return;
         openViewer(i);
       });
     });
@@ -726,7 +750,7 @@ const headingText = heading ?? 'Featured characters';
   .char-stories__ring { position: absolute; inset: 0; width: 64px; height: 64px; }
   .char-stories__ring-circle { stroke: #db2777; }
   .char-stories__avatar-wrap {
-    position: absolute; inset: 5px; border-radius: 999px; background: #fff; padding: 2px;
+    position: absolute; inset: 5px; border-radius: 999px; background: var(--color-surface-container-lowest); padding: 2px;
   }
   .char-stories__avatar-wrap--plain {
     inset: 0;
@@ -769,7 +793,7 @@ const headingText = heading ?? 'Featured characters';
   }
   .char-stories__progress { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; gap: 4px; z-index: 4; }
   .char-stories__bar { flex: 1; height: 3px; border-radius: 999px; background: rgb(255 255 255 / 35%); }
-  .char-stories__bar.is-done { background: #fff; }
+  .char-stories__bar.is-done { background: var(--color-surface-container-lowest); }
   .char-stories__bar.is-active { background: rgb(255 255 255 / 50%); animation: barFill 5.2s linear forwards; }
   @keyframes barFill { from { box-shadow: inset 0 0 0 0 #fff; } to { box-shadow: inset 100px 0 0 0 #fff; } }
   .char-stories__close { position: absolute; top: 28px; right: 10px; z-index: 5; width: 32px; height: 32px; border: none; border-radius: 999px; background: rgb(0 0 0 / 35%); color: #fff; cursor: pointer; }
@@ -778,7 +802,15 @@ const headingText = heading ?? 'Featured characters';
     display: block; color: #fff; text-decoration: none; font-size: 13px; font-weight: 800;
   }
   .char-stories__header-name:hover { text-decoration: underline; }
-  .char-stories__modal-header img { border-radius: 999px; border: 2px solid #db2777; }
+  .char-stories__modal-header img {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    object-position: center top;
+    flex-shrink: 0;
+    border-radius: 999px;
+    border: 2px solid #db2777;
+  }
   .char-stories__modal-header p:last-child { margin: 0; font-size: 10px; font-weight: 400; opacity: 0.8; }
   .char-stories__modal.is-char-switching .char-stories__slide,
   .char-stories__modal.is-char-entering .char-stories__slide {

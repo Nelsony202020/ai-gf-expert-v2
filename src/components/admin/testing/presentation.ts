@@ -10,6 +10,11 @@
 // rawValue.status.
 
 import type { EntityRow } from '../api';
+import {
+  INCLUDED_FEATURES_CHECKLIST_ITEMS,
+  PAYWALLS_CHECKLIST_ITEMS,
+  TESTER_RUBRIC_OPTIONS,
+} from './rubricOptions';
 import { SHORT_QUESTIONS } from './shortQuestions';
 
 function shortQuestionKey(categorySlug: string | undefined, def: EntityRow): string | null {
@@ -106,7 +111,17 @@ export function ratioConfig(def: EntityRow): RatioConfig | null {
   return c && c.kind === 'ratio' ? c : null;
 }
 
+const HARDCODED_CHECKLISTS: Record<string, string[]> = {
+  'included-features': INCLUDED_FEATURES_CHECKLIST_ITEMS,
+  paywalls: PAYWALLS_CHECKLIST_ITEMS,
+};
+
 export function checklistConfig(def: EntityRow): ChecklistConfig | null {
+  const slug = String(def.slug ?? '');
+  const hardcoded = HARDCODED_CHECKLISTS[slug];
+  if (hardcoded) {
+    return { kind: 'checklist', items: hardcoded };
+  }
   const c = def.calculationMethod as RatioConfig | ChecklistConfig | undefined;
   return c && c.kind === 'checklist' && Array.isArray(c.items) && c.items.length > 0 ? c : null;
 }
@@ -119,18 +134,26 @@ const GENDER_GROUP_OPTIONS: DefOption[] = [
 ];
 
 export function defOptions(def: EntityRow): DefOption[] {
+  const slug = String(def.slug ?? '');
+  const custom = TESTER_RUBRIC_OPTIONS[slug];
+  if (custom) return custom;
   const existing = Array.isArray(def.options) ? (def.options as DefOption[]) : [];
-  if (String(def.slug) === 'genders') {
+  if (slug === 'genders') {
     return existing.length > 0 ? existing : GENDER_GROUP_OPTIONS;
   }
   return existing;
 }
 
 /** Which input control the tester sees. Derived from measurementType with optional inputType hint. */
+const TESTER_RUBRIC_SLUGS = new Set(Object.keys(TESTER_RUBRIC_OPTIONS));
+
 export function controlKind(def: EntityRow): ControlKind {
-  if (String(def.slug) === 'genders' && defOptions(def).length > 0) return 'multi_select';
+  const slug = String(def.slug ?? '');
+  if (HARDCODED_CHECKLISTS[slug]) return 'checklist';
+  if (TESTER_RUBRIC_SLUGS.has(slug)) return 'rubric';
+  if (slug === 'genders' && defOptions(def).length > 0) return 'multi_select';
   // Character creator: simple availability checks, not percentage or limited.
-  if (String(def.slug) === 'editing' || String(def.slug) === 'preview') return 'boolean';
+  if (slug === 'editing' || slug === 'preview') return 'boolean';
 
   const hint = typeof def.inputType === 'string' ? def.inputType : '';
   if (hint === 'ratio' && ratioConfig(def)) return 'ratio';

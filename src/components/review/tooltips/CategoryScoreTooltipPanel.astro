@@ -79,7 +79,7 @@ const panelClass = [
           class="ratings-tooltip-panel__score-row"
           {...(annotate ? { 'data-annotation-target': '1' } : {})}
         >
-          <span class={`rt-score-chip rt-score-chip--outline ${currentChip}`}>{fmtScore(currentScore)}</span>
+          <span class={`rt-score-chip ${currentChip}`}>{fmtScore(currentScore)}</span>
           <span class="ratings-tooltip-panel__score-label">{category.name}</span>
         </div>
         <p

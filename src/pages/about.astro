@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
+import { companyAddressLines, companyLegalName, companyLicense } from '../data/site-contact';
 
 const team = [
   {
@@ -40,7 +41,7 @@ const timeline = [
 ---
 
 <BaseLayout
-  title="About Us — AI Girlfriend Expert"
+  title="About Us"
   description="At AI Girlfriend Expert, we test AI girlfriend apps to help you find the best virtual companions. Learn how we test, score, and stay independent."
 >
   <Header />
@@ -171,18 +172,14 @@ const timeline = [
         </p>
         <p class="about-copy">
           <strong>Need help choosing an AI girlfriend?</strong> Personalized matching is coming soon. In the meantime,
-          browse our <a href="/best/ai-girlfriend">best AI girlfriend apps</a> roundup or email Herman for a personal
-          recommendation.
+          browse our <a href="/best/ai-girlfriend">best AI girlfriend apps</a> roundup or use our
+          <a href="/contact">contact form</a> for a personal recommendation.
         </p>
         <div class="about-address">
           <p class="about-address__label">Mailing Address</p>
-          <p>aigirlfriend.expert</p>
-          <p>2248 Broadway #1659</p>
-          <p>New York, NY 10024, United States</p>
-          <p class="mt-3">
-            Email:
-            <a href="mailto:herman@aigirlfriend.expert">herman@aigirlfriend.expert</a>
-          </p>
+          <p>{companyLegalName}</p>
+          <p>{companyLicense}</p>
+          {companyAddressLines.map((line) => <p>{line}</p>)}
         </div>
       </section>
     </div>
@@ -290,7 +287,7 @@ const timeline = [
     padding: 0.875rem 1rem;
     border: 1px solid var(--color-surface-variant);
     border-radius: 0.875rem;
-    background: #fff;
+    background: var(--color-surface-container-lowest);
   }
 
   .about-timeline__year {
@@ -322,7 +319,7 @@ const timeline = [
     padding: 1.125rem 1.25rem;
     border: 1px solid var(--color-surface-variant);
     border-radius: 1rem;
-    background: #fff;
+    background: var(--color-surface-container-lowest);
   }
 
   .about-team__name {

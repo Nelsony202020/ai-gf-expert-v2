@@ -1,6 +1,7 @@
 // Client-side "answered enough to publish" checks aligned with the scoring engine.
 
 import type { RawValue } from '../scoring/engine';
+import { isFreeAccessDetailsComplete, parseFreeAccessDetails } from './freeAccessDetails';
 
 const MODE_RATING_SCORES = new Set(['good', 'partial', 'poor']);
 
@@ -52,18 +53,36 @@ export function isEvidenceAnswerComplete(opts: {
   if (notApplicable || isUnknown) return true;
   if (rawValue == null) return Boolean(hasAutofillSuggestion);
 
+  if (
+    rawValue &&
+    typeof rawValue === 'object' &&
+    'detail' in rawValue &&
+    (rawValue as { detail?: Record<string, unknown> }).detail?.notPossible === true
+  ) {
+    return true;
+  }
+
   if (slug === 'chat-modes') {
     const modeTypesRaw = relatedAnswers?.['mode-types'];
     const raw = repairChatModesRaw(rawValue, modeTypesRaw) as
       | { status?: string; detail?: { count?: number } }
       | undefined;
     if (!raw) return false;
-    if (raw.status === 'no') return true;
+    if (raw.status === 'no' || raw.status === 'na') return true;
     if (raw.status === 'yes') return typeof raw.detail?.count === 'number';
     return false;
   }
 
+  if (slug === 'restrictions') {
+    return isFreeAccessDetailsComplete(parseFreeAccessDetails(rawValue as RawValue | undefined));
+  }
+
   if (slug === 'mode-types') {
+    const chatRaw = relatedAnswers?.['chat-modes'];
+    if (chatRaw && typeof chatRaw === 'object' && 'status' in chatRaw) {
+      const chatStatus = String((chatRaw as { status?: string }).status ?? '');
+      if (chatStatus === 'no' || chatStatus === 'na') return true;
+    }
     const related = { ...relatedAnswers };
     if (related['chat-modes']) {
       related['chat-modes'] = repairChatModesRaw(
@@ -85,13 +104,15 @@ export function isEvidenceAnswerComplete(opts: {
 
 /** Required defs not shown in any testing session (e.g. pricing autofill). */
 export function supplementalRequiredMissing(
-  definitions: { id: string; active?: boolean; required?: boolean; name?: unknown; questionLabel?: unknown }[],
+  definitions: { id: string; active?: boolean; required?: boolean; name?: unknown; questionLabel?: unknown; slug?: unknown }[],
   sessionDefIds: Set<string>,
   hasValue: (defId: string) => boolean,
 ): { count: number; labels: string[]; items: { defId: string; label: string }[] } {
+  const COMBINED = new Set(['mode-types', 'live-cam', 'support-channels']);
   const items: { defId: string; label: string }[] = [];
   for (const def of definitions) {
     if (def.active === false || !def.required) continue;
+    if (COMBINED.has(String(def.slug ?? ''))) continue;
     if (sessionDefIds.has(def.id)) continue;
     if (hasValue(def.id)) continue;
     items.push({ defId: def.id, label: String(def.questionLabel ?? def.name ?? def.id) });

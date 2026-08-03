@@ -7,10 +7,12 @@ const { testing } = fileAiGirlfriendRoundup;
 <section class="home-section section-container px-4 md:px-8" aria-labelledby="home-testing-title">
   <div class="home-testing">
     <div class="home-testing__panel">
-      <h2 id="home-testing-title" class="home-testing__title">
-        <span class="material-symbols-outlined" aria-hidden="true">science</span>
-        {testing.title}
-      </h2>
+      <div class="home-testing__title-row">
+        <span class="material-symbols-outlined home-testing__title-icon" aria-hidden="true">science</span>
+        <h2 id="home-testing-title" class="home-testing__title">
+          {testing.title}
+        </h2>
+      </div>
       <p class="home-testing__desc">{testing.description}</p>
       <a href={testing.processHref} class="home-testing__link">
         {testing.processLabel}

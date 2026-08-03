@@ -15,12 +15,12 @@ const sections = editorialGuidelinesSections.map((section) => ({
   ...section,
   id: toSlug(section.title),
 }));
-const pageTitle = 'Editorial Guidelines — AI Girlfriend Expert';
+const pageTitle = 'Editorial Guidelines';
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 ---
 
 <BaseLayout
-  title="Editorial Guidelines — AI Girlfriend Expert"
+  title="Editorial Guidelines"
   description="Our editorial independence, fact-checking standards, correction policy, affiliate disclosures, and separation between commercial relationships and product scoring."
 >
   <Header />

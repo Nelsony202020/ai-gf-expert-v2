@@ -34,7 +34,7 @@ const methodology = getTestCategoryMethodology(category.key);
 
 const categories = getTestCategories();
 
-const pageTitle = `${category.name} Testing Methodology — AI Girlfriend Expert`;
+const pageTitle = `${category.name} Testing Methodology`;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 const introParagraphs = methodology?.intro?.length ? methodology.intro : [category.description];
 

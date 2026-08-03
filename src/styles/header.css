@@ -1,7 +1,7 @@
 /* Site header — mega menu, inline search, dark mode */
 
 .site-header {
-  background-color: #f8faf3;
+  background-color: var(--color-header-surface);
   border-bottom: 1px solid #e5e9df;
 }
 
@@ -368,7 +368,7 @@ body.site-header-menu-open {
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 999px;
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   transition:
     max-width 0.28s ease,
     width 0.28s ease,
@@ -412,7 +412,7 @@ body.site-header-menu-open {
   top: calc(100% + 8px);
   right: 0;
   width: min(320px, calc(100vw - 2rem));
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   border: 1px solid var(--color-surface-variant);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgb(0 0 0 / 10%);
@@ -522,7 +522,7 @@ body.site-header-menu-open {
   top: 100%;
   left: 0;
   right: 0;
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   border-bottom: 1px solid var(--color-surface-variant);
   box-shadow: 0 16px 40px rgb(0 0 0 / 8%);
   z-index: 55;
@@ -768,7 +768,7 @@ body.site-header-menu-open {
 
 /* Dark mode */
 [data-theme='dark'] .site-header {
-  background-color: #0f172a;
+  background-color: var(--color-header-surface);
   border-bottom-color: #1e293b;
 }
 

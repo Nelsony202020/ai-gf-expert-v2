@@ -14,7 +14,7 @@ interface Props {
 }
 
 const { meta, shareUrl } = Astro.props;
-const shareTitle = 'How to Choose an AI Girlfriend App — Buying Guide — AI Girlfriend Expert';
+const shareTitle = 'How to Choose an AI Girlfriend App — Buying Guide';
 ---
 
 <div class="roundup-hero-intro">
@@ -28,7 +28,7 @@ const shareTitle = 'How to Choose an AI Girlfriend App — Buying Guide — AI G
 
   <div class="roundup-hero-intro__title-row">
     <h1 class="roundup-hero-intro__title text-3xl md:text-4xl lg:text-5xl font-black text-on-surface tracking-tight mb-0">
-      <span class="roundup-hero-intro__title-main">How to Choose an AI Girlfriend App</span>
+      <span class="roundup-hero-intro__title-main">How to Choose an AI Girlfriend App</span>{' '}
       <span class="roundup-hero-intro__title-date font-serif italic font-normal">{meta.methodology}</span>
     </h1>
     <ShareMenu shareTitle={shareTitle} shareUrl={shareUrl} variant="title-mobile" />

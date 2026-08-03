@@ -20,7 +20,7 @@ interface Props {
 }
 
 const { product, shareUrl, pageHead, isDraft = false } = Astro.props;
-const shareTitle = pageHead?.ogTitle ?? `${product.name} Review — AI Girlfriend Expert`;
+const shareTitle = pageHead?.ogTitle ?? `${product.name} Review`;
 const breadcrumbLabel = product.seo?.breadcrumbLabel?.trim() || product.name;
 const h1IsOverride = pageHead?.h1IsOverride ?? false;
 const h1Text = pageHead?.h1 ?? `${product.name} Review`;

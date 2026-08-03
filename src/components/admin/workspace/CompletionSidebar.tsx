@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../ui';
 import { confirmLeaveExplanationsIfNeeded } from '../testing/explanations/explanationLeaveGuard';
+import { confirmLeavePricingIfNeeded } from '../testing/pricingLeaveGuard';
 import { useWorkspace } from './context';
 import { workspaceTabPath } from './completion';
 import { statusTone, type SidebarContext, workflowStatusLabel } from './sidebar/nextActions';
@@ -38,7 +39,12 @@ function WorkflowList({ onNavigate }: { onNavigate?: () => void }) {
               <Link
                 to={workspaceTabPath(ws.productId, tab.id)}
                 onClick={(e) => {
-                  if (!confirmLeaveExplanationsIfNeeded(workspaceTabPath(ws.productId, tab.id))) {
+                  const next = workspaceTabPath(ws.productId, tab.id);
+                  if (!confirmLeaveExplanationsIfNeeded(next)) {
+                    e.preventDefault();
+                    return;
+                  }
+                  if (!confirmLeavePricingIfNeeded(next)) {
                     e.preventDefault();
                     return;
                   }

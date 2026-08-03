@@ -1,6 +1,6 @@
 // Bonus features: AI Cam Models + bonus gate + more bonus features (proof via paperclip drawer).
 
-import { Icon, TextInput } from '../ui';
+import { Icon, Select, TextInput } from '../ui';
 import type { RawValue } from './EvidenceInput';
 
 export type BonusExtraRow = { id: string; name: string; note: string };
@@ -91,50 +91,34 @@ export function formatBonusFeaturesSummary(
   return `Yes · ${cam} · ${filled.length} feature${filled.length === 1 ? '' : 's'}`;
 }
 
-function YesNoToggle({
-  name,
+function YesNoSelect({
   label,
   value,
   disabled,
   onChange,
 }: {
-  name: string;
   label: string;
   value: 'yes' | 'no' | '';
   disabled?: boolean;
   onChange: (v: 'yes' | 'no') => void;
 }) {
   return (
-    <fieldset className="space-y-1.5">
-      <legend className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</legend>
-      <div className="flex flex-wrap gap-2">
-        {(
-          [
-            { v: 'yes' as const, label: 'Yes' },
-            { v: 'no' as const, label: 'No' },
-          ] as const
-        ).map(({ v, label: optLabel }) => (
-          <label
-            key={v}
-            className={`inline-flex cursor-pointer items-center rounded-md border px-3 py-1.5 text-sm transition-colors ${
-              value === v
-                ? 'border-pink-400 bg-pink-50 text-pink-700 dark:border-pink-600 dark:bg-pink-950/40 dark:text-pink-300'
-                : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900'
-            }`}
-          >
-            <input
-              type="radio"
-              name={name}
-              className="sr-only"
-              disabled={disabled}
-              checked={value === v}
-              onChange={() => onChange(v)}
-            />
-            {optLabel}
-          </label>
-        ))}
-      </div>
-    </fieldset>
+    <div>
+      <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{label}</label>
+      <Select
+        value={value}
+        disabled={disabled}
+        className="!py-2 text-sm"
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v === 'yes' || v === 'no') onChange(v);
+        }}
+      >
+        <option value="">Choose…</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </Select>
+    </div>
   );
 }
 
@@ -189,16 +173,14 @@ export function BonusFeaturesField({
 
   return (
     <div className="testing-input-wide w-full min-w-0 max-w-3xl space-y-4">
-      <YesNoToggle
-        name="ai-cam-models"
+      <YesNoSelect
         label="AI Cam Models"
         value={parsed.aiCamModels}
         disabled={disabled}
         onChange={setAiCamModels}
       />
 
-      <YesNoToggle
-        name="bonus-features"
+      <YesNoSelect
         label="Bonus features"
         value={parsed.hasBonus}
         disabled={disabled}

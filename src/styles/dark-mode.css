@@ -79,3 +79,56 @@ html[data-theme='dark'] [class*='bg-brand-lime'] {
 html[data-theme='dark'] .bg-brand-cta:hover {
   background-color: #be185d !important;
 }
+
+/* Review tab sections & navigation */
+html[data-theme='dark'] section.bg-white,
+html[data-theme='dark'] section.bg-background {
+  background-color: var(--color-background) !important;
+}
+
+html[data-theme='dark'] .review-tabbar {
+  background-color: var(--color-header-surface) !important;
+  border-color: var(--dark-border-subtle) !important;
+}
+
+/* Homepage tags & misc surfaces */
+html[data-theme='dark'] .home-featured-spotlight__tag {
+  background: var(--color-surface-container);
+  border-color: rgb(255 255 255 / 10%);
+}
+
+html[data-theme='dark'] .home-featured-spotlight__panel {
+  background:
+    radial-gradient(circle at 100% 0%, rgb(219 39 119 / 14%), transparent 42%),
+    var(--color-surface-container-lowest);
+  border-color: rgb(255 255 255 / 10%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+}
+
+html[data-theme='dark'] .home-featured-spotlight__quote {
+  background: rgb(124 58 237 / 12%);
+}
+
+/* Ratings evidence drawer */
+html[data-theme='dark'] .ratings-drawer-panel {
+  background: var(--color-surface-container-lowest) !important;
+  box-shadow: -8px 0 32px rgb(0 0 0 / 45%);
+}
+
+html[data-theme='dark'] .ratings-drawer-panel__header {
+  border-color: var(--dark-border-subtle);
+}
+
+/* Article TOC drawer (review tab) */
+html[data-theme='dark'] .review-toc__drawer,
+html[data-theme='dark'] .review-toc__toggle {
+  background: var(--color-surface-container-lowest);
+  border-color: var(--dark-border-subtle);
+  color: var(--color-on-surface);
+}
+
+/* Author popovers & avatar rings */
+html[data-theme='dark'] .author-bio-popover {
+  background: var(--color-surface-container-lowest) !important;
+  border-color: var(--dark-border-subtle) !important;
+}

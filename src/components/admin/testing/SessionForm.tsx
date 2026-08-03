@@ -25,10 +25,20 @@ import { ChatModesField, parseChatModesDraft } from './ChatModesField';
 import { BonusFeaturesField, formatBonusFeaturesSummary } from './BonusExtrasField';
 import { migrateBrowsingDraft } from './browsingMigration';
 import { SupportContactField, parseSupportContactDraft } from './SupportContactField';
+import {
+  FreeAccessDetailsField,
+  formatFreeAccessDetailsSummary,
+  parseFreeAccessDetails,
+} from './FreeAccessDetailsField';
 import { buildProofCountMap } from './proofCounts';
 import { PROOF_ACCEPTED_TYPES, uploadProofFilesParallel } from './proofUpload';
 import { COMBINED_EVIDENCE_SLUGS, type TestSessionDef } from './sessions';
 import { readImageEditingStatus, isGenderCountApplicable } from './capabilityGating';
+import {
+  isDedicatedVideoGenerationBlocked,
+  VIDEO_NOT_POSSIBLE_DETAIL,
+} from '../../../lib/testing/videoGenerationGating';
+import { allowsNaToggle } from './rubricOptions';
 import './testing-ui.css';
 import { WorksheetGrid } from './WorksheetGrid';
 import { WorksheetStepView } from './WorksheetStepView';
@@ -38,6 +48,8 @@ import { controlKind } from './presentation';
 import { WORKSHEETS, capWorksheetRows, type DerivedColumn, type WorksheetRow } from './worksheets';
 
 const SUPPORT_RATING_SLUGS = new Set(['support-reach', 'support-speed', 'support-helpfulness']);
+
+const VIDEO_LOCKED_SESSIONS = new Set(['video-batch-review', 'video-experience']);
 
 export type { SessionItem };
 
@@ -161,6 +173,15 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     resultBySlug &&
     readImageEditingStatus(resultBySlug) === 'no';
 
+  const videoGenerationLocked = Boolean(
+    resultBySlug &&
+      categorySlug === 'video' &&
+      VIDEO_LOCKED_SESSIONS.has(session.id) &&
+      isDedicatedVideoGenerationBlocked(resultBySlug),
+  );
+
+  const capabilityLocked = imageEditingLocked || videoGenerationLocked;
+
   const editingAccuracyDef = useMemo(
     () => items.find(({ def }) => String(def.slug) === 'editing-accuracy')?.def,
     [items],
@@ -182,6 +203,34 @@ export const SessionForm = forwardRef<SessionFormHandle, {
       };
     });
   }, [imageEditingLocked, editingAccuracyDef?.id]);
+
+  useEffect(() => {
+    if (!videoGenerationLocked) return;
+    setDrafts((prev) => {
+      const next = { ...prev };
+      const targets =
+        session.id === 'video-batch-review'
+          ? worksheetItems
+          : session.id === 'video-experience'
+            ? items
+            : [];
+      for (const { def } of targets) {
+        const cur = next[def.id] ?? initialDraft(resultByDef.get(def.id), def);
+        if (cur.raw && 'detail' in cur.raw) {
+          const detail = cur.raw.detail as Record<string, unknown> | undefined;
+          if (detail?.notPossible === true && cur.dirty) continue;
+        }
+        next[def.id] = {
+          ...cur,
+          raw: { value: 0, detail: { ...VIDEO_NOT_POSSIBLE_DETAIL } },
+          na: false,
+          dirty: true,
+        };
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoGenerationLocked, session.id]);
 
   function fixedDenominatorFor(def: EntityRow): number | undefined {
     if (!session.sampleSizeField) return undefined;
@@ -574,8 +623,13 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   }
 
   function patchDraftWithCascade(defId: string, patch: Partial<Draft>) {
-    patchDraft(defId, patch);
     const def = items.find(({ def: d }) => d.id === defId)?.def;
+    if (def && String(def.slug) === 'chat-modes' && patch.na) {
+      patchDraft(defId, { ...patch, raw: undefined });
+      if (modeTypesDef) patchDraft(modeTypesDef.id, { raw: undefined });
+      return;
+    }
+    patchDraft(defId, patch);
     if (
       def &&
       String(def.slug) === 'save-memories' &&
@@ -718,6 +772,15 @@ export const SessionForm = forwardRef<SessionFormHandle, {
 
             let publicResult = (existing?.publicResult as string | undefined) ?? undefined;
             if (!draft.na && draft.raw && !publicResult) {
+              const rubricLabel =
+                draft.raw &&
+                'detail' in draft.raw &&
+                typeof (draft.raw.detail as Record<string, unknown> | undefined)?.rubric === 'string'
+                  ? String((draft.raw.detail as Record<string, unknown>).rubric)
+                  : null;
+              if (rubricLabel) {
+                publicResult = rubricLabel;
+              } else {
               const checklistLabel =
                 def.slug === 'included-features'
                   ? 'features included'
@@ -740,6 +803,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                   const templated = renderPublicResult(def, rawVal);
                   if (templated) publicResult = templated;
                 }
+              }
               }
             }
 
@@ -870,6 +934,17 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         />
       );
     }
+    if (String(def.slug) === 'restrictions') {
+      const detailsRaw =
+        draft.raw && 'status' in draft.raw && draft.raw.status === 'na' ? undefined : draft.raw;
+      return (
+        <FreeAccessDetailsField
+          disabled={isBlocked}
+          raw={detailsRaw}
+          onChange={(v) => patchDraftWithCascade(def.id, { raw: v })}
+        />
+      );
+    }
     if (String(def.slug) === 'support-available' && supportChannelsDef) {
       const channelsDraft =
         drafts[supportChannelsDef.id] ?? initialDraft(resultByDef.get(supportChannelsDef.id));
@@ -947,16 +1022,18 @@ export const SessionForm = forwardRef<SessionFormHandle, {
           </p>
         )}
         <div className="flex flex-wrap items-center gap-4">
-          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-500">
-            <input
-              type="checkbox"
-              className="testing-checkbox h-3.5 w-3.5 rounded border-slate-300 focus:ring-[var(--testing-accent)]"
-              checked={draft.na}
-              disabled={isBlocked}
-              onChange={(e) => patchDraft(def.id, { na: e.target.checked })}
-            />
-            Not applicable — feature not available
-          </label>
+          {allowsNaToggle(def) && (
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-500">
+              <input
+                type="checkbox"
+                className="testing-checkbox h-3.5 w-3.5 rounded border-slate-300 focus:ring-[var(--testing-accent)]"
+                checked={draft.na}
+                disabled={isBlocked}
+                onChange={(e) => patchDraft(def.id, { na: e.target.checked })}
+              />
+              Not applicable — feature not available
+            </label>
+          )}
           <button
             type="button"
             className="testing-link text-xs font-medium hover:underline"
@@ -1016,7 +1093,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     <div className="testing-workspace space-y-3">
       {error && <ErrorNote message={error} />}
 
-      {session.intro && !simplifiedWorksheet && !imageEditingLocked && (
+      {session.intro && !simplifiedWorksheet && !capabilityLocked && (
         <p className="flex items-center gap-1 text-xs text-slate-500">
           <span className="font-medium text-slate-600 dark:text-slate-400">Session tip</span>
           <TestingHint text={session.intro} />
@@ -1068,7 +1145,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
 
       {imageEditingLocked && (
         <div className="rounded-lg border border-slate-200 bg-slate-50/90 px-3 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
-          <p className="font-medium text-slate-800 dark:text-slate-100">Not applicable — no image editing</p>
+          <p className="font-medium text-slate-800 dark:text-slate-100">Not possible — no image editing</p>
           <p className="mt-1 text-xs">
             You answered <strong>No</strong> to image editing in Generation experience &amp; tools, so this
             accuracy test is excluded from the score.
@@ -1076,7 +1153,17 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         </div>
       )}
 
-      {worksheet && worksheetDefs.size > 0 && !imageEditingLocked && (
+      {videoGenerationLocked && (
+        <div className="rounded-lg border border-slate-200 bg-slate-50/90 px-3 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
+          <p className="font-medium text-slate-800 dark:text-slate-100">Not possible — no video generator</p>
+          <p className="mt-1 text-xs">
+            You answered <strong>No</strong> to both text-to-video and image-to-video, so this section is
+            scored 0/10 automatically. No uploads needed.
+          </p>
+        </div>
+      )}
+
+      {worksheet && worksheetDefs.size > 0 && !capabilityLocked && (
         <>
           {session.id === 'chat-understanding' ? (
             <ChatUnderstandingGrid
@@ -1125,7 +1212,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
 
       {layout === 'step' && !worksheet ? (
         renderStepView()
-      ) : useTable && !imageEditingLocked ? (
+      ) : useTable && !capabilityLocked ? (
         <SessionAnswerTable
           items={visibleStandaloneItems}
           categorySlug={categorySlug}
@@ -1160,7 +1247,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         />
       ) : (
         visibleStandaloneItems.length > 0 &&
-        !imageEditingLocked && (
+        !capabilityLocked && (
           <div className="space-y-2">
             {visibleStandaloneItems.map(({ def }) => {
               const draft = drafts[def.id] ?? initialDraft(resultByDef.get(def.id));
@@ -1189,6 +1276,9 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                     return n > 0 ? `Yes · ${n} link${n === 1 ? '' : 's'}` : 'Yes';
                   }
                   return '—';
+                }
+                if (String(def.slug) === 'restrictions') {
+                  return formatFreeAccessDetailsSummary(parseFreeAccessDetails(draft.raw));
                 }
                 return formatAnswerSummary(def, draft.raw, draft.na);
               })();
@@ -1264,16 +1354,18 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                     </p>
                   )}
                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-500">
-                      <input
-                        type="checkbox"
-                        className="testing-checkbox h-3.5 w-3.5 rounded border-slate-300 focus:ring-[var(--testing-accent)]"
-                        checked={draft.na}
-                        disabled={isBlocked}
-                        onChange={(e) => patchDraft(def.id, { na: e.target.checked })}
-                      />
-                      Not applicable — feature not available
-                    </label>
+                    {allowsNaToggle(def) && (
+                      <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-500">
+                        <input
+                          type="checkbox"
+                          className="testing-checkbox h-3.5 w-3.5 rounded border-slate-300 focus:ring-[var(--testing-accent)]"
+                          checked={draft.na}
+                          disabled={isBlocked}
+                          onChange={(e) => patchDraft(def.id, { na: e.target.checked })}
+                        />
+                        Not applicable — feature not available
+                      </label>
+                    )}
                     <button
                       type="button"
                       className="testing-link text-xs font-medium hover:underline"

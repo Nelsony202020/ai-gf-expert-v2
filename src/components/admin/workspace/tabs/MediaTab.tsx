@@ -39,6 +39,7 @@ import {
   heroSortOrderUpdates,
   type MediaRoleState,
 } from '../../../../lib/media/catalog';
+import { pricingProofVisibleInLibrary } from '../../../../lib/media/pricingProofLibrary';
 
 
 const ASSET_ROLES = ['logo', 'featured'];
@@ -117,7 +118,13 @@ export function MediaTab() {
   const toast = useToast();
   const canEdit = can('content.edit');
 
-  const media = ws.related.media;
+  const media = useMemo(
+    () =>
+      ws.related.media.filter((row) =>
+        pricingProofVisibleInLibrary(row, ws.related.pricingSnapshots),
+      ),
+    [ws.related.media, ws.related.pricingSnapshots],
+  );
 
   const allMedia = useMemo(
     () =>

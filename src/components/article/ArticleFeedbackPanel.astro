@@ -180,7 +180,7 @@ import { brandIcons } from '../../lib/brand-icons';
       if (counter && message) counter.textContent = `${message.value.length}/500`;
     });
 
-    form?.addEventListener('submit', (e) => {
+    form?.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!categoryInput?.value) {
         categoryBtns[0]?.focus();
@@ -194,22 +194,32 @@ import { brandIcons } from '../../lib/brand-icons';
       }
 
       const payload = {
+        kind: 'feedback',
         category: categoryInput.value,
         email: email.value.trim(),
         message: message?.value ?? '',
         pageUrl,
         pageTitle,
-        submittedAt: new Date().toISOString(),
       };
 
+      const submitBtn = form.querySelector<HTMLButtonElement>('.article-feedback__submit');
+      submitBtn?.setAttribute('disabled', 'true');
+
       try {
-        const existing = JSON.parse(localStorage.getItem('article-feedback-queue') ?? '[]');
-        existing.push(payload);
-        localStorage.setItem('article-feedback-queue', JSON.stringify(existing.slice(-50)));
-      } catch {
-        /* ignore storage errors */
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || 'Failed to send feedback');
+      } catch (error) {
+        submitBtn?.removeAttribute('disabled');
+        window.alert(error instanceof Error ? error.message : 'Could not send feedback. Please try again.');
+        return;
       }
 
+      submitBtn?.removeAttribute('disabled');
       formView?.classList.add('hidden');
       successView?.classList.remove('hidden');
     });

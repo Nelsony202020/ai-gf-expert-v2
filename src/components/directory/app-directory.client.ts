@@ -629,7 +629,10 @@ export function initAppDirectory() {
   function openFiltersSheet() {
     lastFocusedBeforeDrawer = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     filtersPanel?.classList.add('is-open');
-    if (filtersBackdrop) filtersBackdrop.hidden = false;
+    if (filtersBackdrop) {
+      filtersBackdrop.hidden = false;
+      requestAnimationFrame(() => filtersBackdrop.classList.add('is-visible'));
+    }
     document.body.classList.add('home-filters-open');
     document.addEventListener('keydown', drawerKeydown);
     updatePreviewCounts();
@@ -640,7 +643,14 @@ export function initAppDirectory() {
 
   function closeFiltersSheet() {
     filtersPanel?.classList.remove('is-open');
-    if (filtersBackdrop) filtersBackdrop.hidden = true;
+    if (filtersBackdrop) {
+      filtersBackdrop.classList.remove('is-visible');
+      const hideBackdrop = () => {
+        filtersBackdrop.hidden = true;
+        filtersBackdrop.removeEventListener('transitionend', hideBackdrop);
+      };
+      filtersBackdrop.addEventListener('transitionend', hideBackdrop);
+    }
     document.body.classList.remove('home-filters-open');
     document.removeEventListener('keydown', drawerKeydown);
     (lastFocusedBeforeDrawer ?? filtersOpen)?.focus();

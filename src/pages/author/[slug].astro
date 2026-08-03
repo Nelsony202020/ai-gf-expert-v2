@@ -18,7 +18,7 @@ if (!author) {
   return Astro.redirect('/404');
 }
 
-const title = `${author.name} — AI Girlfriend Expert`;
+const title = author.name;
 const intro = author.intro?.length ? author.intro : [author.bio];
 const firstName = author.name.split(' ')[0];
 ---

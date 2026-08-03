@@ -511,7 +511,6 @@ const fileRoundup: Roundup = {
       verified: true,
       slug: 'herman-carter',
     },
-    { name: 'Sarah Jenkins', role: 'Fact-Checker', avatar: avatar(45), verified: true },
   ],
   intro:
     'The best AI girlfriend app in 2026 is Candy AI — it balances natural conversation, strong customization, and reliable image generation better than any rival we tested. If you want voice-first companionship, choose Kindroid; for roleplay depth, pick CrushOn AI; for video and media, go with Aura AI. Below we rank every finalist with the same scoring system we use in our full reviews, so you can compare apps on customization, chat features, images, video, privacy, and price before you commit.',

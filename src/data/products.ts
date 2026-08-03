@@ -247,7 +247,6 @@ const auraAi: Product = {
       verified: true,
       slug: 'herman-carter',
     },
-    { name: 'Sarah Jenkins', role: 'Fact-Checker', avatar: avatar(45), verified: true },
   ],
   websiteUrl: 'https://example.com/aura-ai',
   affiliateUrl: 'https://example.com/go/aura-ai',

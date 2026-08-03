@@ -15,12 +15,12 @@ const sections = marketDataSections.map((section) => ({
   ...section,
   id: toSlug(section.title),
 }));
-const pageTitle = 'Market Data Methodology — AI Girlfriend Expert';
+const pageTitle = 'Market Data Methodology';
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 ---
 
 <BaseLayout
-  title="Market Data Methodology — AI Girlfriend Expert"
+  title="Market Data Methodology"
   description="How we use Google Trends, search interest, internal popularity data, and competitive comparisons — and why market data does not affect product scores."
 >
   <Header />

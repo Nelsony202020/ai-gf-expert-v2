@@ -35,6 +35,7 @@
 
   /* Color system */
   --color-background: #f9f9f9;
+  --color-header-surface: #f8faf3;
   --color-on-background: #1b1b1b;
 
   --color-surface: #f9f9f9;
@@ -113,7 +114,7 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: #ffffff;
+    background-color: var(--color-background);
     color: var(--color-on-surface);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -211,6 +212,7 @@ html.theme-transition *::after {
 /* Dark mode — slate-blue palette (matches admin dashboard) */
 [data-theme='dark'] {
   --color-background: #020617;
+  --color-header-surface: #0f172a;
   --color-on-background: #f1f5f9;
   --color-surface: #020617;
   --color-surface-variant: #1e293b;

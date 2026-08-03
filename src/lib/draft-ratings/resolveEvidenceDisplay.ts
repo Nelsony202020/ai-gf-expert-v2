@@ -1,4 +1,5 @@
 import { formatEvidenceAnswer, formatChecklistAnswer } from '../testing/evidenceFormat';
+import { formatFreeAccessDetailsSummary, parseFreeAccessDetails } from '../testing/freeAccessDetails';
 import { fmtMoney } from '../pricing/calc';
 import { renderPublicResult } from '../../components/admin/testing/presentation';
 
@@ -102,9 +103,9 @@ function formatFreeAccessValue(slug: string | undefined, raw: unknown): string |
       const text = (raw as { text: string }).text.trim();
       if (text) return text;
     }
-    const structured =
-      'structured' in raw ? (raw as { structured?: Record<string, unknown> }).structured : undefined;
-    if (structured && typeof structured.label === 'string') return structured.label.trim();
+    if ('structured' in raw) {
+      return formatFreeAccessDetailsSummary(parseFreeAccessDetails(raw as { structured?: Record<string, unknown> }));
+    }
   }
 
   if (slug && FREE_ACCESS_COUNT_LABEL[slug] && 'value' in raw) {

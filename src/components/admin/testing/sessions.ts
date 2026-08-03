@@ -303,16 +303,16 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'pricing-free-access',
       title: 'Free access',
-      intro: 'Record what users get without paying: messages, images, video, voice, characters, and free trial without credit card.',
+      intro: 'Record what users get without paying, then answer the free access details questions at the end.',
       icon: 'card_giftcard',
-      slugs: ['free-chat', 'free-characters', 'free-images', 'free-video', 'free-voice', 'free-value'],
+      slugs: ['free-chat', 'free-characters', 'free-images', 'free-video', 'free-voice', 'free-value', 'restrictions'],
     },
     {
       id: 'pricing-billing',
       title: 'Billing & policies',
       intro: 'Record pricing clarity, credit expiry, refunds, and easy cancellation. Payment privacy comes from the Pricing tab.',
       icon: 'policy',
-      slugs: ['pricing-clarity', 'credit-expiry', 'refunds', 'cancellation'],
+      slugs: ['pricing-clarity', 'paywalls', 'credit-expiry', 'refunds', 'cancellation'],
     },
   ],
 };

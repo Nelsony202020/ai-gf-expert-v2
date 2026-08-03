@@ -17,7 +17,7 @@ interface Props {
 
 const { roundup, shareUrl } = Astro.props;
 const monthYear = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-const shareTitle = `${roundup.title} (${monthYear}) — AI Girlfriend Expert`;
+const shareTitle = `${roundup.title} (${monthYear})`;
 ---
 
 <div class="roundup-hero-intro">

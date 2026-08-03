@@ -56,10 +56,10 @@ const portrait = spotlight
     <div class="home-featured-spotlight__body">
       <div class="home-featured-spotlight__head">
         <div>
-          <h3 class="home-featured-spotlight__name">
-            {spotlight.name}
+          <div class="home-featured-spotlight__name-row">
+            <h3 class="home-featured-spotlight__name">{spotlight.name}</h3>
             <span class="material-symbols-outlined home-featured-spotlight__heart" aria-hidden="true">favorite</span>
-          </h3>
+          </div>
           {spotlight.platform && <p class="home-featured-spotlight__platform">{spotlight.platform}</p>}
         </div>
       </div>

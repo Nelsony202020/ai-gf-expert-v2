@@ -392,7 +392,7 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Count attempts that fail, remain stuck, produce no image or produce an unusable result."
   },
   "images|chat-generation": {
-    "q": "Images: chat generation?",
+    "q": "In-chat generator?",
     "hint": "Request one image in three separate chats."
   },
   "images|separate-generator": {
@@ -504,8 +504,8 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Record the stated storage period for:"
   },
   "privacy|policy-clarity": {
-    "q": "Privacy: policy clarity?",
-    "hint": "Check whether the company clearly answers these six questions:"
+    "q": "How clear is the privacy policy?",
+    "hint": "Pick Unclear, Neutral, or Very clear based on how plainly the company explains data use."
   },
   "privacy|delete-chats": {
     "q": "Privacy: delete chats?",
@@ -556,20 +556,20 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Add links to news or official statements about breaches or leaks (past 5 years). Optional note."
   },
   "privacy|support-available": {
-    "q": "Support: offered?",
-    "hint": "Does the app offer any way to contact support? If yes, add email, contact page, Discord, Reddit, or Telegram links."
+    "q": "Does the app offer customer support?",
+    "hint": "If yes, add email, contact page, Discord, Reddit, or Telegram links below."
   },
   "privacy|support-reach": {
-    "q": "Support: easy to reach?",
-    "hint": "How easy is it for a paying user to contact support? Pick Poor → Excellent."
+    "q": "How easy is support to reach?",
+    "hint": "How easy is it for a paying user to start a support request?"
   },
   "privacy|support-speed": {
-    "q": "Support: response speed?",
-    "hint": "After sending a real support message, rate how fast they replied (overall impression, not seconds)."
+    "q": "Support response speed?",
+    "hint": "After sending a real support message, rate how fast they replied (overall impression)."
   },
   "privacy|support-helpfulness": {
-    "q": "Support: helpfulness?",
-    "hint": "Did the reply solve or clearly progress your issue? Pick Poor → Excellent."
+    "q": "Support helpfulness?",
+    "hint": "Did the reply solve or clearly progress your issue?"
   },
   "chat-features|platform-extras-list": {
     "q": "Bonus features?",
@@ -593,7 +593,7 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "pricing|included-features": {
     "q": "Included features?",
-    "hint": "Tick core features included without extra payment."
+    "hint": "On the normal paid plan, tick every core feature included without extra payment."
   },
   "pricing|plan-limits": {
     "q": "Plan limits?",
@@ -649,11 +649,15 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "pricing|pricing-clarity": {
     "q": "Price clarity?",
-    "hint": "Tick what the site shows before checkout (price, limits, refunds, etc.)."
+    "hint": "How clearly does the site explain costs, limits, expiry, and refunds before checkout?"
   },
   "pricing|paywalls": {
-    "q": "Paywalls?",
-    "hint": "Deprecated — removed from testing."
+    "q": "Which features are paywalled?",
+    "hint": "Tick features that require a higher tier or extra payment beyond the normal plan."
+  },
+  "pricing|restrictions": {
+    "q": "Free access details",
+    "hint": "How the free plan works: allowance resets, expiry, trial length, and credit-card requirements."
   },
   "pricing|credit-expiry": {
     "q": "Credit expiry?",

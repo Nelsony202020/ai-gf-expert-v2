@@ -154,6 +154,15 @@ export function normalizeEvidence(input: EvidenceInput): {
     return { score: null, status: 'na', detail: 'Not applicable — removed, weights re-scaled' };
   }
 
+  if (
+    input.rawValue &&
+    typeof input.rawValue === 'object' &&
+    'detail' in input.rawValue &&
+    (input.rawValue.detail as Record<string, unknown> | undefined)?.notPossible === true
+  ) {
+    return { score: 0, status: 'scored', detail: 'Feature not available — scored 0/10' };
+  }
+
   if (input.slug === 'platform-extras-list') {
     if (!input.rawValue || !('structured' in input.rawValue)) {
       return {

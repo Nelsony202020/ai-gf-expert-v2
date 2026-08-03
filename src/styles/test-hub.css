@@ -171,7 +171,7 @@
   padding: 1.125rem 1.125rem 1rem;
   border: 1px solid var(--color-surface-variant);
   border-radius: 14px;
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   box-shadow: 0 1px 3px rgb(0 0 0 / 4%);
 }
 
@@ -256,7 +256,7 @@
 .test-process-pin__shell {
   padding: 0.5rem;
   border-radius: 1.375rem;
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   border: 1px solid rgb(226 226 226 / 90%);
   box-shadow: 0 10px 24px rgb(211 211 211 / 55%);
 }
@@ -373,11 +373,11 @@
   .test-process-pin__shell {
     position: relative;
     z-index: 1;
-    background: #fff;
+    background: var(--color-surface-container-lowest);
   }
 
   .test-process-pin:nth-child(even) .test-process-pin__shell {
-    background: #fff;
+    background: var(--color-surface-container-lowest);
   }
 
   .test-process-pin--tilt-r {
@@ -880,7 +880,6 @@
 .test-category-subscores-box {
   margin-top: 1.5rem;
   border-radius: var(--radius-lg);
-  background: var(--color-surface-container-lowest);
 }
 
 .test-category-subscore {
@@ -1545,7 +1544,7 @@
   padding: 0.375rem 0.6875rem;
   border: 1px solid color-mix(in srgb, var(--color-accent) 38%, rgb(26 36 24 / 10%));
   border-radius: var(--radius-md);
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   font-size: 0.75rem;
   line-height: 1.25;
   white-space: nowrap;
@@ -1621,7 +1620,7 @@
 }
 
 [data-theme='dark'] .test-category-subscores-box {
-  background: rgb(255 255 255 / 3%);
+  background: transparent;
 }
 
 [data-theme='dark'] .test-category-calc-chip {
@@ -2645,7 +2644,6 @@
   gap: 0.625rem 0.75rem;
   padding: 0.875rem 0;
   border-radius: var(--radius-lg);
-  background: var(--color-surface-container-lowest);
   font-size: 0.875rem;
   line-height: 1.4;
   color: var(--color-on-surface-variant);
@@ -3763,7 +3761,7 @@
   border-radius: 0.75rem;
   overflow: hidden;
   box-shadow: 0 1px 3px rgb(0 0 0 / 4%);
-  background: #fff;
+  background: var(--color-surface-container-lowest);
 }
 
 .test-hub__score-example-head {
@@ -4426,7 +4424,7 @@
   overflow: auto;
   padding: 0.5rem 1rem max(1rem, env(safe-area-inset-bottom));
   border-radius: 20px 20px 0 0;
-  background: #fff;
+  background: var(--color-surface-container-lowest);
 }
 
 .test-hub-sheet__title {
@@ -4758,7 +4756,7 @@
   padding: 0.4375rem 0.75rem;
   border: 1px solid rgb(226 226 226 / 80%);
   border-radius: 999px;
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--color-on-surface-variant);
@@ -5254,7 +5252,7 @@
   padding: 0.875rem 1rem;
   border: 1px solid rgb(226 226 226 / 80%);
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-surface-container-lowest);
 }
 
 .test-tooltip-icon-samples__preview {
@@ -5607,7 +5605,7 @@
   padding: 1rem 1.125rem;
   border: 1px solid var(--color-surface-variant);
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-surface-container-lowest);
 }
 
 .test-tooltip-where-card__icon {
@@ -5730,7 +5728,7 @@
 
 .test-tooltips-cta__btn--secondary {
   border: 1px solid var(--color-surface-variant);
-  background: #fff;
+  background: var(--color-surface-container-lowest);
   color: var(--color-on-surface);
 }
 

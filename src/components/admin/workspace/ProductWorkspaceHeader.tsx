@@ -5,6 +5,7 @@ import { Badge, Button, Icon, statusTone } from '../ui';
 import { useCan } from '../context';
 import { useWorkspace } from './context';
 import { confirmLeaveExplanationsIfNeeded } from '../testing/explanations/explanationLeaveGuard';
+import { confirmLeavePricingIfNeeded } from '../testing/pricingLeaveGuard';
 import { WORKSPACE_TABS, fmtRelativeTime, workspaceTabPath, tabVisualStatus, type TabCompletion } from './completion';
 import { reviewPageUrl, reviewPreviewPageUrl } from '../../../lib/slugs';
 import { isDevReviewSlug } from '../../../lib/content/reviewDevProducts';
@@ -57,6 +58,7 @@ export function ProductWorkspaceHeader() {
             to="/products"
             onClick={(e) => {
               if (!confirmLeaveExplanationsIfNeeded('/products')) e.preventDefault();
+              else if (!confirmLeavePricingIfNeeded('/products')) e.preventDefault();
             }}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
             aria-label="Back to all products"
@@ -158,7 +160,12 @@ export function ProductWorkspaceHeader() {
               key={t.id}
               to={workspaceTabPath(ws.productId, t.id)}
               onClick={(e) => {
-                if (!confirmLeaveExplanationsIfNeeded(workspaceTabPath(ws.productId, t.id))) {
+                const next = workspaceTabPath(ws.productId, t.id);
+                if (!confirmLeaveExplanationsIfNeeded(next)) {
+                  e.preventDefault();
+                  return;
+                }
+                if (!confirmLeavePricingIfNeeded(next)) {
                   e.preventDefault();
                 }
               }}

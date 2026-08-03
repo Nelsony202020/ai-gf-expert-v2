@@ -1,6 +1,6 @@
 // Customer support: availability gate + optional channel links (editorial).
 
-import { Field, TextInput } from '../ui';
+import { Field, Select, TextInput } from '../ui';
 import type { RawValue } from './EvidenceInput';
 
 export type SupportChannels = {
@@ -132,38 +132,19 @@ export function SupportContactField({
 
   return (
     <div className="space-y-4 testing-input-wide w-full min-w-0 max-w-xl">
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-slate-700 dark:text-slate-200">
-          Does the app offer customer support?
-        </legend>
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              { v: 'yes' as const, label: 'Yes' },
-              { v: 'no' as const, label: 'No' },
-            ] as const
-          ).map(({ v, label }) => (
-            <label
-              key={v}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                parsed.hasSupport === v
-                  ? 'border-pink-400 bg-pink-50 text-pink-700 dark:border-pink-600 dark:bg-pink-950/40 dark:text-pink-300'
-                  : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900'
-              }`}
-            >
-              <input
-                type="radio"
-                name="support-available"
-                className="sr-only"
-                disabled={disabled}
-                checked={parsed.hasSupport === v}
-                onChange={() => sync(v, parsed.channels)}
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <Select
+        value={parsed.hasSupport}
+        disabled={disabled}
+        className="!py-2 text-sm"
+        onChange={(e) => {
+          const v = e.target.value as 'yes' | 'no' | '';
+          sync(v, parsed.channels);
+        }}
+      >
+        <option value="">Choose…</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </Select>
 
       {parsed.hasSupport === 'yes' && (
         <div className="space-y-3 border-t border-slate-200 pt-3 dark:border-slate-700">
