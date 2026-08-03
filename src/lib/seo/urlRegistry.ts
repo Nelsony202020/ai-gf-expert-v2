@@ -7,6 +7,7 @@
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { publicSiteOrigin } from '../siteOrigin';
 import { getAllSitemapEntries, childSitemapFor } from '../sitemap';
 import { getPageOverrides, normalizeOverridePath } from './pageOverrides';
 import { pathMatchKey, publicPagePath } from '../urls';
@@ -335,8 +336,7 @@ interface DbTestRun {
 }
 
 export async function buildUrlRegistry(): Promise<UrlRegistry> {
-  const rawOrigin = process.env.PUBLIC_SITE_URL || 'https://aigirlfriend.expert';
-  const siteOrigin = (rawOrigin.includes('localhost') ? 'https://aigirlfriend.expert' : rawOrigin).replace(/\/$/, '');
+  const siteOrigin = publicSiteOrigin();
 
   const rows: RegistryUrl[] = [];
   const byPath = new Map<string, RegistryUrl>();

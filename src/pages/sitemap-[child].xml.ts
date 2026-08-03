@@ -5,6 +5,7 @@ import { CHILD_SITEMAPS, buildChildXmlSitemap, type ChildSitemapKey } from '../l
 import { loadPublishedProducts, loadPublishedRoundupSummaries } from '../lib/content/store';
 import { getDraftedPaths } from '../lib/seo/pageOverrides';
 import { products as fileProducts } from '../data/products';
+import { publicSiteOrigin } from '../lib/siteOrigin';
 
 // One child sitemap per content group, e.g. /sitemap-reviews.xml.
 // Server-rendered so newly published content appears immediately; pages set
@@ -15,7 +16,7 @@ export const GET: APIRoute = async ({ params, site }) => {
     return new Response(null, { status: 404, statusText: 'Not Found' });
   }
 
-  const origin = site?.toString().replace(/\/$/, '') ?? 'https://aigirlfriend.expert';
+  const origin = publicSiteOrigin(site);
   const [publishedProducts, publishedRoundups, draftedPaths] = await Promise.all([
     loadPublishedProducts(fileProducts),
     loadPublishedRoundupSummaries(),
