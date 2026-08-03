@@ -47,8 +47,7 @@ const featuredIn = await getProductFeaturedIn(product.slug);
 const ratingsModel = useDraftRatings
   ? await loadDraftRatingsViewModel(product, { preview: true })
   : undefined;
-const origin = Astro.site?.toString() ?? Astro.url.origin;
-const head = resolveProductPageHead(product, { origin, draft: isDraft });
+const head = resolveProductPageHead(product, { astroSite: Astro.site, draft: isDraft });
 const showMarketDataTab = hasMarketDataTab(product.slug) && (import.meta.env.DEV || isDraft);
 
 const tabs: Tab[] = [

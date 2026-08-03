@@ -15,6 +15,7 @@ import { getPublicEvidenceGroupDisplay } from '../../../../lib/test-subscore-pub
 import { getTestCategoryMethodology } from '../../../../data/test-category-methodology';
 import { buildSubscoreRelatedMethodology } from '../../../../data/test-hub-content';
 import { testCategoryUrl, testHubUrl } from '../../../../lib/slugs';
+import { canonicalPublicUrl } from '../../../../lib/siteOrigin';
 import '../../../../styles/test-hub.css';
 
 const categories = getTestCategories();
@@ -46,7 +47,7 @@ if (!match) {
 const { category: catNode, sub: subNode } = match;
 const richContent = getTestSubscoreMethodology(category!, subscore!);
 const pageTitle = `${subNode.name} — ${catNode.name} — How We Test`;
-const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+const canonical = canonicalPublicUrl(Astro.url.pathname, Astro.site);
 
 const evidenceItems = subNode.contributors.map((contributor) => ({
   id: contributor.slug,
@@ -88,6 +89,7 @@ const tocItems = richContent
 <BaseLayout
   title={pageTitle}
   description={richContent?.heroIntro.join(' ') ?? subNode.description}
+  canonical={canonical}
 >
   <Header />
   <StandardContentLayout pageClass="test-category-page test-page">

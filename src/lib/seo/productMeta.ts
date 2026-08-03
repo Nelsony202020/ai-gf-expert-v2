@@ -1,4 +1,5 @@
 import { resolveSeoTemplate, type SeoTemplateContext } from './templateTags';
+import { publicSiteOrigin, resolveCanonicalUrl } from '../siteOrigin';
 
 export interface ProductSeoFields {
   name?: string;
@@ -126,9 +127,10 @@ function absolutizeUrl(url: string | null | undefined, origin: string): string |
 /** Resolved `<head>` + hero heading values for a live or preview review page. */
 export function resolveProductPageHead(
   product: ProductSeoSource,
-  opts: { origin: string; preview?: boolean; draft?: boolean } = { origin: '' },
+  opts: { astroSite?: URL | string | null; preview?: boolean; draft?: boolean } = {},
 ): ProductPageHead {
   const seo = product.seo ?? {};
+  const origin = publicSiteOrigin(opts.astroSite);
   const featuredImageUrl = product.featuredImage?.full ?? null;
   const fields: ProductSeoFields = {
     name: product.name,
@@ -161,8 +163,11 @@ export function resolveProductPageHead(
   const h1Override = String(seo.h1Override ?? '').trim();
   const h1 = h1Override || `${product.name} Review`;
 
-  const defaultCanonical = new URL(`/reviews/${product.slug}`, opts.origin || 'https://example.com').toString();
-  const canonical = String(seo.canonicalUrl ?? '').trim() || defaultCanonical;
+  const canonical = resolveCanonicalUrl(
+    `/reviews/${product.slug}`,
+    seo.canonicalUrl,
+    opts.astroSite,
+  );
 
   const robots = opts.preview || opts.draft
     ? 'noindex, nofollow'

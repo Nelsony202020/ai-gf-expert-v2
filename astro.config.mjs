@@ -4,10 +4,11 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import vercel from '@astrojs/vercel';
 import { astroScriptTsPlugin } from './vite/astro-script-ts-plugin.mjs';
+import { canonicalGuard } from './integrations/canonical-guard.mjs';
 
 // https://astro.build/config
 export default defineConfig({
-  site: process.env.PUBLIC_SITE_URL || 'https://aigirlfriend.expert',
+  site: 'https://aigirlfriend.expert',
   // 'ignore' so /admin and /admin/ both work in dev (trailingSlash: 'always' 404s bare /admin).
   trailingSlash: 'ignore',
   env: {
@@ -39,7 +40,7 @@ export default defineConfig({
   adapter: vercel(),
   // Admin uses a Vite page script (admin-entry.tsx), not Astro React islands.
   // @astrojs/react forces broken Rolldown pre-bundling of React 19 in dev.
-  integrations: [],
+  integrations: [canonicalGuard()],
   vite: {
     plugins: [astroScriptTsPlugin(), tailwindcss(), react()],
     ssr: {

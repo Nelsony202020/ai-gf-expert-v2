@@ -22,6 +22,7 @@ import RoundupScoreBarAnimate from '../../components/roundup/RoundupScoreBarAnim
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import ArticleFeedbackLink from '../../components/article/ArticleFeedbackLink.astro';
+import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
 import { loadRoundupForPublic } from '../../lib/content/store';
 
@@ -29,7 +30,7 @@ const { roundup, isDraft } = await loadRoundupForPublic('ai-girlfriend', fileAiG
 
 const monthYear = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 const pageTitle = `${roundup.title} (${monthYear})`;
-const canonical = new URL('/best/ai-girlfriend', Astro.site ?? Astro.url.origin).toString();
+const canonical = canonicalPublicUrl('/best/ai-girlfriend', Astro.site);
 ---
 
 <BaseLayout
@@ -37,6 +38,7 @@ const canonical = new URL('/best/ai-girlfriend', Astro.site ?? Astro.url.origin)
   description={roundup.metaDescription}
   image={roundup.featuredImage}
   robots={isDraft ? 'noindex, nofollow' : undefined}
+  canonical={canonical}
 >
   <Header />
   <main class="roundup-page" id="roundup-top" data-roundup-root data-reading-length="skim">

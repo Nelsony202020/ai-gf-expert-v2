@@ -24,6 +24,7 @@ import {
   testTooltipsTocSections,
 } from '../../../data/test-tooltips-content';
 import { testHubUrl } from '../../../lib/slugs';
+import { canonicalPublicUrl } from '../../../lib/siteOrigin';
 import '../../../styles/test-hub.css';
 import '../../../styles/ratings-tooltips.css';
 
@@ -34,12 +35,13 @@ const tooltipFaqItems = testTooltipsFaq.map((item) => ({
 }));
 
 const pageTitle = 'How Our Score Tooltips Work';
-const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+const canonical = canonicalPublicUrl(Astro.url.pathname, Astro.site);
 ---
 
 <BaseLayout
   title={pageTitle}
   description="How tooltips explain our ratings across reviews, roundups, directories, and the rest of AI Girlfriend Expert — and what each type of tooltip shows."
+  canonical={canonical}
 >
   <Header />
   <StandardContentLayout pageClass="test-hub test-tooltips-page">

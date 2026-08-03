@@ -11,6 +11,7 @@ import { getTestCategories } from '../../../lib/test-framework';
 import { testHubImportantTests } from '../../../data/test-hub-content';
 import { testHubUrl } from '../../../lib/slugs';
 import { getAllSitemapEntries } from '../../../lib/sitemap';
+import { canonicalPublicUrl } from '../../../lib/siteOrigin';
 import '../../../styles/test-hub.css';
 
 const categories = getTestCategories();
@@ -28,7 +29,7 @@ for (const test of testHubImportantTests) {
 }
 
 const pageTitle = 'All Tests';
-const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+const canonical = canonicalPublicUrl(Astro.url.pathname, Astro.site);
 
 const tocItems = [
   ...categories.map((cat) => ({
@@ -42,6 +43,7 @@ const tocItems = [
 <BaseLayout
   title={pageTitle}
   description="Complete directory of our AI girlfriend app testing methodology — categories, subscores, scored tests, and featured individual tests."
+  canonical={canonical}
 >
   <Header />
   <StandardContentLayout pageClass="test-page test-archive">

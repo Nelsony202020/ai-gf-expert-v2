@@ -29,7 +29,7 @@ async function main() {
     process.exit(1);
   }
 
-  const head = resolveProductPageHead(product, { origin: 'https://aigirlfriendexpert.com' });
+  const head = resolveProductPageHead(product, { astroSite: 'https://aigirlfriend.expert' });
 
   console.log('=== IDENTITY ===');
   console.log({ slug: product.slug, name: product.name, score: product.overallScore });

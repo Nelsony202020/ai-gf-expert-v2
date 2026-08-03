@@ -44,8 +44,7 @@ if (!product) {
 
 const featuredIn = await getProductFeaturedIn(product.slug);
 const ratingsModel = await loadDraftRatingsViewModel(product, { preview: true });
-const origin = Astro.site?.toString() ?? Astro.url.origin;
-const head = resolveProductPageHead(product, { origin, preview: true });
+const head = resolveProductPageHead(product, { astroSite: Astro.site, preview: true });
 
 const tabs: Tab[] = [
   { id: 'overview', label: 'Overview' },

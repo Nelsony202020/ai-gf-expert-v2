@@ -9,6 +9,7 @@ import TestPageBackLink from '../components/test/TestPageBackLink.astro';
 import ArticleUtilityRail from '../components/article/ArticleUtilityRail.astro';
 import { editorialGuidelinesSections } from '../data/methodology-support-content';
 import { testHubUrl, toSlug } from '../lib/slugs';
+import { canonicalPublicUrl } from '../lib/siteOrigin';
 import '../styles/test-hub.css';
 
 const sections = editorialGuidelinesSections.map((section) => ({
@@ -16,12 +17,13 @@ const sections = editorialGuidelinesSections.map((section) => ({
   id: toSlug(section.title),
 }));
 const pageTitle = 'Editorial Guidelines';
-const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+const canonical = canonicalPublicUrl(Astro.url.pathname, Astro.site);
 ---
 
 <BaseLayout
   title="Editorial Guidelines"
   description="Our editorial independence, fact-checking standards, correction policy, affiliate disclosures, and separation between commercial relationships and product scoring."
+  canonical={canonical}
 >
   <Header />
   <StandardContentLayout pageClass="test-page">

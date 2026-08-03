@@ -27,6 +27,7 @@ import {
 } from '../../data/test-hub-content';
 import { testHubScoredVsInformational } from '../../data/methodology-support-content';
 import { testMethodologyPageMeta } from '../../data/test-category-pages';
+import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import '../../styles/test-hub.css';
 import '../../styles/ratings-tooltips.css';
 
@@ -36,12 +37,13 @@ const chatCategory = categories.find((c) => c.key === 'chat');
 const tocSections = buildTestHubTocSections(categories);
 const testFaqItems = testHubFaq;
 const pageTitle = 'How We Test AI Girlfriend Apps';
-const canonical = new URL('/test/', Astro.site ?? Astro.url.origin).toString();
+const canonical = canonicalPublicUrl('/test/', Astro.site);
 ---
 
 <BaseLayout
   title={pageTitle}
   description="How we test AI girlfriend apps using paid accounts, structured scenarios, and measurable evidence across eight rating categories."
+  canonical={canonical}
 >
   <Header />
   <StandardContentLayout pageClass="test-hub-page">
