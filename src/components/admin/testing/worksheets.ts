@@ -8,6 +8,10 @@ export interface WorksheetColumn {
   hint?: string;
   kind: 'count' | 'pass' | 'tri' | 'avg_tri' | 'reference';
   max?: number;
+  /** Lower cell values are better (footer score is inverted). */
+  invert?: boolean;
+  /** Footer summary format for this column. */
+  footer?: 'pct' | 'seconds';
   /** For avg_tri — slugs averaged per row before aggregation. */
   avgOf?: string[];
 }
@@ -25,6 +29,8 @@ export interface WorksheetConfig {
 }
 
 const CHATS = SAMPLE.chatConversations;
+const RELIABILITY_ROWS = 6;
+const RELIABILITY_CELL_MAX = 20;
 
 /** Candy AI image batch tests use 15 rows (legacy runs had up to 20 — trim above 15). */
 export const CANDY_AI_SLUG = 'candy-ai';
@@ -76,6 +82,64 @@ export const WORKSHEETS: Record<string, WorksheetConfig> = {
         hint: 'How many of the 5 roleplay checks passed? (0–5)',
         kind: 'count',
         max: 5,
+      },
+    ],
+  },
+
+  'chat-reliability': {
+    title: 'Chat problems & speed',
+    instruction:
+      'Use the same chats from earlier tests. Fill one row per check. Lower is better for problem counts; enter reply time in seconds.',
+    rowLabel: 'Check',
+    rowCount: RELIABILITY_ROWS,
+    steps: [],
+    columns: [
+      {
+        defSlug: 'repetition',
+        label: 'Repetition /20',
+        hint: 'Count repetition problems in this check (0–20). Lower is better.',
+        kind: 'count',
+        max: RELIABILITY_CELL_MAX,
+        invert: true,
+      },
+      {
+        defSlug: 'refusals',
+        label: 'Refusal /20',
+        hint: 'Unnecessary refusals in this check (0–20). Lower is better.',
+        kind: 'count',
+        max: RELIABILITY_CELL_MAX,
+        invert: true,
+      },
+      {
+        defSlug: 'reply-speed',
+        label: 'Reply speed',
+        hint: 'Time one reply in this check — enter seconds from send to full reply.',
+        kind: 'count',
+        max: 120,
+        footer: 'seconds',
+      },
+      {
+        defSlug: 'errors',
+        label: 'Errors /20',
+        hint: 'Broken, cut-off, empty, or unrelated replies (0–20). Lower is better.',
+        kind: 'count',
+        max: RELIABILITY_CELL_MAX,
+        invert: true,
+      },
+      {
+        defSlug: 'consistency',
+        label: 'Contradicts /20',
+        hint: 'Times it contradicted earlier facts in this check (0–20). Lower is better.',
+        kind: 'count',
+        max: RELIABILITY_CELL_MAX,
+        invert: true,
+      },
+      {
+        defSlug: 'recovery',
+        label: 'Recovery /20',
+        hint: 'Successful recoveries after you corrected a mistake (0–20). Higher is better.',
+        kind: 'count',
+        max: RELIABILITY_CELL_MAX,
       },
     ],
   },
@@ -139,7 +203,7 @@ export const WORKSHEETS: Record<string, WorksheetConfig> = {
 
   'video-batch-review': {
     title: `${SAMPLE.videoBatch} videos`,
-    instruction: `Generate ${SAMPLE.videoBatch} test videos with the same prompt. Upload and rate each one.`,
+    instruction: `Generate ${SAMPLE.videoBatch} test videos — one prompt per video. Upload and rate each one.`,
     rowLabel: 'Video',
     rowCount: SAMPLE.videoBatch,
     steps: [],

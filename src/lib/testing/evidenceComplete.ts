@@ -1,9 +1,45 @@
 // Client-side "answered enough to publish" checks aligned with the scoring engine.
 
 import type { RawValue } from '../scoring/engine';
-import { isFreeAccessDetailsComplete, parseFreeAccessDetails } from './freeAccessDetails';
+import { isSecurityIncidentsComplete } from './securityIncidents';
 
 const MODE_RATING_SCORES = new Set(['good', 'partial', 'poor']);
+
+type ResultLike = { rawValue?: unknown; notApplicable?: boolean };
+
+/** Raw answer for related-question lookups — includes N/A from the notApplicable flag. */
+export function relatedAnswerFromResult(row?: ResultLike): RawValue | undefined {
+  if (row?.rawValue != null) return row.rawValue as RawValue;
+  if (row?.notApplicable) return { status: 'na' };
+  return undefined;
+}
+
+/** Build slug → answer map for conditional completion / scoring (chat-modes repair included). */
+export function buildRelatedAnswersBySlug(
+  entries: Iterable<{ defId: string; row?: ResultLike }>,
+  slugByDefId: Map<string, string>,
+): Record<string, RawValue | undefined> {
+  const out: Record<string, RawValue | undefined> = {};
+  for (const { defId, row } of entries) {
+    if (!row) continue;
+    const slug = slugByDefId.get(defId);
+    if (!slug) continue;
+    const val = relatedAnswerFromResult(row);
+    if (val !== undefined) out[slug] = val;
+  }
+  if (out['chat-modes'] != null || out['mode-types'] != null) {
+    out['chat-modes'] = repairChatModesRaw(out['chat-modes'], out['mode-types']);
+  }
+  return out;
+}
+
+/** True when chat modes were marked N/A — mode-types is excluded from score and progress. */
+export function chatModesExcluded(related?: Record<string, RawValue | undefined>): boolean {
+  const chatRaw = related?.['chat-modes'];
+  return Boolean(
+    chatRaw && typeof chatRaw === 'object' && 'status' in chatRaw && chatRaw.status === 'na',
+  );
+}
 
 /** Infer chat-modes count from rated mode-types when legacy saves omitted detail.count. */
 export function repairChatModesRaw(
@@ -51,15 +87,15 @@ export function isEvidenceAnswerComplete(opts: {
   const { slug, rawValue, notApplicable, isUnknown, relatedAnswers, hasAutofillSuggestion } = opts;
 
   if (notApplicable || isUnknown) return true;
-  if (rawValue == null) return Boolean(hasAutofillSuggestion);
 
-  if (
-    rawValue &&
-    typeof rawValue === 'object' &&
-    'detail' in rawValue &&
-    (rawValue as { detail?: Record<string, unknown> }).detail?.notPossible === true
-  ) {
-    return true;
+  if (slug === 'mode-types' && chatModesExcluded(relatedAnswers)) return true;
+
+  if (slug === 'mode-types') {
+    const chatRaw = relatedAnswers?.['chat-modes'];
+    if (chatRaw && typeof chatRaw === 'object' && 'status' in chatRaw) {
+      const chatStatus = String((chatRaw as { status?: string }).status ?? '');
+      if (chatStatus === 'no' || chatStatus === 'na') return true;
+    }
   }
 
   if (slug === 'chat-modes') {
@@ -73,16 +109,22 @@ export function isEvidenceAnswerComplete(opts: {
     return false;
   }
 
-  if (slug === 'restrictions') {
-    return isFreeAccessDetailsComplete(parseFreeAccessDetails(rawValue as RawValue | undefined));
+  if (rawValue == null) return Boolean(hasAutofillSuggestion);
+
+  if (
+    rawValue &&
+    typeof rawValue === 'object' &&
+    'detail' in rawValue &&
+    (rawValue as { detail?: Record<string, unknown> }).detail?.notPossible === true
+  ) {
+    return true;
+  }
+
+  if (slug === 'security-incidents') {
+    return isSecurityIncidentsComplete(rawValue as RawValue | undefined);
   }
 
   if (slug === 'mode-types') {
-    const chatRaw = relatedAnswers?.['chat-modes'];
-    if (chatRaw && typeof chatRaw === 'object' && 'status' in chatRaw) {
-      const chatStatus = String((chatRaw as { status?: string }).status ?? '');
-      if (chatStatus === 'no' || chatStatus === 'na') return true;
-    }
     const related = { ...relatedAnswers };
     if (related['chat-modes']) {
       related['chat-modes'] = repairChatModesRaw(

@@ -15,7 +15,7 @@ import { isEvidenceApplicable } from '../testing/capabilityGating';
 import { isGenderCountApplicable } from '../testing/genderCountGating';
 import { computePricingSuggestions } from '../testing/pricingAutofill';
 import { PRICING_AUTOFILL_SLUGS } from '../testing/pricingEvidenceSlugs';
-import { repairChatModesRaw } from '../testing/evidenceComplete';
+import { relatedAnswerFromResult, repairChatModesRaw } from '../testing/evidenceComplete';
 import { deferUsageCostScores } from '../ratings/evidenceIcons';
 
 function isEditingAccuracyScoredForRun(resultBySlug: Map<string, { notApplicable?: boolean; rawValue?: unknown }>): boolean {
@@ -189,6 +189,44 @@ async function syncPricingEvidence(
   if (writes.length > 0) await db.transact(writes);
 }
 
+async function repairModeTypesWhenChatModesNa(
+  resultByDef: Map<string, any>,
+  resultBySlug: Map<string, any>,
+) {
+  const chat = resultBySlug.get('chat-modes');
+  if (!chat?.id) return;
+
+  const chatNa =
+    Boolean(chat.notApplicable) ||
+    (chat.rawValue &&
+      typeof chat.rawValue === 'object' &&
+      'status' in chat.rawValue &&
+      chat.rawValue.status === 'na');
+  if (!chatNa) return;
+
+  const modeTypes = resultBySlug.get('mode-types');
+  if (!modeTypes?.id) return;
+
+  const modeNa =
+    Boolean(modeTypes.notApplicable) ||
+    (modeTypes.rawValue &&
+      typeof modeTypes.rawValue === 'object' &&
+      'status' in modeTypes.rawValue &&
+      modeTypes.rawValue.status === 'na');
+  if (modeNa) return;
+
+  const db = getDb();
+  const now = Date.now();
+  const fields = { rawValue: { status: 'na' }, notApplicable: true, updatedAt: now };
+  await db.transact([db.tx.evidenceResults[modeTypes.id].update(fields)]);
+
+  const updated = { ...modeTypes, ...fields };
+  resultBySlug.set('mode-types', updated);
+  if (modeTypes.evidenceDefinition?.id) {
+    resultByDef.set(modeTypes.evidenceDefinition.id, updated);
+  }
+}
+
 async function repairChatModesEvidence(
   resultByDef: Map<string, any>,
   resultBySlug: Map<string, any>,
@@ -227,6 +265,7 @@ export async function calculateRun(testRunId: string): Promise<{
   }
 
   await repairChatModesEvidence(resultByDef, resultBySlug);
+  await repairModeTypesWhenChatModesNa(resultByDef, resultBySlug);
   await syncPricingEvidence(testRunId, productId, mv, resultByDef);
   for (const row of resultByDef.values()) {
     const slug = row.evidenceDefinition?.slug;
@@ -296,7 +335,12 @@ export async function calculateRun(testRunId: string): Promise<{
                 relatedAnswers: Object.fromEntries(
                   (s.evidenceDefinitions ?? [])
                     .filter((d: any) => d.active)
-                    .map((d: any) => [d.slug, resultByDef.get(d.id)?.rawValue]),
+                    .map((d: any) => {
+                      const result = resultByDef.get(d.id);
+                      const val = relatedAnswerFromResult(result);
+                      return val !== undefined ? [d.slug, val] : null;
+                    })
+                    .filter((entry): entry is [string, unknown] => entry !== null),
                 ),
               } satisfies EvidenceInput;
             }),

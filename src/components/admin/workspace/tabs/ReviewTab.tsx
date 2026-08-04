@@ -24,31 +24,17 @@ import { ImageInspectorPanel } from '../../review/ImageInspectorPanel';
 import type { ImageInspectorTarget, ReviewEditorUI } from '../../review/reviewEditorContext';
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
-import { makeBlock, type ReviewBlock } from '../reviewBlocks';
+import { makeBlock, reviewTemplateHeadings, type ReviewBlock } from '../reviewBlocks';
 
 const ReviewEditor = lazyImport(() => import('../../review/ReviewEditor'), 'ReviewEditor');
 
 const MAX_REVISIONS = 10;
 const READING_WPM = 200;
 
-const TEMPLATE_HEADINGS = [
-  'Introduction',
-  'First Impressions',
-  'Character Selection',
-  'Character Customization',
-  'Chat Experience',
-  'Chat Features',
-  'Image Generation',
-  'Video Generation',
-  'Privacy',
-  'Pricing',
-  'Final Thoughts',
-];
-
-function templateDoc(): JSONDoc {
+function templateDoc(productName: string): JSONDoc {
   return {
     type: 'doc',
-    content: TEMPLATE_HEADINGS.flatMap((heading) => [
+    content: reviewTemplateHeadings(productName).flatMap((heading) => [
       {
         type: 'heading',
         attrs: { level: 2, blockId: null },
@@ -193,7 +179,7 @@ export function ReviewTab() {
   }
 
   function applyTemplate() {
-    const nextDoc = templateDoc();
+    const nextDoc = templateDoc(String(ws.fields.name ?? ''));
     setDoc(nextDoc);
     setContentKey((k) => k + 1);
     setTemplateDismissed(true);
@@ -283,8 +269,8 @@ export function ReviewTab() {
             <Icon name="post_add" className="!text-[32px] text-slate-300" />
             <h3 className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-200">No review article yet</h3>
             <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
-              Start from the standard section outline (Introduction through Final Thoughts — plain
-              editable headings), or start blank and type <code>/</code> to insert blocks.
+              Start from the hands-on review outline (First Impressions through My Final Take — headings
+              include the product name where needed), or start blank and type <code>/</code> to insert blocks.
             </p>
             <div className="mt-4 flex justify-center gap-2">
               <Button onClick={applyTemplate}>

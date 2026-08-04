@@ -7,7 +7,7 @@ import { EvidenceInput, type RawValue } from './EvidenceInput';
 import { ChatModesField, parseChatModesDraft } from './ChatModesField';
 import { BonusFeaturesField, formatBonusFeaturesSummary } from './BonusExtrasField';
 import { SupportContactField, parseSupportContactDraft } from './SupportContactField';
-import { FreeAccessDetailsField, formatFreeAccessDetailsSummary, parseFreeAccessDetails } from './FreeAccessDetailsField';
+import { SecurityIncidentsField, formatSecurityIncidentsSummary } from './SecurityIncidentsField';
 import {
   formatAnswerSummary,
   rowState,
@@ -161,8 +161,8 @@ export function SessionAnswerTable({
                         }
                         return '—';
                       })()
-                    : String(def.slug) === 'restrictions'
-                      ? formatFreeAccessDetailsSummary(parseFreeAccessDetails(draft.raw))
+                    : String(def.slug) === 'security-incidents'
+                      ? formatSecurityIncidentsSummary(draft.raw)
                     : formatAnswerSummary(def, draft.raw, draft.na);
             const isActive = activeDefId === def.id;
             const isHighlighted = highlightDefId === def.id;
@@ -304,8 +304,8 @@ export function SessionAnswerTable({
                           />
                         );
                       })()
-                    ) : String(def.slug) === 'restrictions' ? (
-                      <FreeAccessDetailsField
+                    ) : String(def.slug) === 'security-incidents' ? (
+                      <SecurityIncidentsField
                         disabled={busy}
                         raw={
                           draft.raw && 'status' in draft.raw && draft.raw.status === 'na'

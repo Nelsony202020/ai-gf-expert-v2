@@ -108,6 +108,18 @@ function formatFreeAccessValue(slug: string | undefined, raw: unknown): string |
     }
   }
 
+  if (slug === 'security-incidents' && 'value' in raw) {
+    const detail =
+      'detail' in raw && raw.detail && typeof raw.detail === 'object'
+        ? (raw.detail as Record<string, unknown>)
+        : undefined;
+    const count = Number((raw as { value: unknown }).value);
+    if (count === 0 && detail?.foundIncidents === false) return '0 confirmed incidents';
+    if (Number.isFinite(count) && count > 0) {
+      return `${count} confirmed incident${count === 1 ? '' : 's'}`;
+    }
+  }
+
   if (slug && FREE_ACCESS_COUNT_LABEL[slug] && 'value' in raw) {
     const count = Number((raw as { value: unknown }).value);
     if (!Number.isFinite(count)) return null;

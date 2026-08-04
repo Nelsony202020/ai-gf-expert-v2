@@ -1,6 +1,6 @@
 /** Shared worksheet row scoring helpers (defects, usable, tri-state). */
 
-import type { WorksheetColumn, WorksheetConfig, WorksheetRow } from './worksheets';
+import type { DerivedColumn, WorksheetColumn, WorksheetConfig, WorksheetRow } from './worksheets';
 
 export const IMAGE_DEFECTS = [
   'Bad hands or fingers',
@@ -177,6 +177,56 @@ export function batchSummaryStats(
   const rated = rows.filter((r) => usableFn(r) !== null).length;
   const failureRate = rated > 0 ? Math.round(((rated - usable) / rated) * 100) : null;
   return { avgs, usable, rated, failureRate };
+}
+
+const RELIABILITY_BAND_COUNTS = new Set(['repetition', 'refusals', 'errors']);
+
+function median(nums: number[]): number | undefined {
+  if (nums.length === 0) return undefined;
+  const sorted = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
+}
+
+export function worksheetColumnFooter(
+  col: WorksheetColumn,
+  derived: DerivedColumn | undefined,
+  rows: WorksheetRow[],
+): string {
+  if (!derived || derived.filledRows === 0) return '—';
+  if (col.footer === 'seconds') {
+    const vals = rows
+      .map((r) => r[col.defSlug])
+      .filter((v): v is number => typeof v === 'number');
+    const med = median(vals);
+    return med === undefined ? '—' : `${med}s`;
+  }
+  const pct = col.invert ? Math.round((100 - derived.pct) * 10) / 10 : derived.pct;
+  return `${pct}%`;
+}
+
+/** Map chat-reliability worksheet columns to scored raw values. */
+export function reliabilityWorksheetRaw(
+  slug: string,
+  col: DerivedColumn,
+  rows: WorksheetRow[],
+): { value: number; detail: Record<string, unknown> } {
+  const detail = {
+    numerator: col.numerator,
+    denominator: col.denominator,
+    worksheetRows: rows,
+  };
+  if (slug === 'reply-speed') {
+    const seconds = rows
+      .map((r) => r['reply-speed'])
+      .filter((v): v is number => typeof v === 'number');
+    const med = median(seconds);
+    return { value: med ?? 0, detail: { ...detail, medianSeconds: med } };
+  }
+  if (RELIABILITY_BAND_COUNTS.has(slug)) {
+    return { value: col.numerator, detail };
+  }
+  return { value: col.pct, detail };
 }
 
 /** Live partial summary for character consistency (variation rows only). */

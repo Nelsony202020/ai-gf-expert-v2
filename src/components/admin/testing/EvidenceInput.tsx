@@ -122,40 +122,6 @@ export function EvidenceInput({
     );
   }
 
-  if (slug === 'security-incidents') {
-    const detail = (value && 'detail' in value ? value.detail : undefined) ?? {};
-    const url = typeof detail.url === 'string' ? detail.url : value && 'text' in value ? value.text : '';
-    const note = typeof detail.note === 'string' ? detail.note : '';
-    return (
-      <div className={`space-y-2 ${wide}`}>
-        <TextInput
-          type="url"
-          value={url}
-          disabled={disabled}
-          placeholder="Link to news article or official statement (optional)"
-          onChange={(e) =>
-            onChange({
-              text: e.target.value,
-              detail: { ...detail, url: e.target.value, note },
-            })
-          }
-        />
-        <TextArea
-          rows={2}
-          value={note}
-          disabled={disabled}
-          placeholder="Optional note about what happened"
-          onChange={(e) =>
-            onChange({
-              text: url,
-              detail: { ...detail, url, note: e.target.value },
-            })
-          }
-        />
-      </div>
-    );
-  }
-
   switch (kind) {
     case 'boolean':
     case 'ynl': {

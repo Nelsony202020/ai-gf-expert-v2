@@ -26,10 +26,9 @@ import { BonusFeaturesField, formatBonusFeaturesSummary } from './BonusExtrasFie
 import { migrateBrowsingDraft } from './browsingMigration';
 import { SupportContactField, parseSupportContactDraft } from './SupportContactField';
 import {
-  FreeAccessDetailsField,
-  formatFreeAccessDetailsSummary,
-  parseFreeAccessDetails,
-} from './FreeAccessDetailsField';
+  SecurityIncidentsField,
+  formatSecurityIncidentsSummary,
+} from './SecurityIncidentsField';
 import { buildProofCountMap } from './proofCounts';
 import { PROOF_ACCEPTED_TYPES, uploadProofFilesParallel } from './proofUpload';
 import { COMBINED_EVIDENCE_SLUGS, type TestSessionDef } from './sessions';
@@ -42,7 +41,7 @@ import { allowsNaToggle } from './rubricOptions';
 import './testing-ui.css';
 import { WorksheetGrid } from './WorksheetGrid';
 import { WorksheetStepView } from './WorksheetStepView';
-import { deriveWorksheetExtended } from './worksheetScoring';
+import { deriveWorksheetExtended, reliabilityWorksheetRaw } from './worksheetScoring';
 import { pctFromRatio, ratioDenominatorFromSample } from './sampleRatio';
 import { controlKind } from './presentation';
 import { WORKSHEETS, capWorksheetRows, type DerivedColumn, type WorksheetRow } from './worksheets';
@@ -272,9 +271,14 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   const worksheet = WORKSHEETS[session.id];
   const simplifiedWorksheet = Boolean(
     worksheet &&
-      ['chat-understanding', 'image-batch-review', 'image-consistency', 'video-batch-review'].includes(
-        session.id,
-      ),
+      [
+        'chat-understanding',
+        'chat-realism',
+        'chat-reliability',
+        'image-batch-review',
+        'image-consistency',
+        'video-batch-review',
+      ].includes(session.id),
   );
   const worksheetDefs = useMemo(() => {
     if (!worksheet) return new Map<string, EntityRow>();
@@ -626,7 +630,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     const def = items.find(({ def: d }) => d.id === defId)?.def;
     if (def && String(def.slug) === 'chat-modes' && patch.na) {
       patchDraft(defId, { ...patch, raw: undefined });
-      if (modeTypesDef) patchDraft(modeTypesDef.id, { raw: undefined });
+      if (modeTypesDef) patchDraft(modeTypesDef.id, { raw: undefined, na: true, dirty: true });
       return;
     }
     patchDraft(defId, patch);
@@ -674,12 +678,17 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         if (col.filledRows === 0) continue;
         const def = worksheetDefs.get(col.defSlug);
         if (!def) continue;
+        const slug = String(def.slug ?? '');
+        const raw =
+          session.id === 'chat-reliability'
+            ? reliabilityWorksheetRaw(slug, col, rows)
+            : {
+                value: col.pct,
+                detail: { numerator: col.numerator, denominator: col.denominator, worksheetRows: rows },
+              };
         next[def.id] = {
           ...(next[def.id] ?? { raw: undefined, na: false, dirty: false }),
-          raw: {
-            value: col.pct,
-            detail: { numerator: col.numerator, denominator: col.denominator, worksheetRows: rows },
-          },
+          raw,
           dirty: true,
         };
       }
@@ -934,13 +943,13 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         />
       );
     }
-    if (String(def.slug) === 'restrictions') {
-      const detailsRaw =
+    if (String(def.slug) === 'security-incidents') {
+      const incidentsRaw =
         draft.raw && 'status' in draft.raw && draft.raw.status === 'na' ? undefined : draft.raw;
       return (
-        <FreeAccessDetailsField
+        <SecurityIncidentsField
           disabled={isBlocked}
-          raw={detailsRaw}
+          raw={incidentsRaw}
           onChange={(v) => patchDraftWithCascade(def.id, { raw: v })}
         />
       );
@@ -1277,8 +1286,8 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                   }
                   return '—';
                 }
-                if (String(def.slug) === 'restrictions') {
-                  return formatFreeAccessDetailsSummary(parseFreeAccessDetails(draft.raw));
+                if (String(def.slug) === 'security-incidents') {
+                  return formatSecurityIncidentsSummary(draft.raw);
                 }
                 return formatAnswerSummary(def, draft.raw, draft.na);
               })();

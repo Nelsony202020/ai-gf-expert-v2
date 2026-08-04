@@ -180,6 +180,28 @@ async function main() {
     if (chunks.length) await db.transact(chunks);
   }
 
+  // Retired evidence — keep out of testing and scoring (no longer in methodology seeds).
+  {
+    const RETIRED_EVIDENCE = [{ category: 'pricing', slug: 'restrictions' }];
+    const { evidenceDefinitions: defsToRetire } = await db.query({
+      evidenceDefinitions: { subscore: { category: {} } },
+    });
+    const retireChunks: any[] = [];
+    for (const def of defsToRetire as any[]) {
+      const catSlug = def.subscore?.category?.slug;
+      if (
+        RETIRED_EVIDENCE.some((r) => r.slug === def.slug && r.category === catSlug) &&
+        def.active !== false
+      ) {
+        retireChunks.push(db.tx.evidenceDefinitions[def.id].update({ active: false }));
+      }
+    }
+    if (retireChunks.length) {
+      await db.transact(retireChunks);
+      console.log(`  deactivated ${retireChunks.length} retired evidence definition(s)`);
+    }
+  }
+
   // ------------------------------------------------------------------ 3. authors
   console.log('3) Authors');
   const { authors: existingAuthors } = await db.query({ authors: {} });

@@ -154,6 +154,22 @@ export function normalizeEvidence(input: EvidenceInput): {
     return { score: null, status: 'na', detail: 'Not applicable — removed, weights re-scaled' };
   }
 
+  if (input.slug === 'mode-types') {
+    const chatRaw = input.relatedAnswers?.['chat-modes'];
+    if (
+      chatRaw &&
+      typeof chatRaw === 'object' &&
+      'status' in chatRaw &&
+      chatRaw.status === 'na'
+    ) {
+      return {
+        score: null,
+        status: 'na',
+        detail: 'Chat modes not applicable — mode quality excluded from score',
+      };
+    }
+  }
+
   if (
     input.rawValue &&
     typeof input.rawValue === 'object' &&

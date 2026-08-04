@@ -5,6 +5,11 @@
 
 import type { EntityRow } from '../api';
 import { evidenceRequirements } from './presentation';
+import {
+  COMBINED_EVIDENCE_BY_PARENT,
+  COMBINED_EVIDENCE_PARENT,
+  COMBINED_EVIDENCE_SLUGS,
+} from './sessions';
 import { WORKSHEETS } from './worksheets';
 import type { SessionItem } from './sessionUi';
 
@@ -85,6 +90,7 @@ export function sessionRequiredUnits(sessionId: string, items: SessionItem[]): R
 
   for (const item of items) {
     const slug = String(item.def.slug);
+    if (COMBINED_EVIDENCE_SLUGS.has(slug)) continue;
     if (worksheetSlugs?.has(slug)) {
       if (item.def.required) worksheetDefIds.push(item.def.id);
     } else if (item.def.required) {
@@ -97,7 +103,13 @@ export function sessionRequiredUnits(sessionId: string, items: SessionItem[]): R
   }
 
   for (const { def } of standalone) {
-    units.push({ id: def.id, defIds: [def.id], required: true });
+    const defIds = [def.id];
+    const combinedSlug = COMBINED_EVIDENCE_BY_PARENT[String(def.slug)];
+    if (combinedSlug) {
+      const combined = items.find(({ def: d }) => String(d.slug) === combinedSlug);
+      if (combined?.def.required) defIds.push(combined.def.id);
+    }
+    units.push({ id: def.id, defIds, required: true });
   }
 
   return units;
@@ -109,21 +121,43 @@ export function hasRequiredEvidence(def: EntityRow, attachmentCount: number): bo
   return attachmentCount >= reqs.length;
 }
 
+/** Check one required evidence definition (value + attachments). */
+export function defCompleteWithItems(
+  defId: string,
+  items: SessionItem[],
+  ctx: ProgressContext,
+): boolean {
+  const def = items.find(({ def: d }) => d.id === defId)?.def;
+  if (!def?.required) return true;
+  if (!ctx.hasValue(defId)) return false;
+  const result = ctx.getResult(defId);
+  if (result?.notApplicable) return true;
+  return hasRequiredEvidence(def, ctx.attachmentCount(defId));
+}
+
 /** Check one required input unit using item lookup for definitions. */
 export function unitCompleteWithItems(
   unit: RequiredInputUnit,
   items: SessionItem[],
   ctx: ProgressContext,
 ): boolean {
-  const defById = new Map(items.map(({ def }) => [def.id, def]));
-  return unit.defIds.every((defId) => {
-    if (!ctx.hasValue(defId)) return false;
-    const def = defById.get(defId);
-    if (!def?.required) return true;
-    const result = ctx.getResult(defId);
-    if (result?.notApplicable) return true;
-    return hasRequiredEvidence(def, ctx.attachmentCount(defId));
-  });
+  return unit.defIds.every((defId) => defCompleteWithItems(defId, items, ctx));
+}
+
+function missingItemForDef(
+  defId: string,
+  items: SessionItem[],
+): { defId: string; label: string } {
+  const item = items.find(({ def }) => def.id === defId);
+  const slug = item ? String(item.def.slug) : '';
+  const parentSlug = COMBINED_EVIDENCE_PARENT[slug];
+  const focusItem = parentSlug
+    ? items.find(({ def }) => String(def.slug) === parentSlug) ?? item
+    : item;
+  return {
+    defId: focusItem ? focusItem.def.id : defId,
+    label: item ? String(item.def.questionLabel ?? item.def.name) : defId,
+  };
 }
 
 export function sessionHasUnknownRequired(items: SessionItem[], ctx: ProgressContext): boolean {
@@ -240,17 +274,11 @@ export function computeRunProgress(
     totalRequired += prog.total;
     completedRequired += prog.complete;
 
-    const missingRequiredItems = prog.units
-      .filter((u) => !unitCompleteWithItems(u, s.items, ctx))
-      .flatMap((u) =>
-        u.defIds.map((id) => {
-          const item = s.items.find(({ def }) => def.id === id);
-          return {
-            defId: id,
-            label: item ? String(item.def.questionLabel ?? item.def.name) : id,
-          };
-        }),
-      );
+    const missingRequiredItems = prog.units.flatMap((u) =>
+      u.defIds
+        .filter((defId) => !defCompleteWithItems(defId, s.items, ctx))
+        .map((defId) => missingItemForDef(defId, s.items)),
+    );
 
     const missingRequiredLabels = missingRequiredItems.map((m) => m.label).slice(0, 6);
 

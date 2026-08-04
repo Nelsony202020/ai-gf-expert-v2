@@ -143,6 +143,16 @@ function mapAuthor(a: any): Author {
 }
 
 /** Map one DB product (with links + snapshots) onto the site's Product shape. */
+function resolveVideoReview(dbProduct: {
+  youtubeReviewUrl?: string | null;
+}): Product['videoReview'] {
+  const raw = String(dbProduct.youtubeReviewUrl ?? '').trim();
+  if (!raw) return undefined;
+  const embed = youtubeEmbedUrl(raw);
+  if (!embed) return undefined;
+  return { embedUrl: embed, channelUrl: raw };
+}
+
 function mapProduct(
   dbProduct: any,
   fileFallback: Product | undefined,
@@ -414,18 +424,7 @@ function mapProduct(
       typicalMonthly: typicalMonthly ?? fileFallback?.pricingDisplay.typicalMonthly ?? null,
       storeLabel: fileFallback?.pricingDisplay.storeLabel ?? 'Visit site',
     },
-    videoReview: (() => {
-      const embed = dbProduct.youtubeReviewUrl
-        ? youtubeEmbedUrl(String(dbProduct.youtubeReviewUrl))
-        : null;
-      if (embed) {
-        return {
-          embedUrl: embed,
-          channelUrl: String(dbProduct.youtubeReviewUrl),
-        };
-      }
-      return fileFallback?.slug === dbProduct.slug ? fileFallback.videoReview : undefined;
-    })(),
+    videoReview: resolveVideoReview(dbProduct),
     reviewBlocks: Array.isArray(review?.blocks)
       ? (review.blocks as Product['reviewBlocks'])
       : fileFallback?.reviewBlocks ?? [],

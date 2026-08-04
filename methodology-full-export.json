@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-08-02T07:11:09.883Z",
+  "exportedAt": "2026-08-04T09:54:14.772Z",
   "methodologyVersion": "v3.1",
   "source": "InstantDB (active methodology version)",
   "calculationVersion": "calc-1.0",
@@ -22,6 +22,8 @@
         "intro": "Open the character library once. Count characters in each category below.",
         "icon": "groups",
         "slugs": [
+          "amount",
+          "genders",
           "female-count",
           "male-count",
           "anime-female-count",
@@ -138,7 +140,7 @@
       {
         "id": "chat-reliability",
         "title": "Chat problems & speed",
-        "intro": "Use the same chats again. Also run the refusal test and speed test where asked.",
+        "intro": "Fill in the table — one row per check, scores out of 20 in each column.",
         "icon": "speed",
         "slugs": [
           "repetition",
@@ -363,7 +365,7 @@
       {
         "id": "pricing-free-access",
         "title": "Free access",
-        "intro": "Record what users get without paying: messages, images, video, voice, characters, and free trial without credit card.",
+        "intro": "Record what users get without paying, then answer the free access details questions at the end.",
         "icon": "card_giftcard",
         "slugs": [
           "free-chat",
@@ -371,7 +373,8 @@
           "free-images",
           "free-video",
           "free-voice",
-          "free-value"
+          "free-value",
+          "restrictions"
         ]
       },
       {
@@ -381,6 +384,7 @@
         "icon": "policy",
         "slugs": [
           "pricing-clarity",
+          "paywalls",
           "credit-expiry",
           "refunds",
           "cancellation"
@@ -429,6 +433,62 @@
           "hint": "How many of the 5 roleplay checks passed? (0–5)",
           "kind": "count",
           "max": 5
+        }
+      ]
+    },
+    "chat-reliability": {
+      "title": "Chat problems & speed",
+      "instruction": "Use the same chats from earlier tests. Fill one row per check. Lower is better for problem counts; enter reply time in seconds.",
+      "rowLabel": "Check",
+      "rowCount": 6,
+      "steps": [],
+      "columns": [
+        {
+          "defSlug": "repetition",
+          "label": "Repetition /20",
+          "hint": "Count repetition problems in this check (0–20). Lower is better.",
+          "kind": "count",
+          "max": 20,
+          "invert": true
+        },
+        {
+          "defSlug": "refusals",
+          "label": "Refusal /20",
+          "hint": "Unnecessary refusals in this check (0–20). Lower is better.",
+          "kind": "count",
+          "max": 20,
+          "invert": true
+        },
+        {
+          "defSlug": "reply-speed",
+          "label": "Reply speed",
+          "hint": "Time one reply in this check — enter seconds from send to full reply.",
+          "kind": "count",
+          "max": 120,
+          "footer": "seconds"
+        },
+        {
+          "defSlug": "errors",
+          "label": "Errors /20",
+          "hint": "Broken, cut-off, empty, or unrelated replies (0–20). Lower is better.",
+          "kind": "count",
+          "max": 20,
+          "invert": true
+        },
+        {
+          "defSlug": "consistency",
+          "label": "Contradicts /20",
+          "hint": "Times it contradicted earlier facts in this check (0–20). Lower is better.",
+          "kind": "count",
+          "max": 20,
+          "invert": true
+        },
+        {
+          "defSlug": "recovery",
+          "label": "Recovery /20",
+          "hint": "Successful recoveries after you corrected a mistake (0–20). Higher is better.",
+          "kind": "count",
+          "max": 20
         }
       ]
     },
@@ -564,7 +624,7 @@
     },
     "video-batch-review": {
       "title": "3 videos",
-      "instruction": "Generate 3 test videos with the same prompt. Upload and rate each one.",
+      "instruction": "Generate 3 test videos — one prompt per video. Upload and rate each one.",
       "rowLabel": "Video",
       "rowCount": 3,
       "steps": [],
@@ -656,8 +716,8 @@
   },
   "shortQuestions": {
     "characters|amount": {
-      "q": "Characters: how many total?",
-      "hint": "Legacy — use the category counts below instead."
+      "q": "How many total characters?",
+      "hint": "Count all ready-made characters shown in the library."
     },
     "characters|female-count": {
       "q": "Characters: how many female?",
@@ -692,8 +752,8 @@
       "hint": "Tick each style offered (realistic, anime, 2D, etc.)."
     },
     "characters|genders": {
-      "q": "Characters: which genders?",
-      "hint": "Tick each gender option in the library."
+      "q": "Which gender groups are offered?",
+      "hint": "Tick each gender category in the library. Add any others in the text field."
     },
     "characters|ethnicities": {
       "q": "Characters: which ethnicities?",
@@ -828,8 +888,8 @@
       "hint": "Make 5 characters from your own written description. Count how many matched what you asked for."
     },
     "customization|editing": {
-      "q": "Creator: edit after creating?",
-      "hint": "Make 5 characters, then try to change them. Count how many let you edit."
+      "q": "Can you edit after creating?",
+      "hint": "Create a character, then try to change appearance, personality, or other details."
     },
     "customization|detail-level": {
       "q": "Creator: how much control?",
@@ -840,8 +900,8 @@
       "hint": "Make 5 characters using preset buttons AND your own text. Count successes."
     },
     "customization|preview": {
-      "q": "Creator: preview before save?",
-      "hint": "Make 5 characters. Before finishing each one, check if you can see a picture or description first — without burning all your tokens."
+      "q": "Preview before save?",
+      "hint": "Start creating a character and check whether you can see a preview before confirming."
     },
     "chat|memory": {
       "q": "Chat: remembers facts?",
@@ -889,27 +949,27 @@
     },
     "chat|repetition": {
       "q": "Chat: repeats itself?",
-      "hint": "In your 100 test replies, count repetition problems."
+      "hint": "Use the table — count repetition problems per row (0–20). Lower is better."
     },
     "chat|refusals": {
       "q": "Chat: refuses too much?",
-      "hint": "Try 25 different prompts. Count how many got refused."
+      "hint": "Use the table — count refusals per row (0–20). Lower is better."
     },
     "chat|reply-speed": {
       "q": "Chat: reply speed?",
-      "hint": "Time 25 replies. Enter median seconds to respond."
+      "hint": "Use the table — enter reply time in seconds for each row."
     },
     "chat|errors": {
       "q": "Chat: errors or crashes?",
-      "hint": "In 100 test replies, count errors or broken replies."
+      "hint": "Use the table — count errors per row (0–20). Lower is better."
     },
     "chat|consistency": {
       "q": "Chat: contradicts itself?",
-      "hint": "In 5 chats, count times it contradicted earlier facts."
+      "hint": "Use the table — count contradictions per row (0–20). Lower is better."
     },
     "chat|recovery": {
       "q": "Chat: recovers from mistakes?",
-      "hint": "Correct the AI 5 times when it messes up. Count successes."
+      "hint": "Use the table — successful recoveries out of 20 per row."
     },
     "chat-features|images-sent": {
       "q": "Chat: images sent?",
@@ -944,8 +1004,8 @@
       "hint": "Start three voice calls on three different days."
     },
     "chat-features|chat-modes": {
-      "q": "Chat: different chat modes?",
-      "hint": "Yes/No first. If yes, count how many modes exist, then test and rate two of them."
+      "q": "Different chat modes?",
+      "hint": "Yes or No. If yes, count how many modes exist, then test and rate two of them."
     },
     "chat-features|mode-types": {
       "q": "Chat: how well do modes work?",
@@ -1040,7 +1100,7 @@
       "hint": "Count attempts that fail, remain stuck, produce no image or produce an unusable result."
     },
     "images|chat-generation": {
-      "q": "Images: chat generation?",
+      "q": "In-chat generator?",
       "hint": "Request one image in three separate chats."
     },
     "images|separate-generator": {
@@ -1152,8 +1212,8 @@
       "hint": "Record the stated storage period for:"
     },
     "privacy|policy-clarity": {
-      "q": "Privacy: policy clarity?",
-      "hint": "Check whether the company clearly answers these six questions:"
+      "q": "How clear is the privacy policy?",
+      "hint": "Pick Unclear, Neutral, or Very clear based on how plainly the company explains data use."
     },
     "privacy|delete-chats": {
       "q": "Privacy: delete chats?",
@@ -1201,23 +1261,23 @@
     },
     "privacy|security-incidents": {
       "q": "Privacy: past security incidents?",
-      "hint": "Add links to news or official statements about breaches or leaks (past 5 years). Optional note."
+      "hint": "Search the past 5 years. Choose No if none found, or Yes and add a link for each confirmed incident."
     },
     "privacy|support-available": {
-      "q": "Support: offered?",
-      "hint": "Does the app offer any way to contact support? If yes, add email, contact page, Discord, Reddit, or Telegram links."
+      "q": "Does the app offer customer support?",
+      "hint": "If yes, add email, contact page, Discord, Reddit, or Telegram links below."
     },
     "privacy|support-reach": {
-      "q": "Support: easy to reach?",
-      "hint": "How easy is it for a paying user to contact support? Pick Poor → Excellent."
+      "q": "How easy is support to reach?",
+      "hint": "How easy is it for a paying user to start a support request?"
     },
     "privacy|support-speed": {
-      "q": "Support: response speed?",
-      "hint": "After sending a real support message, rate how fast they replied (overall impression, not seconds)."
+      "q": "Support response speed?",
+      "hint": "After sending a real support message, rate how fast they replied (overall impression)."
     },
     "privacy|support-helpfulness": {
-      "q": "Support: helpfulness?",
-      "hint": "Did the reply solve or clearly progress your issue? Pick Poor → Excellent."
+      "q": "Support helpfulness?",
+      "hint": "Did the reply solve or clearly progress your issue?"
     },
     "chat-features|platform-extras-list": {
       "q": "Bonus features?",
@@ -1241,7 +1301,7 @@
     },
     "pricing|included-features": {
       "q": "Included features?",
-      "hint": "Tick core features included without extra payment."
+      "hint": "On the normal paid plan, tick every core feature included without extra payment."
     },
     "pricing|plan-limits": {
       "q": "Plan limits?",
@@ -1297,11 +1357,15 @@
     },
     "pricing|pricing-clarity": {
       "q": "Price clarity?",
-      "hint": "Tick what the site shows before checkout (price, limits, refunds, etc.)."
+      "hint": "How clearly does the site explain costs, limits, expiry, and refunds before checkout?"
     },
     "pricing|paywalls": {
-      "q": "Paywalls?",
-      "hint": "Deprecated — removed from testing."
+      "q": "Which features are paywalled?",
+      "hint": "Tick features that require a higher tier or extra payment beyond the normal plan."
+    },
+    "pricing|restrictions": {
+      "q": "Free access details",
+      "hint": "How the free plan works: allowance resets, expiry, trial length, and credit-card requirements."
     },
     "pricing|credit-expiry": {
       "q": "Credit expiry?",

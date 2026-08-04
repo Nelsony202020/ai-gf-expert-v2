@@ -15,6 +15,16 @@ export type RowState = 'done' | 'na' | 'todo' | 'unsaved';
 export function formatAnswerSummary(def: EntityRow, raw: RawValue | undefined, na: boolean): string {
   if (na) return 'N/A';
   if (!raw) return '—';
+  if (String(def.slug) === 'security-incidents' && 'value' in raw) {
+    const detail =
+      'detail' in raw && raw.detail && typeof raw.detail === 'object'
+        ? (raw.detail as Record<string, unknown>)
+        : undefined;
+    if (raw.value === 0 && detail?.foundIncidents === false) return 'None found';
+    if (typeof raw.value === 'number' && raw.value > 0) {
+      return `${raw.value} incident${raw.value === 1 ? '' : 's'}`;
+    }
+  }
   if ('status' in raw) {
     if (raw.status === 'na') return 'N/A';
     if (raw.status === 'yes') return 'Yes';

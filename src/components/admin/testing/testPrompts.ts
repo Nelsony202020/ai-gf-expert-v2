@@ -18,8 +18,18 @@ export const IMAGE_CONSISTENCY_VARIATION_PROMPTS = [
 /** @deprecated Use IMAGE_CONSISTENCY_REFERENCE_PROMPT */
 export const IMAGE_CONSISTENCY_PROMPT = IMAGE_CONSISTENCY_REFERENCE_PROMPT;
 
-export const VIDEO_BATCH_PROMPT =
-  'Waves hello and smiles at the camera, gentle breeze in hair, stable camera.';
+export const VIDEO_BATCH_PROMPTS = [
+  'Waves hello and smiles at the camera, gentle breeze in hair, stable camera.',
+  'She walks toward the camera, turns around once, then looks back and smiles.',
+  'She picks up a glass, takes a sip, puts it down, then smiles at the camera.',
+] as const;
+
+/** @deprecated Use VIDEO_BATCH_PROMPTS or videoBatchPromptForStep */
+export const VIDEO_BATCH_PROMPT = VIDEO_BATCH_PROMPTS[0];
+
+export function videoBatchPromptForStep(step: number): string {
+  return VIDEO_BATCH_PROMPTS[step] ?? VIDEO_BATCH_PROMPTS[0];
+}
 
 export function consistencyPromptForStep(step: number): string {
   if (step === 0) return IMAGE_CONSISTENCY_REFERENCE_PROMPT;

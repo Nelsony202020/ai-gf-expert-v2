@@ -310,7 +310,6 @@ const PUBLIC_EVIDENCE_GROUP_DISPLAY: Record<string, PublicEvidenceGroupDisplay[]
     { label: 'Free Voice', slug: 'free-voice', memberSectionIds: ['free-voice'] },
     { label: 'Free Characters', slug: 'free-characters', memberSectionIds: ['free-characters'] },
     { label: 'Free Value', slug: 'free-value', memberSectionIds: ['free-value'] },
-    { label: 'Restrictions', slug: 'restrictions', memberSectionIds: ['restrictions'] },
   ],
   'pricing/billing': [
     { label: 'Pricing Clarity', slug: 'pricing-clarity', memberSectionIds: ['pricing-clarity'] },

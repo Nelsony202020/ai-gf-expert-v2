@@ -22,7 +22,7 @@ import {
 } from '../../lib/content/store';
 import { loadDraftRatingsViewModel } from '../../lib/draft-ratings/loadDraftRatingsData';
 import { DEV_REVIEW_SLUGS, hasMarketDataTab } from '../../lib/content/reviewDevProducts';
-import { resolveProductPageHead } from '../../lib/seo/productMeta';
+import { resolveProductPageHead } from '../../lib/seo/productPageHead';
 
 /** Prerender published reviews at build so Vercel static output matches the admin publish state. */
 export async function getStaticPaths() {

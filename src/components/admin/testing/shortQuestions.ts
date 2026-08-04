@@ -241,27 +241,27 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "chat|repetition": {
     "q": "Chat: repeats itself?",
-    "hint": "In your 100 test replies, count repetition problems."
+    "hint": "Use the table — count repetition problems per row (0–20). Lower is better."
   },
   "chat|refusals": {
     "q": "Chat: refuses too much?",
-    "hint": "Try 25 different prompts. Count how many got refused."
+    "hint": "Use the table — count refusals per row (0–20). Lower is better."
   },
   "chat|reply-speed": {
     "q": "Chat: reply speed?",
-    "hint": "Time 25 replies. Enter median seconds to respond."
+    "hint": "Use the table — enter reply time in seconds for each row."
   },
   "chat|errors": {
     "q": "Chat: errors or crashes?",
-    "hint": "In 100 test replies, count errors or broken replies."
+    "hint": "Use the table — count errors per row (0–20). Lower is better."
   },
   "chat|consistency": {
     "q": "Chat: contradicts itself?",
-    "hint": "In 5 chats, count times it contradicted earlier facts."
+    "hint": "Use the table — count contradictions per row (0–20). Lower is better."
   },
   "chat|recovery": {
     "q": "Chat: recovers from mistakes?",
-    "hint": "Correct the AI 5 times when it messes up. Count successes."
+    "hint": "Use the table — successful recoveries out of 20 per row."
   },
   "chat-features|images-sent": {
     "q": "Chat: images sent?",
@@ -553,7 +553,7 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "privacy|security-incidents": {
     "q": "Privacy: past security incidents?",
-    "hint": "Add links to news or official statements about breaches or leaks (past 5 years). Optional note."
+    "hint": "Search the past 5 years. Choose No if none found, or Yes and add a link for each confirmed incident."
   },
   "privacy|support-available": {
     "q": "Does the app offer customer support?",
@@ -654,10 +654,6 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   "pricing|paywalls": {
     "q": "Which features are paywalled?",
     "hint": "Tick features that require a higher tier or extra payment beyond the normal plan."
-  },
-  "pricing|restrictions": {
-    "q": "Free access details",
-    "hint": "How the free plan works: allowance resets, expiry, trial length, and credit-card requirements."
   },
   "pricing|credit-expiry": {
     "q": "Credit expiry?",

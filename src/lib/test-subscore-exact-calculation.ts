@@ -223,7 +223,6 @@ export const PRICING_FREE_ACCESS_EVIDENCE_DISPLAY_ORDER = [
   'free-voice',
   'free-characters',
   'free-value',
-  'restrictions',
 ] as const;
 
 export const PRICING_BILLING_EVIDENCE_DISPLAY_ORDER = [
@@ -538,7 +537,6 @@ const SUBSCORE_EVIDENCE_CONFIG: Record<string, SubscoreEvidenceConfig> = {
       'free-voice': 4,
       'free-characters': 8,
       'free-value': 10,
-      'restrictions': 8,
     },
     exampleTableSlugs: PRICING_FREE_ACCESS_EVIDENCE_DISPLAY_ORDER,
   },

@@ -18,8 +18,8 @@ import { GuidedTestingMode, type GuidedSession, type ProofUploadedEvent } from '
 import { filterApplicableItems, isSessionApplicable } from '../../testing/capabilityGating';
 import { computePricingSuggestions, type AutofillSuggestion } from '../../testing/pricingAutofill';
 import {
+  buildRelatedAnswersBySlug,
   isEvidenceAnswerComplete,
-  repairChatModesRaw,
   supplementalRequiredMissing,
 } from '../../../../lib/testing/evidenceComplete';
 import {
@@ -33,7 +33,7 @@ import { TestingRunProgressSummary } from '../../testing/TestingProgressHeader';
 import type { MissingRequiredRow } from '../../testing/TestingMissingRequiredPanel';
 import { readSkippedSessions } from '../../testing/sessionProgressStorage';
 import { type SessionItem } from '../../testing/sessionUi';
-import { sessionsForCategory } from '../../testing/sessions';
+import { sessionsForCategory, COMBINED_EVIDENCE_PARENT } from '../../testing/sessions';
 import {
   Badge,
   Button,
@@ -452,17 +452,14 @@ export function TestingTab() {
 
   const defById = useMemo(() => new Map(definitions.map((d) => [d.id, d])), [definitions]);
 
-  const relatedAnswersBySlug = useMemo(() => {
-    const out: Record<string, unknown> = {};
-    for (const [defId, row] of resultByDef) {
-      const slug = defById.get(defId)?.slug;
-      if (slug && row.rawValue) out[String(slug)] = row.rawValue;
-    }
-    if (out['chat-modes'] != null || out['mode-types'] != null) {
-      out['chat-modes'] = repairChatModesRaw(out['chat-modes'], out['mode-types']);
-    }
-    return out;
-  }, [resultByDef, defById]);
+  const relatedAnswersBySlug = useMemo(
+    () =>
+      buildRelatedAnswersBySlug(
+        Array.from(resultByDef.entries()).map(([defId, row]) => ({ defId, row })),
+        new Map(Array.from(defById.entries()).map(([id, def]) => [id, String(def.slug)])),
+      ),
+    [resultByDef, defById],
+  );
 
   const progressCtx: ProgressContext = useMemo(
     () => ({
@@ -641,6 +638,25 @@ export function TestingTab() {
       toast.error("Can't publish yet", {
         message: freshTree.blockingErrors.slice(0, 3).join(' · '),
       });
+      const blockingMatch = freshTree.blockingErrors[0]?.match(/\(([^)]+)\)/);
+      const blockingNames = blockingMatch?.[1]?.split(',').map((s) => s.trim()) ?? [];
+      for (const name of blockingNames) {
+        const def = definitions.find(
+          (d) => String(d.name) === name || String(d.questionLabel) === name,
+        );
+        if (!def) continue;
+        const parentSlug = COMBINED_EVIDENCE_PARENT[String(def.slug ?? '')];
+        const focusDef = parentSlug
+          ? definitions.find((d) => String(d.slug) === parentSlug) ?? def
+          : def;
+        const idx = orderedSessions.findIndex((s) =>
+          s.items.some(({ def: d }) => d.id === focusDef.id || d.id === def.id),
+        );
+        if (idx >= 0) {
+          jumpToMissingItem(idx, focusDef.id);
+          break;
+        }
+      }
       return;
     }
     await publishRun();

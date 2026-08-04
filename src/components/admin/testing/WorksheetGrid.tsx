@@ -2,40 +2,17 @@
 
 import { useState } from 'react';
 import type { EntityRow } from '../api';
-import { Icon } from '../ui';
 import {
   deriveWorksheetExtended,
   imageUsable,
   readDefects,
+  worksheetColumnFooter,
   type TriValue,
   videoUsable,
 } from './worksheetScoring';
 import type { DerivedColumn, WorksheetConfig, WorksheetRow } from './worksheets';
+import { ColumnTooltip } from './ColumnTooltip';
 import './testing-ui.css';
-
-function ColumnTooltip({ hint }: { hint: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <span className="relative inline-block">
-      <button
-        type="button"
-        className="ml-0.5 inline-flex align-middle text-slate-400 hover:text-pink-500"
-        aria-label="Column help"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((v) => !v);
-        }}
-      >
-        <Icon name="info" className="!text-[14px]" />
-      </button>
-      {open && (
-        <span className="absolute left-1/2 top-full z-10 mt-1 w-44 -translate-x-1/2 rounded-md border border-slate-200 bg-white p-2 text-left text-[11px] font-normal leading-snug text-slate-600 shadow-lg dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-          {hint}
-        </span>
-      )}
-    </span>
-  );
-}
 
 function clampCount(raw: string, max?: number): number | undefined {
   if (raw === '') return undefined;
@@ -129,7 +106,13 @@ export function WorksheetGrid({
                     {skipTri && col.kind === 'tri' ? (
                       <span className="text-slate-400">Ref</span>
                     ) : col.kind === 'pass' ? (
-                      <span className="text-slate-500">{readDefects(row).length || '—'}</span>
+                      <input
+                        type="checkbox"
+                        className="testing-checkbox h-4 w-4 rounded border-slate-300"
+                        checked={Boolean(row[col.defSlug])}
+                        disabled={disabled}
+                        onChange={(e) => setCell(i, col.defSlug, e.target.checked)}
+                      />
                     ) : col.kind === 'tri' ? (
                       <select
                         className="rounded border border-slate-200 bg-white px-1 py-0.5 text-xs dark:border-slate-700 dark:bg-slate-900"
@@ -179,7 +162,7 @@ export function WorksheetGrid({
               const d = derived.find((x) => x.defSlug === col.defSlug);
               return (
                 <td key={col.defSlug} className="px-2 py-2 text-center font-semibold text-pink-600">
-                  {d && d.filledRows > 0 ? `${d.pct}%` : '—'}
+                  {worksheetColumnFooter(col, d, rows)}
                 </td>
               );
             })}

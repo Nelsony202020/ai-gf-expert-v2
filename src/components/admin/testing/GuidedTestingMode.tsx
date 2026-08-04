@@ -7,8 +7,8 @@ import { Button, Icon } from '../ui';
 import { STEP_DEFAULT_SESSIONS } from './capabilityGating';
 import type { AutofillSuggestion } from './pricingAutofill';
 import {
+  buildRelatedAnswersBySlug,
   isEvidenceAnswerComplete,
-  repairChatModesRaw,
 } from '../../../lib/testing/evidenceComplete';
 import {
   computeRunProgress,
@@ -50,29 +50,22 @@ function buildProgressContext(
   evidenceDefs?: EntityRow[],
   suggestions?: Map<string, AutofillSuggestion>,
 ): ProgressContext {
-  const defById = new Map((evidenceDefs ?? []).map((d) => [d.id, d]));
-  const relatedAnswersBySlug: Record<string, unknown> = {};
-  for (const [defId, row] of results) {
-    const slug = defById.get(defId)?.slug;
-    if (slug && row.rawValue) relatedAnswersBySlug[String(slug)] = row.rawValue;
-  }
-  if (relatedAnswersBySlug['chat-modes'] != null || relatedAnswersBySlug['mode-types'] != null) {
-    relatedAnswersBySlug['chat-modes'] = repairChatModesRaw(
-      relatedAnswersBySlug['chat-modes'],
-      relatedAnswersBySlug['mode-types'],
-    );
-  }
+  const slugByDefId = new Map((evidenceDefs ?? []).map((d) => [d.id, String(d.slug ?? '')]));
+  const relatedAnswersBySlug = buildRelatedAnswersBySlug(
+    Array.from(results.entries()).map(([defId, row]) => ({ defId, row })),
+    slugByDefId,
+  );
 
   const hasValue = (defId: string) => {
     const r = results.get(defId);
-    const def = defById.get(defId);
-    if (!def) {
+    const slug = slugByDefId.get(defId);
+    if (!slug) {
       if (!r) return false;
       if (r.notApplicable || r.isUnknown) return true;
       return Boolean(r.rawValue);
     }
     return isEvidenceAnswerComplete({
-      slug: String(def.slug),
+      slug,
       rawValue: r?.rawValue,
       notApplicable: r?.notApplicable,
       isUnknown: r?.isUnknown,

@@ -5,8 +5,8 @@ import type { EntityRow } from '../api';
 import { Icon, TextArea } from '../ui';
 import {
   IMAGE_BATCH_PROMPT,
-  VIDEO_BATCH_PROMPT,
   consistencyPromptForStep,
+  videoBatchPromptForStep,
 } from './testPrompts';
 import {
   resolveWorksheetConfig,
@@ -400,7 +400,7 @@ export function WorksheetStepView({
     sessionId === 'image-batch-review'
       ? IMAGE_BATCH_PROMPT
       : sessionId === 'video-batch-review'
-        ? VIDEO_BATCH_PROMPT
+        ? videoBatchPromptForStep(step)
         : isConsistency
           ? consistencyPromptForStep(step)
           : '';

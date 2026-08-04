@@ -109,7 +109,7 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'chat-reliability',
       title: 'Chat problems & speed',
-      intro: 'Use the same chats again. Also run the refusal test and speed test where asked.',
+      intro: 'Fill in the table — one row per check, scores out of 20 in each column.',
       icon: 'speed',
       slugs: ['repetition', 'refusals', 'reply-speed', 'errors', 'consistency', 'recovery'],
     },
@@ -303,9 +303,9 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'pricing-free-access',
       title: 'Free access',
-      intro: 'Record what users get without paying, then answer the free access details questions at the end.',
+      intro: 'Record what users get without paying: messages, images, video, voice, characters, and free trial without credit card.',
       icon: 'card_giftcard',
-      slugs: ['free-chat', 'free-characters', 'free-images', 'free-video', 'free-voice', 'free-value', 'restrictions'],
+      slugs: ['free-chat', 'free-characters', 'free-images', 'free-video', 'free-voice', 'free-value'],
     },
     {
       id: 'pricing-billing',
@@ -327,8 +327,23 @@ export const COMBINED_EVIDENCE_SLUGS = new Set([
   'support-channels',
 ]);
 
+/** Parent slug → combined child slug written by the same tester control. */
+export const COMBINED_EVIDENCE_BY_PARENT: Record<string, string> = {
+  'chat-modes': 'mode-types',
+  'platform-extras-list': 'live-cam',
+  'support-available': 'support-channels',
+};
+
+/** Combined child slug → parent row that hosts the control (for focus / jump). */
+export const COMBINED_EVIDENCE_PARENT: Record<string, string> = Object.fromEntries(
+  Object.entries(COMBINED_EVIDENCE_BY_PARENT).map(([parent, child]) => [child, parent]),
+);
+
+/** Evidence slugs retired from testing — hidden even if still active in the DB. */
+const RETIRED_TESTING_SLUGS = new Set(['restrictions']);
+
 /** Evidence slugs managed elsewhere in the UI — never show as standalone rows. */
-const HIDDEN_TESTING_SLUGS = new Set<string>([...COMBINED_EVIDENCE_SLUGS]);
+const HIDDEN_TESTING_SLUGS = new Set<string>([...COMBINED_EVIDENCE_SLUGS, ...RETIRED_TESTING_SLUGS]);
 
 function isExcludedFromTesting(categorySlug: string, slug: string): boolean {
   if (HIDDEN_TESTING_SLUGS.has(slug)) return true;

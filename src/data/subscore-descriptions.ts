@@ -84,7 +84,7 @@ const SUBSCORE_DESCRIPTIONS: Record<string, string> = {
   'pricing/usage-costs':
     'Measures the real cost of images, video, voice, calls, top-ups, and regular monthly use.',
   'pricing/free-access':
-    'Measures how much users can genuinely test before paying, including free chat, media, characters, and restrictions.',
+    'Measures how much users can genuinely test before paying, including free chat, media, characters, and trial access.',
   'pricing/billing':
     'Measures how clearly and fairly the app handles prices, paywalls, credit expiry, refunds, cancellation, and payment privacy.',
 };

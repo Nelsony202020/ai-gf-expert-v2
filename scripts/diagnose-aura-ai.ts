@@ -20,7 +20,7 @@ loadEnv();
 
 import { loadPublishedProductBySlug } from '../src/lib/content/store';
 import { isUsablePublicMediaUrl } from '../src/lib/media/url';
-import { resolveProductPageHead } from '../src/lib/seo/productMeta';
+import { resolveProductPageHead } from '../src/lib/seo/productPageHead';
 
 async function main() {
   const product = await loadPublishedProductBySlug('aura-ai');

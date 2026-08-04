@@ -1584,13 +1584,6 @@ export const subscoreBenchmarkConfigs: Record<string, CategoryBenchmarkPanelConf
         weak: 'Payment required to try the app',
         evidenceRef: { category: 'pricing', slug: 'free-value' },
       },
-      {
-        label: 'Restrictions',
-        good: 'Clear rules and useful reset periods',
-        typical: 'Some confusing or tight limits',
-        weak: 'Harsh or quickly expiring allowances',
-        evidenceRef: { category: 'pricing', slug: 'restrictions' },
-      },
     ],
     minimums: [
       {
@@ -1607,11 +1600,6 @@ export const subscoreBenchmarkConfigs: Record<string, CategoryBenchmarkPanelConf
         label: 'Free Value',
         value: 'Whether a credit card is required is clearly recorded',
         evidenceRef: { category: 'pricing', slug: 'free-value' },
-      },
-      {
-        label: 'Restrictions',
-        value: 'Reset, expiry, and trial rules are explained',
-        evidenceRef: { category: 'pricing', slug: 'restrictions' },
       },
     ],
     redFlags: [

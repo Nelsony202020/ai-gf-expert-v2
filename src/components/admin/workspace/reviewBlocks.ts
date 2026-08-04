@@ -131,8 +131,31 @@ export function blockMeta(type: ReviewBlockType): BlockMeta {
   return BLOCK_META.find((m) => m.type === type) ?? BLOCK_META[0];
 }
 
+/** Section headings for the admin “Start from template” review outline. */
+export function reviewTemplateHeadings(productName: string): string[] {
+  const name = productName.trim() || 'This App';
+  return [
+    'First Impressions',
+    'Meeting the AI Girlfriends',
+    'Chat and NSFW Roleplay',
+    'Images, Videos and Voice',
+    `What ${name} Does Best`,
+    'What Annoyed Me',
+    'What It Really Costs',
+    'My Final Take',
+  ];
+}
+
 /** Default review template. Sections can be reordered, renamed, or removed. */
-export function buildDefaultTemplate(categories: EntityRow[]): ReviewBlock[] {
+export function buildDefaultTemplate(productName = ''): ReviewBlock[] {
+  return reviewTemplateHeadings(productName).flatMap((heading) => [
+    makeBlock('h2', { text: heading }),
+    makeBlock('paragraph', { text: '' }),
+  ]);
+}
+
+/** @deprecated Prefer reviewTemplateHeadings — category-scored outline kept for reference. */
+export function buildCategoryScoredTemplate(categories: EntityRow[]): ReviewBlock[] {
   const bySlugOrName = (needle: string): string => {
     const lower = needle.toLowerCase();
     const cat = categories.find(

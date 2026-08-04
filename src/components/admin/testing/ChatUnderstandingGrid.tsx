@@ -6,34 +6,8 @@ import { Button, Icon } from '../ui';
 import { CHAT_UNDERSTANDING_SCRIPT } from './chatTestScript';
 import type { DerivedColumn, WorksheetConfig, WorksheetRow } from './worksheets';
 import { deriveWorksheetExtended } from './worksheetScoring';
+import { ColumnTooltip } from './ColumnTooltip';
 import './testing-ui.css';
-
-function ColumnTooltip({ hint }: { hint: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <span className="relative inline-block">
-      <button
-        type="button"
-        className="ml-0.5 inline-flex align-middle text-slate-400 hover:text-pink-500"
-        aria-label="Column help"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((v) => !v);
-        }}
-      >
-        <Icon name="info" className="!text-[14px]" />
-      </button>
-      {open && (
-        <span
-          role="tooltip"
-          className="absolute left-1/2 top-full z-10 mt-1 w-48 -translate-x-1/2 rounded-md border border-slate-200 bg-white p-2 text-left text-[11px] font-normal leading-snug text-slate-600 shadow-lg dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-        >
-          {hint}
-        </span>
-      )}
-    </span>
-  );
-}
 
 function clampCount(raw: string, max?: number): number | undefined {
   if (raw === '') return undefined;

@@ -24,6 +24,7 @@ const shareTitle = pageHead?.ogTitle ?? `${product.name} Review`;
 const breadcrumbLabel = product.seo?.breadcrumbLabel?.trim() || product.name;
 const h1IsOverride = pageHead?.h1IsOverride ?? false;
 const h1Text = pageHead?.h1 ?? `${product.name} Review`;
+const hasVideoReview = Boolean(product.videoReview?.embedUrl);
 ---
 
 <section class="section-container pt-8 md:pt-12 pb-10 px-4 md:px-8">
@@ -47,7 +48,11 @@ const h1Text = pageHead?.h1 ?? `${product.name} Review`;
       )
     }
 
-    <h2 class="sr-only">{product.name} Video Review</h2>
+    {
+      hasVideoReview && (
+        <h2 class="sr-only">{product.name} Video Review</h2>
+      )
+    }
 
     <div class="article-meta-row mb-0">
       {
