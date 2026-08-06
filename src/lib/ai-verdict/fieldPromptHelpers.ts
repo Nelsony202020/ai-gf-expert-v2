@@ -1,6 +1,10 @@
 /** Max words per pros/cons list item in AI output. */
 export const PRO_CON_MAX_WORDS = 5;
 
+export function isMetaDescriptionField(targetField?: string): boolean {
+  return (targetField ?? '').toLowerCase().includes('meta description');
+}
+
 export function isProsConsListField(targetField?: string): boolean {
   const tf = (targetField ?? '').toLowerCase();
   return (

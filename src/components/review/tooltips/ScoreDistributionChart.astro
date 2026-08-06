@@ -1,23 +1,27 @@
 ---
 import type { ScoreBin } from '../../../lib/score-distribution';
+import { activeBinIndex, distBarFillRatio } from '../../../lib/score-distribution';
 import { reviewRatingsSectionUrl } from '../../../lib/slugs';
 import { fmtScore, getScoreVisual } from '../../../lib/scores';
 
 interface Props {
   bins: ScoreBin[];
-  /** -1 = nothing selected by default */
+  /** -1 = nothing selected by default (bar click) */
   activeBinIndex?: number;
+  /** Highlight the bin this product score falls into (subtle marker arrow). */
+  highlightScore?: number | null;
   /** Category context for cross-app distribution links */
   categoryKey?: string;
   /** Subscore context — slugified in data attributes for client chart updates */
   subscoreName?: string;
 }
 
-const { bins, activeBinIndex = -1, categoryKey, subscoreName } = Astro.props;
+const { bins, activeBinIndex: selectedBinIndex = -1, highlightScore, categoryKey, subscoreName } =
+  Astro.props;
 const maxCount = Math.max(1, ...bins.map((b) => b.apps.length));
-const barMaxHeight = 48;
-const hasSelection = activeBinIndex >= 0;
-const activeBin = hasSelection ? bins[activeBinIndex] : null;
+const highlightBinIndex = activeBinIndex(bins, highlightScore);
+const hasSelection = selectedBinIndex >= 0;
+const activeBin = hasSelection ? bins[selectedBinIndex] : null;
 const distLinkCategory = categoryKey ?? '';
 const distLinkSubscore = subscoreName?.trim()
   ? subscoreName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
@@ -28,7 +32,8 @@ const distLinkSubscore = subscoreName?.trim()
   class="rt-dist-chart"
   data-dist-chart
   data-dist-bins={JSON.stringify(bins)}
-  data-dist-active={activeBinIndex}
+  data-dist-active={selectedBinIndex}
+  data-dist-highlight={highlightBinIndex}
   data-dist-link-category={distLinkCategory}
   data-dist-link-subscore={distLinkSubscore}
 >
@@ -42,28 +47,50 @@ const distLinkSubscore = subscoreName?.trim()
       {
         bins.map((b, i) => {
           const count = b.apps.length;
-          const h = count > 0 ? Math.max(6, Math.round((count / maxCount) * barMaxHeight)) : 3;
+          const ratio = distBarFillRatio(count, maxCount);
           const v = getScoreVisual((b.start + b.end) / 2);
-          const isActive = hasSelection && i === activeBinIndex;
+          const isActive = hasSelection && i === selectedBinIndex;
+          const isHighlighted = highlightBinIndex >= 0 && i === highlightBinIndex;
           return (
             <button
               type="button"
-              class="rt-dist-chart__bar"
+              class:list={['rt-dist-chart__bar', isHighlighted && 'rt-dist-chart__bar--highlighted']}
               data-dist-bin={i}
               aria-label={`${b.start.toFixed(1)}–${b.end.toFixed(1)} (${count})`}
               aria-pressed={isActive ? 'true' : 'false'}
             >
-              <span
-                class={`rt-dist-chart__bar-fill ${v.bg} ${isActive ? 'rt-dist-chart__bar-fill--active' : ''}`}
-                style={`height:${h}px;`}
-              />
+              <span class="rt-dist-chart__bar-stack">
+                <span
+                  class:list={[
+                    'rt-dist-chart__bar-fill',
+                    v.bg,
+                    count === 0 && 'rt-dist-chart__bar-fill--empty',
+                    isActive && 'rt-dist-chart__bar-fill--active',
+                  ]}
+                  style={count > 0 ? `--dist-bar-ratio:${ratio}` : undefined}
+                />
+              </span>
             </button>
           );
         })
       }
     </div>
 
-    <div class="rt-dist-chart__gradient" aria-hidden="true"></div>
+    <div class="rt-dist-chart__baseline">
+      <div class="rt-dist-chart__gradient" aria-hidden="true"></div>
+      <div class="rt-dist-chart__markers" aria-hidden="true">
+        {
+          bins.map((b, i) => {
+            const isHighlighted = highlightBinIndex >= 0 && i === highlightBinIndex;
+            return (
+              <span class="rt-dist-chart__marker-slot">
+                {isHighlighted && <span class="rt-dist-chart__marker" />}
+              </span>
+            );
+          })
+        }
+      </div>
+    </div>
   </div>
 
   <div class="rt-dist-chart__footer">

@@ -1,4 +1,6 @@
 import { formatEvidenceAnswer, formatChecklistAnswer } from '../testing/evidenceFormat';
+import { formatRetentionPeriodSummary } from '../testing/retentionPeriod';
+import type { RawValue } from '../scoring/engine';
 import { formatFreeAccessDetailsSummary, parseFreeAccessDetails } from '../testing/freeAccessDetails';
 import { fmtMoney } from '../pricing/calc';
 import { renderPublicResult } from '../../components/admin/testing/presentation';
@@ -115,9 +117,29 @@ function formatFreeAccessValue(slug: string | undefined, raw: unknown): string |
         : undefined;
     const count = Number((raw as { value: unknown }).value);
     if (count === 0 && detail?.foundIncidents === false) return '0 confirmed incidents';
+    if (Number.isFinite(count) && count >= 0 && detail?.foundIncidents === true) {
+      const incidents = Array.isArray(detail.incidents) ? detail.incidents : [];
+      const excluded = incidents.filter(
+        (row) =>
+          row &&
+          typeof row === 'object' &&
+          typeof (row as { url?: unknown }).url === 'string' &&
+          (row as { url: string }).url.trim() &&
+          Boolean((row as { excludeFromRating?: unknown }).excludeFromRating),
+      ).length;
+      if (count > 0) {
+        const base = `${count} confirmed incident${count === 1 ? '' : 's'}`;
+        return excluded > 0 ? `${base} (${excluded} excluded)` : base;
+      }
+    }
     if (Number.isFinite(count) && count > 0) {
       return `${count} confirmed incident${count === 1 ? '' : 's'}`;
     }
+  }
+
+  if (slug === 'retention' && 'value' in raw) {
+    const formatted = formatRetentionPeriodSummary(raw as RawValue);
+    if (formatted !== '—') return formatted;
   }
 
   if (slug && FREE_ACCESS_COUNT_LABEL[slug] && 'value' in raw) {
@@ -196,7 +218,7 @@ export function resolveEvidenceDisplayValue(def: EvidenceDef, row: EvidenceRow):
     }
 
     if (def.slug === 'ease-of-use' && 'value' in raw && typeof (raw as { value: unknown }).value === 'number') {
-      return `${(raw as { value: number }).value} steps`;
+      return `${(raw as { value: number }).value}/10 ease`;
     }
 
     if ('value' in raw && typeof (raw as { value: unknown }).value === 'number') {

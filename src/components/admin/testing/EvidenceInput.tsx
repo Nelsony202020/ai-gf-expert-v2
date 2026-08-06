@@ -113,8 +113,13 @@ export function EvidenceInput({
           disabled={disabled}
           value={current}
           className="w-full accent-pink-500"
+          aria-label="Ease of use rating from 1 very hard to 10 very easy"
           onChange={(e) => onChange({ value: Number(e.target.value) })}
         />
+        <div className="flex items-center justify-between text-[10px] text-slate-400">
+          <span>Very hard</span>
+          <span>Very easy</span>
+        </div>
         <p className="text-center text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-200">
           {current}/10
         </p>
@@ -325,7 +330,14 @@ export function EvidenceInput({
         ? filterFeatureChecklistItems(cfg.items, productFields)
         : cfg.items;
       const detail = (value && 'detail' in value ? value.detail : undefined) ?? {};
-      const checked = new Set(Array.isArray(detail.checked) ? (detail.checked as string[]) : []);
+      const noneSelected = slug === 'paywalls' && detail.none === true;
+      const checked = new Set(
+        noneSelected
+          ? []
+          : Array.isArray(detail.checked)
+            ? (detail.checked as string[])
+            : [],
+      );
       const total = items.length;
       const passed = items.filter((i) => checked.has(i)).length;
       const checklistLabel =
@@ -335,28 +347,63 @@ export function EvidenceInput({
       const resultLabel =
         total > 0 && !hideChecklistResult
           ? (formatChecklistAnswer(
-              { value: total > 0 ? Math.round((passed / total) * 1000) / 10 : 0, detail: { checked: items.filter((i) => checked.has(i)), total } },
+              {
+                value: total > 0 ? Math.round((passed / total) * 1000) / 10 : 0,
+                detail: {
+                  checked: items.filter((i) => checked.has(i)),
+                  total,
+                  ...(noneSelected ? { none: true } : {}),
+                },
+              },
               { itemLabel: checklistLabel },
             ) ?? '—')
           : hideChecklistResult
             ? null
             : '—';
 
+      function emitChecked(nextChecked: string[], none = false) {
+        const nextPassed = none ? 0 : items.filter((i) => nextChecked.includes(i)).length;
+        onChange({
+          value: total > 0 ? Math.round((nextPassed / total) * 1000) / 10 : 0,
+          detail: none
+            ? { checked: [], total, none: true }
+            : { checked: nextChecked, total },
+        });
+      }
+
       function toggle(item: string) {
         const next = new Set(checked);
         if (next.has(item)) next.delete(item);
         else next.add(item);
-        const nextPassed = items.filter((i) => next.has(i)).length;
-        onChange({
-          value: total > 0 ? Math.round((nextPassed / total) * 1000) / 10 : 0,
-          detail: { checked: items.filter((i) => next.has(i)), total },
-        });
+        emitChecked(items.filter((i) => next.has(i)), false);
+      }
+
+      function toggleNone() {
+        if (noneSelected) {
+          onChange(undefined);
+          return;
+        }
+        emitChecked([], true);
       }
 
       return (
         <div className={compact ? 'w-full min-w-[18rem]' : 'space-y-2'}>
           <div className={`flex flex-wrap items-start gap-3 ${compact ? '' : ''}`}>
             <ul className={`grid flex-1 gap-x-3 gap-y-1 ${compact ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
+              {slug === 'paywalls' && (
+                <li className="col-span-full">
+                  <label className="flex cursor-pointer items-start gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      className="testing-checkbox mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-slate-300"
+                      checked={noneSelected}
+                      disabled={disabled}
+                      onChange={toggleNone}
+                    />
+                    <span className="min-w-0 leading-snug">None — no extra paywalls</span>
+                  </label>
+                </li>
+              )}
               {items.map((item) => (
                 <li key={item}>
                   <label className="flex cursor-pointer items-start gap-1.5 text-xs text-slate-700 dark:text-slate-300">

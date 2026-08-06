@@ -25,7 +25,7 @@ import {
   withDefaultTokenExpiration,
   type CreditCurrencyLike,
 } from '../../../../lib/pricing/credit-currency';
-import { PRICING_PROOF_CAPTION, pricingProofMediaPatch, galleryTagsFromRoleState, type MediaRoleState } from '../../../../lib/media/catalog';
+import { PRICING_PROOF_CAPTION, pricingProofMediaPatch } from '../../../../lib/media/catalog';
 import {
   countUnverifiedPricingProof,
   pricingProofVisibleInLibrary,
@@ -53,7 +53,6 @@ import { UsageScenariosPanel } from './UsageScenariosPanel';
 import { PricingImportCard } from '../../ai-pricing/PricingImportCard';
 import { PricingReviewModal, type PricingDraftClient } from '../../ai-pricing/PricingReviewModal';
 import { ProofThumb } from '../../testing/ProofThumb';
-import { MediaRoleFields } from './MediaRoleFields';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -384,7 +383,7 @@ export function PricingTab() {
             </p>
           )}
           {profile && (
-            <PricingEvidence entity="paymentProfiles" row={profile} canEdit={canEdit} altText="Payment methods evidence" />
+            <PricingEvidence entity="paymentProfiles" row={profile} canEdit={canEdit} />
           )}
         </section>
       </div>
@@ -605,7 +604,7 @@ function PricingHeader({
         )}
       </div>
       <div className="mt-3">
-        <PricingEvidence entity="pricingSnapshots" row={snapshot} canEdit={canEdit} altText="Pricing page screenshot" compact />
+        <PricingEvidence entity="pricingSnapshots" row={snapshot} canEdit={canEdit} compact />
       </div>
       {snapshot.verifiedBy && (
         <p className="mt-2 text-xs text-slate-400">
@@ -1069,7 +1068,7 @@ function TierPlanModal({
           </div>
         </div>
         {tier && (
-          <PricingEvidence entity="subscriptionPlans" row={tier} canEdit altText={`Pricing evidence: ${tier.name}`} />
+          <PricingEvidence entity="subscriptionPlans" row={tier} canEdit />
         )}
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
           <Button variant="secondary" type="button" onClick={onClose}>
@@ -1200,13 +1199,11 @@ function PricingEvidence({
   entity,
   row,
   canEdit,
-  altText,
   compact,
 }: {
   entity: 'subscriptionPlans' | 'creditPackages' | 'featureCosts' | 'paymentProfiles' | 'pricingSnapshots' | 'pricingPromotions';
   row: EntityRow;
   canEdit: boolean;
-  altText: string;
   compact?: boolean;
 }) {
   const ws = useWorkspace();
@@ -1217,11 +1214,6 @@ function PricingEvidence({
   useToastError(error, () => setError(null));
   const fileInput = useRef<HTMLInputElement>(null);
   const [addToGallery, setAddToGallery] = useState(false);
-  const [galleryRoleState, setGalleryRoleState] = useState<MediaRoleState>({
-    character: false,
-    contextTag: '',
-    hero: false,
-  });
   const ids: string[] = Array.isArray(row.evidenceMediaIds) ? row.evidenceMediaIds : [];
   const mediaById = new Map(ws.related.mediaAll.map((m) => [m.id, m]));
 
@@ -1270,17 +1262,12 @@ function PricingEvidence({
         form.set('role', addToGallery ? 'gallery' : 'proof');
         form.set('caption', PRICING_PROOF_CAPTION);
         form.set('testCategory', 'pricing');
-        form.set('altText', altText);
         form.set('productId', ws.productId);
-        if (addToGallery) {
-          form.set('mediaTags', JSON.stringify(galleryTagsFromRoleState(galleryRoleState)));
-        }
         const created = await api.upload<{ id: string }>('/api/admin/media/upload', form);
         if (addToGallery) {
           await dataApi.update('media', created.id, {
             approved: true,
             role: 'gallery',
-            mediaTags: galleryTagsFromRoleState(galleryRoleState),
             caption: PRICING_PROOF_CAPTION,
             testCategory: 'pricing',
           });
@@ -1352,14 +1339,16 @@ function PricingEvidence({
               onClick={() => fileInput.current?.click()}
             >
               <Icon name="add_photo_alternate" className="!text-[14px]" />
-              {uploading ? 'Uploading…' : ids.length > 0 ? 'Add' : 'Drop or add screenshot'}
+              {uploading ? 'Uploading…' : ids.length > 0 ? 'Add screenshot' : 'Drop or upload screenshot'}
             </button>
             <button
               type="button"
-              className="text-xs text-slate-400 hover:text-pink-600"
+              title="Choose from media library"
+              aria-label="Choose from media library"
+              className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-200 text-slate-400 hover:border-pink-400 hover:text-pink-600 dark:border-slate-600"
               onClick={() => setShowPicker(true)}
             >
-              choose existing
+              <Icon name="photo_library" className="!text-[16px]" />
             </button>
           </>
         )}
@@ -1374,18 +1363,8 @@ function PricingEvidence({
               onChange={(e) => setAddToGallery(e.target.checked)}
               className="rounded border-slate-300"
             />
-            Also add to Photos &amp; Videos gallery
+            Add to gallery
           </label>
-          {addToGallery && (
-            <div className="mt-2">
-              <MediaRoleFields
-                value={galleryRoleState}
-                onChange={setGalleryRoleState}
-                showHero={false}
-                radioName={`pricing-evidence-gallery-${row.id}`}
-              />
-            </div>
-          )}
         </div>
       )}
       {error && <p className="mt-1 text-[10px] text-red-500">{error}</p>}
@@ -1412,13 +1391,11 @@ function PricingEvidence({
                   await dataApi.update('media', id, {
                     approved: true,
                     role: 'gallery',
-                    mediaTags: galleryTagsFromRoleState(galleryRoleState),
                     caption: PRICING_PROOF_CAPTION,
                     testCategory: 'pricing',
-                    altText: altText.trim() || undefined,
                   });
                 } else {
-                  await dataApi.update('media', id, pricingProofMediaPatch(altText));
+                  await dataApi.update('media', id, pricingProofMediaPatch());
                 }
                 await ws.refreshRelated();
                 await patch([...ids, id]);
@@ -1523,7 +1500,7 @@ function PackageModal({ pkg, onClose, onSaved }: { pkg: EntityRow | null; onClos
             <TextInput type="date" value={f.lastVerifiedAt} onChange={(e) => setField('lastVerifiedAt', e.target.value)} />
           </Field>
         </div>
-        {pkg && <PricingEvidence entity="creditPackages" row={pkg} canEdit altText={`Pricing evidence: ${pkg.name} package`} />}
+        {pkg && <PricingEvidence entity="creditPackages" row={pkg} canEdit />}
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
           <Button variant="secondary" onClick={onClose}>
             Cancel

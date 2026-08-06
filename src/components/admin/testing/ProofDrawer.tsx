@@ -1,6 +1,6 @@
 // Right-side drawer for proof uploads — keeps the main session view compact.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { dataApi, type EntityRow } from '../api';
 import { DrawerCloseButton } from '../ui';
 import { DRAWER_UNMOUNT_MS } from '../../../lib/drawer/animate';
@@ -42,6 +42,7 @@ export function ProofDrawer({
   const [liveCamResultId, setLiveCamResultId] = useState<string | null>(
     liveCamExisting?.id ?? null,
   );
+  const beforeCloseRef = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
     if (existing?.id) setResultId(existing.id);
@@ -64,7 +65,8 @@ export function ProofDrawer({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  function handleClose() {
+  async function handleClose() {
+    await beforeCloseRef.current?.();
     setOpen(false);
     window.setTimeout(onClose, DRAWER_UNMOUNT_MS);
   }
@@ -117,7 +119,7 @@ export function ProofDrawer({
               Proof upload
             </p>
             <h2 id="proof-drawer-title" className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100">
-              <QuestionLabel def={def} categorySlug={categorySlug} />
+              <QuestionLabel def={def} categorySlug={categorySlug} showHint={false} />
             </h2>
           </div>
           <DrawerCloseButton onClick={handleClose} ariaLabel="Close proof panel" />
@@ -142,11 +144,16 @@ export function ProofDrawer({
               def={def}
               categorySlug={categorySlug}
               productId={productId}
+              runId={runId}
               resultId={resultId}
+              result={existing}
               ensureResultId={ensureResultId}
               showLinks={allowsProofLinks(sessionId)}
               proofLinks={existing?.proofLinks}
               onUploaded={() => void onSaved()}
+              onRegisterBeforeClose={(handler) => {
+                beforeCloseRef.current = handler;
+              }}
             />
           )}
         </div>

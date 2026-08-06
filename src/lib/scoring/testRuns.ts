@@ -13,6 +13,7 @@ import {
 import { triggerRebuild } from '../db/publish';
 import { isEvidenceApplicable } from '../testing/capabilityGating';
 import { isGenderCountApplicable } from '../testing/genderCountGating';
+import { isRetiredEvidenceSlug } from '../testing/retiredEvidence';
 import { computePricingSuggestions } from '../testing/pricingAutofill';
 import { PRICING_AUTOFILL_SLUGS } from '../testing/pricingEvidenceSlugs';
 import { relatedAnswerFromResult, repairChatModesRaw } from '../testing/evidenceComplete';
@@ -154,7 +155,6 @@ async function syncPricingEvidence(
         const suggestion = suggestions.get(key);
         if (!suggestion) continue;
         const existing = resultByDef.get(def.id);
-        if (existing?.rawValue) continue;
 
         if (existing) {
           writes.push(
@@ -309,6 +309,7 @@ export async function calculateRun(testRunId: string): Promise<{
               const genderGated =
                 c.slug === 'characters' &&
                 !isGenderCountApplicable(c.slug, String(d.slug ?? ''), gendersRaw);
+              const retired = isRetiredEvidenceSlug(String(d.slug ?? ''));
               return {
                 definitionId: d.id,
                 slug: d.slug,
@@ -325,6 +326,7 @@ export async function calculateRun(testRunId: string): Promise<{
                   result?.notApplicable ||
                   capabilityGated ||
                   genderGated ||
+                  retired ||
                   deferUsageCostScores(productSlug, s.slug) ||
                   (c.slug === 'images' &&
                     d.slug === 'editing-accuracy' &&

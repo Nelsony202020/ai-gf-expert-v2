@@ -51,35 +51,36 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 const SEVERITY_STYLES: Record<
   ToastSeverity,
-  { bar: string; bg: string; border: string; icon: string; iconClass: string }
+  {
+    bar: string;
+    iconWrap: string;
+    icon: string;
+    iconClass: string;
+  }
 > = {
   info: {
     bar: 'bg-blue-500',
-    bg: 'bg-slate-900',
-    border: 'border-slate-700',
+    iconWrap: 'bg-blue-50',
     icon: 'info',
-    iconClass: 'text-blue-400',
+    iconClass: 'text-blue-600',
   },
   success: {
     bar: 'bg-green-500',
-    bg: 'bg-slate-900',
-    border: 'border-green-800/60',
-    icon: 'check_circle',
-    iconClass: 'text-green-400',
+    iconWrap: 'bg-green-50',
+    icon: 'check',
+    iconClass: 'text-green-600',
   },
   warning: {
     bar: 'bg-amber-500',
-    bg: 'bg-slate-900',
-    border: 'border-amber-800/60',
+    iconWrap: 'bg-amber-50',
     icon: 'warning',
-    iconClass: 'text-amber-400',
+    iconClass: 'text-amber-600',
   },
   error: {
     bar: 'bg-red-500',
-    bg: 'bg-slate-900',
-    border: 'border-red-800/60',
-    icon: 'error',
-    iconClass: 'text-red-400',
+    iconWrap: 'bg-red-50',
+    icon: 'close',
+    iconClass: 'text-red-600',
   },
 };
 
@@ -262,31 +263,35 @@ function ToastCard({ toast, onDismiss }: { toast: ActiveToast; onDismiss: () => 
 
   return (
     <div
-      className={`pointer-events-auto overflow-hidden rounded-xl border shadow-2xl ${meta.bg} ${meta.border} ${
+      className={`pointer-events-auto overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg ${
         toast.exiting ? 'animate-toast-out' : 'animate-toast-in'
       }`}
       role="alert"
     >
-      <div className="flex items-start gap-3 px-4 py-4">
-        <Icon name={meta.icon} className={`mt-0.5 !text-[22px] shrink-0 ${meta.iconClass}`} />
-        <div className="min-w-0 flex-1">
-          <p className="text-base font-semibold leading-snug text-white">{toast.title}</p>
+      <div className="flex items-start gap-3 px-4 py-3.5">
+        <div
+          className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${meta.iconWrap}`}
+        >
+          <Icon name={meta.icon} className={`!text-[18px] ${meta.iconClass}`} />
+        </div>
+        <div className="min-w-0 flex-1 pt-0.5">
+          <p className="text-sm font-semibold leading-snug text-slate-900">{toast.title}</p>
           {toast.message && (
-            <p className="mt-1.5 text-sm leading-relaxed text-slate-300">{toast.message}</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-500">{toast.message}</p>
           )}
         </div>
         <button
           type="button"
           aria-label="Dismiss"
-          className="shrink-0 rounded p-1 text-slate-400 transition-colors hover:text-white"
+          className="shrink-0 rounded p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
           onClick={onDismiss}
         >
           <Icon name="close" className="!text-[18px]" />
         </button>
       </div>
-      <div className="h-1 w-full bg-slate-800">
+      <div className="h-1 w-full bg-slate-100">
         <div
-          className={`h-full ${meta.bar} animate-toast-timer origin-left`}
+          className={`h-full ${meta.bar} animate-toast-timer`}
           style={{ animationDuration: `${toast.durationMs}ms` }}
         />
       </div>

@@ -2,7 +2,11 @@
 
 import type { RawValue } from '../scoring/engine';
 
-export type SecurityIncidentEntry = { url: string; note: string };
+export type SecurityIncidentEntry = {
+  url: string;
+  note: string;
+  excludeFromRating?: boolean;
+};
 
 export function emptySecurityIncident(): SecurityIncidentEntry {
   return { url: '', note: '' };
@@ -62,16 +66,30 @@ export function parseSecurityIncidents(raw: RawValue | undefined): {
 
 function parseIncidentEntries(value: unknown): SecurityIncidentEntry[] {
   if (!Array.isArray(value) || value.length === 0) return [emptySecurityIncident()];
-  const entries = value
-    .map((row) => {
-      if (!row || typeof row !== 'object') return null;
-      const url = typeof (row as { url?: unknown }).url === 'string' ? (row as { url: string }).url : '';
-      const note = typeof (row as { note?: unknown }).note === 'string' ? (row as { note: string }).note : '';
-      if (!url.trim() && !note.trim()) return null;
-      return { url, note };
-    })
-    .filter((row): row is SecurityIncidentEntry => row !== null);
+  const entries = value.map((row) => {
+    if (!row || typeof row !== 'object') return emptySecurityIncident();
+    const url = typeof (row as { url?: unknown }).url === 'string' ? (row as { url: string }).url : '';
+    const note = typeof (row as { note?: unknown }).note === 'string' ? (row as { note: string }).note : '';
+    const excludeFromRating = Boolean((row as { excludeFromRating?: unknown }).excludeFromRating);
+    return {
+      url,
+      note,
+      ...(excludeFromRating ? { excludeFromRating: true } : {}),
+    };
+  });
   return entries.length > 0 ? entries : [emptySecurityIncident()];
+}
+
+function normalizeIncidentRow(row: SecurityIncidentEntry): SecurityIncidentEntry {
+  return {
+    url: row.url.trim(),
+    note: row.note.trim(),
+    ...(row.excludeFromRating ? { excludeFromRating: true } : {}),
+  };
+}
+
+function scoredIncidentCount(incidents: SecurityIncidentEntry[]): number {
+  return incidents.filter((row) => row.url && !row.excludeFromRating).length;
 }
 
 export function securityIncidentsToRaw(parsed: {
@@ -82,13 +100,10 @@ export function securityIncidentsToRaw(parsed: {
     return { value: 0, detail: { foundIncidents: false } };
   }
   if (parsed.foundIncidents === 'yes') {
-    const filled = parsed.incidents
-      .map((row) => ({ url: row.url.trim(), note: row.note.trim() }))
-      .filter((row) => row.url);
-    if (filled.length === 0) return undefined;
+    const incidents = parsed.incidents.map(normalizeIncidentRow);
     return {
-      value: filled.length,
-      detail: { foundIncidents: true, incidents: filled },
+      value: scoredIncidentCount(incidents),
+      detail: { foundIncidents: true, incidents },
     };
   }
   return undefined;
@@ -107,8 +122,14 @@ export function formatSecurityIncidentsSummary(raw: RawValue | undefined): strin
   const parsed = parseSecurityIncidents(raw);
   if (parsed.foundIncidents === 'no') return 'None found';
   if (parsed.foundIncidents === 'yes') {
-    const n = parsed.incidents.filter((row) => row.url.trim()).length;
-    return n > 0 ? `${n} incident${n === 1 ? '' : 's'}` : 'Yes';
+    const documented = parsed.incidents.filter((row) => row.url.trim());
+    const scored = documented.filter((row) => !row.excludeFromRating);
+    const excluded = documented.filter((row) => row.excludeFromRating).length;
+    if (scored.length > 0) {
+      const base = `${scored.length} incident${scored.length === 1 ? '' : 's'}`;
+      return excluded > 0 ? `${base} (${excluded} excluded)` : base;
+    }
+    return 'Yes';
   }
   return '—';
 }

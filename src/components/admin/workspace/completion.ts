@@ -7,6 +7,7 @@
 
 import type { EntityRow } from '../api';
 import { isHeroMedia } from '../../../lib/media/catalog';
+import { isMissingAltText } from '../../../lib/media/altText';
 import { SETUP_CHARACTER_CAPABILITIES } from '../productCapabilities';
 
 export const WORKSPACE_TABS = [
@@ -165,12 +166,23 @@ const TESTING_CHECKS: Check[] = [
 const VERDICT_CHECKS: Check[] = [
   { key: 'oneLineVerdict', label: 'One-line verdict', severity: 'required', done: (i) => textFilled(i.fields.oneLineVerdict) },
   { key: 'ourTake', label: '"Our Take"', severity: 'required', done: (i) => textFilled(i.fields.ourTake) },
-  { key: 'pros', label: 'At least one pro', severity: 'required', done: (i) => arrayFilled(i.fields.pros) },
-  { key: 'cons', label: 'At least one con', severity: 'required', done: (i) => arrayFilled(i.fields.cons) },
+  { key: 'pros', label: 'At least one pro', severity: 'recommended', done: (i) => arrayFilled(i.fields.pros) },
+  { key: 'cons', label: 'At least one con', severity: 'recommended', done: (i) => arrayFilled(i.fields.cons) },
+  {
+    key: 'bestFor',
+    label: 'Best for (at least one)',
+    severity: 'recommended',
+    done: (i) => arrayFilled(i.fields.bestFor) || textFilled(i.fields.recommendedFor),
+  },
+  {
+    key: 'notIdealFor',
+    label: 'Not ideal for (at least one)',
+    severity: 'recommended',
+    done: (i) => arrayFilled(i.fields.notIdealFor) || textFilled(i.fields.notRecommendedFor),
+  },
   { key: 'mainStrength', label: 'Main strength', severity: 'recommended', done: (i) => textFilled(i.fields.mainStrength) },
   { key: 'mainLimitation', label: 'Main limitation', severity: 'recommended', done: (i) => textFilled(i.fields.mainLimitation) },
   { key: 'directoryDescription', label: 'Short directory description', severity: 'recommended', done: (i) => textFilled(i.fields.directoryDescription) },
-  { key: 'recommendedFor', label: 'Recommended for', severity: 'recommended', done: (i) => textFilled(i.fields.recommendedFor) },
   {
     key: 'categoryVerdicts',
     label: 'Category verdicts',
@@ -203,17 +215,17 @@ const MEDIA_CHECKS: Check[] = [
   {
     key: 'featuredImage',
     label: 'Featured image',
-    severity: 'required',
+    severity: 'recommended',
     done: (i) =>
       Boolean(i.links.featuredImage) || activeMedia(i.media).some((m) => isHeroMedia(m)),
   },
   {
     key: 'altText',
     label: 'Alt text on all images',
-    severity: 'required',
+    severity: 'recommended',
     done: (i) => {
       const images = activeMedia(i.media).filter(mediaNeedingAlt);
-      return images.length > 0 && images.every((m) => textFilled(m.altText));
+      return images.length > 0 && images.every((m) => !isMissingAltText(m.altText));
     },
   },
   {

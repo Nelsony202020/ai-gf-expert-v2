@@ -7,6 +7,8 @@ import { aiVerdictConfig, PROMPT_VERSION } from './config';
 import { deriveKeyFindings } from './keyFindings';
 import { getOpenAIClient } from './openaiClient';
 import { buildSystemPrompt, buildUserPrompt } from './prompts/v1';
+import { buildMetaDescriptionSystemPrompt, normalizeMetaDescriptionText } from './prompts/metaDescription';
+import { isMetaDescriptionField } from './fieldPromptHelpers';
 import { TONE_OF_VOICE_PROMPT } from './toneOfVoice';
 import { assertRateLimit } from './rateLimit';
 import { parseAiSuggestionOutput } from './normalizeOutput';
@@ -58,7 +60,10 @@ export async function generateAiSuggestion(
 
   const keyFindings = deriveKeyFindings(payload);
   const client = getOpenAIClient();
-  const system = `${buildSystemPrompt(body.scope)}\n\n${TONE_OF_VOICE_PROMPT}`;
+  const metaDescription = isMetaDescriptionField(body.targetField);
+  const system = metaDescription
+    ? buildMetaDescriptionSystemPrompt(payload.product.name)
+    : `${buildSystemPrompt(body.scope)}\n\n${TONE_OF_VOICE_PROMPT}`;
   const user = buildUserPrompt(payload, keyFindings, body.targetField, {
     currentText: body.currentText,
     fieldMode: body.fieldMode,
@@ -106,6 +111,10 @@ export async function generateAiSuggestion(
     body.categorySlug,
     body.targetField,
   );
+
+  if (metaDescription && output.field_suggestion?.text) {
+    output.field_suggestion.text = normalizeMetaDescriptionText(output.field_suggestion.text);
+  }
 
   const allowedIds = new Set(payload.evidenceIds);
   const idErrors = validateEvidenceIds(output, allowedIds);

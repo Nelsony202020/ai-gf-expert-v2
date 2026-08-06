@@ -9,10 +9,10 @@ export const IMAGE_CONSISTENCY_REFERENCE_PROMPT =
 
 /** Different scenes/outfits — do not repeat “same woman”; character is pre-selected. */
 export const IMAGE_CONSISTENCY_VARIATION_PROMPTS = [
-  'Full-body shot in a red summer dress on a sunny beach.',
+  'full shot, on knees, at the beach, wet hair, golden hour, head slightly tilted, sand in hair',
   'Business casual outfit, standing in a modern office, soft lighting.',
   'Winter coat on a city street at night.',
-  'Athletic wear at a gym.',
+  'Wearing pink Nike yoga pants and black crop top, at gym, taking mirror selfie, dumbbell rack in background',
 ] as const;
 
 /** @deprecated Use IMAGE_CONSISTENCY_REFERENCE_PROMPT */

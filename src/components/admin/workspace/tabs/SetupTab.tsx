@@ -285,13 +285,13 @@ export function SetupTab() {
                 checked={fields.homepageFeatured}
                 onChange={(v) => set('homepageFeatured', v)}
                 label="Homepage featured"
-                hint="Feature this product on the homepage."
+                hint="Show in Our Top Picks on the homepage (syncs with Homepage → Top brands, max 3)."
               />
               <ToggleWithHint
                 checked={fields.publishedInDirectory}
                 onChange={(v) => set('publishedInDirectory', v)}
                 label="Published in directory"
-                hint="Include this product in public directories."
+                hint="Include this product on /ai-girlfriend-apps when published."
               />
             </div>
           </ProductFormSection>

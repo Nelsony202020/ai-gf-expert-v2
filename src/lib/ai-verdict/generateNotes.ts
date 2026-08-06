@@ -3,6 +3,7 @@ import { auditTx } from '../db/audit';
 import type { AdminIdentity } from '../db/auth';
 import { HttpError } from '../db/auth';
 import { assembleEvidence, resolveTestRunId } from './assembleEvidence';
+import { buildCategoryPerformance } from './categoryPerformance';
 import { aiVerdictConfig } from './config';
 import { deriveKeyFindings } from './keyFindings';
 import { getOpenAIClient } from './openaiClient';
@@ -12,10 +13,12 @@ import {
   buildFieldSuggestions,
   normalizeFieldSuggestions,
   parseSectionKey,
+  sanitizeKeyFindings,
   sectionConfig,
   type AiVerdictNotesDto,
   type GenerateNotesRequest,
   type LoadNotesRequest,
+  type LoadNotesResponse,
 } from './notesSchema';
 import { assertRateLimit } from './rateLimit';
 import type { KeyFinding } from './suggestionSchema';
@@ -71,19 +74,45 @@ function notesScopeForSection(sectionKey: string): {
     return { scope: 'category', categorySlug: parsed.categorySlug };
   }
   if (parsed.stepId === 'expert') return { scope: 'outline' };
-  if (parsed.stepId === 'decision' || parsed.stepId === 'pros-cons') {
+  if (parsed.stepId === 'decision') {
     return { scope: 'overall' };
   }
   return { scope: cfg.scope === 'field' ? 'overall' : cfg.scope };
 }
 
-function formatNotesRow(row: any, stale: boolean): AiVerdictNotesDto {
+function overallProductScoreFromSnapshots(snapshots: { kind: string; refSlug: string; score: number }[]): number | null {
+  return snapshots.find((s) => s.kind === 'overall')?.score ?? null;
+}
+
+async function categoryPerformanceForPayload(
+  payload: Awaited<ReturnType<typeof assembleEvidence>>,
+  categoryName?: string,
+): Promise<ReturnType<typeof buildCategoryPerformance>> {
+  if (!payload.categorySlug) return null;
+  const db = getDb();
+  const { testRuns } = await (db.query as any)({
+    testRuns: {
+      $: { where: { id: payload.testRun.id } },
+      scoreSnapshots: {},
+    },
+  });
+  const snapshots = (testRuns[0]?.scoreSnapshots ?? []).map((s: any) => ({
+    kind: s.kind,
+    refSlug: s.refSlug,
+    score: s.score,
+  }));
+  const overall = overallProductScoreFromSnapshots(snapshots);
+  const name = categoryName ?? payload.categorySlug;
+  return buildCategoryPerformance(payload, name, overall);
+}
+
+function formatNotesRow(row: any, stale: boolean, performance?: ReturnType<typeof buildCategoryPerformance>): AiVerdictNotesDto {
   return {
     id: row.id,
     sectionKey: row.sectionKey,
     scope: row.scope,
     categorySlug: row.categorySlug ?? null,
-    keyFindings: (row.keyFindings as KeyFinding[]) ?? [],
+    keyFindings: sanitizeKeyFindings((row.keyFindings as KeyFinding[]) ?? []),
     fieldSuggestions: normalizeFieldSuggestions(
       (row.fieldSuggestions as Record<string, unknown>) ?? {},
     ),
@@ -97,12 +126,13 @@ function formatNotesRow(row: any, stale: boolean): AiVerdictNotesDto {
     generatedBy: row.generatedBy ?? null,
     testRunId: row.testRun?.id ?? null,
     stale,
+    performance: performance ?? null,
   };
 }
 
 export async function loadAiVerdictNotes(
   body: LoadNotesRequest,
-): Promise<{ notes: AiVerdictNotesDto | null; currentInputHash: string }> {
+): Promise<LoadNotesResponse> {
   const { scope, categorySlug } = notesScopeForSection(body.sectionKey);
   const payload = await assembleEvidence({
     productId: body.productId,
@@ -111,16 +141,27 @@ export async function loadAiVerdictNotes(
     categorySlug,
   });
 
+  const performance =
+    parsedCategorySection(body.sectionKey) != null
+      ? await categoryPerformanceForPayload(payload, body.categoryName)
+      : null;
+
   const saved = await findSavedNotes(body.productId, body.testRunId, body.sectionKey);
   if (!saved) {
-    return { notes: null, currentInputHash: payload.inputHash };
+    return { notes: null, currentInputHash: payload.inputHash, performance };
   }
 
   const stale = saved.inputHash !== payload.inputHash || saved.status === 'stale';
   return {
-    notes: formatNotesRow(saved, stale),
+    notes: formatNotesRow(saved, stale, performance ?? undefined),
     currentInputHash: payload.inputHash,
+    performance,
   };
+}
+
+function parsedCategorySection(sectionKey: string): string | null {
+  if (!sectionKey.startsWith('category:')) return null;
+  return sectionKey.slice(9);
 }
 
 export async function generateAiVerdictNotes(
@@ -151,17 +192,19 @@ export async function generateAiVerdictNotes(
 
   const db = getDb();
 
+  const performance = await categoryPerformanceForPayload(payload, body.categoryName);
+
   if (!body.regenerate) {
     const saved = await findSavedNotes(body.productId, testRunId, body.sectionKey);
     if (saved) {
       const stale = saved.inputHash !== payload.inputHash;
-      return formatNotesRow(saved, stale);
+      return formatNotesRow(saved, stale, performance ?? undefined);
     }
   }
 
   const derivedFindings = deriveKeyFindings(payload);
   const client = getOpenAIClient();
-  const system = buildNotesSystemPrompt(scope);
+  const system = buildNotesSystemPrompt(scope, body.sectionKey);
   const user = buildNotesUserPrompt(body.sectionKey, payload, derivedFindings);
 
   let completion;
@@ -198,7 +241,7 @@ export async function generateAiVerdictNotes(
     throw new HttpError(422, `Invalid AI output: ${idErrors.slice(0, 3).join('; ')}`);
   }
 
-  const aiFindings = output.key_findings ?? [];
+  const aiFindings = sanitizeKeyFindings(output.key_findings ?? []);
   const keyFindings: KeyFinding[] =
     aiFindings.length >= 3
       ? aiFindings.slice(0, 6)
@@ -284,5 +327,6 @@ export async function generateAiVerdictNotes(
       testRun: { id: testRunId },
     },
     false,
+    performance ?? undefined,
   );
 }

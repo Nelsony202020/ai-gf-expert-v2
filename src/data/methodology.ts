@@ -149,7 +149,7 @@ add('video', 'Quality', 'Visual Errors', 'Broken faces, limbs or movement', 'Cou
 add('video', 'Quality', 'Frame Consistency', 'Stability across frames', 'Points when no major face/body/clothing/object/background flicker changes.', 'Percentage of 50 frame-consistency checks passed', { testSize: vidTest });
 add('video', 'Experience', 'Speed', 'Median generation time', 'Time all 10 generations from submit to finished video.', 'Median time in seconds', { testSize: vidTest, scoreConversion: 'Seconds displayed; internal score from speed bands' });
 add('video', 'Experience', 'Failures', 'Failed generations', 'Count failed, stuck or unusable out of 10.', 'Number and percentage of failures', { testSize: vidTest });
-add('video', 'Experience', 'Ease of Use', 'Steps to create video', 'Create three videos; count clicks/actions from open to start.', 'Average steps across three tests');
+add('video', 'Experience', 'Ease of Use', 'Ease of use', 'Create three videos; rate workflow ease 1 (hard) to 10 (easy).', '1–10 ease rating');
 add('video', 'Experience', 'Controls', 'Available video controls', 'Count adjustable controls (duration, resolution, aspect, motion, camera, style, audio, negative prompt).', 'Number of available controls');
 add('video', 'Experience', 'Regeneration', 'Retry or variations', 'Try to regenerate three finished videos.', 'Successful regenerations out of three; Yes/Limited/No');
 add('video', 'Experience', 'Cost', 'Average cost per video', 'Total costs for 10-video test ÷ usable videos.', 'Average cost per usable video', { goodBad: 'Displayed for context; affects Pricing score only' });

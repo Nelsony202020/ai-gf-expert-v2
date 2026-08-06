@@ -595,6 +595,22 @@ const _schema = i.schema({
       createdAt: i.date(),
     }),
 
+    // AI privacy policy analysis — documents + structured proposals for a test run.
+    aiPrivacyAnalyses: i.entity({
+      promptVersion: i.string().optional(),
+      model: i.string().optional(),
+      inputHash: i.string().optional().indexed(),
+      // draft | applied | failed
+      status: i.string().indexed(),
+      documents: i.json().optional(),
+      structuredOutput: i.json().optional(),
+      error: i.string().optional(),
+      tokenUsage: i.json().optional(),
+      generatedBy: i.string().optional(),
+      generatedAt: i.date().optional(),
+      updatedAt: i.date(),
+    }),
+
     // AI editorial suggestions — stored separately from published verdict copy.
     aiEditorialSuggestions: i.entity({
       scope: i.string().indexed(), // overall | category | field | outline
@@ -934,6 +950,14 @@ const _schema = i.schema({
     snapshotProduct: {
       forward: { on: 'scoreSnapshots', has: 'one', label: 'product' },
       reverse: { on: 'products', has: 'many', label: 'scoreSnapshots' },
+    },
+    aiPrivacyAnalysisProduct: {
+      forward: { on: 'aiPrivacyAnalyses', has: 'one', label: 'product' },
+      reverse: { on: 'products', has: 'many', label: 'aiPrivacyAnalyses' },
+    },
+    aiPrivacyAnalysisTestRun: {
+      forward: { on: 'aiPrivacyAnalyses', has: 'one', label: 'testRun' },
+      reverse: { on: 'testRuns', has: 'many', label: 'aiPrivacyAnalyses' },
     },
     aiSuggestionProduct: {
       forward: { on: 'aiEditorialSuggestions', has: 'one', label: 'product' },

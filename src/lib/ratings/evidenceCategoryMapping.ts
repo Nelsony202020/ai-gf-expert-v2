@@ -52,6 +52,7 @@ export const CONTRIBUTOR_ICONS: Record<string, string> = {
   'eye-color': 'visibility',
   'body-type': 'accessibility_new',
   'breast-size': 'straighten',
+  'ss-size': 'straighten',
   'hair-style': 'content_cut',
   'hair-color': 'palette',
   outfits: 'checkroom',

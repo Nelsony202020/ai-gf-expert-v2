@@ -1,8 +1,10 @@
 // Proof-only panel: instructions + attachments + optional reference links. Uploads save immediately.
 
+import { useEffect, useRef } from 'react';
 import type { EntityRow } from '../api';
 import { EvidenceAttachments } from './EvidenceAttachments';
-import { EvidenceLinks } from './EvidenceLinks';
+import { EvidenceLinks, type EvidenceLinksHandle } from './EvidenceLinks';
+import { AiPrivacyEvidencePanel } from './AiPrivacyEvidencePanel';
 import { testerHelpTooltip, testerInstructions } from './presentation';
 import { parseProofLinks } from './proofLinks';
 
@@ -10,25 +12,39 @@ export function ProofPanel({
   def,
   categorySlug,
   productId,
+  runId,
   ensureResultId,
   resultId,
+  result,
   disabled,
   showLinks,
   proofLinks,
   onUploaded,
+  onRegisterBeforeClose,
 }: {
   def: EntityRow;
   categorySlug?: string;
   productId?: string;
+  runId?: string;
   ensureResultId: () => Promise<string>;
   resultId: string | null;
+  result?: EntityRow | null;
   disabled?: boolean;
   showLinks?: boolean;
   proofLinks?: unknown;
   onUploaded?: () => void;
+  onRegisterBeforeClose?: (handler: () => Promise<void>) => void;
 }) {
+  const linksRef = useRef<EvidenceLinksHandle>(null);
   const steps = testerInstructions(def);
   const hint = testerHelpTooltip(def, categorySlug);
+
+  useEffect(() => {
+    if (!onRegisterBeforeClose) return;
+    onRegisterBeforeClose(async () => {
+      await linksRef.current?.flushPending();
+    });
+  }, [onRegisterBeforeClose]);
 
   return (
     <div className="space-y-4">
@@ -45,6 +61,16 @@ export function ProofPanel({
         </div>
       )}
 
+      {runId && (
+        <AiPrivacyEvidencePanel
+          def={def}
+          result={result ?? null}
+          productId={productId}
+          runId={runId}
+          onChanged={onUploaded}
+        />
+      )}
+
       <EvidenceAttachments
         def={def}
         resultId={resultId}
@@ -56,6 +82,7 @@ export function ProofPanel({
 
       {showLinks && (
         <EvidenceLinks
+          ref={linksRef}
           resultId={resultId}
           proofLinks={parseProofLinks(proofLinks)}
           ensureResultId={ensureResultId}

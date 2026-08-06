@@ -16,6 +16,7 @@ export const GET: APIRoute = handler(async ({ request }) => {
     productId: url.searchParams.get('productId'),
     testRunId: url.searchParams.get('testRunId'),
     sectionKey: url.searchParams.get('sectionKey'),
+    categoryName: url.searchParams.get('categoryName') ?? undefined,
   });
   const result = await loadAiVerdictNotes(body);
   return json(result);

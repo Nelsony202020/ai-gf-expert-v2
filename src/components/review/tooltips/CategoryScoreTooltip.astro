@@ -203,7 +203,7 @@ const categoryWhatItIs = getCategoryTooltipDescription(category.key);
           {!compareAverageOnly && (
             <div class="ratings-tooltip-panel__distribution">
               <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-              <ScoreDistributionChart bins={bins} categoryKey={category.key} />
+              <ScoreDistributionChart bins={bins} categoryKey={category.key} highlightScore={currentScore} />
             </div>
           )}
         </div>
@@ -268,7 +268,7 @@ const categoryWhatItIs = getCategoryTooltipDescription(category.key);
 
           <div>
             <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-            <ScoreDistributionChart bins={bins} categoryKey={category.key} />
+            <ScoreDistributionChart bins={bins} categoryKey={category.key} highlightScore={currentScore} />
           </div>
         </div>
       )

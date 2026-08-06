@@ -1,4 +1,4 @@
-// Verdict tab: guided 5-step editorial workspace mirroring the public "Our
+// Verdict tab: guided 4-step editorial workspace mirroring the public "Our
 // Verdict" section. Scores always come from test runs, never from here.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -80,7 +80,6 @@ export function VerdictTab() {
   const { fields, set, setMany, related, productId, saving } = ws;
   const [activeStep, setActiveStep] = useState<VerdictStepId>('overall');
   const [categoryDrawerSlug, setCategoryDrawerSlug] = useState<string | null>(null);
-  const [categoryNotesOpen, setCategoryNotesOpen] = useState(false);
   const [notesDrawerOpen, setNotesDrawerOpen] = useState(false);
   const [notesSectionKey, setNotesSectionKey] = useState<string | null>(null);
   const [aiAssistedFields, setAiAssistedFields] = useState<Set<string>>(new Set());
@@ -203,8 +202,14 @@ export function VerdictTab() {
   const testRunId = testing.currentRun?.id;
 
   useEffect(() => {
-    setCategoryNotesOpen(false);
-  }, [categoryDrawerSlug]);
+    if (!categoryDrawerSlug || !testRunId) return;
+    const key = categorySectionKey(categoryDrawerSlug);
+    setNotesSectionKey(key);
+    const cat = related.categories.find((c) => String(c.slug) === categoryDrawerSlug);
+    void aiNotes.load(key, {
+      categoryName: cat ? String(cat.name) : categoryDrawerSlug,
+    });
+  }, [categoryDrawerSlug, testRunId]);
 
   function currentNotesSectionKey(): string {
     if (categoryDrawerSlug) return categorySectionKey(categoryDrawerSlug);
@@ -262,19 +267,28 @@ export function VerdictTab() {
     [aiNotes, testing.currentRun, toast],
   );
 
-  async function handleGenerateNotes() {
-    if (!notesSectionKey) return;
-    await aiNotes.generate(notesSectionKey, false);
+  async function handleGenerateNotes(categoryName?: string) {
+    const key = notesSectionKey ?? (categoryDrawerSlug ? categorySectionKey(categoryDrawerSlug) : null);
+    if (!key) return;
+    await aiNotes.generate(key, false, { categoryName });
   }
 
-  async function handleRegenerateNotes() {
-    if (!notesSectionKey) return;
-    await aiNotes.generate(notesSectionKey, true);
+  async function handleRegenerateNotes(categoryName?: string) {
+    const key = notesSectionKey ?? (categoryDrawerSlug ? categorySectionKey(categoryDrawerSlug) : null);
+    if (!key) return;
+    await aiNotes.generate(key, true, { categoryName });
+  }
+
+  function activeCategorySlug(): string | null {
+    if (categoryDrawerSlug) return categoryDrawerSlug;
+    if (notesSectionKey?.startsWith('category:')) return notesSectionKey.slice(9);
+    if (aiNotes.sectionKey?.startsWith('category:')) return aiNotes.sectionKey.slice(9);
+    return null;
   }
 
   function getNotesFieldValue(fieldKey: string): string | string[] {
-    if (notesSectionKey?.startsWith('category:')) {
-      const slug = notesSectionKey.slice(9);
+    const slug = activeCategorySlug();
+    if (slug) {
       const cv = categoryVerdicts[slug] ?? {};
       const val = (cv as Record<string, unknown>)[fieldKey];
       if (Array.isArray(val)) return val as string[];
@@ -286,8 +300,8 @@ export function VerdictTab() {
   }
 
   function handleNotesInsertField(fieldKey: string, value: string) {
-    if (notesSectionKey?.startsWith('category:')) {
-      const slug = notesSectionKey.slice(9);
+    const slug = activeCategorySlug();
+    if (slug) {
       setCategoryVerdict(slug, { [fieldKey]: value });
       markAiAssisted([`categoryVerdicts.${slug}.${fieldKey}`]);
       return;
@@ -298,8 +312,8 @@ export function VerdictTab() {
 
   function handleNotesInsertListField(fieldKey: string, items: string[]) {
     const normalized = normalizeListField(items);
-    if (notesSectionKey?.startsWith('category:')) {
-      const slug = notesSectionKey.slice(9);
+    const slug = activeCategorySlug();
+    if (slug) {
       if (fieldKey === 'pros' || fieldKey === 'cons') {
         setCategoryVerdict(slug, patchCategoryProsOrCons(fieldKey, normalized));
       } else {
@@ -330,18 +344,6 @@ export function VerdictTab() {
     else if (ws.saveError) toast.error(ws.saveError);
     return ok;
   }
-
-  const openCategoryNotes = useCallback(
-    async (slug: string) => {
-      if (categoryNotesOpen && notesSectionKey === categorySectionKey(slug)) {
-        setCategoryNotesOpen(false);
-        return;
-      }
-      setCategoryNotesOpen(true);
-      await openNotesDrawer(categorySectionKey(slug));
-    },
-    [categoryNotesOpen, notesSectionKey, openNotesDrawer],
-  );
 
   const activeStepLabel = VERDICT_STEPS.find((s) => s.id === activeStep)?.label ?? '';
 
@@ -534,118 +536,122 @@ export function VerdictTab() {
           )}
 
           {activeStep === 'decision' && (
-            <div className="mt-4 space-y-4">
-              <p className="text-xs text-slate-500">
-                Rendered as separate rows in the public “Best for / Not ideal for” lists.
-              </p>
-              {(bestForIsLegacy || notIdealIsLegacy) && (
-                <p className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
-                  Imported from legacy free-text fields. Saving stores them as structured lists.
+            <div className="mt-4 space-y-6">
+              <div className="space-y-4">
+                <p className="text-xs text-slate-500">
+                  <strong>Best for / Not ideal for</strong> appear in the review sidebar.{' '}
+                  <strong>Pros / Cons</strong> appear under Overall Performance in Our Verdict and on
+                  roundup cards.
                 </p>
-              )}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-                    Best for
-                    <AiAssistBadge fieldKey="bestFor" />
+                {(bestForIsLegacy || notIdealIsLegacy) && (
+                  <p className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
+                    Imported from legacy free-text fields. Saving stores them as structured lists.
                   </p>
-                  <StringListEditor
-                    value={bestForEditor}
-                    onChange={(items) => set('bestFor', items)}
-                    addLabel="Add “Best for” item"
-                    placeholder="Users who want deep, realistic conversations"
-                    emptyHint="Who should choose this product? Aim for 3–4 short items."
-                    maxRecommended={4}
-                    maxItemLength={90}
-                  />
-                  <div className="mt-1">
-                    {renderAssist({
-                      fieldKey: 'bestFor',
-                      targetField:
-                        'bestFor — 3–4 short items describing who this product is best for, each under 90 characters',
-                      hasText: bestFor.length > 0,
-                      list: true,
-                      onItems: (items) => set('bestFor', items),
-                    })}
+                )}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                      Best for
+                      <AiAssistBadge fieldKey="bestFor" />
+                    </p>
+                    <StringListEditor
+                      value={bestForEditor}
+                      onChange={(items) => set('bestFor', items)}
+                      addLabel="Add “Best for” item"
+                      placeholder="Users who want deep, realistic conversations"
+                      emptyHint="Who should choose this product? Aim for 3–4 short items."
+                      maxRecommended={4}
+                      maxItemLength={90}
+                    />
+                    <div className="mt-1">
+                      {renderAssist({
+                        fieldKey: 'bestFor',
+                        targetField:
+                          'bestFor — 3–4 short items describing who this product is best for, each under 90 characters',
+                        hasText: bestFor.length > 0,
+                        list: true,
+                        onItems: (items) => set('bestFor', items),
+                      })}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-                    Not ideal for
-                    <AiAssistBadge fieldKey="notIdealFor" />
-                  </p>
-                  <StringListEditor
-                    value={notIdealEditor}
-                    onChange={(items) => set('notIdealFor', items)}
-                    emptyHint="Who should look elsewhere? Aim for 2–4 short items."
-                    addLabel="Add “Not ideal for” item"
-                    placeholder="Users who need instant image generation"
-                    maxRecommended={4}
-                    maxItemLength={90}
-                  />
-                  <div className="mt-1">
-                    {renderAssist({
-                      fieldKey: 'notIdealFor',
-                      targetField:
-                        'notIdealFor — 2–4 short items describing who this product is not ideal for, each under 90 characters',
-                      hasText: notIdealFor.length > 0,
-                      list: true,
-                      onItems: (items) => set('notIdealFor', items),
-                    })}
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                      Not ideal for
+                      <AiAssistBadge fieldKey="notIdealFor" />
+                    </p>
+                    <StringListEditor
+                      value={notIdealEditor}
+                      onChange={(items) => set('notIdealFor', items)}
+                      emptyHint="Who should look elsewhere? Aim for 2–4 short items."
+                      addLabel="Add “Not ideal for” item"
+                      placeholder="Users who need instant image generation"
+                      maxRecommended={4}
+                      maxItemLength={90}
+                    />
+                    <div className="mt-1">
+                      {renderAssist({
+                        fieldKey: 'notIdealFor',
+                        targetField:
+                          'notIdealFor — 2–4 short items describing who this product is not ideal for, each under 90 characters',
+                        hasText: notIdealFor.length > 0,
+                        list: true,
+                        onItems: (items) => set('notIdealFor', items),
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
 
-          {activeStep === 'pros-cons' && (
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-                  Pros
-                  <AiAssistBadge fieldKey="pros" />
-                </p>
-                <StringListEditor
-                  value={prosEditor}
-                  onChange={(items) => set('pros', items)}
-                  addLabel="Add pro"
-                  placeholder="Fantastic character variety with 2,450+ presets"
-                  emptyHint="What genuinely stood out in testing?"
-                  maxItemLength={120}
-                />
-                <div className="mt-1">
-                  {renderAssist({
-                    fieldKey: 'pros',
-                    targetField:
-                      'pros — 3–5 pros, max 5 words each, short phrases not sentences',
-                    hasText: pros.length > 0,
-                    list: true,
-                    onItems: (items) => set('pros', items),
-                  })}
-                </div>
-              </div>
-              <div>
-                <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-                  Cons
-                  <AiAssistBadge fieldKey="cons" />
-                </p>
-                <StringListEditor
-                  value={consEditor}
-                  onChange={(items) => set('cons', items)}
-                  addLabel="Add con"
-                  placeholder="Image generation is slower than competing platforms"
-                  emptyHint="What are the honest drawbacks?"
-                  maxItemLength={120}
-                />
-                <div className="mt-1">
-                  {renderAssist({
-                    fieldKey: 'cons',
-                    targetField:
-                      'cons — 2–4 cons, max 5 words each, short phrases not sentences',
-                    hasText: cons.length > 0,
-                    list: true,
-                    onItems: (items) => set('cons', items),
-                  })}
+              <div className="border-t border-slate-100 pt-5 dark:border-slate-800">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                      Pros
+                      <AiAssistBadge fieldKey="pros" />
+                    </p>
+                    <StringListEditor
+                      value={prosEditor}
+                      onChange={(items) => set('pros', items)}
+                      addLabel="Add pro"
+                      placeholder="Fantastic character variety with 2,450+ presets"
+                      emptyHint="What genuinely stood out in testing?"
+                      maxItemLength={120}
+                    />
+                    <div className="mt-1">
+                      {renderAssist({
+                        fieldKey: 'pros',
+                        targetField:
+                          'pros — 3–5 pros, max 5 words each, short phrases not sentences',
+                        hasText: pros.length > 0,
+                        list: true,
+                        onItems: (items) => set('pros', items),
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                      Cons
+                      <AiAssistBadge fieldKey="cons" />
+                    </p>
+                    <StringListEditor
+                      value={consEditor}
+                      onChange={(items) => set('cons', items)}
+                      addLabel="Add con"
+                      placeholder="Image generation is slower than competing platforms"
+                      emptyHint="What are the honest drawbacks?"
+                      maxItemLength={120}
+                    />
+                    <div className="mt-1">
+                      {renderAssist({
+                        fieldKey: 'cons',
+                        targetField:
+                          'cons — 2–4 cons, max 5 words each, short phrases not sentences',
+                        hasText: cons.length > 0,
+                        list: true,
+                        onItems: (items) => set('cons', items),
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -789,38 +795,41 @@ export function VerdictTab() {
           categoryRemainingTests={categoryRemainingTests}
           isPreview={testing.isPreview}
           testRunId={testing.currentRun?.id}
+          productName={String(fields.name ?? 'Product')}
+          testRunLabel={testing.currentRun?.name}
           testingHref={`${workspaceTabPath(productId, 'testing')}?category=${encodeURIComponent(categoryDrawerSlug)}`}
           aiAssisted={aiAssistedFields.has(`categoryVerdicts.${categoryDrawerSlug}`)}
-          onClose={() => setCategoryDrawerSlug(null)}
+          onClose={() => {
+            setCategoryDrawerSlug(null);
+            aiNotes.dismiss();
+          }}
           onSave={saveCategoryDraft}
-          onOpenNotes={() => void openCategoryNotes(categoryDrawerSlug)}
-          notesOpen={categoryNotesOpen}
-          notesPanel={
-            categoryNotesOpen ? (
-              <AiNotesDrawer
-                embedded
-                open
-                sectionLabel={
-                  String(
-                    related.categories.find((c) => String(c.slug) === categoryDrawerSlug)?.name ??
-                      categoryDrawerSlug,
-                  )
+          analysis={
+            testRunId
+              ? {
+                  performance: aiNotes.performance,
+                  notes: aiNotes.notes,
+                  loading: aiNotes.loading,
+                  generating: aiNotes.generating,
+                  error: aiNotes.error,
+                  onGenerate: () =>
+                    void handleGenerateNotes(
+                      String(
+                        related.categories.find((c) => String(c.slug) === categoryDrawerSlug)?.name ??
+                          categoryDrawerSlug,
+                      ),
+                    ),
+                  onRegenerate: () =>
+                    void handleRegenerateNotes(
+                      String(
+                        related.categories.find((c) => String(c.slug) === categoryDrawerSlug)?.name ??
+                          categoryDrawerSlug,
+                      ),
+                    ),
                 }
-                productName={String(fields.name ?? 'Product')}
-                testRunName={testing.currentRun?.name}
-                notes={aiNotes.notes}
-                loading={aiNotes.loading}
-                generating={aiNotes.generating}
-                error={aiNotes.error}
-                onClose={() => setCategoryNotesOpen(false)}
-                onGenerate={() => void handleGenerateNotes()}
-                onRegenerate={() => void handleRegenerateNotes()}
-                getFieldValue={getNotesFieldValue}
-                onInsertField={handleNotesInsertField}
-                onInsertListField={handleNotesInsertListField}
-              />
-            ) : null
+              : undefined
           }
+          onMarkAiAssisted={() => markAiAssisted([`categoryVerdicts.${categoryDrawerSlug}.pros`, `categoryVerdicts.${categoryDrawerSlug}.cons`])}
           renderFieldAssist={(opts) =>
             renderAssist({
               ...opts,

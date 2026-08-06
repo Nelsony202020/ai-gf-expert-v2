@@ -470,7 +470,7 @@ export function PricingReviewModal({
     }
   }
 
-  const inputCls = '!py-1 text-xs';
+  const inputCls = '!py-1 w-full min-w-0 text-xs';
 
   return (
     <Modal title={`Review AI-extracted pricing (${draft.model})`} onClose={onClose} wide>
@@ -628,12 +628,15 @@ function HeaderCells({ labels }: { labels: string[] }) {
   return (
     <>
       {labels.map((l) => (
-        <span key={l} className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+        <span
+          key={l}
+          className="px-0.5 text-center text-[10px] font-medium uppercase leading-tight tracking-wide text-slate-400"
+        >
           {l}
         </span>
       ))}
-      <span aria-hidden="true" />
-      <span aria-hidden="true" />
+      <span aria-hidden="true" className="w-[72px]" />
+      <span aria-hidden="true" className="w-5" />
     </>
   );
 }
@@ -748,17 +751,21 @@ function RowCells({
   return (
     <div className={`col-span-full grid ${gridClass} items-center gap-x-2 gap-y-1.5`}>
       {children}
-      <Badge tone={status === 'create' ? 'green' : 'blue'}>
-        {status === 'create' ? 'will create' : 'will update'}
-      </Badge>
-      <button
-        type="button"
-        aria-label="Remove row"
-        className="text-slate-300 transition-colors hover:text-red-500"
-        onClick={onRemove}
-      >
-        <Icon name="close" className="!text-[14px]" />
-      </button>
+      <div className="flex justify-center">
+        <Badge tone={status === 'create' ? 'green' : 'blue'}>
+          {status === 'create' ? 'will create' : 'will update'}
+        </Badge>
+      </div>
+      <div className="flex justify-center">
+        <button
+          type="button"
+          aria-label="Remove row"
+          className="text-slate-300 transition-colors hover:text-red-500"
+          onClick={onRemove}
+        >
+          <Icon name="close" className="!text-[14px]" />
+        </button>
+      </div>
     </div>
   );
 }

@@ -5,6 +5,7 @@
 
 import type { EntityRow } from '../api';
 import { PRICING_AUTOFILL_SLUGS as PRICING_TAB_COVERED_SLUGS } from '../../../lib/testing/pricingEvidenceSlugs';
+import { RETIRED_EVIDENCE_SLUGS } from '../../../lib/testing/retiredEvidence';
 import { SAMPLE } from './sampleSizes';
 
 export interface TestSessionDef {
@@ -71,6 +72,7 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
         'eye-color',
         'body-type',
         'breast-size',
+        'ss-size',
         'hair-style',
         'hair-color',
         'outfits',
@@ -217,12 +219,11 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'video-capabilities',
       title: 'Video capabilities',
-      intro: 'What video features exist: text-to-video, image-to-video, chat video, audio, length and resolution.',
+      intro: 'What video features exist: text-to-video, image-to-video, audio, length and resolution.',
       icon: 'movie',
       slugs: [
         'text-to-video',
         'image-to-video',
-        'chat-video',
         'audio',
         'maximum-length',
       ],
@@ -243,6 +244,14 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
   ],
 
   privacy: [
+    {
+      id: 'policy-docs',
+      title: 'Upload privacy documents',
+      intro:
+        'Add privacy policy, terms, and related pages (include a refund policy URL if you want AI to propose a refunds answer). Scraping fetches text only — AI then proposes answers for specific questions in Policy review and Data controls (plus refunds when applicable). Delete chats and export data stay manual test-account checks.',
+      icon: 'upload_file',
+      slugs: [],
+    },
     {
       id: 'policy-review',
       title: 'Policy & data-use review',
@@ -340,12 +349,13 @@ export const COMBINED_EVIDENCE_PARENT: Record<string, string> = Object.fromEntri
 );
 
 /** Evidence slugs retired from testing — hidden even if still active in the DB. */
-const RETIRED_TESTING_SLUGS = new Set(['restrictions']);
+const RETIRED_TESTING_SLUGS = RETIRED_EVIDENCE_SLUGS;
 
 /** Evidence slugs managed elsewhere in the UI — never show as standalone rows. */
 const HIDDEN_TESTING_SLUGS = new Set<string>([...COMBINED_EVIDENCE_SLUGS, ...RETIRED_TESTING_SLUGS]);
 
-function isExcludedFromTesting(categorySlug: string, slug: string): boolean {
+/** True when a definition is filled outside guided testing (pricing autofill, retired, combined). */
+export function isEvidenceExcludedFromTesting(categorySlug: string, slug: string): boolean {
   if (HIDDEN_TESTING_SLUGS.has(slug)) return true;
   if (categorySlug === 'pricing' && PRICING_TAB_COVERED_SLUGS.has(slug)) return true;
   return false;
@@ -354,6 +364,11 @@ function isExcludedFromTesting(categorySlug: string, slug: string): boolean {
 export interface SessionGroup {
   session: TestSessionDef;
   defs: EntityRow[];
+}
+
+/** UI-only sessions with no evidence slugs (e.g. policy document upload before AI analysis). */
+export function isAssistSession(session: Pick<TestSessionDef, 'slugs'>): boolean {
+  return session.slugs.length === 0;
 }
 
 /**
@@ -374,11 +389,14 @@ export function sessionsForCategory(categorySlug: string, defs: EntityRow[]): Se
       .map((slug) => bySlug.get(slug))
       .filter((d): d is EntityRow => Boolean(d));
     for (const d of matched) used.add(d.id);
-    if (matched.length > 0) groups.push({ session, defs: matched });
+    // Empty-slug sessions (e.g. policy-docs upload) are intentional UI steps.
+    if (matched.length > 0 || session.slugs.length === 0) {
+      groups.push({ session, defs: matched });
+    }
   }
 
   const leftover = defs.filter(
-    (d) => !used.has(d.id) && !isExcludedFromTesting(categorySlug, String(d.slug ?? '')),
+    (d) => !used.has(d.id) && !isEvidenceExcludedFromTesting(categorySlug, String(d.slug ?? '')),
   );
   if (leftover.length > 0) {
     groups.push({

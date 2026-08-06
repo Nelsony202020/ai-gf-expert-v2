@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { dataApi, type EntityRow } from '../../api';
 import { useAsyncToast } from '../../Toast';
-import { Button, Field, Modal, Select, TextInput } from '../../ui';
+import { Button, Field, Icon, Modal, Select, TextInput } from '../../ui';
 import { useWorkspace } from '../context';
 import { featureCostRange } from '../../../../lib/pricing/calc';
 import {
@@ -234,6 +234,7 @@ function FeatureVariantsModal({
     existing.length > 0 ? existing.map((c) => rowToDraft(c, family)) : [emptyDraft(family)],
   );
   const [removedIds, setRemovedIds] = useState<string[]>([]);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const { busy, error, run } = useAsyncToast();
 
   const showVariantFields = family.key === 'video_generation' || family.key === 'standard_image';
@@ -241,6 +242,16 @@ function FeatureVariantsModal({
 
   function patchVariant(index: number, patch: Partial<VariantDraft>) {
     setVariants((prev) => prev.map((v, i) => (i === index ? { ...v, ...patch } : v)));
+  }
+
+  function moveVariant(fromIndex: number, toIndex: number) {
+    if (toIndex < 0 || toIndex >= variants.length || fromIndex === toIndex) return;
+    setVariants((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, item!);
+      return next;
+    });
   }
 
   function addVariant() {
@@ -325,17 +336,65 @@ function FeatureVariantsModal({
           {variants.map((v, index) => (
             <div
               key={v.id ?? `new-${index}`}
-              className="rounded-lg border border-slate-200 p-3 dark:border-slate-700"
+              draggable
+              onDragStart={() => setDragIndex(index)}
+              onDragEnd={() => setDragIndex(null)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragIndex != null) moveVariant(dragIndex, index);
+                setDragIndex(null);
+              }}
+              className={`rounded-lg border p-3 transition-colors dark:border-slate-700 ${
+                dragIndex === index
+                  ? 'border-pink-400 bg-pink-50/40 dark:bg-pink-950/20'
+                  : 'border-slate-200'
+              }`}
             >
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  Variant {index + 1}
-                </span>
-                {variants.length > 1 && (
-                  <Button type="button" variant="ghost" className="text-xs text-red-600" onClick={() => removeVariant(index)}>
-                    Remove
-                  </Button>
-                )}
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <button
+                    type="button"
+                    aria-label="Drag to reorder"
+                    className="cursor-grab text-slate-300 hover:text-slate-500 active:cursor-grabbing"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <Icon name="drag_indicator" className="!text-[18px]" />
+                  </button>
+                  <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Variant {index + 1}
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <button
+                    type="button"
+                    aria-label="Move variant up"
+                    disabled={index === 0}
+                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 dark:hover:bg-slate-800"
+                    onClick={() => moveVariant(index, index - 1)}
+                  >
+                    <Icon name="keyboard_arrow_up" className="!text-[18px]" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Move variant down"
+                    disabled={index === variants.length - 1}
+                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 dark:hover:bg-slate-800"
+                    onClick={() => moveVariant(index, index + 1)}
+                  >
+                    <Icon name="keyboard_arrow_down" className="!text-[18px]" />
+                  </button>
+                  {variants.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="ml-1 text-xs text-red-600"
+                      onClick={() => removeVariant(index)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 <Field label={`Cost in ${creditLabel}`}>

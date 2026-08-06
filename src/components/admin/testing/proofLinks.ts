@@ -18,6 +18,7 @@ export function parseProofLinks(raw: unknown): ProofLink[] {
 
 /** Sessions where proof drawer supports reference URLs (privacy policy links, etc.). */
 export const PROOF_LINK_SESSION_IDS = new Set([
+  'policy-docs',
   'policy-review',
   'data-controls',
   'security-billing',

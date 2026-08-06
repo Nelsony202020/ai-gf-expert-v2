@@ -1,7 +1,6 @@
 // Free access details — four simple questions stored on the restrictions slug.
 
 import { Field, Select, TextInput } from '../ui';
-import { TestingHint } from './TestingHint';
 import type { RawValue } from './EvidenceInput';
 import {
   CARD_LABELS,
@@ -32,14 +31,7 @@ function LabeledSelect({
   onChange: (value: string) => void;
 }) {
   return (
-    <Field
-      label={
-        <span className="inline-flex items-center gap-1">
-          {label}
-          <TestingHint text={hint} />
-        </span>
-      }
-    >
+    <Field label={label} help={hint}>
       <Select value={value} disabled={disabled} className={selectClass} onChange={(e) => onChange(e.target.value)}>
         <option value="">Choose…</option>
         {options.map((o) => (
@@ -101,14 +93,7 @@ export function FreeAccessDetailsField({
       />
 
       {parsed.trialStated === 'yes' && (
-        <Field
-          label={
-            <span className="inline-flex items-center gap-1">
-              Free trial length
-              <TestingHint text={FREE_ACCESS_FIELD_HINTS.trialLength} />
-            </span>
-          }
-        >
+        <Field label="Free trial length" help={FREE_ACCESS_FIELD_HINTS.trialLength}>
           <TextInput
             disabled={disabled}
             value={parsed.trialLength}

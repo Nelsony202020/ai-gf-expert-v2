@@ -3,8 +3,7 @@ import { isCategoryVerdictComplete } from './categoryVerdictProgress';
 
 export const VERDICT_STEPS: VerdictStepDef[] = [
   { id: 'overall', label: 'Overall summary', navLabel: 'Overall' },
-  { id: 'decision', label: 'Decision summary', navLabel: 'Decision' },
-  { id: 'pros-cons', label: 'Pros & cons', navLabel: 'Pros & cons' },
+  { id: 'decision', label: 'Decision & pros/cons', navLabel: 'Decision' },
   { id: 'expert', label: 'Expert opinion', navLabel: 'Expert opinion' },
   { id: 'categories', label: 'Category verdicts', navLabel: 'Categories' },
 ];
@@ -30,9 +29,11 @@ export function isVerdictStepComplete(stepId: VerdictStepId, input: VerdictProgr
     case 'overall':
       return textFilled(input.oneLineVerdict) && textFilled(input.ourTake);
     case 'decision':
-      return input.bestFor.length > 0;
-    case 'pros-cons':
-      return input.pros.length > 0 && input.cons.length > 0;
+      return (
+        input.bestFor.length > 0 &&
+        input.pros.length > 0 &&
+        input.cons.length > 0
+      );
     case 'expert':
       return textFilled(input.expertOpinion);
     case 'categories':

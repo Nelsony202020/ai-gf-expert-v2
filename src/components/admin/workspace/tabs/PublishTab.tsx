@@ -214,7 +214,7 @@ export function PublishTab() {
           items={required}
           productId={ws.productId}
           tone="red"
-          serverMessages={serverCheck?.errors ?? []}
+          serverMessages={serverMessagesWithoutClientDuplicates(required, serverCheck?.errors ?? [])}
         />
 
         {/* Recommended */}
@@ -225,7 +225,7 @@ export function PublishTab() {
           items={recommended}
           productId={ws.productId}
           tone="amber"
-          serverMessages={serverCheck?.warnings ?? []}
+          serverMessages={serverMessagesWithoutClientDuplicates(recommended, serverCheck?.warnings ?? [])}
         />
 
         {/* Actions */}
@@ -336,6 +336,18 @@ export function PublishTab() {
       <CompletionSidebar />
     </div>
   );
+}
+
+function serverMessagesWithoutClientDuplicates(
+  items: MissingItem[],
+  serverMessages: string[],
+): string[] {
+  if (serverMessages.length === 0) return [];
+  const needles = items.map((item) => item.label.toLowerCase());
+  return serverMessages.filter((msg) => {
+    const lower = msg.toLowerCase();
+    return !needles.some((label) => lower.includes(label));
+  });
 }
 
 function ChecklistSection({

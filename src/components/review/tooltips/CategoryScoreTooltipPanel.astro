@@ -114,7 +114,7 @@ const panelClass = [
 
     <div {...(annotate ? { 'data-annotation-target': '4' } : {})}>
       <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-      <ScoreDistributionChart bins={bins} categoryKey={category.key} />
+      <ScoreDistributionChart bins={bins} categoryKey={category.key} highlightScore={currentScore} />
     </div>
   </div>
 </div>

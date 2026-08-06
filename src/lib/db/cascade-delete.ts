@@ -65,8 +65,13 @@ export async function deleteProductCascade(
       pricingSnapshots: {},
       featureCosts: {},
       pricingPromotions: {},
-      testRuns: { evidenceResults: { attachments: {} }, scoreSnapshots: {} },
+      testRuns: {
+        evidenceResults: { attachments: {} },
+        scoreSnapshots: {},
+        aiPrivacyAnalyses: {},
+      },
       evidenceResults: { attachments: {} },
+      aiPrivacyAnalyses: {},
       scoreSnapshots: {},
       roundupEntries: {},
       homepageSlots: {},
@@ -93,6 +98,7 @@ export async function deleteProductCascade(
   const pricingSnapshots = new Set<string>();
   const featureCosts = new Set<string>();
   const pricingPromotions = new Set<string>();
+  const aiPrivacyAnalyses = new Set<string>();
 
   for (const link of product.affiliateLinks ?? []) {
     mark(affiliateLinks, link.id);
@@ -120,17 +126,20 @@ export async function deleteProductCascade(
       mark(evidenceResults, er.id);
       for (const att of er.attachments ?? []) mark(media, att.id);
     }
+    for (const row of run.aiPrivacyAnalyses ?? []) mark(aiPrivacyAnalyses, row.id);
   }
   for (const snap of product.scoreSnapshots ?? []) mark(scoreSnapshots, snap.id);
   for (const er of product.evidenceResults ?? []) {
     mark(evidenceResults, er.id);
     for (const att of er.attachments ?? []) mark(media, att.id);
   }
+  for (const row of product.aiPrivacyAnalyses ?? []) mark(aiPrivacyAnalyses, row.id);
 
   const chunks = [
     ...deleteChunks('affiliateLinkHistory', affiliateLinkHistory),
     ...deleteChunks('homepageSlots', homepageSlots),
     ...deleteChunks('roundupEntries', roundupEntries),
+    ...deleteChunks('aiPrivacyAnalyses', aiPrivacyAnalyses),
     ...deleteChunks('evidenceResults', evidenceResults),
     ...deleteChunks('scoreSnapshots', scoreSnapshots),
     ...deleteChunks('testRuns', testRuns),

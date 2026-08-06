@@ -1,6 +1,11 @@
 // Client-side "answered enough to publish" checks aligned with the scoring engine.
 
 import type { RawValue } from '../scoring/engine';
+import { isEvidenceApplicable } from './capabilityGating';
+import { isGenderCountApplicable } from './genderCountGating';
+import { PRICING_AUTOFILL_SLUGS } from './pricingEvidenceSlugs';
+import { isRetiredEvidenceSlug } from './retiredEvidence';
+import { isRetentionPeriodComplete } from './retentionPeriod';
 import { isSecurityIncidentsComplete } from './securityIncidents';
 
 const MODE_RATING_SCORES = new Set(['good', 'partial', 'poor']);
@@ -62,7 +67,7 @@ export function repairChatModesRaw(
   const modes = structured?.modes;
   if (!Array.isArray(modes) || modes.length === 0) return chat as RawValue;
 
-  return { status: 'yes', detail: { count: Math.max(modes.length, 2) } };
+  return { status: 'yes', detail: { count: modes.length } };
 }
 
 export function chatModesCount(related?: Record<string, RawValue | undefined>): number | null {
@@ -85,6 +90,8 @@ export function isEvidenceAnswerComplete(opts: {
   hasAutofillSuggestion?: boolean;
 }): boolean {
   const { slug, rawValue, notApplicable, isUnknown, relatedAnswers, hasAutofillSuggestion } = opts;
+
+  if (isRetiredEvidenceSlug(slug)) return true;
 
   if (notApplicable || isUnknown) return true;
 
@@ -124,6 +131,10 @@ export function isEvidenceAnswerComplete(opts: {
     return isSecurityIncidentsComplete(rawValue as RawValue | undefined);
   }
 
+  if (slug === 'retention') {
+    return isRetentionPeriodComplete(rawValue as RawValue | undefined);
+  }
+
   if (slug === 'mode-types') {
     const related = { ...relatedAnswers };
     if (related['chat-modes']) {
@@ -135,29 +146,91 @@ export function isEvidenceAnswerComplete(opts: {
     const modeCount = chatModesCount(related);
     if (modeCount !== null && modeCount <= 1) return true;
     if (modeCount === null) return false;
-    const raw = rawValue as { structured?: { modes?: Array<{ rating?: string }> } };
+    const raw = rawValue as {
+      structured?: { modes?: Array<{ name?: string; rating?: string }> };
+    };
     const modes = raw.structured?.modes;
     if (!Array.isArray(modes) || modes.length === 0) return false;
-    return modes.some((m) => MODE_RATING_SCORES.has(String(m.rating ?? '').toLowerCase()));
+    const rated = modes.filter(
+      (m) =>
+        String(m.name ?? '').trim() !== '' &&
+        MODE_RATING_SCORES.has(String(m.rating ?? '').toLowerCase()),
+    );
+    return rated.length >= modeCount;
   }
 
   return true;
 }
 
+export interface SupplementalMissingContext {
+  sessionDefIds: Set<string>;
+  hasValue: (defId: string) => boolean;
+  categorySlugByDefId: Map<string, string>;
+  productFields?: Record<string, unknown>;
+  gendersRaw?: unknown;
+  hasAutofillSuggestion?: (defId: string) => boolean;
+  isExcludedFromTesting?: (categorySlug: string, slug: string) => boolean;
+}
+
 /** Required defs not shown in any testing session (e.g. pricing autofill). */
 export function supplementalRequiredMissing(
-  definitions: { id: string; active?: boolean; required?: boolean; name?: unknown; questionLabel?: unknown; slug?: unknown }[],
-  sessionDefIds: Set<string>,
-  hasValue: (defId: string) => boolean,
-): { count: number; labels: string[]; items: { defId: string; label: string }[] } {
+  definitions: {
+    id: string;
+    active?: boolean;
+    required?: boolean;
+    name?: unknown;
+    questionLabel?: unknown;
+    slug?: unknown;
+  }[],
+  ctx: SupplementalMissingContext,
+): {
+  count: number;
+  labels: string[];
+  items: { defId: string; label: string; categorySlug: string; slug: string; source: 'pricing' | 'hidden' }[];
+} {
   const COMBINED = new Set(['mode-types', 'live-cam', 'support-channels']);
-  const items: { defId: string; label: string }[] = [];
+  const items: {
+    defId: string;
+    label: string;
+    categorySlug: string;
+    slug: string;
+    source: 'pricing' | 'hidden';
+  }[] = [];
+
   for (const def of definitions) {
     if (def.active === false || !def.required) continue;
-    if (COMBINED.has(String(def.slug ?? ''))) continue;
-    if (sessionDefIds.has(def.id)) continue;
-    if (hasValue(def.id)) continue;
-    items.push({ defId: def.id, label: String(def.questionLabel ?? def.name ?? def.id) });
+
+    const slug = String(def.slug ?? '');
+    const categorySlug = ctx.categorySlugByDefId.get(def.id) ?? '';
+
+    if (COMBINED.has(slug)) continue;
+    if (isRetiredEvidenceSlug(slug)) continue;
+    if (ctx.sessionDefIds.has(def.id)) continue;
+    if (ctx.hasValue(def.id)) continue;
+    if (ctx.hasAutofillSuggestion?.(def.id)) continue;
+
+    if (ctx.isExcludedFromTesting?.(categorySlug, slug)) continue;
+
+    if (
+      categorySlug === 'characters' &&
+      !isGenderCountApplicable(categorySlug, slug, ctx.gendersRaw)
+    ) {
+      continue;
+    }
+
+    if (!isEvidenceApplicable(categorySlug, def, ctx.productFields ?? {})) continue;
+
+    const source =
+      categorySlug === 'pricing' && PRICING_AUTOFILL_SLUGS.has(slug) ? 'pricing' : 'hidden';
+
+    items.push({
+      defId: def.id,
+      label: String(def.questionLabel ?? def.name ?? def.id),
+      categorySlug,
+      slug,
+      source,
+    });
   }
+
   return { count: items.length, labels: items.map((i) => i.label), items };
 }

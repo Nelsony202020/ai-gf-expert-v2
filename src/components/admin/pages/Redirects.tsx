@@ -24,6 +24,25 @@ import { invalidateRegistryCache, useUrlRegistry } from './seo/registry';
 import type { RegistryIssue } from '../../../lib/seo/urlRegistryTypes';
 
 type TabId = 'active' | 'suggested';
+type SortKey = 'source' | 'destination' | 'type' | 'active' | 'hits' | 'created' | 'issues';
+type SortDir = 'asc' | 'desc';
+
+const DEFAULT_SORT_DIR: Record<SortKey, SortDir> = {
+  source: 'asc',
+  destination: 'asc',
+  type: 'asc',
+  active: 'desc',
+  hits: 'desc',
+  created: 'desc',
+  issues: 'desc',
+};
+
+function toggleSortKey(current: { key: SortKey; dir: SortDir } | null, key: SortKey) {
+  if (current?.key === key) {
+    return { key, dir: current.dir === 'asc' ? ('desc' as SortDir) : ('asc' as SortDir) };
+  }
+  return { key, dir: DEFAULT_SORT_DIR[key] };
+}
 
 export function RedirectsPage() {
   const [rows, setRows] = useState<EntityRow[] | null>(null);
@@ -32,6 +51,7 @@ export function RedirectsPage() {
   const [prefill, setPrefill] = useState<{ sourcePath?: string; destinationPath?: string } | null>(null);
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<TabId>('active');
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir } | null>(null);
   const { registry, reload: reloadRegistry } = useUrlRegistry();
 
   function reload() {
@@ -71,6 +91,43 @@ export function RedirectsPage() {
   const filtered = rows?.filter(
     (r) => !search || `${r.sourcePath} ${r.destinationPath}`.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const sorted = useMemo(() => {
+    if (!filtered) return filtered;
+    if (!sort) return filtered;
+    const list = [...filtered];
+    list.sort((a, b) => {
+      let cmp = 0;
+      switch (sort.key) {
+        case 'source':
+          cmp = String(a.sourcePath).localeCompare(String(b.sourcePath));
+          break;
+        case 'destination':
+          cmp = String(a.destinationPath ?? '').localeCompare(String(b.destinationPath ?? ''));
+          break;
+        case 'type':
+          cmp = Number(a.redirectType ?? 0) - Number(b.redirectType ?? 0);
+          break;
+        case 'active':
+          cmp = Number(Boolean(a.active)) - Number(Boolean(b.active));
+          break;
+        case 'hits':
+          cmp = Number(a.hitCount ?? 0) - Number(b.hitCount ?? 0);
+          break;
+        case 'created':
+          cmp = Number(a.createdAt ?? 0) - Number(b.createdAt ?? 0);
+          break;
+        case 'issues': {
+          const ai = (issuesById.get(a.id) ?? []).length;
+          const bi = (issuesById.get(b.id) ?? []).length;
+          cmp = ai - bi;
+          break;
+        }
+      }
+      return sort.dir === 'asc' ? cmp : -cmp;
+    });
+    return list;
+  }, [filtered, sort, issuesById]);
 
   return (
     <div className="space-y-4">
@@ -121,26 +178,26 @@ export function RedirectsPage() {
 
       {tab === 'active' ? (
         <Card>
-          {!filtered ? (
+          {!sorted ? (
             <Spinner />
-          ) : filtered.length === 0 ? (
+          ) : sorted.length === 0 ? (
             <EmptyState message="No redirects." />
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-400">
-                  <th className="px-2 py-2">Source</th>
-                  <th className="px-2 py-2">Destination</th>
-                  <th className="px-2 py-2">Type</th>
-                  <th className="px-2 py-2">Active</th>
-                  <th className="px-2 py-2">Hits</th>
-                  <th className="px-2 py-2">Created</th>
-                  <th className="px-2 py-2">Issues</th>
+                  <SortableHeader label="Source" sortKey="source" sort={sort} onSort={setSort} />
+                  <SortableHeader label="Destination" sortKey="destination" sort={sort} onSort={setSort} />
+                  <SortableHeader label="Type" sortKey="type" sort={sort} onSort={setSort} />
+                  <SortableHeader label="Active" sortKey="active" sort={sort} onSort={setSort} />
+                  <SortableHeader label="Hits" sortKey="hits" sort={sort} onSort={setSort} />
+                  <SortableHeader label="Created" sortKey="created" sort={sort} onSort={setSort} />
+                  <SortableHeader label="Issues" sortKey="issues" sort={sort} onSort={setSort} />
                   <th className="px-2 py-2" />
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r) => {
+                {sorted.map((r) => {
                   const issues = issuesById.get(r.id) ?? [];
                   return (
                     <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
@@ -354,7 +411,14 @@ export function RedirectModal({
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Type">
-            <Select value={redirectType} onChange={(e) => setRedirectType(e.target.value)}>
+            <Select
+              value={redirectType}
+              onChange={(e) => {
+                const next = e.target.value;
+                setRedirectType(next);
+                if (Number(next) === 410) setDestinationPath('');
+              }}
+            >
               <option value="301">301 (permanent)</option>
               <option value="302">302 (temporary)</option>
               <option value="410">410 (gone)</option>
@@ -377,5 +441,38 @@ export function RedirectModal({
         </div>
       </form>
     </Modal>
+  );
+}
+
+function SortableHeader({
+  label,
+  sortKey,
+  sort,
+  onSort,
+}: {
+  label: string;
+  sortKey: SortKey;
+  sort: { key: SortKey; dir: SortDir } | null;
+  onSort: (next: { key: SortKey; dir: SortDir }) => void;
+}) {
+  const active = sort?.key === sortKey;
+  return (
+    <th className="px-2 py-2">
+      <button
+        type="button"
+        onClick={() => onSort(toggleSortKey(sort, sortKey))}
+        className={`inline-flex items-center gap-0.5 uppercase tracking-wide transition-colors hover:text-slate-600 dark:hover:text-slate-200 ${
+          active ? 'font-semibold text-pink-600 dark:text-pink-400' : ''
+        }`}
+      >
+        {label}
+        {active && (
+          <Icon
+            name={sort!.dir === 'asc' ? 'arrow_upward' : 'arrow_downward'}
+            className="!text-[14px]"
+          />
+        )}
+      </button>
+    </th>
   );
 }

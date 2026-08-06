@@ -322,6 +322,14 @@ html.theme-transition *::after {
   border-color: #1e293b !important;
 }
 
+[data-theme='dark'] .rt-dist-chart__bar-fill--active {
+  box-shadow: 0 0 0 1.5px rgb(148 163 184 / 45%);
+}
+
+[data-theme='dark'] .rt-dist-chart__marker {
+  border-bottom-color: rgb(241 241 241 / 42%);
+}
+
 [data-theme='dark'] .rt-comp-row--link:hover {
   background: rgb(219 39 119 / 12%) !important;
 }

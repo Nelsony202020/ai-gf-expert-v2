@@ -1,7 +1,8 @@
 import type { AiVerdictScope } from '../config';
 import type { AssembledPayload } from '../assembleEvidence';
 import type { KeyFinding } from '../suggestionSchema';
-import { categoryFocusRule, listFieldExtraRules } from '../fieldPromptHelpers';
+import { categoryFocusRule, isMetaDescriptionField, listFieldExtraRules } from '../fieldPromptHelpers';
+import { metaDescriptionUserInstruction } from './metaDescription';
 
 export function buildSystemPrompt(scope: AiVerdictScope): string {
   return `You are an editorial assistant for AI GF Expert, an independent product review site.
@@ -26,31 +27,41 @@ export function buildUserPrompt(
     notesContext?: KeyFinding[];
   },
 ): string {
-  const trimmed = {
-    product: payload.product,
-    testRun: payload.testRun,
-    scope: payload.scope,
-    categorySlug: payload.categorySlug,
-    targetField,
-    overallScore: payload.overallScore,
-    scores: payload.scores,
-    benchmarks: payload.benchmarks,
-    pricing: payload.pricing,
-    previousRun: payload.previousRun,
-    evidence: payload.evidence.map((e: AssembledPayload['evidence'][number]) => ({
-      id: e.id,
-      slug: e.slug,
-      name: e.name,
-      categorySlug: e.categorySlug,
-      publicResult: e.publicResult,
-      publicExplanation: e.publicExplanation,
-      normalizedScore: e.normalizedScore,
-      isUnknown: e.isUnknown,
-      notApplicable: e.notApplicable,
-      internalNotes: e.internalNotes,
-    })),
-    key_findings: keyFindings,
-  };
+  const metaDescription = isMetaDescriptionField(targetField);
+  const trimmed = metaDescription
+    ? {
+        product: payload.product,
+        key_findings: keyFindings,
+        category_scores: payload.scores
+          .filter((s) => s.kind === 'category')
+          .map((s) => ({ category: s.refSlug, score: s.score })),
+        pricing: payload.pricing?.summary ?? null,
+      }
+    : {
+        product: payload.product,
+        testRun: payload.testRun,
+        scope: payload.scope,
+        categorySlug: payload.categorySlug,
+        targetField,
+        overallScore: payload.overallScore,
+        scores: payload.scores,
+        benchmarks: payload.benchmarks,
+        pricing: payload.pricing,
+        previousRun: payload.previousRun,
+        evidence: payload.evidence.map((e: AssembledPayload['evidence'][number]) => ({
+          id: e.id,
+          slug: e.slug,
+          name: e.name,
+          categorySlug: e.categorySlug,
+          publicResult: e.publicResult,
+          publicExplanation: e.publicExplanation,
+          normalizedScore: e.normalizedScore,
+          isUnknown: e.isUnknown,
+          notApplicable: e.notApplicable,
+          internalNotes: e.internalNotes,
+        })),
+        key_findings: keyFindings,
+      };
 
   const fieldInstructions =
     payload.scope === 'overall'
@@ -58,7 +69,7 @@ export function buildUserPrompt(
       : payload.scope === 'category'
         ? `Generate category fields for "${payload.categorySlug}": category_verdict_headline, category_verdict, category_primary_strength, category_primary_limitation, category_pros, category_cons.`
         : payload.scope === 'field'
-          ? fieldModeInstruction(targetField, opts, payload.categorySlug)
+          ? fieldModeInstruction(targetField, opts, payload.categorySlug, payload.product.name)
           : `Generate expert_opinion_outline only — bullet prompts for the editor, not finished first-person copy.`;
 
   const schemaHint = schemaInstructions(payload.scope);
@@ -88,14 +99,15 @@ function fieldModeInstruction(
     fieldMode?: 'write' | 'rewrite' | 'shorten' | 'specific' | 'another';
   },
   categorySlug?: string,
+  brandName?: string,
 ): string {
+  if (isMetaDescriptionField(targetField)) {
+    return metaDescriptionUserInstruction(brandName ?? 'this product', opts?.fieldMode);
+  }
+
   const topic = categoryFocusRule(categorySlug);
   const listRules = listFieldExtraRules(targetField);
-  const tf = (targetField ?? '').toLowerCase();
-  const seoMetaRules = tf.includes('meta description')
-    ? ' Write a Google meta description under 155 characters. Summarize the overall product review in plain language. Do not list category scores or unrelated features.'
-    : '';
-  const base = `Generate field_suggestion for target field "${targetField}". Use plain, easy-to-understand language — first-year high school reading level. Never sound technical or corporate.${topic}${listRules}${seoMetaRules}`;
+  const base = `Generate field_suggestion for target field "${targetField}". Use plain, easy-to-understand language — first-year high school reading level. Never sound technical or corporate.${topic}${listRules}`;
   switch (opts?.fieldMode) {
     case 'rewrite':
       return `${base} Rewrite the current editor text so it is much easier to understand. Keep every important detail, fact, and nuance. Keep the author's tone and editorial integrity — only simplify wording and improve flow. Do not make it stiff, jargon-heavy, or corporate.`;

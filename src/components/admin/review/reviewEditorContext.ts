@@ -8,6 +8,7 @@ export type ImageInspectorTarget = {
   attrs: Record<string, unknown>;
   itemIndex?: number;
   pairWithNext?: () => void;
+  splitRow?: () => void;
 };
 
 export interface ReviewEditorUI {

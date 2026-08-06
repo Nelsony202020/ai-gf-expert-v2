@@ -58,6 +58,8 @@ export interface ProgressContext {
   getResult: (defId: string) => EntityRow | undefined;
   attachmentCount: (defId: string) => number;
   isSkipped: (sessionKey: string) => boolean;
+  /** Optional: empty-slug assist sessions (policy-docs) mark complete after AI apply. */
+  isAssistSessionComplete?: (sessionId: string) => boolean;
 }
 
 /** How many things a tester fills in for one session (1 grid counts as 1). */
@@ -183,6 +185,16 @@ export function sessionRequiredProgress(
   items: SessionItem[],
   ctx: ProgressContext,
 ): { total: number; complete: number; remaining: number; units: RequiredInputUnit[] } {
+  if (items.length === 0 && ctx.isAssistSessionComplete) {
+    const done = ctx.isAssistSessionComplete(sessionId);
+    return {
+      units: [],
+      total: 1,
+      complete: done ? 1 : 0,
+      remaining: done ? 0 : 1,
+    };
+  }
+
   const units = sessionRequiredUnits(sessionId, items);
   const complete = units.filter((u) => unitCompleteWithItems(u, items, ctx)).length;
   return {
@@ -200,7 +212,12 @@ export function sessionRequiredComplete(
   ctx: ProgressContext,
 ): boolean {
   const { total, complete } = sessionRequiredProgress(sessionId, items, ctx);
-  if (total === 0) return true;
+  if (total === 0) {
+    if (items.length === 0 && ctx.isAssistSessionComplete) {
+      return ctx.isAssistSessionComplete(sessionId);
+    }
+    return items.length > 0;
+  }
   return complete >= total;
 }
 
@@ -220,7 +237,12 @@ export function deriveSessionStatus(
 ): SessionStatus {
   const { total, complete } = sessionRequiredProgress(sessionId, items, ctx);
   if (total === 0) {
-    if (items.length === 0) return 'not_started';
+    // Empty-slug assist sessions (e.g. policy-docs): skipped, or optional custom complete.
+    if (items.length === 0) {
+      if (ctx.isSkipped(sessionKey)) return 'skipped';
+      if (ctx.isAssistSessionComplete?.(sessionId)) return 'complete';
+      return 'not_started';
+    }
     const answered = items.filter(({ def }) => ctx.hasValue(def.id)).length;
     if (answered === 0) return 'not_started';
     if (answered >= items.length) return 'complete';

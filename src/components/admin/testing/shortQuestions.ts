@@ -41,7 +41,7 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "characters|styles": {
     "q": "Characters: which art styles?",
-    "hint": "Tick each style offered (realistic, anime, 2D, etc.)."
+    "hint": "Tick each art style offered (realistic, anime, fantasy, semi-realistic). Add others in the text field."
   },
   "characters|genders": {
     "q": "Which gender groups are offered?",
@@ -110,6 +110,10 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   "customization|breast-size": {
     "q": "Creator: breast size options?",
     "hint": "Count breast size choices if offered."
+  },
+  "customization|ss-size": {
+    "q": "Creator: SS size options?",
+    "hint": "Count SS size choices if offered."
   },
   "customization|hair-style": {
     "q": "Creator: hair style options?",
@@ -297,11 +301,11 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "chat-features|chat-modes": {
     "q": "Different chat modes?",
-    "hint": "Yes or No. If yes, count how many modes exist, then test and rate two of them."
+    "hint": "Yes or No. If yes, enter how many modes exist, then test and rate each one."
   },
   "chat-features|mode-types": {
     "q": "Chat: how well do modes work?",
-    "hint": "Filled automatically when you rate two modes above."
+    "hint": "Filled automatically when you rate all modes above."
   },
   "chat-features|group-chat": {
     "q": "Chat: group chat?",
@@ -423,10 +427,6 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "q": "Video: image-to-video?",
     "hint": "Try to create three videos from three different source images."
   },
-  "video|chat-video": {
-    "q": "Video: chat video?",
-    "hint": "Request one video in three separate chats."
-  },
   "video|audio": {
     "q": "Video: audio?",
     "hint": "Generate three videos and request audio."
@@ -489,7 +489,7 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "privacy|human-review": {
     "q": "Privacy: human review?",
-    "hint": "Search the privacy policy, terms and help pages for a clear statement about employees or contract…"
+    "hint": "Search the privacy policy, terms and help pages for a clear statement about if or when the company uses humans to review user content."
   },
   "privacy|data-sharing": {
     "q": "Privacy: data sharing?",
@@ -500,8 +500,8 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Check the privacy policy and account settings for advertising, personalized advertising or profil…"
   },
   "privacy|retention": {
-    "q": "Privacy: retention?",
-    "hint": "Record the stated storage period for:"
+    "q": "How long does the company keep your data?",
+    "hint": "Check the privacy policy for how long chats, account info, payment records, and deleted data are stored. Enter the longest stated period."
   },
   "privacy|policy-clarity": {
     "q": "How clear is the privacy policy?",
@@ -653,7 +653,7 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "pricing|paywalls": {
     "q": "Which features are paywalled?",
-    "hint": "Tick features that require a higher tier or extra payment beyond the normal plan."
+    "hint": "Tick features that require a higher tier or extra payment beyond the normal plan. Choose None if nothing extra is paywalled (full points)."
   },
   "pricing|credit-expiry": {
     "q": "Credit expiry?",

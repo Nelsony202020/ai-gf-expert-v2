@@ -786,13 +786,14 @@ export const homepageSlotSchema = z.object({
 export const redirectSchema = z
   .object({
     sourcePath: pathString,
-    destinationPath: z.union([pathString, httpUrl]).optional(),
+    destinationPath: z.union([pathString, httpUrl, z.literal('')]).optional(),
     redirectType: z.union([z.literal(301), z.literal(302), z.literal(410)]),
     active: z.boolean(),
     notes: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.redirectType !== 410 && !data.destinationPath?.trim()) {
+    if (data.redirectType === 410) return;
+    if (!data.destinationPath?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Destination is required for 301/302 redirects.',

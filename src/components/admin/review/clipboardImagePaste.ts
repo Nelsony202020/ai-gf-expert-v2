@@ -23,23 +23,17 @@ export interface ClipboardPasteOptions {
 async function uploadPastedFile(
   file: File,
   productId: string,
-  altText: string,
   mediaTags: string[] = [],
 ): Promise<PastedImageResult> {
   const normalized = fileWithInferredMime(file);
   const form = new FormData();
   form.set('file', normalized);
   form.set('adult', '0');
-  form.set('altText', altText);
   form.set('role', 'gallery');
   form.set('mediaTags', JSON.stringify(mediaTags));
   form.set('productId', productId);
   const created = await api.upload<{ id: string; url?: string }>('/api/admin/media/upload', form);
-  return { id: created.id, url: created.url ?? '', altText };
-}
-
-function altFromFilename(name: string): string {
-  return name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
+  return { id: created.id, url: created.url ?? '', altText: '' };
 }
 
 async function srcToFile(src: string, index: number): Promise<File | null> {
@@ -119,8 +113,7 @@ export function createClipboardImagePaste(getOptions: () => ClipboardPasteOption
                 void (async () => {
                   try {
                     for (const file of imageFiles) {
-                      const altText = altFromFilename(file.name);
-                      const uploaded = await uploadPastedFile(file, productId, altText);
+                      const uploaded = await uploadPastedFile(file, productId);
                       editor
                         .chain()
                         .focus()
@@ -128,7 +121,7 @@ export function createClipboardImagePaste(getOptions: () => ClipboardPasteOption
                           type: 'image',
                           attrs: {
                             src: uploaded.url,
-                            alt: uploaded.altText,
+                            alt: '',
                             mediaId: uploaded.id,
                             caption: '',
                           },
@@ -168,11 +161,10 @@ export function createClipboardImagePaste(getOptions: () => ClipboardPasteOption
                     if (!src || !needsImageUpload(src)) continue;
                     const file = await srcToFile(src, idx++);
                     if (!file) continue;
-                    const altText = img.getAttribute('alt')?.trim() || altFromFilename(file.name);
-                    const uploaded = await uploadPastedFile(file, productId, altText);
+                    const uploaded = await uploadPastedFile(file, productId);
                     img.setAttribute('src', uploaded.url);
                     img.setAttribute('data-media-id', uploaded.id);
-                    if (!img.getAttribute('alt')) img.setAttribute('alt', uploaded.altText);
+                    img.setAttribute('alt', '');
                   }
 
                   editor.chain().focus().insertContent(doc.body.innerHTML).run();
@@ -186,7 +178,7 @@ export function createClipboardImagePaste(getOptions: () => ClipboardPasteOption
                     const stamped = imgs.find((img) => img.getAttribute('src') === src);
                     const mediaId = stamped?.getAttribute('data-media-id');
                     if (mediaId && node.attrs.mediaId !== mediaId) {
-                      tr.setNodeMarkup(pos, undefined, { ...node.attrs, mediaId });
+                      tr.setNodeMarkup(pos, undefined, { ...node.attrs, mediaId, alt: '', caption: '' });
                       changed = true;
                     }
                   });

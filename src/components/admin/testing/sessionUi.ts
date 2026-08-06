@@ -3,6 +3,8 @@
 import type { EntityRow } from '../api';
 import type { RawValue } from './EvidenceInput';
 import { formatChecklistAnswer, formatEvidenceAnswer } from '../../../lib/testing/evidenceFormat';
+import { formatRetentionPeriodSummary } from '../../../lib/testing/retentionPeriod';
+import { formatSecurityIncidentsSummary } from '../../../lib/testing/securityIncidents';
 import { controlKind, testerQuestion } from './presentation';
 
 export interface SessionItem {
@@ -15,15 +17,11 @@ export type RowState = 'done' | 'na' | 'todo' | 'unsaved';
 export function formatAnswerSummary(def: EntityRow, raw: RawValue | undefined, na: boolean): string {
   if (na) return 'N/A';
   if (!raw) return '—';
-  if (String(def.slug) === 'security-incidents' && 'value' in raw) {
-    const detail =
-      'detail' in raw && raw.detail && typeof raw.detail === 'object'
-        ? (raw.detail as Record<string, unknown>)
-        : undefined;
-    if (raw.value === 0 && detail?.foundIncidents === false) return 'None found';
-    if (typeof raw.value === 'number' && raw.value > 0) {
-      return `${raw.value} incident${raw.value === 1 ? '' : 's'}`;
-    }
+  if (String(def.slug) === 'retention' && 'value' in raw) {
+    return formatRetentionPeriodSummary(raw);
+  }
+  if (String(def.slug) === 'security-incidents') {
+    return formatSecurityIncidentsSummary(raw);
   }
   if ('status' in raw) {
     if (raw.status === 'na') return 'N/A';

@@ -1,23 +1,28 @@
 // Reference URLs attached to an evidence result (policy pages, settings links, etc.).
 
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { dataApi } from '../api';
 import { Button, Icon, TextInput } from '../ui';
 import { parseProofLinks, type ProofLink } from './proofLinks';
 
-export function EvidenceLinks({
-  resultId,
-  proofLinks,
-  ensureResultId,
-  disabled,
-  onChanged,
-}: {
-  resultId: string | null;
-  proofLinks: ProofLink[];
-  ensureResultId: () => Promise<string>;
-  disabled?: boolean;
-  onChanged?: () => void;
-}) {
+export type EvidenceLinksHandle = {
+  /** Save URL/label draft fields if the user did not click Add link. */
+  flushPending: () => Promise<void>;
+};
+
+export const EvidenceLinks = forwardRef<
+  EvidenceLinksHandle,
+  {
+    resultId: string | null;
+    proofLinks: ProofLink[];
+    ensureResultId: () => Promise<string>;
+    disabled?: boolean;
+    onChanged?: () => void;
+  }
+>(function EvidenceLinks(
+  { resultId, proofLinks, ensureResultId, disabled, onChanged },
+  ref,
+) {
   const [links, setLinks] = useState<ProofLink[]>(proofLinks);
   const [draftUrl, setDraftUrl] = useState('');
   const [draftLabel, setDraftLabel] = useState('');
@@ -57,8 +62,8 @@ export function EvidenceLinks({
     }
   }
 
-  async function addLink() {
-    const url = draftUrl.trim();
+  async function addLink(urlRaw?: string, labelRaw?: string) {
+    const url = (urlRaw ?? draftUrl).trim();
     if (!url) return;
     try {
       new URL(url);
@@ -66,12 +71,21 @@ export function EvidenceLinks({
       setError('Enter a valid URL (include https://).');
       return;
     }
-    const label = draftLabel.trim();
+    const label = (labelRaw ?? draftLabel).trim();
     const next = [...links, { url, ...(label ? { label } : {}) }];
     await persist(next);
-    setDraftUrl('');
-    setDraftLabel('');
+    if (urlRaw == null) {
+      setDraftUrl('');
+      setDraftLabel('');
+    }
   }
+
+  useImperativeHandle(ref, () => ({
+    flushPending: async () => {
+      if (!draftUrl.trim() || disabled || saving) return;
+      await addLink();
+    },
+  }));
 
   return (
     <div className="space-y-2 rounded-md border border-slate-200 p-3 dark:border-slate-700">
@@ -154,4 +168,4 @@ export function EvidenceLinks({
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );
-}
+});

@@ -2,6 +2,11 @@ import { getDb } from '../db/server';
 import { HttpError } from '../db/auth';
 import type { AiVerdictScope } from './config';
 import { inputHash } from './hash';
+import { isMetaDescriptionField } from './fieldPromptHelpers';
+import {
+  applyPricingAutofillToEvidence,
+  type PricingAutofillDef,
+} from '../testing/pricingAutofill';
 
 export interface AssembledEvidenceItem {
   id: string;
@@ -9,6 +14,7 @@ export interface AssembledEvidenceItem {
   name: string;
   categorySlug: string;
   subscoreSlug: string;
+  subscoreName?: string;
   required: boolean;
   weight: number;
   publicResult: string | null;
@@ -39,8 +45,19 @@ export interface AssembledBenchmark {
   sampleSize: number;
 }
 
+export interface AssembledProductEditorial {
+  oneLineVerdict?: string;
+  ourTake?: string;
+  pros?: string[];
+  cons?: string[];
+  bestFor?: string[];
+  notIdealFor?: string[];
+  mainStrength?: string;
+  mainLimitation?: string;
+}
+
 export interface AssembledPayload {
-  product: { id: string; name: string; slug: string };
+  product: { id: string; name: string; slug: string } & AssembledProductEditorial;
   testRun: { id: string; name: string; status: string; methodologyVersion: string | null };
   scope: AiVerdictScope;
   categorySlug?: string;
@@ -135,6 +152,10 @@ export async function assembleEvidence(opts: {
     products: {
       $: { where: { id: opts.productId } },
       pricingSnapshots: {},
+      subscriptionPlans: {},
+      creditPackages: {},
+      featureCosts: {},
+      paymentProfile: {},
     },
     testRuns: {
       $: { where: { id: opts.testRunId } },
@@ -166,6 +187,7 @@ export async function assembleEvidence(opts: {
   }
 
   const evidence: AssembledEvidenceItem[] = [];
+  const autofillDefs = new Map<string, PricingAutofillDef>();
   for (const cat of mv?.categories ?? []) {
     if (!cat.active) continue;
     if (opts.categorySlug && cat.slug !== opts.categorySlug) {
@@ -176,12 +198,18 @@ export async function assembleEvidence(opts: {
       for (const def of sub.evidenceDefinitions ?? []) {
         if (!def.active) continue;
         const result = resultByDef.get(def.id);
+        autofillDefs.set(`${cat.slug}/${def.slug}`, {
+          measurementType: String(def.measurementType ?? ''),
+          scoringRule: def.scoringRule,
+          unit: def.unit ? String(def.unit) : undefined,
+        });
         evidence.push({
           id: def.id,
           slug: def.slug,
           name: def.name,
           categorySlug: cat.slug,
           subscoreSlug: sub.slug,
+          subscoreName: String(sub.name ?? sub.slug),
           required: Boolean(def.required),
           weight: def.weight ?? 1,
           publicResult: result?.publicResult ?? null,
@@ -200,6 +228,13 @@ export async function assembleEvidence(opts: {
   if (opts.categorySlug && evidence.length === 0) {
     throw new HttpError(400, `No evidence found for category ${opts.categorySlug}`);
   }
+
+  applyPricingAutofillToEvidence(evidence, autofillDefs, {
+    plans: (product.subscriptionPlans ?? []) as Record<string, unknown>[],
+    packages: (product.creditPackages ?? []) as Record<string, unknown>[],
+    featureCosts: (product.featureCosts ?? []) as Record<string, unknown>[],
+    paymentProfile: (product.paymentProfile ?? null) as Record<string, unknown> | null,
+  });
 
   let scores: AssembledScore[] = (run.scoreSnapshots ?? []).map((s: any) => ({
     kind: s.kind,
@@ -257,8 +292,32 @@ export async function assembleEvidence(opts: {
     };
   }
 
+  const productBase: AssembledPayload['product'] = {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+  };
+  if (isMetaDescriptionField(opts.targetField)) {
+    if (product.oneLineVerdict) productBase.oneLineVerdict = String(product.oneLineVerdict);
+    if (product.ourTake) productBase.ourTake = String(product.ourTake);
+    if (Array.isArray(product.pros) && product.pros.length > 0) {
+      productBase.pros = product.pros.map(String);
+    }
+    if (Array.isArray(product.cons) && product.cons.length > 0) {
+      productBase.cons = product.cons.map(String);
+    }
+    if (Array.isArray(product.bestFor) && product.bestFor.length > 0) {
+      productBase.bestFor = product.bestFor.map(String);
+    }
+    if (Array.isArray(product.notIdealFor) && product.notIdealFor.length > 0) {
+      productBase.notIdealFor = product.notIdealFor.map(String);
+    }
+    if (product.mainStrength) productBase.mainStrength = String(product.mainStrength);
+    if (product.mainLimitation) productBase.mainLimitation = String(product.mainLimitation);
+  }
+
   const payload: Omit<AssembledPayload, 'inputHash'> = {
-    product: { id: product.id, name: product.name, slug: product.slug },
+    product: productBase,
     testRun: {
       id: run.id,
       name: run.name,

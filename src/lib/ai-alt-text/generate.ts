@@ -8,6 +8,7 @@ import { getDb } from '../db/server';
 import { HttpError, type AdminIdentity } from '../db/auth';
 import { getOpenAIClient } from '../ai-verdict/openaiClient';
 import { assertRateLimit } from '../ai-verdict/rateLimit';
+import { isPlaceholderAltText, isUsableAltSuggestion } from '../media/altText';
 
 const ALT_TEXT_MAX_IMAGES = Number(env('AI_ALT_TEXT_MAX_IMAGES') ?? 100);
 
@@ -121,6 +122,7 @@ export async function generateAltTexts(
 For EACH image (1-based index, in the order provided) write one concise, descriptive alt text:
 - Describe what is actually visible; never invent details.
 - Max ~125 characters. No "image of" / "screenshot of" prefixes. No quotes.
+- Never use filenames, upload labels, or placeholders like "pasted image".
 - Mention "${productName}" only when it helps (e.g. UI screenshots).
 Respond with a single JSON object: {"altTexts":[{"index":1,"altText":"..."}]}`;
 
@@ -166,7 +168,8 @@ Respond with a single JSON object: {"altTexts":[{"index":1,"altText":"..."}]}`;
   const out: Array<{ mediaId: string; altText: string }> = [];
   for (const item of result.data.altTexts) {
     const img = images[item.index - 1];
-    if (img) out.push({ mediaId: img.id, altText: item.altText.trim() });
+    const altText = item.altText.trim();
+    if (img && isUsableAltSuggestion(altText)) out.push({ mediaId: img.id, altText });
   }
   if (out.length === 0) throw new HttpError(422, 'AI returned no alt texts');
   return out;

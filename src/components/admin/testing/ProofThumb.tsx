@@ -5,7 +5,17 @@ import { Icon } from '../ui';
 import { resolveMediaUrl } from '../../../lib/media/url';
 import { proofMediaLabel } from './proofTags';
 
-function ImageHoverPreview({ url, anchorRect, isVideo = false }: { url: string; anchorRect: DOMRect; isVideo?: boolean }) {
+function ImageHoverPreview({
+  url,
+  anchorRect,
+  isVideo = false,
+  blurred = false,
+}: {
+  url: string;
+  anchorRect: DOMRect;
+  isVideo?: boolean;
+  blurred?: boolean;
+}) {
   const style: CSSProperties = {
     position: 'fixed',
     left: Math.min(anchorRect.left, window.innerWidth - 320),
@@ -14,32 +24,50 @@ function ImageHoverPreview({ url, anchorRect, isVideo = false }: { url: string; 
     zIndex: 9999,
   };
 
+  const blurClass = blurred ? 'blur-xl scale-105' : '';
+
   return createPortal(
     <div
-      className="pointer-events-none overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900"
+      className="pointer-events-none relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900"
       style={style}
     >
       {isVideo ? (
         <video
           src={url}
-          className="max-h-64 max-w-[min(320px,90vw)] object-contain"
+          className={`max-h-64 max-w-[min(320px,90vw)] object-contain ${blurClass}`}
           autoPlay
           muted
           loop
           playsInline
         />
       ) : (
-        <img src={url} alt="" className="max-h-64 max-w-[min(320px,90vw)] object-contain" />
+        <img src={url} alt="" className={`max-h-64 max-w-[min(320px,90vw)] object-contain ${blurClass}`} />
+      )}
+      {blurred && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-bold uppercase tracking-wider text-white">
+          NSFW
+        </div>
       )}
     </div>,
     document.body,
   );
 }
 
-function ProofHoverPreview({ media, anchorRect }: { media: EntityRow; anchorRect: DOMRect }) {
+function ProofHoverPreview({
+  media,
+  anchorRect,
+  revealed,
+}: {
+  media: EntityRow;
+  anchorRect: DOMRect;
+  revealed: boolean;
+}) {
   const url = resolveMediaUrl(media);
   if (!url) return null;
-  return <ImageHoverPreview url={url} anchorRect={anchorRect} isVideo={media.mediaType === 'video'} />;
+  const blurred = Boolean(media.adult) && !revealed;
+  return (
+    <ImageHoverPreview url={url} anchorRect={anchorRect} isVideo={media.mediaType === 'video'} blurred={blurred} />
+  );
 }
 
 export function ImageHoverThumb({
@@ -104,10 +132,13 @@ export function ProofThumb({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState(false);
+  const [revealed, setRevealed] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const isVideo = media.mediaType === 'video';
   const url = resolveMediaUrl(media);
   const title = proofMediaLabel(media.caption) || 'Proof';
+  const isNsfw = Boolean(media.adult);
+  const blurred = isNsfw && !revealed;
   const dim = size === 'sm' ? 'h-8 w-8' : 'h-9 w-9';
   const iconSize = size === 'sm' ? '!text-[14px]' : '!text-[18px]';
 
@@ -121,12 +152,25 @@ export function ProofThumb({
           setHover(true);
         }}
         onMouseLeave={() => setHover(false)}
-        title={title}
+        onClick={() => {
+          if (isNsfw) setRevealed((v) => !v);
+        }}
+        title={isNsfw && !revealed ? `${title} — click to reveal NSFW` : title}
       >
         {url && !isVideo ? (
-          <img src={url} alt="" className="h-full w-full object-cover" />
+          <img
+            src={url}
+            alt=""
+            className={`h-full w-full object-cover transition-[filter] ${blurred ? 'scale-110 blur-md' : ''}`}
+          />
         ) : url && isVideo ? (
-          <video src={url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+          <video
+            src={url}
+            className={`h-full w-full object-cover transition-[filter] ${blurred ? 'scale-110 blur-md' : ''}`}
+            muted
+            playsInline
+            preload="metadata"
+          />
         ) : isVideo ? (
           <div className="flex h-full w-full items-center justify-center bg-slate-900">
             <Icon name="play_arrow" className={`${iconSize} text-white/90`} />
@@ -134,6 +178,11 @@ export function ProofThumb({
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <Icon name="image" className={`${iconSize} text-slate-400`} />
+          </div>
+        )}
+        {blurred && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 text-[8px] font-bold uppercase tracking-wide text-white">
+            NSFW
           </div>
         )}
         {!disabled && onDetach && (
@@ -150,7 +199,7 @@ export function ProofThumb({
           </button>
         )}
       </div>
-      {hover && rect && url && <ProofHoverPreview media={media} anchorRect={rect} />}
+      {hover && rect && url && <ProofHoverPreview media={media} anchorRect={rect} revealed={revealed} />}
     </>
   );
 }

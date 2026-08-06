@@ -40,6 +40,13 @@ import {
   type MediaRoleState,
 } from '../../../../lib/media/catalog';
 import { pricingProofVisibleInLibrary } from '../../../../lib/media/pricingProofLibrary';
+import {
+  altTextForUpdate,
+  displayAltText,
+  isMissingAltText,
+  isPlaceholderAltText,
+  isUsableAltSuggestion,
+} from '../../../../lib/media/altText';
 
 
 const ASSET_ROLES = ['logo', 'featured'];
@@ -160,7 +167,7 @@ export function MediaTab() {
   const filteredMedia = useMemo(
     () =>
       visibleMedia.filter((m) => {
-        if (altFilter === 'no-alt') return !m.altText;
+        if (altFilter === 'no-alt') return isMissingAltText(m.altText);
         if (altFilter === 'adult') return Boolean(m.adult);
         if (altFilter === 'safe') return !m.adult;
         return true;
@@ -230,7 +237,7 @@ export function MediaTab() {
   }
 
   const missingAltCount = useMemo(
-    () => visibleMedia.filter((m) => !String(m.altText ?? '').trim()).length,
+    () => visibleMedia.filter((m) => isMissingAltText(m.altText)).length,
     [visibleMedia],
   );
 
@@ -258,10 +265,13 @@ export function MediaTab() {
   );
 
   async function applyAltTextUpdates(updates: Array<{ mediaId: string; altText: string }>) {
-    if (updates.length === 0) return;
-    await Promise.all(updates.map((u) => dataApi.update('media', u.mediaId, { altText: u.altText })));
+    const usable = updates.filter((u) => isUsableAltSuggestion(u.altText));
+    if (usable.length === 0) return;
+    await Promise.all(
+      usable.map((u) => dataApi.update('media', u.mediaId, { altText: altTextForUpdate(u.altText) })),
+    );
     await ws.refreshRelated();
-    toast.success(`Updated alt text on ${updates.length} item${updates.length === 1 ? '' : 's'}`);
+    toast.success(`Updated alt text on ${usable.length} item${usable.length === 1 ? '' : 's'}`);
   }
 
   async function aiAltTextSelected(explicitIds?: string[]) {
@@ -285,7 +295,7 @@ export function MediaTab() {
         .map((id) => {
           const row = media.find((m) => m.id === id);
           const suggested = byId.get(id)?.trim();
-          if (!row || !suggested) return null;
+          if (!row || !suggested || !isUsableAltSuggestion(suggested)) return null;
           return { mediaId: id, row, suggested };
         })
         .filter((item): item is AiReviewItem => Boolean(item));
@@ -334,13 +344,13 @@ export function MediaTab() {
 
   function selectMissingAlt(enterSelectMode = false) {
     if (enterSelectMode || !selectMode) setSelectMode(true);
-    const ids = filteredMedia.filter((m) => !String(m.altText ?? '').trim()).map((m) => m.id);
+    const ids = filteredMedia.filter((m) => isMissingAltText(m.altText)).map((m) => m.id);
     setSelected(new Set(ids));
   }
 
   async function aiAltTextForMissing() {
     const imageIds = filteredMedia
-      .filter((m) => !String(m.altText ?? '').trim() && m.mediaType !== 'video')
+      .filter((m) => isMissingAltText(m.altText) && m.mediaType !== 'video')
       .map((m) => m.id);
     selectMissingAlt(true);
     await aiAltTextSelected(imageIds);
@@ -633,7 +643,7 @@ export function MediaTab() {
                         {canEdit && !selectMode ? (
                           <AltTextCell
                             row={m}
-                            onSave={(v) => void updateMedia(m.id, { altText: v || undefined })}
+                            onSave={(v) => void updateMedia(m.id, { altText: altTextForUpdate(v) })}
                             onRegister={registerAltInput}
                             onTab={(direction) => tabBetweenAlt(m.id, direction)}
                           />
@@ -842,15 +852,29 @@ function AltTextCell({
   onRegister?: (id: string, el: HTMLInputElement | null) => void;
   onTab?: (direction: 'next' | 'prev') => void;
 }) {
-  const [value, setValue] = useState(String(row.altText ?? ''));
+  const [value, setValue] = useState(() => displayAltText(row.altText));
 
   useEffect(() => {
-    setValue(String(row.altText ?? ''));
+    setValue(displayAltText(row.altText));
   }, [row.altText, row.id]);
 
+  useEffect(() => {
+    if (isPlaceholderAltText(row.altText)) {
+      onSave('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- purge once per stale placeholder row
+  }, [row.id]);
+
   function saveIfChanged(next = value) {
-    const trimmed = next.trim();
-    if (trimmed !== String(row.altText ?? '').trim()) onSave(trimmed);
+    const trimmed = altTextForUpdate(next);
+    if (isPlaceholderAltText(row.altText)) {
+      if (!trimmed) {
+        onSave('');
+        return;
+      }
+    }
+    const stored = altTextForUpdate(displayAltText(row.altText));
+    if (trimmed !== stored) onSave(trimmed);
   }
 
   return (
@@ -938,9 +962,9 @@ function AiAltTextReviewModal({
         <div className="flex justify-center">
           <MediaThumb row={current.row} className="h-40 w-40" />
         </div>
-        {current.row.altText && (
+        {current.row.altText && !isMissingAltText(current.row.altText) && (
           <p className="text-xs text-slate-500">
-            Current: <span className="text-slate-700 dark:text-slate-300">{String(current.row.altText)}</span>
+            Current: <span className="text-slate-700 dark:text-slate-300">{displayAltText(current.row.altText)}</span>
           </p>
         )}
         <Field label="Suggested alt text">
@@ -1143,8 +1167,12 @@ function MediaCard({
         </div>
       </div>
       <p className="mt-1.5 truncate text-xs text-slate-400">{placementLabel(row)}</p>
-      <p className="truncate text-xs text-slate-500" title={row.altText ?? ''}>
-        {row.altText || <span className="text-amber-600">No alt text</span>}
+      <p className="truncate text-xs text-slate-500" title={displayAltText(row.altText)}>
+        {isMissingAltText(row.altText) ? (
+          <span className="text-amber-600">No alt text</span>
+        ) : (
+          displayAltText(row.altText)
+        )}
       </p>
       {canEdit && !selecting && (
         <div className="mt-1 flex items-center gap-1">
@@ -1393,7 +1421,7 @@ function MediaEditForm({
   onClose: () => void;
 }) {
   const ws = useWorkspace();
-  const [altText, setAltText] = useState(String(row.altText ?? ''));
+  const [altText, setAltText] = useState(() => displayAltText(row.altText));
   const [adult, setAdult] = useState(Boolean(row.adult));
   const [roleState, setRoleState] = useState<MediaRoleState>(() => readMediaRoleState(row));
   const [testCategory, setTestCategory] = useState(String(row.testCategory ?? ''));
@@ -1415,8 +1443,8 @@ function MediaEditForm({
         { productId: ws.productId, mediaIds: [row.id] },
       );
       const suggestion = altTexts[0]?.altText;
-      if (suggestion) setAltText(suggestion);
-      else toast.error('No suggestion returned — try again.');
+      if (suggestion && isUsableAltSuggestion(suggestion)) setAltText(suggestion);
+      else toast.error('No usable suggestion returned — try again.');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'AI alt text failed');
     } finally {
@@ -1443,7 +1471,7 @@ function MediaEditForm({
         'media',
         row.id,
         {
-          altText: altText.trim() || undefined,
+          altText: altTextForUpdate(altText),
           caption: caption.trim() || undefined,
           credit: credit.trim() || undefined,
           adult,

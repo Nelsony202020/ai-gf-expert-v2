@@ -17,6 +17,7 @@ export type ScoringRule =
   | { kind: 'linear'; min: number; max: number; invert?: boolean }
   | { kind: 'bands'; bands: { upTo: number; score: number }[]; invert?: boolean }
   | { kind: 'ynl'; yes: number; limited: number; no: number; unknown: number }
+  | { kind: 'scale'; min: number; max: number }
   | { kind: 'manual' };
 
 export interface CategorySeed {
@@ -775,6 +776,30 @@ export const evidenceDefSeeds: EvidenceDefSeed[] = [
         { upTo: 3, score: 4 },
         { upTo: 8, score: 6 },
         { upTo: 15, score: 8 },
+        { upTo: 999999, score: 10 },
+      ],
+    },
+  },
+  {
+    category: 'customization',
+    subscore: 'appearance',
+    slug: 'ss-size',
+    name: 'SS size options',
+    publicDescription: 'ss size options',
+    internalInstructions: 'Count SS size options.',
+    resultFormat: 'Number of SS size options.',
+    measurementType: 'count',
+    unit: 'count',
+    weight: 11,
+    required: true,
+    displayOrder: 6,
+    scoringRule: {
+      kind: 'bands',
+      bands: [
+        { upTo: 2, score: 2 },
+        { upTo: 4, score: 4 },
+        { upTo: 6, score: 6 },
+        { upTo: 10, score: 8 },
         { upTo: 999999, score: 10 },
       ],
     },
@@ -2242,24 +2267,16 @@ export const evidenceDefSeeds: EvidenceDefSeed[] = [
     subscore: 'experience',
     slug: 'ease-of-use',
     name: 'Ease of Use',
-    publicDescription: 'steps required to create a video',
-    internalInstructions: 'Create three videos.\nCount every click or required action from opening the generator to starting generation.',
-    resultFormat: 'Average number of steps across the three tests.',
-    measurementType: 'count',
-    unit: 'steps',
+    publicDescription: 'how easy the video generator is to use',
+    internalInstructions:
+      'Create three videos.\nRate how easy the full workflow feels from opening the generator to starting generation.\nUse 1 for very hard and 10 for very easy.',
+    resultFormat: '1–10 ease rating (10 = very easy).',
+    measurementType: 'scale',
+    unit: 'score',
     weight: 17,
     required: true,
     displayOrder: 3,
-    scoringRule: {
-      kind: 'bands',
-      bands: [
-        { upTo: 3, score: 10 },
-        { upTo: 5, score: 8 },
-        { upTo: 8, score: 6 },
-        { upTo: 12, score: 4 },
-        { upTo: 999999, score: 2 },
-      ],
-    },
+    scoringRule: { kind: 'scale', min: 1, max: 10 },
   },
   {
     category: 'video',
@@ -2338,7 +2355,7 @@ export const evidenceDefSeeds: EvidenceDefSeed[] = [
     slug: 'human-review',
     name: 'Human Review',
     publicDescription: 'humans may review chats',
-    internalInstructions: 'Search the privacy policy, terms and help pages for a clear statement about employees or contractors reading chats.',
+    internalInstructions: 'Search the privacy policy, terms and help pages for a clear statement about if or when the company uses humans to review user content.',
     resultFormat: 'Yes, No or Unknown, with the source and date.',
     measurementType: 'yes_limited_no',
     weight: 14,

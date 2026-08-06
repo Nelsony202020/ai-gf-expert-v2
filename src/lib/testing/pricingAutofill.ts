@@ -17,7 +17,9 @@ import {
   type PlanTierLike,
 } from '../pricing/calc';
 import { findCheapestCost } from '../pricing/featureCostGroups';
-import type { RawValue } from '../scoring/engine';
+import { normalizeEvidence, type RawValue, type ScoringRule } from '../scoring/engine';
+import { formatEvidenceAnswer } from './evidenceFormat';
+import { PRICING_AUTOFILL_SLUGS } from './pricingEvidenceSlugs';
 
 export interface AutofillSuggestion {
   raw: RawValue;
@@ -59,6 +61,70 @@ export function normalizeCostPer10Sec(money: number, cost: FeatureCostLike): num
     return round2((money / secs) * 10);
   }
   return round2(money);
+}
+
+export interface PricingAutofillDef {
+  measurementType: string;
+  scoringRule: ScoringRule;
+  unit?: string;
+}
+
+/** Evidence row shape used when overlaying live Pricing tab values onto assembled test data. */
+export interface PricingAutofillEvidenceRow {
+  id: string;
+  slug: string;
+  name: string;
+  categorySlug: string;
+  subscoreSlug: string;
+  required: boolean;
+  weight: number;
+  normalizedScore: number | null;
+  publicResult: string | null;
+  notApplicable: boolean;
+  isUnknown: boolean;
+}
+
+/**
+ * Overlay live Pricing tab autofill onto assembled evidence (e.g. payment privacy).
+ * Keeps drawer breakdown in sync when pricing profile changes without re-testing.
+ */
+export function applyPricingAutofillToEvidence(
+  evidence: PricingAutofillEvidenceRow[],
+  defsByKey: Map<string, PricingAutofillDef>,
+  source: PricingSourceData,
+): void {
+  const suggestions = computePricingSuggestions(source);
+  for (const item of evidence) {
+    if (!PRICING_AUTOFILL_SLUGS.has(item.slug)) continue;
+    const key = `${item.categorySlug}/${item.slug}`;
+    const suggestion = suggestions.get(key);
+    const def = defsByKey.get(key);
+    if (!suggestion || !def) continue;
+
+    const { score } = normalizeEvidence({
+      definitionId: item.id,
+      slug: item.slug,
+      name: item.name,
+      subscoreSlug: item.subscoreSlug,
+      categorySlug: item.categorySlug,
+      weight: item.weight,
+      required: item.required,
+      measurementType: def.measurementType,
+      scoringRule: def.scoringRule,
+      rawValue: suggestion.raw,
+    });
+
+    item.normalizedScore = score;
+    item.notApplicable = false;
+    item.isUnknown = false;
+    const answer = formatEvidenceAnswer(
+      { unit: def.unit, measurementType: def.measurementType, slug: item.slug },
+      suggestion.raw,
+      false,
+      false,
+    );
+    item.publicResult = answer.trim() || null;
+  }
 }
 
 export function computePricingSuggestions(source: PricingSourceData): Map<string, AutofillSuggestion> {

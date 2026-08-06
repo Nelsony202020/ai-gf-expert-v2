@@ -205,7 +205,7 @@ const whatItIs = getSubscoreDescription(categoryKey, sub.name);
           }
           <div class="ratings-tooltip-panel__distribution">
             <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-            <ScoreDistributionChart bins={bins} categoryKey={categoryKey} subscoreName={sub.name} />
+            <ScoreDistributionChart bins={bins} categoryKey={categoryKey} subscoreName={sub.name} highlightScore={compareMode || compareTableOnly ? null : currentScore} />
           </div>
         </div>
       )
@@ -280,7 +280,7 @@ const whatItIs = getSubscoreDescription(categoryKey, sub.name);
 
       <div>
         <p class="ratings-tooltip-panel__section-title">Score distribution</p>
-        <ScoreDistributionChart bins={bins} categoryKey={categoryKey} subscoreName={sub.name} />
+        <ScoreDistributionChart bins={bins} categoryKey={categoryKey} subscoreName={sub.name} highlightScore={compareMode || compareTableOnly ? null : currentScore} />
       </div>
     </div>
       )

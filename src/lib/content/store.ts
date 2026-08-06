@@ -59,7 +59,7 @@ import { cdnAsset } from '../media/cdn';
 import { buildGroupedContributors } from '../ratings/groupContributors';
 import type { Roundup, RoundupPick } from '../../data/roundups/ai-girlfriend';
 import { hydrateRoundupPicks } from './roundupPick';
-import { filterLaunchProducts, launchCompareDefaultIds } from './launchProducts';
+import { launchCompareDefaultIds } from './launchProducts';
 import { isDevReviewSlug } from './reviewDevProducts';
 
 export type ProductDbPublishStatus = 'published' | 'draft' | 'missing';
@@ -657,12 +657,11 @@ export async function loadRoundupForPublic(
   fileTemplate: Roundup,
 ): Promise<RoundupPublicLoad> {
   if (!isDbConfigured()) {
-    const picks = filterLaunchProducts(fileTemplate.picks);
     return {
       roundup: {
         ...fileTemplate,
-        picks,
-        compareDefaultIds: launchCompareDefaultIds(picks, fileTemplate.compareDefaultIds),
+        picks: fileTemplate.picks,
+        compareDefaultIds: launchCompareDefaultIds(fileTemplate.picks, fileTemplate.compareDefaultIds),
       },
       isDraft: false,
     };
@@ -687,7 +686,6 @@ export async function loadRoundupForPublic(
       picks = orderRoundupPicksFromDbEntries(fileTemplate.picks, dbRoundup.entries);
     }
     picks = hydrateRoundupPicks(picks, productsBySlug);
-    picks = filterLaunchProducts(picks);
 
     const roundup: Roundup = {
       ...fileTemplate,

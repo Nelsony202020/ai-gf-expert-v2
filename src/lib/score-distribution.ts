@@ -41,7 +41,14 @@ export function buildScoreBins(
   );
 }
 
-export function activeBinIndex(bins: ScoreBin[], score: number): number {
+export function activeBinIndex(bins: ScoreBin[], score: number | null | undefined): number {
+  if (score == null || !Number.isFinite(score)) return -1;
   const idx = bins.findIndex((b) => score >= b.start && score <= b.end);
-  return idx >= 0 ? idx : 0;
+  return idx >= 0 ? idx : -1;
+}
+
+/** Bar fill height as a ratio (0–1) for histogram columns. */
+export function distBarFillRatio(count: number, maxCount: number): number {
+  if (count <= 0 || maxCount <= 0) return 0;
+  return count / maxCount;
 }

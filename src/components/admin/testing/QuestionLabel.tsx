@@ -15,14 +15,16 @@ export function QuestionLabel({
   categorySlug,
   required,
   className = '',
+  showHint = true,
 }: {
   def: EntityRow;
   categorySlug?: string;
   required?: boolean;
   className?: string;
+  showHint?: boolean;
 }) {
   const q = testerQuestion(def, categorySlug);
-  const hint = testerHelpTooltip(def, categorySlug);
+  const hint = showHint ? testerHelpTooltip(def, categorySlug) : null;
   const sizeClass = questionSizeClass(q);
 
   return (

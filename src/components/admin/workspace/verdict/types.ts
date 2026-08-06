@@ -18,7 +18,7 @@ export interface Award {
   reason?: string;
 }
 
-export type VerdictStepId = 'overall' | 'decision' | 'pros-cons' | 'expert' | 'categories';
+export type VerdictStepId = 'overall' | 'decision' | 'expert' | 'categories';
 
 export interface VerdictStepDef {
   id: VerdictStepId;

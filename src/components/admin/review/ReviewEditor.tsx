@@ -14,6 +14,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type MouseEvent as ReactMouseEvent,
 } from 'react';
 import { Extension, Node, type Editor } from '@tiptap/core';
 import { NodeSelection } from '@tiptap/pm/state';
@@ -47,6 +48,13 @@ import {
   type ImageInspectorTarget,
   type ReviewEditorUI,
 } from './reviewEditorContext';
+import {
+  figureFrameStyle,
+  figureImageStyle,
+  clampRadiusPercent,
+  clampFocusPercent,
+  isCircleCrop,
+} from '../../../lib/review/imageFrameStyle';
 import './editor.css';
 
 // ---------------------------------------------------------------------------
@@ -63,6 +71,8 @@ const ReviewImage = Image.extend({
       mediaId: { default: null },
       widthPercent: { default: 100 },
       borderRadiusPercent: { default: 0 },
+      clipFocusX: { default: 50 },
+      clipFocusY: { default: 50 },
     };
   },
 
@@ -75,20 +85,58 @@ function ImageView({ node, selected, editor, updateAttributes, deleteNode, getPo
   const ui = useContext(ReviewEditorUIContext);
   const editable = editor.isEditable;
   const src = String(node.attrs.src ?? '');
-  const widthPercent = Math.min(100, Math.max(30, Number(node.attrs.widthPercent ?? 100)));
-  const borderRadiusPercent = Math.min(50, Math.max(0, Number(node.attrs.borderRadiusPercent ?? 0)));
+  const figureRef = useRef<HTMLElement>(null);
+  const [adjustFocus, setAdjustFocus] = useState(false);
+  const radius = clampRadiusPercent(node.attrs.borderRadiusPercent);
+  const isCircle = isCircleCrop(radius);
+
+  useEffect(() => {
+    if (!adjustFocus) return;
+    const onMove = (e: MouseEvent) => {
+      const el = figureRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+      const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+      updateAttributes({
+        clipFocusX: Math.min(100, Math.max(0, x)),
+        clipFocusY: Math.min(100, Math.max(0, y)),
+      });
+    };
+    const onUp = () => setAdjustFocus(false);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [adjustFocus, updateAttributes]);
+
+  const frameStyle = figureFrameStyle({
+    widthPercent: node.attrs.widthPercent,
+    borderRadiusPercent: node.attrs.borderRadiusPercent,
+    clipFocusX: node.attrs.clipFocusX,
+    clipFocusY: node.attrs.clipFocusY,
+  });
+  const imgStyle = figureImageStyle({
+    borderRadiusPercent: node.attrs.borderRadiusPercent,
+    clipFocusX: node.attrs.clipFocusX,
+    clipFocusY: node.attrs.clipFocusY,
+  });
 
   return (
     <NodeViewWrapper
       as="figure"
-      className={`review-image-node group relative my-4 ${selected ? 'ring-2 ring-pink-400' : ''}`}
+      ref={figureRef}
+      className={`review-image-node group relative my-4 ${selected ? 'ring-2 ring-pink-400' : ''} ${adjustFocus ? 'cursor-crosshair ring-2 ring-sky-400' : ''}`}
       contentEditable={false}
-      style={{
-        width: `${widthPercent}%`,
-        maxWidth: '100%',
-        marginInline: widthPercent < 100 ? 'auto' : undefined,
-        borderRadius: `${borderRadiusPercent}%`,
-        overflow: 'hidden',
+      style={frameStyle}
+      onDoubleClick={(e: ReactMouseEvent) => {
+        if (!editable || !isCircle) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setAdjustFocus(true);
       }}
     >
       <span data-drag-handle draggable={editable} className={`block ${editable ? 'cursor-grab' : ''}`}>
@@ -117,7 +165,7 @@ function ImageView({ node, selected, editor, updateAttributes, deleteNode, getPo
               })
             }
           >
-            <img src={src} alt={String(node.attrs.alt ?? '')} className="block h-auto w-full" style={{ display: 'block', width: '100%', height: 'auto' }} />
+            <img src={src} alt={String(node.attrs.alt ?? '')} style={imgStyle} />
           </button>
         ) : (
           <span className="flex h-32 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400 dark:bg-slate-800">
@@ -125,13 +173,22 @@ function ImageView({ node, selected, editor, updateAttributes, deleteNode, getPo
           </span>
         )}
       </span>
+      {adjustFocus && (
+        <span
+          className="pointer-events-none absolute z-10 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-pink-500 shadow"
+          style={{
+            left: `${clampFocusPercent(node.attrs.clipFocusX)}%`,
+            top: `${clampFocusPercent(node.attrs.clipFocusY)}%`,
+          }}
+        />
+      )}
       {editable && (
         <span className="absolute right-2 top-2 hidden items-center gap-1 rounded-md bg-black/60 p-1 group-hover:flex">
           <button
             type="button"
             title="Replace image"
             onClick={() =>
-              ui.openImagePicker((m) => updateAttributes({ src: m.url, alt: m.altText, mediaId: m.id }))
+              ui.openImagePicker((m) => updateAttributes({ src: m.url, mediaId: m.id }))
             }
             className="rounded p-0.5 text-white hover:bg-white/20"
           >
@@ -158,6 +215,8 @@ type ReviewImageItem = {
   mediaId?: string | null;
   widthPercent?: number;
   borderRadiusPercent?: number;
+  clipFocusX?: number;
+  clipFocusY?: number;
 };
 
 function imageAttrsToItem(attrs: Record<string, unknown>): ReviewImageItem {
@@ -167,7 +226,9 @@ function imageAttrsToItem(attrs: Record<string, unknown>): ReviewImageItem {
     caption: String(attrs.caption ?? ''),
     mediaId: attrs.mediaId ? String(attrs.mediaId) : null,
     widthPercent: Math.min(100, Math.max(30, Number(attrs.widthPercent ?? 100))),
-    borderRadiusPercent: Math.min(50, Math.max(0, Number(attrs.borderRadiusPercent ?? 0))),
+    borderRadiusPercent: clampRadiusPercent(attrs.borderRadiusPercent),
+    clipFocusX: clampFocusPercent(attrs.clipFocusX),
+    clipFocusY: clampFocusPercent(attrs.clipFocusY),
   };
 }
 
@@ -204,6 +265,140 @@ function pairImageWithNext(editor: Editor, pos: number | undefined) {
     .deleteRange({ from, to })
     .insertContentAt(from, { type: 'imageRow', attrs: { items: [item1, item2] } })
     .run();
+}
+
+function splitImageRow(editor: Editor, rowPos: number | undefined) {
+  if (typeof rowPos !== 'number') return;
+  const doc = editor.state.doc;
+  const rowNode = doc.nodeAt(rowPos);
+  if (!rowNode || rowNode.type.name !== 'imageRow') return;
+
+  const items = Array.isArray(rowNode.attrs.items) ? (rowNode.attrs.items as ReviewImageItem[]) : [];
+  if (items.length === 0) return;
+
+  editor
+    .chain()
+    .focus()
+    .command(({ tr, state }) => {
+      const imageType = state.schema.nodes.image;
+      if (!imageType) return false;
+      const imageNodes = items.map((item) =>
+        imageType.create({
+          src: item.src ?? '',
+          alt: item.alt ?? '',
+          caption: item.caption ?? '',
+          mediaId: item.mediaId ?? null,
+          widthPercent: item.widthPercent ?? 100,
+          borderRadiusPercent: item.borderRadiusPercent ?? 0,
+          clipFocusX: item.clipFocusX ?? 50,
+          clipFocusY: item.clipFocusY ?? 50,
+        }),
+      );
+      tr.replaceWith(rowPos, rowPos + rowNode.nodeSize, imageNodes);
+      return true;
+    })
+    .run();
+}
+
+function ImageRowCell({
+  item,
+  editable,
+  onOpenInspector,
+  onRemove,
+  onUpdateFocus,
+}: {
+  item: ReviewImageItem;
+  editable: boolean;
+  selected?: boolean;
+  onOpenInspector: () => void;
+  onRemove: () => void;
+  onUpdateFocus: (clipFocusX: number, clipFocusY: number) => void;
+}) {
+  const figureRef = useRef<HTMLElement>(null);
+  const [adjustFocus, setAdjustFocus] = useState(false);
+  const radius = clampRadiusPercent(item.borderRadiusPercent);
+  const isCircle = isCircleCrop(radius);
+
+  useEffect(() => {
+    if (!adjustFocus) return;
+    const onMove = (e: MouseEvent) => {
+      const el = figureRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+      const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+      onUpdateFocus(Math.min(100, Math.max(0, x)), Math.min(100, Math.max(0, y)));
+    };
+    const onUp = () => setAdjustFocus(false);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [adjustFocus, onUpdateFocus]);
+
+  const frameStyle = figureFrameStyle({
+    widthPercent: item.widthPercent ?? 50,
+    borderRadiusPercent: item.borderRadiusPercent,
+    clipFocusX: item.clipFocusX,
+    clipFocusY: item.clipFocusY,
+    rowCell: true,
+    rowWidth: item.widthPercent ?? 50,
+  });
+  const imgStyle = figureImageStyle({
+    borderRadiusPercent: item.borderRadiusPercent,
+    clipFocusX: item.clipFocusX,
+    clipFocusY: item.clipFocusY,
+  });
+
+  return (
+    <figure
+      ref={figureRef}
+      className={`review-image-row-node__cell relative m-0 min-w-0 ${adjustFocus ? 'cursor-crosshair ring-2 ring-sky-400' : ''}`}
+      style={frameStyle}
+      onDoubleClick={(e: ReactMouseEvent) => {
+        if (!editable || !isCircle) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setAdjustFocus(true);
+      }}
+    >
+      {item.src ? (
+        <button
+          type="button"
+          className="block w-full cursor-pointer border-0 bg-transparent p-0"
+          onClick={() => editable && onOpenInspector()}
+        >
+          <img src={item.src} alt={item.alt ?? ''} style={imgStyle} />
+        </button>
+      ) : (
+        <span className="flex h-32 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400 dark:bg-slate-800">
+          Image missing
+        </span>
+      )}
+      {adjustFocus && (
+        <span
+          className="pointer-events-none absolute z-10 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-pink-500 shadow"
+          style={{
+            left: `${clampFocusPercent(item.clipFocusX)}%`,
+            top: `${clampFocusPercent(item.clipFocusY)}%`,
+          }}
+        />
+      )}
+      {editable && (
+        <button
+          type="button"
+          title="Remove from row"
+          onClick={onRemove}
+          className="absolute right-2 top-2 rounded bg-black/60 p-1 text-white hover:bg-black/80"
+        >
+          <Icon name="close" className="!text-[14px]" />
+        </button>
+      )}
+    </figure>
+  );
 }
 
 const ReviewImageRow = Node.create({
@@ -263,6 +458,8 @@ function ImageRowView({ node, selected, editor, updateAttributes, deleteNode, ge
               mediaId: only.mediaId ?? null,
               widthPercent: only.widthPercent ?? 100,
               borderRadiusPercent: only.borderRadiusPercent ?? 0,
+              clipFocusX: only.clipFocusX ?? 50,
+              clipFocusY: only.clipFocusY ?? 50,
             }),
           );
           return true;
@@ -279,66 +476,36 @@ function ImageRowView({ node, selected, editor, updateAttributes, deleteNode, ge
       className={`review-image-row-node my-4 flex flex-wrap gap-3 ${selected ? 'ring-2 ring-pink-400' : ''}`}
       contentEditable={false}
     >
-      {items.map((item, index) => {
-        const widthPercent = Math.min(100, Math.max(30, Number(item.widthPercent ?? 50)));
-        const radius = Math.min(50, Math.max(0, Number(item.borderRadiusPercent ?? 0)));
-        return (
-          <figure
-            key={`${item.src}-${index}`}
-            className="review-image-row-node__cell relative m-0 min-w-0"
-            style={{
-              flex: `0 0 calc(${widthPercent}% - 6px)`,
-              maxWidth: `calc(${widthPercent}% - 6px)`,
-              borderRadius: `${radius}%`,
-              overflow: 'hidden',
-            }}
-          >
-            {item.src ? (
-              <button
-                type="button"
-                className="block w-full cursor-pointer border-0 bg-transparent p-0"
-                onClick={() =>
-                  editable &&
-                  ui.openImageInspector({
-                    kind: 'imageRow',
-                    attrs: {
-                      alt: item.alt ?? '',
-                      caption: item.caption ?? '',
-                      widthPercent: item.widthPercent ?? 50,
-                      borderRadiusPercent: item.borderRadiusPercent ?? 0,
-                      src: item.src ?? '',
-                      mediaId: item.mediaId ?? null,
-                    },
-                    updateAttributes: (patch) => updateItem(index, patch as Partial<ReviewImageItem>),
-                    itemIndex: index,
-                  })
-                }
-              >
-                <img
-                  src={item.src}
-                  alt={item.alt ?? ''}
-                  className="block h-auto w-full"
-                  style={{ display: 'block', width: '100%', height: 'auto' }}
-                />
-              </button>
-            ) : (
-              <span className="flex h-32 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400 dark:bg-slate-800">
-                Image missing
-              </span>
-            )}
-            {editable && (
-              <button
-                type="button"
-                title="Remove from row"
-                onClick={() => removeItem(index)}
-                className="absolute right-2 top-2 rounded bg-black/60 p-1 text-white hover:bg-black/80"
-              >
-                <Icon name="close" className="!text-[14px]" />
-              </button>
-            )}
-          </figure>
-        );
-      })}
+      {items.map((item, index) => (
+        <ImageRowCell
+          key={`${item.src}-${index}`}
+          item={item}
+          editable={editable}
+          selected={selected}
+          onOpenInspector={() =>
+            ui.openImageInspector({
+              kind: 'imageRow',
+              attrs: {
+                alt: item.alt ?? '',
+                caption: item.caption ?? '',
+                widthPercent: item.widthPercent ?? 50,
+                borderRadiusPercent: item.borderRadiusPercent ?? 0,
+                clipFocusX: item.clipFocusX ?? 50,
+                clipFocusY: item.clipFocusY ?? 50,
+                src: item.src ?? '',
+                mediaId: item.mediaId ?? null,
+              },
+              updateAttributes: (patch) => updateItem(index, patch as Partial<ReviewImageItem>),
+              itemIndex: index,
+              splitRow: editable
+                ? () => splitImageRow(editor, typeof getPos === 'function' ? getPos() : undefined)
+                : undefined,
+            })
+          }
+          onRemove={() => removeItem(index)}
+          onUpdateFocus={(clipFocusX, clipFocusY) => updateItem(index, { clipFocusX, clipFocusY })}
+        />
+      ))}
       {editable && items.length < 4 && (
         <button
           type="button"
@@ -350,11 +517,13 @@ function ImageRowView({ node, selected, editor, updateAttributes, deleteNode, ge
                   ...items,
                   {
                     src: m.url,
-                    alt: m.altText,
+                    alt: '',
                     mediaId: m.id,
-                    caption: m.caption ?? '',
+                    caption: '',
                     widthPercent: items.length >= 1 ? 50 : 100,
                     borderRadiusPercent: 0,
+                    clipFocusX: 50,
+                    clipFocusY: 50,
                   },
                 ],
               });
@@ -717,7 +886,7 @@ export default function ReviewEditor({
             editorRef.current
               ?.chain()
               .focus()
-              .insertContent({ type: 'image', attrs: { src: m.url, alt: m.altText, mediaId: m.id, caption: '' } })
+              .insertContent({ type: 'image', attrs: { src: m.url, alt: '', mediaId: m.id, caption: '' } })
               .run();
           }),
         openYoutube: () => setYoutubeDialogOpen(true),
@@ -817,7 +986,7 @@ export default function ReviewEditor({
       <div className="review-editor">
         {/* Sticky compact toolbar */}
         {editable && (
-          <div className="sticky top-[7.5rem] z-20 mb-3 flex flex-wrap items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="sticky top-[var(--workspace-sticky-top,6.5rem)] z-20 mb-2 flex flex-wrap items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <select
               title="Paragraph style"
               value={headingValue}
@@ -866,7 +1035,7 @@ export default function ReviewEditor({
                   editor
                     .chain()
                     .focus()
-                    .insertContent({ type: 'image', attrs: { src: m.url, alt: m.altText, mediaId: m.id, caption: '' } })
+                    .insertContent({ type: 'image', attrs: { src: m.url, alt: '', mediaId: m.id, caption: '' } })
                     .run(),
                 )
               }

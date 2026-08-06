@@ -30,10 +30,7 @@ export function MediaRoleFields({
         )}
       </div>
 
-      <Field
-        label="Context (optional)"
-        help="Images and videos are tagged automatically. Pick Chat to show this in the Chat filter on the review page."
-      >
+      <Field label="Context (optional)">
         <div className="flex flex-wrap gap-4">
           {(
             [

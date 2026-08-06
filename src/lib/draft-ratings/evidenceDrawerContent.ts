@@ -43,6 +43,7 @@ const ENHANCED_SCOPE: Record<string, string> = {
   'eye-color': 'Eye color choices during character customization.',
   'body-type': 'Body type and physique options you can pick from.',
   'breast-size': 'Chest/breast size options where the creator offers them.',
+  'ss-size': 'SS size options where the creator offers them.',
   'hair-style': 'Hairstyle options (length, cut, and style).',
   'hair-color': 'Hair color choices in the creator.',
   outfits: 'Clothing and outfit options for characters.',

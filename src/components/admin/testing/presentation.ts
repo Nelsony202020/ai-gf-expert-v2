@@ -133,6 +133,13 @@ const GENDER_GROUP_OPTIONS: DefOption[] = [
   { value: 'Non-binary', label: 'Non-binary' },
 ];
 
+const STYLE_OPTIONS: DefOption[] = [
+  { value: 'Realistic', label: 'Realistic' },
+  { value: 'Anime', label: 'Anime' },
+  { value: 'Fantasy', label: 'Fantasy' },
+  { value: 'Semi-realistic', label: 'Semi-realistic' },
+];
+
 export function defOptions(def: EntityRow): DefOption[] {
   const slug = String(def.slug ?? '');
   const custom = TESTER_RUBRIC_OPTIONS[slug];
@@ -140,6 +147,9 @@ export function defOptions(def: EntityRow): DefOption[] {
   const existing = Array.isArray(def.options) ? (def.options as DefOption[]) : [];
   if (slug === 'genders') {
     return existing.length > 0 ? existing : GENDER_GROUP_OPTIONS;
+  }
+  if (slug === 'styles') {
+    return existing.length > 0 ? existing : STYLE_OPTIONS;
   }
   return existing;
 }
@@ -151,7 +161,7 @@ export function controlKind(def: EntityRow): ControlKind {
   const slug = String(def.slug ?? '');
   if (HARDCODED_CHECKLISTS[slug]) return 'checklist';
   if (TESTER_RUBRIC_SLUGS.has(slug)) return 'rubric';
-  if (slug === 'genders' && defOptions(def).length > 0) return 'multi_select';
+  if ((slug === 'genders' || slug === 'styles') && defOptions(def).length > 0) return 'multi_select';
   // Character creator: simple availability checks, not percentage or limited.
   if (slug === 'editing' || slug === 'preview') return 'boolean';
 

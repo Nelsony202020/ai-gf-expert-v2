@@ -1,8 +1,8 @@
-import { filterLaunchProducts } from './launchProducts';
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
 import type { HomeFeaturedCharacter, HomeGuide, HomeRecentUpdate } from '../../data/homepage';
 import { getDb, isDbConfigured } from '../db/server';
 import { loadFeaturedCharactersFromDb } from '../homepage/featuredCharacters';
+import { MAX_HOMEPAGE_TOP_PICKS, reconcileFeaturedProductSlots } from '../homepage/featuredProducts';
 import { reviewPageUrl } from '../slugs';
 import { loadPublishedProducts } from './store';
 import {
@@ -18,17 +18,30 @@ function fmtDisplayDate(ms?: number | string | null): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-/** Top homepage brand cards — admin homepageSlots only; published products only. */
+function pickFromProduct(
+  slug: string,
+  templatesBySlug: Map<string, RoundupPick>,
+  productsBySlug: Map<string, import('../../data/products').Product>,
+): RoundupPick | null {
+  const product = productsBySlug.get(slug);
+  if (!product) return null;
+  const template = templatesBySlug.get(slug);
+  return template ? productToRoundupPick(template, product) : minimalRoundupPickFromProduct(product);
+}
+
+/** Top homepage brand cards — homepageSlots + homepageFeatured; published products only. */
 export async function loadHomepageTopPicks(
   templatePicks: RoundupPick[],
 ): Promise<RoundupPick[]> {
-  const launchTemplates = filterLaunchProducts(templatePicks);
+  const templatesBySlug = new Map(templatePicks.map((p) => [p.slug, p]));
 
   if (!isDbConfigured()) {
-    return launchTemplates.slice(0, 3);
+    return templatePicks.slice(0, MAX_HOMEPAGE_TOP_PICKS);
   }
 
   try {
+    await reconcileFeaturedProductSlots();
+
     const db = getDb();
     const { homepageSlots } = await (db.query as any)({
       homepageSlots: {
@@ -36,7 +49,6 @@ export async function loadHomepageTopPicks(
       },
     });
 
-    const templatesBySlug = new Map(templatePicks.map((p) => [p.slug, p]));
     const published = await loadPublishedProducts([]);
     const productsBySlug = new Map(published.map((p) => [p.slug, p]));
 
@@ -45,19 +57,44 @@ export async function loadHomepageTopPicks(
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
     const out: RoundupPick[] = [];
+    const seen = new Set<string>();
+
     for (const slot of slots) {
       const slug = slot.product?.slug as string | undefined;
-      if (!slug) continue;
-      const product = productsBySlug.get(slug);
-      if (!product) continue;
-      const template = templatesBySlug.get(slug);
-      out.push(template ? productToRoundupPick(template, product) : minimalRoundupPickFromProduct(product));
+      if (!slug || seen.has(slug)) continue;
+      const pick = pickFromProduct(slug, templatesBySlug, productsBySlug);
+      if (!pick) continue;
+      seen.add(slug);
+      out.push(pick);
     }
-    const filtered = filterLaunchProducts(out);
-    return filtered.length > 0 ? filtered : launchTemplates.slice(0, 3);
+
+    if (out.length < MAX_HOMEPAGE_TOP_PICKS) {
+      const { products: featuredRows } = await (db.query as any)({
+        products: { $: { where: { status: 'published', homepageFeatured: true } } },
+      });
+      const extras = (featuredRows as any[])
+        .filter((p) => !p.deletedAt && p.homepageFeatured === true)
+        .sort(
+          (a, b) =>
+            (a.displayOrder ?? 999) - (b.displayOrder ?? 999) ||
+            String(a.name ?? '').localeCompare(String(b.name ?? '')),
+        );
+
+      for (const row of extras) {
+        const slug = String(row.slug ?? '');
+        if (!slug || seen.has(slug)) continue;
+        const pick = pickFromProduct(slug, templatesBySlug, productsBySlug);
+        if (!pick) continue;
+        seen.add(slug);
+        out.push(pick);
+        if (out.length >= MAX_HOMEPAGE_TOP_PICKS) break;
+      }
+    }
+
+    return out.length > 0 ? out.slice(0, MAX_HOMEPAGE_TOP_PICKS) : templatePicks.slice(0, MAX_HOMEPAGE_TOP_PICKS);
   } catch (error) {
     console.error('[content] homepage top picks load failed', error);
-    return launchTemplates.slice(0, 3);
+    return templatePicks.slice(0, MAX_HOMEPAGE_TOP_PICKS);
   }
 }
 
@@ -72,7 +109,7 @@ export async function loadHomepageFeaturedCharacters(
 
 /** Recent homepage updates from published reviews (no static placeholder links). */
 export async function loadHomepageRecentUpdates(): Promise<HomeRecentUpdate[]> {
-  const products = filterLaunchProducts(await loadPublishedProducts([]));
+  const products = await loadPublishedProducts([]);
   return products
     .filter((p) => p.overallScore != null)
     .slice(0, 4)
@@ -92,7 +129,7 @@ export async function loadHomepageRecentUpdates(): Promise<HomeRecentUpdate[]> {
 
 /** Guides / featured articles from published reviews only. */
 export async function loadHomepageGuides(): Promise<HomeGuide[]> {
-  const products = filterLaunchProducts(await loadPublishedProducts([]));
+  const products = await loadPublishedProducts([]);
   return products.slice(0, 6).map((p) => ({
     id: `guide-${p.slug}`,
     title: `${p.name} Review`,
@@ -105,12 +142,52 @@ export async function loadHomepageGuides(): Promise<HomeGuide[]> {
   }));
 }
 
-/** Hydrate explorer/directory apps from published product scores. */
+/** Directory apps from published products flagged publishedInDirectory. */
+export async function loadDirectoryPicks(templatePicks: RoundupPick[]): Promise<RoundupPick[]> {
+  const templatesBySlug = new Map(templatePicks.map((p) => [p.slug, p]));
+  const published = await loadPublishedProducts([]);
+  const productsBySlug = new Map(published.map((p) => [p.slug, p]));
+
+  if (!isDbConfigured()) {
+    return hydrateRoundupPicks(templatePicks, productsBySlug);
+  }
+
+  try {
+    const db = getDb();
+    const { products: rows } = await (db.query as any)({
+      products: { $: { where: { status: 'published' } } },
+    });
+
+    const directoryRows = (rows as any[])
+      .filter((p) => !p.deletedAt && p.publishedInDirectory === true)
+      .sort(
+        (a, b) =>
+          (a.displayOrder ?? 999) - (b.displayOrder ?? 999) ||
+          String(a.name ?? '').localeCompare(String(b.name ?? '')),
+      );
+
+    const picks: RoundupPick[] = [];
+    const seen = new Set<string>();
+
+    for (const row of directoryRows) {
+      const slug = String(row.slug ?? '');
+      if (!slug || seen.has(slug)) continue;
+      const pick = pickFromProduct(slug, templatesBySlug, productsBySlug);
+      if (!pick) continue;
+      seen.add(slug);
+      picks.push(pick);
+    }
+
+    return picks.length > 0 ? picks : hydrateRoundupPicks(templatePicks, productsBySlug);
+  } catch (error) {
+    console.error('[content] directory picks load failed', error);
+    return hydrateRoundupPicks(templatePicks, productsBySlug);
+  }
+}
+
+/** @deprecated Use loadDirectoryPicks — kept for import compatibility. */
 export async function hydrateExplorerTemplatePicks(
   templatePicks: RoundupPick[],
 ): Promise<RoundupPick[]> {
-  const launchTemplates = filterLaunchProducts(templatePicks);
-  const published = filterLaunchProducts(await loadPublishedProducts([]));
-  const bySlug = new Map(published.map((p) => [p.slug, p]));
-  return hydrateRoundupPicks(launchTemplates, bySlug);
+  return loadDirectoryPicks(templatePicks);
 }

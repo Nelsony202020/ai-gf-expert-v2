@@ -1,8 +1,13 @@
 import { z } from 'zod';
 import type { VerdictStepId } from '../../components/admin/workspace/verdict/types';
 import type { AiVerdictScope } from './types';
+import type { CategoryPerformanceDto } from './categoryPerformance';
 import { enforceMaxWords, PRO_CON_MAX_WORDS } from './fieldPromptHelpers';
 import type { AiSuggestionOutput, KeyFinding } from './suggestionSchema';
+import { sanitizeKeyFindings, sanitizeSuggestionText } from './sanitizeEvidenceCitations';
+
+/** Max words per category pros/cons suggestion in the analysis panel. */
+export const CATEGORY_PRO_CON_MAX_WORDS = 7;
 
 export const aiNotesSectionKeySchema = z.string().min(1);
 
@@ -10,6 +15,7 @@ export const loadNotesRequestSchema = z.object({
   productId: z.string().min(1),
   testRunId: z.string().min(1),
   sectionKey: z.string().min(1),
+  categoryName: z.string().optional(),
 });
 
 export const generateNotesRequestSchema = loadNotesRequestSchema.extend({
@@ -42,7 +48,10 @@ export function parseSectionKey(sectionKey: string): {
   categorySlug?: string;
 } {
   if (sectionKey.startsWith('step:')) {
-    return { kind: 'step', stepId: sectionKey.slice(5) as VerdictStepId };
+    const raw = sectionKey.slice(5);
+    // Legacy section key before pros/cons merged into Decision.
+    const stepId = (raw === 'pros-cons' ? 'decision' : raw) as VerdictStepId;
+    return { kind: 'step', stepId };
   }
   if (sectionKey.startsWith('category:')) {
     return { kind: 'category', categorySlug: sectionKey.slice(9) };
@@ -82,15 +91,9 @@ export function sectionConfig(sectionKey: string, categoryName?: string): AiNote
       };
     case 'decision':
       return {
-        label: 'Decision summary',
+        label: 'Decision & pros/cons',
         scope: 'overall',
-        productFields: ['bestFor', 'notIdealFor'],
-      };
-    case 'pros-cons':
-      return {
-        label: 'Pros & cons',
-        scope: 'overall',
-        productFields: ['pros', 'cons'],
+        productFields: ['bestFor', 'notIdealFor', 'pros', 'cons'],
       };
     case 'expert':
       return {
@@ -113,9 +116,9 @@ export function normalizeListField(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
     .map((item) => {
-      if (typeof item === 'string') return item.trim();
+      if (typeof item === 'string') return sanitizeSuggestionText(item.trim());
       if (item && typeof item === 'object' && 'text' in item) {
-        return String((item as { text: unknown }).text ?? '').trim();
+        return sanitizeSuggestionText(String((item as { text: unknown }).text ?? '').trim());
       }
       return '';
     })
@@ -123,12 +126,14 @@ export function normalizeListField(value: unknown): string[] {
 }
 
 export function normalizeScalarField(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'string') return sanitizeSuggestionText(value.trim());
   if (value && typeof value === 'object' && 'text' in value) {
-    return String((value as { text: unknown }).text ?? '').trim();
+    return sanitizeSuggestionText(String((value as { text: unknown }).text ?? '').trim());
   }
   return '';
 }
+
+export { sanitizeKeyFindings };
 
 /** Ensure saved suggestions always use plain strings for lists and scalars. */
 export function normalizeFieldSuggestions(raw: Record<string, unknown>): Record<string, unknown> {
@@ -150,6 +155,18 @@ export function normalizeFieldSuggestions(raw: Record<string, unknown>): Record<
   return out;
 }
 
+/** Normalize category analysis pros/cons to 3–4 words each. */
+export function normalizeCategoryProsCons(raw: Record<string, unknown>): Record<string, unknown> {
+  const out = normalizeFieldSuggestions(raw);
+  for (const key of ['pros', 'cons'] as const) {
+    const items = out[key];
+    if (Array.isArray(items)) {
+      out[key] = items.map((s) => enforceMaxWords(String(s), CATEGORY_PRO_CON_MAX_WORDS));
+    }
+  }
+  return out;
+}
+
 /** Map structured AI output to product/category field suggestions for a section. */
 export function buildFieldSuggestions(
   sectionKey: string,
@@ -157,19 +174,10 @@ export function buildFieldSuggestions(
 ): Record<string, unknown> {
   const parsed = parseSectionKey(sectionKey);
   if (parsed.kind === 'category') {
-    const out = normalizeFieldSuggestions({
-      headline: output.category_verdict_headline,
-      verdict: output.category_verdict,
-      mainStrength: output.category_primary_strength,
-      mainWeakness: output.category_primary_limitation,
+    return normalizeCategoryProsCons({
       pros: output.category_pros,
       cons: output.category_cons,
     });
-    const pros = out.pros as string[] | undefined;
-    const cons = out.cons as string[] | undefined;
-    if (pros?.[0]) out.mainStrength = pros[0];
-    if (cons?.[0]) out.mainWeakness = cons[0];
-    return out;
   }
   switch (parsed.stepId) {
     case 'overall':
@@ -184,9 +192,6 @@ export function buildFieldSuggestions(
       return normalizeFieldSuggestions({
         bestFor: output.best_for,
         notIdealFor: output.not_ideal_for,
-      });
-    case 'pros-cons':
-      return normalizeFieldSuggestions({
         pros: output.pros,
         cons: output.cons,
       });
@@ -217,6 +222,14 @@ export interface AiVerdictNotesDto {
   generatedBy: string | null;
   testRunId: string | null;
   stale: boolean;
+  /** Category test intelligence — scores and breakdown from live test data. */
+  performance?: CategoryPerformanceDto | null;
+}
+
+export interface LoadNotesResponse {
+  notes: AiVerdictNotesDto | null;
+  currentInputHash: string;
+  performance?: CategoryPerformanceDto | null;
 }
 
 export const FIELD_LABELS: Record<string, string> = {

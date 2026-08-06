@@ -1,16 +1,16 @@
-/** Products shown on public launch pages (directory, homepage, roundup). */
-export const LAUNCH_PRODUCT_SLUGS = new Set(['candy-ai']);
+/** @deprecated Visibility is controlled by DB flags (homepageFeatured, publishedInDirectory). */
+export const LAUNCH_PRODUCT_SLUGS = new Set<string>();
 
-export function isLaunchProduct(slug: string): boolean {
-  return LAUNCH_PRODUCT_SLUGS.has(slug);
+export function isLaunchProduct(_slug: string): boolean {
+  return true;
 }
 
 export function filterLaunchProducts<T extends { slug: string }>(items: T[]): T[] {
-  return items.filter((item) => isLaunchProduct(item.slug));
+  return items;
 }
 
 export function filterLaunchSlugs(slugs: string[]): string[] {
-  return slugs.filter((slug) => isLaunchProduct(slug));
+  return slugs;
 }
 
 /** Build compare picker defaults from launch picks (pads when fewer than three exist). */

@@ -1,10 +1,12 @@
 // Combined chat-modes + mode-types tester flow:
-// Yes/No dropdown → count → name & rate two modes (3-level rubric).
+// Yes/No dropdown → count → name & rate N modes (3-level rubric).
 
 import { Select, TextInput } from '../ui';
 import type { RawValue } from './EvidenceInput';
 
 export type ModeRating = 'good' | 'partial' | 'poor';
+
+export type ModeDraft = { name: string; rating: ModeRating | '' };
 
 const RATING_OPTS: { value: ModeRating; label: string; hint: string }[] = [
   { value: 'good', label: 'Works well', hint: 'Mode behaves as expected' },
@@ -12,40 +14,64 @@ const RATING_OPTS: { value: ModeRating; label: string; hint: string }[] = [
   { value: 'poor', label: "Doesn't work", hint: 'Broken or no real difference' },
 ];
 
+function parseCount(chatRaw: RawValue | undefined): string {
+  const detail =
+    chatRaw && 'detail' in chatRaw ? (chatRaw.detail as Record<string, unknown> | undefined) : undefined;
+  if (typeof detail?.count === 'number') return String(detail.count);
+  if (chatRaw && 'value' in chatRaw) return String(chatRaw.value);
+  return '';
+}
+
+function savedModes(modeRaw: RawValue | undefined): ModeDraft[] {
+  const structured =
+    modeRaw && 'structured' in modeRaw ? (modeRaw.structured as Record<string, unknown>) : undefined;
+  const saved = Array.isArray(structured?.modes)
+    ? (structured.modes as Array<{ name?: string; rating?: string }>)
+    : [];
+  return saved.map((m) => ({
+    name: m.name ?? '',
+    rating: (m.rating as ModeRating) ?? '',
+  }));
+}
+
+/** Resize mode rows to match count — preserve existing entries where possible. */
+export function resizeModes(
+  modes: ModeDraft[],
+  count: number,
+): ModeDraft[] {
+  const n = Math.max(0, Math.floor(count));
+  if (n === 0) return [];
+  const next: ModeDraft[] = [];
+  for (let i = 0; i < n; i++) {
+    next.push(modes[i] ?? { name: '', rating: '' });
+  }
+  return next;
+}
+
 export function parseChatModesDraft(
   chatRaw: RawValue | undefined,
   modeRaw: RawValue | undefined,
 ): {
   hasModes: 'yes' | 'no' | '';
   count: string;
-  modes: [{ name: string; rating: ModeRating | '' }, { name: string; rating: ModeRating | '' }];
+  modes: ModeDraft[];
 } {
   let hasModes: 'yes' | 'no' | '' = '';
   if (chatRaw && 'status' in chatRaw) {
     if (chatRaw.status === 'yes') hasModes = 'yes';
     if (chatRaw.status === 'no') hasModes = 'no';
   }
-  const detail =
-    chatRaw && 'detail' in chatRaw ? (chatRaw.detail as Record<string, unknown> | undefined) : undefined;
-  const count =
-    typeof detail?.count === 'number'
-      ? String(detail.count)
-      : chatRaw && 'value' in chatRaw
-        ? String(chatRaw.value)
-        : '';
-
-  const structured =
-    modeRaw && 'structured' in modeRaw ? (modeRaw.structured as Record<string, unknown>) : undefined;
-  const saved = Array.isArray(structured?.modes)
-    ? (structured.modes as Array<{ name?: string; rating?: string }>)
-    : [];
+  const count = parseCount(chatRaw);
+  const saved = savedModes(modeRaw);
+  const countNum = Number(count);
+  const targetLen =
+    hasModes === 'yes' && count.trim() !== '' && !Number.isNaN(countNum) && countNum > 0
+      ? countNum
+      : saved.length;
   return {
     hasModes,
     count,
-    modes: [
-      { name: saved[0]?.name ?? '', rating: (saved[0]?.rating as ModeRating) ?? '' },
-      { name: saved[1]?.name ?? '', rating: (saved[1]?.rating as ModeRating) ?? '' },
-    ],
+    modes: targetLen > 0 ? resizeModes(saved, targetLen) : saved,
   };
 }
 
@@ -64,7 +90,7 @@ export function chatModesToRaw(
 
 export function modeTypesToRaw(
   hasModes: 'yes' | 'no' | '',
-  modes: [{ name: string; rating: ModeRating | '' }, { name: string; rating: ModeRating | '' }],
+  modes: ModeDraft[],
 ): RawValue | undefined {
   if (hasModes === 'no') return { structured: { modes: [] } };
   if (hasModes !== 'yes') return undefined;
@@ -96,14 +122,25 @@ export function ChatModesField({
   onModeChange: (v: RawValue | undefined) => void;
 }) {
   const parsed = parseChatModesDraft(chatRaw, modeRaw);
+  const countNum = Number(parsed.count);
+  const showModeFields =
+    parsed.hasModes === 'yes' &&
+    parsed.count.trim() !== '' &&
+    !Number.isNaN(countNum) &&
+    countNum > 0;
 
   function sync(
     hasModes: 'yes' | 'no' | '',
     count: string,
-    modes: typeof parsed.modes,
+    modes: ModeDraft[],
   ) {
+    const n = Number(count);
+    const sized =
+      hasModes === 'yes' && count.trim() !== '' && !Number.isNaN(n) && n > 0
+        ? resizeModes(modes, n)
+        : modes;
     onChatChange(chatModesToRaw(hasModes, count));
-    onModeChange(modeTypesToRaw(hasModes, modes));
+    onModeChange(modeTypesToRaw(hasModes, sized));
   }
 
   return (
@@ -139,14 +176,22 @@ export function ChatModesField({
               disabled={disabled}
               className="!w-28"
               value={parsed.count}
-              onChange={(e) => sync('yes', e.target.value, parsed.modes)}
+              onChange={(e) => {
+                const nextCount = e.target.value;
+                const n = Number(nextCount);
+                const nextModes =
+                  nextCount.trim() !== '' && !Number.isNaN(n) && n > 0
+                    ? resizeModes(parsed.modes, n)
+                    : parsed.modes;
+                sync('yes', nextCount, nextModes);
+              }}
             />
           </div>
 
-          {Number(parsed.count) > 1 && (
+          {showModeFields && (
           <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800/30">
             <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
-              Test two modes — rate how well each one works
+              Test {countNum} mode{countNum === 1 ? '' : 's'} — rate how well each one works
             </p>
             {parsed.modes.map((mode, idx) => (
               <div key={idx} className="space-y-2 border-t border-slate-200 pt-3 first:border-0 first:pt-0 dark:border-slate-700">
@@ -155,7 +200,7 @@ export function ChatModesField({
                   placeholder={`Mode ${idx + 1} name (e.g. Romantic, Roleplay)`}
                   value={mode.name}
                   onChange={(e) => {
-                    const next = [...parsed.modes] as typeof parsed.modes;
+                    const next = [...parsed.modes];
                     next[idx] = { ...next[idx], name: e.target.value };
                     sync('yes', parsed.count, next);
                   }}
@@ -177,7 +222,7 @@ export function ChatModesField({
                         disabled={disabled}
                         checked={mode.rating === value}
                         onChange={() => {
-                          const next = [...parsed.modes] as typeof parsed.modes;
+                          const next = [...parsed.modes];
                           next[idx] = { ...next[idx], rating: value };
                           sync('yes', parsed.count, next);
                         }}

@@ -56,6 +56,15 @@ function buildProgressContext(
     slugByDefId,
   );
 
+  const hasAiPrivacyApply = Array.from(results.values()).some((r) => {
+    const details = r.calculationDetails;
+    return Boolean(
+      details &&
+        typeof details === 'object' &&
+        (details as { aiPrivacy?: unknown }).aiPrivacy,
+    );
+  });
+
   const hasValue = (defId: string) => {
     const r = results.get(defId);
     const slug = slugByDefId.get(defId);
@@ -78,6 +87,8 @@ function buildProgressContext(
     getResult: (defId) => results.get(defId),
     attachmentCount: (defId) => attachmentCountByDef.get(defId) ?? 0,
     isSkipped: (key) => skipped.has(key),
+    isAssistSessionComplete: (sessionId) =>
+      sessionId === 'policy-docs' ? hasAiPrivacyApply : false,
   };
 }
 
@@ -354,32 +365,34 @@ export function GuidedTestingMode({
             checkpointAfterIndices={checkpointAfterIndices}
             trailing={
               <div className="flex shrink-0 items-center gap-2">
-                <div className="flex rounded-lg border border-slate-200 p-0.5 dark:border-slate-700">
-                  <button
-                    type="button"
-                    className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${
-                      layout === 'batch'
-                        ? 'testing-toggle-active'
-                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                    }`}
-                    onClick={() => requestLayout('batch')}
-                    disabled={saving}
-                  >
-                    All at once
-                  </button>
-                  <button
-                    type="button"
-                    className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${
-                      layout === 'step'
-                        ? 'testing-toggle-active'
-                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                    }`}
-                    onClick={() => requestLayout('step')}
-                    disabled={saving}
-                  >
-                    One by one
-                  </button>
-                </div>
+                {current.session.id !== 'policy-docs' && (
+                  <div className="flex rounded-lg border border-slate-200 p-0.5 dark:border-slate-700">
+                    <button
+                      type="button"
+                      className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${
+                        layout === 'batch'
+                          ? 'testing-toggle-active'
+                          : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                      }`}
+                      onClick={() => requestLayout('batch')}
+                      disabled={saving}
+                    >
+                      All at once
+                    </button>
+                    <button
+                      type="button"
+                      className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${
+                        layout === 'step'
+                          ? 'testing-toggle-active'
+                          : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                      }`}
+                      onClick={() => requestLayout('step')}
+                      disabled={saving}
+                    >
+                      One by one
+                    </button>
+                  </div>
+                )}
                 <button
                   type="button"
                   aria-label="Close guided testing"

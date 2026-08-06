@@ -14,6 +14,11 @@ import {
   syncCharacterHomepageSlot,
   syncHomepageSlotToCharacter,
 } from '../homepage/featuredCharacters';
+import {
+  onHomepageTopPickSlotRemoved,
+  syncHomepageSlotToProduct,
+  syncProductHomepageSlot,
+} from '../homepage/featuredProducts';
 
 export interface WritePayload {
   fields: Record<string, unknown>;
@@ -244,12 +249,27 @@ export async function createEntity(
       typeof fields.homepageOrder === 'number' ? fields.homepageOrder : null,
     );
   }
+  if (entity === 'products' && fields.homepageFeatured === true) {
+    await syncProductHomepageSlot(
+      recordId,
+      true,
+      typeof fields.displayOrder === 'number' ? fields.displayOrder : null,
+    );
+  }
   if (entity === 'homepageSlots' && fields.kind === 'featured_character' && payload.links?.character) {
     await syncHomepageSlotToCharacter(
       recordId,
       'featured_character',
       fields.active !== false,
       payload.links.character,
+    );
+  }
+  if (entity === 'homepageSlots' && fields.kind === 'top_pick' && payload.links?.product) {
+    await syncHomepageSlotToProduct(
+      recordId,
+      'top_pick',
+      fields.active !== false,
+      payload.links.product,
     );
   }
 
@@ -327,16 +347,32 @@ export async function updateEntity(
       typeof fields.homepageOrder === 'number' ? fields.homepageOrder : null,
     );
   }
+  if (entity === 'products' && 'homepageFeatured' in fields) {
+    await syncProductHomepageSlot(
+      recordId,
+      Boolean(fields.homepageFeatured),
+      typeof fields.displayOrder === 'number'
+        ? fields.displayOrder
+        : (existing.displayOrder as number | null | undefined) ?? null,
+    );
+  }
   if (entity === 'homepageSlots') {
     const kind = String(fields.kind ?? existing.kind ?? '');
     const characterId =
       payload.links?.character ??
       existing.character?.id ??
       null;
+    const productId =
+      payload.links?.product ??
+      existing.product?.id ??
+      null;
     const active =
       'active' in fields ? fields.active !== false : existing.active !== false;
     if (kind === 'featured_character' && characterId) {
       await syncHomepageSlotToCharacter(recordId, kind, active, characterId);
+    }
+    if (kind === 'top_pick' && productId) {
+      await syncHomepageSlotToProduct(recordId, kind, active, productId);
     }
   }
 }
@@ -366,6 +402,7 @@ export async function deleteEntity(
 
   if (entity === 'homepageSlots') {
     await onHomepageSlotRemoved(existing);
+    await onHomepageTopPickSlotRemoved(existing);
   }
 
   if (cfg.softDelete && !opts.permanent) {

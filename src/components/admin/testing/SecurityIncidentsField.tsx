@@ -2,7 +2,6 @@
 
 import { Button, Field, Icon, Select, TextArea, TextInput } from '../ui';
 import type { RawValue } from './EvidenceInput';
-import { TestingHint } from './TestingHint';
 import {
   emptySecurityIncident,
   formatSecurityIncidentsSummary,
@@ -56,14 +55,14 @@ export function SecurityIncidentsField({
   }
 
   return (
-    <div className="testing-input-wide w-full min-w-0 max-w-xl space-y-4">
+    <div
+      className="testing-input-wide w-full min-w-0 max-w-xl space-y-4"
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
       <Field
-        label={
-          <span className="inline-flex items-center gap-1">
-            Any confirmed security incidents in the past 5 years?
-            <TestingHint text="Search news, company statements, regulator filings, or reliable security reports. Choose No if you found none." />
-          </span>
-        }
+        label="Any confirmed security incidents in the past 5 years?"
+        help="Search news, company statements, regulator filings, or reliable security reports. Choose No if you found none."
       >
         <Select
           value={parsed.foundIncidents}
@@ -125,6 +124,18 @@ export function SecurityIncidentsField({
                 placeholder="Optional note — what happened, when, what data was affected"
                 onChange={(e) => patchIncident(index, { note: e.target.value })}
               />
+              <label className="flex cursor-pointer items-start gap-2 text-xs text-slate-600 dark:text-slate-400">
+                <input
+                  type="checkbox"
+                  className="testing-checkbox mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-slate-300"
+                  checked={Boolean(row.excludeFromRating)}
+                  disabled={disabled}
+                  onChange={(e) => patchIncident(index, { excludeFromRating: e.target.checked })}
+                />
+                <span>
+                  Exclude from score — resolved, false alarm, or not penalized
+                </span>
+              </label>
             </div>
           ))}
 

@@ -19,6 +19,7 @@
 //   carrying `{ blockType, data }` so nothing is ever dropped.
 
 import { newBlockId, type ReviewBlock, type ReviewBlockType } from '../workspace/reviewBlocks';
+import { displayAltText, isMissingAltText } from '../../../lib/media/altText';
 
 // ---------------------------------------------------------------------------
 // Minimal TipTap/ProseMirror JSON types (kept local so this module stays pure)
@@ -254,11 +255,13 @@ export function blocksToDoc(blocks: ReviewBlock[], ctx?: ConversionContext): JSO
                   const media = mediaId ? ctx?.mediaById?.[mediaId] : undefined;
                   return {
                     src: String(media?.url ?? item.src ?? ''),
-                    alt: String(item.alt ?? ''),
+                    alt: displayAltText(item.alt ?? media?.altText ?? ''),
                     caption: String(item.caption ?? ''),
                     mediaId: item.mediaId ? String(item.mediaId) : null,
                     widthPercent: Number(item.widthPercent ?? 100),
                     borderRadiusPercent: Number(item.borderRadiusPercent ?? 0),
+                    clipFocusX: Number(item.clipFocusX ?? 50),
+                    clipFocusY: Number(item.clipFocusY ?? 50),
                   };
                 }),
               },
@@ -295,11 +298,13 @@ export function blocksToDoc(blocks: ReviewBlock[], ctx?: ConversionContext): JSO
           type: 'image',
           attrs: {
             src: String(media?.url ?? d.src ?? ''),
-            alt: String(d.alt ?? media?.altText ?? ''),
+            alt: displayAltText(d.alt ?? media?.altText ?? ''),
             caption: String(d.caption ?? ''),
             mediaId,
             widthPercent: Number(d.widthPercent ?? 100),
             borderRadiusPercent: Number(d.borderRadiusPercent ?? 0),
+            clipFocusX: Number(d.clipFocusX ?? 50),
+            clipFocusY: Number(d.clipFocusY ?? 50),
             blockId,
           },
         });
@@ -438,11 +443,16 @@ export function docToBlocks(doc: JSONDoc | null | undefined): ReviewBlock[] {
                     };
                     if (item.mediaId) stored.mediaId = String(item.mediaId);
                     if (item.src) stored.src = String(item.src);
-                    if (item.alt) stored.alt = String(item.alt);
+                    const alt = displayAltText(item.alt);
+                    if (alt) stored.alt = alt;
                     const width = Number(item.widthPercent ?? 100);
                     if (width !== 100) stored.widthPercent = width;
                     const radius = Number(item.borderRadiusPercent ?? 0);
                     if (radius > 0) stored.borderRadiusPercent = radius;
+                    const focusX = Number(item.clipFocusX ?? 50);
+                    const focusY = Number(item.clipFocusY ?? 50);
+                    if (focusX !== 50) stored.clipFocusX = focusX;
+                    if (focusY !== 50) stored.clipFocusY = focusY;
                     return stored;
                   }),
                 },
@@ -478,11 +488,16 @@ export function docToBlocks(doc: JSONDoc | null | undefined): ReviewBlock[] {
         };
         if (node.attrs?.mediaId) data.mediaId = String(node.attrs.mediaId);
         if (node.attrs?.src) data.src = String(node.attrs.src);
-        if (node.attrs?.alt) data.alt = String(node.attrs.alt);
+        const alt = displayAltText(node.attrs?.alt);
+        if (alt) data.alt = alt;
         const width = Number(node.attrs?.widthPercent ?? 100);
         if (width !== 100) data.widthPercent = width;
         const radius = Number(node.attrs?.borderRadiusPercent ?? 0);
         if (radius > 0) data.borderRadiusPercent = radius;
+        const focusX = Number(node.attrs?.clipFocusX ?? 50);
+        const focusY = Number(node.attrs?.clipFocusY ?? 50);
+        if (focusX !== 50) data.clipFocusX = focusX;
+        if (focusY !== 50) data.clipFocusY = focusY;
         blocks.push({ id: takeId(node, seen), type: 'image', data });
         break;
       }
@@ -546,7 +561,7 @@ export function analyzeDoc(doc: JSONDoc | null | undefined): DocAnalysis {
       if (node.type === 'heading') headingLevels.push(Number(node.attrs?.level ?? 2));
       if (node.type === 'image') {
         hasContent = true;
-        if (!String(node.attrs?.alt ?? '').trim()) imagesMissingAlt++;
+        if (isMissingAltText(node.attrs?.alt)) imagesMissingAlt++;
       }
       if (node.type === 'dynamicBlock' || node.type === 'youtube') hasContent = true;
       walk(node.content);

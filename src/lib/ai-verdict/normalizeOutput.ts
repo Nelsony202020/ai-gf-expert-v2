@@ -6,6 +6,7 @@ import {
   type AiSuggestionOutput,
   type KeyFinding,
 } from './suggestionSchema';
+import { stripInlineEvidenceIds } from './sanitizeEvidenceCitations';
 
 type FieldBlock = { text: string; evidence_ids: string[] };
 
@@ -55,19 +56,22 @@ const CAMEL_ALIASES: Record<string, string> = {
 function coerceFieldBlock(value: unknown): FieldBlock | undefined {
   if (value == null) return undefined;
   if (typeof value === 'string') {
-    const text = value.trim();
+    const { text } = stripInlineEvidenceIds(value.trim());
     return text ? { text, evidence_ids: [] } : undefined;
   }
   if (typeof value === 'object' && !Array.isArray(value)) {
     const o = value as Record<string, unknown>;
     const text = String(o.text ?? o.content ?? o.value ?? '').trim();
     if (!text) return undefined;
-    const evidence_ids = Array.isArray(o.evidence_ids)
+    const rawIds = Array.isArray(o.evidence_ids)
       ? o.evidence_ids.map(String)
       : Array.isArray(o.evidenceIds)
         ? o.evidenceIds.map(String)
         : [];
-    return { text, evidence_ids };
+    const { text: cleanText, extractedIds } = stripInlineEvidenceIds(text);
+    if (!cleanText) return undefined;
+    const evidence_ids = [...new Set([...rawIds, ...extractedIds])];
+    return { text: cleanText, evidence_ids };
   }
   return undefined;
 }

@@ -61,13 +61,14 @@ export interface ProofUploadPayload {
   productId?: string;
   caption?: string;
   altText?: string;
+  adult?: boolean;
 }
 
 export async function uploadProofFile(payload: ProofUploadPayload): Promise<{ id: string; url?: string }> {
   const file = await prepareProofFile(payload.file);
   const form = new FormData();
   form.set('file', file);
-  form.set('adult', '0');
+  form.set('adult', payload.adult ? '1' : '0');
   form.set('role', 'proof');
   form.set('evidenceResultId', payload.evidenceResultId);
   if (payload.productId) form.set('productId', payload.productId);
@@ -81,8 +82,11 @@ export async function uploadProofFilesParallel(
   files: File[],
   evidenceResultId: string,
   productId?: string,
-  concurrency = 3,
+  options?: { adult?: boolean; concurrency?: number; altText?: string },
 ): Promise<{ id: string; url?: string }[]> {
+  const adult = options?.adult ?? false;
+  const altText = options?.altText?.trim();
+  const concurrency = options?.concurrency ?? 3;
   const accepted = files.filter((f) =>
     (PROOF_ACCEPTED_TYPES as readonly string[]).includes(f.type),
   );
@@ -95,7 +99,7 @@ export async function uploadProofFilesParallel(
     while (index < accepted.length) {
       const i = index++;
       const file = accepted[i]!;
-      results[i] = await uploadProofFile({ file, evidenceResultId, productId });
+      results[i] = await uploadProofFile({ file, evidenceResultId, productId, adult, altText });
     }
   }
 

@@ -72,6 +72,7 @@ const PUBLIC_EVIDENCE_GROUP_DISPLAY: Record<string, PublicEvidenceGroupDisplay[]
     { label: 'Eye Color', slug: 'eye-color', memberSectionIds: ['eye-color'] },
     { label: 'Body Type', slug: 'body-type', memberSectionIds: ['body-type'] },
     { label: 'Breast Size', slug: 'breast-size', memberSectionIds: ['breast-size'] },
+    { label: 'SS Size', slug: 'ss-size', memberSectionIds: ['ss-size'] },
     { label: 'Hair Style', slug: 'hair-style', memberSectionIds: ['hair-style'] },
     { label: 'Hair Color', slug: 'hair-color', memberSectionIds: ['hair-color'] },
     { label: 'Outfits', slug: 'outfits', memberSectionIds: ['outfits'] },

@@ -21,7 +21,11 @@ export interface AuditEntry {
     | 'ai_suggest_failed'
     | 'ai_suggest_inserted'
     | 'ai_suggest_rejected'
-    | 'ai_suggest_regenerated';
+    | 'ai_suggest_regenerated'
+    | 'ai_privacy_documents_saved'
+    | 'ai_privacy_accepted'
+    | 'ai_privacy_rejected'
+    | 'ai_privacy_rescanned';
   recordType: string;
   recordId: string;
   oldValue?: unknown;

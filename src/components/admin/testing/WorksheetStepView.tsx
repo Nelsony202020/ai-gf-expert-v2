@@ -1,7 +1,7 @@
 // Step-by-step worksheet UI for image/video/consistency batch tests.
 
 import { useMemo, useRef, useState } from 'react';
-import type { EntityRow } from '../api';
+import { dataApi, type EntityRow } from '../api';
 import { Icon, TextArea } from '../ui';
 import {
   IMAGE_BATCH_PROMPT,
@@ -156,19 +156,47 @@ function rowComplete(sessionId: string, row: WorksheetRow, isReferenceStep: bool
   return false;
 }
 
+/** NSFW checkbox shown below an uploaded image or video. */
+function MediaNsfwToggle({
+  checked,
+  disabled,
+  onChange,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <label className="flex w-fit cursor-pointer items-center gap-1 text-[10px] leading-none text-slate-500">
+      <input
+        type="checkbox"
+        className="testing-checkbox h-3 w-3 rounded"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      NSFW
+    </label>
+  );
+}
+
 /** Fixed-height media upload — images use inline preview; videos use compact bar + player below. */
 function CompactMediaDrop({
   kind,
   mediaUrl,
+  nsfw,
   disabled,
   uploading,
   onFiles,
+  onNsfwChange,
 }: {
   kind: 'image' | 'video';
   mediaUrl?: string;
+  nsfw?: boolean;
   disabled?: boolean;
   uploading?: boolean;
   onFiles: (files: File[]) => void;
+  onNsfwChange?: (next: boolean) => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -204,10 +232,13 @@ function CompactMediaDrop({
             src={mediaUrl}
             controls
             playsInline
-            className="mx-auto max-h-[240px] w-full object-contain"
+            className={`mx-auto max-h-[240px] w-full object-contain ${nsfw ? 'scale-110 blur-md' : ''}`}
             onClick={(e) => e.stopPropagation()}
           />
         </div>
+        {onNsfwChange && (
+          <MediaNsfwToggle checked={Boolean(nsfw)} disabled={disabled} onChange={onNsfwChange} />
+        )}
         <input
           ref={fileInput}
           type="file"
@@ -224,70 +255,75 @@ function CompactMediaDrop({
   }
 
   return (
-    <div
-      className={`relative flex h-[180px] w-full items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors ${
-        dragOver
-          ? 'border-pink-400 bg-pink-50/60 dark:border-pink-600 dark:bg-pink-950/30'
-          : 'border-slate-300 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800/30'
-      }`}
-      onDragOver={(e) => {
-        if (disabled) return;
-        e.preventDefault();
-        setDragOver(true);
-      }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragOver(false);
-        if (disabled) return;
-        const files = Array.from(e.dataTransfer.files).filter(acceptMime);
-        if (files.length > 0) onFiles(files);
-      }}
-      onClick={() => {
-        if (!disabled && !mediaUrl) fileInput.current?.click();
-      }}
-    >
-      {mediaUrl ? (
-        kind === 'video' ? (
-          <video
-            src={mediaUrl}
-            controls
-            className="max-h-full max-w-full cursor-pointer object-contain p-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!disabled) fileInput.current?.click();
-            }}
-          />
-        ) : (
-          <img
-            src={mediaUrl}
-            alt=""
-            className="max-h-full max-w-full cursor-pointer object-contain p-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!disabled) fileInput.current?.click();
-            }}
-          />
-        )
-      ) : uploading ? (
-        <Icon name="progress_activity" className="!text-[22px] animate-spin text-slate-400" />
-      ) : (
-        <Icon
-          name={kind === 'video' ? 'videocam' : 'add_photo_alternate'}
-          className="!text-[28px] text-slate-300"
-        />
-      )}
-      <input
-        ref={fileInput}
-        type="file"
-        accept={accept}
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onFiles([f]);
-          e.target.value = '';
+    <div className="space-y-2">
+      <div
+        className={`relative flex h-[180px] w-full items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors ${
+          dragOver
+            ? 'border-pink-400 bg-pink-50/60 dark:border-pink-600 dark:bg-pink-950/30'
+            : 'border-slate-300 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800/30'
+        }`}
+        onDragOver={(e) => {
+          if (disabled) return;
+          e.preventDefault();
+          setDragOver(true);
         }}
-      />
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (disabled) return;
+          const files = Array.from(e.dataTransfer.files).filter(acceptMime);
+          if (files.length > 0) onFiles(files);
+        }}
+        onClick={() => {
+          if (!disabled && !mediaUrl) fileInput.current?.click();
+        }}
+      >
+        {mediaUrl ? (
+          kind === 'video' ? (
+            <video
+              src={mediaUrl}
+              controls
+              className={`max-h-full max-w-full cursor-pointer object-contain p-1 ${nsfw ? 'scale-110 blur-md' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!disabled) fileInput.current?.click();
+              }}
+            />
+          ) : (
+            <img
+              src={mediaUrl}
+              alt=""
+              className={`max-h-full max-w-full cursor-pointer object-contain p-1 ${nsfw ? 'scale-110 blur-md' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!disabled) fileInput.current?.click();
+              }}
+            />
+          )
+        ) : uploading ? (
+          <Icon name="progress_activity" className="!text-[22px] animate-spin text-slate-400" />
+        ) : (
+          <Icon
+            name={kind === 'video' ? 'videocam' : 'add_photo_alternate'}
+            className="!text-[28px] text-slate-300"
+          />
+        )}
+        <input
+          ref={fileInput}
+          type="file"
+          accept={accept}
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onFiles([f]);
+            e.target.value = '';
+          }}
+        />
+      </div>
+      {mediaUrl && onNsfwChange && (
+        <MediaNsfwToggle checked={Boolean(nsfw)} disabled={disabled} onChange={onNsfwChange} />
+      )}
     </div>
   );
 }
@@ -379,7 +415,7 @@ export function WorksheetStepView({
   productSlug?: string;
   onChange: (rows: WorksheetRow[], derived: DerivedColumn[]) => void;
   onOpenProof?: () => void;
-  onUploadProof?: (files: File[]) => Promise<{ id: string; url?: string }[]>;
+  onUploadProof?: (files: File[], opts?: { altText?: string }) => Promise<{ id: string; url?: string }[]>;
 }) {
   const cappedInitial = useMemo(
     () => capWorksheetRows(sessionId, baseConfig, initialRows, productSlug),
@@ -449,13 +485,16 @@ export function WorksheetStepView({
     setUploadError(null);
     setUploading(true);
     try {
-      const uploaded = await onUploadProof(files);
+      const uploaded = await onUploadProof(
+        files,
+        isVideoBatch && prompt.trim() ? { altText: prompt.trim().slice(0, 300) } : undefined,
+      );
       const first = uploaded[0];
       if (first?.url) {
         patchRow(
           isVideoBatch
-            ? { _mediaId: first.id, _videoUrl: first.url }
-            : { _mediaId: first.id, _imageUrl: first.url },
+            ? { _mediaId: first.id, _videoUrl: first.url, _mediaAdult: false }
+            : { _mediaId: first.id, _imageUrl: first.url, _mediaAdult: false },
         );
       }
     } catch (e) {
@@ -472,6 +511,20 @@ export function WorksheetStepView({
       : typeof row._videoUrl === 'string'
         ? (row._videoUrl as string)
         : undefined;
+  const currentMediaAdult = Boolean(row._mediaAdult);
+  const currentMediaId = typeof row._mediaId === 'string' ? row._mediaId : undefined;
+
+  async function setCurrentMediaNsfw(checked: boolean) {
+    if (!currentMediaId) return;
+    patchRow({ _mediaAdult: checked });
+    try {
+      await dataApi.update('media', currentMediaId, { adult: checked, ageGated: checked });
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Could not update NSFW flag');
+      patchRow({ _mediaAdult: !checked });
+    }
+  }
+
   const referenceUrl =
     typeof syncedRows[0]?._imageUrl === 'string'
       ? (syncedRows[0]._imageUrl as string)
@@ -548,9 +601,11 @@ export function WorksheetStepView({
             <CompactMediaDrop
               kind={mediaKind}
               mediaUrl={currentMediaUrl}
+              nsfw={currentMediaAdult}
               disabled={disabled}
               uploading={uploading}
               onFiles={(files) => void handleMediaDrop(files)}
+              onNsfwChange={(checked) => void setCurrentMediaNsfw(checked)}
             />
           </div>
         </div>
@@ -560,9 +615,11 @@ export function WorksheetStepView({
         <CompactMediaDrop
           kind={mediaKind}
           mediaUrl={currentMediaUrl}
+          nsfw={currentMediaAdult}
           disabled={disabled}
           uploading={uploading}
           onFiles={(files) => void handleMediaDrop(files)}
+          onNsfwChange={(checked) => void setCurrentMediaNsfw(checked)}
         />
       )}
 
@@ -570,9 +627,11 @@ export function WorksheetStepView({
         <CompactMediaDrop
           kind="video"
           mediaUrl={currentMediaUrl}
+          nsfw={currentMediaAdult}
           disabled={disabled}
           uploading={uploading}
           onFiles={(files) => void handleMediaDrop(files)}
+          onNsfwChange={(checked) => void setCurrentMediaNsfw(checked)}
         />
       )}
 

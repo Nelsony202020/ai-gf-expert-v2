@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { dataApi, type EntityRow } from '../api';
+import { dataApi, type EntityRow, api } from '../api';
 import { resolveMediaUrl } from '../../../lib/media/url';
 import { useCan } from '../context';
 import {
@@ -602,6 +602,8 @@ export function HomepagePage() {
   const { busy: saving, run: saveRun } = useAsync();
 
   const reload = useCallback(() => {
+    void api.post('/api/admin/homepage/sync-featured-products').catch(() => {});
+    void api.post('/api/admin/homepage/sync-featured-characters').catch(() => {});
     dataApi
       .list('homepageSlots')
       .then((r) => setSlots(r.rows.sort((a, b) => a.position - b.position)))

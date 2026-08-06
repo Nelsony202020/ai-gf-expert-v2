@@ -43,7 +43,6 @@ export const REQUIRED_CAP: Record<string, ProductCapabilityName> = {
   'images|custom-prompts': 'capImageGeneration',
   'video|text-to-video': 'capVideoGeneration',
   'video|image-to-video': 'capVideoGeneration',
-  'video|chat-video': 'capInChatImages',
 };
 
 /** Paywall / included-feature checklist labels → capability. */

@@ -10,7 +10,7 @@ export interface MissingRequiredRow {
   sessionIndex?: number;
   sessionTitle?: string;
   categoryName?: string;
-  source: 'session' | 'pricing';
+  source: 'session' | 'pricing' | 'hidden';
 }
 
 export function TestingMissingRequiredPanel({

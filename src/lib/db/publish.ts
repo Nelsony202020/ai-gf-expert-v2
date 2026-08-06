@@ -6,6 +6,7 @@ import { env } from '../env';
 import { HttpError, type AdminIdentity } from './auth';
 import { auditTx } from './audit';
 import { createSlugChangeRedirect } from './redirects';
+import { isMissingAltText } from '../media/altText';
 
 export interface PublishValidation {
   errors: string[]; // blocking
@@ -44,15 +45,17 @@ export async function validateProductForPublish(productId: string): Promise<Publ
   if (!product.oneLineVerdict) errors.push('One-line verdict is required.');
   if (!product.ourTake) errors.push('"Our Take" is required.');
   if (!product.directoryDescription) warnings.push('Directory description is empty.');
-  if (!Array.isArray(product.pros) || product.pros.length === 0) errors.push('At least one pro is required.');
-  if (!Array.isArray(product.cons) || product.cons.length === 0) errors.push('At least one con is required.');
+  if (!Array.isArray(product.pros) || product.pros.length === 0) warnings.push('No pros listed yet.');
+  if (!Array.isArray(product.cons) || product.cons.length === 0) warnings.push('No cons listed yet.');
   if (!product.websiteUrl) errors.push('Official website URL is required.');
 
   // Required media
   if (!product.logo) errors.push('Product logo is required.');
   const approvedMedia = (product.media ?? []).filter((m: any) => m.approved && !m.deletedAt);
   if (approvedMedia.length === 0) warnings.push('No approved media in the product gallery.');
-  const missingAlt = (product.media ?? []).filter((m: any) => !m.altText && !m.deletedAt);
+  const missingAlt = (product.media ?? []).filter(
+    (m: any) => !m.deletedAt && m.mediaType !== 'video' && isMissingAltText(m.altText),
+  );
   if (missingAlt.length > 0) warnings.push(`${missingAlt.length} media item(s) missing alt text.`);
 
   // Active published test run
@@ -135,6 +138,7 @@ export async function unpublishProduct(productId: string, identity: AdminIdentit
     db.tx.products[productId].update({
       status: 'draft',
       publishedInDirectory: false,
+      homepageFeatured: false,
       editorsPick: false,
       updatedAt: now,
     }),

@@ -23,7 +23,6 @@ import {
 import { ImageInspectorPanel } from '../../review/ImageInspectorPanel';
 import type { ImageInspectorTarget, ReviewEditorUI } from '../../review/reviewEditorContext';
 import { useWorkspace } from '../context';
-import { CompletionSidebar } from '../CompletionSidebar';
 import { makeBlock, reviewTemplateHeadings, type ReviewBlock } from '../reviewBlocks';
 
 const ReviewEditor = lazyImport(() => import('../../review/ReviewEditor'), 'ReviewEditor');
@@ -217,29 +216,14 @@ export function ReviewTab() {
   ) : undefined;
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
-      <div className="space-y-4">
-        {/* Document meta row (the editor renders its own sticky toolbar) */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <Icon name="article" className="!text-[16px] text-slate-400" />
-            <span>
-              {analysis.words.toLocaleString()} word{analysis.words === 1 ? '' : 's'}
-            </span>
-            {review?.lastEditedAt && (
-              <span>
-                · last edited {fmtDate(review.lastEditedAt)}
-                {review.lastEditedBy ? ` by ${review.lastEditedBy}` : ''}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5">
-            {revisions.length > 0 && (
-              <Button variant="ghost" className="text-xs" onClick={() => setShowRevisions((v) => !v)}>
-                <Icon name="history" className="!text-[15px]" /> Revisions ({revisions.length})
-              </Button>
-            )}
-          </div>
+    <div className="flex gap-4">
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="flex flex-wrap items-center justify-end gap-1.5 px-1">
+          {revisions.length > 0 && (
+            <Button variant="ghost" className="text-xs" onClick={() => setShowRevisions((v) => !v)}>
+              <Icon name="history" className="!text-[15px]" /> Revisions ({revisions.length})
+            </Button>
+          )}
         </div>
 
         {showRevisions && revisions.length > 0 && (
@@ -299,59 +283,57 @@ export function ReviewTab() {
         </Suspense>
       </div>
 
-      <div className="space-y-3">
-        {/* Article stats + validation warnings */}
-        <aside className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Article</h3>
-          <dl className="mt-3 space-y-2.5 text-sm">
-            <div className="flex justify-between gap-2">
-              <dt className="text-slate-500">Words</dt>
-              <dd className="text-slate-800 dark:text-slate-200">{analysis.words.toLocaleString()}</dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-slate-500">Reading time</dt>
-              <dd className="text-slate-800 dark:text-slate-200">
-                {analysis.empty ? '—' : `~${readingMinutes} min`}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-slate-500">Review status</dt>
-              <dd className="text-slate-800 dark:text-slate-200">
-                {review ? 'Saved draft' : 'Not created yet'}
-                {isDirty ? ' · unsaved changes' : ''}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-slate-500">Last saved</dt>
-              <dd className="text-slate-800 dark:text-slate-200">{lastSaved ? fmtDate(lastSaved) : '—'}</dd>
-            </div>
-          </dl>
-          {warnings.length > 0 && (
-            <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Warnings</p>
-              <ul className="space-y-1.5">
-                {warnings.map((w, i) => (
-                  <li key={i} className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
-                    <Icon name="warning" className="mt-px !text-[14px] shrink-0" />
-                    {w}
-                  </li>
-                ))}
-              </ul>
-            </div>
+      <div className="hidden w-52 shrink-0 xl:block">
+        <div className="sticky top-[var(--workspace-sticky-top,6.5rem)] z-10 max-h-[calc(100vh-var(--workspace-sticky-top,6.5rem)-1rem)] space-y-3 overflow-y-auto overscroll-contain">
+          <aside className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">Article</h3>
+            <dl className="mt-2 space-y-1.5 text-xs">
+              <div className="flex justify-between gap-2">
+                <dt className="text-slate-500">Words</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{analysis.words.toLocaleString()}</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-slate-500">Read time</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">
+                  {analysis.empty ? '—' : `~${readingMinutes} min`}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-slate-500">Status</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">
+                  {review ? 'Draft' : 'New'}
+                  {isDirty ? ' · unsaved' : ''}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-slate-500">Saved</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{lastSaved ? fmtDate(lastSaved) : '—'}</dd>
+              </div>
+            </dl>
+            {warnings.length > 0 && (
+              <div className="mt-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Warnings</p>
+                <ul className="space-y-1">
+                  {warnings.map((w, i) => (
+                    <li key={i} className="flex items-start gap-1 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+                      <Icon name="warning" className="mt-px !text-[12px] shrink-0" />
+                      {w}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </aside>
+
+          {imageInspector && canEdit && editorUiRef.current && (
+            <ImageInspectorPanel
+              key={`${imageInspector.kind}-${imageInspector.itemIndex ?? 0}-${String(imageInspector.attrs.src ?? '')}`}
+              target={imageInspector}
+              onClose={() => setImageInspector(null)}
+              openImagePicker={editorUiRef.current.openImagePicker}
+            />
           )}
-        </aside>
-
-        <CompletionSidebar />
-
-        {imageInspector && canEdit && editorUiRef.current && (
-          <ImageInspectorPanel
-            key={`${imageInspector.kind}-${imageInspector.itemIndex ?? 0}-${String(imageInspector.attrs.src ?? '')}`}
-            target={imageInspector}
-            onClose={() => setImageInspector(null)}
-            openImagePicker={editorUiRef.current.openImagePicker}
-            productId={ws.productId}
-          />
-        )}
+        </div>
       </div>
     </div>
   );

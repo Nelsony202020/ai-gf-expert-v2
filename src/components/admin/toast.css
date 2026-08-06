@@ -20,6 +20,7 @@
   }
 }
 
+/* Remaining time — full on the left, depletes toward the right until dismiss. */
 @keyframes toast-timer {
   from {
     transform: scaleX(1);
@@ -38,5 +39,6 @@
 }
 
 .animate-toast-timer {
+  transform-origin: left center;
   animation: toast-timer linear forwards;
 }

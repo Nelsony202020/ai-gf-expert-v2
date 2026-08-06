@@ -9,7 +9,12 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { init } from '@instantdb/admin';
 
-const RETIRED_EVIDENCE = [{ category: 'pricing', slug: 'restrictions' }] as const;
+import { RETIRED_EVIDENCE_SLUGS } from '../src/lib/testing/retiredEvidence';
+
+const RETIRED_EVIDENCE = [...RETIRED_EVIDENCE_SLUGS].map((slug) => ({
+  category: 'pricing' as const,
+  slug,
+}));
 
 function loadEnv(): Record<string, string> {
   const out: Record<string, string> = {};

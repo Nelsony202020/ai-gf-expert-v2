@@ -33,7 +33,7 @@ import { TestingRunProgressSummary } from '../../testing/TestingProgressHeader';
 import type { MissingRequiredRow } from '../../testing/TestingMissingRequiredPanel';
 import { readSkippedSessions } from '../../testing/sessionProgressStorage';
 import { type SessionItem } from '../../testing/sessionUi';
-import { sessionsForCategory, COMBINED_EVIDENCE_PARENT } from '../../testing/sessions';
+import { isAssistSession, isEvidenceExcludedFromTesting, sessionsForCategory, COMBINED_EVIDENCE_PARENT } from '../../testing/sessions';
 import {
   Badge,
   Button,
@@ -411,7 +411,7 @@ export function TestingTab() {
           }))
           .filter(
             (s) =>
-              s.items.length > 0 &&
+              (s.items.length > 0 || isAssistSession(s.session)) &&
               isSessionApplicable(String(s.cat.slug), s.session.id, resultByDef, defs),
           ),
       );
@@ -462,24 +462,37 @@ export function TestingTab() {
   );
 
   const progressCtx: ProgressContext = useMemo(
-    () => ({
-      hasValue: (defId: string) => {
-        const row = resultByDef.get(defId);
-        const def = defById.get(defId);
-        if (!def) return false;
-        return isEvidenceAnswerComplete({
-          slug: String(def.slug),
-          rawValue: row?.rawValue,
-          notApplicable: row?.notApplicable,
-          isUnknown: row?.isUnknown,
-          relatedAnswers: relatedAnswersBySlug,
-          hasAutofillSuggestion: suggestionByDef.has(defId),
-        });
-      },
-      getResult: (defId) => resultByDef.get(defId),
-      attachmentCount: (defId) => attachmentCountByDef.get(defId) ?? 0,
-      isSkipped: (key) => skippedSessions.has(key),
-    }),
+    () => {
+      const hasAiPrivacyApply = Array.from(resultByDef.values()).some((r) => {
+        const details = r.calculationDetails;
+        return Boolean(
+          details &&
+            typeof details === 'object' &&
+            (details as { aiPrivacy?: unknown }).aiPrivacy,
+        );
+      });
+
+      return {
+        hasValue: (defId: string) => {
+          const row = resultByDef.get(defId);
+          const def = defById.get(defId);
+          if (!def) return false;
+          return isEvidenceAnswerComplete({
+            slug: String(def.slug),
+            rawValue: row?.rawValue,
+            notApplicable: row?.notApplicable,
+            isUnknown: row?.isUnknown,
+            relatedAnswers: relatedAnswersBySlug,
+            hasAutofillSuggestion: suggestionByDef.has(defId),
+          });
+        },
+        getResult: (defId) => resultByDef.get(defId),
+        attachmentCount: (defId) => attachmentCountByDef.get(defId) ?? 0,
+        isSkipped: (key) => skippedSessions.has(key),
+        isAssistSessionComplete: (sessionId) =>
+          sessionId === 'policy-docs' ? hasAiPrivacyApply : false,
+      };
+    },
     [
       resultByDef,
       defById,
@@ -511,9 +524,39 @@ export function TestingTab() {
     [orderedSessions],
   );
 
+  const categorySlugByDefId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const cat of mvCategories) {
+      const groups = structureByCategory.get(cat.id) ?? [];
+      for (const { defs } of groups) {
+        for (const def of defs) {
+          map.set(def.id, String(cat.slug));
+        }
+      }
+    }
+    return map;
+  }, [mvCategories, structureByCategory]);
+
   const supplementalMissing = useMemo(
-    () => supplementalRequiredMissing(definitions, sessionDefIds, progressCtx.hasValue),
-    [definitions, sessionDefIds, progressCtx],
+    () =>
+      supplementalRequiredMissing(definitions, {
+        sessionDefIds,
+        hasValue: progressCtx.hasValue,
+        categorySlugByDefId,
+        productFields: ws.fields,
+        gendersRaw,
+        hasAutofillSuggestion: (defId) => suggestionByDef.has(defId),
+        isExcludedFromTesting: isEvidenceExcludedFromTesting,
+      }),
+    [
+      definitions,
+      sessionDefIds,
+      progressCtx,
+      categorySlugByDefId,
+      ws.fields,
+      gendersRaw,
+      suggestionByDef,
+    ],
   );
 
   const effectiveRunProgress = useMemo(() => {
@@ -547,14 +590,22 @@ export function TestingTab() {
       }
     }
     for (const item of supplementalMissing.items) {
+      const sessionIndex = orderedSessions.findIndex((s) =>
+        s.items.some(({ def }) => def.id === item.defId),
+      );
       rows.push({
         defId: item.defId,
         label: item.label,
-        source: 'pricing',
+        source: item.source,
+        sessionIndex: sessionIndex >= 0 ? sessionIndex : undefined,
+        sessionTitle:
+          sessionIndex >= 0 ? orderedSessions[sessionIndex]?.session.title : undefined,
+        categoryName:
+          sessionIndex >= 0 ? String(orderedSessions[sessionIndex]?.cat.name) : undefined,
       });
     }
     return rows;
-  }, [effectiveRunProgress.sessions, supplementalMissing.items]);
+  }, [effectiveRunProgress.sessions, supplementalMissing.items, orderedSessions]);
 
   const publishedScores = useMemo(() => {
     const live = ws.related.scoreHistory.find((h) => h.isCurrentPublished);
@@ -626,7 +677,7 @@ export function TestingTab() {
             : `${effectiveRunProgress.remainingRequired} required question${effectiveRunProgress.remainingRequired === 1 ? '' : 's'} still unanswered`,
       });
       const firstSessionMissing = missingRequiredRows.find(
-        (r) => r.source === 'session' && r.sessionIndex != null && r.defId,
+        (r) => r.sessionIndex != null && r.defId,
       );
       if (firstSessionMissing?.sessionIndex != null && firstSessionMissing.defId) {
         jumpToMissingItem(firstSessionMissing.sessionIndex, firstSessionMissing.defId);
@@ -712,7 +763,7 @@ export function TestingTab() {
         return;
       }
       const firstSessionMissing = missingRequiredRows.find(
-        (r) => r.source === 'session' && r.sessionIndex != null && r.defId,
+        (r) => r.sessionIndex != null && r.defId,
       );
       if (firstSessionMissing?.sessionIndex != null && firstSessionMissing.defId) {
         jumpToMissingItem(firstSessionMissing.sessionIndex, firstSessionMissing.defId);
@@ -953,7 +1004,9 @@ export function TestingTab() {
                           {complete
                             ? `Done · ${prog.total} required attempt${prog.total === 1 ? '' : 's'}`
                             : prog.total > 0
-                              ? `${prog.complete} of ${prog.total} attempts complete`
+                              ? session.id === 'policy-docs'
+                                ? `${prog.complete} of ${prog.total} · upload policies & run AI analysis`
+                                : `${prog.complete} of ${prog.total} attempts complete`
                               : 'No required inputs'}
                         </p>
                       </div>

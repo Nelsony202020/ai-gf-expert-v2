@@ -18,6 +18,8 @@ export type ScoringRule =
   | { kind: 'linear'; min: number; max: number; invert?: boolean }
   | { kind: 'bands'; bands: { upTo: number; score: number }[] }
   | { kind: 'ynl'; yes: number; limited: number; no: number; unknown: number }
+  /** Direct 1–10 (or min–max) rating — stored value becomes the normalized score. */
+  | { kind: 'scale'; min: number; max: number }
   | { kind: 'manual' };
 
 export type RawValue =
@@ -272,7 +274,11 @@ export function normalizeEvidence(input: EvidenceInput): {
     if (input.slug === 'mode-types') {
       const modeCount = chatModesCount(input.relatedAnswers);
       if (modeCount !== null && modeCount > 1) {
-        return { score: null, status: 'missing', detail: 'Rate two chat modes when 2+ modes exist' };
+        return {
+          score: null,
+          status: 'missing',
+          detail: `Rate all ${modeCount} chat modes when ${modeCount} modes exist`,
+        };
       }
     }
     return { score: null, status: 'missing', detail: 'No result entered' };
@@ -299,11 +305,29 @@ export function normalizeEvidence(input: EvidenceInput): {
       return { score: null, status: 'missing', detail: 'Chat mode count required before rating modes' };
     }
     if (!('structured' in raw)) {
-      return { score: null, status: 'missing', detail: 'Rate two chat modes when 2+ modes exist' };
+      return {
+        score: null,
+        status: 'missing',
+        detail: `Rate all ${modeCount} chat modes when ${modeCount} modes exist`,
+      };
     }
-    const modes = (raw.structured as { modes?: Array<{ rating?: string }> }).modes;
+    const modes = (raw.structured as { modes?: Array<{ name?: string; rating?: string }> }).modes;
     if (!Array.isArray(modes) || modes.length === 0) {
       return { score: null, status: 'missing', detail: 'Mode ratings incomplete' };
+    }
+    if (modeCount > 1) {
+      const fullyRated = modes.filter(
+        (m) =>
+          String(m.name ?? '').trim() !== '' &&
+          MODE_RATING_SCORES[String(m.rating ?? '').toLowerCase()] !== undefined,
+      );
+      if (fullyRated.length < modeCount) {
+        return {
+          score: null,
+          status: 'missing',
+          detail: `Rate all ${modeCount} chat modes when ${modeCount} modes exist`,
+        };
+      }
     }
     const scores = modes
       .map((m) => MODE_RATING_SCORES[String(m.rating ?? '').toLowerCase()])
@@ -420,6 +444,17 @@ export function normalizeEvidence(input: EvidenceInput): {
           score: clamp10(band.score),
           status: 'scored',
           detail: `bands: ${num} -> ${band.score} (band ≤ ${band.upTo})`,
+        };
+      }
+      case 'scale': {
+        const { min, max } = rule;
+        if (max <= min) return { score: null, status: 'missing', detail: 'Invalid scale rule (max <= min)' };
+        const clamped = Math.max(min, Math.min(max, num));
+        const score = clamp10(round1(clamped));
+        return {
+          score,
+          status: 'scored',
+          detail: `scale ${min}–${max}: ${num} -> ${score}/10`,
         };
       }
       case 'manual':

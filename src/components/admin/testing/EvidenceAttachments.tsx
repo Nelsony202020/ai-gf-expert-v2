@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { dataApi, type EntityRow } from '../api';
 import { Button, Icon, TextInput } from '../ui';
 import { MediaPickerModal } from '../MediaPicker';
-import { ProofThumb } from './ProofThumb';
 import {
   mediaMatchesProofTag,
   parseProofCaption,
@@ -13,6 +12,7 @@ import {
 } from './proofTags';
 import { evidenceRequirements } from './presentation';
 import { PROOF_ACCEPTED_TYPES, uploadProofFilesParallel } from './proofUpload';
+import { resolveMediaUrl } from '../../../lib/media/url';
 
 export function EvidenceAttachments({
   def,
@@ -141,8 +141,14 @@ export function EvidenceAttachments({
     }
   }
 
-  async function updateMediaMeta(mediaId: string, patch: { altText?: string; caption?: string }) {
+  async function updateMediaMeta(
+    mediaId: string,
+    patch: { altText?: string; caption?: string; adult?: boolean; ageGated?: boolean },
+  ) {
     setError(null);
+    setAttachments((prev) =>
+      prev.map((row) => (row.id === mediaId ? { ...row, ...patch } : row)),
+    );
     try {
       await dataApi.update('media', mediaId, patch);
       await reload();
@@ -259,27 +265,28 @@ export function EvidenceAttachments({
               ? parseProofCaption(m.caption).userCaption
               : String(m.caption ?? '');
             const mediaLabel = proofMediaLabel(m.caption);
+            const previewUrl = resolveMediaUrl(m);
+            const isVideo = m.mediaType === 'video';
             return (
               <li
                 key={m.id}
                 className="space-y-2 rounded-md bg-slate-50 px-2 py-2 dark:bg-slate-800/60"
               >
-                <div className="flex items-start gap-2">
-                  <div className="flex shrink-0 flex-col items-center gap-1">
-                    <ProofThumb media={m} size="sm" disabled={disabled} />
-                    {mediaLabel && (
-                      <span className="max-w-[4.5rem] text-center text-[10px] leading-tight text-slate-600 dark:text-slate-400">
-                        {mediaLabel}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-                    {m.url && (
+                <div className="flex items-center justify-between gap-2">
+                  {mediaLabel ? (
+                    <span className="truncate text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                      {mediaLabel}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-slate-400">{isVideo ? 'Video' : 'Image'}</span>
+                  )}
+                  <div className="flex shrink-0 items-center gap-2">
+                    {previewUrl && (
                       <a
-                        href={m.url}
+                        href={previewUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="shrink-0 text-xs font-medium text-pink-600 hover:underline"
+                        className="text-xs font-medium text-pink-600 hover:underline"
                       >
                         View
                       </a>
@@ -289,13 +296,33 @@ export function EvidenceAttachments({
                         type="button"
                         aria-label="Remove attachment"
                         onClick={() => void detach(m.id)}
-                        className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-red-600 dark:hover:bg-slate-700"
+                        className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-red-600 dark:hover:bg-slate-700"
                       >
                         <Icon name="close" className="!text-[16px]" />
                       </button>
                     )}
                   </div>
                 </div>
+
+                {previewUrl && (
+                  <div className="overflow-hidden rounded-lg border border-slate-200 bg-black/90 dark:border-slate-700">
+                    {isVideo ? (
+                      <video
+                        src={previewUrl}
+                        controls
+                        playsInline
+                        className={`mx-auto max-h-48 w-full object-contain ${Boolean(m.adult) ? 'scale-110 blur-md' : ''}`}
+                      />
+                    ) : (
+                      <img
+                        src={previewUrl}
+                        alt=""
+                        className={`mx-auto max-h-48 w-full object-contain ${Boolean(m.adult) ? 'scale-110 blur-md' : ''}`}
+                      />
+                    )}
+                  </div>
+                )}
+
                 {!disabled && (
                   <div className="grid gap-2 sm:grid-cols-2">
                     <label className="block text-[11px] text-slate-500">
@@ -311,15 +338,31 @@ export function EvidenceAttachments({
                         }}
                       />
                     </label>
-                    <label className="block text-[11px] text-slate-500">
-                      Caption
-                      <TextInput
-                        className="mt-0.5 !py-1 text-xs"
-                        defaultValue={captionValue}
-                        placeholder="Optional caption"
-                        onBlur={(e) => saveCaption(m, e.target.value)}
-                      />
-                    </label>
+                    <div className="block text-[11px] text-slate-500">
+                      <span className="mb-0.5 block">Caption</span>
+                      <div className="flex items-center gap-2">
+                        <TextInput
+                          className="min-w-0 flex-1 !py-1 text-xs"
+                          defaultValue={captionValue}
+                          placeholder="Optional caption"
+                          onBlur={(e) => saveCaption(m, e.target.value)}
+                        />
+                        {previewUrl && (
+                          <label className="flex shrink-0 cursor-pointer items-center gap-1 text-[10px] leading-none text-slate-500">
+                            <input
+                              type="checkbox"
+                              className="testing-checkbox h-3 w-3 rounded"
+                              checked={Boolean(m.adult)}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                void updateMediaMeta(m.id, { adult: checked, ageGated: checked });
+                              }}
+                            />
+                            NSFW
+                          </label>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </li>

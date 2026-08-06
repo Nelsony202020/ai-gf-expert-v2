@@ -44,6 +44,7 @@ export function formatChecklistAnswer(
       ? (raw.detail as Record<string, unknown>)
       : null;
   if (!detail) return null;
+  if (detail.none === true) return 'None';
   const checked = Array.isArray(detail.checked) ? detail.checked : null;
   const total = typeof detail.total === 'number' ? detail.total : null;
   if (!checked || !total || total <= 0) return null;
@@ -83,7 +84,9 @@ export function formatEvidenceAnswer(
   if ('value' in rv && typeof rv.value === 'number') {
     const unit = def.unit ? ` ${def.unit}` : '';
     let base: string;
-    if (def.measurementType === 'percentage') base = `${rv.value}%`;
+    if (def.slug === 'ease-of-use' || (def.measurementType === 'scale' && def.unit === 'score')) {
+      base = `${rv.value}/10`;
+    } else if (def.measurementType === 'percentage') base = `${rv.value}%`;
     else base = `${rv.value}${unit}`;
 
     const detail =

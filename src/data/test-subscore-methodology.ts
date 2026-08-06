@@ -1016,6 +1016,11 @@ const customizationAppearance: TestSubscoreMethodologyContent = {
       whyItMatters:
         'It is scored separately because some apps offer several body types but almost no control over this specific feature.',
     },
+    'ss-size': {
+      intro: ['SS Size measures how many SS size choices are available for adult female characters.'],
+      whyItMatters:
+        'It is scored separately because some apps offer several body types but almost no control over this specific feature.',
+    },
     'hair-style': {
       intro: ['Hair Style measures how many different hairstyles you can choose.'],
       whyItMatters:
@@ -1165,6 +1170,32 @@ const customizationAppearance: TestSubscoreMethodologyContent = {
       ],
       displayedResult: '8 breast-size options',
       scoringEvidenceSlug: 'breast-size',
+      scoringIntro: 'More options means a higher score.',
+      showWhyItMatters: false,
+      edgeCases:
+        'This setting may only appear for certain character types. We record the account settings and character type used during testing.',
+    },
+    {
+      id: 'ss-size',
+      title: 'SS Size',
+      whatItMeasures: 'How many SS size choices are available for adult female characters.',
+      whyItMatters:
+        'It is scored separately because some apps offer several body types but almost no control over this specific feature.',
+      howWeTest:
+        'We count every clearly selectable SS size option shown for adult characters.',
+      whatWeCount: [
+        'Clearly labelled size presets',
+        'A working size slider with separate settings',
+        'Options that visibly change the character',
+      ],
+      whatWeDoNotCount: [
+        'Size guessed from generated images',
+        'Random results that cannot be selected',
+        'Tiny changes that do not create a noticeable difference',
+        'Options shown only in marketing images',
+      ],
+      displayedResult: '5 SS size options',
+      scoringEvidenceSlug: 'ss-size',
       scoringIntro: 'More options means a higher score.',
       showWhyItMatters: false,
       edgeCases:
@@ -5479,7 +5510,7 @@ const videoExperience: TestSubscoreMethodologyContent = {
   heroIntro: [
     'Experience measures what it is actually like to use the video generator.',
     'A generator can create good videos and still be frustrating when every attempt takes several minutes, videos regularly fail, or you need to click through too many screens just to start.',
-    'We check generation speed, failed attempts, how many steps it takes to create a video, and whether you can quickly retry a finished result.',
+    'We check generation speed, failed attempts, how easy the generator feels to use, and whether you can quickly retry a finished result.',
   ],
   whyItMatters: {
     title: 'Why Experience matters',
@@ -5498,7 +5529,7 @@ const videoExperience: TestSubscoreMethodologyContent = {
       'We use a paid account and test the normal video-generation process available to users.',
       'For Speed, we time 10 video generations. The timer starts when generation is submitted and stops when the finished video becomes available.',
       'For Failures, we record how many of those 10 attempts fail completely, remain stuck, produce no video, or produce a completely unusable result.',
-      'For Ease of Use, we create three videos and count every required click or action from opening the generator to starting the generation.',
+      'For Ease of Use, we create three videos and rate how easy the workflow feels on a 1–10 scale (10 = very easy).',
       'Finally, we try to regenerate three finished videos.',
       'This lets us compare how fast, reliable, and easy each generator is under normal use.',
     ],
@@ -5507,7 +5538,7 @@ const videoExperience: TestSubscoreMethodologyContent = {
     title: 'What good Experience looks like',
     paragraphs: [
       'A high Experience score means videos generate reasonably quickly, failures are rare, the generator is easy to use, and finished videos can be retried.',
-      'A lower score means videos take too long, attempts regularly fail, or creating one clip requires too many steps.',
+      'A lower score means videos take too long, attempts regularly fail, or the generator feels hard to use.',
     ],
   },
   scoreCalculation: {
@@ -5563,9 +5594,9 @@ const videoExperience: TestSubscoreMethodologyContent = {
         'A generator may be fast, but it is still frustrating when too many attempts fail or remain stuck.',
     },
     'ease-of-use': {
-      intro: ['Ease of Use measures how many steps it takes to start creating a video.'],
+      intro: ['Ease of Use measures how easy the video generator feels to use.'],
       whyItMatters:
-        'A simple generator should let you move from opening the tool to starting generation without clicking through several confusing screens.',
+        'A simple generator should let you move from opening the tool to starting generation without getting lost in confusing menus.',
     },
     regeneration: {
       intro: ['Regeneration measures whether you can quickly retry a finished video or create another version.'],
@@ -5646,35 +5677,32 @@ const videoExperience: TestSubscoreMethodologyContent = {
     {
       id: 'ease-of-use',
       title: 'Ease of Use',
-      whatItMeasures: 'How many steps it takes to start creating a video.',
+      whatItMeasures: 'How easy the video generator feels to use.',
       whyItMatters:
-        'A simple generator should let you move from opening the tool to starting generation without clicking through several confusing screens.',
+        'A simple generator should let you move from opening the tool to starting generation without getting lost in confusing menus.',
       howWeTest:
-        'We create three videos. For each video, we count every required click or action from opening the generator to starting the generation. We then calculate the average number of steps.',
+        'We create three videos. For each one, we rate how easy the full workflow feels from opening the generator to starting generation. The rating uses a 1–10 scale where 10 means very easy and 1 means very hard.',
       whatWeCount: [
-        'Opening the video generator',
-        'Selecting the character or source image',
-        'Entering the required prompt',
-        'Choosing required video settings',
-        'Pressing the final Generate button',
-        'Any other required action before generation starts',
+        'How clear the video generator is to find',
+        'How many confusing steps or menus appear',
+        'How easy it is to choose a character or source image',
+        'How easy it is to enter a prompt and required settings',
+        'How straightforward it feels to press Generate',
       ],
       whatWeDoNotCount: [
-        'Optional settings',
         'Time spent waiting for the video',
-        'Downloading the finished result',
-        'Watching the finished video',
-        'Editing or regenerating afterward',
-        'Actions that only appear because the tester chooses an optional feature',
+        'The quality of the finished video',
+        'Optional settings the tester chooses to skip',
+        'Downloading or watching the finished result',
       ],
-      displayedResult: '4 steps',
-      displayedResultExtra: 'Average steps to start: 4',
+      displayedResult: '8/10',
+      displayedResultExtra: 'Ease rating: 8/10 (very easy)',
       scoringEvidenceSlug: 'ease-of-use',
-      scoringIntro: 'Fewer required steps means a higher score.',
-      scoringFootnote: 'An average of 4 steps scores 8/10.',
+      scoringIntro: 'Higher ease ratings mean a higher score.',
+      scoringFootnote: 'An ease rating of 8/10 scores 8/10.',
       showWhyItMatters: false,
       edgeCases:
-        'Fewer steps normally means the generator is easier to use. However, we do not reward an app for removing useful controls. The review can still explain when a generator is simple because it gives users almost no creative freedom.',
+        'We still note when a generator feels simple only because it offers very few controls. A low rating can also reflect confusing layout even when the step count is small.',
     },
     {
       id: 'regeneration',
@@ -5717,7 +5745,7 @@ const videoExperience: TestSubscoreMethodologyContent = {
       'Generation speed can change depending on server demand, internet connection, video length, and the settings used.',
       'One slow generation does not automatically mean the platform is slow. We use the median time from several attempts so one unusual result does not control the score.',
       'A video can also take longer because it has a higher resolution or longer duration. We record the settings used so readers can understand the result.',
-      'Ease of use does not measure how attractive the interface looks. It measures how many required steps users need to complete before generation starts.',
+      'Ease of use does not measure how attractive the interface looks. It measures how easy the workflow feels when creating a video.',
       'Regeneration can also work in different ways. Some apps retry the same setup, while others create a variation. We record what the button actually does and use Limited when important restrictions make it less useful.',
       'Video quality, motion, and character consistency are tested separately under Video Quality.',
     ],

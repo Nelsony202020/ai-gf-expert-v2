@@ -2,6 +2,7 @@
 
 import { isUsablePublicMediaUrl, inferMediaTypeFromUrl } from '../media/url';
 import type { MediaLookupEntry } from '../media/catalog';
+import { publicFigureStyle, publicImageStyle } from './imageFrameStyle';
 
 export interface ReviewBlockPublic {
   id: string;
@@ -174,19 +175,26 @@ function renderImageFigure(
     String(item.alt ?? opts?.mediaById?.[mediaId]?.altText ?? ''),
   );
   const caption = String(item.caption ?? '').trim();
-  const width = Math.min(100, Math.max(30, Number(item.widthPercent ?? 100)));
-  const radius = Math.min(50, Math.max(0, Number(item.borderRadiusPercent ?? 0)));
   const cellClass = opts?.rowCell ? 'review-figure review-image-row__cell' : 'review-figure';
-  const widthStyle = opts?.rowCell
-    ? `flex:0 0 calc(${width}% - 6px);max-width:calc(${width}% - 6px);`
-    : `width:${width}%;max-width:100%;margin-inline:${width < 100 ? 'auto' : '0'};`;
+  const figureStyle = publicFigureStyle({
+    widthPercent: item.widthPercent,
+    borderRadiusPercent: item.borderRadiusPercent,
+    clipFocusX: item.clipFocusX,
+    clipFocusY: item.clipFocusY,
+    rowCell: opts?.rowCell,
+  });
+  const imageStyle = publicImageStyle({
+    borderRadiusPercent: item.borderRadiusPercent,
+    clipFocusX: item.clipFocusX,
+    clipFocusY: item.clipFocusY,
+  });
   const payload = reviewLightboxItem(item, src, mediaType, opts?.mediaById);
   const innerMedia =
     mediaType === 'video'
-      ? `<video class="review-video-native review-video-native--preview" src="${escapeHtml(src)}" muted playsinline preload="metadata" style="width:100%;height:auto;display:block;pointer-events:none"></video>`
-      : `<img src="${escapeHtml(src)}" alt="${alt}" loading="lazy" style="width:100%;height:auto;display:block" />`;
+      ? `<video class="review-video-native review-video-native--preview" src="${escapeHtml(src)}" muted playsinline preload="metadata" style="${imageStyle}pointer-events:none"></video>`
+      : `<img src="${escapeHtml(src)}" alt="${alt}" loading="lazy" style="${imageStyle}" />`;
   const mediaHtml = renderLightboxTrigger(payload, innerMedia);
-  let html = `<figure class="${cellClass}" style="${widthStyle}border-radius:${radius}%;overflow:hidden">${mediaHtml}`;
+  let html = `<figure class="${cellClass}" style="${figureStyle}">${mediaHtml}`;
   if (caption) html += `<figcaption>${escapeHtml(caption)}</figcaption>`;
   html += '</figure>';
   return { html, lightboxItem: payload };

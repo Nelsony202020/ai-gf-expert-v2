@@ -353,6 +353,10 @@ export const EVIDENCE_METHODOLOGY: Record<string, EvidenceMethodologyCopy> = {
     whatItMeasures: 'Checks whether breast size can be changed and how many options are offered.',
     howWeTested: 'We counted every clearly selectable breast-size option shown for adult characters.',
   },
+  'customization/appearance/ss-size': {
+    whatItMeasures: 'Checks whether SS size can be changed and how many options are offered.',
+    howWeTested: 'We counted every clearly selectable SS size option shown for adult characters.',
+  },
   'customization/appearance/ethnicity': {
     whatItMeasures: 'Checks which ethnicity options you can choose when creating a character.',
     howWeTested: 'We counted every ethnicity option clearly shown inside the character creator. We only use the labels provided by the platform.',
@@ -690,8 +694,8 @@ export const EVIDENCE_METHODOLOGY: Record<string, EvidenceMethodologyCopy> = {
     howWeTested: 'We entered three different video prompts. Each test starts with text only.',
   },
   'video/experience/ease-of-use': {
-    whatItMeasures: 'Checks how simple it is to create a video without getting confused by the controls.',
-    howWeTested: 'We created three videos. For each video, we count every required click or action from opening the generator to starting the generation.',
+    whatItMeasures: 'Checks how easy the video generator feels to use.',
+    howWeTested: 'We created three videos and rated how easy the workflow felt from opening the generator to starting generation (1 = very hard, 10 = very easy).',
   },
   'video/experience/failures': {
     whatItMeasures: 'Checks how often video generation fails or returns a broken result.',

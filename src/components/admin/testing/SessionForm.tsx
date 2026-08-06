@@ -5,7 +5,6 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, 
 import { dataApi, type EntityRow } from '../api';
 import { Button, ErrorNote, Icon, TextInput, useAsync } from '../ui';
 import { ChatUnderstandingGrid } from './ChatUnderstandingGrid';
-import { TestingHint } from './TestingHint';
 import { EvidenceInput, type RawValue } from './EvidenceInput';
 import { QuestionLabel } from './QuestionLabel';
 import { renderPublicResult } from './presentation';
@@ -15,6 +14,7 @@ import { SessionAnswerTable } from './SessionAnswerTable';
 import { SessionProofZone } from './SessionProofZone';
 import { ProofDrawer } from './ProofDrawer';
 import { NoteDrawer } from './NoteDrawer';
+import { PrivacyNoteDrawer } from './PrivacyNoteDrawer';
 import {
   formatAnswerSummary,
   rowState,
@@ -29,6 +29,13 @@ import {
   SecurityIncidentsField,
   formatSecurityIncidentsSummary,
 } from './SecurityIncidentsField';
+import { RetentionPeriodField, formatRetentionPeriodSummary } from './RetentionPeriodField';
+import { PolicyDocsSession, type PolicyDocsSessionHandle } from './PolicyDocsSession';
+import { readAiPrivacyDetails } from '../../../lib/ai-privacy/clientHelpers';
+import { isAiPrivacySlug } from '../../../lib/ai-privacy/types';
+import { AiPrivacyBanner, findFirstFlaggedDefId } from './AiPrivacyBanner';
+import { AiPrivacyRowMeta } from './AiPrivacyRowMeta';
+import { AiPrivacyEvidencePanel } from './AiPrivacyEvidencePanel';
 import { buildProofCountMap } from './proofCounts';
 import { PROOF_ACCEPTED_TYPES, uploadProofFilesParallel } from './proofUpload';
 import { COMBINED_EVIDENCE_SLUGS, type TestSessionDef } from './sessions';
@@ -146,6 +153,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   const [noteDefId, setNoteDefId] = useState<string | null>(null);
   const [activeDefId, setActiveDefId] = useState<string | null>(null);
   const [highlightDefId, setHighlightDefId] = useState<string | null>(null);
+  const [expandedAiDefId, setExpandedAiDefId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
   const appliedFocusKeyRef = useRef<string | null>(null);
   const [proofCounts, setProofCounts] = useState<Map<string, number>>(new Map());
@@ -164,6 +172,22 @@ export const SessionForm = forwardRef<SessionFormHandle, {
   });
   const { busy, error, setError, run } = useAsync();
   const [saving, setSaving] = useState(false);
+  const policyDocsRef = useRef<PolicyDocsSessionHandle>(null);
+
+  function toggleAiProof(defId: string) {
+    setExpandedAiDefId((prev) => (prev === defId ? null : defId));
+  }
+
+  function reviewFlaggedAnswers() {
+    const defId = findFirstFlaggedDefId(items, resultByDef);
+    if (!defId) return;
+    setExpandedAiDefId(defId);
+    setHighlightDefId(defId);
+    setActiveDefId(defId);
+    requestAnimationFrame(() => {
+      document.querySelector(`[data-session-row="${defId}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  }
 
   const isBlocked = saving || busy;
 
@@ -240,7 +264,28 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     setDrafts((prev) => {
       const next = { ...prev };
       for (const { def } of items) {
-        if (!next[def.id]?.dirty) next[def.id] = initialDraft(resultByDef.get(def.id), def);
+        const result = resultByDef.get(def.id);
+        const cur = next[def.id] ?? initialDraft(result, def);
+        let updated = cur;
+
+        if (!cur.dirty) {
+          updated = {
+            ...updated,
+            raw: (result?.rawValue as RawValue | undefined) ?? undefined,
+            na: Boolean(result?.notApplicable),
+            dirty: false,
+          };
+        }
+
+        if (!cur.notesDirty) {
+          updated = {
+            ...updated,
+            internalNotes: String(result?.internalNotes ?? ''),
+            notesDirty: false,
+          };
+        }
+
+        next[def.id] = updated;
       }
       return next;
     });
@@ -515,7 +560,10 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     }
   }
 
-  async function uploadWorksheetProof(files: File[]): Promise<{ id: string; url?: string }[]> {
+  async function uploadWorksheetProof(
+    files: File[],
+    opts?: { altText?: string },
+  ): Promise<{ id: string; url?: string }[]> {
     const def = worksheetItems[0]?.def;
     if (!def) return [];
     const ACCEPTED =
@@ -528,7 +576,9 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     const ensured = await ensureResultForDef(def.id, { notify: false });
     bumpProofCount(ensured.id, accepted.length);
     try {
-      const uploaded = await uploadProofFilesParallel(accepted, ensured.id, productId);
+      const uploaded = await uploadProofFilesParallel(accepted, ensured.id, productId, {
+        altText: opts?.altText,
+      });
       for (const row of uploaded) {
         void onProofUploaded?.({
           id: row.id,
@@ -821,9 +871,11 @@ export const SessionForm = forwardRef<SessionFormHandle, {
               notApplicable: draft.na,
               isUnknown,
               testDate: Date.now(),
-              internalNotes: draft.internalNotes.trim() || undefined,
               ...(publicResult !== undefined ? { publicResult } : {}),
             };
+            if (draft.notesDirty) {
+              fields.internalNotes = draft.internalNotes.trim() || undefined;
+            }
 
             if (existing) {
               await dataApi.update('evidenceResults', existing.id, fields);
@@ -954,6 +1006,17 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         />
       );
     }
+    if (String(def.slug) === 'retention') {
+      const retentionRaw =
+        draft.raw && 'status' in draft.raw && draft.raw.status === 'na' ? undefined : draft.raw;
+      return (
+        <RetentionPeriodField
+          disabled={isBlocked}
+          raw={retentionRaw}
+          onChange={(v) => patchDraftWithCascade(def.id, { raw: v })}
+        />
+      );
+    }
     if (String(def.slug) === 'support-available' && supportChannelsDef) {
       const channelsDraft =
         drafts[supportChannelsDef.id] ?? initialDraft(resultByDef.get(supportChannelsDef.id));
@@ -1024,6 +1087,30 @@ export const SessionForm = forwardRef<SessionFormHandle, {
           <QuestionLabel def={def} categorySlug={categorySlug} required={Boolean(def.required)} />
         </h3>
         {!draft.na && renderEvidenceControl(def, draft)}
+        {readAiPrivacyDetails(result) && (
+          <AiPrivacyRowMeta
+            def={def}
+            result={result ?? null}
+            hasAnswer={Boolean(draft.raw) || Boolean(result?.rawValue) || draft.na}
+            expanded={expandedAiDefId === def.id}
+            onToggleProof={() => toggleAiProof(def.id)}
+            onEnterManually={() => setActiveDefId(def.id)}
+          />
+        )}
+        {expandedAiDefId === def.id && readAiPrivacyDetails(result) && (
+          <AiPrivacyEvidencePanel
+            def={def}
+            result={result ?? null}
+            productId={productId}
+            runId={runId}
+            hasAnswer={Boolean(draft.raw) || Boolean(result?.rawValue) || draft.na}
+            rejected={readAiPrivacyDetails(result)?.reviewStatus === 'rejected'}
+            onChanged={async () => {
+              await onRowSaved?.({ refreshResults: true });
+            }}
+            onChangeAnswer={() => setActiveDefId(def.id)}
+          />
+        )}
         {suggestion && (
           <p className="flex items-start gap-1 text-xs text-[var(--testing-accent-muted)]">
             <Icon name="auto_awesome" className="mt-px !text-[13px] shrink-0 testing-icon-accent" />
@@ -1098,15 +1185,61 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     );
   }
 
+  if (session.id === 'policy-docs') {
+    return (
+      <div className="testing-workspace space-y-3">
+        {session.intro && (
+          <p className="text-xs text-slate-500 dark:text-slate-400">{session.intro}</p>
+        )}
+        <PolicyDocsSession
+          ref={policyDocsRef}
+          productId={productId ?? ''}
+          runId={runId}
+          onAnalyzed={async () => {
+            await onRowSaved?.({ refreshResults: true });
+          }}
+        />
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+          {secondaryActions}
+          <Button
+            type="button"
+            disabled={!productId || saving}
+            onClick={async () => {
+              setSaving(true);
+              onBusyChange?.(true);
+              try {
+                const ok = (await policyDocsRef.current?.saveDraft()) ?? true;
+                if (ok) await onSaved();
+              } finally {
+                setSaving(false);
+                onBusyChange?.(false);
+              }
+            }}
+          >
+            {submitLabel ?? 'Continue →'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="testing-workspace space-y-3">
       {error && <ErrorNote message={error} />}
 
       {session.intro && !simplifiedWorksheet && !capabilityLocked && (
-        <p className="flex items-center gap-1 text-xs text-slate-500">
-          <span className="font-medium text-slate-600 dark:text-slate-400">Session tip</span>
-          <TestingHint text={session.intro} />
-        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{session.intro}</p>
+      )}
+
+      {(session.id === 'policy-review' ||
+        session.id === 'data-controls' ||
+        session.id === 'pricing-billing') && (
+        <AiPrivacyBanner
+          resultByDef={resultByDef}
+          items={items}
+          sessionId={session.id}
+          onReviewFlagged={reviewFlaggedAnswers}
+        />
       )}
 
       {session.sampleSizeField && (
@@ -1253,6 +1386,12 @@ export const SessionForm = forwardRef<SessionFormHandle, {
           onDragOverRow={setDropTargetDefId}
           onDragLeaveTable={() => setDropTargetDefId(null)}
           onDropFiles={(defId, files) => void uploadFilesToDef(defId, files)}
+          runId={runId}
+          expandedAiDefId={expandedAiDefId}
+          onToggleAiProof={toggleAiProof}
+          onAiReviewChanged={async () => {
+            await onRowSaved?.({ refreshResults: true });
+          }}
         />
       ) : (
         visibleStandaloneItems.length > 0 &&
@@ -1270,7 +1409,8 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                   if (p.hasModes === 'no') return 'No';
                   if (p.hasModes !== 'yes') return '—';
                   const rated = p.modes.filter((m) => m.rating).length;
-                  return `${p.count || '?'} modes · ${rated}/2 rated`;
+                  const total = Number(p.count) || p.modes.length;
+                  return `${p.count || '?'} modes · ${rated}/${total} rated`;
                 }
                 if (String(def.slug) === 'platform-extras-list' && liveCamDef) {
                   const liveDraft = drafts[liveCamDef.id];
@@ -1288,6 +1428,9 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                 }
                 if (String(def.slug) === 'security-incidents') {
                   return formatSecurityIncidentsSummary(draft.raw);
+                }
+                if (String(def.slug) === 'retention') {
+                  return formatRetentionPeriodSummary(draft.raw);
                 }
                 return formatAnswerSummary(def, draft.raw, draft.na);
               })();
@@ -1465,7 +1608,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
           }
           onClose={() => setDrawerDefId(null)}
           onSaved={async () => {
-            void onRowSaved?.({ proofOnly: true });
+            void onRowSaved?.({ proofOnly: true, refreshResults: true });
           }}
         />
       )}
@@ -1473,7 +1616,29 @@ export const SessionForm = forwardRef<SessionFormHandle, {
       {noteDefId && (() => {
         const noteDef = items.find(({ def }) => def.id === noteDefId)?.def;
         if (!noteDef) return null;
-        const noteDraft = drafts[noteDef.id] ?? initialDraft(resultByDef.get(noteDef.id));
+        const noteResult = resultByDef.get(noteDef.id) ?? null;
+        const noteDraft = drafts[noteDef.id] ?? initialDraft(noteResult, noteDef);
+        const slug = String(noteDef.slug ?? '');
+        const usePrivacyDrawer = isAiPrivacySlug(slug) && readAiPrivacyDetails(noteResult);
+
+        if (usePrivacyDrawer) {
+          return (
+            <PrivacyNoteDrawer
+              def={noteDef}
+              categorySlug={categorySlug}
+              result={noteResult}
+              reviewerNotes={noteDraft.internalNotes}
+              onClose={() => setNoteDefId(null)}
+              onSaveNote={(notes) => persistNotes(noteDef.id, notes)}
+              onViewFullProof={() => {
+                setNoteDefId(null);
+                setExpandedAiDefId(noteDef.id);
+                setActiveDefId(noteDef.id);
+              }}
+            />
+          );
+        }
+
         return (
           <NoteDrawer
             def={noteDef}
