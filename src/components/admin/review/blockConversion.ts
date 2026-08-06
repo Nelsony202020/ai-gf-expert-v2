@@ -275,7 +275,7 @@ export function blocksToDoc(blocks: ReviewBlock[], ctx?: ConversionContext): JSO
       case 'h2':
       case 'h3': {
         const stored = Number(d.level);
-        const level = stored >= 2 && stored <= 4 ? stored : block.type === 'h2' ? 2 : 3;
+        const level = stored === 4 ? 4 : 3;
         const node: JSONNode = { type: 'heading', attrs: { level, blockId } };
         const inline = dataToInline(d);
         if (inline.length > 0) node.content = inline;
@@ -463,11 +463,10 @@ export function docToBlocks(doc: JSONDoc | null | undefined): ReviewBlock[] {
         break;
       }
       case 'heading': {
-        const level = Number(node.attrs?.level ?? 2);
-        const type: ReviewBlockType = level === 2 ? 'h2' : 'h3';
+        const level = Number(node.attrs?.level ?? 3);
         const data: Record<string, unknown> = inlineToData(node.content);
-        if (level === 4) data.level = 4; // whitelist has no h4; preserved via data
-        blocks.push({ id: takeId(node, seen), type, data });
+        if (level >= 4) data.level = 4;
+        blocks.push({ id: takeId(node, seen), type: 'h3', data });
         break;
       }
       case 'bulletList':

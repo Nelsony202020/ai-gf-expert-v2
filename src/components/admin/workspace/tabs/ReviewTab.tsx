@@ -23,7 +23,7 @@ import {
 import { ImageInspectorPanel } from '../../review/ImageInspectorPanel';
 import type { ImageInspectorTarget, ReviewEditorUI } from '../../review/reviewEditorContext';
 import { useWorkspace } from '../context';
-import { makeBlock, reviewTemplateHeadings, type ReviewBlock } from '../reviewBlocks';
+import { makeBlock, normalizeReviewHeadingLevels, reviewTemplateHeadings, type ReviewBlock } from '../reviewBlocks';
 
 const ReviewEditor = lazyImport(() => import('../../review/ReviewEditor'), 'ReviewEditor');
 
@@ -84,17 +84,17 @@ export function ReviewTab() {
     let initial: ReviewBlock[] = [];
     if (review) {
       if (Array.isArray(review.blocks) && review.blocks.length > 0) {
-        initial = review.blocks as ReviewBlock[];
+        initial = normalizeReviewHeadingLevels(review.blocks as ReviewBlock[]);
       } else if (Array.isArray(review.sections) && review.sections.length > 0) {
         // Legacy sections -> blocks (heading + paragraph), one-time client migration.
         initial = (review.sections as { heading: string; body: string; level?: number }[]).flatMap(
           (s) => [
-            makeBlock(s.level === 3 ? 'h3' : 'h2', { text: s.heading }),
+            makeBlock('h3', { text: s.heading }),
             makeBlock('paragraph', { text: s.body }),
           ],
         );
       } else if (review.intro) {
-        initial = [makeBlock('h2', { text: 'Introduction' }), makeBlock('paragraph', { text: review.intro })];
+        initial = [makeBlock('h3', { text: 'Introduction' }), makeBlock('paragraph', { text: review.intro })];
       }
     }
     devRoundTripCheck(initial, conversionCtx);
@@ -124,7 +124,7 @@ export function ReviewTab() {
     setBusy(true);
     setError(null);
     try {
-      const blocks = docToBlocks(doc);
+      const blocks = normalizeReviewHeadingLevels(docToBlocks(doc));
       const now = Date.now();
       const fields: Record<string, unknown> = {
         blocks,

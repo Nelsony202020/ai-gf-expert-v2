@@ -80,7 +80,8 @@ function renderInline(data: Record<string, unknown>): string {
 }
 
 function headingLevel(type: string, data: Record<string, unknown>): 2 | 3 | 4 {
-  if (type === 'h2') return 2;
+  // Legacy h2 blocks and all section headings render as H3 — the page title is the only H2.
+  if (type === 'h2') return 3;
   const stored = Number(data.level);
   if (stored === 4) return 4;
   return 3;
@@ -313,8 +314,8 @@ export function renderReviewBlocksHtml(
         const level = headingLevel(type, data);
         const text = String(data.text ?? '');
         const id = headingId(text, block.id);
-        const tag = level === 2 ? 'h2' : level === 4 ? 'h4' : 'h3';
-        const cls = level === 2 ? 'review-heading review-heading--h2' : 'review-heading';
+        const tag = level === 4 ? 'h4' : 'h3';
+        const cls = 'review-heading';
         parts.push(renderHeading(tag, id, cls, renderInline(data)));
         break;
       }

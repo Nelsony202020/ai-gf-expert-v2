@@ -655,9 +655,8 @@ function buildInsertItems(ui: {
 
   const items: SlashCommandItem[] = [
     text('paragraph', 'Paragraph', 'notes', (e) => e.chain().focus().setParagraph().run(), 'text body'),
-    text('h2', 'Heading 2', 'format_h2', (e) => e.chain().focus().setHeading({ level: 2 }).run(), 'section title'),
-    text('h3', 'Heading 3', 'format_h3', (e) => e.chain().focus().setHeading({ level: 3 }).run(), 'subsection'),
-    text('h4', 'Heading 4', 'format_h4', (e) => e.chain().focus().setHeading({ level: 4 }).run(), 'subheading'),
+    text('h3', 'Section heading', 'format_h3', (e) => e.chain().focus().setHeading({ level: 3 }).run(), 'section title h3'),
+    text('h4', 'Subheading', 'format_h4', (e) => e.chain().focus().setHeading({ level: 4 }).run(), 'subheading h4'),
     text('bulletList', 'Bullet list', 'format_list_bulleted', (e) => e.chain().focus().toggleBulletList().run(), 'unordered ul'),
     text('numberedList', 'Numbered list', 'format_list_numbered', (e) => e.chain().focus().toggleOrderedList().run(), 'ordered ol'),
     text('quote', 'Quote', 'format_quote', (e) => e.chain().focus().toggleBlockquote().run(), 'blockquote citation'),
@@ -973,12 +972,12 @@ export default function ReviewEditor({
   if (!editor) return null;
 
   const inTable = editor.isActive('table');
-  const headingValue = editor.isActive('heading', { level: 2 })
-    ? '2'
-    : editor.isActive('heading', { level: 3 })
-      ? '3'
-      : editor.isActive('heading', { level: 4 })
-        ? '4'
+  const headingValue = editor.isActive('heading', { level: 3 })
+    ? '3'
+    : editor.isActive('heading', { level: 4 })
+      ? '4'
+      : editor.isActive('heading', { level: 2 })
+        ? '3'
         : 'p';
 
   return (
@@ -994,14 +993,13 @@ export default function ReviewEditor({
               onChange={(e) => {
                 const v = e.target.value;
                 if (v === 'p') editor.chain().focus().setParagraph().run();
-                else editor.chain().focus().setHeading({ level: Number(v) as 2 | 3 | 4 }).run();
+                else editor.chain().focus().setHeading({ level: Number(v) as 3 | 4 }).run();
               }}
               className="rounded-md border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-700 focus:border-pink-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             >
               <option value="p">Paragraph</option>
-              <option value="2">Heading 2</option>
-              <option value="3">Heading 3</option>
-              <option value="4">Heading 4</option>
+              <option value="3">Section heading</option>
+              <option value="4">Subheading</option>
             </select>
             <ToolbarDivider />
             <ToolBtn icon="format_bold" label="Bold" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} />

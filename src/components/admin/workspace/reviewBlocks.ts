@@ -149,9 +149,14 @@ export function reviewTemplateHeadings(productName: string): string[] {
 /** Default review template. Sections can be reordered, renamed, or removed. */
 export function buildDefaultTemplate(productName = ''): ReviewBlock[] {
   return reviewTemplateHeadings(productName).flatMap((heading) => [
-    makeBlock('h2', { text: heading }),
+    makeBlock('h3', { text: heading }),
     makeBlock('paragraph', { text: '' }),
   ]);
+}
+
+/** Persist section headings as H3 blocks (page title is the only H2 on the public review). */
+export function normalizeReviewHeadingLevels(blocks: ReviewBlock[]): ReviewBlock[] {
+  return blocks.map((block) => (block.type === 'h2' ? { ...block, type: 'h3' } : block));
 }
 
 /** @deprecated Prefer reviewTemplateHeadings — category-scored outline kept for reference. */
@@ -165,7 +170,7 @@ export function buildCategoryScoredTemplate(categories: EntityRow[]): ReviewBloc
   };
 
   const section = (heading: string, extras: ReviewBlock[] = []): ReviewBlock[] => [
-    makeBlock('h2', { text: heading }),
+    makeBlock('h3', { text: heading }),
     makeBlock('paragraph', { text: '' }),
     ...extras,
   ];

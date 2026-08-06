@@ -21,13 +21,13 @@ if (Object.keys(mediaById).length === 0) {
 const sections = hasSavedReview
   ? buildReviewToc(reviewBlocks)
   : [
-      { id: 'first-impressions', label: 'First Impressions', level: 2 as const },
-      { id: 'chat-experience', label: 'Chat Experience', level: 2 as const },
-      { id: 'media-experience', label: 'Media Experience', level: 2 as const },
-      { id: 'pricing-in-real-use', label: 'Pricing in Real Use', level: 2 as const },
-      { id: 'what-stands-out', label: 'What Stands Out', level: 2 as const },
-      { id: 'what-frustrated-me', label: 'What Frustrated Me', level: 2 as const },
-      { id: 'final-recommendation', label: 'Final Recommendation', level: 2 as const },
+      { id: 'first-impressions', label: 'First Impressions', level: 3 as const },
+      { id: 'chat-experience', label: 'Chat Experience', level: 3 as const },
+      { id: 'media-experience', label: 'Media Experience', level: 3 as const },
+      { id: 'pricing-in-real-use', label: 'Pricing in Real Use', level: 3 as const },
+      { id: 'what-stands-out', label: 'What Stands Out', level: 3 as const },
+      { id: 'what-frustrated-me', label: 'What Frustrated Me', level: 3 as const },
+      { id: 'final-recommendation', label: 'Final Recommendation', level: 3 as const },
     ];
 
 const savedReviewHtml = hasSavedReview
@@ -452,7 +452,6 @@ const reviewVideoId = product.videoReview?.embedUrl
   }
 
   .review-blocks .review-heading,
-  .review-blocks h2,
   .review-blocks h3,
   .review-blocks h4 {
     scroll-margin-top: 8rem;
@@ -482,19 +481,18 @@ const reviewVideoId = product.videoReview?.embedUrl
     margin-top: 4px;
   }
 
-  .review-blocks .review-heading--h2:first-child,
-  .review-blocks > .review-heading--h2:first-child,
-  .review-blocks > h2:first-child {
+  .review-blocks .review-heading:first-child,
+  .review-blocks > .review-heading:first-child,
+  .review-blocks > h3:first-child {
     margin-top: 0.25rem;
   }
 
-  .review-blocks .review-heading--h2,
-  .review-blocks h2 {
-    margin: 2rem 0 12px;
-    font-size: 1.5rem;
+  .review-blocks .review-heading,
+  .review-blocks h3 {
+    margin: 1.75rem 0 12px;
+    font-size: 1.375rem;
   }
 
-  .review-blocks h3,
   .review-blocks h4 {
     margin: 1.75rem 0 12px;
     font-size: 1.375rem;
