@@ -1,0 +1,18 @@
+---
+import HomePaymentIcon from '../home/HomePaymentIcon.astro';
+import { getDirectoryPaymentIconTypes } from '../../lib/directory/payments';
+
+interface Props {
+  payments: string[];
+  idPrefix: string;
+}
+
+const { payments, idPrefix } = Astro.props;
+const iconTypes = getDirectoryPaymentIconTypes(payments);
+---
+
+{
+  iconTypes.map((type) => (
+    <HomePaymentIcon type={type} tooltipId={`${idPrefix}-pay-${type}`} />
+  ))
+}

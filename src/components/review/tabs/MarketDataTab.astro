@@ -6,76 +6,120 @@ import InfoIcon from '../../ui/InfoIcon.astro';
 import BrandIcon from '../../ui/BrandIcon.astro';
 import { brandIcons } from '../../../lib/brand-icons';
 import InlineHelpTooltip from '../tooltips/InlineHelpTooltip.astro';
-import { fmtScore } from '../../../lib/scores';
+import { loadMarketDataViewModel } from '../../../lib/market-data/loadMarketData';
+import { unwrapPrice } from '../../../lib/market-data/aura-ai-draft';
+import {
+  formatGrowth,
+  formatInterest,
+  formatPrice,
+  formatRank,
+  formatRankSub,
+  formatMarketRankCell,
+  formatUnavailable,
+} from '../../../lib/market-data/format';
 
 interface Props {
   product: Product;
 }
 
 const { product } = Astro.props;
-const { overview } = product;
+const vm = await loadMarketDataViewModel(product);
 const herman = getAuthor('herman-carter');
 
-const categoryAvgPrice = 15.8;
-const productPrice = 12.99;
-const priceSavingsPct = Math.round(((categoryAvgPrice - productPrice) / categoryAvgPrice) * 100);
+const categoryAvgPrice = vm.categoryAvgPrice.status === 'ok' ? vm.categoryAvgPrice.value : null;
+const productPrice = vm.productPrice.status === 'ok' ? vm.productPrice.value : null;
+const priceSavingsPct =
+  categoryAvgPrice != null && productPrice != null && categoryAvgPrice > 0
+    ? Math.round(((categoryAvgPrice - productPrice) / categoryAvgPrice) * 100)
+    : null;
+
+function interestSub(interest: typeof vm.searchInterest): string {
+  if (interest.status === 'unavailable') return '';
+  if (interest.value >= 75) return 'High';
+  if (interest.value >= 50) return 'Moderate';
+  return 'Lower';
+}
 
 const metrics = [
-  { label: 'Search interest', value: `${overview.searchTrends.currentInterest}/100`, sub: 'High', icon: 'trending_up', tone: 'pink' },
-  { label: '12-month growth', value: `+${overview.searchTrends.changePercent}%`, sub: 'vs. previous 12 months', icon: 'schedule', tone: 'green' },
-  { label: 'Market rank', value: `#${overview.searchTrends.popularityRank}`, sub: `of ${overview.searchTrends.totalReviewed} AI companion apps`, icon: 'emoji_events', tone: 'amber' },
-  { label: 'Monthly price', value: overview.highlights.startingPrice, sub: `vs. category avg $${categoryAvgPrice.toFixed(2)}`, icon: 'sell', tone: 'pink' },
-  { label: 'Value rank', value: '#2', sub: 'Best value in top 5', icon: 'star', tone: 'green' },
-  { label: 'Category position', value: 'Top 15%', sub: 'Overall market presence', icon: 'visibility', tone: 'purple' },
+  {
+    label: 'Search interest',
+    value: formatInterest(vm.searchInterest),
+    sub: interestSub(vm.searchInterest),
+    icon: 'trending_up',
+    tone: 'pink',
+    muted: vm.searchInterest.status === 'unavailable',
+  },
+  {
+    label: '12-month growth',
+    value: formatGrowth(vm.growth12m),
+    sub: vm.growth12m.status === 'ok' ? 'vs. previous 12 months' : '',
+    icon: 'schedule',
+    tone: 'green',
+    muted: vm.growth12m.status === 'unavailable',
+  },
+  {
+    label: 'Market rank',
+    value: formatRank(vm.marketRank, vm.totalTracked),
+    sub: formatRankSub(vm.marketRank, vm.totalTracked),
+    icon: 'emoji_events',
+    tone: 'amber',
+    muted: vm.marketRank.status === 'unavailable',
+  },
+  {
+    label: 'Monthly price',
+    value: vm.productPrice.status === 'ok' ? formatPrice(vm.productPrice) : product.overview.highlights.startingPrice,
+    sub:
+      categoryAvgPrice != null
+        ? `vs. category avg $${categoryAvgPrice.toFixed(2)}`
+        : '',
+    icon: 'sell',
+    tone: 'pink',
+    muted: vm.productPrice.status === 'unavailable',
+  },
+  {
+    label: 'Value rank',
+    value: vm.valueRank.status === 'ok' ? `#${vm.valueRank.value}` : formatUnavailable(),
+    sub: vm.valueRank.status === 'ok' ? 'Among tracked competitors' : '',
+    icon: 'star',
+    tone: 'green',
+    muted: vm.valueRank.status === 'unavailable',
+  },
+  {
+    label: 'Category position',
+    value: vm.categoryPositionLabel.status === 'ok' ? vm.categoryPositionLabel.value : formatUnavailable(),
+    sub: vm.categoryPositionLabel.status === 'ok' ? 'Overall market presence' : '',
+    icon: 'visibility',
+    tone: 'purple',
+    muted: vm.categoryPositionLabel.status === 'unavailable',
+  },
 ];
 
-const rankList = [
-  { name: 'Candy AI', interest: 85, medal: 'gold' as const },
-  { name: 'Kindroid', interest: 74, medal: 'silver' as const },
-  { name: product.name, interest: overview.searchTrends.currentInterest, medal: 'bronze' as const, highlight: true },
-  { name: 'Nastia AI', interest: 61, medal: null },
-  { name: 'DreamGF', interest: 54, medal: null },
-];
+const rankList = vm.rankList;
+const marketComparison = vm.marketComparison;
+const trendMonths = vm.trendMonths;
+const trendSeries = vm.trendSeries;
 
-const competitors = [
-  { name: product.name, interest: overview.searchTrends.currentInterest, growth: overview.searchTrends.changePercent, price: productPrice, overall: product.overallScore, images: 8.4, chat: 9.2, value: 8.8, highlight: true },
-  { name: 'Candy AI', interest: 85, growth: 12, price: 19.99, overall: 8.4, images: 8.1, chat: 8.6, value: 7.2, highlight: false },
-  { name: 'Kindroid', interest: 68, growth: -4, price: 13.99, overall: 8.1, images: 7.8, chat: 8.9, value: 8.0, highlight: false },
-  { name: 'Nastia AI', interest: 61, growth: 6, price: 14.99, overall: 7.9, images: 7.5, chat: 8.2, value: 7.6, highlight: false },
-  { name: 'DreamGF', interest: 54, growth: -8, price: 9.99, overall: 7.4, images: 7.2, chat: 7.8, value: 7.9, highlight: false },
-];
-
-const priceBars = [
-  { label: 'Candy AI', price: 19.99, color: '#a855f7' },
-  { label: 'Kindroid', price: 13.99, color: '#3b82f6' },
-  { label: product.name, price: productPrice, color: '#db2777', highlight: true },
-  { label: 'Nastia AI', price: 14.99, color: '#f97316' },
-  { label: 'DreamGF', price: 9.99, color: '#22c55e' },
-];
-const maxPrice = 22;
+const priceBars = vm.priceBars.map((bar) => ({
+  ...bar,
+  priceNum: unwrapPrice(bar.price),
+}));
+const maxPrice = Math.max(22, ...priceBars.map((b) => b.priceNum).filter((n) => n > 0));
 const chartBarMaxPx = 160;
-const avgLinePx = Math.round((categoryAvgPrice / maxPrice) * chartBarMaxPx);
+const avgLinePx =
+  categoryAvgPrice != null ? Math.round((categoryAvgPrice / maxPrice) * chartBarMaxPx) : 0;
 
-const scatterPoints = [
-  { name: product.name, price: productPrice, score: product.overallScore, color: '#db2777', highlight: true },
-  { name: 'Candy AI', price: 19.99, score: 8.4, color: '#a855f7' },
-  { name: 'Kindroid', price: 13.99, score: 8.1, color: '#3b82f6' },
-  { name: 'Nastia AI', price: 14.99, score: 7.9, color: '#f97316' },
-  { name: 'DreamGF', price: 9.99, score: 7.4, color: '#22c55e' },
-];
+const scatterPoints = vm.scatterPoints.map((pt) => ({
+  ...pt,
+  priceNum: unwrapPrice(pt.price),
+  scoreNum: pt.score.status === 'ok' ? pt.score.value : null,
+}));
 const scatterMaxPrice = 22;
 const scatterMinScore = 7;
 const scatterMaxScore = 10;
 
-const trendMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const trendSeries = {
-  product: [58, 60, 62, 61, 64, 66, 67, 68, 69, 70, 71, overview.searchTrends.currentInterest],
-  candy: [72, 74, 76, 75, 78, 80, 81, 82, 83, 84, 84, 85],
-  kindroid: [62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51],
-  avg: [60, 61, 62, 62, 63, 64, 64, 65, 65, 66, 66, 67],
-};
 const trendMin = 45;
 const trendMax = 95;
+const hasTrendData = trendSeries.product.length > 1;
 
 function trendPoints(values: number[]) {
   const width = 360;
@@ -90,18 +134,18 @@ function trendPoints(values: number[]) {
     .join(' ');
 }
 
-const takeaways = [
-  { icon: 'trending_up', tone: 'pink', parts: ['Search interest grew ', '18%', ' over 12 months — above the category average.'] },
-  { icon: 'sell', tone: 'green', parts: ['At ', '$12.99/mo', ', it undercuts the category average while ranking ', '#3', ' for overall interest.'] },
-  { icon: 'photo_library', tone: 'blue', parts: ['Image quality (', '8.4', ') and chat quality (', '9.2', ') beat the competitive set average.'] },
-  { icon: 'star', tone: 'amber', parts: ['Value rank ', '#2', ' suggests a strong score-to-price ratio among fully reviewed apps.'] },
-  { icon: 'groups', tone: 'purple', parts: ['Competition from higher-interest apps remains meaningful — popularity ≠ quality.'] },
-];
+const takeaways = vm.takeaways;
 ---
 
 <section class="py-12 md:py-14 bg-background dark-section">
   <div class="section-container px-4 md:px-8">
-    <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-8">Market Data</h2>
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-8">
+      <h2 class="text-3xl md:text-4xl font-black text-on-surface">Market Data</h2>
+      <p class="text-xs font-semibold text-tertiary">
+        Updated {vm.updatedLabel}
+        {vm.isDraft && <span class="ml-1 text-amber-700 dark:text-amber-300">(draft test data)</span>}
+      </p>
+    </div>
 
     <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4 mb-10">
       {
@@ -111,7 +155,7 @@ const takeaways = [
               <span class="material-symbols-outlined text-[18px]">{m.icon}</span>
             </div>
             <p class="md-metric-card__label">{m.label}</p>
-            <p class="md-metric-card__value">{m.value}</p>
+            <p class={`md-metric-card__value ${m.muted ? 'md-metric-card__value--muted' : ''}`}>{m.value}</p>
             <p class="md-metric-card__sub">{m.sub}</p>
           </div>
         ))
@@ -138,25 +182,33 @@ const takeaways = [
           </select>
         </div>
         <div class="md-line-chart">
-          <div class="md-line-chart__wrap">
-            <svg viewBox="0 0 360 140" class="md-line-chart__svg" preserveAspectRatio="none" aria-hidden="true">
-              {[0, 25, 50, 75, 100].map((pct) => (
-                <line x1="0" y1={(140 * pct) / 100} x2="360" y2={(140 * pct) / 100} stroke="#ececec" stroke-width="1" />
-              ))}
-              <polyline fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="5 4" points={trendPoints(trendSeries.avg)} />
-              <polyline fill="none" stroke="#a855f7" stroke-width="2.5" points={trendPoints(trendSeries.candy)} />
-              <polyline fill="none" stroke="#3b82f6" stroke-width="2.5" points={trendPoints(trendSeries.kindroid)} />
-              <polyline fill="none" stroke="#db2777" stroke-width="3" points={trendPoints(trendSeries.product)} />
-            </svg>
-            <div class="md-line-chart__ylabels" aria-hidden="true">
-              <span>100</span>
-              <span>75</span>
-              <span>50</span>
-            </div>
-          </div>
-          <div class="md-line-chart__months" aria-hidden="true">
-            {trendMonths.map((m) => <span>{m}</span>)}
-          </div>
+          {
+            hasTrendData ? (
+              <>
+                <div class="md-line-chart__wrap">
+                  <svg viewBox="0 0 360 140" class="md-line-chart__svg" preserveAspectRatio="none" aria-hidden="true">
+                    {[0, 25, 50, 75, 100].map((pct) => (
+                      <line x1="0" y1={(140 * pct) / 100} x2="360" y2={(140 * pct) / 100} stroke="#ececec" stroke-width="1" />
+                    ))}
+                    <polyline fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="5 4" points={trendPoints(trendSeries.avg)} />
+                    <polyline fill="none" stroke="#a855f7" stroke-width="2.5" points={trendPoints(trendSeries.candy)} />
+                    <polyline fill="none" stroke="#3b82f6" stroke-width="2.5" points={trendPoints(trendSeries.kindroid)} />
+                    <polyline fill="none" stroke="#db2777" stroke-width="3" points={trendPoints(trendSeries.product)} />
+                  </svg>
+                  <div class="md-line-chart__ylabels" aria-hidden="true">
+                    <span>100</span>
+                    <span>75</span>
+                    <span>50</span>
+                  </div>
+                </div>
+                <div class="md-line-chart__months" aria-hidden="true">
+                  {trendMonths.map((m) => <span>{m}</span>)}
+                </div>
+              </>
+            ) : (
+              <p class="text-sm text-tertiary py-8 text-center">Not enough data</p>
+            )
+          }
         </div>
         <div class="flex flex-wrap gap-3 mt-3 text-xs font-semibold text-on-surface-variant">
           <span class="inline-flex items-center gap-1.5"><span class="w-4 h-0.5 bg-accent rounded" /> {product.name}</span>
@@ -181,7 +233,7 @@ const takeaways = [
         <p class="text-xs text-tertiary mb-4">vs. AI companion apps</p>
         <ol class="space-y-3">
           {
-            rankList.map((item, i) => (
+            rankList.length > 0 ? rankList.map((item, i) => (
               <li class="md-rank-row">
                 <span class="md-rank-row__pos">
                   {
@@ -194,17 +246,25 @@ const takeaways = [
                 <div class="md-rank-row__body min-w-0">
                   <div class="flex items-center justify-between gap-2 mb-1">
                     <span class={`text-sm font-bold truncate ${item.highlight ? 'text-accent' : 'text-on-surface'}`}>{item.name}</span>
-                    <span class="text-xs font-black tabular-nums text-on-surface-variant shrink-0">{item.interest}</span>
+                    <span class="text-xs font-black tabular-nums text-on-surface-variant shrink-0">
+                      {item.interest.status === 'ok' ? item.interest.value : formatUnavailable()}
+                    </span>
                   </div>
-                  <div class="h-2 rounded-full bg-surface-container overflow-hidden">
-                    <div
-                      class={`h-full rounded-full ${item.highlight ? 'bg-accent' : 'bg-tertiary/35'}`}
-                      style={`width: ${item.interest}%`}
-                    />
-                  </div>
+                  {
+                    item.interest.status === 'ok' && (
+                      <div class="h-2 rounded-full bg-surface-container overflow-hidden">
+                        <div
+                          class={`h-full rounded-full ${item.highlight ? 'bg-accent' : 'bg-tertiary/35'}`}
+                          style={`width: ${item.interest.value}%`}
+                        />
+                      </div>
+                    )
+                  }
                 </div>
               </li>
-            ))
+            )) : (
+              <li class="text-sm text-tertiary">Not enough data</li>
+            )
           }
         </ol>
         <button type="button" class="md-btn-outline w-full mt-5">View full ranking</button>
@@ -213,46 +273,46 @@ const takeaways = [
 
     <div class="md-panel mb-10 overflow-hidden p-0">
       <div class="p-5 border-b border-surface-variant">
-        <h3 class="text-lg font-black text-on-surface">Competitive Comparison</h3>
+        <h3 class="text-lg font-black text-on-surface">Market Comparison</h3>
+        <p class="text-xs text-tertiary mt-1">Market metrics only — search interest, growth, and rank.</p>
       </div>
       <div class="overflow-x-auto">
-        <table class="md-comp-table w-full min-w-[880px] text-sm">
+        <table class="md-comp-table w-full min-w-[520px] text-sm">
           <thead>
             <tr class="text-left text-[11px] uppercase tracking-wide text-tertiary border-b border-surface-variant">
               <th class="p-3">Product</th>
               <th class="p-3">Search interest</th>
               <th class="p-3">12M growth</th>
-              <th class="p-3">Monthly price</th>
-              <th class="p-3">Overall score</th>
-              <th class="p-3">Image quality</th>
-              <th class="p-3">Chat quality</th>
-              <th class="p-3">Value score</th>
+              <th class="p-3">Market rank</th>
             </tr>
           </thead>
           <tbody>
             {
-              competitors.map((c) => (
+              marketComparison.length > 0 ? marketComparison.map((c) => (
                 <tr class={`md-comp-table__row border-b border-surface-variant/60 ${c.highlight ? 'md-comp-table__highlight bg-accent/[0.04]' : ''}`}>
                   <td class="p-3 font-bold text-on-surface">{c.name}</td>
-                  <td class="p-3 tabular-nums">{c.interest}/100</td>
+                  <td class="p-3 tabular-nums">{formatInterest(c.interest)}</td>
                   <td class="p-3">
-                    <span class={`md-growth ${c.growth >= 0 ? 'md-growth--up' : 'md-growth--down'}`}>
-                      {c.growth >= 0 ? '+' : ''}{c.growth}%
-                    </span>
+                    {
+                      c.growth.status === 'ok' ? (
+                        <span class={`md-growth ${c.growth.value >= 0 ? 'md-growth--up' : 'md-growth--down'}`}>
+                          {c.growth.value >= 0 ? '+' : ''}{c.growth.value}%
+                        </span>
+                      ) : (
+                        <span class="text-tertiary">{formatUnavailable()}</span>
+                      )
+                    }
                   </td>
-                  <td class="p-3 tabular-nums">${c.price.toFixed(2)}</td>
-                  <td class="p-3 tabular-nums font-bold">{fmtScore(c.overall)}</td>
-                  <td class="p-3 tabular-nums">{fmtScore(c.images)}</td>
-                  <td class="p-3 tabular-nums">{fmtScore(c.chat)}</td>
-                  <td class="p-3 tabular-nums">{fmtScore(c.value)}</td>
+                  <td class="p-3 tabular-nums">{formatMarketRankCell(c.marketRank)}</td>
                 </tr>
-              ))
+              )) : (
+                <tr>
+                  <td colspan="4" class="p-6 text-center text-sm text-tertiary">Not enough data</td>
+                </tr>
+              )
             }
           </tbody>
         </table>
-      </div>
-      <div class="p-4 text-center border-t border-surface-variant">
-        <button type="button" class="md-btn-outline">Compare more apps</button>
       </div>
     </div>
 
@@ -275,25 +335,39 @@ const takeaways = [
             {
               priceBars.map((bar) => (
                 <div class="md-price-chart__col">
-                  <span class="md-price-chart__val">${bar.price.toFixed(2)}</span>
-                  <div
-                    class={`md-price-chart__bar ${bar.highlight ? 'md-price-chart__bar--highlight' : ''}`}
-                    style={`height: ${Math.round((bar.price / maxPrice) * chartBarMaxPx)}px; background: ${bar.color};`}
-                  />
+                  <span class="md-price-chart__val">
+                    {bar.price.status === 'ok' ? `$${bar.priceNum.toFixed(2)}` : formatUnavailable()}
+                  </span>
+                  {
+                    bar.priceNum > 0 && (
+                      <div
+                        class={`md-price-chart__bar ${bar.highlight ? 'md-price-chart__bar--highlight' : ''}`}
+                        style={`height: ${Math.round((bar.priceNum / maxPrice) * chartBarMaxPx)}px; background: ${bar.color};`}
+                      />
+                    )
+                  }
                   <span class={`md-price-chart__name ${bar.highlight ? 'text-accent font-bold' : ''}`}>{bar.label}</span>
                 </div>
               ))
             }
-            <div class="md-price-chart__avg-line" style={`bottom: ${avgLinePx + 28}px`}>
-              <span>Category avg ${categoryAvgPrice.toFixed(2)}</span>
-            </div>
+            {
+              categoryAvgPrice != null && (
+                <div class="md-price-chart__avg-line" style={`bottom: ${avgLinePx + 28}px`}>
+                  <span>Category avg ${categoryAvgPrice.toFixed(2)}</span>
+                </div>
+              )
+            }
           </div>
         </div>
-        <div class="md-price-callout mt-4">
-          <p class="text-xs font-bold text-tertiary uppercase tracking-wide">{product.name} vs. Category Avg</p>
-          <p class="text-lg font-black text-green-700">−{priceSavingsPct}%</p>
-          <p class="text-sm font-semibold text-green-800">More affordable</p>
-        </div>
+        {
+          priceSavingsPct != null && productPrice != null && (
+            <div class="md-price-callout mt-4">
+              <p class="text-xs font-bold text-tertiary uppercase tracking-wide">{product.name} vs. Category Avg</p>
+              <p class="text-lg font-black text-green-700">{priceSavingsPct > 0 ? `−${priceSavingsPct}%` : `+${Math.abs(priceSavingsPct)}%`}</p>
+              <p class="text-sm font-semibold text-green-800">{priceSavingsPct > 0 ? 'More affordable' : 'Above category average'}</p>
+            </div>
+          )
+        }
       </div>
 
       <div class="md-panel">
@@ -319,8 +393,9 @@ const takeaways = [
             <span class="md-scatter__quad md-scatter__quad--br">Overpriced</span>
             {
               scatterPoints.map((pt) => {
-                const leftPct = ((pt.price - 8) / (scatterMaxPrice - 8)) * 100;
-                const bottomPct = ((pt.score - scatterMinScore) / (scatterMaxScore - scatterMinScore)) * 100;
+                if (pt.priceNum <= 0 || pt.scoreNum == null) return null;
+                const leftPct = ((pt.priceNum - 8) / (scatterMaxPrice - 8)) * 100;
+                const bottomPct = ((pt.scoreNum - scatterMinScore) / (scatterMaxScore - scatterMinScore)) * 100;
                 return (
                   <span
                     class={`md-scatter__point ${pt.highlight ? 'md-scatter__point--highlight' : ''}`}
@@ -347,15 +422,7 @@ const takeaways = [
                 <span class={`md-takeaway__icon md-takeaway__icon--${item.tone}`}>
                   <span class="material-symbols-outlined text-[16px]">{item.icon}</span>
                 </span>
-                <p class="text-sm text-on-surface-variant leading-relaxed">
-                  {item.parts[0]}
-                  <strong class="text-on-surface font-black">{item.parts[1]}</strong>
-                  {item.parts[2]}
-                  {item.parts[3] && <strong class="text-on-surface font-black">{item.parts[3]}</strong>}
-                  {item.parts[4]}
-                  {item.parts[5] && <strong class="text-on-surface font-black">{item.parts[5]}</strong>}
-                  {item.parts[6]}
-                </p>
+                <p class="text-sm text-on-surface-variant leading-relaxed">{item.text}</p>
               </li>
             ))
           }
@@ -366,12 +433,11 @@ const takeaways = [
         herman && (
           <div class="md-panel md-expert">
             <h3 class="text-lg font-black text-on-surface mb-4">Expert Analysis</h3>
-            <p class="text-sm text-on-surface leading-relaxed mb-4">
-              {product.name} sits in a strong position on paper — search interest is climbing, pricing undercuts the category average, and our hands-on scores back up the hype on chat and characters. That said, Candy AI still leads raw search volume, which usually means heavier marketing rather than a better product.
-            </p>
-            <p class="text-sm text-on-surface leading-relaxed mb-5">
-              If you care about value for money, the data here aligns with our testing: you are getting premium-tier conversation quality without paying premium-tier prices. I would still watch image generation latency — that is where the score gap shows up in real use.
-            </p>
+            {
+              vm.expertAnalysis.map((paragraph) => (
+                <p class="text-sm text-on-surface leading-relaxed mb-4 last:mb-5">{paragraph}</p>
+              ))
+            }
             <div class="md-expert__byline flex items-center gap-3">
               <BrandIcon
                 src={brandIcons.scientist.dark}
@@ -392,6 +458,17 @@ const takeaways = [
         )
       }
     </div>
+
+    {
+      vm.sources.length > 0 && (
+        <div class="mt-8 pt-6 border-t border-surface-variant">
+          <p class="text-xs font-bold text-tertiary uppercase tracking-wide mb-2">Sources</p>
+          <ul class="text-xs text-on-surface-variant space-y-1">
+            {vm.sources.map((source) => <li>{source}</li>)}
+          </ul>
+        </div>
+      )
+    }
   </div>
 </section>
 
@@ -413,6 +490,7 @@ const takeaways = [
   .md-metric-card__icon--purple { background: rgb(168 85 247 / 10%); color: #9333ea; }
   .md-metric-card__label { margin: 10px 0 2px; font-size: 11px; font-weight: 700; color: var(--color-tertiary); }
   .md-metric-card__value { font-size: 1.35rem; font-weight: 900; color: var(--color-on-surface); line-height: 1.1; }
+  .md-metric-card__value--muted { font-size: 1rem; font-weight: 700; color: var(--color-tertiary); }
   .md-metric-card__sub { margin-top: 4px; font-size: 11px; color: var(--color-on-surface-variant); line-height: 1.35; }
 
   .md-panel {

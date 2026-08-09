@@ -1,0 +1,27 @@
+---
+import {
+  getMobileNavMode,
+  getActiveBottomNavItem,
+  showMobileBottomNav,
+} from '../../lib/mobile-nav/modes';
+import MobileBottomNav from './MobileBottomNav.astro';
+import MobileMoreSheet from './MobileMoreSheet.astro';
+
+interface Props {
+  pathname: string;
+}
+
+const { pathname } = Astro.props;
+const mode = getMobileNavMode(pathname);
+const activeItem = getActiveBottomNavItem(pathname);
+const bottomNav = showMobileBottomNav(mode);
+---
+
+{
+  bottomNav && (
+    <>
+      <MobileBottomNav mode={mode} activeItem={activeItem} />
+      <MobileMoreSheet />
+    </>
+  )
+}

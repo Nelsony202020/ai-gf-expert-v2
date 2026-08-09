@@ -1,0 +1,135 @@
+---
+import ThemeToggle from '../ui/ThemeToggle.astro';
+---
+
+<div class="mobile-sheet mobile-more-sheet" data-mobile-more-sheet hidden aria-hidden="true">
+  <button type="button" class="mobile-sheet__backdrop" data-mobile-more-close aria-label="Close menu"></button>
+  <div class="mobile-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="mobile-more-title">
+    <div class="mobile-sheet__handle" aria-hidden="true"></div>
+    <header class="mobile-sheet__head">
+      <h2 id="mobile-more-title" class="mobile-sheet__title">More</h2>
+      <button type="button" class="mobile-sheet__close" data-mobile-more-close aria-label="Close">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+    <div class="mobile-sheet__body">
+      <button type="button" class="mobile-sheet__link" data-mobile-more-share>
+        <span class="material-symbols-outlined" aria-hidden="true">share</span>
+        Share
+      </button>
+      <button type="button" class="mobile-sheet__link" data-mobile-more-feedback>
+        <span class="material-symbols-outlined" aria-hidden="true">rate_review</span>
+        Send feedback
+      </button>
+      <button type="button" class="mobile-sheet__link" data-mobile-more-top>
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+        Back to top
+      </button>
+
+      <a href="/contact/" class="mobile-sheet__link">
+        <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+        Contact us
+      </a>
+
+      <div class="mobile-sheet__divider"></div>
+
+      <div class="mobile-sheet__theme-row">
+        <ThemeToggle variant="footer" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { closeSheet, openSheet } from '../../lib/ui/bottomSheet.ts';
+
+  function getPageMeta() {
+    const navSheet = document.querySelector('[data-nav-sheet]');
+    const hubRoot = document.querySelector('[data-hub-root]');
+    const roundupRoot = document.querySelector('[data-roundup-root]');
+    return {
+      title:
+        navSheet?.getAttribute('data-page-title') ||
+        hubRoot?.getAttribute('data-page-title') ||
+        roundupRoot?.getAttribute('data-page-title') ||
+        document.title,
+      url:
+        navSheet?.getAttribute('data-page-url') ||
+        hubRoot?.getAttribute('data-page-url') ||
+        roundupRoot?.getAttribute('data-page-url') ||
+        window.location.href,
+    };
+  }
+
+  function initMobileMoreSheet() {
+    const sheet = document.querySelector('[data-mobile-more-sheet]');
+    const panel = sheet?.querySelector('.mobile-sheet__panel');
+    if (!sheet || !panel || sheet.dataset.bound === 'true') return;
+    sheet.dataset.bound = 'true';
+
+    let releaseFocus = null;
+
+    const close = () => {
+      closeSheet(sheet, () => {
+        releaseFocus?.();
+        releaseFocus = null;
+      });
+    };
+
+    const open = () => {
+      releaseFocus?.();
+      releaseFocus = openSheet(sheet, panel, {
+        focusSelector: '[data-mobile-more-close]',
+      });
+    };
+
+    document.querySelectorAll('[data-mobile-more-open]').forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+      btn.addEventListener('click', open);
+    });
+
+    sheet.querySelectorAll('[data-mobile-more-close]').forEach((el) => {
+      el.addEventListener('click', close);
+    });
+
+    sheet.querySelector('[data-mobile-more-top]')?.addEventListener('click', () => {
+      close();
+      const top =
+        document.querySelector('#roundup-top') ||
+        document.querySelector('#buying-guide-top') ||
+        document.querySelector('#test-hub-top') ||
+        document.querySelector('main');
+      if (top) top.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    sheet.querySelector('[data-mobile-more-feedback]')?.addEventListener('click', () => {
+      close();
+      const { title, url } = getPageMeta();
+      window.dispatchEvent(new CustomEvent('article-feedback:open', { detail: { title, url } }));
+    });
+
+    sheet.querySelector('[data-mobile-more-share]')?.addEventListener('click', async () => {
+      const { title, url } = getPageMeta();
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, url });
+          close();
+          return;
+        } catch {
+          /* copy fallback */
+        }
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        /* ignore */
+      }
+      close();
+    });
+  }
+
+  initMobileMoreSheet();
+  document.addEventListener('astro:page-load', initMobileMoreSheet);
+</script>

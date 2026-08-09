@@ -1,0 +1,134 @@
+---
+import ThemeToggle from '../ui/ThemeToggle.astro';
+
+interface Props {
+  pageTitle?: string;
+  pageUrl?: string;
+}
+
+const { pageTitle, pageUrl } = Astro.props;
+---
+
+<div class="review-mobile-util-trigger-wrap">
+  <button
+    type="button"
+    class="review-mobile-util-trigger"
+    data-review-util-open
+    aria-label="Page utilities"
+  >
+    <span class="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+  </button>
+</div>
+
+<div
+  class="mobile-sheet review-mobile-util-sheet"
+  data-review-util-sheet
+  hidden
+  aria-hidden="true"
+  data-page-title={pageTitle}
+  data-page-url={pageUrl}
+>
+  <button type="button" class="mobile-sheet__backdrop" data-review-util-close aria-label="Close"></button>
+  <div class="mobile-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="review-util-title">
+    <div class="mobile-sheet__handle" aria-hidden="true"></div>
+    <header class="mobile-sheet__head">
+      <h2 id="review-util-title" class="mobile-sheet__title">Page options</h2>
+      <button type="button" class="mobile-sheet__close" data-review-util-close aria-label="Close">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+    <div class="mobile-sheet__body">
+      <button type="button" class="mobile-sheet__link" data-review-util-share>
+        <span class="material-symbols-outlined" aria-hidden="true">share</span>
+        Share review
+      </button>
+      <button type="button" class="mobile-sheet__link" data-review-util-feedback>
+        <span class="material-symbols-outlined" aria-hidden="true">rate_review</span>
+        Send feedback
+      </button>
+      <button type="button" class="mobile-sheet__link" data-review-util-top>
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+        Back to top
+      </button>
+      <a href="/test/" class="mobile-sheet__link">
+        <span class="material-symbols-outlined" aria-hidden="true">science</span>
+        How we test
+      </a>
+      <a href="/contact/" class="mobile-sheet__link">
+        <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+        Contact us
+      </a>
+
+      <div class="mobile-sheet__divider"></div>
+
+      <div class="mobile-sheet__theme-row">
+        <ThemeToggle variant="footer" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { closeSheet, openSheet } from '../../lib/ui/bottomSheet.ts';
+
+  function initReviewUtilSheet() {
+    const sheet = document.querySelector<HTMLElement>('[data-review-util-sheet]');
+    const panel = sheet?.querySelector<HTMLElement>('.mobile-sheet__panel');
+    const trigger = document.querySelector<HTMLButtonElement>('[data-review-util-open]');
+    if (!sheet || !panel || !trigger || sheet.dataset.bound === 'true') return;
+    sheet.dataset.bound = 'true';
+
+    let releaseFocus: (() => void) | null = null;
+
+    const title = sheet.dataset.pageTitle || document.title;
+    const url = sheet.dataset.pageUrl || window.location.href;
+
+    const close = () => {
+      closeSheet(sheet, () => {
+        releaseFocus?.();
+        releaseFocus = null;
+      });
+    };
+
+    trigger.addEventListener('click', () => {
+      releaseFocus?.();
+      releaseFocus = openSheet(sheet, panel);
+    });
+
+    sheet.querySelectorAll('[data-review-util-close]').forEach((el) => {
+      el.addEventListener('click', close);
+    });
+
+    sheet.querySelector('[data-review-util-feedback]')?.addEventListener('click', () => {
+      close();
+      window.dispatchEvent(new CustomEvent('article-feedback:open', { detail: { title, url } }));
+    });
+
+    sheet.querySelector('[data-review-util-top]')?.addEventListener('click', () => {
+      close();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    sheet.querySelector('[data-review-util-share]')?.addEventListener('click', async () => {
+      const shareData = { title, url };
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+          close();
+          return;
+        } catch {
+          /* fall through to copy */
+        }
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        /* ignore */
+      }
+      close();
+    });
+  }
+
+  initReviewUtilSheet();
+  document.addEventListener('astro:page-load', initReviewUtilSheet);
+</script>

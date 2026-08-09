@@ -6,6 +6,8 @@ import SocialIcon from '../../components/ui/SocialIcon.astro';
 import { authors, getAuthor } from '../../data/authors';
 import VerifiedCheck from '../../components/ui/VerifiedCheck.astro';
 import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import JsonLd from '../../components/seo/JsonLd.astro';
+import { buildProfilePageSchema } from '../../lib/seo/jsonld';
 
 export function getStaticPaths() {
   return Object.keys(authors).map((slug) => ({ params: { slug } }));
@@ -21,9 +23,11 @@ if (!author) {
 const title = author.name;
 const intro = author.intro?.length ? author.intro : [author.bio];
 const firstName = author.name.split(' ')[0];
+const jsonLdGraph = buildProfilePageSchema(author);
 ---
 
 <BaseLayout title={title} description={author.bio}>
+  <JsonLd slot="head" graph={jsonLdGraph} />
   <Header />
   <main class="section-container px-4 md:px-8 py-10 md:py-14">
     <Breadcrumbs

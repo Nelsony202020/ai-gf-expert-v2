@@ -15,6 +15,11 @@ export interface HomeFeaturedCharacter extends StoryHighlightCharacter {
 
 const img = (seed: string, w: number, h: number) => `https://picsum.photos/seed/${seed}/${w}/${h}`;
 
+function roundupPickImage(slug: string): string {
+  const pick = fileAiGirlfriendRoundup.picks.find((p) => p.slug === slug);
+  return pick?.gallery[0]?.full ?? fileAiGirlfriendRoundup.featuredImage;
+}
+
 export interface HomeExplorerApp extends RoundupPick {
   filters: string[];
   payments: string[];
@@ -695,7 +700,7 @@ export const recentUpdates: HomeRecentUpdate[] = [
     id: 'aura-retest',
     title: 'Aura AI Review',
     href: '/reviews/aura-ai',
-    image: getProduct('aura-ai')?.gallery[0]?.full ?? fileAiGirlfriendRoundup.picks[3].gallery[0].full,
+    image: getProduct('aura-ai')?.gallery[0]?.full ?? roundupPickImage('ourdream-ai'),
     imageAlt: 'Aura AI review update',
     date: 'Jul 22, 2026',
     summary: 'Overview & ratings UI refresh — comparison charts, search trends, and character story highlights updated.',
@@ -718,7 +723,7 @@ export const recentUpdates: HomeRecentUpdate[] = [
     id: 'candy-retest',
     title: 'Candy AI retested',
     href: '/best/ai-girlfriend#pick-candy-ai',
-    image: fileAiGirlfriendRoundup.picks[0].gallery[0].full,
+    image: roundupPickImage('candy-ai'),
     imageAlt: 'Candy AI retest',
     date: 'Jun 28, 2026',
     summary: 'Major memory upgrade in v4.2 — chat reliability improved after a two-week retest.',
@@ -743,7 +748,7 @@ export const featuredGuides: HomeGuide[] = [
   {
     id: 'best-2026',
     title: 'Best AI Girlfriend Apps in 2026',
-    excerpt: 'Our ranked list of the eight apps that survived 30+ days of hands-on testing.',
+    excerpt: 'Our ranked list of the apps that survived hands-on testing.',
     href: '/best/ai-girlfriend',
     image: fileAiGirlfriendRoundup.featuredImage,
     imageAlt: 'Best AI girlfriend apps roundup',
@@ -751,22 +756,22 @@ export const featuredGuides: HomeGuide[] = [
     type: 'roundup',
   },
   {
-    id: 'aura-review',
-    title: 'Aura AI Review — Full Breakdown',
-    excerpt: 'Eight category scores, safety audit, and video generation deep dive from our lead reviewer.',
-    href: '/reviews/aura-ai',
-    image: getProduct('aura-ai')?.gallery[0]?.full ?? fileAiGirlfriendRoundup.picks[3].gallery[0].full,
-    imageAlt: 'Aura AI full review',
+    id: 'ourdream-review',
+    title: 'OurDream AI Review — Full Breakdown',
+    excerpt: 'Eight category scores and a deep dive into chat, images, and video from our lead reviewer.',
+    href: '/reviews/ourdream-ai',
+    image: roundupPickImage('ourdream-ai'),
+    imageAlt: 'OurDream AI full review',
     date: 'Oct 25, 2024',
     type: 'guide',
   },
   {
-    id: 'voice-compare',
-    title: 'Kindroid vs Candy AI: Voice Quality',
-    excerpt: 'Side-by-side voice call tests — latency, emotion, and realism scored with the same rubric.',
+    id: 'roundup-compare',
+    title: 'Compare our top AI girlfriend apps',
+    excerpt: 'Side-by-side scores for Candy AI, OurDream AI, and GirlfriendGPT — same rubric, live data.',
     href: '/best/ai-girlfriend#roundup-compare',
-    image: fileAiGirlfriendRoundup.picks[1].gallery[0].full,
-    imageAlt: 'Voice quality comparison',
+    image: roundupPickImage('girlfriendgpt'),
+    imageAlt: 'Roundup comparison',
     date: 'Jun 12, 2026',
     type: 'comparison',
   },

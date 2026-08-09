@@ -1,11 +1,6 @@
 ---
 import type { HomeExplorerApp } from '../../data/homepage';
-import {
-  appAcceptsCard,
-  appAcceptsCrypto,
-  appAcceptsPaypal,
-} from '../../data/homepage';
-import HomePaymentIcon from '../home/HomePaymentIcon.astro';
+import DirectoryPaymentIcons from './DirectoryPaymentIcons.astro';
 import AppBrandTooltip from './AppBrandTooltip.astro';
 import AppOverallScoreTooltip from './AppOverallScoreTooltip.astro';
 import DirectoryCategoryScoresCard from './DirectoryCategoryScoresCard.astro';
@@ -18,9 +13,6 @@ interface Props {
 }
 
 const { app, formatReviewCount } = Astro.props;
-const showCard = appAcceptsCard(app);
-const showPaypal = appAcceptsPaypal(app);
-const showCrypto = appAcceptsCrypto(app);
 const reviewHref = app.reviewUrl ?? reviewPageUrl(app.slug);
 const overallVisual = getScoreVisual(app.overallScore);
 ---
@@ -40,7 +32,7 @@ const overallVisual = getScoreVisual(app.overallScore);
         type="button"
         class="home-app-card__icon-btn coming-soon-tip coming-soon-muted"
         data-coming-soon="save"
-        data-coming-soon-tip="Save — coming soon"
+        data-coming-soon-tip="Save is in development"
         aria-label={`Save ${app.name} — coming soon`}
       >
         <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
@@ -96,9 +88,7 @@ const overallVisual = getScoreVisual(app.overallScore);
           {app.creditsNote && <span class="home-app-card__credits">{app.creditsNote}</span>}
         </p>
         <div class="home-app-card__icons" aria-label="Payment methods">
-          {showCard && <HomePaymentIcon type="card" tooltipId={`pay-card-${app.id}`} />}
-          {showPaypal && <HomePaymentIcon type="paypal" tooltipId={`pay-paypal-${app.id}`} />}
-          {showCrypto && <HomePaymentIcon type="crypto" tooltipId={`pay-crypto-${app.id}`} />}
+          <DirectoryPaymentIcons payments={app.payments} idPrefix={`card-${app.id}`} />
         </div>
       </div>
     </div>

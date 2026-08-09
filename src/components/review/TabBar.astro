@@ -2,6 +2,7 @@
 export interface Tab {
   id: string;
   label: string;
+  mobileLabel?: string;
 }
 
 interface Props {
@@ -12,31 +13,175 @@ interface Props {
 const { tabs, active = tabs[0]?.id } = Astro.props;
 ---
 
-<nav class="review-tabbar border-surface-variant z-40 border-b" data-tabbar aria-label="Review sections">
-  <div class="section-container px-4 md:px-8">
-    <ul class="flex overflow-x-auto whitespace-nowrap gap-6 md:gap-8 text-sm font-bold text-tertiary justify-start md:justify-center py-3 no-scrollbar" role="tablist">
-      {
-        tabs.map((tab) => (
-          <li role="presentation">
-            <button
-              type="button"
-              role="tab"
-              data-tab={tab.id}
-              aria-current={tab.id === active ? 'true' : 'false'}
-              class="tab-btn transition-colors cursor-pointer pb-2 -mb-3 border-b-2 border-transparent hover:text-accent"
-            >
-              {tab.label}
-            </button>
-          </li>
-        ))
-      }
-    </ul>
+<nav
+  class="review-tabbar border-surface-variant z-40 border-b"
+  data-tabbar
+  aria-label="Review sections"
+  style={`--review-tab-count: ${tabs.length}`}
+>
+  <div class="review-tabbar__shell">
+    <div class="section-container px-2 md:px-8">
+      <ul class="review-tabbar__list" role="tablist">
+        {
+          tabs.map((tab) => (
+            <li role="presentation" class="review-tabbar__item">
+              <button
+                type="button"
+                role="tab"
+                data-tab={tab.id}
+                aria-current={tab.id === active ? 'true' : 'false'}
+                class="tab-btn review-tabbar__btn transition-colors cursor-pointer pb-2 md:-mb-3 border-b-2 border-transparent hover:text-accent"
+              >
+                <span class="md:hidden review-tabbar__mobile-label">{tab.mobileLabel ?? tab.label}</span>
+                <span class="hidden md:inline">{tab.label}</span>
+              </button>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
   </div>
 </nav>
 
+<script>
+  function initReviewTabbarPin() {
+    const tabbar = document.querySelector('[data-tabbar].review-tabbar');
+    if (!tabbar || tabbar.dataset.pinBound === 'true') return;
+    if (document.body.dataset.mobileNavMode !== 'review') return;
+    tabbar.dataset.pinBound = 'true';
+
+    const header = document.querySelector('[data-site-header]');
+    let spacer = tabbar.nextElementSibling;
+    if (!spacer?.matches('[data-tabbar-spacer]')) {
+      spacer = document.createElement('div');
+      spacer.dataset.tabbarSpacer = '';
+      spacer.setAttribute('aria-hidden', 'true');
+      tabbar.after(spacer);
+    }
+
+    let naturalTop = 0;
+
+    function measureNaturalTop() {
+      const wasPinned = tabbar.classList.contains('review-tabbar--pinned');
+      if (wasPinned) {
+        tabbar.classList.remove('review-tabbar--pinned');
+        tabbar.style.top = '';
+        spacer.hidden = true;
+        spacer.style.height = '0';
+      }
+      naturalTop = tabbar.getBoundingClientRect().top + window.scrollY;
+    }
+
+    function update() {
+      const headerH = header?.offsetHeight ?? 52;
+      const tabbarH = tabbar.offsetHeight;
+      const shouldPin = window.scrollY >= naturalTop - headerH - 1;
+
+      if (shouldPin) {
+        tabbar.classList.add('review-tabbar--pinned');
+        tabbar.style.top = `${headerH}px`;
+        spacer.style.height = `${tabbarH}px`;
+        spacer.hidden = false;
+      } else {
+        tabbar.classList.remove('review-tabbar--pinned');
+        tabbar.style.top = '';
+        spacer.hidden = true;
+        spacer.style.height = '0';
+      }
+    }
+
+    function remeasureAndUpdate() {
+      measureNaturalTop();
+      update();
+    }
+
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', remeasureAndUpdate, { passive: true });
+    document.addEventListener('site-header-offset-change', remeasureAndUpdate);
+    remeasureAndUpdate();
+  }
+
+  initReviewTabbarPin();
+  document.addEventListener('astro:page-load', initReviewTabbarPin);
+</script>
+
 <style>
+  .review-tabbar__list {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 1.5rem;
+    margin: 0;
+    padding: 0.75rem 0;
+    list-style: none;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-tertiary);
+    justify-content: flex-start;
+    scrollbar-width: none;
+  }
+
+  .review-tabbar__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .review-tabbar__list {
+      gap: 2rem;
+      justify-content: center;
+    }
+  }
+
   .tab-btn[aria-current='true'] {
     color: var(--color-accent);
     border-bottom-color: var(--color-accent);
+  }
+
+  @media (max-width: 767px) {
+    .review-tabbar__list {
+      display: grid;
+      grid-template-columns: repeat(var(--review-tab-count, 5), minmax(0, 1fr));
+      gap: 0;
+      overflow: visible;
+      white-space: normal;
+      padding: 0.25rem 0;
+    }
+
+    .review-tabbar__item {
+      min-width: 0;
+    }
+
+    .review-tabbar__btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 44px;
+      padding: 0.375rem 0.125rem 0.5rem;
+      margin: 0;
+      border-bottom: none !important;
+      font-size: 0.625rem;
+      font-weight: 700;
+      line-height: 1.15;
+      text-align: center;
+    }
+
+    .review-tabbar__mobile-label {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .tab-btn[aria-current='true']::after {
+      content: '';
+      width: 0.25rem;
+      height: 0.25rem;
+      border-radius: 999px;
+      background: var(--color-accent);
+      margin-top: 2px;
+    }
   }
 </style>

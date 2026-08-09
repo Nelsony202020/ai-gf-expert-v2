@@ -22,6 +22,8 @@ import {
   loadHomepageRecentUpdates,
   loadHomepageTopPicks,
 } from '../lib/content/homepageLoaders';
+import JsonLd from '../components/seo/JsonLd.astro';
+import { buildHomepageSchema } from '../lib/seo/jsonld';
 
 // SSR so admin homepage slots appear without a full rebuild.
 export const prerender = false;
@@ -31,9 +33,11 @@ const featuredCharactersShowcase = await loadFeaturedCharactersShowcase();
 const topPicks = await loadHomepageTopPicks(fileAiGirlfriendRoundup.picks);
 const recentUpdates = await loadHomepageRecentUpdates();
 const featuredGuides = await loadHomepageGuides();
+const jsonLdGraph = buildHomepageSchema();
 ---
 
 <BaseLayout title={homeMeta.title} description={homeMeta.description} image={homeMeta.heroImage}>
+  <JsonLd slot="head" graph={jsonLdGraph} />
   <Header />
   <main>
     <HomeHero />

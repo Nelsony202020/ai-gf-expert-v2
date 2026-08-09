@@ -1,19 +1,26 @@
 ---
 import type { Roundup } from '../../data/roundups/ai-girlfriend';
-import { HUB_NAV_TABS, type HubTabId } from '../../lib/hub-nav';
 
 interface Props {
   roundup: Roundup;
-  active?: HubTabId;
+  pageTitle?: string;
+  pageUrl?: string;
 }
 
-const { roundup, active = 'best-apps' } = Astro.props;
+const { roundup, pageTitle, pageUrl } = Astro.props;
 
 const mainSections = roundup.tocSections.filter((s) => s.level !== 3);
 const pickSections = roundup.tocSections.filter((s) => s.level === 3);
 ---
 
-<div class="roundup-sheet roundup-nav-sheet" data-nav-sheet hidden aria-hidden="true">
+<div
+  class="roundup-sheet roundup-nav-sheet"
+  data-nav-sheet
+  hidden
+  aria-hidden="true"
+  data-page-title={pageTitle}
+  data-page-url={pageUrl}
+>
   <div class="roundup-sheet__backdrop" data-sheet-backdrop tabindex="-1"></div>
   <div
     class="roundup-sheet__panel roundup-nav-sheet__panel"
@@ -22,32 +29,9 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
     aria-labelledby="nav-sheet-title"
   >
     <div class="roundup-sheet__handle" aria-hidden="true"></div>
-    <h2 id="nav-sheet-title" class="sr-only">Page navigation</h2>
-
-    <nav class="roundup-nav-sheet__hub" aria-label="Hub sections">
-      {
-        HUB_NAV_TABS.map((tab) => {
-          const isActive = tab.id === active;
-          const mobileLabel = tab.mobileLabel ?? tab.label;
-          return isActive ? (
-            <span class="roundup-nav-sheet__hub-tab is-active" aria-current="page">
-              <span class="material-symbols-outlined roundup-nav-sheet__hub-icon" aria-hidden="true">{tab.icon}</span>
-              <span>{mobileLabel}</span>
-            </span>
-          ) : (
-            <a class="roundup-nav-sheet__hub-tab" href={tab.href} data-hub-nav-link>
-              <span class="material-symbols-outlined roundup-nav-sheet__hub-icon" aria-hidden="true">{tab.icon}</span>
-              <span>{mobileLabel}</span>
-            </a>
-          );
-        })
-      }
-    </nav>
-
-    <div class="roundup-nav-sheet__divider" aria-hidden="true"></div>
+    <h2 id="nav-sheet-title" class="roundup-nav-sheet__toc-title">Contents</h2>
 
     <nav class="roundup-nav-sheet__toc" aria-label="Table of contents">
-      <p class="roundup-nav-sheet__toc-title">Contents</p>
       <ul class="roundup-nav-sheet__toc-list">
         {
           mainSections.map((section) => (
@@ -86,23 +70,23 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
 
 <script>
   function initRoundupMobileNavSheet() {
-    const sheet = document.querySelector<HTMLElement>('[data-nav-sheet]');
+    const sheet = document.querySelector('[data-nav-sheet]');
     if (!sheet || sheet.dataset.bound === 'true') return;
     sheet.dataset.bound = 'true';
 
     function closeSheet() {
-      sheet!.hidden = true;
-      sheet!.setAttribute('aria-hidden', 'true');
+      sheet.hidden = true;
+      sheet.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('roundup-sheet-open');
     }
 
     function openSheet() {
-      sheet!.hidden = false;
-      sheet!.setAttribute('aria-hidden', 'false');
+      sheet.hidden = false;
+      sheet.setAttribute('aria-hidden', 'false');
       document.body.classList.add('roundup-sheet-open');
     }
 
-    document.querySelectorAll<HTMLButtonElement>('[data-nav-sheet-open]').forEach((btn) => {
+    document.querySelectorAll('[data-nav-sheet-open]').forEach((btn) => {
       if (btn.dataset.bound === 'true') return;
       btn.dataset.bound = 'true';
       btn.addEventListener('click', openSheet);
@@ -111,23 +95,14 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
     sheet.querySelector('[data-sheet-close]')?.addEventListener('click', closeSheet);
     sheet.querySelector('[data-sheet-backdrop]')?.addEventListener('click', closeSheet);
 
-    sheet.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach((link) => {
+    sheet.querySelectorAll('a[href^="#"]').forEach((link) => {
       link.addEventListener('click', () => {
         closeSheet();
       });
     });
 
-    const SCROLL_KEY_PREFIX = 'hub-nav-scroll:';
-
-    sheet.querySelectorAll<HTMLAnchorElement>('[data-hub-nav-link]').forEach((link) => {
-      link.addEventListener('click', () => {
-        try {
-          const dest = new URL(link.href, window.location.href).pathname;
-          sessionStorage.removeItem(SCROLL_KEY_PREFIX + dest);
-        } catch {
-          /* ignore malformed href */
-        }
-      });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sheet && !sheet.hidden) closeSheet();
     });
   }
 

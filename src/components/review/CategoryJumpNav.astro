@@ -1,0 +1,116 @@
+---
+import type { Product } from '../../data/products';
+import { buildReviewRatingsHash } from '../../lib/review/ratingsDeepLink';
+import ScorePill from './ScorePill.astro';
+import VerdictCategoryIcon from './VerdictCategoryIcon.astro';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+---
+
+<nav class="category-jump-nav" aria-label="Jump to category scores">
+  <p class="category-jump-nav__label">Jump to category</p>
+  <ul class="category-jump-nav__list">
+    {
+      product.categories.map((category) => (
+        <li>
+          <a
+            href={`#${buildReviewRatingsHash(category.key)}`}
+            class="category-jump-nav__link group"
+            data-goto-category={category.key}
+          >
+            <span class="category-jump-nav__icon" aria-hidden="true">
+              <VerdictCategoryIcon id={category.key} />
+            </span>
+            <span class="category-jump-nav__name">{category.name}</span>
+            <ScorePill score={category.score} size="sm" class="shrink-0" />
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+
+<style>
+  .category-jump-nav {
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 0.75rem;
+    background: var(--color-surface-container-low);
+    padding: 1rem 1.25rem 1.25rem;
+  }
+
+  .category-jump-nav__label {
+    margin: 0 0 0.75rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+  }
+
+  .category-jump-nav__list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow: visible;
+    touch-action: manipulation;
+  }
+
+  @media (min-width: 640px) {
+    .category-jump-nav__list {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .category-jump-nav__link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    background: var(--color-surface);
+    color: var(--color-on-surface);
+    text-decoration: none;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .category-jump-nav__link:hover {
+    border-color: var(--color-accent);
+    background: var(--color-surface-container);
+    color: var(--color-accent);
+  }
+
+  .category-jump-nav__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    opacity: 0.85;
+  }
+
+  .category-jump-nav__link:hover .category-jump-nav__icon {
+    opacity: 1;
+  }
+
+  .category-jump-nav__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>

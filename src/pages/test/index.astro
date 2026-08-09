@@ -28,6 +28,8 @@ import {
 import { testHubScoredVsInformational } from '../../data/methodology-support-content';
 import { testMethodologyPageMeta } from '../../data/test-category-pages';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
+import JsonLd from '../../components/seo/JsonLd.astro';
+import { buildWebPageSchema } from '../../lib/seo/jsonld';
 import '../../styles/test-hub.css';
 import '../../styles/ratings-tooltips.css';
 
@@ -37,14 +39,26 @@ const chatCategory = categories.find((c) => c.key === 'chat');
 const tocSections = buildTestHubTocSections(categories);
 const testFaqItems = testHubFaq;
 const pageTitle = 'How We Test AI Girlfriend Apps';
+const pageDescription =
+  'How we test AI girlfriend apps using paid accounts, structured scenarios, and measurable evidence across eight rating categories.';
 const canonical = canonicalPublicUrl('/test/', Astro.site);
+const jsonLdGraph = buildWebPageSchema({
+  pathname: '/test/',
+  name: pageTitle,
+  description: pageDescription,
+  breadcrumbs: [
+    { label: 'Home', href: '/' },
+    { label: 'How We Test' },
+  ],
+});
 ---
 
 <BaseLayout
   title={pageTitle}
-  description="How we test AI girlfriend apps using paid accounts, structured scenarios, and measurable evidence across eight rating categories."
+  description={pageDescription}
   canonical={canonical}
 >
+  <JsonLd slot="head" graph={jsonLdGraph} />
   <Header />
   <StandardContentLayout pageClass="test-hub-page">
     <TestHubSidebar
@@ -246,9 +260,11 @@ const canonical = canonicalPublicUrl('/test/', Astro.site);
   <TestHubMobileNavSheet
     categories={categories}
     tocSections={tocSections}
-    active="how-we-test"
     collapsibleToc
+    pageTitle={pageTitle}
+    pageUrl={canonical}
   />
+  <div data-hub-root data-page-title={pageTitle} data-page-url={canonical} hidden aria-hidden="true"></div>
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
   <RatingsTooltipInit />
 

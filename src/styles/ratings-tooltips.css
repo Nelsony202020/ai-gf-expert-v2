@@ -891,6 +891,14 @@ a.rt-inline-test-link.rt-comp-name {
 }
 
 @media (max-width: 767px) {
+  .ratings-tooltip-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: rgb(0 0 0 / 45%);
+    pointer-events: auto;
+  }
+
   .ratings-tooltip-panel--methodology.ratings-tooltip-panel--mobile-sheet {
     display: flex;
     flex-direction: column;
@@ -904,6 +912,56 @@ a.rt-inline-test-link.rt-comp-name {
 
   .ratings-tooltip-panel--methodology .ratings-tooltip-panel__header {
     padding: 12px 14px;
+  }
+
+  .ratings-tooltip-panel--methodology .ratings-tooltip-panel__header--closable {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: start;
+    column-gap: 10px;
+    row-gap: 6px;
+    padding-right: 10px;
+  }
+
+  .ratings-tooltip-panel--methodology .ratings-tooltip-panel__header--closable .ratings-tooltip-panel__section-title {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
+    font-size: 12px;
+    color: var(--color-accent);
+  }
+
+  .ratings-tooltip-panel--methodology .ratings-tooltip-panel__header--closable .ratings-tooltip-panel__desc {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 0;
+  }
+
+  .ratings-tooltip-panel--methodology .ratings-tooltip-panel__header--closable .ratings-tooltip-panel__close {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  .ratings-tooltip-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    margin: -2px 0 0;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: rgb(0 0 0 / 6%);
+    color: var(--color-on-surface-variant);
+    cursor: pointer;
+  }
+
+  .ratings-tooltip-panel__close .material-symbols-outlined {
+    font-size: 18px;
   }
 
   .ratings-tooltip-panel--methodology .ratings-tooltip-panel__body {
@@ -960,8 +1018,8 @@ a.rt-inline-test-link.rt-comp-name {
 }
 
 .rt-method-version--current {
-  border-color: rgb(255 107 0 / 35%);
-  background: rgb(255 107 0 / 6%);
+  border-color: rgb(219 39 119 / 35%);
+  background: rgb(219 39 119 / 8%);
 }
 
 .rt-method-version__badge {
@@ -983,7 +1041,7 @@ a.rt-inline-test-link.rt-comp-name {
 
 .rt-method-version__badge--current {
   color: #fff;
-  background: var(--color-primary-container, #ff6b00);
+  background: var(--color-accent, #db2777);
   border-color: transparent;
 }
 
@@ -1013,7 +1071,7 @@ a.rt-inline-test-link.rt-comp-name {
   gap: 2px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: linear-gradient(180deg, rgb(255 107 0 / 5%), rgb(243 243 243 / 50%));
+  background: linear-gradient(180deg, rgb(219 39 119 / 6%), rgb(243 243 243 / 50%));
   border: 1px solid rgb(226 226 226 / 70%);
 }
 
@@ -1024,7 +1082,7 @@ a.rt-inline-test-link.rt-comp-name {
 }
 
 .rt-method-step--final .rt-method-step__num {
-  background: var(--color-primary-container, #ff6b00);
+  background: var(--color-accent, #db2777);
   color: #fff;
   border-color: transparent;
 }

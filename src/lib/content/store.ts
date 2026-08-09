@@ -58,7 +58,7 @@ import { affiliateRel, DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
 import { cdnAsset } from '../media/cdn';
 import { buildGroupedContributors } from '../ratings/groupContributors';
 import type { Roundup, RoundupPick } from '../../data/roundups/ai-girlfriend';
-import { hydrateRoundupPicks } from './roundupPick';
+import { hydrateRoundupPicks, minimalRoundupPickFromProduct } from './roundupPick';
 import { launchCompareDefaultIds } from './launchProducts';
 import { isDevReviewSlug } from './reviewDevProducts';
 
@@ -617,27 +617,33 @@ export async function getProductFeaturedIn(productSlug: string): Promise<Feature
 function orderRoundupPicksFromDbEntries(
   filePicks: RoundupPick[],
   entries: any[],
+  productsBySlug: Map<string, Product>,
 ): RoundupPick[] {
   const bySlug = new Map(filePicks.map((p) => [p.slug, p]));
-  const ordered = entries
-    .filter((e) => e.included && e.product?.slug && bySlug.has(e.product.slug))
+  const included = entries
+    .filter((e) => e.included && e.product?.slug)
     .sort(
       (a, b) =>
         (a.publishedPosition ?? a.calculatedPosition ?? 999) -
         (b.publishedPosition ?? b.calculatedPosition ?? 999),
-    )
-    .map((e) => {
-      const pick = { ...bySlug.get(e.product.slug)! };
-      if (e.awardLabel) pick.ribbon = e.awardLabel;
-      if (e.reason) pick.overallSummary = e.reason;
-      return pick;
-    });
-  if (ordered.length === 0) return filePicks;
-  const orderedSlugs = new Set(ordered.map((p) => p.slug));
-  for (const pick of filePicks) {
-    if (!orderedSlugs.has(pick.slug)) ordered.push(pick);
+    );
+
+  if (included.length === 0) return filePicks;
+
+  const ordered: RoundupPick[] = [];
+  for (const e of included) {
+    const slug = String(e.product.slug);
+    const product = productsBySlug.get(slug);
+    const template =
+      bySlug.get(slug) ?? (product ? minimalRoundupPickFromProduct(product) : null);
+    if (!template) continue;
+    const pick = { ...template };
+    if (e.awardLabel) pick.ribbon = e.awardLabel;
+    if (e.reason) pick.overallSummary = e.reason;
+    ordered.push(pick);
   }
-  return ordered;
+
+  return ordered.length > 0 ? ordered : filePicks;
 }
 
 export interface RoundupPublicLoad {
@@ -683,7 +689,7 @@ export async function loadRoundupForPublic(
 
     let picks = fileTemplate.picks;
     if (dbRoundup?.entries?.length) {
-      picks = orderRoundupPicksFromDbEntries(fileTemplate.picks, dbRoundup.entries);
+      picks = orderRoundupPicksFromDbEntries(fileTemplate.picks, dbRoundup.entries, productsBySlug);
     }
     picks = hydrateRoundupPicks(picks, productsBySlug);
 
@@ -778,7 +784,7 @@ export async function overlayRoundupWithDb<T extends {
 
     const publishedProducts = await loadPublishedProducts([]);
     const productsBySlug = new Map(publishedProducts.map((p) => [p.slug, p]));
-    const ordered = orderRoundupPicksFromDbEntries(fileRoundup.picks, dbRoundup.entries);
+    const ordered = orderRoundupPicksFromDbEntries(fileRoundup.picks, dbRoundup.entries, productsBySlug);
     const picks = hydrateRoundupPicks(ordered, productsBySlug);
 
     return { ...fileRoundup, picks };

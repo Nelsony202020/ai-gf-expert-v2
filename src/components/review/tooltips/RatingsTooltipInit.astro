@@ -15,6 +15,7 @@
 
   let activePanel: HTMLElement | null = null;
   let activeTrigger: HTMLElement | null = null;
+  let activeBackdrop: HTMLElement | null = null;
   let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
   function scoreChipClass(score: number): string {
@@ -32,6 +33,8 @@
 
   function hidePanel() {
     cancelHide();
+    activeBackdrop?.remove();
+    activeBackdrop = null;
     if (activePanel) {
       activePanel.remove();
       activePanel = null;
@@ -262,11 +265,50 @@
     });
   }
 
+  function bindMobileMethodologyChrome(panel: HTMLElement) {
+    const isMobileMethodology =
+      panel.classList.contains('ratings-tooltip-panel--methodology') && window.innerWidth < 768;
+    if (!isMobileMethodology) return;
+
+    const portal = document.getElementById('ratings-tooltip-portal');
+    if (!portal) return;
+
+    if (!activeBackdrop) {
+      activeBackdrop = document.createElement('div');
+      activeBackdrop.className = 'ratings-tooltip-backdrop';
+      activeBackdrop.addEventListener('click', hidePanel);
+      portal.insertBefore(activeBackdrop, panel);
+    }
+
+    const header = panel.querySelector('.ratings-tooltip-panel__header');
+    if (header && !header.querySelector('[data-ratings-tooltip-close]')) {
+      header.classList.add('ratings-tooltip-panel__header--closable');
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'ratings-tooltip-panel__close';
+      closeBtn.dataset.ratingsTooltipClose = 'true';
+      closeBtn.setAttribute('aria-label', 'Close tooltip');
+      closeBtn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">close</span>';
+      closeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        hidePanel();
+      });
+      header.appendChild(closeBtn);
+    }
+  }
+
   function showPanel(trigger: HTMLElement) {
     const id = trigger.dataset.ratingsTooltipTrigger;
     if (!id) return;
 
+    const isMobileMethodologyTrigger = window.innerWidth < 768;
+
     if (activeTrigger === trigger && activePanel) {
+      if (isMobileMethodologyTrigger && activePanel.classList.contains('ratings-tooltip-panel--methodology')) {
+        hidePanel();
+        return;
+      }
       cancelHide();
       return;
     }
@@ -287,6 +329,7 @@
     activeTrigger = trigger;
 
     positionPanel(trigger, panel);
+    bindMobileMethodologyChrome(panel);
     bindDistribution(panel);
     bindTooltipPanelActions(panel);
 
@@ -348,6 +391,10 @@
   }
 
   .ratings-tooltip-portal .ratings-tooltip-panel--open {
+    pointer-events: auto;
+  }
+
+  .ratings-tooltip-portal .ratings-tooltip-backdrop {
     pointer-events: auto;
   }
 </style>

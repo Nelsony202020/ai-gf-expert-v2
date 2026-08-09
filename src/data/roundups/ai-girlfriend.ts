@@ -237,24 +237,6 @@ function scores(
   }));
 }
 
-function scoresFromProduct(slug: string): RoundupCategoryScore[] | null {
-  const product = getProduct(slug);
-  if (!product) return null;
-  const mapped = ROUNDUP_CATEGORY_KEYS.map((key) => {
-    const c = product.categories.find((cat) => cat.key === key);
-    if (!c) return null;
-    return {
-      key: c.key,
-      name: c.key === 'pricing' ? 'Price' : c.name,
-      score: c.score,
-      description: c.description,
-      subscores: c.subscores.map((s) => ({ name: s.name, score: s.score })),
-    };
-  });
-  if (mapped.some((m) => m === null)) return null;
-  return mapped as RoundupCategoryScore[];
-}
-
 function gallery(seed: string): GalleryImage[] {
   return [
     { full: img(`${seed}-1`, 960, 640), thumb: img(`${seed}-1t`, 320, 213), alt: `${seed} screenshot 1` },
@@ -262,8 +244,6 @@ function gallery(seed: string): GalleryImage[] {
     { full: img(`${seed}-3`, 960, 640), thumb: img(`${seed}-3t`, 320, 213), alt: `${seed} screenshot 3` },
   ];
 }
-
-const aura = getProduct('aura-ai');
 
 const picks: RoundupPick[] = [
   {
@@ -293,202 +273,65 @@ const picks: RoundupPick[] = [
     ourTake:
       'Candy AI is the app we recommend when someone asks for a single best AI girlfriend in 2026. It rarely tops every individual category, but it avoids weak spots better than any rival.',
     affiliateUrl: 'https://example.com/go/candy-ai',
+    reviewUrl: '/reviews/candy-ai/',
   },
   {
-    id: 'kindroid',
-    slug: 'kindroid',
-    name: 'Kindroid',
-    logo: img('kindroid-logo', 128, 128),
-    ribbon: 'Best for Voice',
-    ribbonKey: 'voice',
-    overallScore: 9.1,
-    overallSummary: 'Best pick for voice quality and realistic phone-call companionship.',
-    priceMonthly: 13.99,
+    id: 'ourdream-ai',
+    slug: 'ourdream-ai',
+    name: 'OurDream AI',
+    logo: img('ourdream-logo', 128, 128),
+    ribbon: 'Best for Media',
+    ribbonKey: 'video',
+    overallScore: 8.8,
+    overallSummary: 'Feature-rich platform with strong scores across chat, images, and video.',
+    priceMonthly: 19.99,
     intro:
-      'Kindroid stands out for voice quality and phone-call realism — if spoken conversation matters more than images, start here.',
-    gallery: gallery('kindroid'),
-    categoryScores: scores(7.8, 8.4, 9.3, 9.6, 8.0, 7.8, 9.0, 7.9),
+      'OurDream AI packs a wide feature set into one subscription — a strong pick when you want chat, images, and video in a single app.',
+    gallery: gallery('ourdream'),
+    categoryScores: scores(8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 8.4, 8.0),
     specs: [
-      { label: 'Starting price', value: '$13.99 / mo' },
-      { label: 'Free tier', value: 'Trial only' },
-      { label: 'Voice calls', value: 'Yes · best-in-class' },
-      { label: 'NSFW', value: 'Yes' },
-      { label: 'Memory', value: 'Persistent' },
-      { label: 'Platforms', value: 'Web, Android' },
+      { label: 'Starting price', value: '$19.99 / mo' },
+      { label: 'Free tier', value: 'Limited' },
+      { label: 'Voice calls', value: 'Yes' },
+      { label: 'Video gen', value: 'Yes' },
+      { label: 'Memory', value: 'Long-term' },
+      { label: 'Platforms', value: 'Web' },
     ],
-    pros: ['Best-in-class voice and phone calls', 'Emotionally responsive TTS', 'Strong privacy defaults'],
-    cons: ['Image generation lags top rivals', 'Smaller preset character library'],
+    pros: ['Strong video generation', 'Broad feature set', 'High overall test scores'],
+    cons: ['Higher monthly price than some rivals', 'Steeper learning curve'],
     ourTake:
-      'Kindroid feels closest to talking to a real person over the phone. Voice-first users should prioritize it over flashier image-heavy apps.',
-    affiliateUrl: 'https://example.com/go/kindroid',
+      'OurDream AI scored very well across all categories in our tests — one of the most complete platforms in the category.',
+    affiliateUrl: 'https://example.com/go/ourdream-ai',
+    reviewUrl: '/reviews/ourdream-ai/',
   },
   {
-    id: 'crushon-ai',
-    slug: 'crushon-ai',
-    name: 'CrushOn AI',
-    logo: img('crushon-logo', 128, 128),
+    id: 'girlfriendgpt',
+    slug: 'girlfriendgpt',
+    name: 'GirlfriendGPT',
+    logo: img('girlfriendgpt-logo', 128, 128),
     ribbon: 'Best for Roleplay',
     ribbonKey: 'roleplay',
-    overallScore: 8.9,
-    overallSummary: 'Strong roleplay depth with a large community character library.',
-    priceMonthly: 9.99,
+    overallScore: 7.7,
+    overallSummary: 'One of the best adult roleplay experiences we have tested.',
+    priceMonthly: 15.0,
     intro:
-      'CrushOn AI excels at long-form roleplay, scenario depth, and community-created characters — ideal for story-driven sessions.',
-    gallery: gallery('crushon'),
-    categoryScores: scores(9.2, 8.8, 9.1, 8.7, 8.5, 7.5, 8.2, 9.1),
+      'GirlfriendGPT is built for long-form roleplay and adult scenarios — the standout pick when conversation depth matters most.',
+    gallery: gallery('girlfriendgpt'),
+    categoryScores: scores(8.0, 7.8, 8.5, 8.2, 7.5, 6.8, 7.8, 7.6),
     specs: [
-      { label: 'Starting price', value: '$9.99 / mo' },
-      { label: 'Free tier', value: 'Generous daily credits' },
+      { label: 'Starting price', value: '$15.00 / mo' },
+      { label: 'Free tier', value: 'Limited' },
       { label: 'Voice calls', value: 'No' },
       { label: 'NSFW', value: 'Yes' },
       { label: 'Memory', value: 'Scenario-aware' },
       { label: 'Platforms', value: 'Web' },
     ],
-    pros: ['Deep scenario and RP tools', 'Huge community character library', 'Strong value on lower tiers'],
-    cons: ['No voice or video calling', 'UI feels dated compared to premium rivals'],
+    pros: ['Excellent adult roleplay', 'Deep scenario support', 'Active community'],
+    cons: ['Image quality trails top picks', 'No voice or video calling'],
     ourTake:
-      'If your sessions run long and plot-heavy, CrushOn AI keeps context better than most apps at this price. It is our go-to RP pick even when it is not the prettiest interface.',
-    affiliateUrl: 'https://example.com/go/crushon-ai',
-  },
-  {
-    id: 'aura-ai',
-    slug: 'aura-ai',
-    name: 'Aura AI',
-    logo: img('aura-logo', 128, 128),
-    ribbon: 'Best for Video',
-    ribbonKey: 'video',
-    overallScore: aura?.overallScore ?? 8.9,
-    overallSummary: aura?.overallSummary ?? 'Industry-leading video generation with strong chat and character variety.',
-    priceMonthly: 12.99,
-    intro:
-      'Aura AI delivers the strongest video generation and media pipeline in our tests — best when photos and short clips are part of the experience.',
-    gallery: aura?.gallery.slice(0, 3) ?? gallery('aura'),
-    categoryScores: scoresFromProduct('aura-ai') ?? scores(9.1, 8.9, 9.1, 9.4, 8.7, 9.2, 8.0, 8.5),
-    specs: [
-      { label: 'Starting price', value: '$12.99 / mo' },
-      { label: 'Free tier', value: 'Limited' },
-      { label: 'Voice calls', value: 'Yes' },
-      { label: 'Video gen', value: 'Yes · industry-leading' },
-      { label: 'Memory', value: 'Long-term' },
-      { label: 'Platforms', value: 'Web, iOS' },
-    ],
-    pros: ['Best video generation in our tests', 'Large character library', 'Realistic chat with strong memory'],
-    cons: ['Image generation slower than Candy AI', 'Premium tier required for best video quality'],
-    ourTake: aura?.ourTake ?? 'Aura AI remains a top-tier pick when media quality matters as much as conversation.',
-    affiliateUrl: aura?.affiliateUrl ?? 'https://example.com/go/aura-ai',
-    reviewUrl: '/reviews/aura-ai',
-  },
-  {
-    id: 'dreamgf',
-    slug: 'dreamgf',
-    name: 'DreamGF',
-    logo: img('dreamgf-logo', 128, 128),
-    ribbon: 'Best for Images',
-    ribbonKey: 'images',
-    overallScore: 8.7,
-    overallSummary: 'Visual-first pick with excellent image quality and consistency.',
-    priceMonthly: 11.99,
-    intro:
-      'DreamGF prioritizes visual fidelity — character portraits and scene images look sharper and more consistent than most competitors.',
-    gallery: gallery('dreamgf'),
-    categoryScores: scores(7.6, 8.5, 7.8, 7.9, 9.4, 8.0, 8.0, 8.3),
-    specs: [
-      { label: 'Starting price', value: '$11.99 / mo' },
-      { label: 'Free tier', value: 'Daily images' },
-      { label: 'Voice calls', value: 'Limited' },
-      { label: 'NSFW', value: 'Yes' },
-      { label: 'Memory', value: 'Standard' },
-      { label: 'Platforms', value: 'Web' },
-    ],
-    pros: ['Excellent image quality and consistency', 'Fast generation times', 'Solid appearance customization'],
-    cons: ['Chat feels less natural than top picks', 'Video features still maturing'],
-    ourTake:
-      'DreamGF is the visual-first choice. Users who care most about how their companion looks in photos will notice the gap immediately versus chat-first apps.',
-    affiliateUrl: 'https://example.com/go/dreamgf',
-  },
-  {
-    id: 'replika',
-    slug: 'replika',
-    name: 'Replika',
-    logo: img('replika-logo', 128, 128),
-    ribbon: 'Best for Privacy',
-    ribbonKey: 'privacy',
-    overallScore: 8.5,
-    overallSummary: 'Most mature privacy controls and clearest data policies in the category.',
-    priceMonthly: 19.99,
-    intro:
-      'Replika offers the most mature privacy controls and the clearest data policies — a safer pick for users who want discretion and transparency.',
-    gallery: gallery('replika'),
-    categoryScores: scores(8.0, 7.8, 8.5, 8.2, 7.5, 6.8, 9.5, 6.5),
-    specs: [
-      { label: 'Starting price', value: '$19.99 / mo' },
-      { label: 'Free tier', value: 'Basic chat' },
-      { label: 'Voice calls', value: 'Yes' },
-      { label: 'NSFW', value: 'Limited / opt-in' },
-      { label: 'Memory', value: 'Long-term' },
-      { label: 'Platforms', value: 'Web, iOS, Android' },
-    ],
-    pros: ['Industry-leading privacy controls', 'Discreet billing options', 'Available on all major platforms'],
-    cons: ['Higher monthly price', 'NSFW and image features more restricted'],
-    ourTake:
-      'Replika is not always the most exciting companion app, but it is the one we trust most when privacy and billing discretion are non-negotiable.',
-    affiliateUrl: 'https://example.com/go/replika',
-  },
-  {
-    id: 'character-ai',
-    slug: 'character-ai',
-    name: 'Character.AI',
-    logo: img('cai-logo', 128, 128),
-    ribbon: 'Best Free Option',
-    ribbonKey: 'free',
-    overallScore: 8.2,
-    overallSummary: 'Best free entry point with a huge community and responsive chat.',
-    priceMonthly: 0,
-    intro:
-      'Character.AI offers the strongest free experience in the category — a practical starting point before upgrading to a dedicated AI girlfriend app.',
-    gallery: gallery('cai'),
-    categoryScores: scores(9.5, 8.0, 8.2, 7.8, 6.5, 5.0, 8.8, 9.8),
-    specs: [
-      { label: 'Starting price', value: 'Free' },
-      { label: 'Free tier', value: 'Generous' },
-      { label: 'Voice calls', value: 'Beta' },
-      { label: 'NSFW', value: 'Filtered' },
-      { label: 'Memory', value: 'Session-based' },
-      { label: 'Platforms', value: 'Web, iOS, Android' },
-    ],
-    pros: ['Best free tier in the category', 'Massive character community', 'Fast, responsive chat'],
-    cons: ['Strict SFW filters', 'No dedicated romance / NSFW features'],
-    ourTake:
-      'Character.AI is the right zero-cost entry point. Power users will outgrow it, but it is unbeatable for testing whether AI companionship fits your routine.',
-    affiliateUrl: 'https://example.com/go/character-ai',
-  },
-  {
-    id: 'nectar-ai',
-    slug: 'nectar-ai',
-    name: 'Nectar AI',
-    logo: img('nectar-logo', 128, 128),
-    ribbon: 'Best Value',
-    ribbonKey: 'value',
-    overallScore: 8.4,
-    overallSummary: 'Best value pick — premium-style features at a lower monthly price.',
-    priceMonthly: 7.99,
-    intro:
-      'Nectar AI packs surprising depth into a lower price — the best value pick if you want premium-style features without a premium subscription.',
-    gallery: gallery('nectar'),
-    categoryScores: scores(7.5, 8.2, 8.0, 8.0, 8.1, 7.2, 8.3, 9.3),
-    specs: [
-      { label: 'Starting price', value: '$7.99 / mo' },
-      { label: 'Free tier', value: 'Yes' },
-      { label: 'Voice calls', value: 'No' },
-      { label: 'NSFW', value: 'Yes' },
-      { label: 'Memory', value: 'Standard' },
-      { label: 'Platforms', value: 'Web' },
-    ],
-    pros: ['Lowest price among our finalists', 'Solid customization for the cost', 'Good image quality per dollar'],
-    cons: ['No voice or video calling', 'Smaller team means slower feature updates'],
-    ourTake:
-      'Nectar AI proves you do not need to spend $15+/mo for a capable AI girlfriend. It is the budget-conscious pick that still feels premium enough for daily use.',
-    affiliateUrl: 'https://example.com/go/nectar-ai',
+      'GirlfriendGPT offers one of the best adult roleplay experiences we have tested — ideal for story-driven sessions.',
+    affiliateUrl: 'https://example.com/go/girlfriendgpt',
+    reviewUrl: '/reviews/girlfriendgpt/',
   },
 ];
 
@@ -558,8 +401,8 @@ const fileRoundup: Roundup = {
     processLabel: 'See our full selection process',
   },
   quickHeading: 'Quick overview',
-  picksHeading: 'Our 8 Best AI Girlfriend Apps',
-  compareDefaultIds: ['candy-ai', 'kindroid', 'crushon-ai'],
+  picksHeading: 'Our 3 Best AI Girlfriend Apps',
+  compareDefaultIds: ['candy-ai', 'ourdream-ai', 'girlfriendgpt'],
   changelog: [
     {
       date: 'Jul 21, 2026',
@@ -614,9 +457,9 @@ const fileRoundup: Roundup = {
     lead:
       'It balances chat realism, customization depth, and image quality better than any rival we tested — the safest default if you want one subscription that covers the basics well.',
     alternate: {
-      pickId: 'kindroid',
-      before: 'If voice quality and phone-call companionship matter more than images,',
-      after: 'is our strongest alternative — it leads our lineup on chat features and privacy, even when it is not the flashiest pick overall.',
+      pickId: 'ourdream-ai',
+      before: 'If you want the broadest feature set and strongest media pipeline,',
+      after: 'is our strongest alternative — it leads our lineup on video and overall depth, even when Candy AI remains the safest default.',
     },
     compareLabel: 'Compare top 3 apps',
   },

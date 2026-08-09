@@ -1,17 +1,11 @@
 ---
 import type { HomeExplorerApp } from '../../data/homepage';
-import {
-  appAcceptsCard,
-  appAcceptsCrypto,
-  appAcceptsPaypal,
-} from '../../data/homepage';
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 import { reviewPageUrl } from '../../lib/slugs';
 import DirectoryCategoryScores from './DirectoryCategoryScores.astro';
 import AppBrandTooltip from './AppBrandTooltip.astro';
 import AppOverallScoreTooltip from './AppOverallScoreTooltip.astro';
-import HomePaymentIcon from '../home/HomePaymentIcon.astro';
-import VerifiedCheck from '../ui/VerifiedCheck.astro';
+import DirectoryPaymentIcons from './DirectoryPaymentIcons.astro';
 import CmsField from '../cms/CmsField.astro';
 
 interface Props {
@@ -22,9 +16,6 @@ interface Props {
 const { app, formatReviewCount } = Astro.props;
 const reviewHref = app.reviewUrl ?? reviewPageUrl(app.slug);
 const overallVisual = getScoreVisual(app.overallScore);
-const showCard = appAcceptsCard(app);
-const showPaypal = appAcceptsPaypal(app);
-const showCrypto = appAcceptsCrypto(app);
 ---
 
 <article class="dir-row">
@@ -59,18 +50,6 @@ const showCrypto = appAcceptsCrypto(app);
               <a href={reviewHref}>{app.name}</a>
               <AppBrandTooltip app={app} />
             </h3>
-            {
-              app.hasReview && (
-                <span
-                  class="dir-row__verified"
-                  role="img"
-                  aria-label="Verified"
-                  title="Product details and current availability have been checked by our team."
-                >
-                  <VerifiedCheck class="w-4 h-4" />
-                </span>
-              )
-            }
           </div>
           <CmsField field="directoryDescription" as="p" class="dir-row__tagline">{app.directoryDescription}</CmsField>
         </div>
@@ -100,8 +79,8 @@ const showCrypto = appAcceptsCrypto(app);
           type="button"
           class="dir-row__action-btn coming-soon-tip coming-soon-muted"
           data-coming-soon="save"
-          data-coming-soon-tip="Save — coming soon"
-          aria-label={`Save ${app.name} — coming soon`}
+          data-coming-soon-tip="Save is in development"
+          aria-label={`Save ${app.name} — in development`}
         >
           <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
           <span class="dir-row__action-label">Save</span>
@@ -158,9 +137,7 @@ const showCrypto = appAcceptsCrypto(app);
     </div>
 
     <div class="dir-row__payments" aria-label="Payment methods">
-      {showCard && <HomePaymentIcon type="card" tooltipId={`row-pay-card-${app.id}`} />}
-      {showPaypal && <HomePaymentIcon type="paypal" tooltipId={`row-pay-paypal-${app.id}`} />}
-      {showCrypto && <HomePaymentIcon type="crypto" tooltipId={`row-pay-crypto-${app.id}`} />}
+      <DirectoryPaymentIcons payments={app.payments} idPrefix={`row-${app.id}`} />
     </div>
 
     <div class="dir-row__cta-group">

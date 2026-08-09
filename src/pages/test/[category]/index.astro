@@ -121,7 +121,8 @@ const tocItems = methodology
     }
   </StandardContentLayout>
   <Footer />
-  <TestCategoryMobileNavSheet category={category} active="how-we-test" />
+  <TestCategoryMobileNavSheet tocSections={tocItems} pageTitle={pageTitle} pageUrl={canonical} />
+  <div data-hub-root data-page-title={pageTitle} data-page-url={canonical} hidden aria-hidden="true"></div>
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
   <RatingsTooltipInit />
 

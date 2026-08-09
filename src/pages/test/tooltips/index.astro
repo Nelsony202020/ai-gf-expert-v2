@@ -12,6 +12,7 @@ import TestTooltipSubscoreAnnotation from '../../../components/test/TestTooltipS
 import TestHubSidebar from '../../../components/test/TestHubSidebar.astro';
 import TestTooltipUsageRow from '../../../components/test/TestTooltipUsageRow.astro';
 import RoundupFaq from '../../../components/roundup/RoundupFaq.astro';
+import TestHubMobileNavSheet from '../../../components/test/TestHubMobileNavSheet.astro';
 import ArticleUtilityRail from '../../../components/article/ArticleUtilityRail.astro';
 import { getTestCategories } from '../../../lib/test-framework';
 import {
@@ -201,27 +202,14 @@ const canonical = canonicalPublicUrl(Astro.url.pathname, Astro.site);
             </a>
           </aside>
     </article>
-
-    <div slot="after">
-      <button type="button" class="test-hub__mobile-toc-btn lg:hidden" data-test-hub-toc-open aria-label="Open table of contents">
-        <span class="material-symbols-outlined" aria-hidden="true">description</span>
-      </button>
-
-      <div class="test-hub-sheet" data-test-hub-sheet hidden aria-hidden="true">
-        <div class="test-hub-sheet__backdrop" data-test-hub-sheet-close tabindex="-1"></div>
-        <div class="test-hub-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="test-tooltips-sheet-title">
-          <h2 id="test-tooltips-sheet-title" class="test-hub-sheet__title">Contents</h2>
-          <TestHubSidebar
-            categories={categories}
-            tocSections={testTooltipsTocSections}
-            relatedMethodology={testTooltipsRelatedMethodology}
-            mobile
-          />
-        </div>
-      </div>
-    </div>
   </StandardContentLayout>
   <Footer />
+  <TestHubMobileNavSheet
+    categories={categories}
+    tocSections={testTooltipsTocSections}
+    pageTitle={pageTitle}
+    pageUrl={canonical}
+  />
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
 
   <script>
@@ -286,31 +274,6 @@ const canonical = canonicalPublicUrl(Astro.url.pathname, Astro.site);
       updateActiveSection();
       window.addEventListener('scroll', updateActiveSection, { passive: true });
       window.addEventListener('resize', updateActiveSection);
-    }
-
-    function initTestHubSheet() {
-      const sheet = document.querySelector('[data-test-hub-sheet]');
-      const openBtn = document.querySelector('[data-test-hub-toc-open]');
-      if (!sheet || !openBtn || openBtn.dataset.bound === 'true') return;
-      openBtn.dataset.bound = 'true';
-
-      function close() {
-        sheet.hidden = true;
-        sheet.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('roundup-sheet-open');
-      }
-
-      function open() {
-        sheet.hidden = false;
-        sheet.setAttribute('aria-hidden', 'false');
-        document.body.classList.add('roundup-sheet-open');
-      }
-
-      openBtn.addEventListener('click', open);
-      sheet.querySelector('[data-test-hub-sheet-close]')?.addEventListener('click', close);
-      sheet.querySelectorAll('[data-test-hub-sheet-link]').forEach((link) => {
-        link.addEventListener('click', close);
-      });
     }
 
     function initTooltipCalloutLinks() {
@@ -437,12 +400,10 @@ const canonical = canonicalPublicUrl(Astro.url.pathname, Astro.site);
     }
 
     initTestHubNav();
-    initTestHubSheet();
     initTooltipCalloutLinks();
     initStaticDistCharts();
     document.addEventListener('astro:page-load', () => {
       initTestHubNav();
-      initTestHubSheet();
       initTooltipCalloutLinks();
       initStaticDistCharts();
     });

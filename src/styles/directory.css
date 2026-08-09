@@ -112,6 +112,7 @@
   font-weight: 700;
   color: var(--color-on-surface-variant);
   cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
 }
 
 .dir-view-switch__btn .material-symbols-outlined {
@@ -121,6 +122,10 @@
 .dir-view-switch__btn[aria-pressed='true'] {
   background: var(--color-accent-soft);
   color: var(--color-accent);
+}
+
+.dir-view-switch {
+  transition: box-shadow 0.2s ease;
 }
 
 /* --------------------------------------------------------------------------
@@ -160,7 +165,198 @@
 }
 
 /* --------------------------------------------------------------------------
-   Filter drawer (left side on desktop; existing bottom sheet on mobile)
+   Simplified filter bar (inline desktop / bottom sheet mobile)
+   -------------------------------------------------------------------------- */
+
+.dir-toolbar__filters-btn {
+  display: inline-flex;
+}
+
+@media (min-width: 768px) {
+  .dir-toolbar__filters-btn {
+    display: none;
+  }
+}
+
+.dir-filters-wrap {
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+  .dir-filters-wrap {
+    position: static;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 1rem;
+    background: var(--color-surface-container-lowest);
+  }
+
+  .dir-filters-wrap__head,
+  .dir-filters-wrap__footer {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .dir-filters-wrap {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 85;
+    display: flex;
+    flex-direction: column;
+    max-height: min(88vh, 640px);
+    padding: 0;
+    border-radius: 1.25rem 1.25rem 0 0;
+    background: var(--color-surface-container-lowest);
+    box-shadow: 0 -12px 48px rgb(0 0 0 / 18%);
+    transform: translateY(100%);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s linear 0.32s;
+  }
+
+  .dir-filters-wrap.is-open {
+    transform: translateY(0);
+    visibility: visible;
+    pointer-events: auto;
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s linear 0s;
+  }
+
+  .dir-filters-wrap__head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1rem 0.5rem;
+    border-bottom: 1px solid var(--color-surface-variant);
+  }
+
+  .dir-filters-wrap__title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .dir-filters-wrap__clear {
+    margin-left: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--color-accent);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .dir-filters-wrap__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-on-surface-variant);
+    cursor: pointer;
+  }
+
+  .dir-filter-bar {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dir-filters-wrap__footer {
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--color-surface-variant);
+    background: inherit;
+  }
+
+  .dir-filters-wrap__apply {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-accent);
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #fff;
+    cursor: pointer;
+  }
+}
+
+.dir-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .dir-filter-bar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1rem 1.5rem;
+  }
+}
+
+.dir-filter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .dir-filter-row {
+    flex: 1 1 auto;
+    min-width: min(100%, 12rem);
+  }
+}
+
+.dir-filter-row__label {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+}
+
+.dir-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.dir-filter-pill {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--color-surface-variant);
+  border-radius: 999px;
+  background: var(--color-surface-container-lowest);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.15s;
+}
+
+.dir-filter-pill:hover {
+  border-color: rgb(219 39 119 / 28%);
+  color: var(--color-on-surface);
+}
+
+.dir-filter-pill.is-active,
+.dir-filter-pill[aria-pressed='true'] {
+  border-color: rgb(219 39 119 / 40%);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* --------------------------------------------------------------------------
+   Filter drawer (legacy — superseded by dir-filters-wrap)
    -------------------------------------------------------------------------- */
 
 .home-explorer--drawer {
@@ -271,6 +467,18 @@
 }
 
 /* --------------------------------------------------------------------------
+   Directory explorer — full-width (no filter sidebar column)
+   -------------------------------------------------------------------------- */
+
+.app-directory .home-explorer {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-directory .home-explorer__main {
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
    Directory items: one wrapper renders either the row or the card
    -------------------------------------------------------------------------- */
 
@@ -278,6 +486,20 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+[data-home-grid].is-switching .dir-item {
+  opacity: 0;
+  transform: translateY(4px) scale(0.985);
+}
+
+[data-home-grid] {
+  transition: opacity 0.18s ease;
+}
+
+[data-home-grid].is-switching {
+  opacity: 0.72;
 }
 
 .dir-item > article {
@@ -567,6 +789,7 @@
 
 .dir-row__payments {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-start;
   gap: 0.35rem;
@@ -845,7 +1068,25 @@
    -------------------------------------------------------------------------- */
 
 .dir-customize-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-bottom: 0;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.34s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.28s ease,
+    margin-bottom 0.34s ease;
+}
+
+.dir-customize-wrap.is-open {
+  grid-template-rows: 1fr;
   margin-bottom: 1.25rem;
+  opacity: 1;
+}
+
+.dir-customize-wrap__inner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 .dir-customize-wrap .home-explorer__customize {

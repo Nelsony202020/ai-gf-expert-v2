@@ -3,6 +3,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
+import JsonLd from '../components/seo/JsonLd.astro';
+import { buildWebPageSchema } from '../lib/seo/jsonld';
 import { companyAddressLines, companyLegalName, companyLicense } from '../data/site-contact';
 
 const team = [
@@ -38,12 +40,22 @@ const timeline = [
   { year: 'Sep 2024', title: 'AI Girlfriend Expert', text: 'AI Girlfriend Expert is created as a dedicated review destination.' },
   { year: '2025', title: 'Growing team', text: 'What started as a one-man project grows into a four-person team of AI enthusiasts.' },
 ];
+
+const aboutDescription =
+  'At AI Girlfriend Expert, we test AI girlfriend apps to help you find the best virtual companions. Learn how we test, score, and stay independent.';
+const jsonLdGraph = buildWebPageSchema({
+  pathname: '/about/',
+  name: 'About Us',
+  description: aboutDescription,
+  breadcrumbs: [
+    { label: 'Home', href: '/' },
+    { label: 'About Us' },
+  ],
+});
 ---
 
-<BaseLayout
-  title="About Us"
-  description="At AI Girlfriend Expert, we test AI girlfriend apps to help you find the best virtual companions. Learn how we test, score, and stay independent."
->
+<BaseLayout title="About Us" description={aboutDescription}>
+  <JsonLd slot="head" graph={jsonLdGraph} />
   <Header />
   <main class="about-page">
     <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">

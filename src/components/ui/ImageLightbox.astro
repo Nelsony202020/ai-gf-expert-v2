@@ -4,6 +4,7 @@
   role="dialog"
   aria-modal="true"
   aria-label="Image preview"
+  aria-hidden="true"
 >
   <button
     type="button"
@@ -53,6 +54,17 @@
     display: flex;
   }
 
+  .image-lightbox {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .image-lightbox.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .image-lightbox__stage {
     position: relative;
     display: flex;
@@ -60,18 +72,70 @@
     justify-content: center;
     max-width: min(100%, 1200px);
     max-height: 90vh;
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+    transition:
+      opacity 0.36s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.38s cubic-bezier(0.34, 1.12, 0.64, 1);
+  }
+
+  .image-lightbox.is-visible .image-lightbox__stage {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  .image-lightbox [data-lightbox-close],
+  .image-lightbox__nav {
+    opacity: 0;
+    transition: opacity 0.28s ease 0.08s;
+  }
+
+  .image-lightbox.is-visible [data-lightbox-close],
+  .image-lightbox.is-visible .image-lightbox__nav:not(.hidden) {
+    opacity: 1;
+  }
+
+  [data-lightbox-caption],
+  [data-lightbox-counter] {
+    opacity: 0;
+    transition:
+      opacity 0.28s ease 0.1s,
+      transform 0.28s ease 0.1s;
+    transform: translate(-50%, 6px);
+  }
+
+  .image-lightbox.is-visible [data-lightbox-caption],
+  .image-lightbox.is-visible [data-lightbox-counter]:not(.hidden) {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .image-lightbox,
+    .image-lightbox__stage,
+    .image-lightbox [data-lightbox-close],
+    .image-lightbox__nav,
+    [data-lightbox-caption],
+    [data-lightbox-counter] {
+      transition: none !important;
+      transform: none !important;
+    }
+
+    .image-lightbox.is-visible .image-lightbox__stage {
+      transform: none;
+    }
   }
 
   .image-lightbox__img {
     transition:
-      opacity 0.28s ease,
-      transform 0.28s ease;
+      opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .image-lightbox__video {
     transition:
-      opacity 0.28s ease,
-      transform 0.28s ease;
+      opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .image-lightbox__video.is-changing {
@@ -85,15 +149,15 @@
 
   .image-lightbox__img.is-changing {
     opacity: 0;
-    transform: scale(0.985);
+    transform: scale(0.98);
   }
 
   .image-lightbox__img.from-left {
-    transform: translateX(-12px);
+    transform: translateX(-16px);
   }
 
   .image-lightbox__img.from-right {
-    transform: translateX(12px);
+    transform: translateX(16px);
   }
 
   .image-lightbox__nav {
@@ -153,6 +217,8 @@
 </style>
 
 <script>
+  import { playOverlayClose, playOverlayOpen } from '../../lib/ui/overlayTransition.ts';
+
   interface LightboxItem {
     src: string;
     alt?: string;
@@ -231,7 +297,7 @@
         activeEl?.classList.add('is-changing', direction === 'left' ? 'from-left' : 'from-right');
         window.setTimeout(() => {
           apply();
-        }, 140);
+        }, 180);
         return;
       }
 
@@ -248,23 +314,29 @@
         }));
       index = Math.min(Math.max(startIndex, 0), Math.max(items.length - 1, 0));
       isOpen = true;
-      lightbox.classList.remove('hidden');
+      lightbox.classList.remove('hidden', 'is-visible');
       lightbox.classList.add('flex');
+      lightbox.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       renderItem('none');
       updateNavUi();
+      playOverlayOpen(lightbox);
     }
 
     function close() {
+      if (!isOpen) return;
       isOpen = false;
-      lightbox.classList.add('hidden');
-      lightbox.classList.remove('flex');
-      pauseVideo();
-      img.classList.remove('hidden', 'is-changing', 'from-left', 'from-right');
-      items = [];
-      index = 0;
-      document.body.style.overflow = '';
-      updateNavUi();
+      lightbox.setAttribute('aria-hidden', 'true');
+      playOverlayClose(lightbox, () => {
+        lightbox.classList.add('hidden');
+        lightbox.classList.remove('flex');
+        pauseVideo();
+        img.classList.remove('hidden', 'is-changing', 'from-left', 'from-right');
+        items = [];
+        index = 0;
+        document.body.style.overflow = '';
+        updateNavUi();
+      });
     }
 
     function step(delta: number) {

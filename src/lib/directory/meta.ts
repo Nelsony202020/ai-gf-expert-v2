@@ -67,15 +67,11 @@ export interface DirectorySortOption {
   label: string;
 }
 
-/** Sort options backed by real structured data. */
+/** Sort options for the directory toolbar. */
 export const DIRECTORY_SORT_OPTIONS: DirectorySortOption[] = [
   { id: 'overall', label: 'Overall rating' },
   { id: 'popular', label: 'Most popular' },
   { id: 'price-asc', label: 'Lowest monthly price' },
-  { id: 'value', label: 'Best value' },
-  { id: 'chat', label: 'Highest Chat score' },
-  { id: 'images', label: 'Highest Images score' },
-  { id: 'video', label: 'Highest Video score' },
 ];
 
 export const DIRECTORY_SORT_LABELS: Record<string, string> = Object.fromEntries(

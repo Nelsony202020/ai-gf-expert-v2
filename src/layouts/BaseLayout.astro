@@ -4,6 +4,8 @@ import ImageLightbox from '../components/ui/ImageLightbox.astro';
 import ThemeToggleInit from '../components/ui/ThemeToggleInit.astro';
 import ExternalLinksInit from '../components/ui/ExternalLinksInit.astro';
 import ComingSoonLayer from '../components/ui/ComingSoonLayer.astro';
+import MobileNavShell from '../components/mobile/MobileNavShell.astro';
+import { getMobileNavMode } from '../lib/mobile-nav/modes';
 import { cdnAsset, getCdnBaseUrl } from '../lib/media/cdn';
 import { canonicalPublicUrl, resolveCanonicalUrl } from '../lib/siteOrigin';
 
@@ -33,13 +35,14 @@ const canonical = canonicalOverride
 const ogTitleResolved = ogTitle ?? title;
 const ogDescriptionResolved = ogDescription ?? description;
 const cdnBase = getCdnBaseUrl();
+const mobileNavMode = getMobileNavMode(Astro.url.pathname);
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href={cdnAsset('/brand/herman-main-icon.svg')} />
     {cdnBase && <link rel="preconnect" href={cdnBase} crossorigin />}
     <meta name="generator" content={Astro.generator} />
@@ -74,7 +77,7 @@ const cdnBase = getCdnBaseUrl();
     <link rel="stylesheet" href={globalStylesUrl} />
     <slot name="head" />
   </head>
-  <body class="bg-background text-on-surface">
+  <body class="bg-background text-on-surface" data-mobile-nav-mode={mobileNavMode}>
     <script is:inline>
       (function () {
         try {
@@ -85,6 +88,7 @@ const cdnBase = getCdnBaseUrl();
       })();
     </script>
     <slot />
+    <MobileNavShell pathname={Astro.url.pathname} />
     <ImageLightbox />
     <ThemeToggleInit />
     <ComingSoonLayer />

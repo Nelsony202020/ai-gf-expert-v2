@@ -35,7 +35,13 @@ const enrichedUserTypes = await enrichBuyingGuideUserTypes(buyingGuideUserTypes)
 
 <BaseLayout title={pageTitle} description={description} image={buyingGuideFeaturedImage} canonical={canonical}>
   <Header />
-  <main class="roundup-page buying-guide-page" id="buying-guide-top">
+  <main
+    class="roundup-page buying-guide-page"
+    id="buying-guide-top"
+    data-hub-root
+    data-page-title={pageTitle}
+    data-page-url={canonical}
+  >
     <TestCategoryHero image={buyingGuideFeaturedImage} alt={buyingGuideFeaturedImageAlt} />
 
     <div class="section-container px-4 md:px-8 pb-16 md:pb-24">
@@ -111,7 +117,7 @@ const enrichedUserTypes = await enrichBuyingGuideUserTypes(buyingGuideUserTypes)
     </div>
   </main>
   <Footer />
-  <BuyingGuideMobileNavSheet active="buying-guide" />
+  <BuyingGuideMobileNavSheet pageTitle={pageTitle} pageUrl={canonical} />
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
 
   <script>

@@ -2,6 +2,7 @@
 import type { Product } from '../../data/products';
 import { affiliateRel } from '../../lib/affiliate/rel';
 import { getScoreVisual, fmtScore } from '../../lib/scores';
+import { buildReviewRatingsHash } from '../../lib/review/ratingsDeepLink';
 import ScorePill from './ScorePill.astro';
 import OverallScoreTooltip from './tooltips/OverallScoreTooltip.astro';
 import CategoryScoreTooltip from './tooltips/CategoryScoreTooltip.astro';
@@ -37,9 +38,9 @@ const ctaRel = affiliateRel(product.affiliateRel);
     {
       product.categories.map((category) => (
         <div class="w-full group">
-          <button
-            type="button"
-            class="flex items-center gap-2.5 cursor-pointer text-left w-full"
+          <a
+            href={`#${buildReviewRatingsHash(category.key)}`}
+            class="flex items-center gap-2.5 text-left w-full no-underline"
             data-goto-category={category.key}
           >
             <ScorePill score={category.score} size="sm" class="shrink-0" />
@@ -51,7 +52,7 @@ const ctaRel = affiliateRel(product.affiliateRel);
                 <InfoIcon size="xs" />
               </span>
             </CategoryScoreTooltip>
-          </button>
+          </a>
         </div>
       ))
     }

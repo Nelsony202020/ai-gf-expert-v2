@@ -1,20 +1,27 @@
 ---
 import type { TestCategoryNode } from '../../lib/test-framework';
-import { HUB_NAV_TABS, type HubTabId } from '../../lib/hub-nav';
 import TestHubSidebar from './TestHubSidebar.astro';
 import type { TestHubTocSection } from '../../data/test-hub-content';
 
 interface Props {
   categories: TestCategoryNode[];
   tocSections: TestHubTocSection[];
-  active?: HubTabId;
   collapsibleToc?: boolean;
+  pageTitle?: string;
+  pageUrl?: string;
 }
 
-const { categories, tocSections, active = 'how-we-test', collapsibleToc = false } = Astro.props;
+const { categories, tocSections, collapsibleToc = false, pageTitle, pageUrl } = Astro.props;
 ---
 
-<div class="roundup-sheet roundup-nav-sheet test-hub-nav-sheet" data-nav-sheet hidden aria-hidden="true">
+<div
+  class="roundup-sheet roundup-nav-sheet test-hub-nav-sheet"
+  data-nav-sheet
+  hidden
+  aria-hidden="true"
+  data-page-title={pageTitle}
+  data-page-url={pageUrl}
+>
   <div class="roundup-sheet__backdrop" data-sheet-backdrop tabindex="-1"></div>
   <div
     class="roundup-sheet__panel roundup-nav-sheet__panel"
@@ -23,29 +30,7 @@ const { categories, tocSections, active = 'how-we-test', collapsibleToc = false 
     aria-labelledby="test-hub-nav-sheet-title"
   >
     <div class="roundup-sheet__handle" aria-hidden="true"></div>
-    <h2 id="test-hub-nav-sheet-title" class="sr-only">Page navigation</h2>
-
-    <nav class="roundup-nav-sheet__hub" aria-label="Hub sections">
-      {
-        HUB_NAV_TABS.map((tab) => {
-          const isActive = tab.id === active;
-          const mobileLabel = tab.mobileLabel ?? tab.label;
-          return isActive ? (
-            <span class="roundup-nav-sheet__hub-tab is-active" aria-current="page">
-              <span class="material-symbols-outlined roundup-nav-sheet__hub-icon" aria-hidden="true">{tab.icon}</span>
-              <span>{mobileLabel}</span>
-            </span>
-          ) : (
-            <a class="roundup-nav-sheet__hub-tab" href={tab.href} data-hub-nav-link>
-              <span class="material-symbols-outlined roundup-nav-sheet__hub-icon" aria-hidden="true">{tab.icon}</span>
-              <span>{mobileLabel}</span>
-            </a>
-          );
-        })
-      }
-    </nav>
-
-    <div class="roundup-nav-sheet__divider" aria-hidden="true"></div>
+    <h2 id="test-hub-nav-sheet-title" class="roundup-nav-sheet__toc-title">Contents</h2>
 
     <TestHubSidebar
       categories={categories}
@@ -60,23 +45,23 @@ const { categories, tocSections, active = 'how-we-test', collapsibleToc = false 
 
 <script>
   function initTestHubMobileNavSheet() {
-    const sheet = document.querySelector<HTMLElement>('.test-hub-nav-sheet[data-nav-sheet]');
+    const sheet = document.querySelector('.test-hub-nav-sheet[data-nav-sheet]');
     if (!sheet || sheet.dataset.bound === 'true') return;
     sheet.dataset.bound = 'true';
 
     function closeSheet() {
-      sheet!.hidden = true;
-      sheet!.setAttribute('aria-hidden', 'true');
+      sheet.hidden = true;
+      sheet.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('roundup-sheet-open');
     }
 
     function openSheet() {
-      sheet!.hidden = false;
-      sheet!.setAttribute('aria-hidden', 'false');
+      sheet.hidden = false;
+      sheet.setAttribute('aria-hidden', 'false');
       document.body.classList.add('roundup-sheet-open');
     }
 
-    document.querySelectorAll<HTMLButtonElement>('[data-nav-sheet-open]').forEach((btn) => {
+    document.querySelectorAll('[data-nav-sheet-open]').forEach((btn) => {
       if (btn.dataset.bound === 'true') return;
       btn.dataset.bound = 'true';
       btn.addEventListener('click', openSheet);
@@ -85,10 +70,14 @@ const { categories, tocSections, active = 'how-we-test', collapsibleToc = false 
     sheet.querySelector('[data-sheet-close]')?.addEventListener('click', closeSheet);
     sheet.querySelector('[data-sheet-backdrop]')?.addEventListener('click', closeSheet);
 
-    sheet.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach((link) => {
+    sheet.querySelectorAll('a[href^="#"]').forEach((link) => {
       link.addEventListener('click', () => {
         closeSheet();
       });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sheet && !sheet.hidden) closeSheet();
     });
   }
 

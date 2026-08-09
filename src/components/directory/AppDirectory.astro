@@ -4,15 +4,7 @@ import type { BreadcrumbItem } from '../ui/Breadcrumbs.astro';
 import Breadcrumbs from '../ui/Breadcrumbs.astro';
 import {
   APPS_PER_PAGE,
-  buildExplorerPriceHistogram,
-  explorerAcceptedPayments,
-  explorerBudgetPresets,
   explorerLastUpdated,
-  explorerMaxPrice,
-  explorerMinRatings,
-  getExplorerCollapsedFilterGroups,
-  explorerPopularMore,
-  explorerPopularVisible,
   explorerPriorityOptions,
 } from '../../data/homepage';
 import {
@@ -22,7 +14,6 @@ import {
 import { appsPageUrl, totalPages } from '../../lib/app-directory';
 import AppDirectoryCard from './AppDirectoryCard.astro';
 import DirectoryProductRow from './DirectoryProductRow.astro';
-import ExplorerFilterIcon from './ExplorerFilterIcon.astro';
 import PriorityPicker from './PriorityPicker.astro';
 import RatingsTooltipInit from '../review/tooltips/RatingsTooltipInit.astro';
 
@@ -38,12 +29,10 @@ const {
   apps,
   basePath = '/ai-girlfriend-apps',
   title = 'Explore AI girlfriend apps',
-  subtitle = 'Browse every app we have tested and narrow the results by features, pricing, ratings, and payment options.',
+  subtitle = 'Browse every app we have tested. Sort results or customize ranking to match what matters most to you.',
   breadcrumbs,
 } = Astro.props;
 
-const histogram = buildExplorerPriceHistogram(apps);
-const moreFilterGroups = getExplorerCollapsedFilterGroups();
 const priorityByValue = Object.fromEntries(explorerPriorityOptions.map((opt) => [opt.value, opt]));
 const pageCount = totalPages(apps.length);
 const paginationPages = Array.from({ length: pageCount }, (_, i) => i + 1);
@@ -61,8 +50,6 @@ function formatReviewCount(count: number): string {
   data-app-directory
   data-base-path={basePath}
   data-per-page={APPS_PER_PAGE}
-  data-max-price={explorerMaxPrice}
-  data-histogram={JSON.stringify(histogram)}
 >
   <div class="section-container px-4 md:px-8">
     {breadcrumbs && <Breadcrumbs items={breadcrumbs} />}
@@ -82,12 +69,6 @@ function formatReviewCount(count: number): string {
     <div class="dir-toolbar">
       <p class="dir-toolbar__count" data-home-result-count aria-live="polite">{apps.length} tested apps</p>
       <div class="dir-toolbar__controls">
-        <button type="button" class="dir-btn dir-btn--primary" data-home-filters-open>
-          <span class="material-symbols-outlined" aria-hidden="true">tune</span>
-          Filters
-          <span class="dir-btn__count" data-home-filter-count hidden></span>
-        </button>
-
         <button
           type="button"
           class="dir-btn"
@@ -102,7 +83,11 @@ function formatReviewCount(count: number): string {
         <label class="dir-sort">
           <span class="dir-sort__label">Sort</span>
           <select class="dir-sort__select" data-home-sort aria-label="Sort results">
-            {DIRECTORY_SORT_OPTIONS.map((opt) => <option value={opt.id}>{opt.label}</option>)}
+            {DIRECTORY_SORT_OPTIONS.map((opt) => (
+              <option value={opt.id} selected={opt.id === 'overall'}>
+                {opt.label}
+              </option>
+            ))}
           </select>
         </label>
 
@@ -117,248 +102,63 @@ function formatReviewCount(count: number): string {
           </button>
         </div>
 
-        <button type="button" class="dir-btn" data-home-saved-toggle aria-pressed="false">
+        <button
+          type="button"
+          class="dir-btn coming-soon-tip coming-soon-muted"
+          data-coming-soon="save"
+          data-coming-soon-tip="Save is in development"
+          aria-label="Saved — in development"
+        >
           <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
           Saved
-          <span class="dir-btn__count" data-home-saved-count hidden></span>
         </button>
       </div>
     </div>
 
-    <div class="home-explorer home-explorer--drawer" data-home-explorer>
-      <div class="home-explorer__sheet-backdrop" data-home-filters-backdrop hidden></div>
-
-      <aside
-        class="home-explorer__filters"
-        data-home-filters-panel
-        role="dialog"
-        aria-modal="true"
-        aria-label="Filter apps"
-      >
-        <div class="home-explorer__filters-box">
-          <div class="home-explorer__filters-head">
-            <h2 class="home-explorer__filters-title">Filters</h2>
-            <button type="button" class="home-explorer__clear" data-home-clear-filters>Clear all</button>
-            <button type="button" class="home-explorer__sheet-close" data-home-filters-close aria-label="Close filters">
-              <span class="material-symbols-outlined">close</span>
-            </button>
-          </div>
-
-          <div class="home-explorer__filters-scroll">
-        <div class="home-filter-group is-open" data-filter-group="popular">
-          <button type="button" class="home-filter-group__toggle" data-filter-toggle="popular" aria-expanded="true">
-            <span class="home-filter-group__toggle-label">
-              <ExplorerFilterIcon icon="grade" class="home-filter-group__heading-icon" />
-              <span>Popular filters</span>
-            </span>
-            <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-          </button>
-          <div class="home-filter-group__body" data-filter-body="popular">
-            {
-              explorerPopularVisible.map((option) => (
-                <label class="home-filter-option">
-                  <input type="checkbox" value={option.id} data-home-filter />
-                  {option.icon && <ExplorerFilterIcon icon={option.icon} />}
-                  <span>{option.label}</span>
-                </label>
-              ))
-            }
-            <div class="home-filter-more" data-home-popular-more hidden>
-              {
-                explorerPopularMore.map((option) => (
-                  <label class="home-filter-option">
-                    <input type="checkbox" value={option.id} data-home-filter />
-                    {option.icon && <ExplorerFilterIcon icon={option.icon} />}
-                    <span>{option.label}</span>
-                  </label>
-                ))
-              }
-            </div>
-            <button
-              type="button"
-              class="home-filter-more__toggle"
-              data-home-popular-more-toggle
-              aria-expanded="false"
-            >
-              + Show more filters
-            </button>
-          </div>
-        </div>
-
-        <div class="home-filter-group is-open" data-filter-group="budget">
-          <button type="button" class="home-filter-group__toggle" data-filter-toggle="budget" aria-expanded="true">
-            <span class="home-filter-group__toggle-label">
-              <ExplorerFilterIcon icon="account_balance_wallet" class="home-filter-group__heading-icon" />
-              <span>Monthly budget</span>
-            </span>
-            <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-          </button>
-          <div class="home-filter-group__body" data-filter-body="budget">
-            <div class="home-budget__values">
-              <label class="home-budget__value">
-                Min
-                <span class="home-budget__value-input-wrap">
-                  $<input type="number" min="0" max={explorerMaxPrice} step="1" value="0" data-home-price-min inputmode="numeric" />
-                </span>
-              </label>
-              <label class="home-budget__value">
-                Max
-                <span class="home-budget__value-input-wrap">
-                  $<input type="number" min="0" max={explorerMaxPrice} step="1" value={explorerMaxPrice} data-home-price-max inputmode="numeric" />
-                </span>
-              </label>
-            </div>
-            <div class="home-budget__chart" aria-hidden="true">
-              {histogram.map((height) => <span class="home-budget__bar" style={`height:${Math.max(height, 8)}%`} />)}
-            </div>
-            <div class="home-budget__dual" data-home-price-dual>
-              <div class="home-budget__track" aria-hidden="true">
-                <div class="home-budget__track-fill" data-home-price-fill></div>
+    <div class="home-explorer" data-home-explorer>
+      <div class="home-explorer__main">
+        <div class="dir-customize-wrap" id="dir-customize-panel" data-home-customize-panel hidden>
+          <div class="dir-customize-wrap__inner">
+            <div class="home-explorer__customize" data-home-customize>
+              <div class="home-explorer__customize-head">
+                <div class="home-explorer__customize-title-wrap">
+                  <span class="home-explorer__customize-icon material-symbols-outlined" aria-hidden="true">emoji_events</span>
+                  <div>
+                    <h2 class="home-explorer__customize-title">Customize your results</h2>
+                    <p class="home-explorer__customize-copy">Rank up to 3 factors to personalize the order of results. Your official scores never change.</p>
+                  </div>
+                </div>
+                <button type="button" class="home-explorer__customize-reset" data-home-priorities-reset>
+                  <span class="material-symbols-outlined text-[16px]" aria-hidden="true">refresh</span>
+                  Reset to default
+                </button>
               </div>
-              <input type="range" class="home-budget__range home-budget__range--min" min="0" max={explorerMaxPrice} step="1" value="0" data-home-price-min-range aria-label="Minimum monthly budget" />
-              <input type="range" class="home-budget__range home-budget__range--max" min="0" max={explorerMaxPrice} step="1" value={explorerMaxPrice} data-home-price-max-range aria-label="Maximum monthly budget" />
-            </div>
-            <div class="home-budget__presets">
-              {
-                explorerBudgetPresets.map((preset) => (
-                  <button type="button" class="home-budget__preset" data-home-budget-preset={preset.id}>
-                    {preset.label}
-                  </button>
-                ))
-              }
-            </div>
-          </div>
-        </div>
 
-        <div class="home-filter-group is-open" data-filter-group="rating">
-          <button type="button" class="home-filter-group__toggle" data-filter-toggle="rating" aria-expanded="true">
-            <span class="home-filter-group__toggle-label">
-              <ExplorerFilterIcon icon="star" class="home-filter-group__heading-icon" />
-              <span>Minimum rating</span>
-            </span>
-            <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-          </button>
-          <div class="home-filter-group__body" data-filter-body="rating">
-            <div class="home-filter-rating">
-              {
-                explorerMinRatings.map((option, index) => (
-                  <label class="home-filter-rating__option">
-                    <input type="radio" name="home-min-rating" value={option.id} data-home-min-rating checked={index === 0} />
-                    <span>{option.label}</span>
-                  </label>
-                ))
-              }
-            </div>
-          </div>
-        </div>
-
-        <div class="home-filter-group is-open" data-filter-group="payment">
-          <button type="button" class="home-filter-group__toggle" data-filter-toggle="payment" aria-expanded="true">
-            <span class="home-filter-group__toggle-label">
-              <ExplorerFilterIcon icon="credit_card" class="home-filter-group__heading-icon" />
-              <span>Payment & billing</span>
-            </span>
-            <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-          </button>
-          <div class="home-filter-group__body" data-filter-body="payment">
-            {
-              explorerAcceptedPayments.map((option) => (
-                <label class="home-filter-option">
-                  <input type="checkbox" value={option.id} data-home-payment-filter />
-                  {option.icon && <ExplorerFilterIcon icon={option.icon} />}
-                  <span>{option.label}</span>
-                </label>
-              ))
-            }
-          </div>
-        </div>
-
-        {
-          moreFilterGroups.map((group) => (
-            <div class="home-filter-group" data-filter-group={group.id}>
-              <button type="button" class="home-filter-group__toggle" data-filter-toggle={group.id} aria-expanded="false">
-                <span class="home-filter-group__toggle-label">
-                  <ExplorerFilterIcon icon={group.icon} class="home-filter-group__heading-icon" />
-                  <span>{group.title}</span>
-                </span>
-                <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-              </button>
-              <div class="home-filter-group__body" data-filter-body={group.id} hidden>
+              <div class="home-explorer__priority-list" data-home-priority-list>
                 {
-                  group.options.map((option) => (
-                    <label class="home-filter-option">
-                      <input type="checkbox" value={option.id} data-home-filter />
-                      {option.icon && <ExplorerFilterIcon icon={option.icon} />}
-                      <span>{option.label}</span>
-                    </label>
-                  ))
+                  DEFAULT_RANKING_PRIORITIES.map((value, index) => {
+                    const option = priorityByValue[value];
+                    return (
+                      <div class="home-explorer__priority-slot" data-home-priority-slot>
+                        <span class="home-explorer__priority-rank">{index + 1}</span>
+                        <span
+                          class="home-explorer__priority-icon"
+                          style={`background:${option?.color ?? '#db2777'}20;color:${option?.color ?? '#db2777'}`}
+                          data-home-priority-icon
+                        >
+                          <span class="material-symbols-outlined" aria-hidden="true">{option?.icon ?? 'star'}</span>
+                        </span>
+                        <PriorityPicker slotIndex={index} value={value} options={explorerPriorityOptions} />
+                      </div>
+                    );
+                  })
                 }
               </div>
-            </div>
-          ))
-        }
-          </div>
 
-          <div class="home-explorer__filters-actions">
-            <button type="button" class="home-explorer__apply-filters" data-home-apply-filters>
-              Show <span data-home-sheet-count>{apps.length}</span> matching apps
-            </button>
-            <button type="button" class="home-explorer__filters-reset" data-home-reset-filters>Reset</button>
-          </div>
-        </div>
-
-        <div class="home-explorer__sheet-footer" data-home-sheet-footer>
-          <button type="button" class="home-explorer__sheet-clear" data-home-clear-filters-sheet>Clear all</button>
-          <button type="button" class="home-explorer__sheet-apply" data-home-apply-filters-mobile>
-            Show <span data-home-sheet-count-mobile>{apps.length}</span> matching apps
-          </button>
-          <button type="button" class="home-explorer__sheet-reset" data-home-reset-filters>Reset</button>
-        </div>
-      </aside>
-
-      <div class="home-explorer__main">
-        <div class="home-explorer__active-filters" data-home-active-filters hidden></div>
-
-        <div class="dir-customize-wrap" id="dir-customize-panel" data-home-customize-panel hidden>
-          <div class="home-explorer__customize" data-home-customize>
-            <div class="home-explorer__customize-head">
-              <div class="home-explorer__customize-title-wrap">
-                <span class="home-explorer__customize-icon material-symbols-outlined" aria-hidden="true">emoji_events</span>
-                <div>
-                  <h2 class="home-explorer__customize-title">Customize your results</h2>
-                  <p class="home-explorer__customize-copy">Rank up to 3 factors to personalize the order of results. Your official scores never change.</p>
-                </div>
+              <div class="home-explorer__customize-status" data-home-customize-status hidden>
+                <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+                <span>Results are now personalized based on your top priorities.</span>
               </div>
-              <button type="button" class="home-explorer__customize-reset" data-home-priorities-reset>
-                <span class="material-symbols-outlined text-[16px]" aria-hidden="true">refresh</span>
-                Reset to default
-              </button>
-            </div>
-
-            <div class="home-explorer__priority-list" data-home-priority-list>
-              {
-                DEFAULT_RANKING_PRIORITIES.map((value, index) => {
-                  const option = priorityByValue[value];
-                  return (
-                    <div class="home-explorer__priority-slot" data-home-priority-slot>
-                      <span class="home-explorer__priority-rank">{index + 1}</span>
-                      <span
-                        class="home-explorer__priority-icon"
-                        style={`background:${option?.color ?? '#db2777'}20;color:${option?.color ?? '#db2777'}`}
-                        data-home-priority-icon
-                      >
-                        <span class="material-symbols-outlined" aria-hidden="true">{option?.icon ?? 'star'}</span>
-                      </span>
-                      <PriorityPicker slotIndex={index} value={value} options={explorerPriorityOptions} />
-                    </div>
-                  );
-                })
-              }
-            </div>
-
-            <div class="home-explorer__customize-status" data-home-customize-status hidden>
-              <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
-              <span>Results are now personalized based on your top priorities.</span>
             </div>
           </div>
         </div>
@@ -372,8 +172,6 @@ function formatReviewCount(count: number): string {
                 data-overall-score={app.overallScore}
                 data-price={app.priceMonthly}
                 data-review-count={app.reviewCount}
-                data-filters={app.filters.join(',')}
-                data-payments={app.payments.join(',')}
                 data-category-scores={JSON.stringify(Object.fromEntries(app.categoryScores.map((c) => [c.key, c.score])))}
               >
                 <DirectoryProductRow app={app} formatReviewCount={formatReviewCount} />
@@ -381,12 +179,6 @@ function formatReviewCount(count: number): string {
               </div>
             ))
           }
-          <div class="dir-empty" hidden data-home-empty>
-            <p class="dir-empty__title">No apps match all of your filters.</p>
-            <div class="dir-empty__actions">
-              <button type="button" class="dir-btn" data-home-clear-filters-empty>Clear all filters</button>
-            </div>
-          </div>
         </div>
 
         <div class="home-explorer__pagination-wrap">

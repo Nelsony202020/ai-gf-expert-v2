@@ -8,12 +8,6 @@ import ThemeToggle from './ui/ThemeToggle.astro';
 const publishedProducts = await loadComparisonProducts();
 const megaMenuColumns = buildMegaMenuColumns(publishedProducts);
 const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
-const mobileReviewLinks = [...publishedProducts]
-  .sort((a, b) => a.name.localeCompare(b.name))
-  .map((product) => ({
-    label: `${product.name} Review`,
-    href: `/reviews/${product.slug}`,
-  }));
 ---
 
 <header class="site-header relative z-50" data-site-header>
@@ -21,20 +15,20 @@ const mobileReviewLinks = [...publishedProducts]
     <div class="site-header__left">
       <a href="/" class="site-logo-link site-header__logo-link shrink-0">
         <img
-          src={cdnAsset('/brand/ai-gf-logo-light.png')}
-          alt="AI Girlfriend Expert"
+          src={cdnAsset('/brand/girlfriend-expert-logo.png')}
+          alt="Girlfriend Expert AI"
           class="site-header__logo site-header__logo--light"
-          width="127"
-          height="100"
+          width="148"
+          height="82"
           loading="eager"
           decoding="async"
         />
         <img
-          src={cdnAsset('/brand/ai-gf-logo-white.png')}
+          src={cdnAsset('/brand/girlfriend-expert-logo-white.png')}
           alt=""
           class="site-header__logo site-header__logo--dark"
-          width="127"
-          height="100"
+          width="148"
+          height="82"
           loading="eager"
           decoding="async"
           aria-hidden="true"
@@ -117,27 +111,24 @@ const mobileReviewLinks = [...publishedProducts]
     </div>
   </div>
 
+  <div class="site-header__mobile-backdrop hidden" data-mobile-menu-backdrop aria-hidden="true"></div>
+
   <div id="site-mobile-menu" class="site-header__mobile-menu hidden" data-mobile-menu hidden>
-    <nav class="site-header__mobile-nav" aria-label="Mobile">
-      <a href="/ai-girlfriend-apps" class="site-header__mobile-link">All Apps</a>
-      <a href="/best/ai-girlfriend" class="site-header__mobile-link">Best AI Girlfriend Apps</a>
-      <a href="/guides/how-to-choose-an-ai-girlfriend-app" class="site-header__mobile-link">How to Choose an AI Girlfriend App</a>
-      {
-        mobileReviewLinks.map((link) => (
-          <a href={link.href} class="site-header__mobile-link">{link.label}</a>
-        ))
-      }
-      <a href="/test/" class="site-header__mobile-link">How We Review</a>
+    <div class="site-header__mobile-menu-handle" aria-hidden="true"></div>
+    <nav class="site-header__mobile-nav" aria-label="Site">
+      <a href="/" class="site-header__mobile-link">Home</a>
+      <a href="/reviews/" class="site-header__mobile-link">All Reviews</a>
+      <a href="/best/ai-girlfriend/" class="site-header__mobile-link">Best AI Girlfriend</a>
+      <a href="/test/" class="site-header__mobile-link">How We Test</a>
+      <a href="/about/" class="site-header__mobile-link">About</a>
+      <a href="/contact/" class="site-header__mobile-link">Contact</a>
     </nav>
     <div class="site-header__mobile-actions">
       <ThemeToggle variant="footer" />
-      <button type="button" class="site-header__mobile-link coming-soon-tip coming-soon-muted site-header__auth-btn" data-coming-soon-tip="Coming soon">
-        Sign In
-      </button>
-      <button type="button" class="site-header__mobile-join coming-soon-tip coming-soon-muted site-header__auth-btn" data-coming-soon-tip="Coming soon">
-        Join
-      </button>
     </div>
+    <button type="button" class="site-header__mobile-close-sheet" data-mobile-menu-toggle aria-label="Close menu">
+      Close
+    </button>
   </div>
 
   <div
@@ -207,47 +198,60 @@ const mobileReviewLinks = [...publishedProducts]
     const searchField = header.querySelector('[data-search-field]');
     const searchInput = header.querySelector('[data-search-input]');
     const searchResults = header.querySelector('[data-search-results]');
-    const mobileMenuToggle = header.querySelector('[data-mobile-menu-toggle]');
     const mobileMenu = header.querySelector('[data-mobile-menu]');
+    const mobileMenuBackdrop = header.querySelector('[data-mobile-menu-backdrop]');
 
-    let activeIndex = -1;
-    let currentResults = [];
-    let megaCloseTimer = null;
+    let activeMenuToggle = null;
 
     function closeMobileMenu() {
       mobileMenu?.classList.add('hidden');
       mobileMenu?.setAttribute('hidden', '');
-      mobileMenuToggle?.setAttribute('aria-expanded', 'false');
-      mobileMenuToggle?.setAttribute('aria-label', 'Open menu');
-      const icon = mobileMenuToggle?.querySelector('.material-symbols-outlined');
-      if (icon) icon.textContent = 'menu';
+      mobileMenuBackdrop?.classList.add('hidden');
+      mobileMenuBackdrop?.setAttribute('aria-hidden', 'true');
+      document.querySelectorAll('[data-mobile-menu-toggle]').forEach((btn) => {
+        btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-label', 'Open menu');
+        const icon = btn.querySelector('.material-symbols-outlined');
+        if (icon) icon.textContent = 'menu';
+      });
       header.classList.remove('site-header--menu-open');
       document.body.classList.remove('site-header-menu-open');
+      activeMenuToggle = null;
     }
 
-    function openMobileMenu() {
+    function openMobileMenu(toggle) {
       closeMega();
       closeSearch();
+      activeMenuToggle = toggle;
       mobileMenu?.classList.remove('hidden');
       mobileMenu?.removeAttribute('hidden');
-      mobileMenuToggle?.setAttribute('aria-expanded', 'true');
-      mobileMenuToggle?.setAttribute('aria-label', 'Close menu');
-      const icon = mobileMenuToggle?.querySelector('.material-symbols-outlined');
+      mobileMenuBackdrop?.classList.remove('hidden');
+      mobileMenuBackdrop?.setAttribute('aria-hidden', 'false');
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-label', 'Close menu');
+      const icon = toggle.querySelector('.material-symbols-outlined');
       if (icon) icon.textContent = 'close';
       header.classList.add('site-header--menu-open');
       document.body.classList.add('site-header-menu-open');
     }
 
-    mobileMenuToggle?.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (mobileMenu?.classList.contains('hidden')) openMobileMenu();
-      else closeMobileMenu();
+    document.querySelectorAll('[data-mobile-menu-toggle]').forEach((toggle) => {
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (mobileMenu?.classList.contains('hidden')) openMobileMenu(toggle);
+        else closeMobileMenu();
+      });
+      toggle.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+      });
     });
 
-    mobileMenuToggle?.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-    });
+    mobileMenuBackdrop?.addEventListener('click', closeMobileMenu);
+
+    let activeIndex = -1;
+    let currentResults = [];
+    let megaCloseTimer = null;
 
     header.querySelectorAll('.site-header__auth-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
@@ -312,6 +316,20 @@ const mobileReviewLinks = [...publishedProducts]
         return;
       }
 
+      const typeIcons = {
+        review: 'rate_review',
+        roundup: 'emoji_events',
+        guide: 'menu_book',
+        page: 'article',
+      };
+
+      const typeLabels = {
+        review: 'Review',
+        roundup: 'Roundup',
+        guide: 'Guide',
+        page: 'Page',
+      };
+
       currentResults = searchIndex.filter((item) => {
         const hay = `${item.label} ${item.meta ?? ''}`.toLowerCase();
         return hay.includes(q);
@@ -325,17 +343,25 @@ const mobileReviewLinks = [...publishedProducts]
         return;
       }
 
-      searchResults.innerHTML = currentResults.map((item, i) => `
+      searchResults.innerHTML = currentResults.map((item, i) => {
+        const icon = typeIcons[item.type] || 'article';
+        const meta = item.meta || typeLabels[item.type] || 'Page';
+        return `
         <a
           href="${item.href}"
           class="site-header__search-item${i === activeIndex ? ' is-active' : ''}"
           role="option"
           data-search-index="${i}"
         >
-          <span class="site-header__search-item-label">${item.label}</span>
-          ${item.meta ? `<span class="site-header__search-item-meta">${item.meta}</span>` : ''}
+          <span class="site-header__search-item-icon material-symbols-outlined" aria-hidden="true">${icon}</span>
+          <span class="site-header__search-item-body">
+            <span class="site-header__search-item-label">${item.label}</span>
+            <span class="site-header__search-item-meta">${meta}</span>
+          </span>
+          <span class="site-header__search-item-chevron material-symbols-outlined" aria-hidden="true">chevron_right</span>
         </a>
-      `).join('');
+      `;
+      }).join('');
     }
 
     megaWrap?.addEventListener('mouseenter', openMega);
@@ -381,7 +407,7 @@ const mobileReviewLinks = [...publishedProducts]
     });
 
     document.addEventListener('click', (e) => {
-      if (mobileMenuToggle?.contains(e.target)) return;
+      if (e.target.closest('[data-mobile-menu-toggle]')) return;
       if (!searchRoot?.contains(e.target)) closeSearch();
       if (
         mobileMenu &&

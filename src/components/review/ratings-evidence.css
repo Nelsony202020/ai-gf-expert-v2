@@ -7,6 +7,11 @@
 
 .ratings-accordion__item {
   border-bottom: 1px solid var(--color-surface-variant);
+  scroll-margin-top: calc(52px + 1rem);
+}
+
+#ratings {
+  scroll-margin-top: calc(52px + 1rem);
 }
 
 .ratings-accordion__item:last-child {
@@ -545,7 +550,7 @@
   z-index: 60;
   background: rgb(0 0 0 / 40%);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 
@@ -570,7 +575,7 @@
   border-bottom-left-radius: 0.625rem;
   overflow: hidden;
   transform: translateX(100%);
-  transition: transform 0.3s ease-out;
+  transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .ratings-drawer-panel[data-open='true'] {

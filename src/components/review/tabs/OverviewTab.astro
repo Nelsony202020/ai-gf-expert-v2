@@ -125,7 +125,7 @@ function verdictCmsField(
                   )}
 
                   {(verdict.pros.length > 0 || verdict.cons.length > 0) && (
-                  <div class="grid md:grid-cols-2 gap-x-10 gap-y-6">
+                  <div class="grid grid-cols-2 gap-x-6 gap-y-6 sm:gap-x-10">
                     {verdict.pros.length > 0 && (
                     <div>
                       <p class="font-black text-lg mb-4 text-on-surface m-0">Pros</p>
@@ -255,28 +255,32 @@ function verdictCmsField(
 
 <style is:global>
   .verdict-icon-nav {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 4px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    overflow: visible;
+    padding-bottom: 0;
+    touch-action: manipulation;
   }
 
   .verdict-icon-nav::-webkit-scrollbar {
     display: none;
   }
 
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .verdict-icon-nav {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+
   @media (min-width: 1024px) {
     .verdict-icon-nav {
+      display: flex;
       flex-direction: column;
       flex-wrap: nowrap;
-      overflow-x: visible;
+      grid-template-columns: none;
       width: 44px;
       gap: 4px;
-      padding-bottom: 0;
     }
   }
 
@@ -285,8 +289,10 @@ function verdictCmsField(
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 100%;
+    max-width: 44px;
+    aspect-ratio: 1;
+    justify-self: center;
     flex-shrink: 0;
     border: 1px solid var(--color-surface-variant);
     border-radius: 10px;
@@ -294,6 +300,15 @@ function verdictCmsField(
     color: var(--color-on-surface);
     cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  @media (min-width: 1024px) {
+    .verdict-icon-nav__btn {
+      width: 36px;
+      height: 36px;
+      max-width: none;
+      aspect-ratio: auto;
+    }
   }
 
   .verdict-icon-nav__btn:hover,
@@ -389,8 +404,11 @@ function verdictCmsField(
     navBtns.forEach((btn) => {
       const id = btn.dataset.verdictNav;
       if (!id) return;
-      btn.addEventListener('mouseenter', () => show(id));
-      btn.addEventListener('focus', () => show(id));
+      const useHoverNav = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      if (useHoverNav) {
+        btn.addEventListener('mouseenter', () => show(id));
+        btn.addEventListener('focus', () => show(id));
+      }
       btn.addEventListener('click', () => show(id));
     });
 

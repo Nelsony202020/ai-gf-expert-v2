@@ -4,6 +4,8 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import LegalSidebar from '../components/legal/LegalSidebar.astro';
 import Breadcrumbs, { type BreadcrumbItem } from '../components/ui/Breadcrumbs.astro';
+import JsonLd from '../components/seo/JsonLd.astro';
+import { buildWebPageSchema } from '../lib/seo/jsonld';
 import '../styles/roundup.css';
 import '../styles/legal-hub.css';
 
@@ -22,9 +24,20 @@ const trail =
     { label: 'Legal', href: '/legal/' },
     { label: title },
   ];
+const pathname = legalSlug ? `/legal/${legalSlug}/` : Astro.url.pathname;
+const jsonLdGraph = buildWebPageSchema({
+  pathname,
+  name: title,
+  description: description || title,
+  breadcrumbs: trail.map((item) => ({
+    label: item.label,
+    href: item.href,
+  })),
+});
 ---
 
 <BaseLayout title={title} description={description || title}>
+  <JsonLd slot="head" graph={jsonLdGraph} />
   <Header />
   <main class="legal-hub-page">
     <div class="section-container px-4 md:px-8 py-10 md:py-14 pb-16 md:pb-24">

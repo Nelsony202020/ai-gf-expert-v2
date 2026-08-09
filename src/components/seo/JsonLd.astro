@@ -1,0 +1,20 @@
+---
+import type { JsonLdNode } from '../../lib/seo/jsonld';
+import { serializeJsonLd } from '../../lib/seo/jsonld';
+
+interface Props {
+  graph: JsonLdNode[];
+}
+
+const { graph } = Astro.props;
+let json = '';
+try {
+  if (graph.length > 0) {
+    json = serializeJsonLd(graph);
+  }
+} catch (error) {
+  console.error('[jsonld] serialize failed — skipping structured data', error);
+}
+---
+
+{json && <script type="application/ld+json" set:html={json} />}

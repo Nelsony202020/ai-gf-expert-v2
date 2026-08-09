@@ -8,12 +8,14 @@ import type { Tab } from '../../components/review/TabBar.astro';
 import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
 import ReviewArticleTab from '../../components/review/tabs/ReviewArticleTab.astro';
 import MarketDataTab from '../../components/review/tabs/MarketDataTab.astro';
+import AlternativesTab from '../../components/review/tabs/AlternativesTab.astro';
 import RatingsSpecsTab from '../../components/review/tabs/RatingsSpecsTab.astro';
 import PlaceholderTab from '../../components/review/tabs/PlaceholderTab.astro';
 import PhotosVideosTab from '../../components/review/tabs/PhotosVideosTab.astro';
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
 import ReviewScrollRestore from '../../components/review/ReviewScrollRestore.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
+import ReviewMobileUtilitySheet from '../../components/mobile/ReviewMobileUtilitySheet.astro';
 import RoundupAffiliateFineprint from '../../components/roundup/RoundupAffiliateFineprint.astro';
 import {
   getProductFeaturedIn,
@@ -21,8 +23,10 @@ import {
   loadReviewPageProduct,
 } from '../../lib/content/store';
 import { loadDraftRatingsViewModel } from '../../lib/draft-ratings/loadDraftRatingsData';
-import { DEV_REVIEW_SLUGS, hasMarketDataTab } from '../../lib/content/reviewDevProducts';
+import { DEV_REVIEW_SLUGS, hasAlternativesTab, hasMarketDataTab, hasPhotosVideosTab } from '../../lib/content/reviewDevProducts';
 import { resolveProductPageHead } from '../../lib/seo/productPageHead';
+import JsonLd from '../../components/seo/JsonLd.astro';
+import { buildReviewProductSchema } from '../../lib/seo/jsonld';
 
 /** Prerender published reviews at build so Vercel static output matches the admin publish state. */
 export async function getStaticPaths() {
@@ -49,19 +53,25 @@ const ratingsModel = useDraftRatings
   : undefined;
 const head = resolveProductPageHead(product, { astroSite: Astro.site, draft: isDraft });
 const showMarketDataTab = hasMarketDataTab(product.slug) && (import.meta.env.DEV || isDraft);
+const showAlternativesTab = hasAlternativesTab(product.slug) && (import.meta.env.DEV || isDraft);
+const showPhotosVideosTab = hasPhotosVideosTab(product.slug);
 
 const tabs: Tab[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'ratings', label: 'Ratings & Specs' },
-  { id: 'review', label: 'Review' },
-  { id: 'photos', label: 'Photos & Videos' },
-  { id: 'pricing', label: 'Pricing' },
+  { id: 'overview', label: 'Overview', mobileLabel: 'Overview' },
+  { id: 'ratings', label: 'Ratings & Specs', mobileLabel: 'Ratings' },
+  { id: 'review', label: 'Review', mobileLabel: 'Review' },
+  { id: 'photos', label: 'Photos & Videos', mobileLabel: 'Media' },
+  { id: 'pricing', label: 'Pricing', mobileLabel: 'Pricing' },
 ];
 if (showMarketDataTab) {
-  tabs.push({ id: 'market-data', label: 'Market Data' });
+  tabs.push({ id: 'market-data', label: 'Market Data', mobileLabel: 'Data' });
+}
+if (showAlternativesTab) {
+  tabs.push({ id: 'alternatives', label: 'Alternatives', mobileLabel: 'Alt.' });
 }
 
 const shareUrl = head.canonical;
+const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
 ---
 
 <BaseLayout
@@ -73,6 +83,7 @@ const shareUrl = head.canonical;
   ogDescription={head.ogDescription}
   robots={head.robots}
 >
+  {jsonLdGraph.length > 0 && <JsonLd slot="head" graph={jsonLdGraph} />}
   <Header />
   {
     isDraft && (
@@ -125,7 +136,17 @@ const shareUrl = head.canonical;
         <ReviewArticleTab product={product} />
       </div>
       <div data-tab-panel="photos" class="hidden">
-        <PhotosVideosTab product={product} />
+        {
+          showPhotosVideosTab ? (
+            <PhotosVideosTab product={product} />
+          ) : (
+            <PlaceholderTab
+              title="Photos & Videos"
+              icon="photo_library"
+              description="Screenshots and clips from our hands-on testing will be published here soon."
+            />
+          )
+        }
       </div>
       <div data-tab-panel="pricing" class="hidden">
         <PlaceholderTab
@@ -141,10 +162,18 @@ const shareUrl = head.canonical;
           </div>
         )
       }
+      {
+        showAlternativesTab && (
+          <div data-tab-panel="alternatives" class="hidden">
+            <AlternativesTab product={product} />
+          </div>
+        )
+      }
     </div>
   </main>
   <Footer />
   <ArticleUtilityRail pageTitle={head.title} pageUrl={shareUrl} />
+  <ReviewMobileUtilitySheet pageTitle={head.title} pageUrl={shareUrl} />
   <RatingsTooltipInit />
   <ReviewScrollRestore productSlug={product.slug} />
 </BaseLayout>
@@ -159,8 +188,11 @@ const shareUrl = head.canonical;
   const TABBAR_OFFSET = 52;
 
   function getScrollOffset() {
+    const header = document.querySelector<HTMLElement>('[data-site-header]');
     const tabbar = document.querySelector<HTMLElement>('[data-tabbar]');
-    return tabbar?.offsetHeight ?? TABBAR_OFFSET;
+    const headerH = header?.offsetHeight ?? TABBAR_OFFSET;
+    const tabbarH = tabbar?.offsetHeight ?? 0;
+    return headerH + tabbarH;
   }
 
   function initReview() {
@@ -294,6 +326,7 @@ const shareUrl = head.canonical;
 
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-goto-category]');
       if (!btn) return;
+      if ((e.target as HTMLElement).closest('.rt-tooltip-trigger')) return;
       e.preventDefault();
       const key = btn.dataset.gotoCategory;
       if (!key) return;

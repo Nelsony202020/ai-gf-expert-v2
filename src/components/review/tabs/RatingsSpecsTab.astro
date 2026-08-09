@@ -4,7 +4,7 @@ import type { DraftCategory, DraftRatingsViewModel } from '../../../lib/draft-ra
 import RatingCategory from './RatingCategory.astro';
 import DetailLevelControl from '../DetailLevelControl.astro';
 import RatingsChangelogCompact from '../RatingsChangelogCompact.astro';
-import TestingCredentialsCard from '../TestingCredentialsCard.astro';
+import CategoryJumpNav from '../CategoryJumpNav.astro';
 import RatingsEvidenceDrawer from '../RatingsEvidenceDrawer.astro';
 import { loadDraftRatingsViewModel } from '../../../lib/draft-ratings/loadDraftRatingsData';
 import {
@@ -15,7 +15,6 @@ import { getSubscoreDescription } from '../../../data/subscore-descriptions';
 import { buildSubscoreCalcDrawer } from '../../../lib/ratings/evidenceGroupScoring';
 import { buildDrawerNavChain } from '../../../lib/draft-ratings/drawerNav';
 import { deferPayAsYouGoScores, iconForEvidenceDef, PRICING_BENCHMARK_PENDING_NOTE } from '../../../lib/ratings/evidenceIcons';
-import '../testing-credentials.css';
 import '../ratings-evidence.css';
 
 interface Props {
@@ -121,7 +120,7 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
     <RatingsChangelogCompact entries={product.ratingChangelog} />
 
     <div class="mb-6 md:mb-8">
-      <TestingCredentialsCard overview={ratingsModel.overview} />
+      <CategoryJumpNav product={product} />
     </div>
 
     <DetailLevelControl />

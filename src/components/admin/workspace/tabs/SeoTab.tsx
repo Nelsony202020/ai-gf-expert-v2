@@ -17,7 +17,7 @@ import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
 import { useVerdictTestingSummary } from '../verdict/useVerdictTestingSummary';
 
-const SITE_HOST = 'aigirlfriendexpert.com';
+const SITE_HOST = 'aigirlfriend.expert';
 
 export function SeoTab() {
   const ws = useWorkspace();
@@ -84,7 +84,7 @@ export function SeoTab() {
   const canonicalWarning =
     canonical !== '' && canonical !== defaultCanonical && canonical !== publicPath;
 
-  // Structured-data readiness (generated server-side from these fields).
+  // Structured-data readiness for Product + Review JSON-LD on the public review page.
   const structuredDataReady =
     Boolean(String(fields.name ?? '').trim()) &&
     Boolean(String(fields.oneLineVerdict ?? '').trim()) &&
@@ -392,10 +392,11 @@ export function SeoTab() {
             className={`mt-0.5 shrink-0 !text-[18px] ${structuredDataReady ? 'text-green-600' : 'text-blue-600 dark:text-blue-400'}`}
           />
           <p>
-            Structured data (JSON-LD) is generated automatically from product fields — no manual JSON needed.{' '}
+            Public review pages emit Product + Review JSON-LD from published fields (editorial score as
+            reviewRating, pros/cons as positiveNotes/negativeNotes). No AggregateRating is invented.{' '}
             {structuredDataReady
-              ? 'This product has everything needed for a full Review rich result (name, verdict, published score).'
-              : 'For a full Review rich result, add the product name, one-line verdict, and a published test run.'}
+              ? 'This product has everything needed for Product + Review markup (name, verdict, published score).'
+              : 'For Product + Review markup, add the product name, one-line verdict, and a published test run.'}
           </p>
         </div>
       </div>

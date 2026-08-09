@@ -95,6 +95,20 @@
   transform: translateX(0) translateY(0);
 }
 
+.dir-toolbar__controls .coming-soon-tip::after {
+  top: calc(100% + 0.4rem);
+  bottom: auto;
+  left: auto;
+  right: 0;
+  z-index: 50;
+  transform: translateX(0) translateY(-0.15rem);
+}
+
+.dir-toolbar__controls .coming-soon-tip:hover::after,
+.dir-toolbar__controls .coming-soon-tip:focus-visible::after {
+  transform: translateX(0) translateY(0);
+}
+
 .coming-soon-muted {
   opacity: 0.55;
 }

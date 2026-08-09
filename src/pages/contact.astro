@@ -4,6 +4,8 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import BrandIcon from '../components/ui/BrandIcon.astro';
 import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
+import JsonLd from '../components/seo/JsonLd.astro';
+import { buildWebPageSchema } from '../lib/seo/jsonld';
 import { brandIcons } from '../lib/brand-icons';
 import {
   companyAddressLines,
@@ -56,12 +58,22 @@ const faqs = [
     a: 'We welcome submissions, but acceptance does not guarantee a positive score. Our methodology applies equally to all products.',
   },
 ];
+
+const contactDescription =
+  'We understand you might have questions, suggestions, or just want to chat with us. Our support team strives to reply within 1 business day.';
+const jsonLdGraph = buildWebPageSchema({
+  pathname: '/contact/',
+  name: 'Contact AI Girlfriend Expert',
+  description: contactDescription,
+  breadcrumbs: [
+    { label: 'Home', href: '/' },
+    { label: 'Contact' },
+  ],
+});
 ---
 
-<BaseLayout
-  title="Contact AI Girlfriend Expert"
-  description="We understand you might have questions, suggestions, or just want to chat with us. Our support team strives to reply within 1 business day."
->
+<BaseLayout title="Contact AI Girlfriend Expert" description={contactDescription}>
+  <JsonLd slot="head" graph={jsonLdGraph} />
   <Header />
   <main class="contact-page">
     <div class="section-container px-4 md:px-8 py-10 md:py-14">

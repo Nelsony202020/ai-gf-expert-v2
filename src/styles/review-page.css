@@ -20,16 +20,51 @@
   }
 }
 
-[data-tabbar].review-tabbar {
+/* Keep site header visible so the tab bar has a stable anchor */
+.site-header {
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 50;
+}
+
+[data-tabbar].review-tabbar {
+  position: sticky;
+  top: calc(var(--site-header-height) + var(--site-header-offset));
+  z-index: 45;
   background: var(--color-header-surface);
+  border-bottom: 1px solid var(--color-surface-variant);
+}
+
+[data-tabbar].review-tabbar.review-tabbar--pinned {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
+}
+
+[data-tabbar-spacer][hidden] {
+  display: none;
 }
 
 [data-theme='dark'] [data-tabbar].review-tabbar {
   background: var(--color-header-surface);
   border-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] [data-tabbar].review-tabbar.review-tabbar--pinned {
+  box-shadow: 0 4px 16px rgb(0 0 0 / 24%);
+}
+
+@media (max-width: 767px) {
+  /* Hide tooltip triggers on mobile review — avoids drag/scroll traps */
+  body[data-mobile-nav-mode='review'] .rt-tooltip-trigger {
+    display: none !important;
+  }
+
+  body[data-mobile-nav-mode='review'] .verdict-icon-nav__tip {
+    display: none !important;
+  }
 }
 
 @media (min-width: 1024px) {

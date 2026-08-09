@@ -10,6 +10,8 @@ const publishedProducts = await loadComparisonProducts();
 const herman = authors['herman-carter'];
 const year = new Date().getFullYear();
 
+const legalBySlug = Object.fromEntries(legalPages.map((page) => [page.slug, page]));
+
 const reviewLinks = [
   { label: 'All Reviews', href: '/reviews/' },
   ...publishedProducts.map((product) => ({
@@ -18,9 +20,18 @@ const reviewLinks = [
   })),
 ];
 
-const legalBySlug = Object.fromEntries(legalPages.map((page) => [page.slug, page]));
+interface FooterLink {
+  label: string;
+  href: string;
+  badge?: string;
+}
 
-const columns = [
+interface FooterColumn {
+  title: string;
+  links: FooterLink[];
+}
+
+const columns: FooterColumn[] = [
   {
     title: 'Explore',
     links: [
@@ -53,97 +64,95 @@ const columns = [
       { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure/' },
     ],
   },
-  {
-    title: 'Legal',
-    links: [
-      { label: legalBySlug.privacy?.title ?? 'Privacy Policy', href: legalBySlug.privacy?.href ?? '/legal/privacy/' },
-      { label: legalBySlug.terms?.title ?? 'Terms of Service', href: legalBySlug.terms?.href ?? '/legal/terms/' },
-      { label: legalBySlug.accessibility?.title ?? 'Accessibility', href: legalBySlug.accessibility?.href ?? '/legal/accessibility/' },
-      { label: legalBySlug.copyright?.title ?? 'Copyright Policy', href: legalBySlug.copyright?.href ?? '/legal/copyright/' },
-      { label: legalBySlug.disclaimer?.title ?? 'Disclaimer', href: legalBySlug.disclaimer?.href ?? '/legal/disclaimer/' },
-    ],
-  },
+];
+
+const bottomLinks = [
+  { label: legalBySlug.privacy?.title ?? 'Privacy Policy', href: legalBySlug.privacy?.href ?? '/legal/privacy/' },
+  { label: legalBySlug.terms?.title ?? 'Terms of Service', href: legalBySlug.terms?.href ?? '/legal/terms/' },
+  { label: legalBySlug.accessibility?.title ?? 'Accessibility', href: legalBySlug.accessibility?.href ?? '/legal/accessibility/' },
 ];
 ---
 
 <footer class="site-footer">
-  <div class="section-container px-4 md:px-8">
-    <div class="site-footer__main">
+  <div class="site-footer__container section-container px-4 sm:px-6 lg:px-8">
+    <div class="site-footer__top">
       <div class="site-footer__brand">
         <a href="/" class="site-logo-link site-footer__logo-link">
           <img
-            src={cdnAsset('/brand/ai-gf-logo-light.png')}
-            alt="AI Girlfriend Expert"
+            src={cdnAsset('/brand/girlfriend-expert-logo.png')}
+            alt="Girlfriend Expert AI"
             class="site-footer__logo site-footer__logo--light"
-            width="127"
-            height="100"
+            width="120"
+            height="40"
             loading="lazy"
             decoding="async"
           />
           <img
-            src={cdnAsset('/brand/ai-gf-logo-white.png')}
+            src={cdnAsset('/brand/girlfriend-expert-logo-white.png')}
             alt=""
             class="site-footer__logo site-footer__logo--dark"
-            width="127"
-            height="100"
+            width="120"
+            height="40"
             loading="lazy"
             decoding="async"
             aria-hidden="true"
           />
         </a>
 
-        <p class="site-footer__tagline">
+        <p class="site-footer__description">
           Independent AI companion reviews — tested honestly, scored transparently, updated regularly.
         </p>
 
-        <a href="/test/" class="site-footer__method-link">
-          See how we test
-          <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-        </a>
-
         {
           herman?.socials?.length ? (
-            <div class="site-footer__social-block">
-              <p class="site-footer__label">Follow us</p>
-              <ul class="site-footer__socials">
-                {herman.socials.map((item) => (
-                  <li>
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="site-footer__social-link"
-                      aria-label={item.platform}
-                    >
-                      <SocialIcon platform={item.icon} class="site-footer__social-icon" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
+            <div class="site-footer__socials" aria-label="Social links">
+              {herman.socials.map((item) => (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="site-footer__social-link"
+                  aria-label={item.platform}
+                >
+                  <SocialIcon platform={item.icon} class="site-footer__social-icon" />
+                </a>
+              ))}
             </div>
           ) : null
         }
       </div>
 
-      {
-        columns.map((col) => (
-          <div class="site-footer__col">
-            <p class="site-footer__label">{col.title}</p>
-            <ul class="site-footer__links">
-              {col.links.map((link) => (
-                <li>
-                  <a href={link.href}>{link.label}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))
-      }
+      <div class="site-footer__nav">
+        {
+          columns.map((col) => (
+            <div class="site-footer__col">
+              <h4 class="site-footer__col-title">{col.title}</h4>
+              <ul class="site-footer__links">
+                {col.links.map((link) => (
+                  <li>
+                    <a href={link.href} class="site-footer__link">
+                      {link.label}
+                      {link.badge && <span class="site-footer__badge">{link.badge}</span>}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
     </div>
 
     <div class="site-footer__bottom">
       <p class="site-footer__copyright">&copy; {year} Nelson Digital FZ-LLC. All rights reserved.</p>
-      <ThemeToggle variant="footer" />
+      <div class="site-footer__bottom-actions">
+        <nav class="site-footer__legal" aria-label="Legal">
+          {bottomLinks.map((link) => (
+            <a href={link.href} class="site-footer__legal-link">{link.label}</a>
+          ))}
+        </nav>
+        <ThemeToggle variant="footer" />
+      </div>
     </div>
   </div>
 </footer>

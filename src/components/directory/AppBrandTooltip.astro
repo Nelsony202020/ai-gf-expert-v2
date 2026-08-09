@@ -1,5 +1,6 @@
 ---
 import type { HomeExplorerApp } from '../../data/homepage';
+import { splitAudienceDisplay } from '../../lib/cms/format';
 import InfoIcon from '../ui/InfoIcon.astro';
 import VerifiedCheck from '../ui/VerifiedCheck.astro';
 import CmsField from '../cms/CmsField.astro';
@@ -10,6 +11,8 @@ interface Props {
 
 const { app } = Astro.props;
 const tooltipId = `brand-explorer-${app.id}`;
+const bestForLines = splitAudienceDisplay(app.bestFor);
+const watchOutLines = splitAudienceDisplay(app.watchOutFor);
 ---
 
 <span
@@ -36,24 +39,36 @@ const tooltipId = `brand-explorer-${app.id}`;
       <CmsField field="tagline" as="p" class="home-brand-tip__liner">{app.tagline}</CmsField>
       <div class="home-brand-tip__divider" aria-hidden="true"></div>
       <ul class="home-brand-tip__rows">
-        <li class="home-brand-tip__row">
-          <span class="home-brand-tip__icon home-brand-tip__icon--best" aria-hidden="true">
-            <span class="material-symbols-outlined">group</span>
-          </span>
-          <div class="home-brand-tip__copy">
-            <span class="home-brand-tip__label">Best for</span>
-            <CmsField field="bestFor" class="home-brand-tip__value">{app.bestFor}</CmsField>
-          </div>
-        </li>
-        <li class="home-brand-tip__row">
-          <span class="home-brand-tip__icon home-brand-tip__icon--watch" aria-hidden="true">
-            <span class="material-symbols-outlined">warning</span>
-          </span>
-          <div class="home-brand-tip__copy">
-            <span class="home-brand-tip__label">Watch out for</span>
-            <CmsField field="notIdealFor" class="home-brand-tip__value">{app.watchOutFor}</CmsField>
-          </div>
-        </li>
+        {
+          bestForLines.length > 0 && (
+            <li class="home-brand-tip__row">
+              <span class="home-brand-tip__icon home-brand-tip__icon--best" aria-hidden="true">
+                <span class="material-symbols-outlined">group</span>
+              </span>
+              <div class="home-brand-tip__copy">
+                <span class="home-brand-tip__label">Best for</span>
+                <CmsField field="bestFor" as="ul" class="home-brand-tip__bullets">
+                  {bestForLines.map((line) => <li>{line}</li>)}
+                </CmsField>
+              </div>
+            </li>
+          )
+        }
+        {
+          watchOutLines.length > 0 && (
+            <li class="home-brand-tip__row">
+              <span class="home-brand-tip__icon home-brand-tip__icon--watch" aria-hidden="true">
+                <span class="material-symbols-outlined">warning</span>
+              </span>
+              <div class="home-brand-tip__copy">
+                <span class="home-brand-tip__label">Watch out for</span>
+                <CmsField field="notIdealFor" as="ul" class="home-brand-tip__bullets">
+                  {watchOutLines.map((line) => <li>{line}</li>)}
+                </CmsField>
+              </div>
+            </li>
+          )
+        }
       </ul>
     </div>
   </div>

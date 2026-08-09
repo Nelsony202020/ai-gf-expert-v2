@@ -1,0 +1,435 @@
+---
+import type { Product } from '../../../data/products';
+import { fmtScore } from '../../../lib/scores';
+import ScorePill from '../ScorePill.astro';
+import {
+  loadAlternativesViewModel,
+  COMPARISON_CATEGORY_KEYS,
+  COMPARISON_CATEGORY_LABELS,
+} from '../../../lib/alternatives/loadAlternatives';
+import type { AlternativePeerView } from '../../../lib/alternatives/loadAlternatives';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const vm = await loadAlternativesViewModel(product);
+if (!vm) {
+  return null;
+}
+
+function productThumb(p: Product): string | undefined {
+  return p.logo ?? p.gallery[0]?.full;
+}
+
+const tableColumns: Product[] = [vm.source, ...vm.peers.map((p) => p.product)];
+
+type TableRow = {
+  label: string;
+  scores: (number | null)[];
+};
+
+const tableRows: TableRow[] = [
+  {
+    label: 'Overall',
+    scores: tableColumns.map((c) => c.overallScore),
+  },
+  ...COMPARISON_CATEGORY_KEYS.map((key) => ({
+    label: COMPARISON_CATEGORY_LABELS[key],
+    scores: tableColumns.map((c) => c.categories.find((cat) => cat.key === key)?.score ?? null),
+  })),
+];
+
+function bestScoreIndex(scores: (number | null)[]): number {
+  let best = -Infinity;
+  let idx = -1;
+  scores.forEach((s, i) => {
+    if (s != null && s > best) {
+      best = s;
+      idx = i;
+    }
+  });
+  return idx;
+}
+
+function peerAnchor(slug: string): string {
+  return `#alt-peer-${slug}`;
+}
+
+function featuredWins(peer: AlternativePeerView): string[] {
+  if (peer.winsOverSource.length > 0) {
+    return peer.winsOverSource.map((w) => `${w.label} (${w.peerScore.toFixed(1)} vs ${w.sourceScore.toFixed(1)})`);
+  }
+  return [peer.editorial.whyChoose];
+}
+
+function featuredSourceWins(peer: AlternativePeerView, sourceName: string): string[] {
+  if (peer.sourceWinsOver.length > 0) {
+    return peer.sourceWinsOver.map((w) => `${w.label} (${w.sourceScore.toFixed(1)} vs ${w.peerScore.toFixed(1)})`);
+  }
+  return [`${sourceName} ${peer.editorial.whereSourceBetter}`];
+}
+
+const maxPopularity = Math.max(
+  ...vm.popularity.map((p) => p.searchInterest ?? 0),
+  1,
+);
+---
+
+<section class="py-12 md:py-16 bg-background dark-section alt-tab">
+  <div class="section-container px-4 md:px-8 alt-tab__inner">
+    <!-- Header -->
+    <header class="alt-tab__header">
+      <p class="alt-section__label">Alternatives</p>
+      <h2 class="alt-tab__title">Best {vm.source.name} Alternatives</h2>
+      <p class="alt-tab__intro">{vm.intro}</p>
+      <p class="alt-tab__updated">Updated {vm.updatedLabel}</p>
+    </header>
+
+    {
+      vm.bestOverall && (
+        <>
+          <section class="alt-section" aria-labelledby="alt-best-overall">
+            <p id="alt-best-overall" class="alt-section__label">Best overall alternative</p>
+            <article class="alt-featured">
+              <span class="alt-featured__badge">Our top pick</span>
+              <div class="alt-featured__head">
+                {
+                  productThumb(vm.bestOverall.product) ? (
+                    <img
+                      src={productThumb(vm.bestOverall.product)}
+                      alt=""
+                      width="64"
+                      height="64"
+                      class="alt-featured__logo"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div class="alt-featured__logo alt-featured__logo--fallback" aria-hidden="true">
+                      <span class="material-symbols-outlined text-[28px]">smart_toy</span>
+                    </div>
+                  )
+                }
+                <div class="alt-featured__meta">
+                  <div class="alt-featured__name-row">
+                    <h3 class="alt-featured__name">{vm.bestOverall.product.name}</h3>
+                    <span class="alt-sim-pill">{vm.bestOverall.similarity}% similar</span>
+                  </div>
+                  <p class="alt-featured__score">
+                    <strong>{fmtScore(vm.bestOverall.product.overallScore)}</strong> / 10
+                  </p>
+                </div>
+              </div>
+
+              <div class="alt-featured__best-for">
+                <p class="alt-featured__field-label">Best for</p>
+                <p class="alt-featured__best-for-text">{vm.bestOverall.editorial.bestFor}</p>
+              </div>
+
+              <div class="alt-featured__cols">
+                <div>
+                  <p class="alt-featured__list-title">Better than {vm.source.name}</p>
+                  <ul class="alt-featured__list">
+                    {featuredWins(vm.bestOverall).map((line) => <li>{line}</li>)}
+                  </ul>
+                </div>
+                <div>
+                  <p class="alt-featured__list-title">{vm.source.name} is better</p>
+                  <ul class="alt-featured__list alt-featured__list--source">
+                    {featuredSourceWins(vm.bestOverall, vm.source.name).map((line) => <li>{line}</li>)}
+                  </ul>
+                </div>
+              </div>
+
+              <div class="alt-featured__actions">
+                {
+                  vm.bestOverall.reviewUrl && (
+                    <a href={vm.bestOverall.reviewUrl} class="alt-btn alt-btn--primary">
+                      Read {vm.bestOverall.product.name} review
+                    </a>
+                  )
+                }
+                <a href="#alt-comparison-table" class="alt-btn alt-btn--secondary">Compare scores</a>
+              </div>
+            </article>
+          </section>
+
+          {
+            vm.otherPeers.length > 0 && (
+              <section class="alt-section" aria-labelledby="alt-other-label">
+                <h3 id="alt-other-label" class="alt-section__heading">Other good alternatives</h3>
+                <div class="alt-other-strip">
+                  {
+                    vm.otherPeers.map((peer) => (
+                      <a href={peerAnchor(peer.product.slug)} class="alt-other-chip">
+                        <span class="alt-other-chip__name">{peer.product.name}</span>
+                        <span class="alt-other-chip__best">Best for {peer.editorial.bestFor.toLowerCase()}</span>
+                      </a>
+                    ))
+                  }
+                </div>
+              </section>
+            )
+          }
+        </>
+      )
+    }
+
+    <!-- Full-width cards for other peers -->
+    {
+      vm.otherPeers.length > 0 && (
+        <section class="alt-section">
+          {
+            vm.otherPeers.map((peer) => {
+              const thumb = productThumb(peer.product);
+              return (
+                <article id={`alt-peer-${peer.product.slug}`} class="alt-peer-card">
+                  <div class="alt-peer-card__head">
+                    {
+                      thumb ? (
+                        <img src={thumb} alt="" width="52" height="52" class="alt-peer-card__logo" loading="lazy" />
+                      ) : (
+                        <div class="alt-peer-card__logo alt-peer-card__logo--fallback" aria-hidden="true">
+                          <span class="material-symbols-outlined text-[24px]">smart_toy</span>
+                        </div>
+                      )
+                    }
+                    <div class="min-w-0">
+                      <div class="alt-peer-card__title-row">
+                        <h3 class="alt-peer-card__name">{peer.product.name}</h3>
+                        <span class="alt-sim-pill">{peer.similarity}% similar</span>
+                      </div>
+                      <p class="alt-peer-card__score-line">{fmtScore(peer.product.overallScore)} / 10</p>
+                    </div>
+                  </div>
+                  <div class="alt-peer-card__body">
+                    <div>
+                      <p class="alt-peer-card__block-label">Best for</p>
+                      <p class="alt-peer-card__block-text">{peer.editorial.bestFor}</p>
+                    </div>
+                    <div>
+                      <p class="alt-peer-card__block-label">Why choose it instead</p>
+                      <p class="alt-peer-card__block-text">{peer.editorial.whyChoose}</p>
+                    </div>
+                    <div>
+                      <p class="alt-peer-card__block-label">Where {vm.source.name} wins</p>
+                      <p class="alt-peer-card__block-text">{peer.editorial.whereSourceBetter}</p>
+                    </div>
+                  </div>
+                  <div class="alt-peer-card__actions">
+                    {
+                      peer.reviewUrl ? (
+                        <a href={peer.reviewUrl} class="alt-btn alt-btn--primary">
+                          Read {peer.product.name} review
+                        </a>
+                      ) : (
+                        <span class="text-sm text-tertiary">Review coming soon</span>
+                      )
+                    }
+                    <a href="#alt-comparison-table" class="alt-btn alt-btn--secondary">Compare scores</a>
+                  </div>
+                </article>
+              );
+            })
+          }
+        </section>
+      )
+    }
+
+    <hr class="alt-divider" />
+
+    <!-- Comparison table -->
+    <section class="alt-section" id="alt-comparison-table" aria-labelledby="alt-table-title">
+      <div class="alt-table-panel">
+        <div class="alt-table-panel__head">
+          <h3 id="alt-table-title" class="alt-table-panel__title">{vm.source.name} vs. alternatives</h3>
+          <p class="alt-table-panel__sub">Our hands-on test scores — green highlight is best in each row.</p>
+        </div>
+        <div class="alt-table-scroll">
+          <table class="alt-table">
+            <thead>
+              <tr>
+                <th scope="col">Category</th>
+                {
+                  tableColumns.map((col, i) => (
+                    <th scope="col" class:list={[i === 0 && 'alt-table__source-col']}>
+                      {col.name}
+                    </th>
+                  ))
+                }
+              </tr>
+            </thead>
+            <tbody>
+              {
+                tableRows.map((row) => {
+                  const bestIdx = bestScoreIndex(row.scores);
+                  return (
+                    <tr>
+                      <td class="alt-table__cat">{row.label}</td>
+                      {
+                        row.scores.map((score, i) => (
+                          <td
+                            class:list={[
+                              i === 0 && 'alt-table__source-col',
+                              i === bestIdx && bestIdx >= 0 && 'alt-table__best',
+                            ]}
+                          >
+                            {score != null ? (
+                              <ScorePill score={score} size="sm" />
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        ))
+                      }
+                    </tr>
+                  );
+                })
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <hr class="alt-divider" />
+
+    <!-- Win / loss -->
+    {
+      (vm.alternativeWins.length > 0 || vm.sourceWins.length > 0) && (
+        <section class="alt-section" aria-labelledby="alt-winloss-title">
+          <div class="alt-winloss">
+            <div class="alt-winloss__head">
+              <h3 id="alt-winloss-title" class="alt-winloss__title">
+                Where {vm.source.name} wins — and loses
+              </h3>
+            </div>
+            <div class="alt-winloss__grid">
+              <div class="alt-winloss__col alt-winloss__col--alt">
+                <p class="alt-winloss__col-label">Better alternatives</p>
+                {
+                  vm.alternativeWins.length > 0 ? (
+                    vm.alternativeWins.map((row) => (
+                      <div class="alt-winloss__item">
+                        <p class="alt-winloss__cat">{row.categoryLabel}</p>
+                        <p class="alt-winloss__scores">
+                          {row.leaderName} scored {row.leaderScore.toFixed(1)} vs {row.trailingScore.toFixed(1)} for{' '}
+                          {vm.source.name}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p class="alt-winloss__scores">No category scored meaningfully higher among listed alternatives.</p>
+                  )
+                }
+              </div>
+              <div class="alt-winloss__col alt-winloss__col--source">
+                <p class="alt-winloss__col-label">{vm.source.name} still wins</p>
+                {
+                  vm.sourceWins.map((row) => (
+                    <div class="alt-winloss__item">
+                      <p class="alt-winloss__cat">{row.categoryLabel}</p>
+                      <p class="alt-winloss__scores">
+                        {row.leaderName} scored {row.leaderScore.toFixed(1)} vs {row.trailingScore.toFixed(1)} for{' '}
+                        {row.trailingName}
+                      </p>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+        </section>
+      )
+    }
+
+    <!-- Popularity — only when enough real data -->
+    {
+      vm.showPopularity && (
+        <>
+          <hr class="alt-divider" />
+          <section class="alt-section" aria-labelledby="alt-pop-title">
+            <div class="md-panel">
+              <h3 id="alt-pop-title" class="alt-section__heading">Popularity snapshot</h3>
+              <p class="text-sm text-tertiary mb-4">
+                Relative search interest · {vm.popularitySource} · {vm.updatedLabel}
+              </p>
+              <ul class="space-y-3">
+                {
+                  vm.popularity
+                    .filter((p) => p.searchInterest != null && p.searchInterest > 0)
+                    .map((item) => {
+                      const pct = Math.round(((item.searchInterest ?? 0) / maxPopularity) * 100);
+                      return (
+                        <li class="md-rank-row">
+                          <div class="md-rank-row__body min-w-0 w-full">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                              <span
+                                class:list={[
+                                  'text-sm font-bold truncate',
+                                  item.highlight ? 'text-accent' : 'text-on-surface',
+                                ]}
+                              >
+                                {item.name}
+                              </span>
+                              <span class="text-sm font-black tabular-nums text-on-surface-variant shrink-0">
+                                {item.searchInterest}
+                              </span>
+                            </div>
+                            <div class="h-2.5 rounded-full bg-surface-container overflow-hidden">
+                              <div
+                                class:list={['h-full rounded-full', item.highlight ? 'bg-accent' : 'bg-tertiary/35']}
+                                style={`width: ${pct}%`}
+                              />
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })
+                }
+              </ul>
+              <p class="alt-popularity__source">Secondary context only — does not drive our recommendations.</p>
+            </div>
+          </section>
+        </>
+      )
+    }
+
+    <hr class="alt-divider" />
+
+    <!-- Decision grid -->
+    <section class="alt-section" aria-labelledby="alt-choose-title">
+      <h3 id="alt-choose-title" class="alt-section__heading">Which alternative should you choose?</h3>
+      <div class="alt-decision-grid">
+        {
+          vm.peers.map((peer) => (
+            <article class="alt-decision-card">
+              <p class="alt-decision-card__hook">
+                <span class="material-symbols-outlined" aria-hidden="true">{peer.editorial.decisionIcon}</span>
+                {peer.editorial.decisionHook}
+              </p>
+              <p class="alt-decision-card__product">{peer.product.name}</p>
+              <p class="alt-decision-card__detail">{peer.editorial.chooseIf}</p>
+              {
+                peer.reviewUrl && (
+                  <a href={peer.reviewUrl} class="alt-btn alt-btn--primary w-full sm:w-auto">
+                    Read review
+                  </a>
+                )
+              }
+            </article>
+          ))
+        }
+        <article class="alt-decision-card alt-decision-card--source">
+          <p class="alt-decision-card__hook">
+            <span class="material-symbols-outlined" aria-hidden="true">{vm.stickWithDecisionIcon}</span>
+            {vm.stickWithDecisionHook}
+          </p>
+          <p class="alt-decision-card__product">Stick with {vm.source.name}</p>
+          <p class="alt-decision-card__detail">{vm.stickWithSourceIf}</p>
+        </article>
+      </div>
+    </section>
+  </div>
+</section>

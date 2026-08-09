@@ -3,16 +3,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import AppDirectory from '../components/directory/AppDirectory.astro';
+import JsonLd from '../components/seo/JsonLd.astro';
 import { loadExplorerApps } from '../data/homepage';
+import { buildDirectoryItemListSchema } from '../lib/seo/jsonld';
 
 const apps = await loadExplorerApps();
 const directoryPath = '/ai-girlfriend-apps';
+const pageTitle = 'Explore AI Girlfriend Apps — Directory';
+const pageDescription =
+  'Browse and filter AI companion apps tested by our editorial team. Compare scores, pricing, features, and read full reviews.';
+// Same apps array as the visible directory — default DB order (displayOrder, then name).
+const jsonLdGraph = buildDirectoryItemListSchema(apps, {
+  pathname: '/ai-girlfriend-apps/',
+  name: pageTitle,
+  description: pageDescription,
+});
 ---
 
-<BaseLayout
-  title="Explore AI Girlfriend Apps — Directory"
-  description="Browse and filter AI companion apps tested by our editorial team. Compare scores, pricing, features, and read full reviews."
->
+<BaseLayout title={pageTitle} description={pageDescription}>
+  {jsonLdGraph.length > 0 && <JsonLd slot="head" graph={jsonLdGraph} />}
   <Header />
   <main>
     <AppDirectory
@@ -20,7 +29,7 @@ const directoryPath = '/ai-girlfriend-apps';
       basePath={directoryPath}
       breadcrumbs={[
         { label: 'Home', href: '/' },
-        { label: 'AI girlfriend apps' },
+        { label: 'AI Girlfriend Apps' },
       ]}
     />
   </main>

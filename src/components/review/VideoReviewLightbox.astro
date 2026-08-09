@@ -39,7 +39,12 @@ const channelLabel = product.videoReview.channelLabel ?? 'AI Girlfriend Expert o
   </button>
 </div>
 
-<div class="video-review-modal hidden" data-video-review-modal={modalId} aria-hidden="true">
+<div
+  class="video-review-modal hidden"
+  data-video-review-modal={modalId}
+  data-video-review-embed={embedUrl}
+  aria-hidden="true"
+>
   <div class="video-review-modal__backdrop" data-video-review-close />
   <div class="video-review-modal__panel" role="dialog" aria-modal="true" aria-label="Video review">
     <button type="button" class="video-review-modal__close" data-video-review-close aria-label="Close">
@@ -93,44 +98,58 @@ const channelLabel = product.videoReview.channelLabel ?? 'AI Girlfriend Expert o
   </div>
 </div>
 
-<script define:vars={{ modalId, embedUrl }}>
+<script>
+  import { playOverlayClose, playOverlayOpen } from '../../lib/ui/overlayTransition.ts';
+
   function initVideoReview() {
-    const trigger = document.querySelector(`[data-video-review-open="${modalId}"]`);
-    const modal = document.querySelector(`[data-video-review-modal="${modalId}"]`);
-    const iframe = modal?.querySelector('[data-video-review-iframe]');
-    if (!trigger || !modal || !iframe) return;
-    if (trigger.dataset.bound === 'true') return;
-    trigger.dataset.bound = 'true';
+    document.querySelectorAll<HTMLElement>('[data-video-review-open]').forEach((trigger) => {
+      if (trigger.dataset.bound === 'true') return;
+      const modalId = trigger.dataset.videoReviewOpen;
+      const modal = document.querySelector<HTMLElement>(`[data-video-review-modal="${modalId}"]`);
+      const iframe = modal?.querySelector<HTMLIFrameElement>('[data-video-review-iframe]');
+      const embedUrl = modal?.dataset.videoReviewEmbed;
+      if (!modalId || !modal || !iframe || !embedUrl) return;
+      trigger.dataset.bound = 'true';
 
-    const open = () => {
-      iframe.src = embedUrl + (embedUrl.includes('?') ? '&' : '?') + 'autoplay=1';
-      modal.classList.remove('hidden');
-      modal.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
-    };
+      let isOpen = false;
 
-    const close = () => {
-      iframe.src = '';
-      modal.classList.add('hidden');
-      modal.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
-    };
+      const open = () => {
+        if (isOpen) return;
+        isOpen = true;
+        iframe.src = embedUrl + (embedUrl.includes('?') ? '&' : '?') + 'autoplay=1';
+        modal.classList.remove('hidden', 'is-visible');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        playOverlayOpen(modal);
+      };
 
-    trigger.addEventListener('click', (e) => {
-      e.stopPropagation();
-      open();
-    });
+      const close = () => {
+        if (!isOpen) return;
+        isOpen = false;
+        modal.setAttribute('aria-hidden', 'true');
+        playOverlayClose(modal, () => {
+          iframe.src = '';
+          modal.classList.add('hidden');
+          document.body.style.overflow = '';
+        });
+      };
 
-    modal.querySelectorAll('[data-video-review-close]').forEach((el) => {
-      el.addEventListener('click', close);
-    });
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        open();
+      });
 
-    modal.querySelector('[data-tab="photos"]')?.addEventListener('click', () => {
-      close();
-    });
+      modal.querySelectorAll('[data-video-review-close]').forEach((el) => {
+        el.addEventListener('click', close);
+      });
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !modal.classList.contains('hidden')) close();
+      modal.querySelector('[data-tab="photos"]')?.addEventListener('click', () => {
+        close();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isOpen) close();
+      });
     });
   }
 

@@ -1,18 +1,24 @@
 ---
-import { HUB_NAV_TABS, type HubTabId } from '../../lib/hub-nav';
 import {
-  buyingGuideRelatedLinks,
   buyingGuideTocSections,
 } from '../../data/buying-guide-content';
 
 interface Props {
-  active?: HubTabId;
+  pageTitle?: string;
+  pageUrl?: string;
 }
 
-const { active = 'buying-guide' } = Astro.props;
+const { pageTitle, pageUrl } = Astro.props;
 ---
 
-<div class="roundup-sheet roundup-nav-sheet buying-guide-nav-sheet" data-nav-sheet hidden aria-hidden="true">
+<div
+  class="roundup-sheet roundup-nav-sheet buying-guide-nav-sheet"
+  data-nav-sheet
+  hidden
+  aria-hidden="true"
+  data-page-title={pageTitle}
+  data-page-url={pageUrl}
+>
   <div class="roundup-sheet__backdrop" data-sheet-backdrop tabindex="-1"></div>
   <div
     class="roundup-sheet__panel roundup-nav-sheet__panel"
@@ -21,32 +27,9 @@ const { active = 'buying-guide' } = Astro.props;
     aria-labelledby="buying-guide-nav-sheet-title"
   >
     <div class="roundup-sheet__handle" aria-hidden="true"></div>
-    <h2 id="buying-guide-nav-sheet-title" class="sr-only">Page navigation</h2>
-
-    <nav class="roundup-nav-sheet__hub" aria-label="Hub sections">
-      {
-        HUB_NAV_TABS.map((tab) => {
-          const isActive = tab.id === active;
-          const mobileLabel = tab.mobileLabel ?? tab.label;
-          return isActive ? (
-            <span class="roundup-nav-sheet__hub-tab is-active" aria-current="page">
-              <span class="material-symbols-outlined roundup-nav-sheet__hub-icon" aria-hidden="true">{tab.icon}</span>
-              <span>{mobileLabel}</span>
-            </span>
-          ) : (
-            <a class="roundup-nav-sheet__hub-tab" href={tab.href} data-hub-nav-link>
-              <span class="material-symbols-outlined roundup-nav-sheet__hub-icon" aria-hidden="true">{tab.icon}</span>
-              <span>{mobileLabel}</span>
-            </a>
-          );
-        })
-      }
-    </nav>
-
-    <div class="roundup-nav-sheet__divider" aria-hidden="true"></div>
+    <h2 id="buying-guide-nav-sheet-title" class="roundup-nav-sheet__toc-title">Contents</h2>
 
     <nav class="roundup-nav-sheet__toc" aria-label="Table of contents">
-      <p class="roundup-nav-sheet__toc-title">Contents</p>
       <ul class="roundup-nav-sheet__toc-list">
         {
           buyingGuideTocSections.map((section) => (
@@ -82,27 +65,6 @@ const { active = 'buying-guide' } = Astro.props;
       </ul>
     </nav>
 
-    <details class="roundup-nav-sheet__toc-panel">
-      <summary class="roundup-nav-sheet__toc-panel-toggle">
-        <span class="roundup-nav-sheet__toc-panel-label">
-          <span class="material-symbols-outlined" aria-hidden="true">menu_book</span>
-          Related
-        </span>
-        <span class="material-symbols-outlined roundup-nav-sheet__toc-panel-chevron" aria-hidden="true">expand_more</span>
-      </summary>
-      <ul class="roundup-nav-sheet__toc-list roundup-nav-sheet__toc-panel-list">
-        {
-          buyingGuideRelatedLinks.map((link) => (
-            <li>
-              <a class="roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h3" href={link.href}>
-                {link.label}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </details>
-
     <button type="button" class="roundup-sheet__cancel" data-sheet-close>Close</button>
   </div>
 </div>
@@ -111,23 +73,23 @@ const { active = 'buying-guide' } = Astro.props;
   import '../test/test-hub-toc.client.ts';
 
   function initBuyingGuideMobileNavSheet() {
-    const sheet = document.querySelector<HTMLElement>('.buying-guide-nav-sheet[data-nav-sheet]');
+    const sheet = document.querySelector('.buying-guide-nav-sheet[data-nav-sheet]');
     if (!sheet || sheet.dataset.bound === 'true') return;
     sheet.dataset.bound = 'true';
 
     function closeSheet() {
-      sheet!.hidden = true;
-      sheet!.setAttribute('aria-hidden', 'true');
+      sheet.hidden = true;
+      sheet.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('roundup-sheet-open');
     }
 
     function openSheet() {
-      sheet!.hidden = false;
-      sheet!.setAttribute('aria-hidden', 'false');
+      sheet.hidden = false;
+      sheet.setAttribute('aria-hidden', 'false');
       document.body.classList.add('roundup-sheet-open');
     }
 
-    document.querySelectorAll<HTMLButtonElement>('[data-nav-sheet-open]').forEach((btn) => {
+    document.querySelectorAll('[data-nav-sheet-open]').forEach((btn) => {
       if (btn.dataset.bound === 'true') return;
       btn.dataset.bound = 'true';
       btn.addEventListener('click', openSheet);
@@ -136,10 +98,14 @@ const { active = 'buying-guide' } = Astro.props;
     sheet.querySelector('[data-sheet-close]')?.addEventListener('click', closeSheet);
     sheet.querySelector('[data-sheet-backdrop]')?.addEventListener('click', closeSheet);
 
-    sheet.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach((link) => {
+    sheet.querySelectorAll('a[href^="#"]').forEach((link) => {
       link.addEventListener('click', () => {
         closeSheet();
       });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sheet && !sheet.hidden) closeSheet();
     });
   }
 

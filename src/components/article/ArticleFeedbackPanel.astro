@@ -25,24 +25,62 @@ import { brandIcons } from '../../lib/brand-icons';
         Spot something wrong, outdated, or missing? Send us a note and we'll review it.
       </p>
 
-      <div class="article-feedback__categories" role="group" aria-label="Feedback type">
-        <button type="button" class="article-feedback__cat" data-feedback-category="outdated">
-          <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
-          <span>Outdated information</span>
+      <p class="article-feedback__categories-label">
+        What's this about? <span class="article-feedback__required" aria-hidden="true">*</span>
+      </p>
+
+      <div class="article-feedback__categories" role="radiogroup" aria-label="Feedback type" data-feedback-category-group>
+        <button
+          type="button"
+          class="article-feedback__cat"
+          data-feedback-category="outdated"
+          role="radio"
+          aria-checked="false"
+        >
+          <span class="article-feedback__cat-icon" aria-hidden="true">
+            <span class="material-symbols-outlined">calendar_today</span>
+          </span>
+          <span class="article-feedback__cat-label">Outdated information</span>
         </button>
-        <button type="button" class="article-feedback__cat" data-feedback-category="missing-app">
-          <span class="material-symbols-outlined" aria-hidden="true">search</span>
-          <span>Missing app</span>
+        <button
+          type="button"
+          class="article-feedback__cat"
+          data-feedback-category="missing-app"
+          role="radio"
+          aria-checked="false"
+        >
+          <span class="article-feedback__cat-icon" aria-hidden="true">
+            <span class="material-symbols-outlined">search</span>
+          </span>
+          <span class="article-feedback__cat-label">Missing app</span>
         </button>
-        <button type="button" class="article-feedback__cat" data-feedback-category="wrong">
-          <span class="material-symbols-outlined" aria-hidden="true">warning</span>
-          <span>Something is wrong</span>
+        <button
+          type="button"
+          class="article-feedback__cat"
+          data-feedback-category="wrong"
+          role="radio"
+          aria-checked="false"
+        >
+          <span class="article-feedback__cat-icon" aria-hidden="true">
+            <span class="material-symbols-outlined">warning</span>
+          </span>
+          <span class="article-feedback__cat-label">Something is wrong</span>
         </button>
-        <button type="button" class="article-feedback__cat" data-feedback-category="general">
-          <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
-          <span>General feedback</span>
+        <button
+          type="button"
+          class="article-feedback__cat"
+          data-feedback-category="general"
+          role="radio"
+          aria-checked="false"
+        >
+          <span class="article-feedback__cat-icon" aria-hidden="true">
+            <span class="material-symbols-outlined">chat_bubble</span>
+          </span>
+          <span class="article-feedback__cat-label">General feedback</span>
         </button>
       </div>
+
+      <p class="article-feedback__categories-hint" data-feedback-category-hint>Select a topic above to continue.</p>
 
       <form class="article-feedback__form" data-feedback-form>
         <input type="hidden" name="category" value="" data-feedback-category-input />
@@ -77,7 +115,7 @@ import { brandIcons } from '../../lib/brand-icons';
           <span class="article-feedback__counter" data-feedback-counter>0/500</span>
         </label>
 
-        <button type="submit" class="article-feedback__submit bg-brand-cta">
+        <button type="submit" class="article-feedback__submit bg-brand-cta" data-feedback-submit disabled>
           Send feedback
         </button>
       </form>
@@ -109,6 +147,8 @@ import { brandIcons } from '../../lib/brand-icons';
 </div>
 
 <script>
+  import { overlayDurationMs, playOverlayClose, playOverlayOpen } from '../../lib/ui/overlayTransition.ts';
+
   function initArticleFeedback() {
     const root = document.querySelector<HTMLElement>('[data-article-feedback]');
     if (!root || root.dataset.bound === 'true') return;
@@ -125,9 +165,24 @@ import { brandIcons } from '../../lib/brand-icons';
     const urlInput = root.querySelector<HTMLInputElement>('[data-feedback-url-input]');
     const titleInput = root.querySelector<HTMLInputElement>('[data-feedback-title-input]');
     const categoryBtns = root.querySelectorAll<HTMLButtonElement>('[data-feedback-category]');
+    const categoryHint = root.querySelector<HTMLElement>('[data-feedback-category-hint]');
+    const categoryGroup = root.querySelector<HTMLElement>('[data-feedback-category-group]');
+    const submitBtn = form?.querySelector<HTMLButtonElement>('[data-feedback-submit]');
 
     let pageTitle = document.title;
     let pageUrl = window.location.href;
+
+    function updateSubmitState() {
+      const hasCategory = Boolean(categoryInput?.value);
+      if (submitBtn) submitBtn.disabled = !hasCategory;
+      categoryGroup?.classList.toggle('is-invalid', false);
+      if (categoryHint) {
+        categoryHint.textContent = hasCategory
+          ? 'Thanks — add your note below.'
+          : 'Select a topic above to continue.';
+        categoryHint.classList.toggle('is-ready', hasCategory);
+      }
+    }
 
     function setPageContext(title: string, url: string) {
       pageTitle = title;
@@ -138,11 +193,15 @@ import { brandIcons } from '../../lib/brand-icons';
 
     function resetForm() {
       form?.reset();
-      categoryBtns.forEach((b) => b.classList.remove('is-selected'));
+      categoryBtns.forEach((b) => {
+        b.classList.remove('is-selected');
+        b.setAttribute('aria-checked', 'false');
+      });
       if (categoryInput) categoryInput.value = '';
       if (counter) counter.textContent = '0/500';
       formView?.classList.remove('hidden');
       successView?.classList.add('hidden');
+      updateSubmitState();
     }
 
     function openFeedback(title?: string, url?: string) {
@@ -150,14 +209,19 @@ import { brandIcons } from '../../lib/brand-icons';
       setPageContext(title ?? document.title, url ?? window.location.href);
       root.hidden = false;
       root.setAttribute('aria-hidden', 'false');
+      root.classList.remove('is-visible');
       document.body.classList.add('article-feedback-open');
-      window.setTimeout(() => message?.focus(), 80);
+      playOverlayOpen(root);
+      window.setTimeout(() => categoryBtns[0]?.focus(), overlayDurationMs() + 40);
     }
 
     function closeFeedback() {
-      root.hidden = true;
-      root.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('article-feedback-open');
+      if (root.hidden || !root.classList.contains('is-visible')) return;
+      playOverlayClose(root, () => {
+        root.hidden = true;
+        root.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('article-feedback-open');
+      });
     }
 
     window.addEventListener('article-feedback:open', ((e: CustomEvent<{ title?: string; url?: string }>) => {
@@ -170,9 +234,14 @@ import { brandIcons } from '../../lib/brand-icons';
 
     categoryBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        categoryBtns.forEach((b) => b.classList.remove('is-selected'));
+        categoryBtns.forEach((b) => {
+          b.classList.remove('is-selected');
+          b.setAttribute('aria-checked', 'false');
+        });
         btn.classList.add('is-selected');
+        btn.setAttribute('aria-checked', 'true');
         if (categoryInput) categoryInput.value = btn.dataset.feedbackCategory ?? '';
+        updateSubmitState();
       });
     });
 
@@ -183,6 +252,8 @@ import { brandIcons } from '../../lib/brand-icons';
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!categoryInput?.value) {
+        categoryGroup?.classList.add('is-invalid');
+        if (categoryHint) categoryHint.textContent = 'Please select a topic before sending.';
         categoryBtns[0]?.focus();
         return;
       }
@@ -202,8 +273,8 @@ import { brandIcons } from '../../lib/brand-icons';
         pageTitle,
       };
 
-      const submitBtn = form.querySelector<HTMLButtonElement>('.article-feedback__submit');
-      submitBtn?.setAttribute('disabled', 'true');
+      const submitButton = form.querySelector<HTMLButtonElement>('[data-feedback-submit]');
+      submitButton?.setAttribute('disabled', 'true');
 
       try {
         const res = await fetch('/api/contact', {
@@ -214,19 +285,22 @@ import { brandIcons } from '../../lib/brand-icons';
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(body.error || 'Failed to send feedback');
       } catch (error) {
-        submitBtn?.removeAttribute('disabled');
+        submitButton?.removeAttribute('disabled');
+        updateSubmitState();
         window.alert(error instanceof Error ? error.message : 'Could not send feedback. Please try again.');
         return;
       }
 
-      submitBtn?.removeAttribute('disabled');
+      submitButton?.removeAttribute('disabled');
       formView?.classList.add('hidden');
       successView?.classList.remove('hidden');
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !root.hidden) closeFeedback();
+      if (e.key === 'Escape' && !root.hidden && root.classList.contains('is-visible')) closeFeedback();
     });
+
+    updateSubmitState();
   }
 
   initArticleFeedback();

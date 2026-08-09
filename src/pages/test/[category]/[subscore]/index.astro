@@ -7,6 +7,7 @@ import TestSubscoreMethodologyBody from '../../../../components/test/TestSubscor
 import TestSubscoreMethodologyHero from '../../../../components/test/TestSubscoreMethodologyHero.astro';
 import TestPageBackLink from '../../../../components/test/TestPageBackLink.astro';
 import TestHubSidebar from '../../../../components/test/TestHubSidebar.astro';
+import TestCategoryMobileNavSheet from '../../../../components/test/TestCategoryMobileNavSheet.astro';
 import ArticleUtilityRail from '../../../../components/article/ArticleUtilityRail.astro';
 import { findTestSubscore, getTestCategories } from '../../../../lib/test-framework';
 import { getMethodology } from '../../../../data/methodology';
@@ -175,6 +176,8 @@ const tocItems = richContent
     }
   </StandardContentLayout>
   <Footer />
+  <TestCategoryMobileNavSheet tocSections={tocItems} pageTitle={pageTitle} pageUrl={canonical} />
+  <div data-hub-root data-page-title={pageTitle} data-page-url={canonical} hidden aria-hidden="true"></div>
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal />
 
   <script>
