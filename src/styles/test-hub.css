@@ -1865,6 +1865,14 @@
   display: block;
 }
 
+.test-category-nav-sheet [data-toc-section] .roundup-nav-sheet__toc-sublist {
+  display: none;
+}
+
+.test-category-nav-sheet [data-toc-section].is-expanded .roundup-nav-sheet__toc-sublist {
+  display: block;
+}
+
 .test-subscore-list {
   display: flex;
   flex-direction: column;
@@ -3307,10 +3315,6 @@
 
 .test-hub-page .roundup-hero-intro {
   padding-top: 0;
-}
-
-.test-hub-nav-sheet .test-hub-nav {
-  padding: 0 0 0.5rem;
 }
 
 .test-hub-page.standard-content-page .standard-content-grid__body .test-hub__main {

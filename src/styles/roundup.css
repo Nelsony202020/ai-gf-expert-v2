@@ -2808,6 +2808,25 @@ body.roundup-sheet-open {
   color: var(--color-on-brand-lime);
 }
 
+@media (max-width: 767px) {
+  .roundup-pick__cta-wrap {
+    padding-inline: 1rem;
+  }
+
+  .roundup-pick__cta {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+    padding-block: 0.75rem;
+  }
+
+  .roundup-compare__cta {
+    min-height: 48px;
+    padding-block: 0.75rem;
+  }
+}
+
 .roundup-compare__table-wrap {
   margin-bottom: 2rem;
 }

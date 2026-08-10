@@ -2,7 +2,6 @@ import type { Product } from '../../../data/products';
 import { isLocalUrl } from '../../siteOrigin';
 import { reviewPageUrl } from '../../slugs';
 import {
-  organizationId,
   productId,
   reviewId,
   reviewPageId,
@@ -10,7 +9,7 @@ import {
 } from './ids';
 import type { JsonLdNode } from './omitEmpty';
 import { buildBreadcrumbSchema } from './breadcrumb';
-import { buildOrganizationSchema } from './organization';
+import { buildOrganizationRef, buildOrganizationSchema } from './organization';
 import { buildPersonRef } from './person';
 
 function notesList(items: string[]): JsonLdNode | undefined {
@@ -89,7 +88,7 @@ export function buildReviewProductSchema(product: Product): JsonLdNode[] {
     author: author
       ? buildPersonRef({ name: author.name, slug: author.slug })
       : undefined,
-    publisher: { '@id': organizationId() },
+    publisher: buildOrganizationRef(),
     reviewRating: {
       '@type': 'Rating',
       ratingValue: product.overallScore,
@@ -128,7 +127,7 @@ export function buildReviewProductSchema(product: Product): JsonLdNode[] {
     dateModified,
     isPartOf: { '@id': websiteId() },
     mainEntity: { '@id': productId(slug) },
-    publisher: { '@id': organizationId() },
+    publisher: buildOrganizationRef(),
   };
 
   return [

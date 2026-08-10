@@ -32,13 +32,16 @@ const { tocSections, pageTitle, pageUrl } = Astro.props;
       <ul class="roundup-nav-sheet__toc-list">
         {
           tocSections.map((section) => (
-            <li>
+            <li
+              class:list={[section.children?.length && 'has-toc-children']}
+              data-toc-section={section.children?.length ? section.id : undefined}
+            >
               <a class="roundup-nav-sheet__toc-link" href={`#${section.id}`} data-toc-link={section.id}>
                 {section.label}
               </a>
               {
                 section.children && section.children.length > 0 && (
-                  <ul class="roundup-nav-sheet__toc-sublist roundup-toc__sublist">
+                  <ul class="roundup-nav-sheet__toc-sublist roundup-toc__sublist" data-toc-sublist>
                     {
                       section.children.map((child) => (
                         <li>
@@ -66,6 +69,8 @@ const { tocSections, pageTitle, pageUrl } = Astro.props;
 </div>
 
 <script>
+  import './test-hub-toc.client.ts';
+
   function initTestCategoryMobileNavSheet() {
     const sheet = document.querySelector('.test-category-nav-sheet[data-nav-sheet]');
     if (!sheet || sheet.dataset.bound === 'true') return;

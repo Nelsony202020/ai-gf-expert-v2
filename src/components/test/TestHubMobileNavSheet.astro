@@ -1,6 +1,5 @@
 ---
 import type { TestCategoryNode } from '../../lib/test-framework';
-import TestHubSidebar from './TestHubSidebar.astro';
 import type { TestHubTocSection } from '../../data/test-hub-content';
 
 interface Props {
@@ -11,7 +10,7 @@ interface Props {
   pageUrl?: string;
 }
 
-const { categories, tocSections, collapsibleToc = false, pageTitle, pageUrl } = Astro.props;
+const { tocSections, pageTitle, pageUrl } = Astro.props;
 ---
 
 <div
@@ -32,18 +31,49 @@ const { categories, tocSections, collapsibleToc = false, pageTitle, pageUrl } = 
     <div class="roundup-sheet__handle" aria-hidden="true"></div>
     <h2 id="test-hub-nav-sheet-title" class="roundup-nav-sheet__toc-title">Contents</h2>
 
-    <TestHubSidebar
-      categories={categories}
-      tocSections={tocSections}
-      mobile
-      collapsibleToc={collapsibleToc}
-    />
+    <nav class="roundup-nav-sheet__toc" aria-label="Table of contents">
+      <ul class="roundup-nav-sheet__toc-list">
+        {
+          tocSections.map((section) => (
+            <li
+              class:list={[section.children?.length && 'has-toc-children']}
+              data-toc-section={section.children?.length ? section.id : undefined}
+            >
+              <a class="roundup-nav-sheet__toc-link" href={`#${section.id}`} data-toc-link={section.id}>
+                {section.label}
+              </a>
+              {
+                section.children && section.children.length > 0 && (
+                  <ul class="roundup-nav-sheet__toc-sublist roundup-toc__sublist" data-toc-sublist>
+                    {
+                      section.children.map((child) => (
+                        <li>
+                          <a
+                            class="roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h3"
+                            href={`#${child.id}`}
+                            data-toc-link={child.id}
+                          >
+                            {child.label}
+                          </a>
+                        </li>
+                      ))
+                    }
+                  </ul>
+                )
+              }
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
 
     <button type="button" class="roundup-sheet__cancel" data-sheet-close>Close</button>
   </div>
 </div>
 
 <script>
+  import './test-hub-toc.client.ts';
+
   function initTestHubMobileNavSheet() {
     const sheet = document.querySelector('.test-hub-nav-sheet[data-nav-sheet]');
     if (!sheet || sheet.dataset.bound === 'true') return;

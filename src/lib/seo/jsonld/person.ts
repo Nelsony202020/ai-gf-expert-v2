@@ -1,8 +1,9 @@
 import type { AuthorProfile } from '../../../data/authors';
 import { cdnAsset } from '../../media/cdn';
 import { isLocalUrl, PRODUCTION_SITE_ORIGIN } from '../../siteOrigin';
-import { absoluteUrl, organizationId, personId } from './ids';
+import { absoluteUrl, personId } from './ids';
 import type { JsonLdNode } from './omitEmpty';
+import { buildOrganizationRef } from './organization';
 
 function absoluteAssetUrl(pathOrUrl: string): string | undefined {
   const trimmed = pathOrUrl.trim();
@@ -29,17 +30,24 @@ export function buildPersonSchema(author: AuthorProfile): JsonLdNode {
     jobTitle: author.title,
     description: author.bio,
     sameAs: sameAs.length > 0 ? sameAs : undefined,
-    worksFor: { '@id': organizationId() },
+    worksFor: buildOrganizationRef(),
   };
 }
 
-/** Lightweight Person reference for review author (@id only, or minimal when slug unknown). */
+/**
+ * Person reference for Review.author.
+ * Google Product snippets require `name` even when `@id` is present.
+ */
 export function buildPersonRef(author: {
   name: string;
   slug?: string;
 }): JsonLdNode {
   if (author.slug) {
-    return { '@type': 'Person', '@id': personId(author.slug) };
+    return {
+      '@type': 'Person',
+      '@id': personId(author.slug),
+      name: author.name,
+    };
   }
   return { '@type': 'Person', name: author.name };
 }

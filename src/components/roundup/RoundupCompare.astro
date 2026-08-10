@@ -326,14 +326,23 @@ function barHtml(score: number) {
     let selected = [...defaultIds];
     const byId = Object.fromEntries(comparePayload.map((p) => [p.id, p]));
 
+    function visibleCompareSlots(): number[] {
+      if (window.innerWidth >= 768) return selected.map((_, i) => i);
+      return selected.map((_, i) => i).filter((i) => i < 2);
+    }
+
     function syncPickerDisabled() {
+      const visibleSlots = new Set(visibleCompareSlots());
       root.querySelectorAll('[data-compare-option]').forEach((btn) => {
         const id = btn.dataset.compareOption;
         const slot = btn.dataset.compareSlot;
-        const selectedElsewhere = selected.some((sid, i) => sid === id && String(i) !== slot);
+        const slotNum = Number(slot);
+        const selectedElsewhere = selected.some(
+          (sid, i) => sid === id && String(i) !== slot && visibleSlots.has(i),
+        );
         btn.disabled = selectedElsewhere;
         btn.classList.toggle('is-disabled', selectedElsewhere);
-        btn.classList.toggle('is-active', selected[slot] === id);
+        btn.classList.toggle('is-active', selected[slotNum] === id);
       });
     }
 

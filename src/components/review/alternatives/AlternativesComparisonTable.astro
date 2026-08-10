@@ -1,0 +1,149 @@
+---
+import type { ComparisonTableRow, ComparisonTableTakeaway } from '../../../lib/alternatives/comparison-table';
+import { COMPARISON_TABLE_METRIC_KEYS, COMPARISON_TABLE_METRIC_LABELS } from '../../../lib/alternatives/comparison-table';
+import AlternativeComparisonRow from './AlternativeComparisonRow.astro';
+
+interface Props {
+  sourceName: string;
+  rows: ComparisonTableRow[];
+  takeaway: ComparisonTableTakeaway | null;
+  updatedLabel: string;
+  altCount: number;
+}
+
+const { sourceName, rows, takeaway, updatedLabel, altCount } = Astro.props;
+
+const gridCols = 'minmax(210px, 1.4fr) 96px repeat(7, minmax(58px, 1fr))';
+
+const sortColumns = [
+  { key: 'app', label: 'App' },
+  { key: 'match', label: 'Match' },
+  ...COMPARISON_TABLE_METRIC_KEYS.map((key) => ({
+    key,
+    label: COMPARISON_TABLE_METRIC_LABELS[key],
+  })),
+];
+---
+
+<div class="alt-compare-section" id="alt-comparison-table" data-alt-fin-table>
+  <div class="alt-compare-explainer">
+    <h3 class="alt-compare-explainer__pick-title">How we pick {sourceName} alternatives</h3>
+    <p class="alt-compare-explainer__pick-text">
+      We compare every reviewed app against {sourceName} using our hands-on scores across chat, customization,
+      images, video, privacy, pricing, and overall performance. The apps below are the <strong>closest matches</strong>,
+      ranked by similarity — not simply by highest score.
+    </p>
+    <ol class="alt-compare-explainer__steps">
+      <li><span>Compare scores</span></li>
+      <li><span>Measure similarity</span></li>
+      <li><span>Rank closest matches</span></li>
+    </ol>
+    <p class="alt-compare-explainer__note">
+      A higher match score means the app performs more like {sourceName} overall. Green shows where an alternative
+      performs better; red shows where {sourceName} performs better.
+    </p>
+  </div>
+
+  <header class="alt-fin-table__header">
+    <h3 class="alt-fin-table__title">How {sourceName} compares with its closest alternatives</h3>
+    <p class="alt-fin-table__sub">
+      The {altCount} most similar apps from our reviewed database, ranked by overall similarity.
+    </p>
+  </header>
+
+  <div class="alt-fin-table__shell">
+    <div class="alt-fin-table__scroll">
+      <div class="alt-fin-table__grid" style={`--alt-fin-cols: ${gridCols}`}>
+        <div class="alt-fin-table__head" role="row">
+          {
+            sortColumns.map((col, i) => (
+              <button
+                type="button"
+                class:list={['alt-fin-table__th', i === 0 && 'alt-fin-table__th--app']}
+                data-sort-key={col.key}
+                aria-label={`Sort by ${col.label}`}
+              >
+                {col.label}
+                <span class="alt-fin-table__sort-icon material-symbols-outlined" aria-hidden="true">unfold_more</span>
+              </button>
+            ))
+          }
+        </div>
+
+        <div class="alt-fin-table__body" data-alt-fin-body>
+          {rows.map((row) => <AlternativeComparisonRow row={row} />)}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {
+    takeaway && (
+      <aside class="alt-fin-table__takeaway">
+        <strong>Best match:</strong> {takeaway.text}
+      </aside>
+    )
+  }
+
+  <footer class="alt-fin-table__footer">
+    <p class="alt-fin-table__updated">Testing scores · Updated {updatedLabel}</p>
+  </footer>
+</div>
+
+<script>
+  document.querySelectorAll('[data-alt-fin-table]').forEach((root) => {
+    const body = root.querySelector<HTMLElement>('[data-alt-fin-body]');
+    const headers = root.querySelectorAll<HTMLButtonElement>('[data-sort-key]');
+    if (!body || !headers.length) return;
+
+    let sortKey = 'match';
+    let sortDir: 'asc' | 'desc' = 'desc';
+
+    function parseSortValue(row: HTMLElement, key: string): number | string {
+      const raw = row.getAttribute(`data-sort-${key}`);
+      if (raw == null) return key === 'app' ? '' : -Infinity;
+      if (key === 'app') return raw;
+      const num = Number(raw);
+      return Number.isFinite(num) ? num : raw;
+    }
+
+    function sortRows(key: string) {
+      if (sortKey === key) {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortKey = key;
+        sortDir = key === 'app' ? 'asc' : 'desc';
+      }
+
+      const rows = Array.from(body.querySelectorAll<HTMLElement>('.alt-fin-table__row'));
+      rows.sort((a, b) => {
+        const aVal = parseSortValue(a, key);
+        const bVal = parseSortValue(b, key);
+        let cmp = 0;
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          cmp = aVal.localeCompare(bVal);
+        } else {
+          cmp = (aVal as number) - (bVal as number);
+        }
+        if (a.dataset.source === 'true') return -1;
+        if (b.dataset.source === 'true') return 1;
+        return sortDir === 'asc' ? cmp : -cmp;
+      });
+
+      rows.forEach((row) => body.appendChild(row));
+
+      headers.forEach((btn) => {
+        const active = btn.dataset.sortKey === sortKey;
+        btn.dataset.sortActive = active ? sortDir : '';
+        const icon = btn.querySelector('.alt-fin-table__sort-icon');
+        if (icon) {
+          icon.textContent = active ? (sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more';
+        }
+      });
+    }
+
+    headers.forEach((btn) => {
+      btn.addEventListener('click', () => sortRows(btn.dataset.sortKey ?? 'match'));
+    });
+  });
+</script>

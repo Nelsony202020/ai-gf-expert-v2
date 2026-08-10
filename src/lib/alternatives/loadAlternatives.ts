@@ -14,6 +14,57 @@ import {
   sourceBeatsThreshold,
 } from './similarity';
 import { popularitySnapshotFromProducts, resolveAlternativeProduct } from './profiles';
+import {
+  getExternalMarketCompetitors,
+  getMarketTrafficChart,
+  getMarketMetricsTable,
+  type MarketCompetitorRow,
+  type MarketTrafficColumn,
+} from './external-market-data';
+import { fetchAhrefsMarketData } from './ahrefs';
+import { syncMarketSnapshots, type MarketSnapshotMonth } from './market-snapshots';
+import { buildRadarChartModel, type RadarChartModel } from './radar-chart';
+import {
+  buildBiggestDifferences,
+  compactPeerBullets,
+  type BiggestDifferencesModel,
+  type CompactPeerBullets,
+} from './comparison-insights';
+import {
+  buildComparisonTableRows,
+  buildComparisonTableTakeaway,
+  type ComparisonTableRow,
+  type ComparisonTableTakeaway,
+} from './comparison-table';
+
+export const DEFAULT_ALTERNATIVE_DISPLAY_COUNT = 3;
+export const MAX_ALTERNATIVE_DISPLAY_COUNT = 5;
+
+export interface QuickPickView {
+  label: string;
+  peer: AlternativePeerView;
+}
+
+export type SummaryStatTone = 'default' | 'better' | 'worse' | 'neutral';
+
+export interface SummaryStatRow {
+  label: string;
+  value: string;
+  unit?: string;
+  valueTone: SummaryStatTone;
+  sourceValue?: string;
+  sourceShortName?: string;
+}
+
+export interface SummaryFeatured {
+  productName: string;
+  bestFor: string;
+  similarity: number;
+  score: number;
+  price: string;
+  thumb?: string;
+  reviewUrl: string | null;
+}
 
 export interface AlternativePeerView {
   product: Product;
@@ -38,7 +89,13 @@ export interface AlternativesViewModel {
   source: Product;
   updatedLabel: string;
   intro: string;
+  summaryFeatured: SummaryFeatured | null;
+  summaryListStats: SummaryStatRow[];
+  appsCompared: number;
   peers: AlternativePeerView[];
+  testingPeers: AlternativePeerView[];
+  quickPicks: QuickPickView[];
+  tablePeers: AlternativePeerView[];
   bestOverall: AlternativePeerView | null;
   otherPeers: AlternativePeerView[];
   alternativeWins: WinLossRow[];
@@ -46,6 +103,19 @@ export interface AlternativesViewModel {
   popularity: Array<{ name: string; slug: string; searchInterest: number | null; highlight?: boolean }>;
   showPopularity: boolean;
   popularitySource: string;
+  marketCompetitors: MarketCompetitorRow[];
+  marketTrafficChart: MarketTrafficColumn[];
+  marketMetricsTable: MarketCompetitorRow[];
+  marketSnapshotMonths: MarketSnapshotMonth[];
+  marketSnapshotDefaultKey: string;
+  marketDataSource: 'ahrefs' | 'mock' | 'unavailable';
+  marketSourceDomain: string | null;
+  radarChart: RadarChartModel;
+  biggestDifferences: BiggestDifferencesModel;
+  compactBullets: Record<string, CompactPeerBullets>;
+  comparisonTableRows: ComparisonTableRow[];
+  comparisonTableExtraRows: ComparisonTableRow[];
+  comparisonTableTakeaway: ComparisonTableTakeaway | null;
   stickWithSourceIf: string;
   stickWithDecisionHook: string;
   stickWithDecisionIcon: string;
@@ -136,6 +206,156 @@ function sourceCategoryWins(
   return out.slice(0, 4);
 }
 
+function formatPeerPrice(peer: AlternativePeerView): string {
+  if (peer.priceMonthly != null) return `$${peer.priceMonthly.toFixed(2)}`;
+  const raw = peer.product.overview.highlights.startingPrice;
+  return raw.replace(/\s*\/\s*mo(nth)?/i, '').trim() || '—';
+}
+
+function productThumb(p: Product): string | undefined {
+  return p.logo ?? p.gallery[0]?.full ?? p.gallery[0]?.thumb;
+}
+
+function buildSummaryData(
+  source: Product,
+  sourceScores: Record<string, number | null>,
+  peers: AlternativePeerView[],
+  config: (typeof PRODUCT_ALTERNATIVES)[string],
+): { featured: SummaryFeatured | null; listStats: SummaryStatRow[] } {
+  const peerBySlug = Object.fromEntries(peers.map((p) => [p.product.slug, p]));
+  const closest = peers[0];
+  const sourceShortName = source.name.split(/\s+/)[0] ?? source.name;
+
+  const featured: SummaryFeatured | null = closest
+    ? {
+        productName: closest.product.name,
+        bestFor: closest.editorial.bestFor,
+        similarity: closest.similarity,
+        score: closest.product.overallScore,
+        price: formatPeerPrice(closest),
+        thumb: productThumb(closest.product),
+        reviewUrl: closest.reviewUrl,
+      }
+    : null;
+
+  function sourcePrice(): number | null {
+    const match = source.overview.highlights.startingPrice.match(/\$([\d.]+)/);
+    return match ? Number(match[1]) : null;
+  }
+
+  function scoreTone(peerVal: number, sourceVal: number): SummaryStatTone {
+    const diff = peerVal - sourceVal;
+    if (Math.abs(diff) < 0.05) return 'neutral';
+    return diff > 0 ? 'better' : 'worse';
+  }
+
+  function priceTone(peerVal: number, sourceVal: number): SummaryStatTone {
+    const diff = peerVal - sourceVal;
+    if (Math.abs(diff) < 0.05) return 'neutral';
+    return diff < 0 ? 'better' : 'worse';
+  }
+
+  const listStats: SummaryStatRow[] = [];
+  const slots = config.summarySlots ?? [];
+  for (const slot of slots) {
+    const peer = peerBySlug[slot.slug];
+    if (!peer) continue;
+
+    const metric = slot.compareMetric ?? (slot.valueKind === 'price' ? 'price' : 'overall');
+
+    if (metric === 'price') {
+      const peerPrice = peer.priceMonthly;
+      const srcPrice = sourcePrice();
+      const value = formatPeerPrice(peer);
+      const sourceValue = srcPrice != null ? `$${srcPrice.toFixed(2)}` : undefined;
+      const valueTone =
+        peerPrice != null && srcPrice != null ? priceTone(peerPrice, srcPrice) : 'default';
+
+      listStats.push({
+        label: slot.label,
+        value,
+        unit: '/mo',
+        valueTone,
+        sourceValue,
+        sourceShortName,
+      });
+      continue;
+    }
+
+    const peerScore =
+      metric === 'chat'
+        ? peer.categoryScores.chat
+        : peer.product.overallScore;
+    const sourceScore =
+      metric === 'chat' ? sourceScores.chat : source.overallScore;
+
+    const value =
+      peerScore != null ? peerScore.toFixed(1) : peer.product.overallScore.toFixed(1);
+    const sourceValue = sourceScore != null ? sourceScore.toFixed(1) : undefined;
+    const valueTone =
+      peerScore != null && sourceScore != null ? scoreTone(peerScore, sourceScore) : 'default';
+
+    listStats.push({
+      label: slot.label,
+      value,
+      valueTone,
+      sourceValue,
+      sourceShortName,
+    });
+  }
+
+  return { featured, listStats: listStats.slice(0, 3) };
+}
+
+async function loadMarketData(
+  productSlug: string,
+  sourceName: string,
+  config: (typeof PRODUCT_ALTERNATIVES)[string],
+): Promise<{
+  marketCompetitors: MarketCompetitorRow[];
+  marketTrafficChart: MarketTrafficColumn[];
+  marketMetricsTable: MarketCompetitorRow[];
+  marketSnapshotMonths: MarketSnapshotMonth[];
+  marketSnapshotDefaultKey: string;
+  marketDataSource: 'ahrefs' | 'mock' | 'unavailable';
+  marketSourceDomain: string | null;
+}> {
+  const sourceDomain = config.marketSourceDomain ?? null;
+  let metricsTable: MarketCompetitorRow[] = [];
+  let marketDataSource: 'ahrefs' | 'mock' | 'unavailable' = 'mock';
+  let marketCompetitors: MarketCompetitorRow[] = [];
+  let marketTrafficChart: MarketTrafficColumn[] = [];
+
+  if (sourceDomain) {
+    const live = await fetchAhrefsMarketData(sourceDomain, sourceName);
+    if (live) {
+      marketCompetitors = live.competitors;
+      marketTrafficChart = live.trafficChart;
+      metricsTable = live.metricsTable;
+      marketDataSource = 'ahrefs';
+    }
+  }
+
+  if (metricsTable.length === 0) {
+    marketCompetitors = getExternalMarketCompetitors(productSlug);
+    marketTrafficChart = getMarketTrafficChart(productSlug);
+    metricsTable = getMarketMetricsTable(productSlug);
+    marketDataSource = 'mock';
+  }
+
+  const { months, defaultKey } = syncMarketSnapshots(productSlug, metricsTable);
+
+  return {
+    marketCompetitors,
+    marketTrafficChart,
+    marketMetricsTable: metricsTable,
+    marketSnapshotMonths: months,
+    marketSnapshotDefaultKey: defaultKey,
+    marketDataSource,
+    marketSourceDomain: sourceDomain,
+  };
+}
+
 export async function loadAlternativesViewModel(source: Product): Promise<AlternativesViewModel | null> {
   const config = PRODUCT_ALTERNATIVES[source.slug];
   if (!config) return null;
@@ -167,18 +387,57 @@ export async function loadAlternativesViewModel(source: Product): Promise<Altern
 
   peers.sort((a, b) => b.similarity - a.similarity);
 
+  const peerBySlug = Object.fromEntries(peers.map((p) => [p.product.slug, p]));
+  const configuredSlugs = config.tablePeerSlugs ?? peers.slice(0, DEFAULT_ALTERNATIVE_DISPLAY_COUNT).map((p) => p.product.slug);
+  const displayPeers = configuredSlugs
+    .map((slug) => peerBySlug[slug])
+    .filter(Boolean)
+    .slice(0, DEFAULT_ALTERNATIVE_DISPLAY_COUNT) as AlternativePeerView[];
+  const displaySlugSet = new Set(displayPeers.map((p) => p.product.slug));
+  const expandablePeers = peers
+    .filter((p) => !displaySlugSet.has(p.product.slug))
+    .slice(0, MAX_ALTERNATIVE_DISPLAY_COUNT - DEFAULT_ALTERNATIVE_DISPLAY_COUNT);
+  const testingPeers = displayPeers;
+  const tablePeers = displayPeers;
+  const quickPicks = config.quickPicks
+    .map((slot) => {
+      const peer = peerBySlug[slot.slug];
+      return peer ? { label: slot.label, peer } : null;
+    })
+    .filter(Boolean) as QuickPickView[];
+
   const bestOverall = peers[0] ?? null;
   const otherPeers = peers.slice(1);
   const { alternativeWins, sourceWins } = buildWinRows(source, sourceScores, peers);
 
   const popularity = popularitySnapshotFromProducts(source, peers.map((p) => p.product));
   const popularityWithData = popularity.filter((p) => p.searchInterest != null && p.searchInterest > 0);
+  const { featured, listStats } = buildSummaryData(source, sourceScores, peers, config);
+  const marketData = await loadMarketData(source.slug, source.name, config);
+  const radarChart = buildRadarChartModel(
+    source.name,
+    sourceScores,
+    tablePeers.map((p) => ({ name: p.product.name, scores: p.categoryScores })),
+  );
+  const biggestDifferences = buildBiggestDifferences(source, sourceScores, tablePeers);
+  const compactBullets = Object.fromEntries(
+    displayPeers.map((p) => [p.product.slug, compactPeerBullets(p)]),
+  );
+  const comparisonTableRows = buildComparisonTableRows(source, sourceScores, tablePeers);
+  const comparisonTableExtraRows = buildComparisonTableRows(source, sourceScores, expandablePeers).slice(1);
+  const comparisonTableTakeaway = buildComparisonTableTakeaway(source, sourceScores, tablePeers[0] ?? null);
 
   return {
     source,
     updatedLabel: config.updatedLabel,
-    intro: `We compared ${source.name} against every app we've tested. These are the closest alternatives based on our scores, features, pricing, and hands-on testing.`,
+    intro: `We compared ${source.name} with the closest AI companion apps we've tested. The alternatives below are based on our hands-on scores, pricing, features, and overall similarity.`,
+    summaryFeatured: featured,
+    summaryListStats: listStats,
+    appsCompared: peers.length,
     peers,
+    testingPeers,
+    quickPicks,
+    tablePeers,
     bestOverall,
     otherPeers,
     alternativeWins,
@@ -186,6 +445,19 @@ export async function loadAlternativesViewModel(source: Product): Promise<Altern
     popularity,
     showPopularity: popularityWithData.length >= 3,
     popularitySource: 'Google Trends relative search interest',
+    marketCompetitors: marketData.marketCompetitors,
+    marketTrafficChart: marketData.marketTrafficChart,
+    marketMetricsTable: marketData.marketMetricsTable,
+    marketSnapshotMonths: marketData.marketSnapshotMonths,
+    marketSnapshotDefaultKey: marketData.marketSnapshotDefaultKey,
+    marketDataSource: marketData.marketDataSource,
+    marketSourceDomain: marketData.marketSourceDomain,
+    radarChart,
+    biggestDifferences,
+    compactBullets,
+    comparisonTableRows,
+    comparisonTableExtraRows,
+    comparisonTableTakeaway,
     stickWithSourceIf:
       'You prioritize chat realism and video generation in one app, and you are comfortable with slower image generation speeds.',
     stickWithDecisionHook: config.stickWithDecisionHook,

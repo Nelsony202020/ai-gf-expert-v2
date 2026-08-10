@@ -1,0 +1,266 @@
+---
+import type { MarketCompetitorRow } from '../../../lib/alternatives/external-market-data';
+import {
+  formatTrafficChangeAbs,
+  formatValueChangeAbs,
+} from '../../../lib/alternatives/external-market-data';
+import { normalizeMarketRow } from '../../../lib/alternatives/market-snapshots';
+import { faviconUrl } from '../../../lib/alternatives/ahrefs';
+import type { MarketSnapshotMonth } from '../../../lib/alternatives/market-snapshots';
+import KeywordOverlapBar from './KeywordOverlapBar.astro';
+
+interface Props {
+  rows: MarketCompetitorRow[];
+  sourceName: string;
+  snapshotMonths: MarketSnapshotMonth[];
+  defaultMonthKey: string;
+}
+
+const { rows, sourceName, snapshotMonths, defaultMonthKey } = Astro.props;
+
+const months =
+  snapshotMonths.length > 0
+    ? snapshotMonths.map((m) => ({ ...m, rows: m.rows.map(normalizeMarketRow) }))
+    : [{ key: defaultMonthKey, label: 'Current', rows: rows.map(normalizeMarketRow) }];
+
+const gridCols =
+  '36px minmax(220px, 1.35fr) 52px minmax(120px, 0.95fr) minmax(210px, 1.2fr) 88px 96px 88px 96px';
+
+const sortColumns = [
+  { key: 'rank', label: '#', align: 'center' as const },
+  { key: 'competitor', label: 'Competitor', align: 'left' as const },
+  { key: 'dr', label: 'DR', align: 'right' as const },
+  { key: 'shared', label: 'Shared keywords', align: 'right' as const },
+  { key: 'overlap', label: 'Keyword overlap', align: 'left' as const },
+  { key: 'traffic', label: 'Traffic', align: 'right' as const },
+  { key: 'trafficChange', label: 'Traffic change', align: 'right' as const },
+  { key: 'value', label: 'Value', align: 'right' as const },
+  { key: 'valueChange', label: 'Value change', align: 'right' as const },
+] as const;
+
+function changeClass(n: number | null): string {
+  if (n == null || !Number.isFinite(n) || Math.abs(n) < 1) return 'alt-market-table__change alt-market-table__change--flat';
+  return n > 0 ? 'alt-market-table__change alt-market-table__change--up' : 'alt-market-table__change alt-market-table__change--down';
+}
+---
+
+<div class="alt-market-table-section" data-alt-market-table>
+  <header class="alt-market-table__header">
+    <div class="alt-market-table__header-row">
+      <div>
+        <h3 class="alt-fin-table__title">Closest search competitors for {sourceName}</h3>
+        <p class="alt-fin-table__sub">
+          Ahrefs organic competitors for {sourceName}, ranked by shared Google keywords.
+        </p>
+      </div>
+      {
+        months.length > 1 && (
+          <label class="alt-market-table__month-filter">
+            <span class="alt-market-table__month-filter-label">Month</span>
+            <select data-alt-market-month aria-label="Filter by month">
+              {
+                months.map((m) => (
+                  <option value={m.key} selected={m.key === defaultMonthKey}>
+                    {m.label}
+                  </option>
+                ))
+              }
+            </select>
+          </label>
+        )
+      }
+    </div>
+  </header>
+
+  <div class="alt-fin-table__shell alt-market-table__shell">
+    <div class="alt-fin-table__scroll alt-market-table__scroll">
+      <div class="alt-fin-table__grid alt-market-table__grid" style={`--alt-fin-cols: ${gridCols}`}>
+        <div class="alt-fin-table__head alt-market-table__head" role="row">
+          {
+            sortColumns.map((col, i) => (
+              <button
+                type="button"
+                class:list={[
+                  'alt-fin-table__th',
+                  i === 1 && 'alt-fin-table__th--app',
+                  col.align === 'right' && 'alt-fin-table__th--num',
+                  col.align === 'center' && 'alt-fin-table__th--center',
+                ]}
+                data-sort-key={col.key}
+                aria-label={`Sort by ${col.label}`}
+              >
+                {col.label}
+                <span class="alt-fin-table__sort-icon material-symbols-outlined" aria-hidden="true">unfold_more</span>
+              </button>
+            ))
+          }
+        </div>
+
+        {
+          months.map((month) => (
+            <div
+              class="alt-fin-table__body"
+              data-alt-market-body
+              data-month={month.key}
+              hidden={month.key !== defaultMonthKey}
+            >
+              {
+                month.rows.map((row, idx) => (
+                  <div
+                    class:list={['alt-fin-table__row', 'alt-market-table__row', idx % 2 === 1 && 'alt-market-table__row--alt']}
+                    role="row"
+                    data-sort-rank={idx + 1}
+                    data-sort-competitor={row.name}
+                    data-sort-dr={row.domainRating}
+                    data-sort-shared={row.sharedKeywords}
+                    data-sort-overlap={row.keywordOverlap}
+                    data-sort-traffic={row.organicTrafficNum}
+                    data-sort-trafficChange={row.trafficChangeAbs ?? -999999999}
+                    data-sort-value={row.trafficValue}
+                    data-sort-valueChange={row.trafficValueChangeAbs ?? -999999999}
+                  >
+                    <div class="alt-fin-table__cell alt-market-table__rank">
+                      <span class="alt-market-table__rank-num">{idx + 1}</span>
+                    </div>
+
+                    <div class="alt-fin-table__app alt-market-table__app">
+                      <div class="alt-fin-table__logo-wrap">
+                        <img
+                          src={faviconUrl(row.domain)}
+                          alt=""
+                          width="32"
+                          height="32"
+                          class="alt-fin-table__logo alt-fin-table__logo--square"
+                          loading="lazy"
+                        />
+                      </div>
+                      <span class="alt-fin-table__app-name alt-market-table__name">{row.name}</span>
+                    </div>
+
+                    <div class="alt-fin-table__cell alt-market-table__cell--num">
+                      <span class="alt-fin-table__value alt-market-table__dr">{row.domainRating || '—'}</span>
+                    </div>
+
+                    <div class="alt-fin-table__cell alt-market-table__cell--num">
+                      <span class="alt-fin-table__value alt-market-table__shared">{row.sharedKeywords.toLocaleString()}</span>
+                    </div>
+
+                    <div class="alt-fin-table__cell alt-market-table__overlap-cell">
+                      <KeywordOverlapBar row={row} sourceName={sourceName} />
+                    </div>
+
+                    <div class="alt-fin-table__cell alt-market-table__cell--num">
+                      <span class="alt-fin-table__value alt-market-table__traffic">{row.organicTraffic}</span>
+                    </div>
+
+                    <div class="alt-fin-table__cell alt-market-table__cell--num">
+                      <span class={changeClass(row.trafficChangeAbs)}>
+                        {formatTrafficChangeAbs(row.trafficChangeAbs)}
+                      </span>
+                    </div>
+
+                    <div class="alt-fin-table__cell alt-market-table__cell--num">
+                      <span class="alt-fin-table__value alt-market-table__traffic-value">{row.trafficValueLabel}</span>
+                    </div>
+
+                    <div class="alt-fin-table__cell alt-market-table__cell--num">
+                      <span class={changeClass(row.trafficValueChangeAbs)}>
+                        {formatValueChangeAbs(row.trafficValueChangeAbs)}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('[data-alt-market-table]').forEach((root) => {
+    const bodies = root.querySelectorAll<HTMLElement>('[data-alt-market-body]');
+    const headers = root.querySelectorAll<HTMLButtonElement>('[data-sort-key]');
+    const monthSelect = root.querySelector<HTMLSelectElement>('[data-alt-market-month]');
+    if (!bodies.length || !headers.length) return;
+
+    let sortKey = 'shared';
+    let sortDir: 'asc' | 'desc' = 'desc';
+
+    function activeBody(): HTMLElement | null {
+      return root.querySelector<HTMLElement>('[data-alt-market-body]:not([hidden])');
+    }
+
+    function parseSortValue(row: HTMLElement, key: string): number | string {
+      const raw = row.getAttribute(`data-sort-${key}`);
+      if (raw == null) return key === 'competitor' ? '' : -Infinity;
+      if (key === 'competitor') return raw;
+      const num = Number(raw);
+      return Number.isFinite(num) ? num : raw;
+    }
+
+    function updateRankNumbers(body: HTMLElement) {
+      body.querySelectorAll<HTMLElement>('.alt-fin-table__row').forEach((row, i) => {
+        const badge = row.querySelector('.alt-market-table__rank-num');
+        if (badge) badge.textContent = String(i + 1);
+        row.dataset.sortRank = String(i + 1);
+      });
+    }
+
+    function sortRows(key: string) {
+      const body = activeBody();
+      if (!body) return;
+
+      if (sortKey === key) {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortKey = key;
+        sortDir = key === 'competitor' ? 'asc' : 'desc';
+      }
+
+      const rows = Array.from(body.querySelectorAll<HTMLElement>('.alt-fin-table__row'));
+      rows.sort((a, b) => {
+        const aVal = parseSortValue(a, key);
+        const bVal = parseSortValue(b, key);
+        let cmp = 0;
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          cmp = aVal.localeCompare(bVal);
+        } else {
+          cmp = (aVal as number) - (bVal as number);
+        }
+        return sortDir === 'asc' ? cmp : -cmp;
+      });
+
+      rows.forEach((row) => body.appendChild(row));
+      updateRankNumbers(body);
+
+      headers.forEach((btn) => {
+        const active = btn.dataset.sortKey === sortKey;
+        btn.dataset.sortActive = active ? sortDir : '';
+        const icon = btn.querySelector('.alt-fin-table__sort-icon');
+        if (icon) {
+          icon.textContent = active ? (sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more';
+        }
+      });
+    }
+
+    headers.forEach((btn) => {
+      btn.addEventListener('click', () => sortRows(btn.dataset.sortKey ?? 'shared'));
+    });
+
+    monthSelect?.addEventListener('change', () => {
+      bodies.forEach((body) => {
+        body.hidden = body.dataset.month !== monthSelect.value;
+      });
+      sortKey = 'shared';
+      sortDir = 'desc';
+      headers.forEach((btn) => {
+        btn.dataset.sortActive = btn.dataset.sortKey === 'shared' ? 'desc' : '';
+        const icon = btn.querySelector('.alt-fin-table__sort-icon');
+        if (icon) icon.textContent = btn.dataset.sortKey === 'shared' ? 'arrow_downward' : 'unfold_more';
+      });
+    });
+  });
+</script>

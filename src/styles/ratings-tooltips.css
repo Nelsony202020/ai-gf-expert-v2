@@ -899,6 +899,62 @@ a.rt-inline-test-link.rt-comp-name {
     pointer-events: auto;
   }
 
+  .ratings-tooltip-panel--mobile-sheet {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 24px);
+    overflow: hidden;
+  }
+
+  .ratings-tooltip-panel--mobile-sheet::before {
+    display: none;
+  }
+
+  .ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__header {
+    flex-shrink: 0;
+    padding: 12px 14px;
+  }
+
+  .ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__header--closable {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: start;
+    column-gap: 10px;
+    row-gap: 6px;
+    padding-right: 10px;
+  }
+
+  .ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__header--closable .ratings-tooltip-panel__section-title {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
+    font-size: 12px;
+    color: var(--color-accent);
+  }
+
+  .ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__header--closable .ratings-tooltip-panel__desc {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 0;
+  }
+
+  .ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__header--closable .ratings-tooltip-panel__close {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  .ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__body,
+  .ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__body--compact {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .ratings-tooltip-panel--methodology.ratings-tooltip-panel--mobile-sheet {
     display: flex;
     flex-direction: column;

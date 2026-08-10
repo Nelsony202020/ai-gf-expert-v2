@@ -1,0 +1,108 @@
+---
+import type { MarketTrafficColumn } from '../../../lib/alternatives/external-market-data';
+import { faviconUrl } from '../../../lib/alternatives/ahrefs';
+import { formatTraffic } from '../../../lib/alternatives/external-market-data';
+
+interface Props {
+  sourceDomain: string;
+  columns: MarketTrafficColumn[];
+  periodLabel: string;
+}
+
+const { sourceDomain, columns, periodLabel } = Astro.props;
+const maxTraffic = Math.max(...columns.map((c) => c.traffic), 1);
+const midTraffic = Math.round(maxTraffic / 2);
+const yTicks = [
+  { label: formatTraffic(maxTraffic), pct: 100 },
+  { label: formatTraffic(midTraffic), pct: 50 },
+  { label: '0', pct: 0 },
+];
+---
+
+<div class="alt-market-chart" data-alt-market-chart>
+  <header class="alt-market-chart__head">
+    <h4 class="alt-market-chart__title">
+      Comparison of Monthly Visits: <strong>{sourceDomain}</strong> vs Competitors, {periodLabel}
+    </h4>
+    <p class="alt-market-chart__sub">
+      Estimated organic search traffic from Ahrefs. Bars scale from the baseline — hover any bar for exact visits.
+    </p>
+  </header>
+
+  <div class="alt-market-chart__frame">
+    <div class="alt-market-chart__y-axis" aria-hidden="true">
+      {
+        yTicks.map((tick) => (
+          <span class="alt-market-chart__y-tick" style={`bottom: ${tick.pct}%`}>
+            {tick.label}
+          </span>
+        ))
+      }
+    </div>
+
+    <div class="alt-market-chart__plot" role="img" aria-label={`Monthly visits comparison for ${sourceDomain}`}>
+      <div class="alt-market-chart__y-line" aria-hidden="true" />
+      <div class="alt-market-chart__grid-lines" aria-hidden="true">
+        <span style="bottom: 50%" />
+        <span style="bottom: 100%" />
+      </div>
+
+      <div class="alt-market-chart__bars">
+        {
+          columns.map((col) => {
+            const pct = Math.max(2, (col.traffic / maxTraffic) * 100);
+            const isTiny = pct < 8;
+            return (
+              <div class="alt-market-chart__col">
+                <div class="alt-market-chart__bar-area">
+                  <button
+                    type="button"
+                    class:list={[
+                      'alt-market-chart__bar',
+                      col.isSource && 'alt-market-chart__bar--source',
+                      isTiny && 'alt-market-chart__bar--tiny',
+                    ]}
+                    style={`height: ${pct}%; background: ${col.barColor}`}
+                    data-traffic={col.trafficLabel}
+                    data-domain={col.domain}
+                    aria-label={`${col.domain}: ${col.trafficLabel} monthly visits`}
+                  >
+                    <span class="alt-market-chart__bar-value">{col.trafficLabel}</span>
+                    <span class="alt-market-chart__tooltip" role="tooltip">
+                      <strong>{col.domain}</strong>
+                      <span>{col.trafficLabel} visits / mo</span>
+                    </span>
+                  </button>
+                </div>
+                <div class="alt-market-chart__x-label">
+                  <img
+                    src={faviconUrl(col.domain)}
+                    alt=""
+                    class="alt-market-chart__favicon"
+                    width="24"
+                    height="24"
+                    loading="lazy"
+                  />
+                  <span class="alt-market-chart__domain">{col.domain}</span>
+                </div>
+              </div>
+            );
+          })
+        }
+      </div>
+
+      <div class="alt-market-chart__baseline" aria-hidden="true" />
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('[data-alt-market-chart]').forEach((root) => {
+    root.querySelectorAll<HTMLButtonElement>('.alt-market-chart__bar').forEach((bar) => {
+      bar.addEventListener('mouseenter', () => bar.setAttribute('data-hover', 'true'));
+      bar.addEventListener('mouseleave', () => bar.removeAttribute('data-hover'));
+      bar.addEventListener('focus', () => bar.setAttribute('data-hover', 'true'));
+      bar.addEventListener('blur', () => bar.removeAttribute('data-hover'));
+    });
+  });
+</script>

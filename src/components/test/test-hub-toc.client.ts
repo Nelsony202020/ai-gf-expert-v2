@@ -58,7 +58,7 @@ function initTestHubTocRoot(root: HTMLElement) {
 export function initTestHubTocNav() {
   document
     .querySelectorAll<HTMLElement>(
-      '.test-hub-sidebar, .test-hub-nav-sheet, .buying-guide-sidebar, .buying-guide-nav-sheet',
+      '.test-hub-sidebar, .test-hub-nav-sheet, .test-category-nav-sheet, .buying-guide-sidebar, .buying-guide-nav-sheet',
     )
     .forEach(initTestHubTocRoot);
 }

@@ -135,7 +135,7 @@
 .ratings-subscore-nav__item {
   position: relative;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.625rem;
   min-height: 3.5rem;
@@ -146,6 +146,10 @@
   background: transparent;
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ratings-subscore-nav__item > :first-child {
+  flex-shrink: 0;
 }
 
 .ratings-subscore-nav__item:hover {
@@ -443,6 +447,15 @@
   align-items: center;
   justify-content: flex-start;
   width: 3.25rem;
+  flex-shrink: 0;
+}
+
+.evidence-cat-table__score .rt-score-chip {
+  flex-shrink: 0;
+  min-width: 2.75rem;
+  width: 2.75rem;
+  padding-inline: 0;
+  justify-content: center;
 }
 
 .evidence-cat-table__score-col {

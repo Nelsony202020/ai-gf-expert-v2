@@ -1,10 +1,10 @@
 import type { Roundup, RoundupPick } from '../../../data/roundups/ai-girlfriend';
 import { isLocalUrl } from '../../siteOrigin';
 import { reviewPageUrl } from '../../slugs';
-import { absoluteUrl, organizationId, productId, websiteId } from './ids';
+import { absoluteUrl, productId, websiteId } from './ids';
 import type { JsonLdNode } from './omitEmpty';
 import { buildBreadcrumbSchema } from './breadcrumb';
-import { buildOrganizationSchema } from './organization';
+import { buildOrganizationRef, buildOrganizationSchema } from './organization';
 
 function pickImage(pick: RoundupPick): string | undefined {
   const candidates = [pick.logo, pick.gallery?.[0]?.full];
@@ -59,7 +59,7 @@ export function buildRoundupItemListSchema(
     description: roundup.metaDescription,
     isPartOf: { '@id': websiteId() },
     mainEntity: { '@id': `${pageUrl}#itemlist` },
-    publisher: { '@id': organizationId() },
+    publisher: buildOrganizationRef(),
   };
 
   return [

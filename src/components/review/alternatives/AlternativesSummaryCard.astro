@@ -1,0 +1,104 @@
+---
+import { fmtScore } from '../../../lib/scores';
+import type { SummaryFeatured, SummaryStatRow } from '../../../lib/alternatives/loadAlternatives';
+
+interface Props {
+  featured: SummaryFeatured | null;
+  listStats: SummaryStatRow[];
+  appsCompared: number;
+}
+
+const { featured, listStats, appsCompared } = Astro.props;
+---
+
+<aside class="alt-summary-card" aria-label="Alternatives summary">
+  <header class="alt-summary-card__head">
+    <div>
+      <h3 class="alt-summary-card__title">Alternatives Summary</h3>
+      <p class="alt-summary-card__meta">{appsCompared} apps compared</p>
+    </div>
+  </header>
+
+  {
+    featured && (
+      <div class="alt-summary-card__featured">
+        <div class="alt-summary-card__featured-media">
+          {
+            featured.thumb ? (
+              <img
+                src={featured.thumb}
+                alt=""
+                class="alt-summary-card__featured-img"
+                width="56"
+                height="56"
+                loading="lazy"
+              />
+            ) : (
+              <div class="alt-summary-card__featured-img alt-summary-card__featured-img--fallback" aria-hidden="true">
+                <span class="material-symbols-outlined">smart_toy</span>
+              </div>
+            )
+          }
+        </div>
+        <div class="alt-summary-card__featured-body">
+          <p class="alt-summary-card__featured-kicker">Closest match</p>
+          {
+            featured.reviewUrl ? (
+              <a href={featured.reviewUrl} class="alt-summary-card__featured-name">
+                {featured.productName}
+              </a>
+            ) : (
+              <p class="alt-summary-card__featured-name">{featured.productName}</p>
+            )
+          }
+          <p class="alt-summary-card__featured-sub">Best for {featured.bestFor.toLowerCase()}</p>
+          <div class="alt-summary-card__featured-metrics">
+            <div class="alt-summary-card__mini-stat">
+              <p class="alt-summary-card__mini-label">Similarity</p>
+              <p class="alt-summary-card__mini-value alt-summary-card__mini-value--green">{featured.similarity}%</p>
+            </div>
+            <div class="alt-summary-card__mini-stat">
+              <p class="alt-summary-card__mini-label">Score</p>
+              <p class="alt-summary-card__mini-value alt-summary-card__mini-value--green">{fmtScore(featured.score)}/10</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  {
+    listStats.length > 0 && (
+      <ul class="alt-summary-card__list">
+        {
+          listStats.map((stat) => (
+            <li class="alt-summary-card__row">
+              <span class="alt-summary-card__label">{stat.label}</span>
+              <div class="alt-summary-card__value-group">
+                <span
+                  class:list={[
+                    'alt-summary-card__value',
+                    stat.valueTone === 'better' && 'alt-summary-card__value--better',
+                    stat.valueTone === 'worse' && 'alt-summary-card__value--worse',
+                    stat.valueTone === 'neutral' && 'alt-summary-card__value--neutral',
+                  ]}
+                >
+                  {stat.value}
+                  {stat.unit && <span class="alt-summary-card__unit">{stat.unit}</span>}
+                </span>
+                {
+                  stat.sourceValue && (
+                    <span class="alt-summary-card__source-ref">
+                      <span class="alt-summary-card__source-value">{stat.sourceValue}</span>
+                      <span class="alt-summary-card__source-name">{stat.sourceShortName}</span>
+                    </span>
+                  )
+                }
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    )
+  }
+</aside>

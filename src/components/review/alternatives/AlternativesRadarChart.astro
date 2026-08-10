@@ -1,0 +1,73 @@
+---
+import type { RadarChartModel } from '../../../lib/alternatives/radar-chart';
+import {
+  radarAxisPoint,
+  radarLabelPoint,
+  radarPolygonPoints,
+} from '../../../lib/alternatives/radar-chart';
+
+interface Props {
+  model: RadarChartModel;
+}
+
+const { model } = Astro.props;
+const cx = 160;
+const cy = 160;
+const radius = 100;
+const n = model.labels.length;
+const gridLevels = [2, 4, 6, 8, 10];
+---
+
+<div class="alt-radar" role="img" aria-label="Score comparison radar chart">
+  <svg viewBox="0 0 320 320" class="alt-radar__svg" aria-hidden="true">
+    {
+      gridLevels.map((level) => (
+        <polygon
+          points={radarPolygonPoints(Array(n).fill(level), cx, cy, radius)}
+          class="alt-radar__grid"
+        />
+      ))
+    }
+    {
+      model.labels.map((_, i) => {
+        const end = radarAxisPoint(i, n, cx, cy, radius);
+        return <line x1={cx} y1={cy} x2={end.x} y2={end.y} class="alt-radar__axis" />;
+      })
+    }
+    {
+      model.series
+        .slice()
+        .reverse()
+        .map((series) => (
+          <polygon
+            points={radarPolygonPoints(series.scores, cx, cy, radius)}
+            class:list={['alt-radar__series', series.highlight && 'alt-radar__series--highlight']}
+            fill={series.color}
+            stroke={series.color}
+            fill-opacity={series.highlight ? 0.18 : 0.08}
+            stroke-width={series.highlight ? 2.5 : 1.5}
+          />
+        ))
+    }
+    {
+      model.labels.map((label, i) => {
+        const p = radarLabelPoint(i, n, cx, cy, radius);
+        return (
+          <text x={p.x} y={p.y} class="alt-radar__label" text-anchor="middle" dominant-baseline="middle">
+            {label}
+          </text>
+        );
+      })
+    }
+  </svg>
+  <ul class="alt-radar__legend">
+    {
+      model.series.map((series) => (
+        <li class="alt-radar__legend-item">
+          <span class="alt-radar__legend-dot" style={`background: ${series.color}`} />
+          {series.name}
+        </li>
+      ))
+    }
+  </ul>
+</div>

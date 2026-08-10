@@ -17,6 +17,13 @@ if (Object.keys(mediaById).length === 0) {
     mediaById[item.id] = { url: item.src, altText: item.alt, mediaType: item.type };
   }
 }
+for (const item of product.gallery ?? []) {
+  if (!item.full) continue;
+  const galleryId = `gallery-${item.full}`;
+  if (!mediaById[galleryId]) {
+    mediaById[galleryId] = { url: item.full, altText: item.alt, mediaType: 'image' };
+  }
+}
 
 const sections = hasSavedReview
   ? buildReviewToc(reviewBlocks)
@@ -544,6 +551,11 @@ const reviewVideoId = product.videoReview?.embedUrl
     display: block;
     box-sizing: border-box;
     margin: 0 0 1.25rem;
+    position: relative;
+  }
+
+  .review-blocks .review-figure--crop {
+    overflow: hidden;
   }
 
   .review-blocks .review-figure__zoom {
@@ -557,6 +569,20 @@ const reviewVideoId = product.videoReview?.embedUrl
     border-radius: inherit;
     overflow: hidden;
     outline: none;
+    line-height: 0;
+  }
+
+  .review-blocks .review-figure--crop .review-figure__zoom {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+  }
+
+  .review-blocks .review-figure--crop .review-figure__zoom img,
+  .review-blocks .review-figure--crop .review-figure__zoom video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .review-blocks .review-figure__zoom:focus-visible {

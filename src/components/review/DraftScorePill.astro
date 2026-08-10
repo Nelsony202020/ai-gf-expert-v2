@@ -34,7 +34,7 @@ const badgeSizes: Record<NonNullable<Props['size']>, string> = {
 
 const sizes = shape === 'rect' ? rectSizes : shape === 'badge' ? badgeSizes : pillSizes;
 
-const base = 'inline-flex items-center justify-center font-black leading-none';
+const base = 'inline-flex shrink-0 items-center justify-center font-black leading-none';
 const styles =
   variant === 'solid'
     ? `${visual.bg}`

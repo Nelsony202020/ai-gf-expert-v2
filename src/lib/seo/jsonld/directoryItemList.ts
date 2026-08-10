@@ -1,10 +1,10 @@
 import type { HomeExplorerApp } from '../../../data/homepage';
 import { isLocalUrl } from '../../siteOrigin';
 import { reviewPageUrl } from '../../slugs';
-import { absoluteUrl, organizationId, productId, websiteId } from './ids';
+import { absoluteUrl, productId, websiteId } from './ids';
 import type { JsonLdNode } from './omitEmpty';
 import { buildBreadcrumbSchema } from './breadcrumb';
-import { buildOrganizationSchema } from './organization';
+import { buildOrganizationRef, buildOrganizationSchema } from './organization';
 
 export interface DirectorySchemaApp {
   slug: string;
@@ -82,7 +82,7 @@ export function buildDirectoryItemListSchema(
     name: opts.name,
     description: opts.description,
     isPartOf: { '@id': websiteId() },
-    publisher: { '@id': organizationId() },
+    publisher: buildOrganizationRef(),
     mainEntity: { '@id': itemListId },
   };
 

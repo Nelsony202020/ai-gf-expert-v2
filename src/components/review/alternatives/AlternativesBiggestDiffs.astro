@@ -1,0 +1,54 @@
+---
+import type { BiggestDifferencesModel } from '../../../lib/alternatives/comparison-insights';
+
+interface Props {
+  model: BiggestDifferencesModel;
+  sourceName: string;
+}
+
+const { model, sourceName } = Astro.props;
+
+function fmtDelta(n: number): string {
+  return `+${n.toFixed(1)}`;
+}
+---
+
+<div class="alt-diffs">
+  <h4 class="alt-diffs__title">Biggest differences</h4>
+
+  {
+    model.peerGroups.length > 0 ? (
+      model.peerGroups.map((group) => (
+        <div class="alt-diffs__group">
+          <p class="alt-diffs__peer">{group.peerName}</p>
+          <ul class="alt-diffs__list">
+            {group.diffs.map((d) => (
+              <li class="alt-diffs__row">
+                <span class="alt-diffs__cat">{d.label}</span>
+                <span class="alt-diffs__delta alt-diffs__delta--peer">{fmtDelta(d.delta)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    ) : (
+      <p class="alt-diffs__empty">No major category gaps vs. listed alternatives.</p>
+    )
+  }
+
+  {
+    model.sourceWins.length > 0 && (
+      <div class="alt-diffs__group alt-diffs__group--source">
+        <p class="alt-diffs__peer">{sourceName} wins</p>
+        <ul class="alt-diffs__list">
+          {model.sourceWins.map((d) => (
+            <li class="alt-diffs__row">
+              <span class="alt-diffs__cat">{d.label}</span>
+              <span class="alt-diffs__delta alt-diffs__delta--source">{fmtDelta(d.delta)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+</div>

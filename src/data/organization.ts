@@ -4,6 +4,7 @@
 import { cdnAsset, getCdnBaseUrl } from '../lib/media/cdn';
 import { PRODUCTION_SITE_ORIGIN } from '../lib/siteOrigin';
 import { companyLegalName } from './site-contact';
+import { BRAND_SAME_AS } from './social-links';
 
 export interface OrganizationConfig {
   name: string;
@@ -23,11 +24,7 @@ export const organizationConfig: OrganizationConfig = {
   description:
     'Independent AI companion reviews based on data driven objective test results.',
   email: 'hermanjcarter@gmail.com',
-  sameAs: [
-    'https://www.instagram.com/ai.girlfriend.expert',
-    'https://www.tiktok.com/@ai.girlfriend.expert',
-    'https://www.youtube.com/@ai-girlfriend-expert',
-  ],
+  sameAs: BRAND_SAME_AS,
   logoPath: '/brand/girlfriend-expert-logo.png',
 };
 

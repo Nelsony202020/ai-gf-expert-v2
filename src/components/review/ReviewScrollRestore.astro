@@ -79,6 +79,13 @@ const { productSlug } = Astro.props;
       if (typeof state.y === 'number') {
         window.scrollTo({ top: state.y, behavior: 'instant' in window ? 'instant' : 'auto' });
       }
+
+      const activePanel = document.querySelector('[data-tab-panel]:not(.hidden)');
+      requestAnimationFrame(() => {
+        import('../../lib/review/hydratePanelMedia.client.ts').then(({ hydratePanelMedia }) => {
+          hydratePanelMedia(activePanel);
+        });
+      });
     };
 
     requestAnimationFrame(() => requestAnimationFrame(apply));

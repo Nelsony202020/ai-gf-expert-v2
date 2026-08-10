@@ -1,0 +1,109 @@
+---
+import { fmtSignedDelta } from '../../../lib/alternatives/comparison-table';
+import type { ComparisonTableRow } from '../../../lib/alternatives/comparison-table';
+import { COMPARISON_TABLE_METRIC_KEYS } from '../../../lib/alternatives/comparison-table';
+
+interface Props {
+  row: ComparisonTableRow;
+}
+
+const { row } = Astro.props;
+
+function sortMetricValue(key: string): string {
+  const cell = row.cells[key as keyof typeof row.cells];
+  if (cell.kind === 'price') {
+    const num = cell.display.replace(/[^0-9.]/g, '');
+    return num || '0';
+  }
+  const num = cell.display.replace(/[^0-9.]/g, '');
+  return num || '0';
+}
+---
+
+<div
+  class:list={['alt-fin-table__row', row.isSource && 'alt-fin-table__row--source']}
+  role="row"
+  data-source={row.isSource ? 'true' : 'false'}
+  data-sort-app={row.name}
+  data-sort-match={row.similarity ?? 0}
+  data-sort-overall={sortMetricValue('overall')}
+  data-sort-chat={sortMetricValue('chat')}
+  data-sort-customization={sortMetricValue('customization')}
+  data-sort-images={sortMetricValue('images')}
+  data-sort-video={sortMetricValue('video')}
+  data-sort-privacy={sortMetricValue('privacy')}
+  data-sort-price={sortMetricValue('price')}
+>
+  <div class="alt-fin-table__app">
+    <div class="alt-fin-table__logo-wrap">
+      {
+        row.thumb ? (
+          <img src={row.thumb} alt="" width="32" height="32" class="alt-fin-table__logo" loading="lazy" />
+        ) : (
+          <span class="alt-fin-table__logo alt-fin-table__logo--fallback" aria-hidden="true">
+            <span class="material-symbols-outlined">smart_toy</span>
+          </span>
+        )
+      }
+    </div>
+    <div class="alt-fin-table__app-copy">
+      {
+        row.reviewUrl ? (
+          <a href={row.reviewUrl} class="alt-fin-table__app-name">
+            {row.name}
+          </a>
+        ) : (
+          <span class="alt-fin-table__app-name">{row.name}</span>
+        )
+      }
+      {row.descriptor && <span class="alt-fin-table__app-desc">{row.descriptor}</span>}
+    </div>
+  </div>
+
+  <div class="alt-fin-table__cell alt-fin-table__cell--match">
+    {
+      row.isSource ? (
+        <span class="alt-fin-table__match-text alt-fin-table__match-text--reference">{row.matchLabel}</span>
+      ) : (
+        <span class="alt-fin-table__match-text alt-fin-table__match-text--match">{row.matchLabel}</span>
+      )
+    }
+  </div>
+
+  {
+    COMPARISON_TABLE_METRIC_KEYS.map((key) => {
+      const cell = row.cells[key];
+      const showDelta = !row.isSource && cell.signedDelta != null;
+      const deltaText =
+        showDelta && cell.strength !== 'none'
+          ? fmtSignedDelta(cell.signedDelta!, cell.kind === 'price' ? 'price' : 'score')
+          : showDelta && cell.strength === 'none'
+            ? '='
+            : null;
+
+      return (
+        <div class="alt-fin-table__cell">
+          <div class="alt-fin-table__metric">
+            <span class="alt-fin-table__value">{cell.display}</span>
+            {
+              deltaText && (
+                <span
+                  class:list={[
+                    'alt-fin-table__delta',
+                    cell.strength === 'strong' && cell.tone === 'better' && 'alt-fin-table__delta--strong-better',
+                    cell.strength === 'strong' && cell.tone === 'worse' && 'alt-fin-table__delta--strong-worse',
+                    cell.strength === 'subtle' && cell.tone === 'better' && 'alt-fin-table__delta--subtle-better',
+                    cell.strength === 'subtle' && cell.tone === 'worse' && 'alt-fin-table__delta--subtle-worse',
+                    cell.strength === 'none' && 'alt-fin-table__delta--equal',
+                  ]}
+                >
+                  {deltaText}
+                </span>
+              )
+            }
+          </div>
+        </div>
+      );
+    })
+  }
+</div>

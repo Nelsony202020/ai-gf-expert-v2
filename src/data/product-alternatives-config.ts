@@ -12,6 +12,8 @@ export interface AlternativeEditorial {
   decisionHook: string;
   /** Material symbol name for decision grid */
   decisionIcon: string;
+  /** One-line descriptor under name in comparison table */
+  tableDescriptor: string;
 }
 
 export interface ProductAlternativesConfig {
@@ -20,6 +22,20 @@ export interface ProductAlternativesConfig {
   stickWithDecisionHook: string;
   stickWithDecisionIcon: string;
   editorials: Record<string, Omit<AlternativeEditorial, 'slug'>>;
+  /** Quick-pick cards shown in the horizontal row below the hero. */
+  quickPicks: Array<{ label: string; slug: string }>;
+  /** Decision rows for the intro summary card (max 3 after closest match). */
+  summarySlots: Array<{
+    label: string;
+    slug: string;
+    valueKind: 'score' | 'price';
+    /** Which metric to compare against the source product (defaults to overall). */
+    compareMetric?: 'overall' | 'chat' | 'price';
+  }>;
+  /** Slugs used for detailed testing rows + score comparison table (defaults to first 3 peers). */
+  tablePeerSlugs?: string[];
+  /** Ahrefs target domain for market competitor data. */
+  marketSourceDomain?: string;
 }
 
 /** Approved alternative slugs per source product — smallest config until DB relationship exists. */
@@ -29,9 +45,23 @@ export const PRODUCT_ALTERNATIVES: Record<string, ProductAlternativesConfig> = {
     updatedLabel: 'August 2026',
     stickWithDecisionHook: 'Happy with Aura AI?',
     stickWithDecisionIcon: 'check_circle',
+    quickPicks: [
+      { label: 'Best Overall Alternative', slug: 'ourdream-ai' },
+      { label: 'Best for Chat', slug: 'kindroid' },
+      { label: 'Best for Images', slug: 'ourdream-ai' },
+      { label: 'Best Cheaper Option', slug: 'candy-ai' },
+    ],
+    summarySlots: [
+      { label: 'Best overall', slug: 'ourdream-ai', valueKind: 'score', compareMetric: 'overall' },
+      { label: 'Best for chat', slug: 'kindroid', valueKind: 'score', compareMetric: 'chat' },
+      { label: 'Cheapest alternative', slug: 'candy-ai', valueKind: 'price', compareMetric: 'price' },
+    ],
+    tablePeerSlugs: ['ourdream-ai', 'kindroid', 'girlfriendgpt'],
+    marketSourceDomain: 'aura.ai',
     editorials: {
       'ourdream-ai': {
         bestFor: 'Customization & images',
+        tableDescriptor: 'Closest match · stronger images',
         whyChoose:
           'Gives you much more control over character creation and produced stronger images in our hands-on tests.',
         whereSourceBetter: 'Aura AI scored higher for privacy and video in our testing.',
@@ -41,6 +71,7 @@ export const PRODUCT_ALTERNATIVES: Record<string, ProductAlternativesConfig> = {
       },
       'candy-ai': {
         bestFor: 'Beginners & balance',
+        tableDescriptor: 'Balanced all-rounder · lower similarity',
         whyChoose:
           'The most balanced chat, image, and customization mix in our 2026 testing — fewer weak spots than rivals.',
         whereSourceBetter: 'Aura AI offers stronger video generation controls and voice-call polish.',
@@ -50,6 +81,7 @@ export const PRODUCT_ALTERNATIVES: Record<string, ProductAlternativesConfig> = {
       },
       kindroid: {
         bestFor: 'Voice-first chat',
+        tableDescriptor: 'Closest match · stronger voice/chat focus',
         whyChoose:
           'Voice calls and conversational realism scored higher in our chat-focused test scenarios.',
         whereSourceBetter: 'Aura AI leads on image-to-video generation and character library breadth.',
@@ -59,6 +91,7 @@ export const PRODUCT_ALTERNATIVES: Record<string, ProductAlternativesConfig> = {
       },
       girlfriendgpt: {
         bestFor: 'Adult roleplay',
+        tableDescriptor: 'Similar roleplay focus · weaker overall',
         whyChoose:
           'Long-form scenario roleplay and story depth scored best in our dedicated roleplay tests.',
         whereSourceBetter: 'Aura AI is stronger on image quality consistency and video features.',

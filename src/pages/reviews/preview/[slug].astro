@@ -163,6 +163,7 @@ const shareUrl = head.canonical;
     applyReviewRatingsHashFromLocation,
     navigateToRatingsSection,
   } from '../../../lib/review/ratingsSectionNav.client.ts';
+  import { hydratePanelMedia } from '../../../lib/review/hydratePanelMedia.client.ts';
   import { subscoreSlugFromLabel } from '../../../lib/review/ratingsDeepLink.ts';
 
   const TABBAR_OFFSET = 52;
@@ -186,14 +187,21 @@ const shareUrl = head.canonical;
 
     function setActiveTab(id: string, scroll = true, hashOverride?: string) {
       let matched = false;
+      let activePanel: HTMLElement | null = null;
       panels.forEach((panel) => {
         const isMatch = panel.dataset.tabPanel === id;
         panel.classList.toggle('hidden', !isMatch);
-        if (isMatch) matched = true;
+        if (isMatch) {
+          matched = true;
+          activePanel = panel;
+        }
       });
       if (!matched) return;
       tabButtons.forEach((btn) => btn.setAttribute('aria-current', btn.dataset.tab === id ? 'true' : 'false'));
       if (history.replaceState) history.replaceState(null, '', hashOverride ?? `#${id}`);
+      if (activePanel) {
+        requestAnimationFrame(() => hydratePanelMedia(activePanel));
+      }
       if (scroll) {
         const y = panelsWrap.getBoundingClientRect().top + window.scrollY - getScrollOffset();
         window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });

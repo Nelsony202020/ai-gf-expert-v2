@@ -1,0 +1,35 @@
+---
+import type { TrafficBarRow } from '../../../lib/alternatives/external-market-data';
+
+interface Props {
+  bars: TrafficBarRow[];
+}
+
+const { bars } = Astro.props;
+const maxTraffic = Math.max(...bars.map((b) => b.traffic), 1);
+---
+
+<div class="alt-traffic-bars">
+  <p class="alt-traffic-bars__label">Estimated organic traffic</p>
+  <ul class="alt-traffic-bars__list">
+    {
+      bars.map((bar) => {
+        const pct = Math.max(6, Math.round((bar.traffic / maxTraffic) * 100));
+        return (
+          <li class="alt-traffic-bars__row">
+            <div class="alt-traffic-bars__meta">
+              <span class="alt-traffic-bars__name">
+                {bar.name}
+                {bar.tested && <span class="alt-traffic-bars__tested">Tested</span>}
+              </span>
+              <span class="alt-traffic-bars__value">{bar.trafficLabel}</span>
+            </div>
+            <div class="alt-traffic-bars__track" aria-hidden="true">
+              <div class="alt-traffic-bars__fill" style={`width: ${pct}%`} />
+            </div>
+          </li>
+        );
+      })
+    }
+  </ul>
+</div>

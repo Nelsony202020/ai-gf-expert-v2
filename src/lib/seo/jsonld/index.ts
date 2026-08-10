@@ -12,7 +12,7 @@
  *
  * Confirm: no localhost, no AggregateRating, editorial reviewRating 0–10,
  * roundup/directory ItemList order matches default server-rendered lists,
- * pros/cons match page, author @id.
+ * pros/cons match page, author/publisher include name (+ @id).
  */
 
 export type { JsonLdNode } from './omitEmpty';
@@ -28,7 +28,7 @@ export {
   breadcrumbId,
   absoluteUrl,
 } from './ids';
-export { buildOrganizationSchema } from './organization';
+export { buildOrganizationSchema, buildOrganizationRef } from './organization';
 export { buildWebsiteSchema } from './website';
 export { buildHomepageSchema } from './homepage';
 export { buildPersonSchema, buildPersonRef } from './person';

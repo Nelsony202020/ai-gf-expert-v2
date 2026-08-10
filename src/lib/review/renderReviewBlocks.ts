@@ -2,7 +2,7 @@
 
 import { isUsablePublicMediaUrl, inferMediaTypeFromUrl } from '../media/url';
 import type { MediaLookupEntry } from '../media/catalog';
-import { publicFigureStyle, publicImageStyle } from './imageFrameStyle';
+import { publicFigureStyle, publicImageStyle, isCircleCrop, clampRadiusPercent } from './imageFrameStyle';
 
 export interface ReviewBlockPublic {
   id: string;
@@ -176,7 +176,10 @@ function renderImageFigure(
     String(item.alt ?? opts?.mediaById?.[mediaId]?.altText ?? ''),
   );
   const caption = String(item.caption ?? '').trim();
+  const radius = clampRadiusPercent(item.borderRadiusPercent);
+  const cropped = isCircleCrop(radius);
   const cellClass = opts?.rowCell ? 'review-figure review-image-row__cell' : 'review-figure';
+  const figureClass = cropped ? `${cellClass} review-figure--crop` : cellClass;
   const figureStyle = publicFigureStyle({
     widthPercent: item.widthPercent,
     borderRadiusPercent: item.borderRadiusPercent,
@@ -193,9 +196,9 @@ function renderImageFigure(
   const innerMedia =
     mediaType === 'video'
       ? `<video class="review-video-native review-video-native--preview" src="${escapeHtml(src)}" muted playsinline preload="metadata" style="${imageStyle}pointer-events:none"></video>`
-      : `<img src="${escapeHtml(src)}" alt="${alt}" loading="lazy" style="${imageStyle}" />`;
+      : `<img src="${escapeHtml(src)}" alt="${alt}" loading="eager" decoding="async" style="${imageStyle}" />`;
   const mediaHtml = renderLightboxTrigger(payload, innerMedia);
-  let html = `<figure class="${cellClass}" style="${figureStyle}">${mediaHtml}`;
+  let html = `<figure class="${figureClass}" style="${figureStyle}">${mediaHtml}`;
   if (caption) html += `<figcaption>${escapeHtml(caption)}</figcaption>`;
   html += '</figure>';
   return { html, lightboxItem: payload };

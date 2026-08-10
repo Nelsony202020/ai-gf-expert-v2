@@ -200,7 +200,6 @@ const { pick, rank } = Astro.props;
         const expanded = pick.dataset.pickExpanded;
         if (expanded === 'medium' || expanded === 'deep') {
           collapsePick(pick);
-          pick.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           return;
         }
 

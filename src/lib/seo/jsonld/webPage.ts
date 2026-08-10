@@ -1,7 +1,7 @@
-import { absoluteUrl, organizationId, websiteId } from './ids';
+import { absoluteUrl, websiteId } from './ids';
 import type { JsonLdNode } from './omitEmpty';
 import { buildBreadcrumbSchema, type BreadcrumbInput } from './breadcrumb';
-import { buildOrganizationSchema } from './organization';
+import { buildOrganizationRef, buildOrganizationSchema } from './organization';
 
 export function buildWebPageSchema(opts: {
   pathname: string;
@@ -19,7 +19,7 @@ export function buildWebPageSchema(opts: {
     name: opts.name,
     description: opts.description,
     isPartOf: { '@id': websiteId() },
-    publisher: { '@id': organizationId() },
+    publisher: buildOrganizationRef(),
   };
   if (opts.mainEntityId) {
     page.mainEntity = { '@id': opts.mainEntityId };

@@ -1,0 +1,67 @@
+---
+import type { MarketCompetitorRow } from '../../../lib/alternatives/external-market-data';
+
+interface Props {
+  row: MarketCompetitorRow;
+  sourceName: string;
+}
+
+const { row, sourceName } = Astro.props;
+const { overlap } = row;
+
+function pct(n: number, total: number): string {
+  if (total <= 0) return '0%';
+  return `${(n / total * 100).toFixed(1)}%`;
+}
+
+const total = overlap.competitorUnique + overlap.common + overlap.targetUnique;
+---
+
+<div
+  class="alt-kw-overlap"
+  tabindex="0"
+  data-alt-kw-overlap
+  aria-label={`Keyword overlap with ${sourceName}`}
+>
+  <div class="alt-kw-overlap__bar" aria-hidden="true">
+    {
+      overlap.competitorPct > 0 && (
+        <span class="alt-kw-overlap__seg alt-kw-overlap__seg--competitor" style={`width:${overlap.competitorPct}%`} />
+      )
+    }
+    {
+      overlap.commonPct > 0 && (
+        <span class="alt-kw-overlap__seg alt-kw-overlap__seg--common" style={`width:${overlap.commonPct}%`} />
+      )
+    }
+    {
+      overlap.targetPct > 0 && (
+        <span class="alt-kw-overlap__seg alt-kw-overlap__seg--target" style={`width:${overlap.targetPct}%`} />
+      )
+    }
+  </div>
+
+  <div class="alt-kw-overlap__tip" role="tooltip">
+    <div class="alt-kw-overlap__tip-row">
+      <span class="alt-kw-overlap__dot alt-kw-overlap__dot--competitor" />
+      <span class="alt-kw-overlap__tip-label">Competitor's unique keywords</span>
+      <span class="alt-kw-overlap__tip-val">
+        {overlap.competitorUnique.toLocaleString()} <em>{pct(overlap.competitorUnique, total)}</em>
+      </span>
+    </div>
+    <div class="alt-kw-overlap__tip-row">
+      <span class="alt-kw-overlap__dot alt-kw-overlap__dot--common" />
+      <span class="alt-kw-overlap__tip-label">Common keywords</span>
+      <span class="alt-kw-overlap__tip-val">
+        {overlap.common.toLocaleString()} <em>{pct(overlap.common, total)}</em>
+      </span>
+    </div>
+    <div class="alt-kw-overlap__tip-row">
+      <span class="alt-kw-overlap__dot alt-kw-overlap__dot--target" />
+      <span class="alt-kw-overlap__tip-label">{sourceName}'s unique keywords</span>
+      <span class="alt-kw-overlap__tip-val">
+        {overlap.targetUnique.toLocaleString()} <em>{pct(overlap.targetUnique, total)}</em>
+      </span>
+    </div>
+  </div>
+</div>

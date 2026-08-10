@@ -1,5 +1,12 @@
 import type { MarketValue } from './format';
 
+export interface MarketTrendSeries {
+  product: number[];
+  /** Ahrefs volume index for keyword "ai girlfriend" (0–100). */
+  categoryKeyword: number[];
+  peers: Array<{ name: string; color: string; values: number[] }>;
+}
+
 export interface MarketCompetitorRow {
   name: string;
   slug?: string;
@@ -32,12 +39,10 @@ export interface MarketDataViewModel {
   rankList: MarketRankItem[];
   marketComparison: MarketCompetitorRow[];
   trendMonths: string[];
-  trendSeries: {
-    product: number[];
-    candy: number[];
-    kindroid: number[];
-    avg: number[];
-  };
+  trendSeries: MarketTrendSeries;
+  /** Same shape as trendSeries but 24 months of Ahrefs history. */
+  trendMonths24: string[];
+  trendSeries24: MarketTrendSeries;
   priceBars: Array<{ label: string; price: MarketValue<number>; color: string; highlight?: boolean }>;
   scatterPoints: Array<{ name: string; price: MarketValue<number>; score: MarketValue<number>; color: string; highlight?: boolean }>;
   takeaways: Array<{ icon: string; tone: string; text: string }>;

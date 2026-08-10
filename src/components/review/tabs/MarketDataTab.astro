@@ -8,6 +8,8 @@ import { brandIcons } from '../../../lib/brand-icons';
 import InlineHelpTooltip from '../tooltips/InlineHelpTooltip.astro';
 import { loadMarketDataViewModel } from '../../../lib/market-data/loadMarketData';
 import { unwrapPrice } from '../../../lib/market-data/aura-ai-draft';
+import { faviconUrl } from '../../../lib/alternatives/ahrefs';
+import { resolveReviewDomain } from '../../../lib/market-data/review-peers';
 import {
   formatGrowth,
   formatInterest,
@@ -95,9 +97,38 @@ const metrics = [
 ];
 
 const rankList = vm.rankList;
-const marketComparison = vm.marketComparison;
+const rankMaxInterest = Math.max(
+  ...rankList.map((item) => (item.interest.status === 'ok' ? item.interest.value : 0)),
+  1,
+);
+const marketComparison = vm.marketComparison.map((c) => ({
+  ...c,
+  iconUrl:
+    c.highlight && product.logo
+      ? product.logo
+      : c.slug
+        ? faviconUrl(resolveReviewDomain(c.slug) ?? '')
+        : null,
+}));
 const trendMonths = vm.trendMonths;
 const trendSeries = vm.trendSeries;
+const trendMonths24 = vm.trendMonths24;
+const trendSeries24 = vm.trendSeries24;
+
+const chartLines12 = [
+  { name: product.name, color: '#db2777', values: trendSeries.product, highlight: true },
+  ...trendSeries.peers.map((p) => ({ name: p.name, color: p.color, values: p.values })),
+];
+const chartLines24 = [
+  { name: product.name, color: '#db2777', values: trendSeries24.product, highlight: true },
+  ...trendSeries24.peers.map((p) => ({ name: p.name, color: p.color, values: p.values })),
+];
+const chartPayload = JSON.stringify({
+  months12: trendMonths,
+  months24: trendMonths24,
+  lines12: chartLines12,
+  lines24: chartLines24,
+});
 
 const priceBars = vm.priceBars.map((bar) => ({
   ...bar,
@@ -117,18 +148,22 @@ const scatterMaxPrice = 22;
 const scatterMinScore = 7;
 const scatterMaxScore = 10;
 
-const trendMin = 45;
-const trendMax = 95;
-const hasTrendData = trendSeries.product.length > 1;
+const trendMin = 0;
+const trendMax = 100;
+const hasTrendData =
+  trendSeries.product.length >= 2 ||
+  trendSeries.peers.some((p) => p.values.length >= 2);
 
 function trendPoints(values: number[]) {
   const width = 360;
   const height = 140;
+  if (values.length < 2) return '';
   const step = width / (values.length - 1);
   return values
     .map((v, i) => {
       const x = i * step;
-      const y = height - ((v - trendMin) / (trendMax - trendMin)) * height;
+      const clamped = Math.min(trendMax, Math.max(trendMin, v));
+      const y = height - ((clamped - trendMin) / (trendMax - trendMin)) * height;
       return `${x},${y}`;
     })
     .join(' ');
@@ -169,39 +204,49 @@ const takeaways = vm.takeaways;
             <h3 class="text-lg font-black text-on-surface">Search Interest Over Time</h3>
             <InlineHelpTooltip
               id={`md-trends-${product.slug}`}
-              title="Google Trends data"
+              title="Ahrefs search data"
               label="About search interest"
-              text="Pulled from Google Trends. This shows relative brand search volume — not which app is best. High interest can reflect marketing spend or hype as much as product quality."
+              text="Search interest index from Ahrefs organic traffic for each reviewed product in our database. Hover the chart to compare all products at a given month."
             >
               <InfoIcon size="xs" class="text-tertiary hover:text-accent" />
             </InlineHelpTooltip>
           </div>
-          <select class="md-select" aria-label="Time range">
-            <option>12 months</option>
-            <option>24 months</option>
+          <select class="md-select" aria-label="Time range" data-md-trend-range>
+            <option value="12">12 months</option>
+            <option value="24">24 months</option>
           </select>
         </div>
-        <div class="md-line-chart">
+        <div class="md-line-chart" data-md-trend-chart data-md-trend-payload={chartPayload}>
           {
             hasTrendData ? (
               <>
-                <div class="md-line-chart__wrap">
-                  <svg viewBox="0 0 360 140" class="md-line-chart__svg" preserveAspectRatio="none" aria-hidden="true">
+                <div class="md-line-chart__wrap" data-md-trend-wrap>
+                  <svg viewBox="0 0 360 140" class="md-line-chart__svg" preserveAspectRatio="none" aria-hidden="true" data-md-trend-svg>
                     {[0, 25, 50, 75, 100].map((pct) => (
                       <line x1="0" y1={(140 * pct) / 100} x2="360" y2={(140 * pct) / 100} stroke="#ececec" stroke-width="1" />
                     ))}
-                    <polyline fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="5 4" points={trendPoints(trendSeries.avg)} />
-                    <polyline fill="none" stroke="#a855f7" stroke-width="2.5" points={trendPoints(trendSeries.candy)} />
-                    <polyline fill="none" stroke="#3b82f6" stroke-width="2.5" points={trendPoints(trendSeries.kindroid)} />
-                    <polyline fill="none" stroke="#db2777" stroke-width="3" points={trendPoints(trendSeries.product)} />
+                    <g data-md-trend-crosshair class="md-line-chart__crosshair" style="display:none">
+                      <line x1="0" y1="0" x2="0" y2="140" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3" data-md-trend-vline />
+                      <g data-md-trend-dots />
+                    </g>
+                    {
+                      trendSeries.peers.map((peer) => (
+                        <polyline fill="none" stroke={peer.color} stroke-width="2.5" points={trendPoints(peer.values)} data-md-trend-line={peer.name} />
+                      ))
+                    }
+                    <polyline fill="none" stroke="#db2777" stroke-width="3" points={trendPoints(trendSeries.product)} data-md-trend-line={product.name} />
                   </svg>
+                  <div class="md-line-chart__tooltip md-line-chart__tooltip--hidden" data-md-trend-tooltip aria-hidden="true">
+                    <div class="md-line-chart__tooltip-month" data-md-trend-tooltip-month />
+                    <div class="md-line-chart__tooltip-rows" data-md-trend-tooltip-rows />
+                  </div>
                   <div class="md-line-chart__ylabels" aria-hidden="true">
                     <span>100</span>
                     <span>75</span>
                     <span>50</span>
                   </div>
                 </div>
-                <div class="md-line-chart__months" aria-hidden="true">
+                <div class="md-line-chart__months" aria-hidden="true" data-md-trend-months>
                   {trendMonths.map((m) => <span>{m}</span>)}
                 </div>
               </>
@@ -212,9 +257,13 @@ const takeaways = vm.takeaways;
         </div>
         <div class="flex flex-wrap gap-3 mt-3 text-xs font-semibold text-on-surface-variant">
           <span class="inline-flex items-center gap-1.5"><span class="w-4 h-0.5 bg-accent rounded" /> {product.name}</span>
-          <span class="inline-flex items-center gap-1.5"><span class="w-4 h-0.5 bg-purple-500 rounded" /> Candy AI</span>
-          <span class="inline-flex items-center gap-1.5"><span class="w-4 h-0.5 bg-blue-500 rounded" /> Kindroid</span>
-          <span class="inline-flex items-center gap-1.5"><span class="w-4 h-0.5 bg-gray-400 rounded" style="border-style:dashed" /> Category avg</span>
+          {
+            trendSeries.peers.map((peer) => (
+              <span class="inline-flex items-center gap-1.5">
+                <span class="w-4 h-0.5 rounded" style={`background:${peer.color}`} /> {peer.name}
+              </span>
+            ))
+          }
         </div>
       </div>
 
@@ -225,7 +274,7 @@ const takeaways = vm.takeaways;
             id={`md-rank-${product.slug}`}
             title="Market rank"
             label="About market rank"
-            text="Ranked by Google Trends search interest (1–100 scale) among AI companion apps we track. Higher = more relative search volume."
+            text="Ranked by Ahrefs search interest index (0–100) among AI companion apps we have reviewed. Higher = more relative organic search demand."
           >
             <InfoIcon size="xs" class="text-tertiary hover:text-accent" />
           </InlineHelpTooltip>
@@ -252,10 +301,10 @@ const takeaways = vm.takeaways;
                   </div>
                   {
                     item.interest.status === 'ok' && (
-                      <div class="h-2 rounded-full bg-surface-container overflow-hidden">
+                      <div class="md-rank-row__track h-2 rounded-full bg-surface-container overflow-hidden">
                         <div
                           class={`h-full rounded-full ${item.highlight ? 'bg-accent' : 'bg-tertiary/35'}`}
-                          style={`width: ${item.interest.value}%`}
+                          style={`width: ${Math.round((item.interest.value / rankMaxInterest) * 100)}%`}
                         />
                       </div>
                     )
@@ -267,7 +316,6 @@ const takeaways = vm.takeaways;
             )
           }
         </ol>
-        <button type="button" class="md-btn-outline w-full mt-5">View full ranking</button>
       </div>
     </div>
 
@@ -290,7 +338,16 @@ const takeaways = vm.takeaways;
             {
               marketComparison.length > 0 ? marketComparison.map((c) => (
                 <tr class={`md-comp-table__row border-b border-surface-variant/60 ${c.highlight ? 'md-comp-table__highlight bg-accent/[0.04]' : ''}`}>
-                  <td class="p-3 font-bold text-on-surface">{c.name}</td>
+                  <td class="p-3">
+                    <div class="md-comp-table__product">
+                      {
+                        c.iconUrl && (
+                          <img src={c.iconUrl} alt="" width="24" height="24" class="md-comp-table__icon" loading="lazy" />
+                        )
+                      }
+                      <span class={`font-bold ${c.highlight ? 'text-accent' : 'text-on-surface'}`}>{c.name}</span>
+                    </div>
+                  </td>
                   <td class="p-3 tabular-nums">{formatInterest(c.interest)}</td>
                   <td class="p-3">
                     {
@@ -334,7 +391,13 @@ const takeaways = vm.takeaways;
           <div class="md-price-chart__bars">
             {
               priceBars.map((bar) => (
-                <div class="md-price-chart__col">
+                <div
+                  class="md-price-chart__col"
+                  tabindex="0"
+                  data-md-price-bar
+                  data-md-price-label={bar.label}
+                  data-md-price-value={bar.price.status === 'ok' ? `$${bar.priceNum.toFixed(2)}/mo` : 'N/A'}
+                >
                   <span class="md-price-chart__val">
                     {bar.price.status === 'ok' ? `$${bar.priceNum.toFixed(2)}` : formatUnavailable()}
                   </span>
@@ -347,17 +410,26 @@ const takeaways = vm.takeaways;
                     )
                   }
                   <span class={`md-price-chart__name ${bar.highlight ? 'text-accent font-bold' : ''}`}>{bar.label}</span>
+                  <div class="md-price-chart__hover-tip" aria-hidden="true">
+                    {bar.label} · {bar.price.status === 'ok' ? `$${bar.priceNum.toFixed(2)}/mo` : 'N/A'}
+                  </div>
                 </div>
               ))
             }
             {
               categoryAvgPrice != null && (
-                <div class="md-price-chart__avg-line" style={`bottom: ${avgLinePx + 28}px`}>
-                  <span>Category avg ${categoryAvgPrice.toFixed(2)}</span>
-                </div>
+                <div class="md-price-chart__avg-line" style={`bottom: ${avgLinePx}px`} aria-hidden="true" />
               )
             }
           </div>
+          {
+            categoryAvgPrice != null && (
+              <p class="md-price-chart__avg-legend">
+                <span class="md-price-chart__avg-legend-line" aria-hidden="true" />
+                Category average: <strong>${categoryAvgPrice.toFixed(2)}/mo</strong>
+              </p>
+            )
+          }
         </div>
         {
           priceSavingsPct != null && productPrice != null && (
@@ -510,6 +582,79 @@ const takeaways = vm.takeaways;
   .md-line-chart__wrap {
     position: relative;
     padding-left: 28px;
+    cursor: crosshair;
+  }
+
+  .md-line-chart__crosshair {
+    pointer-events: none;
+  }
+
+  .md-line-chart__tooltip {
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgb(15 23 42 / 94%);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.35;
+    min-width: 160px;
+    transform: translate(-50%, calc(-100% - 12px));
+    box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
+  }
+  .md-line-chart__tooltip--hidden { opacity: 0; visibility: hidden; }
+  .md-line-chart__tooltip-month {
+    font-weight: 800;
+    font-size: 11px;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgb(255 255 255 / 15%);
+  }
+  .md-line-chart__tooltip-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .md-line-chart__tooltip-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: space-between;
+  }
+  .md-line-chart__tooltip-swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .md-line-chart__tooltip-label {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .md-line-chart__tooltip-value {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    margin-left: 8px;
+  }
+
+  .md-comp-table__product {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .md-comp-table__icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    object-fit: contain;
+    background: var(--color-surface-container);
   }
 
   .md-line-chart__svg {
@@ -556,6 +701,7 @@ const takeaways = vm.takeaways;
 
   .md-rank-row { display: flex; align-items: flex-start; gap: 10px; }
   .md-rank-row__pos { width: 24px; text-align: center; font-size: 14px; flex-shrink: 0; padding-top: 2px; }
+  .md-rank-row__track { width: 100%; }
 
   .md-growth { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; }
   .md-growth--up { background: rgb(34 197 94 / 12%); color: #15803d; }
@@ -571,8 +717,47 @@ const takeaways = vm.takeaways;
     height: 200px; border-bottom: 1px solid var(--color-surface-variant); padding-bottom: 28px;
   }
   .md-price-chart__col {
+    position: relative;
     display: flex; flex-direction: column; align-items: center; width: 18%;
     height: calc(100% - 28px); justify-content: flex-end; gap: 0;
+  }
+  .md-price-chart__col:focus-visible .md-price-chart__bar,
+  .md-price-chart__col:hover .md-price-chart__bar {
+    filter: brightness(1.08);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  }
+  .md-price-chart__hover-tip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgb(15 23 42 / 92%);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+    z-index: 3;
+  }
+  .md-price-chart__col:hover .md-price-chart__hover-tip,
+  .md-price-chart__col:focus-visible .md-price-chart__hover-tip { opacity: 1; }
+  .md-price-chart__avg-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 0 28px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-tertiary);
+  }
+  .md-price-chart__avg-legend-line {
+    display: inline-block;
+    width: 24px;
+    border-top: 2px dashed #9ca3af;
   }
   .md-price-chart__val { font-size: 10px; font-weight: 800; margin-bottom: 4px; color: var(--color-on-surface-variant); }
   .md-price-chart__bar { width: 100%; max-width: 48px; border-radius: 6px 6px 0 0; min-height: 8px; flex-shrink: 0; }
@@ -580,11 +765,7 @@ const takeaways = vm.takeaways;
   .md-price-chart__name { margin-top: 8px; font-size: 10px; font-weight: 700; text-align: center; color: var(--color-on-surface-variant); line-height: 1.2; min-height: 24px; }
   .md-price-chart__avg-line {
     position: absolute; left: 0; right: 0;
-    border-top: 2px dashed #9ca3af; pointer-events: none; z-index: 1;
-  }
-  .md-price-chart__avg-line span {
-    position: absolute; right: 0; top: -18px;
-    font-size: 10px; font-weight: 700; color: #6b7280; background: var(--color-surface-container-lowest); padding: 0 4px;
+    border-top: 2px dashed #9ca3af; pointer-events: none; z-index: 2;
   }
 
   .md-price-callout {
@@ -592,8 +773,18 @@ const takeaways = vm.takeaways;
     border: 1px solid #bbf7d0; border-radius: 12px; background: #f0fdf4;
   }
 
-  .md-scatter { position: relative; padding: 8px 8px 28px 36px; }
-  .md-scatter__ylabel { position: absolute; left: 0; top: 50%; transform: rotate(-90deg) translateX(-50%); font-size: 10px; font-weight: 700; color: var(--color-tertiary); white-space: nowrap; }
+  .md-scatter { position: relative; padding: 8px 12px 32px 52px; }
+  .md-scatter__ylabel {
+    position: absolute;
+    left: 8px;
+    top: calc(8px + 120px);
+    transform: translateY(-50%) rotate(180deg);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-tertiary);
+    writing-mode: vertical-rl;
+    line-height: 1;
+  }
   .md-scatter__xlabel { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: var(--color-tertiary); }
   .md-scatter__grid {
     position: relative; height: 240px;
@@ -641,6 +832,19 @@ const takeaways = vm.takeaways;
     color: #fff;
     border-color: transparent;
   }
+  .md-scatter__point--highlight .md-scatter__dot {
+    animation: md-scatter-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes md-scatter-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgb(219 39 119 / 40%);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow: 0 0 0 7px rgb(219 39 119 / 0%);
+      transform: scale(1.2);
+    }
+  }
 
   .md-takeaway { display: flex; gap: 12px; align-items: flex-start; }
   .md-takeaway__icon {
@@ -653,3 +857,154 @@ const takeaways = vm.takeaways;
   .md-takeaway__icon--amber { background: rgb(245 158 11 / 10%); color: #d97706; }
   .md-takeaway__icon--purple { background: rgb(168 85 247 / 10%); color: #9333ea; }
 </style>
+
+<script>
+  const CHART_W = 360;
+  const CHART_H = 140;
+
+  function seriesPoints(values: number[]) {
+    if (values.length < 2) return [];
+    const step = CHART_W / (values.length - 1);
+    return values.map((v, i) => {
+      const clamped = Math.min(100, Math.max(0, v));
+      return { x: i * step, y: CHART_H - (clamped / 100) * CHART_H, value: clamped };
+    });
+  }
+
+  function trendPointsJs(values: number[]) {
+    return seriesPoints(values).map((p) => `${p.x},${p.y}`).join(' ');
+  }
+
+  document.querySelectorAll('[data-md-trend-chart]').forEach((root) => {
+    const payloadRaw = root.getAttribute('data-md-trend-payload');
+    const rangeSelect = root.closest('.md-panel')?.querySelector<HTMLSelectElement>('[data-md-trend-range]');
+    const svg = root.querySelector<SVGSVGElement>('[data-md-trend-svg]');
+    const monthsEl = root.querySelector<HTMLElement>('[data-md-trend-months]');
+    const wrap = root.querySelector<HTMLElement>('[data-md-trend-wrap]');
+    const tooltip = root.querySelector<HTMLElement>('[data-md-trend-tooltip]');
+    const tooltipMonth = root.querySelector<HTMLElement>('[data-md-trend-tooltip-month]');
+    const tooltipRows = root.querySelector<HTMLElement>('[data-md-trend-tooltip-rows]');
+    const crosshair = svg?.querySelector<SVGGElement>('[data-md-trend-crosshair]');
+    const vline = svg?.querySelector<SVGLineElement>('[data-md-trend-vline]');
+    const dotsGroup = svg?.querySelector<SVGGElement>('[data-md-trend-dots]');
+    if (!payloadRaw || !svg || !monthsEl || !wrap || !tooltip || !tooltipMonth || !tooltipRows || !crosshair || !vline || !dotsGroup) return;
+
+    const payload = JSON.parse(payloadRaw) as {
+      months12: string[];
+      months24: string[];
+      lines12: Array<{ name: string; color: string; values: number[]; highlight?: boolean }>;
+      lines24: Array<{ name: string; color: string; values: number[]; highlight?: boolean }>;
+    };
+
+    function activeData() {
+      const is24 = rangeSelect?.value === '24';
+      return {
+        months: is24 ? payload.months24 : payload.months12,
+        lines: is24 ? payload.lines24 : payload.lines12,
+      };
+    }
+
+    function renderRange() {
+      const { months, lines } = activeData();
+      const gridLines = svg.querySelectorAll('line:not([data-md-trend-vline])');
+      gridLines.forEach((el) => el.remove());
+      svg.querySelectorAll('polyline[data-md-trend-line]').forEach((el) => el.remove());
+
+      for (let pct = 0; pct <= 100; pct += 25) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', '0');
+        line.setAttribute('y1', String((CHART_H * pct) / 100));
+        line.setAttribute('x2', String(CHART_W));
+        line.setAttribute('y2', String((CHART_H * pct) / 100));
+        line.setAttribute('stroke', '#ececec');
+        line.setAttribute('stroke-width', '1');
+        svg.insertBefore(line, crosshair);
+      }
+
+      lines.forEach((series) => {
+        const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        poly.setAttribute('fill', 'none');
+        poly.setAttribute('stroke', series.color);
+        poly.setAttribute('stroke-width', series.highlight ? '3' : '2.5');
+        poly.setAttribute('points', trendPointsJs(series.values));
+        poly.dataset.mdTrendLine = series.name;
+        svg.insertBefore(poly, crosshair);
+      });
+
+      monthsEl.innerHTML = months.map((m) => `<span>${m}</span>`).join('');
+      monthsEl.style.gridTemplateColumns = `repeat(${months.length}, 1fr)`;
+      crosshair.setAttribute('style', 'display:none');
+    }
+
+    function showHover(clientX: number, clientY: number) {
+      const rect = svg.getBoundingClientRect();
+      const x = ((clientX - rect.left) / rect.width) * CHART_W;
+      const { months, lines } = activeData();
+      if (lines.length === 0 || months.length < 2) return;
+
+      const step = CHART_W / (months.length - 1);
+      const idx = Math.max(0, Math.min(months.length - 1, Math.round(x / step)));
+      const snapX = idx * step;
+
+      crosshair.setAttribute('style', 'display:block');
+      vline.setAttribute('x1', String(snapX));
+      vline.setAttribute('x2', String(snapX));
+      vline.setAttribute('y1', '0');
+      vline.setAttribute('y2', String(CHART_H));
+
+      dotsGroup.innerHTML = '';
+      const rowsHtml: string[] = [];
+
+      lines.forEach((series) => {
+        const pt = seriesPoints(series.values)[idx];
+        if (!pt) return;
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', String(pt.x));
+        circle.setAttribute('cy', String(pt.y));
+        circle.setAttribute('r', series.highlight ? '5' : '4');
+        circle.setAttribute('fill', series.color);
+        circle.setAttribute('stroke', '#fff');
+        circle.setAttribute('stroke-width', '2');
+        dotsGroup.appendChild(circle);
+
+        rowsHtml.push(`
+          <div class="md-line-chart__tooltip-row">
+            <span class="md-line-chart__tooltip-swatch" style="background:${series.color}"></span>
+            <span class="md-line-chart__tooltip-label">${series.name}</span>
+            <span class="md-line-chart__tooltip-value">${pt.value}/100</span>
+          </div>
+        `);
+      });
+
+      tooltipMonth.textContent = months[idx] ?? '';
+      tooltipRows.innerHTML = rowsHtml.join('');
+      tooltip.classList.remove('md-line-chart__tooltip--hidden');
+
+      const wrapRect = wrap.getBoundingClientRect();
+      const left = ((snapX / CHART_W) * rect.width) + (rect.left - wrapRect.left);
+      tooltip.style.left = `${Math.min(Math.max(left, 80), wrapRect.width - 80)}px`;
+      tooltip.style.top = `${clientY - wrapRect.top}px`;
+    }
+
+    function hideHover() {
+      tooltip.classList.add('md-line-chart__tooltip--hidden');
+      crosshair.setAttribute('style', 'display:none');
+    }
+
+    renderRange();
+    rangeSelect?.addEventListener('change', () => {
+      renderRange();
+      hideHover();
+    });
+
+    wrap.addEventListener('mousemove', (event) => showHover(event.clientX, event.clientY));
+    wrap.addEventListener('mouseleave', hideHover);
+  });
+
+  document.querySelectorAll('[data-md-price-bar]').forEach((col) => {
+    const tip = col.querySelector('.md-price-chart__hover-tip');
+    const label = col.getAttribute('data-md-price-label') ?? '';
+    const value = col.getAttribute('data-md-price-value') ?? '';
+    if (tip) tip.textContent = `${label} · ${value}`;
+  });
+</script>

@@ -1,10 +1,9 @@
 import type { AuthorProfile } from '../../../data/authors';
-import { absoluteUrl, organizationId, personId } from './ids';
+import { absoluteUrl, personId, websiteId } from './ids';
 import type { JsonLdNode } from './omitEmpty';
 import { buildBreadcrumbSchema } from './breadcrumb';
-import { buildOrganizationSchema } from './organization';
+import { buildOrganizationRef, buildOrganizationSchema } from './organization';
 import { buildPersonSchema } from './person';
-import { websiteId } from './ids';
 
 export function buildProfilePageSchema(author: AuthorProfile): JsonLdNode[] {
   const pageUrl = absoluteUrl(author.profileUrl);
@@ -18,7 +17,7 @@ export function buildProfilePageSchema(author: AuthorProfile): JsonLdNode[] {
     description: author.bio,
     isPartOf: { '@id': websiteId() },
     mainEntity: { '@id': personId(author.slug) },
-    publisher: { '@id': organizationId() },
+    publisher: buildOrganizationRef(),
   };
 
   return [

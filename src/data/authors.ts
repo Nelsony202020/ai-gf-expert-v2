@@ -1,3 +1,5 @@
+import { BRAND_SOCIAL } from './social-links';
+
 export interface AuthorSocial {
   platform: string;
   url: string;
@@ -70,14 +72,14 @@ export const authors: Record<string, AuthorProfile> = {
       'Herman also hosts a YouTube channel, @AI Girlfriend Expert, dedicated to helping viewers find the right AI girlfriend app for their needs. With a background in AI ethics from the University of Cambridge, Herman combines his expertise to promote responsible and transparent use of dating technology.',
     ],
     socials: [
-      { platform: 'YouTube', url: 'https://www.youtube.com/@ai-girlfriend-expert', icon: 'youtube' },
+      { platform: 'YouTube', url: BRAND_SOCIAL.youtube, icon: 'youtube' },
       {
         platform: 'Facebook',
         url: 'https://www.facebook.com/people/Herman-Carter/pfbid02r3BBKLcqwAkwMeC1QwAMYee2h2MaffuqgR8wzUcJpGjbmwdfmBsaueY9efGeFpfWl/',
         icon: 'facebook',
       },
-      { platform: 'Instagram', url: 'https://www.instagram.com/hermancarter271/', icon: 'instagram' },
-      { platform: 'TikTok', url: 'https://www.tiktok.com/@ai_girlfriend_expert', icon: 'tiktok' },
+      { platform: 'Instagram', url: BRAND_SOCIAL.instagram, icon: 'instagram' },
+      { platform: 'TikTok', url: BRAND_SOCIAL.tiktok, icon: 'tiktok' },
       { platform: 'Medium', url: 'https://medium.com/@hermanjcarter', icon: 'medium' },
     ],
     featuredIn: featuredPressLogos,

@@ -3,7 +3,7 @@
 :root {
   --site-header-height: 3.25rem;
   --site-header-offset: 0px;
-  --review-tabbar-height: 3.25rem;
+  --review-tabbar-height: 3.5rem;
   --roundup-hub-nav-height: 2.625rem;
 }
 
@@ -57,11 +57,6 @@
 }
 
 @media (max-width: 767px) {
-  /* Hide tooltip triggers on mobile review — avoids drag/scroll traps */
-  body[data-mobile-nav-mode='review'] .rt-tooltip-trigger {
-    display: none !important;
-  }
-
   body[data-mobile-nav-mode='review'] .verdict-icon-nav__tip {
     display: none !important;
   }

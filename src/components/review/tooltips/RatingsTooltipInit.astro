@@ -18,6 +18,21 @@
   let activeBackdrop: HTMLElement | null = null;
   let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
+  function isMobileViewport(): boolean {
+    return window.innerWidth < 768;
+  }
+
+  function lockBodyScroll(lock: boolean) {
+    document.body.classList.toggle('mobile-sheet-open', lock);
+  }
+
+  function scrollEventTargetNode(event: Event): Node | null {
+    const target = event.target;
+    if (target instanceof Node) return target;
+    if (target instanceof Window) return document.documentElement;
+    return null;
+  }
+
   function scoreChipClass(score: number): string {
     if (score >= 7.0) return 'rt-score-chip--good';
     if (score >= 5.5) return 'rt-score-chip--fair';
@@ -40,6 +55,7 @@
       activePanel = null;
     }
     activeTrigger = null;
+    lockBodyScroll(false);
   }
 
   function scheduleHide() {
@@ -76,8 +92,7 @@
 
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
-    const isMobileMethodology =
-      panel.classList.contains('ratings-tooltip-panel--methodology') && viewportW < 768;
+    const isMobileSheet = viewportW < 768;
 
     panel.style.position = 'fixed';
     panel.style.zIndex = '9999';
@@ -85,9 +100,9 @@
     panel.style.display = 'block';
     panel.style.visibility = 'hidden';
     panel.style.maxHeight = '';
-    panel.classList.toggle('ratings-tooltip-panel--mobile-sheet', isMobileMethodology);
+    panel.classList.toggle('ratings-tooltip-panel--mobile-sheet', isMobileSheet);
 
-    if (isMobileMethodology) {
+    if (isMobileSheet) {
       panel.style.maxHeight = `${viewportH - margin * 2}px`;
     }
 
@@ -95,7 +110,7 @@
     let panelHeight = panel.offsetHeight;
     panel.style.visibility = '';
 
-    if (isMobileMethodology) {
+    if (isMobileSheet) {
       panelHeight = Math.min(panel.offsetHeight, viewportH - margin * 2);
       const left = Math.max(margin, (viewportW - panelWidth) / 2);
       const top = Math.max(margin, (viewportH - panelHeight) / 2);
@@ -265,13 +280,13 @@
     });
   }
 
-  function bindMobileMethodologyChrome(panel: HTMLElement) {
-    const isMobileMethodology =
-      panel.classList.contains('ratings-tooltip-panel--methodology') && window.innerWidth < 768;
-    if (!isMobileMethodology) return;
+  function bindMobileSheetChrome(panel: HTMLElement) {
+    if (!isMobileViewport()) return;
 
     const portal = document.getElementById('ratings-tooltip-portal');
     if (!portal) return;
+
+    lockBodyScroll(true);
 
     if (!activeBackdrop) {
       activeBackdrop = document.createElement('div');
@@ -302,10 +317,10 @@
     const id = trigger.dataset.ratingsTooltipTrigger;
     if (!id) return;
 
-    const isMobileMethodologyTrigger = window.innerWidth < 768;
+    const isMobileTrigger = isMobileViewport();
 
     if (activeTrigger === trigger && activePanel) {
-      if (isMobileMethodologyTrigger && activePanel.classList.contains('ratings-tooltip-panel--methodology')) {
+      if (isMobileTrigger) {
         hidePanel();
         return;
       }
@@ -329,12 +344,14 @@
     activeTrigger = trigger;
 
     positionPanel(trigger, panel);
-    bindMobileMethodologyChrome(panel);
+    bindMobileSheetChrome(panel);
     bindDistribution(panel);
     bindTooltipPanelActions(panel);
 
-    panel.addEventListener('mouseenter', cancelHide);
-    panel.addEventListener('mouseleave', scheduleHide);
+    if (!isMobileViewport()) {
+      panel.addEventListener('mouseenter', cancelHide);
+      panel.addEventListener('mouseleave', scheduleHide);
+    }
   }
 
   function initRatingsTooltips() {
@@ -366,8 +383,12 @@
       document.body.dataset.ratingsTooltipGlobalBound = 'true';
       window.addEventListener(
         'scroll',
-        () => {
-          if (activePanel && activeTrigger) positionPanel(activeTrigger, activePanel);
+        (event) => {
+          if (!activePanel || !activeTrigger) return;
+          if (isMobileViewport() && activePanel.classList.contains('ratings-tooltip-panel--mobile-sheet')) return;
+          const target = scrollEventTargetNode(event);
+          if (target && activePanel.contains(target)) return;
+          positionPanel(activeTrigger, activePanel);
         },
         true
       );

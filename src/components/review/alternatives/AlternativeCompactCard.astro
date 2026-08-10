@@ -1,0 +1,66 @@
+---
+import ScorePill from '../ScorePill.astro';
+import type { AlternativePeerView } from '../../../lib/alternatives/loadAlternatives';
+import type { CompactPeerBullets } from '../../../lib/alternatives/comparison-insights';
+
+interface Props {
+  peer: AlternativePeerView;
+  bullets: CompactPeerBullets;
+  thumb?: string;
+  price: string;
+}
+
+const { peer, bullets, thumb, price } = Astro.props;
+---
+
+<article class="alt-compact-card" id={`alt-peer-${peer.product.slug}`}>
+  <div class="alt-compact-card__head">
+    {
+      thumb ? (
+        <img src={thumb} alt="" width="44" height="44" class="alt-compact-card__logo" loading="lazy" />
+      ) : (
+        <div class="alt-compact-card__logo alt-compact-card__logo--fallback" aria-hidden="true">
+          <span class="material-symbols-outlined">smart_toy</span>
+        </div>
+      )
+    }
+    <div class="alt-compact-card__title-block">
+      <div class="alt-compact-card__title-row">
+        <h4 class="alt-compact-card__name">{peer.product.name}</h4>
+        <span class="alt-compact-card__sim">{peer.similarity}% similar</span>
+      </div>
+      <p class="alt-compact-card__best-for">Best for {peer.editorial.bestFor.toLowerCase()}</p>
+    </div>
+  </div>
+
+  {
+    (bullets.wins.length > 0 || bullets.losses.length > 0) && (
+      <ul class="alt-compact-card__bullets">
+        {bullets.wins.map((label) => (
+          <li class="alt-compact-card__bullet alt-compact-card__bullet--win">+ {label}</li>
+        ))}
+        {bullets.losses.map((label) => (
+          <li class="alt-compact-card__bullet alt-compact-card__bullet--loss">− {label}</li>
+        ))}
+      </ul>
+    )
+  }
+
+  <div class="alt-compact-card__footer">
+    <div class="alt-compact-card__stat">
+      <span class="alt-compact-card__stat-label">Overall</span>
+      <ScorePill score={peer.product.overallScore} size="sm" />
+    </div>
+    <div class="alt-compact-card__stat">
+      <span class="alt-compact-card__stat-label">Price</span>
+      <span class="alt-compact-card__price">{price}</span>
+    </div>
+    {
+      peer.reviewUrl && (
+        <a href={peer.reviewUrl} class="alt-compact-card__link">
+          Review
+        </a>
+      )
+    }
+  </div>
+</article>
