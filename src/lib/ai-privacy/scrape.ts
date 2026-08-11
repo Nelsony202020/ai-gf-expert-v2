@@ -9,12 +9,31 @@ export interface ScrapeResult {
   error?: string;
 }
 
+/** Prefer the policy body over full-page chrome (Candy uses `.prose` / content containers). */
+function extractLikelyPolicyHtml(html: string): string {
+  const prose = html.match(
+    /<div[^>]*class="[^"]*\bprose\b[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<\/div>\s*){0,3}<(?:footer|script|aside|nav)/i,
+  );
+  if (prose?.[1] && prose[1].length > 500) return prose[1];
+
+  const mainContent = html.match(
+    /<div[^>]*class="[^"]*main-content-container[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<div[^>]*id="mpc-/i,
+  );
+  if (mainContent?.[1] && mainContent[1].length > 500) return mainContent[1];
+
+  const article = html.match(/<article\b[^>]*>([\s\S]*?)<\/article>/i);
+  if (article?.[1] && article[1].length > 500) return article[1];
+
+  return html;
+}
+
 function stripHtml(html: string): string {
-  let s = html;
+  let s = extractLikelyPolicyHtml(html);
   s = s.replace(/<script[\s\S]*?<\/script>/gi, ' ');
   s = s.replace(/<style[\s\S]*?<\/style>/gi, ' ');
   s = s.replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ');
   s = s.replace(/<!--[\s\S]*?-->/g, ' ');
+  s = s.replace(/<(nav|header|footer|aside|svg)[\s\S]*?<\/\1>/gi, ' ');
   s = s.replace(/<\/(p|div|h[1-6]|li|tr|br|section|article|header|footer)>/gi, '\n');
   s = s.replace(/<br\s*\/?>/gi, '\n');
   s = s.replace(/<[^>]+>/g, ' ');
@@ -28,7 +47,9 @@ function stripHtml(html: string): string {
   s = s
     .split('\n')
     .map((line) => line.replace(/[ \t]+/g, ' ').trim())
-    .filter(Boolean)
+    .filter((line) => line.length > 0 && !/^(class|id|style|data-|fill|viewBox|stroke)=/i.test(line))
+    .filter((line) => !/^main#/i.test(line))
+    .filter((line) => !/^(h|w|z)-\[/.test(line))
     .join('\n');
   return s.trim();
 }

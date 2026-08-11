@@ -1,4 +1,4 @@
-// Admin logo — matches the public site header sizing (no bordered / legacy logo.png).
+// Admin logo — same Girlfriend Expert marks as the public site header.
 
 type AdminLogoVariant = 'sidebar' | 'login';
 
@@ -13,8 +13,8 @@ export function AdminLogo({
   if (compact) {
     return (
       <img
-        src="/brand/ai-gf-logo-green.png"
-        alt="AI Girlfriend Expert"
+        src="/brand/herman-main-icon.svg"
+        alt="Girlfriend Expert AI"
         className="h-7 w-7 shrink-0 object-contain"
         decoding="async"
       />
@@ -23,13 +23,13 @@ export function AdminLogo({
   return (
     <span className={`admin-logo admin-logo--${variant}`}>
       <img
-        src="/brand/ai-gf-logo-light.png"
-        alt="AI Girlfriend Expert"
+        src="/brand/girlfriend-expert-logo.png"
+        alt="Girlfriend Expert AI"
         className="admin-logo__img admin-logo__img--light"
         decoding="async"
       />
       <img
-        src="/brand/ai-gf-logo-white.png"
+        src="/brand/girlfriend-expert-logo-white.png"
         alt=""
         aria-hidden="true"
         className="admin-logo__img admin-logo__img--dark"

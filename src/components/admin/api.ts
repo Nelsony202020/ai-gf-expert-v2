@@ -35,7 +35,16 @@ function withTrailingSlash(path: string): string {
     throw new ApiError(0, 'Network error — check your connection and try again.');
   }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, (data as any).error ?? `Request failed (${res.status})`);
+  if (!res.ok) {
+    const fromBody = typeof (data as { error?: unknown }).error === 'string'
+      ? (data as { error: string }).error.trim()
+      : '';
+    const fallback =
+      res.status === 504 || res.status === 502
+        ? 'Server timed out — try again. Long AI jobs can take up to a minute.'
+        : `Request failed (${res.status})`;
+    throw new ApiError(res.status, fromBody || fallback);
+  }
   return data as T;
 }
 

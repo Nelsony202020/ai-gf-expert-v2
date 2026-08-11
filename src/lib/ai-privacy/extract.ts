@@ -186,15 +186,22 @@ export async function analyzePrivacyPolicies(
   const db = getDb();
   const scrapedDocs = await scrapeDocuments(existing.documents);
   const usable = scrapedDocs.filter((d) => documentBodyText(d).length >= cfg.minDocChars);
+
+  // Persist scrape outcomes before the model call so a timeout still leaves
+  // usable text / failure reasons in the admin UI.
+  await db.transact([
+    db.tx.aiPrivacyAnalyses[existing.id].update({
+      documents: scrapedDocs,
+      status: usable.length === 0 ? 'failed' : 'running',
+      error:
+        usable.length === 0
+          ? 'No readable policy text. Paste the policy contents or fix the URLs.'
+          : undefined,
+      updatedAt: Date.now(),
+    }),
+  ]);
+
   if (usable.length === 0) {
-    await db.transact([
-      db.tx.aiPrivacyAnalyses[existing.id].update({
-        documents: scrapedDocs,
-        status: 'failed',
-        error: 'No readable policy text. Paste the policy contents or fix the URLs.',
-        updatedAt: Date.now(),
-      }),
-    ]);
     throw new HttpError(
       422,
       'No readable policy text. Paste the policy contents (or fix URLs that failed to scrape) and try again.',
@@ -208,16 +215,20 @@ export async function analyzePrivacyPolicies(
 
   let completion;
   try {
-    completion = await client.chat.completions.create({
-      model: cfg.model,
-      response_format: { type: 'json_object' },
-      max_tokens: cfg.maxOutputTokens,
-      temperature: 0.1,
-      messages: [
-        { role: 'system', content: buildPrivacySystemPrompt() },
-        { role: 'user', content: buildPrivacyUserPrompt(modelDocs) },
-      ],
-    });
+    completion = await client.chat.completions.create(
+      {
+        model: cfg.model,
+        response_format: { type: 'json_object' },
+        max_tokens: cfg.maxOutputTokens,
+        temperature: 0.1,
+        messages: [
+          { role: 'system', content: buildPrivacySystemPrompt() },
+          { role: 'user', content: buildPrivacyUserPrompt(modelDocs) },
+        ],
+      },
+      // Large multi-page policy sets regularly exceed the shared 45s client default.
+      { timeout: 90_000 },
+    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await db.transact([

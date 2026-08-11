@@ -37,7 +37,9 @@ export default defineConfig({
   // Public pages stay prerendered (static HTML for SEO). Server routes
   // (/admin, /api, /go) opt out with `export const prerender = false`.
   output: 'static',
-  adapter: vercel(),
+  // Privacy scrape+analyze and other AI admin routes need longer than the
+  // default ~10s hobby timeout (10 Candy policy pages + OpenAI easily exceed it).
+  adapter: vercel({ maxDuration: 120 }),
   // Admin uses a Vite page script (admin-entry.tsx), not Astro React islands.
   // @astrojs/react forces broken Rolldown pre-bundling of React 19 in dev.
   integrations: [canonicalGuard()],

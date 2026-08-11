@@ -99,9 +99,9 @@ export const PolicyDocsSession = forwardRef<
   const [error, setError] = useState<string | null>(null);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { preserveError?: boolean }) => {
     setLoading(true);
-    setError(null);
+    if (!opts?.preserveError) setError(null);
     try {
       const res = await api.get<{ analysis: AnalysisRow | null; summary: AnalysisSummary | null }>(
         `/api/admin/ai-privacy/${runId}`,
@@ -117,9 +117,18 @@ export const PolicyDocsSession = forwardRef<
         setDocs(loaded);
         if (loaded.length > 0) setUrlBulk(docsToUrlBulk(loaded));
         setSummary(res.summary);
+        if (
+          !opts?.preserveError &&
+          res.analysis.status === 'failed' &&
+          res.analysis.error
+        ) {
+          setError(res.analysis.error);
+        }
       }
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Could not load saved documents');
+      if (!opts?.preserveError) {
+        setError(e instanceof ApiError ? e.message : 'Could not load saved documents');
+      }
     } finally {
       setLoading(false);
     }
@@ -181,6 +190,19 @@ export const PolicyDocsSession = forwardRef<
     });
   }
 
+  function analyzeErrorMessage(e: unknown): string {
+    if (!(e instanceof ApiError)) return 'Analysis failed';
+    if (e.status === 0) {
+      return 'Network error or timeout while scraping/analyzing. Wait a moment and try again — large policy sets can take up to a minute.';
+    }
+    if (e.status === 502 || e.status === 504) {
+      return e.message?.trim()
+        ? e.message
+        : 'The server timed out while analyzing policies. Try again; scraped text is kept when possible.';
+    }
+    return e.message || `Request failed (${e.status})`;
+  }
+
   async function analyze() {
     const urls = parsePolicyUrls(urlBulk);
     if (urls.length === 0) {
@@ -217,8 +239,9 @@ export const PolicyDocsSession = forwardRef<
       setDraftSavedAt(Date.now());
       await onAnalyzed?.();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Analysis failed');
-      void load();
+      setError(analyzeErrorMessage(e));
+      // Keep the error visible — a plain reload used to clear it immediately.
+      await load({ preserveError: true });
     } finally {
       setAnalyzing(false);
     }
@@ -251,11 +274,22 @@ export const PolicyDocsSession = forwardRef<
     : null;
   const showDocList =
     displayDocs.length > 0 &&
-    (analyzing || applied || displayDocs.some((d) => d.scrapeStatus && d.scrapeStatus !== 'pending'));
+    (analyzing ||
+      applied ||
+      analysis?.status === 'failed' ||
+      analysis?.status === 'running' ||
+      displayDocs.some((d) => d.scrapeStatus && d.scrapeStatus !== 'pending'));
 
   return (
     <div className="space-y-4">
       {error && <ErrorNote message={error} />}
+
+      {analyzing && (
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Scraping policy pages, then running AI analysis. With 10 links this can take up to a minute —
+          keep this drawer open.
+        </p>
+      )}
 
       <label className="block text-xs">
         <span className="mb-1 block font-medium text-slate-700 dark:text-slate-200">Policy page URLs</span>
