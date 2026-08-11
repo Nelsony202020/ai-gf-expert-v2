@@ -1,27 +1,25 @@
 ---
-import { getScoreVisual, fmtScore } from '../../lib/scores';
+import { getScoreChipClass, fmtScore } from '../../lib/scores';
 
 interface Props {
   score: number | null;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   variant?: 'solid' | 'outline';
   class?: string;
 }
 
 const { score, size = 'md', variant = 'solid', class: className = '' } = Astro.props;
-const visual = getScoreVisual(score);
+const chip = getScoreChipClass(score);
 
-const sizes: Record<NonNullable<Props['size']>, string> = {
-  sm: 'w-[2.75rem] h-7 text-sm rounded-md tabular-nums',
-  md: 'w-12 h-10 text-base rounded-lg tabular-nums',
-  lg: 'w-[3.5rem] h-12 text-2xl rounded-lg tabular-nums',
-};
-
-const base = 'inline-flex shrink-0 items-center justify-center font-black leading-none';
-const styles =
-  variant === 'solid'
-    ? `${visual.bg}`
-    : `border-2 ${visual.border} text-on-surface bg-transparent`;
+const sizeClass =
+  size === 'xs'
+    ? 'rt-score-chip--xs'
+    : size === 'md'
+      ? 'rt-score-chip--md'
+      : size === 'lg'
+        ? 'rt-score-chip--lg'
+        : '';
+const variantClass = variant === 'outline' ? 'rt-score-chip--outline' : '';
 ---
 
-<span class={`${base} ${sizes[size]} ${styles} ${className}`}>{fmtScore(score)}</span>
+<span class={`rt-score-chip ${variantClass} ${sizeClass} ${chip} ${className}`.trim()}>{fmtScore(score)}</span>

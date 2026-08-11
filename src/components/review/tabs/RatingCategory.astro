@@ -116,7 +116,7 @@ const sectionHash = buildReviewRatingsHash(category.key);
                 tabindex="0"
                 aria-selected="false"
               >
-                <DraftScorePill score={sub.score} size="sm" variant="outline" />
+                <DraftScorePill score={sub.score} size="xs" variant="outline" />
                 <span class="ratings-subscore-nav__label-row">
                   <span data-subscore-label class="ratings-subscore-nav__name">{sub.name}</span>
                   <SubscoreScoreTooltip
@@ -158,7 +158,7 @@ const sectionHash = buildReviewRatingsHash(category.key);
                     <div class="ratings-subscore-panel__title-row">
                       <h4 class="ratings-subscore-panel__title">{sub.name}</h4>
                       <span
-                        class={`rt-score-chip rt-score-chip--outline ratings-subscore-panel__score tabular-nums ${getDraftScoreChipClass(sub.score)}`}
+                        class={`rt-score-chip rt-score-chip--outline rt-score-chip--md ratings-subscore-panel__score tabular-nums ${getDraftScoreChipClass(sub.score)}`}
                         aria-label={`Score ${fmtScore(sub.score)} out of 10`}
                       >
                         {fmtScore(sub.score)}

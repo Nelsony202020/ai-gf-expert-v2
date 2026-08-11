@@ -8,13 +8,13 @@ function instantDbFileUrl(media: { file?: { url?: unknown } | null }): string {
   return fileUrl ? String(fileUrl) : '';
 }
 
-/** Prefer a live InstantDB file URL over a possibly-missing Bunny migration URL. */
+/**
+ * Prefer a permanent CDN URL (Bunny) when present.
+ * InstantDB signed file URLs are only a fallback for unmigrated media.
+ */
 function resolveCachedUrl(cached: string, fileUrl: string): string {
   if (!cached) return fileUrl;
-  if (isPermanentCdnUrl(cached)) {
-    if (fileUrl.includes('files.instantdb.com')) return fileUrl;
-    return cached;
-  }
+  if (isPermanentCdnUrl(cached)) return cached;
   return fileUrl || cached;
 }
 

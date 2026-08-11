@@ -90,7 +90,7 @@ const panelClass = [
               return (
                 <div class="rt-comp-row rt-comp-row--inline">
                   <div class="rt-comp-row__main">
-                    <span class={`rt-score-chip rt-score-chip--xs ${chip}`}>{fmtScore(category.score)}</span>
+                    <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>{fmtScore(category.score)}</span>
                     {
                       inlineTestLinks ? (
                         <InlineTestLink categoryKey={category.key} class="rt-comp-name rt-comp-name--truncate">
