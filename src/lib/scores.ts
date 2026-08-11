@@ -96,6 +96,32 @@ export function getScoreChipClass(score: number | null | undefined): string {
   return 'rt-score-chip--poor';
 }
 
+export type ScoreChipSize = 'xs' | 'sm' | 'md' | 'lg';
+
+/** Category scores — always filled solid chips. Omit size for the default chip scale. */
+export function categoryScoreChipClasses(
+  score: number | null | undefined,
+  size?: ScoreChipSize,
+): string {
+  const sizeClass =
+    size === 'xs' || size === 'sm'
+      ? 'rt-score-chip--xs'
+      : size === 'md'
+        ? 'rt-score-chip--md'
+        : size === 'lg'
+          ? 'rt-score-chip--lg'
+          : '';
+  return ['rt-score-chip', sizeClass, getScoreChipClass(score)].filter(Boolean).join(' ');
+}
+
+/** Subscores and evidence rows — bordered outline chips. */
+export function subscoreScoreChipClasses(
+  score: number | null | undefined,
+  size: ScoreChipSize = 'xs',
+): string {
+  return `${categoryScoreChipClasses(score, size)} rt-score-chip--outline`;
+}
+
 /** Format a score to one decimal place, or "-" when not calculated yet. */
 export function fmtScore(score: number | null | undefined): string {
   if (!isScoreCalculated(score)) return '-';

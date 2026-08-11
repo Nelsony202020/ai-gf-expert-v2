@@ -12,6 +12,7 @@ import AlternativesTab from '../../components/review/tabs/AlternativesTab.astro'
 import RatingsSpecsTab from '../../components/review/tabs/RatingsSpecsTab.astro';
 import PlaceholderTab from '../../components/review/tabs/PlaceholderTab.astro';
 import PhotosVideosTab from '../../components/review/tabs/PhotosVideosTab.astro';
+import PricingTab from '../../components/review/tabs/PricingTab.astro';
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
 import ReviewScrollRestore from '../../components/review/ReviewScrollRestore.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
@@ -23,7 +24,13 @@ import {
   loadReviewPageProduct,
 } from '../../lib/content/store';
 import { loadDraftRatingsViewModel } from '../../lib/draft-ratings/loadDraftRatingsData';
-import { DEV_REVIEW_SLUGS, hasAlternativesTab, hasMarketDataTab, hasPhotosVideosTab } from '../../lib/content/reviewDevProducts';
+import {
+  DEV_REVIEW_SLUGS,
+  hasAlternativesTab,
+  hasMarketDataTab,
+  hasPhotosVideosTab,
+  hasPricingTab,
+} from '../../lib/content/reviewDevProducts';
 import { resolveProductPageHead } from '../../lib/seo/productPageHead';
 import JsonLd from '../../components/seo/JsonLd.astro';
 import { buildReviewProductSchema } from '../../lib/seo/jsonld';
@@ -55,6 +62,7 @@ const head = resolveProductPageHead(product, { astroSite: Astro.site, draft: isD
 const showMarketDataTab = hasMarketDataTab(product.slug) && (import.meta.env.DEV || isDraft);
 const showAlternativesTab = hasAlternativesTab(product.slug) && (import.meta.env.DEV || isDraft);
 const showPhotosVideosTab = hasPhotosVideosTab(product.slug);
+const showPricingTab = hasPricingTab(product.slug) && (import.meta.env.DEV || isDraft);
 
 const tabs: Tab[] = [
   { id: 'overview', label: 'Overview', mobileLabel: 'Overview' },
@@ -149,11 +157,17 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
         }
       </div>
       <div data-tab-panel="pricing" class="hidden">
-        <PlaceholderTab
-          title="Pricing & Plans"
-          icon="sell"
-          description="A detailed breakdown of every plan, what each tier unlocks, and how the value compares to competitors is coming soon."
-        />
+        {
+          showPricingTab ? (
+            <PricingTab product={product} />
+          ) : (
+            <PlaceholderTab
+              title="Pricing & Plans"
+              icon="sell"
+              description="A detailed breakdown of every plan, what each tier unlocks, and how the value compares to competitors is coming soon."
+            />
+          )
+        }
       </div>
       {
         showMarketDataTab && (

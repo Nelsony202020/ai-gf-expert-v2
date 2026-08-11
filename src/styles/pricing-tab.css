@@ -1,0 +1,137 @@
+/* Pricing tab — dark-mode overrides (theme attribute on html) */
+
+[data-theme='dark'] .pt-panel {
+  background: var(--dark-elevated) !important;
+  border-color: var(--dark-border-subtle) !important;
+  color: var(--color-on-surface);
+}
+
+[data-theme='dark'] .pt-panel__title,
+[data-theme='dark'] .pt-stat__value,
+[data-theme='dark'] .pt-stat__sub--strong,
+[data-theme='dark'] .pt-plans__name,
+[data-theme='dark'] .pt-plans__price,
+[data-theme='dark'] .pt-usage-row__title,
+[data-theme='dark'] .pt-usage-row__cost,
+[data-theme='dark'] .pt-feature-row__label,
+[data-theme='dark'] .pt-feature-row__value,
+[data-theme='dark'] .pt-compare td,
+[data-theme='dark'] .pt-diff__row strong,
+[data-theme='dark'] .pt-bench__float-name,
+[data-theme='dark'] .pt-bench__float-price,
+[data-theme='dark'] .pt-verdict__text {
+  color: var(--color-on-surface);
+}
+
+[data-theme='dark'] .pt-stat__label,
+[data-theme='dark'] .pt-stat__sub,
+[data-theme='dark'] .pt-plans__sub,
+[data-theme='dark'] .pt-plans__row-label,
+[data-theme='dark'] .pt-usage-row__desc,
+[data-theme='dark'] .pt-bench__ends,
+[data-theme='dark'] .pt-bench__tick-label,
+[data-theme='dark'] .pt-bench__percentile,
+[data-theme='dark'] .pt-verdict__caveat,
+[data-theme='dark'] .pt-compare th,
+[data-theme='dark'] .pt-diff__row,
+[data-theme='dark'] .pt-empty {
+  color: var(--dark-muted);
+}
+
+[data-theme='dark'] .pt-stat,
+[data-theme='dark'] .pt-verdict {
+  border-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] .pt-plans__col-head {
+  background: rgb(51 65 85 / 45%);
+}
+
+[data-theme='dark'] .pt-plans__col-head--accent {
+  background: rgb(219 39 119 / 14%);
+}
+
+[data-theme='dark'] .pt-plans__col-head--green {
+  background: rgb(34 197 94 / 12%);
+}
+
+[data-theme='dark'] .pt-plans__row,
+[data-theme='dark'] .pt-feature-row,
+[data-theme='dark'] .pt-compare td,
+[data-theme='dark'] .pt-diff,
+[data-theme='dark'] .pt-usage-row {
+  border-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] .pt-usage-row {
+  background: var(--dark-elevated);
+}
+
+[data-theme='dark'] .pt-usage-row:hover {
+  background: rgb(51 65 85 / 55%);
+}
+
+[data-theme='dark'] .pt-usage-row--active {
+  background: rgb(219 39 119 / 10%);
+  border-color: rgb(219 39 119 / 35%);
+}
+
+[data-theme='dark'] .pt-usage-row--active .pt-usage-row__cost,
+[data-theme='dark'] .pt-stat__value--accent,
+[data-theme='dark'] .pt-bench__float--product .pt-bench__float-name,
+[data-theme='dark'] .pt-bench__float--product .pt-bench__float-price {
+  color: #f472b6;
+}
+
+[data-theme='dark'] .pt-stat__value--good {
+  color: #4ade80;
+}
+
+[data-theme='dark'] .pt-stat__value--bad {
+  color: #f87171;
+}
+
+[data-theme='dark'] .pt-bench__tick-line {
+  background: rgb(148 163 184 / 40%);
+}
+
+[data-theme='dark'] .pt-bench__dot--avg {
+  background: #e2e8f0;
+  border-color: var(--dark-elevated);
+}
+
+[data-theme='dark'] .pt-bench__dot--product {
+  border-color: var(--dark-elevated);
+}
+
+[data-theme='dark'] .pt-bench__arrow {
+  border-top-color: #e2e8f0;
+}
+
+[data-theme='dark'] .pt-bench__float--product .pt-bench__arrow {
+  border-top-color: #f472b6;
+}
+
+[data-theme='dark'] .pt-verdict__icon {
+  color: #4ade80;
+}
+
+[data-theme='dark'] .pt-pill--better {
+  background: rgb(34 197 94 / 15%);
+  color: #86efac;
+}
+
+[data-theme='dark'] .pt-pill--worse {
+  background: rgb(239 68 68 / 15%);
+  color: #fca5a5;
+}
+
+[data-theme='dark'] .pt-pill--neutral {
+  background: rgb(148 163 184 / 18%);
+  color: #cbd5e1;
+}
+
+[data-theme='dark'] .pt-compare__highlight,
+[data-theme='dark'] .pt-diff__delta {
+  color: #f472b6 !important;
+}

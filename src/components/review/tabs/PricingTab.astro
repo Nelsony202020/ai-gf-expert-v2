@@ -1,0 +1,1167 @@
+---
+import type { Product } from '../../../data/products';
+import InfoIcon from '../../ui/InfoIcon.astro';
+import { fmtScore, getScoreVisual } from '../../../lib/scores';
+import { fmtMoney } from '../../../lib/pricing/calc';
+import { loadPricingTabViewModel } from '../../../lib/pricing-tab/loadPricingTab';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const vm = await loadPricingTabViewModel(product);
+const scoreVisual = getScoreVisual(vm.pricingScore);
+
+const axisTicks = [0, 25, 50, 80].map((n) => ({
+  amount: n,
+  pct: Math.round(((n - vm.barMin) / (vm.barMax - vm.barMin)) * 100),
+  label: n >= 80 ? `$${n}+` : `$${n}`,
+}));
+
+const advertisedLabel =
+  vm.advertisedMonthly != null ? `${fmtMoney(vm.advertisedMonthly, vm.currency)}/mo` : '—';
+const categoryAvgLabel =
+  vm.categoryAvgMonthly != null ? `~${fmtMoney(vm.categoryAvgMonthly, vm.currency)}/mo` : '—';
+const cheaperLabel =
+  vm.heroCheaperPct != null
+    ? `${Math.abs(vm.heroCheaperPct)}% ${vm.heroCheaperPct >= 0 ? 'cheaper' : 'more expensive'}`
+    : '—';
+const savingsLabel =
+  vm.heroSavings != null
+    ? vm.heroSavings >= 0
+      ? `You save ~${fmtMoney(vm.heroSavings, vm.currency)}/mo`
+      : `Costs ~${fmtMoney(Math.abs(vm.heroSavings), vm.currency)}/mo more`
+    : '';
+
+const usagePayload = JSON.stringify(
+  Object.fromEntries(
+    vm.usageTiers.map((tier) => {
+      const cost = tier.monthlyCost;
+      const diff =
+        vm.advertisedMonthly != null && cost != null
+          ? Math.round((cost - vm.advertisedMonthly) * 100) / 100
+          : null;
+      return [
+        tier.id,
+        {
+          realLabel: tier.id === 'casual' ? 'Real light-use cost' : tier.id === 'power' ? 'Real heavy-use cost' : 'Real regular-use cost',
+          realValue: cost != null ? `~${fmtMoney(cost, vm.currency)}/mo` : '—',
+          diffValue:
+            diff == null
+              ? '—'
+              : `${diff >= 0 ? '+' : ''}${fmtMoney(diff, vm.currency)}/mo`,
+        },
+      ];
+    }),
+  ),
+);
+---
+
+<section class="py-12 md:py-14 bg-background dark-section pricing-tab">
+  <div class="section-container px-4 md:px-8">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-8">
+      <h2 class="text-3xl md:text-4xl font-black text-on-surface">Pricing</h2>
+      <p class="text-xs font-semibold text-tertiary">
+        Updated {vm.updatedLabel}
+        {vm.isDraft && <span class="ml-1 text-amber-700 dark:text-amber-300">(draft test data)</span>}
+      </p>
+    </div>
+
+    <!-- Compact hero: score + sticker price vs category average -->
+    <div class="pt-panel pt-summary mb-8">
+      <div class="pt-summary__stats">
+        <div class="pt-stat">
+          <p class="pt-stat__label">Pricing score</p>
+          <p class:list={['pt-stat__value', scoreVisual.text]}>
+            <span class="pt-stat__num">{fmtScore(vm.pricingScore)}</span>
+            <span class="pt-stat__of">/10</span>
+          </p>
+          <p class="pt-stat__sub pt-stat__sub--strong">{vm.scoreLabel}</p>
+        </div>
+        <div class="pt-stat">
+          <p class="pt-stat__label">{vm.productName} price</p>
+          <p class="pt-stat__value pt-stat__value--accent">{advertisedLabel}</p>
+          <p class="pt-stat__sub">Subscription</p>
+        </div>
+        <div class="pt-stat">
+          <p class="pt-stat__label">Category average</p>
+          <p class="pt-stat__value">{categoryAvgLabel}</p>
+          <p class="pt-stat__sub">Average monthly cost</p>
+        </div>
+        <div class="pt-stat">
+          <p class="pt-stat__label">Vs. category average</p>
+          <p
+            class:list={[
+              'pt-stat__value',
+              vm.heroCheaperPct != null && vm.heroCheaperPct >= 0
+                ? 'pt-stat__value--good'
+                : 'pt-stat__value--bad',
+            ]}
+          >
+            {cheaperLabel}
+          </p>
+          <p class="pt-stat__sub">{savingsLabel}</p>
+        </div>
+      </div>
+
+      {
+        vm.productBarPct != null && (
+          <div class="pt-bench" aria-label="Cost comparison benchmark">
+            <div class="pt-bench__ends">
+              <span>Lower cost</span>
+              <span>Higher cost</span>
+            </div>
+
+            <div class="pt-bench__chart">
+              {
+                vm.avgBarPct != null && (
+                  <button
+                    type="button"
+                    class="pt-bench__marker pt-bench__marker--avg"
+                    style={`left: ${vm.avgBarPct}%`}
+                    data-pt-bench-marker
+                    aria-label={`Category average ${categoryAvgLabel}`}
+                  >
+                    <span class="pt-bench__float">
+                      <span class="pt-bench__float-name">Category avg</span>
+                      <span class="pt-bench__float-price">
+                        ~{fmtMoney(vm.categoryAvgMonthly, vm.currency)}
+                      </span>
+                      <span class="pt-bench__arrow" aria-hidden="true" />
+                    </span>
+                    <span class="pt-bench__dot pt-bench__dot--avg" />
+                    <span class="pt-bench__tip" role="tooltip">
+                      <strong>Category average</strong>
+                      <span>~{fmtMoney(vm.categoryAvgMonthly, vm.currency)}/month</span>
+                      <span>
+                        {
+                          vm.reviewedAppCount != null
+                            ? `Based on ${vm.reviewedAppCount} reviewed apps`
+                            : 'Based on apps we’ve reviewed'
+                        }
+                      </span>
+                    </span>
+                  </button>
+                )
+              }
+              <button
+                type="button"
+                class="pt-bench__marker pt-bench__marker--product"
+                style={`left: ${vm.productBarPct}%`}
+                data-pt-bench-marker
+                aria-label={`${vm.productName} ${advertisedLabel}`}
+              >
+                <span class="pt-bench__float pt-bench__float--product">
+                  <span class="pt-bench__float-name">{vm.productName}</span>
+                  <span class="pt-bench__float-price">{fmtMoney(vm.advertisedMonthly, vm.currency)}</span>
+                  <span class="pt-bench__arrow" aria-hidden="true" />
+                </span>
+                <span class="pt-bench__dot pt-bench__dot--product" />
+                <span class="pt-bench__tip" role="tooltip">
+                  <strong>{vm.productName}</strong>
+                  <span>{advertisedLabel}</span>
+                  <span>
+                    {
+                      vm.heroCheaperPct != null
+                        ? `${Math.abs(vm.heroCheaperPct)}% ${vm.heroCheaperPct >= 0 ? 'below' : 'above'} category average`
+                        : 'Compared with category average'
+                    }
+                  </span>
+                </span>
+              </button>
+
+              <div class="pt-bench__track">
+                <div class="pt-bench__fill" />
+              </div>
+
+              <div class="pt-bench__axis">
+                {
+                  axisTicks.map((tick) => (
+                    <span class="pt-bench__tick" style={`left: ${tick.pct}%`}>
+                      <span class="pt-bench__tick-line" />
+                      <span class="pt-bench__tick-label">{tick.label}</span>
+                    </span>
+                  ))
+                }
+              </div>
+            </div>
+
+            {
+              vm.heroCheaperThanPct != null && (
+                <p class="pt-bench__percentile">
+                  Cheaper than {vm.heroCheaperThanPct}% of tested apps
+                </p>
+              )
+            }
+          </div>
+        )
+      }
+
+      {
+        vm.scoreInsight && (
+          <div class="pt-verdict">
+            <span class="material-symbols-outlined pt-verdict__icon" aria-hidden="true">check_circle</span>
+            <div>
+              <p class="pt-verdict__text">{vm.scoreInsight}</p>
+              {vm.scoreCaveat && <p class="pt-verdict__caveat">{vm.scoreCaveat}</p>}
+            </div>
+          </div>
+        )
+      }
+    </div>
+
+    <!-- Plans + usage -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+      <div class="pt-panel">
+        <h3 class="pt-panel__title">
+          Plans & what you get
+          <InfoIcon title="Plan features and included credits from our pricing research." />
+        </h3>
+        {
+          vm.plans.length > 0 ? (
+            <div class="pt-plans" style={`--pt-plan-cols: ${vm.plans.length}`}>
+              <div class="pt-plans__head">
+                <div class="pt-plans__stub" />
+                {
+                  vm.plans.map((plan) => (
+                    <div class={`pt-plans__col-head pt-plans__col-head--${plan.tone}`}>
+                      {plan.badge && <span class="pt-plans__badge">{plan.badge}</span>}
+                      <p class="pt-plans__name">{plan.name}</p>
+                      <p class="pt-plans__price">{plan.priceLabel}</p>
+                      {plan.priceSub && <p class="pt-plans__sub">{plan.priceSub}</p>}
+                    </div>
+                  ))
+                }
+              </div>
+              {
+                (vm.plans[0]?.rows ?? []).map((_, rowIndex) => (
+                  <div class="pt-plans__row">
+                    <div class="pt-plans__row-label">{vm.plans[0].rows[rowIndex]?.label}</div>
+                    {
+                      vm.plans.map((plan) => {
+                        const cell = plan.rows[rowIndex];
+                        return (
+                          <div class="pt-plans__cell">
+                            {cell?.included ? (
+                              <span class="pt-plans__check material-symbols-outlined" aria-label="Included">
+                                check
+                              </span>
+                            ) : (
+                              <span>{cell?.value ?? '—'}</span>
+                            )}
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                ))
+              }
+            </div>
+          ) : (
+            <p class="pt-empty">Plan details are still being verified.</p>
+          )
+        }
+      </div>
+
+      <div class="pt-panel" data-pt-usage data-pt-usage-payload={usagePayload}>
+        <h3 class="pt-panel__title">
+          What you'll actually pay
+          <InfoIcon title="Estimated monthly spend for light, regular, and heavy usage based on our usage scenarios." />
+        </h3>
+        <div class="pt-usage-list" role="listbox" aria-label="Usage scenarios">
+          {
+            vm.usageTiers.map((tier) => {
+              const selected = tier.id === 'regular';
+              return (
+                <button
+                  type="button"
+                  class:list={[
+                    'pt-usage-row',
+                    `pt-usage-row--${tier.tone}`,
+                    selected && 'pt-usage-row--active',
+                  ]}
+                  role="option"
+                  aria-selected={selected ? 'true' : 'false'}
+                  data-pt-usage-select
+                  data-pt-usage-id={tier.id}
+                >
+                  <div class="pt-usage-row__left">
+                    <div class={`pt-usage-row__icon pt-usage-row__icon--${tier.tone}`}>
+                      <span class="material-symbols-outlined">{tier.icon}</span>
+                    </div>
+                    <div class="pt-usage-row__copy">
+                      <p class="pt-usage-row__title">{tier.title}</p>
+                      <p class="pt-usage-row__desc">{tier.description}</p>
+                    </div>
+                  </div>
+                  <p class="pt-usage-row__cost">{tier.costLabel}</p>
+                </button>
+              );
+            })
+          }
+        </div>
+
+        <div class="pt-diff">
+          <div class="pt-diff__row">
+            <span>Advertised price</span>
+            <strong data-pt-diff-advertised>{advertisedLabel}</strong>
+          </div>
+          <div class="pt-diff__row">
+            <span data-pt-diff-real-label>Real regular-use cost</span>
+            <strong data-pt-diff-real-value>
+              {vm.regularUseMonthly != null ? `~${fmtMoney(vm.regularUseMonthly, vm.currency)}/mo` : '—'}
+            </strong>
+          </div>
+          <div class="pt-diff__row pt-diff__row--emphasis">
+            <span>Difference</span>
+            <strong class="pt-diff__delta" data-pt-diff-delta>
+              {
+                vm.advertisedVsRegularDiff != null
+                  ? `+${fmtMoney(vm.advertisedVsRegularDiff, vm.currency)}/mo`
+                  : '—'
+              }
+            </strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature costs + comparison -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div class="pt-panel">
+        <h3 class="pt-panel__title">
+          Cost per feature
+          <InfoIcon title="Estimated money cost per feature use at the best available top-up rate." />
+        </h3>
+        <ul class="pt-feature-list">
+          {
+            vm.featureCosts.map((row) => (
+              <li class="pt-feature-row">
+                <div class={`pt-feature-row__icon pt-feature-row__icon--${row.tone}`}>
+                  <span class="material-symbols-outlined">{row.icon}</span>
+                </div>
+                <span class="pt-feature-row__label">{row.label}</span>
+                <span class="pt-feature-row__value">{row.value}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="pt-panel">
+        <h3 class="pt-panel__title">
+          How {vm.productName} compares
+          <InfoIcon title="Compared with the average across apps we’ve reviewed with pricing data." />
+        </h3>
+        {
+          vm.compareRows.length > 0 ? (
+            <div class="pt-compare-wrap">
+              <table class="pt-compare">
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>{vm.productName}</th>
+                    <th>Category avg</th>
+                    <th>Difference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {
+                    vm.compareRows.map((row) => (
+                      <tr>
+                        <td>{row.metric}</td>
+                        <td class="pt-compare__highlight">{row.productValue}</td>
+                        <td>{row.averageValue}</td>
+                        <td>
+                          <span class={`pt-pill pt-pill--${row.diffTone}`}>{row.diffLabel}</span>
+                        </td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p class="pt-empty">Comparison data is still being verified.</p>
+          )
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .pt-panel {
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 14px;
+    background: var(--color-surface-container-lowest);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 4%);
+    padding: 1.25rem 1.35rem;
+  }
+
+  .pt-panel__title {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 0 1rem;
+    font-size: 1.125rem;
+    font-weight: 900;
+    color: var(--color-on-surface);
+  }
+
+  .pt-summary__stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .pt-stat {
+    padding: 0.15rem 1rem;
+    border-right: 1px solid var(--color-surface-variant);
+  }
+
+  .pt-stat:first-child {
+    padding-left: 0;
+  }
+
+  .pt-stat:last-child {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  @media (max-width: 900px) {
+    .pt-summary__stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem 0;
+    }
+
+    .pt-stat {
+      border-right: none;
+      padding: 0 0.75rem 0 0;
+    }
+
+    .pt-stat:nth-child(odd) {
+      border-right: 1px solid var(--color-surface-variant);
+      padding-right: 1rem;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .pt-summary__stats {
+      grid-template-columns: 1fr;
+    }
+
+    .pt-stat,
+    .pt-stat:nth-child(odd) {
+      border-right: none;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--color-surface-variant);
+    }
+
+    .pt-stat:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .pt-stat__label {
+    margin: 0 0 0.3rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+  }
+
+  .pt-stat__value {
+    display: flex;
+    align-items: baseline;
+    gap: 0.1rem;
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--color-on-surface);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pt-stat__num {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  .pt-stat__of {
+    font-size: 0.95rem;
+    font-weight: 700;
+    opacity: 0.65;
+  }
+
+  .pt-stat__value--accent {
+    color: #db2777;
+  }
+
+  .pt-stat__value--good {
+    color: #16a34a;
+  }
+
+  .pt-stat__value--bad {
+    color: #dc2626;
+  }
+
+  .pt-stat__sub {
+    margin: 0.3rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-tertiary);
+  }
+
+  .pt-stat__sub--strong {
+    font-weight: 800;
+    color: var(--color-on-surface-variant);
+  }
+
+  .pt-bench {
+    margin-top: 1.5rem;
+    padding-top: 0.25rem;
+  }
+
+  .pt-bench__ends {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.35rem;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-tertiary);
+  }
+
+  .pt-bench__chart {
+    position: relative;
+    padding-top: 3.4rem;
+    padding-bottom: 1.85rem;
+  }
+
+  .pt-bench__track {
+    position: relative;
+    height: 14px;
+    border-radius: 999px;
+    background: var(--color-surface-container-low);
+    overflow: visible;
+  }
+
+  .pt-bench__fill {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #16a34a 0%, #eab308 50%, #dc2626 100%);
+  }
+
+  .pt-bench__axis {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(3.4rem + 14px);
+    height: 1.7rem;
+    pointer-events: none;
+  }
+
+  .pt-bench__tick {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .pt-bench__tick:first-child {
+    transform: translateX(0);
+    align-items: flex-start;
+  }
+
+  .pt-bench__tick:last-child {
+    transform: translateX(-100%);
+    align-items: flex-end;
+  }
+
+  .pt-bench__tick-line {
+    display: block;
+    width: 1px;
+    height: 0.55rem;
+    background: rgb(95 94 94 / 35%);
+  }
+
+  .pt-bench__tick-label {
+    margin-top: 0.1rem;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--color-tertiary);
+    white-space: nowrap;
+  }
+
+  .pt-bench__marker {
+    position: absolute;
+    top: 3.4rem;
+    transform: translate(-50%, calc(7px - 50%));
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .pt-bench__marker--avg {
+    z-index: 2;
+  }
+
+  .pt-bench__marker--product {
+    z-index: 4;
+  }
+
+  .pt-bench__float {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .pt-bench__float-name {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .pt-bench__float-price {
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--color-on-surface);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pt-bench__float--product .pt-bench__float-name,
+  .pt-bench__float--product .pt-bench__float-price {
+    color: #db2777;
+  }
+
+  .pt-bench__arrow {
+    width: 0;
+    height: 0;
+    margin-top: 2px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #1b1b1b;
+  }
+
+  .pt-bench__float--product .pt-bench__arrow {
+    border-top-color: #db2777;
+  }
+
+  .pt-bench__dot {
+    display: block;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 22%);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .pt-bench__dot--product {
+    width: 16px;
+    height: 16px;
+    background: #db2777;
+  }
+
+  .pt-bench__dot--avg {
+    background: #1b1b1b;
+  }
+
+  .pt-bench__marker:hover .pt-bench__dot,
+  .pt-bench__marker:focus-visible .pt-bench__dot {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px rgb(219 39 119 / 16%);
+  }
+
+  .pt-bench__marker--avg:hover .pt-bench__dot,
+  .pt-bench__marker--avg:focus-visible .pt-bench__dot {
+    box-shadow: 0 0 0 4px rgb(27 27 27 / 14%);
+  }
+
+  .pt-bench__tip {
+    position: absolute;
+    bottom: calc(100% + 3.1rem);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    min-width: 160px;
+    padding: 0.55rem 0.7rem;
+    border-radius: 10px;
+    background: rgb(15 23 42 / 94%);
+    color: #fff;
+    text-align: left;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+    z-index: 5;
+  }
+
+  .pt-bench__tip strong,
+  .pt-bench__tip span {
+    display: block;
+  }
+
+  .pt-bench__tip strong {
+    font-size: 11px;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+
+  .pt-bench__tip span {
+    font-size: 11px;
+    line-height: 1.35;
+    opacity: 0.92;
+  }
+
+  .pt-bench__marker:hover .pt-bench__tip,
+  .pt-bench__marker:focus-visible .pt-bench__tip,
+  .pt-bench__marker.is-open .pt-bench__tip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .pt-bench__percentile {
+    margin: 0.85rem 0 0;
+    text-align: center;
+    font-size: 0.8125rem;
+    font-style: italic;
+    font-weight: 600;
+    color: var(--color-tertiary);
+  }
+
+  .pt-verdict {
+    display: flex;
+    gap: 0.55rem;
+    align-items: flex-start;
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--color-surface-variant);
+  }
+
+  .pt-verdict__icon {
+    color: #16a34a;
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .pt-verdict__text {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--color-on-surface);
+  }
+
+  .pt-verdict__caveat {
+    margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--color-tertiary);
+  }
+
+  .pt-plans {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .pt-plans__head,
+  .pt-plans__row {
+    display: grid;
+    grid-template-columns: minmax(7rem, 1.1fr) repeat(var(--pt-plan-cols, 3), minmax(0, 1fr));
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .pt-plans__col-head {
+    position: relative;
+    padding: 0.75rem 0.65rem;
+    border-radius: 10px;
+    text-align: center;
+    background: rgb(243 243 243 / 70%);
+  }
+
+  .pt-plans__col-head--accent {
+    background: rgb(219 39 119 / 10%);
+  }
+
+  .pt-plans__col-head--green {
+    background: rgb(34 197 94 / 10%);
+  }
+
+  .pt-plans__badge {
+    display: inline-block;
+    margin-bottom: 0.25rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #16a34a;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .pt-plans__name {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .pt-plans__price {
+    margin: 0.15rem 0 0;
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: var(--color-on-surface);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pt-plans__sub {
+    margin: 0.1rem 0 0;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--color-tertiary);
+    line-height: 1.3;
+  }
+
+  .pt-plans__row {
+    padding: 0.55rem 0;
+    border-bottom: 1px solid rgb(226 226 226 / 70%);
+  }
+
+  .pt-plans__row:last-child {
+    border-bottom: none;
+  }
+
+  .pt-plans__row-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-on-surface-variant);
+    display: flex;
+    align-items: center;
+  }
+
+  .pt-plans__cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-on-surface);
+    text-align: center;
+  }
+
+  .pt-plans__check {
+    font-size: 18px;
+    color: #db2777;
+    font-variation-settings: 'FILL' 1;
+  }
+
+  .pt-usage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .pt-usage-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    padding: 0.85rem 0.9rem;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 12px;
+    background: var(--color-surface-container-lowest);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .pt-usage-row:hover {
+    background: var(--color-surface-container-low);
+  }
+
+  .pt-usage-row--active {
+    border-color: rgb(219 39 119 / 35%);
+    background: rgb(219 39 119 / 6%);
+    box-shadow: inset 0 0 0 1px rgb(219 39 119 / 10%);
+  }
+
+  .pt-usage-row__left {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .pt-usage-row__icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .pt-usage-row__icon .material-symbols-outlined { font-size: 18px; }
+  .pt-usage-row__icon--green { background: rgb(34 197 94 / 12%); color: #16a34a; }
+  .pt-usage-row__icon--amber { background: rgb(245 158 11 / 14%); color: #d97706; }
+  .pt-usage-row__icon--red { background: rgb(239 68 68 / 12%); color: #dc2626; }
+
+  .pt-usage-row__copy {
+    min-width: 0;
+  }
+
+  .pt-usage-row__title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .pt-usage-row__desc {
+    margin: 0.15rem 0 0;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    color: var(--color-tertiary);
+  }
+
+  .pt-usage-row__cost {
+    margin: 0;
+    flex-shrink: 0;
+    font-size: 1.05rem;
+    font-weight: 900;
+    color: var(--color-on-surface);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pt-usage-row--active .pt-usage-row__cost {
+    color: #db2777;
+  }
+
+  .pt-diff {
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--color-surface-variant);
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .pt-diff__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.8125rem;
+    color: var(--color-on-surface-variant);
+  }
+
+  .pt-diff__row strong {
+    color: var(--color-on-surface);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pt-diff__row--emphasis {
+    margin-top: 0.15rem;
+    padding-top: 0.45rem;
+    border-top: 1px dashed rgb(226 226 226 / 80%);
+    font-weight: 700;
+  }
+
+  .pt-diff__delta {
+    color: #db2777 !important;
+  }
+
+  .pt-feature-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .pt-feature-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.65rem 0.15rem;
+    border-bottom: 1px solid rgb(226 226 226 / 60%);
+  }
+
+  .pt-feature-row:last-child {
+    border-bottom: none;
+  }
+
+  .pt-feature-row__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pt-feature-row__icon .material-symbols-outlined { font-size: 18px; }
+  .pt-feature-row__icon--pink { background: rgb(219 39 119 / 10%); color: #db2777; }
+  .pt-feature-row__icon--green { background: rgb(34 197 94 / 10%); color: #16a34a; }
+  .pt-feature-row__icon--amber { background: rgb(245 158 11 / 12%); color: #d97706; }
+  .pt-feature-row__icon--purple { background: rgb(168 85 247 / 10%); color: #9333ea; }
+  .pt-feature-row__icon--blue { background: rgb(59 130 246 / 10%); color: #2563eb; }
+
+  .pt-feature-row__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-on-surface);
+  }
+
+  .pt-feature-row__value {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pt-compare-wrap {
+    overflow-x: auto;
+  }
+
+  .pt-compare {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+
+  .pt-compare th {
+    text-align: left;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+    border-bottom: 1px solid var(--color-surface-variant);
+  }
+
+  .pt-compare td {
+    padding: 0.7rem 0.5rem;
+    border-bottom: 1px solid rgb(226 226 226 / 60%);
+    color: var(--color-on-surface);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pt-compare tr:last-child td {
+    border-bottom: none;
+  }
+
+  .pt-compare__highlight {
+    font-weight: 800;
+    color: #db2777;
+  }
+
+  .pt-pill {
+    display: inline-flex;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .pt-pill--better {
+    background: rgb(34 197 94 / 12%);
+    color: #15803d;
+  }
+
+  .pt-pill--worse {
+    background: rgb(239 68 68 / 12%);
+    color: #b91c1c;
+  }
+
+  .pt-pill--neutral {
+    background: rgb(148 163 184 / 18%);
+    color: #475569;
+  }
+
+  .pt-empty {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-tertiary);
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-pt-usage]').forEach((root) => {
+    const raw = root.getAttribute('data-pt-usage-payload');
+    if (!raw) return;
+
+    type TierDiff = { realLabel: string; realValue: string; diffValue: string };
+    let payload: Record<string, TierDiff> = {};
+    try {
+      payload = JSON.parse(raw) as Record<string, TierDiff>;
+    } catch {
+      return;
+    }
+
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-pt-usage-select]'));
+    const realLabel = root.querySelector<HTMLElement>('[data-pt-diff-real-label]');
+    const realValue = root.querySelector<HTMLElement>('[data-pt-diff-real-value]');
+    const diffValue = root.querySelector<HTMLElement>('[data-pt-diff-delta]');
+
+    function selectTier(id: string) {
+      const data = payload[id];
+      if (!data) return;
+      buttons.forEach((btn) => {
+        const active = btn.dataset.ptUsageId === id;
+        btn.classList.toggle('pt-usage-row--active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      if (realLabel) realLabel.textContent = data.realLabel;
+      if (realValue) realValue.textContent = data.realValue;
+      if (diffValue) diffValue.textContent = data.diffValue;
+    }
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.ptUsageId;
+        if (id) selectTier(id);
+      });
+    });
+  });
+
+  // Tap-to-toggle marker tips on touch devices (hover still works on desktop).
+  const markers = Array.from(document.querySelectorAll<HTMLElement>('[data-pt-bench-marker]'));
+  markers.forEach((marker) => {
+    marker.addEventListener('click', (event) => {
+      const coarse = window.matchMedia('(hover: none)').matches;
+      if (!coarse) return;
+      event.preventDefault();
+      const wasOpen = marker.classList.contains('is-open');
+      markers.forEach((m) => m.classList.remove('is-open'));
+      if (!wasOpen) marker.classList.add('is-open');
+    });
+  });
+  document.addEventListener('click', (event) => {
+    const target = event.target as Node | null;
+    if (!target) return;
+    if (markers.some((m) => m.contains(target))) return;
+    markers.forEach((m) => m.classList.remove('is-open'));
+  });
+</script>

@@ -2,7 +2,7 @@
 import type { HomeExplorerApp } from '../../data/homepage';
 import { buildExplorerApps } from '../../data/homepage';
 import { loadComparisonProducts, overallScorePoints } from '../../lib/content/comparisonProducts';
-import { getScoreChipClass, fmtScore } from '../../lib/scores';
+import { fmtScore, categoryScoreChipClasses } from '../../lib/scores';
 import OverallScoreTooltip from '../review/tooltips/OverallScoreTooltip.astro';
 import InlineTestLink from '../review/tooltips/InlineTestLink.astro';
 import RatingHierarchyPipeline from '../review/tooltips/RatingHierarchyPipeline.astro';
@@ -17,7 +17,6 @@ const { app } = Astro.props;
 const comparisonProducts = await loadComparisonProducts();
 const fullProduct = comparisonProducts.find((product) => product.slug === app.slug);
 const tooltipId = `overall-explorer-${app.id}`;
-const currentChip = getScoreChipClass(app.overallScore);
 const scorePoints = overallScorePoints(comparisonProducts).map((point) => point.score);
 const avgScore = scorePoints.length
   ? scorePoints.reduce((sum, score) => sum + score, 0) / scorePoints.length
@@ -52,7 +51,7 @@ const avgScore = scorePoints.length
               </div>
               <div class="ratings-tooltip-panel__score-block">
                 <div class="ratings-tooltip-panel__score-row">
-                  <span class={`rt-score-chip ${currentChip}`}>{fmtScore(app.overallScore)}</span>
+                  <span class={categoryScoreChipClasses(app.overallScore)}>{fmtScore(app.overallScore)}</span>
                   <span class="ratings-tooltip-panel__score-label">{app.name}</span>
                 </div>
                 <p class="ratings-tooltip-panel__avg">
@@ -72,11 +71,10 @@ const avgScore = scorePoints.length
                 <div class="rt-comp-list rt-comp-list--dense">
                   {
                     app.categoryScores.map((category) => {
-                      const chip = getScoreChipClass(category.score);
                       return (
                         <div class="rt-comp-row rt-comp-row--inline">
                           <div class="rt-comp-row__main">
-                            <span class={`rt-score-chip rt-score-chip--outline rt-score-chip--xs ${chip}`}>
+                            <span class={categoryScoreChipClasses(category.score, 'xs')}>
                               {fmtScore(category.score)}
                             </span>
                             <InlineTestLink categoryKey={category.key} class="rt-comp-name rt-comp-name--truncate">
