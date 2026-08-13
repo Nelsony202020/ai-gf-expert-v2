@@ -30,8 +30,13 @@ import {
   formatSecurityIncidentsSummary,
 } from './SecurityIncidentsField';
 import { RetentionPeriodField, formatRetentionPeriodSummary } from './RetentionPeriodField';
+import { FreeAccessAllowanceField } from './FreeAccessAllowanceField';
+import {
+  formatFreeAccessAllowanceSummary,
+  isFreeAccessAllowanceSlug,
+} from '../../../lib/testing/freeAccessAllowance';
 import { PolicyDocsSession, type PolicyDocsSessionHandle } from './PolicyDocsSession';
-import { readAiPrivacyDetails } from '../../../lib/ai-privacy/clientHelpers';
+import { readAiPrivacyDetails, resolvedEvidenceRaw } from '../../../lib/ai-privacy/clientHelpers';
 import { isAiPrivacySlug } from '../../../lib/ai-privacy/types';
 import { AiPrivacyBanner, findFirstFlaggedDefId } from './AiPrivacyBanner';
 import { AiPrivacyRowMeta } from './AiPrivacyRowMeta';
@@ -71,7 +76,7 @@ interface Draft {
 
 function initialDraft(result: EntityRow | undefined, def?: EntityRow): Draft {
   const base: Draft = {
-    raw: (result?.rawValue as RawValue | undefined) ?? undefined,
+    raw: (resolvedEvidenceRaw(result) as RawValue | undefined) ?? undefined,
     na: Boolean(result?.notApplicable),
     dirty: false,
     internalNotes: String(result?.internalNotes ?? ''),
@@ -257,7 +262,10 @@ export const SessionForm = forwardRef<SessionFormHandle, {
 
   function fixedDenominatorFor(def: EntityRow): number | undefined {
     if (!session.sampleSizeField) return undefined;
-    return ratioDenominatorFromSample(String(def.slug ?? ''), sampleSize);
+    const slug = String(def.slug ?? '');
+    // Duplicate count uses sample size as the max (0–sample), not a ratio denominator.
+    if (slug === 'duplicates') return sampleSize;
+    return ratioDenominatorFromSample(slug, sampleSize);
   }
 
   useEffect(() => {
@@ -271,7 +279,7 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         if (!cur.dirty) {
           updated = {
             ...updated,
-            raw: (result?.rawValue as RawValue | undefined) ?? undefined,
+            raw: (resolvedEvidenceRaw(result) as RawValue | undefined) ?? undefined,
             na: Boolean(result?.notApplicable),
             dirty: false,
           };
@@ -830,7 +838,10 @@ export const SessionForm = forwardRef<SessionFormHandle, {
             const isUnknown = Boolean(raw && 'status' in raw && raw.status === 'unknown');
 
             let publicResult = (existing?.publicResult as string | undefined) ?? undefined;
-            if (!draft.na && draft.raw && !publicResult) {
+            if (!draft.na && draft.raw && isFreeAccessAllowanceSlug(String(def.slug))) {
+              const formatted = formatFreeAccessAllowanceSummary(String(def.slug), draft.raw);
+              if (formatted !== '—') publicResult = formatted;
+            } else if (!draft.na && draft.raw && !publicResult) {
               const rubricLabel =
                 draft.raw &&
                 'detail' in draft.raw &&
@@ -1008,11 +1019,27 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     }
     if (String(def.slug) === 'retention') {
       const retentionRaw =
-        draft.raw && 'status' in draft.raw && draft.raw.status === 'na' ? undefined : draft.raw;
+        draft.raw && 'status' in draft.raw && draft.raw.status === 'na'
+          ? undefined
+          : ((draft.raw ?? resolvedEvidenceRaw(resultByDef.get(def.id))) as RawValue | undefined);
       return (
         <RetentionPeriodField
           disabled={isBlocked}
           raw={retentionRaw}
+          onChange={(v) => patchDraftWithCascade(def.id, { raw: v })}
+        />
+      );
+    }
+    if (isFreeAccessAllowanceSlug(String(def.slug))) {
+      const allowanceRaw =
+        draft.raw && 'status' in draft.raw && draft.raw.status === 'na'
+          ? undefined
+          : ((draft.raw ?? resolvedEvidenceRaw(resultByDef.get(def.id))) as RawValue | undefined);
+      return (
+        <FreeAccessAllowanceField
+          disabled={isBlocked}
+          slug={String(def.slug)}
+          raw={allowanceRaw}
           onChange={(v) => patchDraftWithCascade(def.id, { raw: v })}
         />
       );
@@ -1036,13 +1063,17 @@ export const SessionForm = forwardRef<SessionFormHandle, {
         />
       );
     }
+    const inputRaw =
+      draft.raw && 'status' in draft.raw && draft.raw.status === 'na'
+        ? undefined
+        : ((draft.raw ?? resolvedEvidenceRaw(resultByDef.get(def.id))) as RawValue | undefined);
     return (
       <EvidenceInput
         def={def}
         categorySlug={categorySlug}
         productFields={productFields}
         fixedDenominator={fixedDenominatorFor(def)}
-        value={draft.raw && 'status' in draft.raw && draft.raw.status === 'na' ? undefined : draft.raw}
+        value={inputRaw}
         onChange={(v) => patchDraftWithCascade(def.id, { raw: v })}
         disabled={isBlocked || (String(def.slug) === 'edit-memories' && isEditMemoriesBlocked())}
       />
@@ -1431,6 +1462,9 @@ export const SessionForm = forwardRef<SessionFormHandle, {
                 }
                 if (String(def.slug) === 'retention') {
                   return formatRetentionPeriodSummary(draft.raw);
+                }
+                if (isFreeAccessAllowanceSlug(String(def.slug))) {
+                  return formatFreeAccessAllowanceSummary(String(def.slug), draft.raw);
                 }
                 return formatAnswerSummary(def, draft.raw, draft.na);
               })();

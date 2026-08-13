@@ -260,6 +260,9 @@ const _schema = i.schema({
       // [{ interval, price, currency, introPrice?, introDuration?, renewalPrice?,
       //    freeTrial?, trialLength?, active }]
       billingOptions: i.json().optional(),
+      // Plan entitlements: [{ id, featureKey, sourceLabel, accessType, quantity?,
+      //   unit?, resetInterval?, notes?, evidenceMediaIds? }]
+      allowances: i.json().optional(),
       description: i.string().optional(),
       // once | weekly | monthly | per_billing_cycle | yearly | none | custom
       creditRefresh: i.string().optional(),
@@ -303,6 +306,8 @@ const _schema = i.schema({
       // { displayName, singular, plural, icon?, resetsMonthly?, rollsOver?,
       //   expires?, expirationPeriod?, expirationNotes?, purchasable?, earnable?, freeCreditNotes? }
       creditCurrency: i.json().optional(),
+      // Optional plan name used for autofill / normalized pricing metrics
+      referencePlanName: i.string().optional(),
       effectiveFrom: i.date().optional(),
       effectiveUntil: i.date().optional(),
       verifiedAt: i.date().optional(),

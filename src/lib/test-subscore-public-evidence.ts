@@ -61,8 +61,7 @@ const PUBLIC_EVIDENCE_GROUP_DISPLAY: Record<string, PublicEvidenceGroupDisplay[]
     { label: 'Browsing', slug: 'browsing', memberSectionIds: ['browsing'] },
   ],
   'characters/quality': [
-    { label: 'Duplicates', slug: 'duplicates', memberSectionIds: ['duplicates'] },
-    { label: 'Originality', slug: 'originality', memberSectionIds: ['originality'] },
+    { label: 'Duplicate profiles', slug: 'duplicates', memberSectionIds: ['duplicates'] },
     { label: 'Profile Quality', slug: 'profile-quality', memberSectionIds: ['profile-quality'] },
     { label: 'Visual Quality', slug: 'visual-quality', memberSectionIds: ['visual-quality'] },
   ],
@@ -72,7 +71,7 @@ const PUBLIC_EVIDENCE_GROUP_DISPLAY: Record<string, PublicEvidenceGroupDisplay[]
     { label: 'Eye Color', slug: 'eye-color', memberSectionIds: ['eye-color'] },
     { label: 'Body Type', slug: 'body-type', memberSectionIds: ['body-type'] },
     { label: 'Breast Size', slug: 'breast-size', memberSectionIds: ['breast-size'] },
-    { label: 'SS Size', slug: 'ss-size', memberSectionIds: ['ss-size'] },
+    { label: 'Ass Size', slug: 'ss-size', memberSectionIds: ['ss-size'] },
     { label: 'Hair Style', slug: 'hair-style', memberSectionIds: ['hair-style'] },
     { label: 'Hair Color', slug: 'hair-color', memberSectionIds: ['hair-color'] },
     { label: 'Outfits', slug: 'outfits', memberSectionIds: ['outfits'] },
@@ -314,7 +313,6 @@ const PUBLIC_EVIDENCE_GROUP_DISPLAY: Record<string, PublicEvidenceGroupDisplay[]
   ],
   'pricing/billing': [
     { label: 'Pricing Clarity', slug: 'pricing-clarity', memberSectionIds: ['pricing-clarity'] },
-    { label: 'Paywalls', slug: 'paywalls', memberSectionIds: ['paywalls'] },
     { label: 'Credit Expiry', slug: 'credit-expiry', memberSectionIds: ['credit-expiry'] },
     { label: 'Refunds', slug: 'refunds', memberSectionIds: ['refunds'] },
     { label: 'Cancellation', slug: 'cancellation', memberSectionIds: ['cancellation'] },

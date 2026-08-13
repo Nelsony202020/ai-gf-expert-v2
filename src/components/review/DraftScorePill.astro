@@ -14,8 +14,9 @@ interface Props {
 const { score, size = 'md', variant = 'solid', class: className = '' } = Astro.props;
 const chip = getDraftScoreChipClass(score);
 
+/* sm = default chip scale (same as overall tooltip header scores) */
 const sizeClass =
-  size === 'xs' || size === 'sm'
+  size === 'xs'
     ? 'rt-score-chip--xs'
     : size === 'md'
       ? 'rt-score-chip--md'

@@ -61,12 +61,20 @@ export function UsageScenariosPanel({
   const activeCosts = featureCosts.filter((c) => c.active !== false);
   const activePackages = packages.filter((p) => p.active !== false);
 
+  const referencePlanName = String(snapshot.referencePlanName ?? '') || null;
+
   const estimates = useMemo(
     () =>
       profiles.map((p) =>
-        estimateProfile(p, activeTiers as any, activeCosts as any, activePackages as any),
+        estimateProfile(
+          p,
+          activeTiers as any,
+          activeCosts as any,
+          activePackages as any,
+          referencePlanName,
+        ),
       ),
-    [profiles, activeTiers, activeCosts, activePackages],
+    [profiles, activeTiers, activeCosts, activePackages, referencePlanName],
   );
 
   const activeProfile = profiles.find((p) => p.id === activeId) ?? profiles[0];
@@ -260,9 +268,24 @@ export function UsageScenariosPanel({
                 Add subscription plans above to calculate.
               </p>
             ) : (
-              activeEstimate?.billingPlans.map((plan) => (
-                <PlanCard key={plan.key} plan={plan} currency={currency} highlight={plan.key === 'monthly'} />
-              ))
+              <>
+                {activeEstimate?.billingPlans.map((plan) => (
+                  <PlanCard key={plan.key} plan={plan} currency={currency} highlight={plan.key === 'monthly'} />
+                ))}
+                {activeEstimate?.byPlan && activeEstimate.byPlan.length > 1 && (
+                  <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                    By plan:{' '}
+                    {activeEstimate.byPlan
+                      .map(
+                        (row) =>
+                          `${row.planName} ${
+                            row.totalMonthly != null ? fmtMoney(row.totalMonthly, currency) : '—'
+                          }`,
+                      )
+                      .join(' · ')}
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>

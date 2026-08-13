@@ -12,8 +12,8 @@ import { api, ApiError } from '../api';
 import { Button, ErrorNote, Icon, TextArea } from '../ui';
 import { inferDocumentLabelFromUrl, parsePolicyUrls } from '../../../lib/ai-privacy/classifyUrl';
 import { privacyStructuredOutputSchema } from '../../../lib/ai-privacy/types';
-import type { PrivacyDocument } from '../../../lib/ai-privacy/types';
-import { aiPrivacySummaryFromResults } from '../../../lib/ai-privacy/clientHelpers';
+import type { PrivacyDocument, PrivacyStructuredOutput } from '../../../lib/ai-privacy/types';
+import { AiPrivacyResultsSummary } from './AiPrivacyResultsSummary';
 
 function newDocId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
@@ -52,6 +52,14 @@ type AnalysisSummary = {
   high: number;
   medium: number;
   low: number;
+};
+
+type ApplyResult = {
+  applied: string[];
+  skipped: string[];
+  prefilled: string[];
+  leftEmpty: string[];
+  skippedReasons?: Record<string, string>;
 };
 
 type AnalysisRow = {
@@ -93,6 +101,7 @@ export const PolicyDocsSession = forwardRef<
   const [docs, setDocs] = useState<PrivacyDocument[]>([]);
   const [analysis, setAnalysis] = useState<AnalysisRow | null>(null);
   const [summary, setSummary] = useState<AnalysisSummary | null>(null);
+  const [applyResult, setApplyResult] = useState<ApplyResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -224,6 +233,7 @@ export const PolicyDocsSession = forwardRef<
       const res = await api.post<{
         analysis: AnalysisRow;
         summary: AnalysisSummary;
+        applyResult?: ApplyResult;
       }>('/api/admin/ai-privacy/analyze', {
         productId,
         testRunId: runId,
@@ -232,6 +242,7 @@ export const PolicyDocsSession = forwardRef<
 
       setAnalysis(res.analysis);
       setSummary(res.summary);
+      setApplyResult(res.applyResult ?? null);
       if (res.analysis.documents?.length) {
         setDocs(res.analysis.documents);
         setUrlBulk(docsToUrlBulk(res.analysis.documents));
@@ -255,22 +266,8 @@ export const PolicyDocsSession = forwardRef<
   const parsedOutput = analysis?.structuredOutput
     ? privacyStructuredOutputSchema.safeParse(analysis.structuredOutput)
     : null;
-  const scanSummary = parsedOutput?.success
-    ? aiPrivacySummaryFromResults(
-        parsedOutput.data.answers.map((a) => ({
-          calculationDetails: {
-            aiPrivacy: {
-              slug: a.slug,
-              reviewStatus: 'pending_review',
-              fillStatus: a.status,
-              confidence: a.confidence,
-              evidence: a.evidence,
-              analysisId: analysis?.id ?? '',
-            },
-          },
-          evidenceDefinition: { slug: a.slug },
-        })),
-      )
+  const structuredOutput: PrivacyStructuredOutput | null = parsedOutput?.success
+    ? parsedOutput.data
     : null;
   const showDocList =
     displayDocs.length > 0 &&
@@ -383,42 +380,71 @@ export const PolicyDocsSession = forwardRef<
         {analyzing ? 'Scraping & analyzing…' : applied ? 'Re-analyze policies' : 'Scrape & analyze'}
       </Button>
 
-      {(summary || scanSummary) && applied && (
+      {(summary || structuredOutput) && applied && (
         <div className="rounded-lg border border-slate-200 bg-slate-50/90 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/40">
           <div className="flex items-start gap-2">
             <Icon name="auto_awesome" className="mt-0.5 !text-[15px] shrink-0 text-pink-500" />
-            <div className="min-w-0 space-y-1">
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">AI policy scan complete</p>
-              <p className="text-xs text-slate-600 dark:text-slate-300">
-                Continue to the privacy questions to review AI-filled answers and evidence.
-              </p>
-              {scanSummary && (
-                <ul className="space-y-0.5 text-xs text-slate-600 dark:text-slate-300">
-                  {scanSummary.filledAutomatically > 0 && (
-                    <li>
-                      {scanSummary.filledAutomatically} answer
-                      {scanSummary.filledAutomatically === 1 ? '' : 's'} filled automatically
-                    </li>
-                  )}
-                  {scanSummary.needsReview > 0 && (
-                    <li>
-                      {scanSummary.needsReview} answer{scanSummary.needsReview === 1 ? '' : 's'} need
-                      your review
-                    </li>
-                  )}
-                  {scanSummary.notFound > 0 && (
-                    <li>
-                      {scanSummary.notFound} answer{scanSummary.notFound === 1 ? '' : 's'} not found
-                    </li>
-                  )}
-                  {scanSummary.conflicting > 0 && (
-                    <li>
-                      {scanSummary.conflicting} answer{scanSummary.conflicting === 1 ? '' : 's'} with
-                      conflicting policies
-                    </li>
-                  )}
-                </ul>
-              )}
+            <div className="min-w-0 space-y-2">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-100">AI policy scan complete</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  Answers were written into the privacy question dropdowns. Open Policy &amp; data-use
+                  review (and Data controls) to check them.
+                </p>
+                {summary && (
+                  <ul className="space-y-0.5 text-xs text-slate-600 dark:text-slate-300">
+                    {summary.filled > 0 && (
+                      <li>
+                        {summary.filled} answer{summary.filled === 1 ? '' : 's'} filled automatically
+                      </li>
+                    )}
+                    {summary.needsReview > 0 && (
+                      <li>
+                        {summary.needsReview} answer{summary.needsReview === 1 ? '' : 's'} need your
+                        review (best guess pre-selected)
+                      </li>
+                    )}
+                    {summary.notFound > 0 && (
+                      <li>
+                        {summary.notFound} answer{summary.notFound === 1 ? '' : 's'} not found in the
+                        policies
+                      </li>
+                    )}
+                    {summary.conflicting > 0 && (
+                      <li>
+                        {summary.conflicting} answer{summary.conflicting === 1 ? '' : 's'} with
+                        conflicting policies
+                      </li>
+                    )}
+                    {applyResult && (
+                      <>
+                        <li>
+                          {applyResult.prefilled.length} dropdown
+                          {applyResult.prefilled.length === 1 ? '' : 's'} pre-filled in the form
+                        </li>
+                        {applyResult.skipped.length > 0 && (
+                          <li>
+                            {applyResult.skipped.length} answer
+                            {applyResult.skipped.length === 1 ? '' : 's'} skipped
+                            {Object.values(applyResult.skippedReasons ?? {}).includes(
+                              'missing_definition',
+                            )
+                              ? ' (missing question on this methodology)'
+                              : ' (already accepted or manually edited)'}
+                          </li>
+                        )}
+                        {applyResult.prefilled.length === 0 && applyResult.applied.length > 0 && (
+                          <li className="text-amber-700 dark:text-amber-300">
+                            No dropdowns were pre-filled — the AI did not find usable answers in the
+                            policies.
+                          </li>
+                        )}
+                      </>
+                    )}
+                  </ul>
+                )}
+              </div>
+              {structuredOutput && <AiPrivacyResultsSummary output={structuredOutput} />}
             </div>
           </div>
         </div>

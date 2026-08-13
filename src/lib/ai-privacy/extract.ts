@@ -9,7 +9,11 @@ import { assertRateLimit } from '../ai-verdict/rateLimit';
 import { aiPrivacyConfig, AI_PRIVACY_PROMPT_VERSION } from './config';
 import { buildPrivacySystemPrompt, buildPrivacyUserPrompt, slugsForPolicyDocuments } from './prompts';
 import { inferDocumentLabelFromUrl } from './classifyUrl';
-import { coercePrivacyModelOutput, validatePrivacyAnswer } from './normalizeOutput';
+import {
+  coercePrivacyModelOutput,
+  normalizePrivacyAnswerRaws,
+  validatePrivacyAnswer,
+} from './normalizeOutput';
 import { documentBodyText, scrapePolicyUrl } from './scrape';
 import { getLatestPrivacyAnalysis, formatAnalysisRow, type AiPrivacyAnalysisRow } from './store';
 import {
@@ -103,67 +107,6 @@ function ensureAllSlugs(
     };
   });
   return { answers };
-}
-
-function asRecord(raw: unknown): Record<string, unknown> | null {
-  return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null;
-}
-
-function normalizeAnswerRaws(output: PrivacyStructuredOutput): PrivacyStructuredOutput {
-  return {
-    answers: output.answers.map((a) => {
-      if (a.status === 'not_found' || a.status === 'not_applicable') {
-        return { ...a, raw: undefined };
-      }
-
-      const rec = asRecord(a.raw);
-
-      if (a.status === 'conflicting') {
-        return {
-          ...a,
-          raw: { status: 'unknown' as const },
-          status: 'needs_review' as const,
-        };
-      }
-
-      if (a.slug === 'retention') {
-        const value = typeof rec?.value === 'number' ? rec.value : Number(rec?.value);
-        const unit = asRecord(rec?.detail)?.unit;
-        if (
-          !Number.isFinite(value) ||
-          value <= 0 ||
-          (unit !== 'weeks' && unit !== 'months' && unit !== 'years')
-        ) {
-          return { ...a, status: 'not_found' as const, raw: undefined, confidence: 'low' as const };
-        }
-        return {
-          ...a,
-          raw: { value, detail: { unit } },
-        };
-      }
-
-      if (a.slug === 'policy-clarity') {
-        const value = typeof rec?.value === 'number' ? rec.value : Number(rec?.value);
-        if (value !== 0 && value !== 50 && value !== 100) {
-          return { ...a, status: 'needs_review' as const, raw: undefined, confidence: 'low' as const };
-        }
-        const rubric =
-          value === 100 ? 'Very clear' : value === 50 ? 'Neutral' : 'Unclear';
-        return { ...a, raw: { value, detail: { rubric } } };
-      }
-
-      const status = typeof rec?.status === 'string' ? rec.status : '';
-      const allowed = new Set(['yes', 'limited', 'optional', 'no', 'unknown']);
-      if (!allowed.has(status)) {
-        return { ...a, status: 'not_found' as const, raw: undefined, confidence: 'low' as const };
-      }
-      // Optional only for data-sharing / advertising.
-      if (status === 'optional' && a.slug !== 'data-sharing' && a.slug !== 'advertising') {
-        return { ...a, raw: { status: 'limited' as const } };
-      }
-      return { ...a, raw: { status } };
-    }),
-  };
 }
 
 export async function analyzePrivacyPolicies(
@@ -275,9 +218,9 @@ export async function analyzePrivacyPolicies(
     throw new HttpError(422, `Invalid AI output: ${detail.slice(0, 300)}`);
   }
 
-  const normalized = normalizeAnswerRaws(ensureAllSlugs(validated.data, targetSlugs));
+  const ensured = ensureAllSlugs(validated.data, targetSlugs);
   const output: PrivacyStructuredOutput = {
-    answers: normalized.answers.map((a) => validatePrivacyAnswer(a)),
+    answers: normalizePrivacyAnswerRaws(ensured.answers).map((a) => validatePrivacyAnswer(a)),
   };
   const now = Date.now();
   const tokenUsage = {

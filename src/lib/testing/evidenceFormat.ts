@@ -70,6 +70,30 @@ export function formatEvidenceAnswer(
   const checklistText = formatChecklistAnswer(raw, { itemLabel: checklistLabel });
   if (checklistText) return checklistText;
 
+  // Lazy import avoided — keep period display inlined for free-access counts.
+  if (
+    def.slug &&
+    ['free-chat', 'free-characters', 'free-images', 'free-video', 'free-voice'].includes(def.slug) &&
+    'value' in rv &&
+    typeof rv.value === 'number'
+  ) {
+    const detail =
+      'detail' in rv && rv.detail && typeof rv.detail === 'object'
+        ? (rv.detail as Record<string, unknown>)
+        : null;
+    const period = detail?.period;
+    const unitMap: Record<string, string> = {
+      'free-chat': 'messages',
+      'free-characters': 'characters',
+      'free-images': 'images',
+      'free-video': 'videos',
+      'free-voice': 'sec voice',
+    };
+    const unit = unitMap[def.slug] ?? def.unit ?? '';
+    const suffix = period === 'day' ? ' / day' : period === 'month' ? ' / month' : '';
+    return `${rv.value} ${unit}${suffix}`.trim();
+  }
+
   if ('status' in rv) {
     const map: Record<string, string> = {
       na: 'N/A',

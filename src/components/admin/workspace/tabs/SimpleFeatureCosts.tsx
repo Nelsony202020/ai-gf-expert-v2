@@ -3,7 +3,7 @@ import { dataApi, type EntityRow } from '../../api';
 import { useAsyncToast } from '../../Toast';
 import { Button, Field, Icon, Modal, Select, TextInput } from '../../ui';
 import { useWorkspace } from '../context';
-import { featureCostRange } from '../../../../lib/pricing/calc';
+import { featureCostAvailability, featureCostRange } from '../../../../lib/pricing/calc';
 import {
   costsInFamily,
   dominantUnit,
@@ -18,6 +18,23 @@ import {
 
 export { FEATURE_COST_FAMILIES, PREDEFINED_FEATURE_COSTS } from '../../../../lib/pricing/featureCostGroups';
 
+type CostMode =
+  | 'priced'
+  | 'included'
+  | 'unlimited'
+  | 'pay_as_you_go'
+  | 'not_available'
+  | 'unknown';
+
+const COST_MODE_OPTIONS: Array<{ value: CostMode; label: string }> = [
+  { value: 'priced', label: 'Credit cost' },
+  { value: 'included', label: 'Included' },
+  { value: 'unlimited', label: 'Unlimited' },
+  { value: 'pay_as_you_go', label: 'Pay as you go' },
+  { value: 'not_available', label: 'Not available' },
+  { value: 'unknown', label: 'Cost unknown' },
+];
+
 interface VariantDraft {
   id: string | null;
   model: string;
@@ -25,17 +42,35 @@ interface VariantDraft {
   customLabel: string;
   creditCost: string;
   unit: string;
+  costMode: CostMode;
+}
+
+function costModeFromRow(cost: EntityRow): CostMode {
+  const availability = featureCostAvailability(cost as any);
+  if (availability === 'priced') return 'priced';
+  if (
+    availability === 'included' ||
+    availability === 'unlimited' ||
+    availability === 'pay_as_you_go' ||
+    availability === 'not_available' ||
+    availability === 'unknown'
+  ) {
+    return availability;
+  }
+  return 'unknown';
 }
 
 function rowToDraft(cost: EntityRow, family: FeatureCostFamilyDef): VariantDraft {
-  const range = featureCostRange(cost as any);
+  const mode = costModeFromRow(cost);
+  const range = mode === 'priced' ? featureCostRange(cost as any) : null;
   return {
     id: cost.id,
     model: String(cost.qualityTier ?? ''),
     durationProduced: cost.durationProduced != null ? String(cost.durationProduced) : '',
     customLabel: String(cost.customLabel ?? ''),
-    creditCost: range ? String(range.min) : '',
+    creditCost: range && range.max > 0 ? String(range.min) : '',
     unit: String(cost.unit ?? family.defaultUnit),
+    costMode: mode,
   };
 }
 
@@ -47,6 +82,7 @@ function emptyDraft(family: FeatureCostFamilyDef): VariantDraft {
     customLabel: '',
     creditCost: '',
     unit: family.defaultUnit,
+    costMode: 'unknown',
   };
 }
 
@@ -131,6 +167,11 @@ export function SimpleFeatureCosts({
           const variantCount = variants.length;
           const hasVariants = variantCount > 1 || variants.some(variantHasMetadata);
           const editLabel = hasVariants ? `Variants (${variantCount})` : 'Edit';
+          const modes = new Set(variants.map((v) => costModeFromRow(v)));
+          const statusOnly =
+            !summary && modes.size === 1
+              ? COST_MODE_OPTIONS.find((o) => o.value === [...modes][0])?.label
+              : null;
 
           return (
             <tr key={family.key} className="border-b border-slate-50 dark:border-slate-800/60">
@@ -143,8 +184,10 @@ export function SimpleFeatureCosts({
               <td className="px-2 py-2 align-top">
                 {loading ? (
                   <span className="text-slate-400">…</span>
-                ) : (
+                ) : summary ? (
                   formatCostAmount(summary)
+                ) : (
+                  <span className="text-slate-500">{statusOnly ?? '—'}</span>
                 )}
               </td>
               <td className="px-2 py-2 align-top text-slate-600 dark:text-slate-300">
@@ -280,29 +323,47 @@ function FeatureVariantsModal({
         const duration =
           showDurationField && v.durationProduced.trim() !== '' ? Number(v.durationProduced) : undefined;
 
-        if (family.key === 'video_generation' && v.customLabel.trim() && !v.model.trim() && creditCost == null) {
-          throw new Error('Enter a coin cost for label-only variants (e.g. Video with audio).');
+        const mode = v.costMode;
+        if (
+          family.key === 'video_generation' &&
+          v.customLabel.trim() &&
+          !v.model.trim() &&
+          mode === 'priced' &&
+          creditCost == null
+        ) {
+          throw new Error('Enter a coin cost for label-only variants (e.g. Video with audio), or set status to Cost unknown.');
+        }
+        if ((mode === 'priced' || mode === 'pay_as_you_go') && creditCost == null && !v.id) {
+          // Allow empty new priced rows to be skipped; existing rows can become unknown.
         }
 
         const mapped = variantFieldsToFeatureCost(family, {
           model: v.model.trim() || null,
           durationSeconds: duration ?? null,
           label: v.customLabel.trim() || null,
-          creditCost: creditCost ?? null,
+          creditCost: mode === 'priced' || mode === 'pay_as_you_go' ? creditCost ?? null : null,
           unit: v.unit,
         });
+        const costType =
+          mode === 'priced'
+            ? creditCost != null
+              ? 'fixed'
+              : 'unknown'
+            : mode;
         const fields: Record<string, unknown> = {
           ...mapped,
           minCost: undefined,
           maxCost: undefined,
-          costType: creditCost != null ? 'fixed' : undefined,
+          costType,
+          creditCost:
+            mode === 'priced' || mode === 'pay_as_you_go' ? creditCost ?? undefined : undefined,
           active: true,
           sortOrder: i,
         };
 
         if (v.id) {
           await dataApi.update('featureCosts', v.id, fields, { snapshot: snapshotId });
-        } else if (creditCost != null) {
+        } else if (creditCost != null || mode !== 'priced') {
           await dataApi.create('featureCosts', fields, {
             product: productId,
             snapshot: snapshotId,
@@ -397,14 +458,32 @@ function FeatureVariantsModal({
                 </div>
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
-                <Field label={`Cost in ${creditLabel}`}>
-                  <TextInput
-                    inputMode="decimal"
-                    value={v.creditCost}
-                    onChange={(e) => patchVariant(index, { creditCost: e.target.value.replace(/[^\d.]/g, '') })}
-                    placeholder="e.g. 30"
-                  />
+                <Field label="Status">
+                  <Select
+                    value={v.costMode}
+                    onChange={(e) =>
+                      patchVariant(index, { costMode: e.target.value as CostMode })
+                    }
+                  >
+                    {COST_MODE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </Select>
                 </Field>
+                {(v.costMode === 'priced' || v.costMode === 'pay_as_you_go') && (
+                  <Field label={`Cost in ${creditLabel}`}>
+                    <TextInput
+                      inputMode="decimal"
+                      value={v.creditCost}
+                      onChange={(e) =>
+                        patchVariant(index, { creditCost: e.target.value.replace(/[^\d.]/g, '') })
+                      }
+                      placeholder="e.g. 30"
+                    />
+                  </Field>
+                )}
                 <Field label="Unit">
                   <Select value={v.unit} onChange={(e) => patchVariant(index, { unit: e.target.value })}>
                     {family.unitOptions.map((u) => (

@@ -2,8 +2,13 @@
 
 import type { EntityRow } from '../api';
 import type { RawValue } from './EvidenceInput';
+import { resolvedEvidenceRaw } from '../../../lib/ai-privacy/clientHelpers';
 import { formatChecklistAnswer, formatEvidenceAnswer } from '../../../lib/testing/evidenceFormat';
 import { formatRetentionPeriodSummary } from '../../../lib/testing/retentionPeriod';
+import {
+  formatFreeAccessAllowanceSummary,
+  isFreeAccessAllowanceSlug,
+} from '../../../lib/testing/freeAccessAllowance';
 import { formatSecurityIncidentsSummary } from '../../../lib/testing/securityIncidents';
 import { controlKind, testerQuestion } from './presentation';
 
@@ -19,6 +24,9 @@ export function formatAnswerSummary(def: EntityRow, raw: RawValue | undefined, n
   if (!raw) return '—';
   if (String(def.slug) === 'retention' && 'value' in raw) {
     return formatRetentionPeriodSummary(raw);
+  }
+  if (isFreeAccessAllowanceSlug(String(def.slug))) {
+    return formatFreeAccessAllowanceSummary(String(def.slug), raw);
   }
   if (String(def.slug) === 'security-incidents') {
     return formatSecurityIncidentsSummary(raw);
@@ -67,7 +75,7 @@ export function rowState(
   if (draft.dirty) return 'unsaved';
   if (draft.na) return 'na';
   if (draft.raw !== undefined) return 'done';
-  if (result && (result.rawValue || result.notApplicable)) return 'done';
+  if (result && (result.rawValue || result.notApplicable || resolvedEvidenceRaw(result))) return 'done';
   return 'todo';
 }
 

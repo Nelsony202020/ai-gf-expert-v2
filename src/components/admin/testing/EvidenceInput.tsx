@@ -6,6 +6,7 @@ import type { EntityRow } from '../api';
 import { Select, TextArea, TextInput } from '../ui';
 import { filterFeatureChecklistItems, privacyAllowsUnknown, PRIVACY_OPTIONAL_SLUGS } from './capabilityGating';
 import {
+  duplicateCountMax,
   pctFromRatio,
   ratioNumeratorLabel,
 } from './sampleRatio';
@@ -173,18 +174,36 @@ export function EvidenceInput({
     case 'number': {
       const current = value && 'value' in value ? String(value.value) : '';
       const unit = unitLabel(def);
+      const rule = (def.scoringRule ?? {}) as { kind?: string; min?: number; max?: number };
+      const maxFromRule =
+        rule.kind === 'linear' && typeof rule.max === 'number' ? rule.max : undefined;
+      const max =
+        slug === 'duplicates'
+          ? duplicateCountMax(fixedDenominator ?? maxFromRule)
+          : maxFromRule;
       return (
         <div className={`flex items-center gap-2 ${compact ? 'w-full' : ''}`}>
           <TextInput
             type="number"
             min={0}
-            step="any"
+            max={max}
+            step={slug === 'duplicates' ? 1 : 'any'}
             className={compact ? `${wide} max-w-none` : 'max-w-[160px]'}
             value={current}
             disabled={disabled}
             onChange={(e) => {
-              const n = nonNegative(e.target.value);
-              onChange(n === undefined ? undefined : { value: n });
+              const n = nonNegative(e.target.value, max);
+              onChange(
+                n === undefined
+                  ? undefined
+                  : {
+                      value: n,
+                      detail:
+                        slug === 'duplicates'
+                          ? { count: n, max: max ?? 25 }
+                          : undefined,
+                    },
+              );
             }}
           />
           {unit && <span className="shrink-0 text-xs text-slate-500">{unit}</span>}

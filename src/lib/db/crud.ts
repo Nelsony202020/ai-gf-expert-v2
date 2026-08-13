@@ -164,23 +164,40 @@ function stripMediaFieldsPendingSchema(fields: Record<string, unknown>): Record<
   return out;
 }
 
+function isTransientNetworkError(error: unknown): boolean {
+  const parts: string[] = [];
+  if (error instanceof Error) {
+    parts.push(error.message);
+    if (error.cause instanceof Error) parts.push(error.cause.message);
+  }
+  parts.push(String(error));
+  return /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|GOAWAY|UND_ERR_/i.test(parts.join(' '));
+}
+
 async function rawTransact(chunks: unknown[]) {
   const db = getDb();
   await db.transact(chunks as any);
 }
 
 async function transact(chunks: unknown[]) {
-  try {
-    await rawTransact(chunks);
-  } catch (e: unknown) {
-    if (isSchemaMismatchError(e)) {
-      throw new HttpError(
-        400,
-        'Database schema is out of date. Run `npm run db:push` in the project root, confirm the push, then try again.',
-      );
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await rawTransact(chunks);
+      return;
+    } catch (e: unknown) {
+      lastError = e;
+      if (isSchemaMismatchError(e)) {
+        throw new HttpError(
+          400,
+          'Database schema is out of date. Run `npm run db:push` in the project root, confirm the push, then try again.',
+        );
+      }
+      if (!isTransientNetworkError(e) || attempt === 2) break;
+      await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
     }
-    throw e;
   }
+  throw lastError;
 }
 
 function buildUpdateChunk(

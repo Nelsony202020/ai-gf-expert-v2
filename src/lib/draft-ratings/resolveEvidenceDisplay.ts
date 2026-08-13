@@ -2,6 +2,10 @@ import { formatEvidenceAnswer, formatChecklistAnswer } from '../testing/evidence
 import { formatRetentionPeriodSummary } from '../testing/retentionPeriod';
 import type { RawValue } from '../scoring/engine';
 import { formatFreeAccessDetailsSummary, parseFreeAccessDetails } from '../testing/freeAccessDetails';
+import {
+  formatFreeAccessAllowanceSummary,
+  isFreeAccessAllowanceSlug,
+} from '../testing/freeAccessAllowance';
 import { fmtMoney } from '../pricing/calc';
 import { renderPublicResult } from '../../components/admin/testing/presentation';
 
@@ -29,13 +33,6 @@ const PRICING_CURRENCY_SUFFIX: Record<string, string> = {
   'voice-cost': '/ 10 sec',
   'call-cost': '/ min',
   'monthly-spend': '/ month',
-};
-
-const FREE_ACCESS_COUNT_LABEL: Record<string, string> = {
-  'free-chat': 'messages',
-  'free-images': 'images',
-  'free-video': 'videos',
-  'free-characters': 'characters',
 };
 
 const FREE_VALUE_LABELS: Record<string, string> = {
@@ -81,10 +78,9 @@ function formatPricingCurrency(slug: string, value: number): string {
 function formatFreeAccessValue(slug: string | undefined, raw: unknown): string | null {
   if (!slug || !raw || typeof raw !== 'object') return null;
 
-  if (slug === 'free-voice' && 'value' in raw) {
-    const sec = Number((raw as { value: unknown }).value);
-    if (!Number.isFinite(sec)) return null;
-    return `${sec} sec voice`;
+  if (isFreeAccessAllowanceSlug(slug)) {
+    const formatted = formatFreeAccessAllowanceSummary(slug, raw as RawValue);
+    if (formatted !== '—') return formatted;
   }
 
   if (slug === 'free-value' && 'status' in raw) {
@@ -140,12 +136,6 @@ function formatFreeAccessValue(slug: string | undefined, raw: unknown): string |
   if (slug === 'retention' && 'value' in raw) {
     const formatted = formatRetentionPeriodSummary(raw as RawValue);
     if (formatted !== '—') return formatted;
-  }
-
-  if (slug && FREE_ACCESS_COUNT_LABEL[slug] && 'value' in raw) {
-    const count = Number((raw as { value: unknown }).value);
-    if (!Number.isFinite(count)) return null;
-    return `${count} ${FREE_ACCESS_COUNT_LABEL[slug]}`;
   }
 
   return null;

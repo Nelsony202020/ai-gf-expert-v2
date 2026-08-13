@@ -12,9 +12,15 @@ import { AiPrivacyEvidencePanel } from './AiPrivacyEvidencePanel';
 import { AiPrivacyRowMeta } from './AiPrivacyRowMeta';
 import {
   readAiPrivacyDetails,
+  resolvedEvidenceRaw,
 } from '../../../lib/ai-privacy/clientHelpers';
 import { isAiPrivacySlug } from '../../../lib/ai-privacy/types';
 import { RetentionPeriodField, formatRetentionPeriodSummary } from './RetentionPeriodField';
+import { FreeAccessAllowanceField } from './FreeAccessAllowanceField';
+import {
+  formatFreeAccessAllowanceSummary,
+  isFreeAccessAllowanceSlug,
+} from '../../../lib/testing/freeAccessAllowance';
 import {
   formatAnswerSummary,
   rowState,
@@ -33,6 +39,13 @@ interface Draft {
   dirty: boolean;
   internalNotes: string;
   notesDirty: boolean;
+}
+
+/** Prefer the in-progress draft; fall back to saved/AI proposal so privacy selects aren't blank. */
+function rowInputRaw(draft: Draft, result: EntityRow | undefined): RawValue | undefined {
+  if (draft.raw && 'status' in draft.raw && draft.raw.status === 'na') return undefined;
+  if (draft.raw) return draft.raw;
+  return resolvedEvidenceRaw(result) as RawValue | undefined;
 }
 
 export function SessionAnswerTable({
@@ -164,7 +177,8 @@ export function SessionAnswerTable({
             const result = resultByDef.get(def.id);
             const state = rowState(def, draft, result);
             const ai = readAiPrivacyDetails(result);
-            const hasAnswer = Boolean(draft.raw) || Boolean(result?.rawValue) || draft.na;
+            const hasAnswer =
+              Boolean(draft.raw) || Boolean(resolvedEvidenceRaw(result)) || draft.na;
             const aiExpanded = expandedAiDefId === def.id;
 
             const summary = (() => {
@@ -203,9 +217,15 @@ export function SessionAnswerTable({
                 return formatSecurityIncidentsSummary(draft.raw);
               }
               if (String(def.slug) === 'retention') {
-                return formatRetentionPeriodSummary(draft.raw);
+                return formatRetentionPeriodSummary(rowInputRaw(draft, result));
               }
-              return formatAnswerSummary(def, draft.raw, draft.na);
+              if (isFreeAccessAllowanceSlug(String(def.slug))) {
+                return formatFreeAccessAllowanceSummary(
+                  String(def.slug),
+                  rowInputRaw(draft, result),
+                );
+              }
+              return formatAnswerSummary(def, rowInputRaw(draft, result), draft.na);
             })();
 
             const isActive = activeDefId === def.id;
@@ -364,11 +384,14 @@ export function SessionAnswerTable({
                         ) : String(def.slug) === 'retention' ? (
                           <RetentionPeriodField
                             disabled={busy}
-                            raw={
-                              draft.raw && 'status' in draft.raw && draft.raw.status === 'na'
-                                ? undefined
-                                : draft.raw
-                            }
+                            raw={rowInputRaw(draft, result)}
+                            onChange={(v) => onPatch(def.id, { raw: v })}
+                          />
+                        ) : isFreeAccessAllowanceSlug(String(def.slug)) ? (
+                          <FreeAccessAllowanceField
+                            disabled={busy}
+                            slug={String(def.slug)}
+                            raw={rowInputRaw(draft, result)}
                             onChange={(v) => onPatch(def.id, { raw: v })}
                           />
                         ) : (
@@ -378,11 +401,7 @@ export function SessionAnswerTable({
                             categorySlug={categorySlug}
                             productFields={productFields}
                             fixedDenominator={fixedDenominatorFor?.(def)}
-                            value={
-                              draft.raw && 'status' in draft.raw && draft.raw.status === 'na'
-                                ? undefined
-                                : draft.raw
-                            }
+                            value={rowInputRaw(draft, result)}
                             onChange={(v) => onPatch(def.id, { raw: v })}
                             disabled={busy || (String(def.slug) === 'edit-memories' && editMemoriesBlocked)}
                           />

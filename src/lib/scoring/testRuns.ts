@@ -119,15 +119,33 @@ async function loadProductPricing(productId: string) {
       creditPackages: {},
       featureCosts: {},
       paymentProfile: {},
+      pricingSnapshots: {},
     },
   });
   const product = products[0];
-  if (!product) return { plans: [], packages: [], featureCosts: [], paymentProfile: null };
+  if (!product) {
+    return {
+      plans: [],
+      packages: [],
+      featureCosts: [],
+      paymentProfile: null,
+      referencePlanName: null,
+    };
+  }
+  const snapshots = (product.pricingSnapshots ?? []) as Array<{
+    status?: string;
+    referencePlanName?: string;
+    deletedAt?: unknown;
+  }>;
+  const active =
+    snapshots.find((s) => s.status === 'active' && !s.deletedAt) ??
+    snapshots.find((s) => !s.deletedAt);
   return {
     plans: (product.subscriptionPlans ?? []) as Record<string, unknown>[],
     packages: (product.creditPackages ?? []) as Record<string, unknown>[],
     featureCosts: (product.featureCosts ?? []) as Record<string, unknown>[],
     paymentProfile: (product.paymentProfile ?? null) as Record<string, unknown> | null,
+    referencePlanName: active?.referencePlanName ?? null,
   };
 }
 
@@ -161,12 +179,17 @@ async function syncPricingEvidence(
             db.tx.evidenceResults[existing.id].update({
               rawValue: suggestion.raw,
               notApplicable: false,
-              isUnknown: false,
+              isUnknown: Boolean(suggestion.isUnknown),
               testDate: now,
               updatedAt: now,
             }),
           );
-          resultByDef.set(existing.id, { ...existing, rawValue: suggestion.raw, notApplicable: false });
+          resultByDef.set(existing.id, {
+            ...existing,
+            rawValue: suggestion.raw,
+            notApplicable: false,
+            isUnknown: Boolean(suggestion.isUnknown),
+          });
         } else {
           const rid = newId();
           writes.push(
@@ -174,13 +197,18 @@ async function syncPricingEvidence(
               .update({
                 rawValue: suggestion.raw,
                 notApplicable: false,
-                isUnknown: false,
+                isUnknown: Boolean(suggestion.isUnknown),
                 testDate: now,
                 updatedAt: now,
               })
               .link({ testRun: testRunId, evidenceDefinition: def.id, product: productId }),
           );
-          resultByDef.set(def.id, { id: rid, rawValue: suggestion.raw, evidenceDefinition: def });
+          resultByDef.set(def.id, {
+            id: rid,
+            rawValue: suggestion.raw,
+            isUnknown: Boolean(suggestion.isUnknown),
+            evidenceDefinition: def,
+          });
         }
       }
     }

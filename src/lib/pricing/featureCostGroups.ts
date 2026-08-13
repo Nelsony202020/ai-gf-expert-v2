@@ -145,7 +145,8 @@ export function familySummaryRange(variants: FeatureCostRow[]): CostRange | null
   let max = -Infinity;
   for (const v of variants) {
     const range = featureCostRange(v);
-    if (!range) continue;
+    // Ignore zero-cost included/unlimited rows in the numeric summary.
+    if (!range || (range.min === 0 && range.max === 0)) continue;
     min = Math.min(min, range.min);
     max = Math.max(max, range.max);
   }

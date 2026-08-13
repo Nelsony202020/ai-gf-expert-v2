@@ -368,6 +368,17 @@
   min-width: 0 !important;
 }
 
+/*
+ * Tooltip subscore chips are outline (2px border). Shrink padding so their
+ * outer size matches the filled header chip (e.g. 9.4 Characters).
+ */
+.ratings-tooltip-panel .rt-comp-list .rt-score-chip--outline {
+  font-size: 12px !important;
+  padding: 1px 5px !important;
+  min-width: 2rem !important;
+  line-height: 1.2;
+}
+
 .rt-score-chip--md {
   font-size: 13px;
   padding: 4px 8px;

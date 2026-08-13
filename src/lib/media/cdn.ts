@@ -62,6 +62,8 @@ export function bunnyPublicUrl(storagePath: string): string {
   return `https://${host}/${cleanPath}`;
 }
 
+const BUNNY_UPLOAD_TIMEOUT_MS = 45_000;
+
 /** Upload a file buffer to Bunny Storage; returns the public pull-zone URL. */
 export async function uploadToBunny(
   storagePath: string,
@@ -73,14 +75,25 @@ export async function uploadToBunny(
   const path = storagePath.replace(/^\//, '');
   const endpoint = `https://storage.bunnycdn.com/${encodeURIComponent(zone)}/${path}`;
 
-  const res = await fetch(endpoint, {
-    method: 'PUT',
-    headers: {
-      AccessKey: key,
-      'Content-Type': contentType,
-    },
-    body: buffer,
-  });
+  let res: Response;
+  try {
+    res = await fetch(endpoint, {
+      method: 'PUT',
+      headers: {
+        AccessKey: key,
+        'Content-Type': contentType,
+      },
+      body: buffer,
+      signal: AbortSignal.timeout(BUNNY_UPLOAD_TIMEOUT_MS),
+    });
+  } catch (error) {
+    const name = error instanceof Error ? error.name : '';
+    const message = error instanceof Error ? error.message : String(error);
+    if (name === 'TimeoutError' || name === 'AbortError' || /timeout|aborted/i.test(message)) {
+      throw new Error(`Bunny upload timed out after ${BUNNY_UPLOAD_TIMEOUT_MS / 1000}s`);
+    }
+    throw new Error(`Bunny upload failed: ${message}`);
+  }
 
   if (!res.ok) {
     const detail = await res.text().catch(() => '');

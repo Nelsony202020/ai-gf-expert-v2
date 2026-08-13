@@ -2,6 +2,7 @@
 
 import { getDb, id as newId } from '../db/server';
 import { HttpError } from '../db/auth';
+import { loadRunMethodologyStructure } from '../scoring/testRuns';
 import {
   AI_PRIVACY_SLUGS,
   privacyStructuredOutputSchema,
@@ -64,28 +65,38 @@ function isUnknownRaw(raw: unknown): boolean {
   return Boolean(raw && typeof raw === 'object' && 'status' in raw && (raw as { status: string }).status === 'unknown');
 }
 
-async function loadPrivacyDefs(): Promise<Map<string, { id: string; slug: string }>> {
-  const db = getDb();
-  const { evidenceDefinitions } = await (db.query as any)({
-    evidenceDefinitions: {
-      $: {},
-      subscore: { category: {} },
-    },
-  });
+/** Resolve privacy evidence defs for THIS test run's methodology (not all versions). */
+async function loadPrivacyDefs(testRunId: string): Promise<Map<string, { id: string; slug: string }>> {
+  const structure = await loadRunMethodologyStructure(testRunId);
   const map = new Map<string, { id: string; slug: string }>();
-  for (const def of evidenceDefinitions ?? []) {
+  for (const def of structure.definitions ?? []) {
     const slug = String(def.slug ?? '');
     if (!AI_PRIVACY_SLUGS.includes(slug as AiPrivacySlug)) continue;
-    const cat = def.subscore?.category?.slug;
+    const cat = (def as { subscore?: { category?: { slug?: string } } }).subscore?.category?.slug;
     if (slug === 'refunds') {
       if (cat !== 'pricing') continue;
     } else if (cat && cat !== 'privacy') {
       continue;
     }
-    map.set(slug, { id: def.id, slug });
+    map.set(slug, { id: String(def.id), slug });
   }
   return map;
 }
+
+export type PrivacyApplySkipReason =
+  | 'missing_definition'
+  | 'already_accepted'
+  | 'manual_edit';
+
+export type PrivacyApplyResult = {
+  applied: string[];
+  skipped: string[];
+  /** Slugs where a dropdown/value was written into evidenceResults.rawValue. */
+  prefilled: string[];
+  /** Applied but left empty (not_found / not_applicable / no usable raw). */
+  leftEmpty: string[];
+  skippedReasons: Record<string, PrivacyApplySkipReason>;
+};
 
 export async function applyPrivacyAnalysis(opts: {
   productId: string;
@@ -93,7 +104,7 @@ export async function applyPrivacyAnalysis(opts: {
   analysisId?: string;
   /** Only apply these slugs (for rescan). */
   onlySlugs?: AiPrivacySlug[];
-}): Promise<{ applied: string[]; skipped: string[] }> {
+}): Promise<PrivacyApplyResult> {
   const db = getDb();
   const analysis = await getLatestPrivacyAnalysis(opts.testRunId);
   if (!analysis) throw new HttpError(404, 'No privacy analysis found');
@@ -108,7 +119,13 @@ export async function applyPrivacyAnalysis(opts: {
   if (!parsed.success) throw new HttpError(422, 'Analysis has no valid structured output — run Analyze first.');
 
   const output: PrivacyStructuredOutput = parsed.data;
-  const defs = await loadPrivacyDefs();
+  const defs = await loadPrivacyDefs(opts.testRunId);
+  if (defs.size === 0) {
+    throw new HttpError(
+      422,
+      'No privacy evidence questions found on this test run’s methodology. Check the methodology version linked to the run.',
+    );
+  }
 
   const { evidenceResults } = await (db.query as any)({
     evidenceResults: {
@@ -124,6 +141,9 @@ export async function applyPrivacyAnalysis(opts: {
 
   const applied: string[] = [];
   const skipped: string[] = [];
+  const prefilled: string[] = [];
+  const leftEmpty: string[] = [];
+  const skippedReasons: Record<string, PrivacyApplySkipReason> = {};
   const txs: any[] = [];
   const now = Date.now();
 
@@ -132,6 +152,7 @@ export async function applyPrivacyAnalysis(opts: {
     const def = defs.get(answer.slug);
     if (!def) {
       skipped.push(answer.slug);
+      skippedReasons[answer.slug] = 'missing_definition';
       continue;
     }
 
@@ -144,6 +165,7 @@ export async function applyPrivacyAnalysis(opts: {
 
     if (existingAi?.reviewStatus === 'accepted') {
       skipped.push(answer.slug);
+      skippedReasons[answer.slug] = 'already_accepted';
       continue;
     }
 
@@ -155,6 +177,7 @@ export async function applyPrivacyAnalysis(opts: {
       !rawEqual(existing.rawValue, existingAi.proposalRaw)
     ) {
       skipped.push(answer.slug);
+      skippedReasons[answer.slug] = 'manual_edit';
       continue;
     }
 
@@ -177,6 +200,7 @@ export async function applyPrivacyAnalysis(opts: {
 
     const proofLinks = mergeProofLinks(existing?.proofLinks, prepared.evidence);
     const calculationDetails = { ...existingDetails, aiPrivacy };
+    const writeRaw = usableRaw(prepared);
 
     if (existing) {
       const fields: Record<string, unknown> = {
@@ -184,10 +208,14 @@ export async function applyPrivacyAnalysis(opts: {
         updatedAt: now,
         testDate: existing.testDate ?? now,
       };
-      if (usableRaw(prepared)) {
+      if (writeRaw) {
         fields.rawValue = prepared.raw;
         fields.notApplicable = false;
         fields.isUnknown = isUnknownRaw(prepared.raw);
+      } else {
+        // Clear stale answers when AI now says not found / no usable raw.
+        fields.rawValue = null;
+        fields.isUnknown = false;
       }
       if (proofLinks.length > 0) fields.proofLinks = proofLinks;
       txs.push(db.tx.evidenceResults[existing.id].update(fields));
@@ -199,7 +227,7 @@ export async function applyPrivacyAnalysis(opts: {
         testDate: now,
         proofLinks: proofLinks.length > 0 ? proofLinks : undefined,
       };
-      if (usableRaw(prepared)) {
+      if (writeRaw) {
         fields.rawValue = prepared.raw;
         fields.isUnknown = isUnknownRaw(prepared.raw);
       }
@@ -213,6 +241,8 @@ export async function applyPrivacyAnalysis(opts: {
       );
     }
     applied.push(answer.slug);
+    if (writeRaw) prefilled.push(answer.slug);
+    else leftEmpty.push(answer.slug);
   }
 
   txs.push(
@@ -223,7 +253,7 @@ export async function applyPrivacyAnalysis(opts: {
   );
 
   if (txs.length > 0) await db.transact(txs);
-  return { applied, skipped };
+  return { applied, skipped, prefilled, leftEmpty, skippedReasons };
 }
 
 export function summarizePrivacyOutput(output: PrivacyStructuredOutput | undefined): {

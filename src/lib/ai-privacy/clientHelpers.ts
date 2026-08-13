@@ -18,6 +18,22 @@ export function readAiPrivacyDetails(result: unknown): AiPrivacyCalculationDetai
   return row;
 }
 
+/**
+ * Prefer saved rawValue; if empty, use a pending AI proposal so privacy dropdowns
+ * still show the AI guess after scrape & analyze.
+ */
+export function resolvedEvidenceRaw(result: unknown): unknown | undefined {
+  if (!result || typeof result !== 'object') return undefined;
+  const row = result as { rawValue?: unknown };
+  if (row.rawValue != null && typeof row.rawValue === 'object') return row.rawValue;
+  const ai = readAiPrivacyDetails(result);
+  if (!ai) return undefined;
+  if (ai.reviewStatus === 'accepted' || ai.reviewStatus === 'rejected') return undefined;
+  if (ai.fillStatus === 'not_found' || ai.fillStatus === 'not_applicable') return undefined;
+  if (ai.proposalRaw != null && typeof ai.proposalRaw === 'object') return ai.proposalRaw;
+  return undefined;
+}
+
 /** True when internalNotes likely holds a legacy AI-generated note tied to this row. */
 export function isLikelyLegacyAiInternalNote(
   result: { internalNotes?: unknown } | null | undefined,

@@ -81,9 +81,7 @@ export const POST: APIRoute = handler(async ({ request }) => {
   let fileUrl: string | undefined;
   let instantFileId: string | undefined;
 
-  if (useBunny) {
-    fileUrl = await uploadToBunny(path, buffer, contentType);
-  } else {
+  async function uploadToInstantDb() {
     const uploaded = await db.storage.uploadFile(path, buffer, { contentType });
     instantFileId = uploaded.data.id;
 
@@ -95,6 +93,22 @@ export const POST: APIRoute = handler(async ({ request }) => {
       if (fileUrl) break;
       await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
     }
+  }
+
+  if (useBunny) {
+    try {
+      fileUrl = await uploadToBunny(path, buffer, contentType);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      console.warn('[media/upload] Bunny upload failed — falling back to InstantDB storage:', detail);
+      await uploadToInstantDb();
+    }
+  } else {
+    await uploadToInstantDb();
+  }
+
+  if (!fileUrl) {
+    throw new HttpError(502, 'Upload succeeded but no file URL was returned. Try again.');
   }
 
   const featuresTagged = form.get('features') === '1' || form.get('features') === 'true';

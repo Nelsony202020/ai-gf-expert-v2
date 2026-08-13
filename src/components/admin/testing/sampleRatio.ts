@@ -3,28 +3,21 @@
 import type { EntityRow } from '../api';
 import { controlKind } from './presentation';
 
-const CHECKS_PER_CHARACTER = 5;
-
 /** Denominator derived from session sample size, or undefined if tester enters both fields. */
-export function ratioDenominatorFromSample(slug: string, sampleSize: number): number | undefined {
-  switch (slug) {
-    case 'duplicates':
-    case 'originality':
-      return sampleSize;
-    case 'profile-quality':
-    case 'visual-quality':
-      return sampleSize * CHECKS_PER_CHARACTER;
-    default:
-      return undefined;
-  }
+export function ratioDenominatorFromSample(_slug: string, _sampleSize: number): number | undefined {
+  // Character quality no longer uses ratio inputs (duplicates = count; profiles/photos = Likert).
+  return undefined;
+}
+
+/** Max allowed for duplicate-count questions (0 = best). */
+export function duplicateCountMax(sampleSize?: number): number {
+  if (sampleSize && sampleSize > 0) return Math.min(25, sampleSize);
+  return 25;
 }
 
 export function ratioNumeratorLabel(slug: string, def: EntityRow): string {
   const map: Record<string, string> = {
-    duplicates: 'Duplicates found',
-    originality: 'Characters that passed',
-    'profile-quality': 'Profile checks passed',
-    'visual-quality': 'Image checks passed',
+    duplicates: 'Duplicate profiles found',
   };
   return map[slug] ?? String(def.name ?? 'Count');
 }

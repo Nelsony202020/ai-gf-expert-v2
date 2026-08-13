@@ -56,7 +56,7 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
       intro: 'Review one sample group of characters. Set the sample size once, then answer every question for that same group.',
       icon: 'fact_check',
       sampleSizeField: { label: 'How many characters did you review?', default: 25 },
-      slugs: ['duplicates', 'originality', 'profile-quality', 'visual-quality'],
+      slugs: ['duplicates', 'profile-quality', 'visual-quality'],
     },
   ],
 
@@ -321,7 +321,7 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
       title: 'Billing & policies',
       intro: 'Record pricing clarity, credit expiry, refunds, and easy cancellation. Payment privacy comes from the Pricing tab.',
       icon: 'policy',
-      slugs: ['pricing-clarity', 'paywalls', 'credit-expiry', 'refunds', 'cancellation'],
+      slugs: ['pricing-clarity', 'credit-expiry', 'refunds', 'cancellation'],
     },
   ],
 };

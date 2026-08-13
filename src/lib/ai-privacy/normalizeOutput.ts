@@ -101,6 +101,45 @@ function normalizeEvidence(raw: unknown): PrivacyAnswerProposal['evidence'] {
   return out;
 }
 
+function asRecord(raw: unknown): Record<string, unknown> | null {
+  return raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null;
+}
+
+function coerceChoiceStatus(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const key = value.toLowerCase().trim().replace(/\s+/g, '_');
+  if (RAW_STATUSES.has(key)) return key;
+  if (key === 'partial' || key === 'sometimes' || key === 'restricted') return 'limited';
+  if (key === 'opt_out' || key === 'opt-out' || key === 'optout') return 'optional';
+  return null;
+}
+
+const CHOICE_OPTIONAL_SLUGS = new Set<AiPrivacySlug>(['data-sharing', 'advertising']);
+
+function recordValueIgnoreCase(rec: Record<string, unknown>, keys: string[]): unknown {
+  const lower = new Map(Object.keys(rec).map((k) => [k.toLowerCase(), rec[k]]));
+  for (const key of keys) {
+    if (lower.has(key)) return lower.get(key);
+  }
+  return undefined;
+}
+
+function coerceChoiceRaw(raw: unknown, statusWasAnswer: boolean, statusToken: string): unknown {
+  if (typeof raw === 'string') {
+    const status = coerceChoiceStatus(raw);
+    return status ? { status } : undefined;
+  }
+  const rec = asRecord(raw);
+  if (rec) {
+    const status = coerceChoiceStatus(recordValueIgnoreCase(rec, ['status', 'value', 'answer']));
+    if (status) return { status };
+  }
+  if (statusWasAnswer && RAW_STATUSES.has(statusToken)) {
+    return { status: statusToken };
+  }
+  return undefined;
+}
+
 function normalizeRawForSlug(
   slug: AiPrivacySlug,
   status: PrivacyAnswerProposal['status'],
@@ -109,12 +148,145 @@ function normalizeRawForSlug(
   statusToken: string,
 ): unknown {
   if (status === 'not_found' || status === 'not_applicable') return undefined;
-  if (raw && typeof raw === 'object') return raw;
-  if (statusWasAnswer && RAW_STATUSES.has(statusToken)) {
-    return { status: statusToken === 'optional' ? 'limited' : statusToken };
+  if (slug === 'retention' || slug === 'policy-clarity') {
+    if (raw && typeof raw === 'object') return raw;
+    return raw;
   }
-  if (slug === 'retention' || slug === 'policy-clarity') return raw;
-  return raw;
+  const coerced = coerceChoiceRaw(raw, statusWasAnswer, statusToken);
+  if (coerced) {
+    const rec = asRecord(coerced);
+    const choice = typeof rec?.status === 'string' ? rec.status : '';
+    if (choice === 'optional' && !CHOICE_OPTIONAL_SLUGS.has(slug)) {
+      return { status: 'limited' };
+    }
+    return coerced;
+  }
+  return raw && typeof raw === 'object' ? raw : undefined;
+}
+
+function normalizeRetentionRaw(raw: unknown): { value: number; detail: { unit: 'weeks' | 'months' | 'years' } } | null {
+  const rec = asRecord(raw);
+  if (!rec) return null;
+  let value = typeof rec.value === 'number' ? rec.value : Number(rec.value);
+  const detail = asRecord(rec.detail);
+  let unit = typeof detail?.unit === 'string' ? detail.unit.toLowerCase().trim() : '';
+  if (unit === 'week') unit = 'weeks';
+  if (unit === 'month') unit = 'months';
+  if (unit === 'year') unit = 'years';
+  if (unit === 'days' || unit === 'day') {
+    if (!Number.isFinite(value) || value <= 0) return null;
+    if (value % 30 === 0) {
+      value = value / 30;
+      unit = 'months';
+    } else if (value % 7 === 0) {
+      value = value / 7;
+      unit = 'weeks';
+    } else if (value >= 365) {
+      value = Math.round(value / 365);
+      unit = 'years';
+    } else if (value >= 28) {
+      value = Math.round(value / 30);
+      unit = 'months';
+    } else {
+      value = Math.max(1, Math.round(value / 7));
+      unit = 'weeks';
+    }
+  }
+  if (!Number.isFinite(value) || value <= 0) return null;
+  if (unit !== 'weeks' && unit !== 'months' && unit !== 'years') return null;
+  return { value, detail: { unit } };
+}
+
+function normalizePolicyClarityRaw(
+  raw: unknown,
+): { value: 0 | 50 | 100; detail: { rubric: 'Unclear' | 'Neutral' | 'Very clear' } } | null {
+  const rec = asRecord(raw);
+  if (!rec) return null;
+  const rubricRaw = String(asRecord(rec.detail)?.rubric ?? rec.rubric ?? '').toLowerCase().trim();
+  if (rubricRaw.includes('very clear') || rubricRaw === 'clear') {
+    return { value: 100, detail: { rubric: 'Very clear' } };
+  }
+  if (rubricRaw.includes('neutral') || rubricRaw.includes('mixed') || rubricRaw.includes('partial')) {
+    return { value: 50, detail: { rubric: 'Neutral' } };
+  }
+  if (rubricRaw.includes('unclear') || rubricRaw.includes('poor') || rubricRaw.includes('vague')) {
+    return { value: 0, detail: { rubric: 'Unclear' } };
+  }
+  let value = typeof rec.value === 'number' ? rec.value : Number(rec.value);
+  if (!Number.isFinite(value)) return null;
+  if (value !== 0 && value !== 50 && value !== 100) {
+    const candidates = [0, 50, 100] as const;
+    value = candidates.reduce((best, cur) =>
+      Math.abs(cur - value) < Math.abs(best - value) ? cur : best,
+    );
+  }
+  const rubric = value === 100 ? 'Very clear' : value === 50 ? 'Neutral' : 'Unclear';
+  return { value: value as 0 | 50 | 100, detail: { rubric } };
+}
+
+/**
+ * Final pass after Zod: coerce each answer's raw into the shape EvidenceInput expects,
+ * and keep best-guess raws for needs_review instead of wiping them to empty dropdowns.
+ */
+export function normalizePrivacyAnswerRaws(
+  answers: PrivacyAnswerProposal[],
+): PrivacyAnswerProposal[] {
+  return answers.map((a) => {
+    if (a.status === 'not_found' || a.status === 'not_applicable') {
+      return { ...a, raw: undefined };
+    }
+
+    if (a.status === 'conflicting') {
+      return {
+        ...a,
+        status: 'needs_review',
+        raw: { status: 'unknown' as const },
+        confidence: a.confidence === 'high' ? 'medium' : a.confidence,
+      };
+    }
+
+    if (a.slug === 'retention') {
+      const retention = normalizeRetentionRaw(a.raw);
+      if (!retention) {
+        return { ...a, status: 'not_found', raw: undefined, confidence: 'low' };
+      }
+      return { ...a, raw: retention };
+    }
+
+    if (a.slug === 'policy-clarity') {
+      const clarity = normalizePolicyClarityRaw(a.raw);
+      if (!clarity) {
+        // Uncertain but still prefill a mid option so the dropdown isn't blank.
+        if (a.status === 'filled' || a.status === 'needs_review') {
+          return {
+            ...a,
+            status: 'needs_review',
+            confidence: 'low',
+            raw: { value: 50, detail: { rubric: 'Neutral' as const } },
+          };
+        }
+        return { ...a, status: 'not_found', raw: undefined, confidence: 'low' };
+      }
+      return { ...a, raw: clarity };
+    }
+
+    const coerced = coerceChoiceRaw(a.raw, false, '');
+    const rec = asRecord(coerced);
+    let status = typeof rec?.status === 'string' ? rec.status : '';
+    if (!RAW_STATUSES.has(status)) {
+      // Model claimed an answer but gave a bad/missing raw — keep Unknown + needs review.
+      return {
+        ...a,
+        status: 'needs_review',
+        confidence: 'low',
+        raw: { status: 'unknown' as const },
+      };
+    }
+    if (status === 'optional' && !CHOICE_OPTIONAL_SLUGS.has(a.slug)) {
+      status = 'limited';
+    }
+    return { ...a, raw: { status } };
+  });
 }
 
 /** Best-effort repair of model JSON before Zod validation. */

@@ -415,7 +415,7 @@ function QuickCreateModal({
     const created = await run(() =>
       dataApi.create('characters', fields, {
         product: ws.productId,
-        image: imageId,
+        ...(imageId ? { image: imageId } : {}),
       }),
     );
     if (created) onCreated(created.id);

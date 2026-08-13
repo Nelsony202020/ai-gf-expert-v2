@@ -354,8 +354,8 @@ export const EVIDENCE_METHODOLOGY: Record<string, EvidenceMethodologyCopy> = {
     howWeTested: 'We counted every clearly selectable breast-size option shown for adult characters.',
   },
   'customization/appearance/ss-size': {
-    whatItMeasures: 'Checks whether SS size can be changed and how many options are offered.',
-    howWeTested: 'We counted every clearly selectable SS size option shown for adult characters.',
+    whatItMeasures: 'Checks whether ass size can be changed and how many options are offered.',
+    howWeTested: 'We counted every clearly selectable ass size option shown for adult characters.',
   },
   'customization/appearance/ethnicity': {
     whatItMeasures: 'Checks which ethnicity options you can choose when creating a character.',

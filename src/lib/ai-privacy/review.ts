@@ -32,10 +32,25 @@ async function findResultForSlug(testRunId: string, slug: AiPrivacySlug) {
   const { evidenceResults } = await (db.query as any)({
     evidenceResults: {
       $: { where: { 'testRun.id': testRunId } },
-      evidenceDefinition: {},
+      evidenceDefinition: { subscore: { category: { methodologyVersion: {} } } },
     },
   });
-  return (evidenceResults ?? []).find((r: any) => String(r.evidenceDefinition?.slug) === slug) ?? null;
+  const { testRuns } = await (db.query as any)({
+    testRuns: {
+      $: { where: { id: testRunId } },
+      methodologyVersion: {},
+    },
+  });
+  const mvId = testRuns?.[0]?.methodologyVersion?.id as string | undefined;
+  const matches = (evidenceResults ?? []).filter(
+    (r: any) => String(r.evidenceDefinition?.slug) === slug,
+  );
+  if (matches.length === 0) return null;
+  if (!mvId) return matches[0];
+  const scoped = matches.find(
+    (r: any) => r.evidenceDefinition?.subscore?.category?.methodologyVersion?.id === mvId,
+  );
+  return scoped ?? matches[0];
 }
 
 export async function reviewPrivacyAnswer(

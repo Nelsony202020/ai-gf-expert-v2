@@ -11,8 +11,9 @@ import { getOpenAIClient } from '../ai-verdict/openaiClient';
 import { assertRateLimit } from '../ai-verdict/rateLimit';
 
 import { EXTRACT_FEATURE_CATEGORIES, normalizeExtractedVariant } from '../pricing/featureCostGroups';
+import { refineAllowanceFields } from '../pricing/planAllowances';
 
-export const PRICING_PROMPT_VERSION = 'v2';
+export const PRICING_PROMPT_VERSION = 'v4';
 
 export function aiPricingConfig() {
   return {
@@ -29,6 +30,25 @@ export function aiPricingConfig() {
 
 const nullableNumber = z.number().nonnegative().nullish();
 
+const extractedAllowanceSchema = z.object({
+  sourceLabel: z.string().min(1).max(120),
+  featureKey: z.string().max(60).nullish(),
+  accessType: z
+    .enum([
+      'unlimited',
+      'included_quantity',
+      'included_credits',
+      'pay_as_you_go',
+      'not_included',
+      'included_unspecified',
+    ])
+    .default('included_unspecified'),
+  quantity: nullableNumber,
+  unit: z.string().max(40).nullish(),
+  resetInterval: z.enum(['day', 'month', 'billing_cycle', 'one_time', 'none']).nullish(),
+  notes: z.string().max(300).nullish(),
+});
+
 const extractedPlanSchema = z.object({
   name: z.string().min(1).max(120),
   monthlyPrice: nullableNumber,
@@ -42,6 +62,8 @@ const extractedPlanSchema = z.object({
   includedTokensPerMonth: nullableNumber,
   freeTrial: z.boolean().nullish(),
   trialLength: z.string().max(80).nullish(),
+  /** Per-tier entitlements (quantities / unlimited / unspecified) — NOT invent token costs. */
+  allowances: z.array(extractedAllowanceSchema).max(40).default([]),
 });
 
 const extractedPackageSchema = z.object({
@@ -163,7 +185,17 @@ For EACH image (in the order provided, 1-based index) classify it as one of:
 - "unknown": not pricing related
 
 Then extract, merging data across images and de-duplicating:
-- plans: each subscription tier with name, monthlyPrice (price per month when billed monthly), quarterlyTotalPrice (total charged every 3 months), annualMonthlyPrice (per-month price when billed annually), annualTotalPrice (total charged per year), currency (ISO code like USD), includedTokensPerMonth, freeTrial, trialLength. One tier per subscription level — billing intervals are fields on the same plan, not separate plan names like "3 months".
+- plans: each subscription tier with name, monthlyPrice (price per month when billed monthly), quarterlyTotalPrice (total charged every 3 months), annualMonthlyPrice (per-month price when billed annually), annualTotalPrice (total charged per year), currency (ISO code like USD), includedTokensPerMonth, freeTrial, trialLength, and allowances[]. One tier per subscription level — billing intervals are fields on the same plan, not separate plan names like "3 months".
+  * allowances: plan-specific benefits listed under that tier. Extract FACTS only:
+    - "600 Photo Messages" / "9000 Messages/Mo" → accessType "included_quantity", quantity + resetInterval ("month" or "day")
+    - "Unlimited HD Generations" / "Unlimited Custom Companions" → accessType "unlimited"
+    - "2500 Advanced Credits Every Month" → accessType "included_credits", quantity 2500, resetInterval "month"
+    - "HD Generations", "Video Generation", "Faster Messaging", "16K Context", "95+ customizations" (listed with NO numeric quota and NOT saying unavailable) → accessType "included_unspecified" (NEVER "not_included")
+    - Put non-quantity display text in notes when helpful (e.g. notes "16K context", "95+", "Faster")
+    - Use "not_included" ONLY when the screenshot explicitly marks the feature as unavailable / not included / locked for that tier
+    - NEVER invent a tokenCost for a bullet that only says a feature exists
+    - Keep sourceLabel as shown; featureKey optional (snake_case hint ok)
+  * featureCosts / featureCostVariants: ONLY when the screenshot shows an explicit credit/coin PRICE (e.g. "84 credits per image"). Never invent costs from plan bullets.
 - packages: each token top-up package with name (if any), price, currency, baseCredits (tokens included before bonus), bonusCredits (extra/bonus tokens)
 - featureCostVariants: PREFERRED for tiered or table-based pricing. Extract EVERY distinct price point as its own variant row — do not collapse to one row per feature. category must be one of: ${EXTRACT_FEATURE_CATEGORIES.join(', ')}.
   * For video pricing TABLES (e.g. Lite Model 5s = 30, Pro Model 10s = 60): one variant per cell/row. Use model = exact model name from UI (e.g. "Lite", "Pro"). Use durationSeconds when clip length is shown (5, 10). unit = "per_generation" when a flat coin/token cost is shown per clip (most common).
@@ -176,7 +208,7 @@ Then extract, merging data across images and de-duplicating:
 - tokenName: what the app calls tokens (e.g. "Gems", "Tokens", "Coins") if visible
 
 Prices: numbers only, no currency symbols (e.g. 9.99). Respond with a single JSON object:
-{"images":[{"index":1,"classification":"plans"}],"plans":[],"packages":[],"featureCosts":[],"featureCostVariants":[],"promotions":[],"usesTokens":false,"tokenName":null,"notes":null}`;
+{"images":[{"index":1,"classification":"plans"}],"plans":[{"name":"Premium","monthlyPrice":9.99,"allowances":[{"sourceLabel":"600 Photo Messages","accessType":"included_quantity","quantity":600,"resetInterval":"month"}]}],"packages":[],"featureCosts":[],"featureCostVariants":[],"promotions":[],"usesTokens":false,"tokenName":null,"notes":null}`;
 
 // ---------------------------------------------------------------------------
 // Extraction
@@ -444,6 +476,41 @@ function normalizeExtractionPayload(parsed: unknown): unknown {
     seenVariants.add(key);
     return true;
   });
+
+  // Repair plan allowances: listed benefits must not be tagged not_included.
+  if (Array.isArray(root.plans)) {
+    root.plans = root.plans.map((plan) => {
+      if (!plan || typeof plan !== 'object') return plan;
+      const p = { ...(plan as Record<string, unknown>) };
+      if (!Array.isArray(p.allowances)) return p;
+      p.allowances = p.allowances
+        .map((row) => {
+          if (!row || typeof row !== 'object') return null;
+          const a = row as Record<string, unknown>;
+          const refined = refineAllowanceFields({
+            sourceLabel: String(a.sourceLabel ?? a.label ?? ''),
+            featureKey: a.featureKey != null ? String(a.featureKey) : undefined,
+            accessType: typeof a.accessType === 'string' ? a.accessType : undefined,
+            quantity: parseCostNumber(a.quantity),
+            unit: typeof a.unit === 'string' ? a.unit : undefined,
+            resetInterval: typeof a.resetInterval === 'string' ? a.resetInterval : undefined,
+            notes: typeof a.notes === 'string' ? a.notes : undefined,
+          });
+          if (!refined.sourceLabel.trim()) return null;
+          return {
+            sourceLabel: refined.sourceLabel,
+            featureKey: refined.featureKey,
+            accessType: refined.accessType,
+            quantity: refined.quantity ?? null,
+            unit: refined.unit ?? null,
+            resetInterval: refined.resetInterval ?? null,
+            notes: refined.notes ?? null,
+          };
+        })
+        .filter(Boolean);
+      return p;
+    });
+  }
 
   return root;
 }

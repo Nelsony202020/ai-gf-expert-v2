@@ -11,6 +11,12 @@ import {
   type PlanTierLike,
   type CreditPackageLike,
 } from '../pricing/calc';
+import {
+  ALLOWANCE_ROW_META,
+  formatAllowanceCell,
+  hasExplicitAllowances,
+  resolvePlanAllowances,
+} from '../pricing/planAllowances';
 import { collectPricingStats } from '../pricing/statistics';
 import {
   DEFAULT_USAGE_PROFILES,
@@ -56,17 +62,96 @@ function pctDiff(product: number, average: number): { label: string; tone: Prici
   return { label: `${Math.abs(pct)}% more`, tone: 'worse' };
 }
 
+function collectAllowanceRowKeys(tiers: PlanTierLike[]): string[] {
+  const present = new Set<string>();
+  let anyExplicit = false;
+  for (const tier of tiers) {
+    if (hasExplicitAllowances(tier)) anyExplicit = true;
+    for (const a of resolvePlanAllowances(tier)) {
+      if (a.featureKey && a.featureKey !== 'other') present.add(a.featureKey);
+    }
+  }
+  // Candy-style: only synthesized shared credits (or nothing) → legacy Credits/Included rows.
+  if (!anyExplicit) {
+    const onlyCredits =
+      present.size === 0 || (present.size === 1 && present.has('shared_credits'));
+    if (onlyCredits) return [];
+  }
+  const ordered = ALLOWANCE_ROW_META.filter((m) => present.has(m.key)).map((m) => m.key);
+  for (const key of present) {
+    if (!ordered.includes(key)) ordered.push(key);
+  }
+  return ordered;
+}
+
+function legacyCreditRows(
+  tier: PlanTierLike,
+  extra?: Array<{ label: string; value: string; included?: boolean }>,
+): Array<{ label: string; value: string; included?: boolean }> {
+  const included = Number(tier.includedTokens ?? 0);
+  return [
+    { label: 'Included credits', value: included > 0 ? `${included} / mo` : '—' },
+    { label: 'Chat', value: 'Included', included: true },
+    { label: 'Images', value: included > 0 ? 'Credits' : '—' },
+    { label: 'Video', value: included > 0 ? 'Credits' : '—' },
+    { label: 'Voice', value: included > 0 ? 'Credits' : '—' },
+    ...(extra ?? []),
+  ];
+}
+
+function allowanceRowsForTier(
+  tier: PlanTierLike,
+  rowKeys: string[],
+  extra?: Array<{ label: string; value: string; included?: boolean }>,
+): Array<{ label: string; value: string; included?: boolean }> {
+  if (rowKeys.length === 0) return legacyCreditRows(tier, extra);
+  const byKey = new Map(resolvePlanAllowances(tier).map((a) => [a.featureKey, a]));
+  const rows = rowKeys.map((key) => {
+    const meta = ALLOWANCE_ROW_META.find((m) => m.key === key);
+    const label = meta?.label ?? key.replace(/_/g, ' ');
+    const value = formatAllowanceCell(byKey.get(key));
+    return {
+      label,
+      value,
+      included: value === 'Included' || value === 'Unlimited' ? true : undefined,
+    };
+  });
+  return extra ? [...rows, ...extra] : rows;
+}
+
 function buildPlansFromTiers(tiers: PlanTierLike[], currency: string): PricingPlanColumn[] {
   const active = tiers.filter((t) => t.active !== false);
   if (active.length === 0) return [];
 
-  const columns: PricingPlanColumn[] = [];
+  const rowKeys = collectAllowanceRowKeys(active);
+  const namedTiers = active.filter((t) => String(t.name ?? '').trim());
 
+  // 2+ active named tiers → one column per tier (monthly price + allowance cells).
+  if (namedTiers.length >= 2) {
+    return namedTiers.map((tier, index) => {
+      const options = tierBillingOptions(tier).filter((o) => o.active !== false);
+      const monthly = options.find((o) => o.interval === 'monthly') ?? options[0];
+      const price =
+        monthly?.interval === 'yearly' && monthly.price != null
+          ? monthly.price / 12
+          : monthly?.price;
+      return {
+        key: `${String(tier.name)}-${index}`,
+        name: String(tier.name),
+        priceLabel: moneyLabel(price, currency),
+        priceSub: monthly?.interval === 'yearly' ? 'per month · billed yearly' : 'billed monthly',
+        tone: index === 0 ? 'accent' : index === namedTiers.length - 1 ? 'green' : 'neutral',
+        rows: allowanceRowsForTier(tier, rowKeys),
+      };
+    });
+  }
+
+  // Single tier (or unnamed): keep Monthly / Annual cadence columns.
+  const columns: PricingPlanColumn[] = [];
   for (const tier of active) {
     const options = tierBillingOptions(tier).filter((o) => o.active !== false);
     const monthly = options.find((o) => o.interval === 'monthly');
     const yearly = options.find((o) => o.interval === 'yearly');
-    const included = Number(tier.includedTokens ?? 0);
 
     if (monthly) {
       columns.push({
@@ -75,13 +160,7 @@ function buildPlansFromTiers(tiers: PlanTierLike[], currency: string): PricingPl
         priceLabel: moneyLabel(monthly.price, currency),
         priceSub: 'billed monthly',
         tone: 'accent',
-        rows: [
-          { label: 'Included credits', value: included > 0 ? `${included} / mo` : '—' },
-          { label: 'Chat', value: 'Included', included: true },
-          { label: 'Images', value: included > 0 ? 'Credits' : '—' },
-          { label: 'Video', value: included > 0 ? 'Credits' : '—' },
-          { label: 'Voice', value: included > 0 ? 'Credits' : '—' },
-        ],
+        rows: allowanceRowsForTier(tier, rowKeys),
       });
     }
 
@@ -95,16 +174,12 @@ function buildPlansFromTiers(tiers: PlanTierLike[], currency: string): PricingPl
         priceSub: 'per month · billed yearly',
         badge: discount && discount >= 15 ? 'Best value' : undefined,
         tone: 'green',
-        rows: [
-          { label: 'Included credits', value: included > 0 ? `${included} / mo` : '—' },
-          { label: 'Chat', value: 'Included', included: true },
-          { label: 'Images', value: included > 0 ? 'Credits' : '—' },
-          { label: 'Video', value: included > 0 ? 'Credits' : '—' },
+        rows: allowanceRowsForTier(tier, rowKeys, [
           {
             label: 'Annual discount',
             value: discount != null ? `${discount}% off` : '—',
           },
-        ],
+        ]),
       });
     }
   }
@@ -163,6 +238,7 @@ function buildUsageTiers(
   packages: CreditPackageLike[],
   currency: string,
   fallbacks: Record<string, number | null>,
+  referencePlanName?: string | null,
 ): PricingUsageTier[] {
   const toneById = {
     casual: { title: 'Light use', icon: 'eco', tone: 'green' as const },
@@ -171,7 +247,7 @@ function buildUsageTiers(
   };
 
   return profiles.map((profile) => {
-    const est = estimateProfile(profile, tiers, costs, packages);
+    const est = estimateProfile(profile, tiers, costs, packages, referencePlanName);
     const monthly =
       est.totalMonthly ??
       fallbacks[profile.id] ??
@@ -230,6 +306,8 @@ async function loadLivePricing(product: Product): Promise<PricingTabViewModel | 
   if (tiers.length === 0 && advertised == null) return null;
 
   const draft = product.slug === 'aura-ai' ? getAuraAiDraftPricing(product) : null;
+  const referencePlanName =
+    snapshot?.referencePlanName != null ? String(snapshot.referencePlanName) : null;
   const plans = buildPlansFromTiers(tiers, currency);
   const featureCosts = buildFeatureRows(costs, packages, currency);
   const usageTiers = buildUsageTiers(
@@ -243,6 +321,7 @@ async function loadLivePricing(product: Product): Promise<PricingTabViewModel | 
       regular: typical ?? draft?.usageTiers.find((t) => t.id === 'regular')?.monthlyCost ?? null,
       power: draft?.usageTiers.find((t) => t.id === 'power')?.monthlyCost ?? null,
     },
+    referencePlanName,
   );
 
   const regularUse =

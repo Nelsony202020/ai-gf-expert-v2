@@ -3,6 +3,14 @@
 // the snapshot-activation cache sync. Keep these functions framework-free
 // and testable — the future /industry-statistics page reuses them.
 
+import {
+  findAllowance,
+  hasExplicitAllowances,
+  monthlyQuantityFromAllowance,
+  resolvePlanAllowances,
+  USAGE_TO_ALLOWANCE_KEYS,
+} from './planAllowances';
+
 export const BILLING_INTERVALS = [
   'weekly',
   'monthly',
@@ -52,6 +60,12 @@ export interface PlanTierLike {
   active?: boolean;
   billingOptions?: BillingOption[] | null;
   includedTokens?: number | null;
+  includedImages?: number | null;
+  includedVideos?: number | null;
+  includedVoiceMinutes?: number | null;
+  unlimitedFeatures?: unknown;
+  /** Plan entitlements — when present, preferred over legacy scalars. */
+  allowances?: unknown;
   // Legacy single-price fallback
   billingInterval?: string | null;
   price?: number | null;
@@ -211,14 +225,28 @@ export function cheapestTopUpRate(packages: CreditPackageLike[]): number | null 
 // Feature costs and allowances
 // ---------------------------------------------------------------------------
 
+export type FeatureCostAvailability =
+  | 'fixed'
+  | 'range'
+  | 'variable'
+  | 'included'
+  | 'unlimited'
+  | 'pay_as_you_go'
+  | 'not_available'
+  | 'unknown';
+
 export interface FeatureCostLike {
   featureType?: string;
   active?: boolean;
   creditCost?: number | null;
   minCost?: number | null;
   maxCost?: number | null;
+  /** Priced (fixed/range/variable) or non-priced states (included / unlimited / …). */
+  costType?: FeatureCostAvailability | string | null;
   unit?: string;
   durationProduced?: number | null;
+  /** Empty / missing = available on all plans; otherwise plan name match. */
+  availablePlanNames?: string[] | null;
 }
 
 export interface CostRange {
@@ -226,8 +254,39 @@ export interface CostRange {
   max: number;
 }
 
+/** Non-priced feature-cost states (no billable credit amount). */
+export function featureCostAvailability(cost: FeatureCostLike): FeatureCostAvailability | 'priced' {
+  const t = String(cost.costType ?? '').trim();
+  if (
+    t === 'included' ||
+    t === 'unlimited' ||
+    t === 'pay_as_you_go' ||
+    t === 'not_available' ||
+    t === 'unknown'
+  ) {
+    return t;
+  }
+  if (t === 'fixed' || t === 'range' || t === 'variable') return 'priced';
+  const range = (() => {
+    const fixed = numOrNull(cost.creditCost);
+    const min = numOrNull(cost.minCost);
+    const max = numOrNull(cost.maxCost);
+    if (min !== null && max !== null && min > 0 && max > 0) return true;
+    if (fixed !== null && fixed > 0) return true;
+    if (min !== null && min > 0) return true;
+    if (max !== null && max > 0) return true;
+    return false;
+  })();
+  return range ? 'priced' : 'unknown';
+}
+
 /** Credit cost of one feature use as a range (fixed cost → min === max). */
 export function featureCostRange(cost: FeatureCostLike): CostRange | null {
+  const availability = featureCostAvailability(cost);
+  if (availability === 'included' || availability === 'unlimited') {
+    return { min: 0, max: 0 };
+  }
+  if (availability === 'not_available' || availability === 'unknown') return null;
   const fixed = numOrNull(cost.creditCost);
   const min = numOrNull(cost.minCost);
   const max = numOrNull(cost.maxCost);
@@ -284,6 +343,12 @@ export interface ScenarioResult {
   /** Money for the shortfall at the best top-up rate (null if not purchasable). */
   topUpCost: number | null;
   totalMonthly: number | null;
+  /** Tier name used for this estimate. */
+  planName?: string;
+  /** Features requested that are not available on this tier. */
+  unavailableFeatures?: string[];
+  /** True when spend could not be fully resolved (e.g. included_unspecified without a cost). */
+  incomplete?: boolean;
 }
 
 export interface BillingPlanEstimate {
@@ -316,17 +381,164 @@ export function cheapestMonthlyTier(tiers: PlanTierLike[]): PlanTierLike | null 
   return best;
 }
 
+/** Resolve a tier by name (case-insensitive), else cheapest monthly. */
+export function resolveReferenceTier(
+  tiers: PlanTierLike[],
+  referencePlanName?: string | null,
+): PlanTierLike | null {
+  const active = tiers.filter((t) => t.active !== false);
+  if (active.length === 0) return null;
+  const needle = referencePlanName?.trim().toLowerCase();
+  if (needle) {
+    const hit = active.find((t) => String(t.name ?? '').trim().toLowerCase() === needle);
+    if (hit) return hit;
+  }
+  return cheapestMonthlyTier(active);
+}
+
+/**
+ * Reference tier for a feature metric: prefer the snapshot reference / cheapest
+ * monthly plan, but if that plan marks the feature not_included, fall back to
+ * the cheapest monthly plan that includes it.
+ */
+export function resolveTierForFeature(
+  tiers: PlanTierLike[],
+  featureTypes: string[],
+  referencePlanName?: string | null,
+): PlanTierLike | null {
+  const preferred = resolveReferenceTier(tiers, referencePlanName);
+  if (!preferred) return null;
+  const keys = featureTypes.flatMap((t) => USAGE_TO_ALLOWANCE_KEYS[t] ?? [t]);
+  const preferredAllowance = findAllowance(resolvePlanAllowances(preferred), keys);
+  if (!preferredAllowance || preferredAllowance.accessType !== 'not_included') {
+    return preferred;
+  }
+  const active = tiers.filter((t) => t.active !== false);
+  const supporting = active.filter((t) => {
+    const a = findAllowance(resolvePlanAllowances(t), keys);
+    return Boolean(a && a.accessType !== 'not_included');
+  });
+  return cheapestMonthlyTier(supporting.length > 0 ? supporting : active);
+}
+
+function featureCostForPlan(
+  featureCosts: FeatureCostLike[],
+  featureType: string,
+  planName?: string | null,
+): FeatureCostLike | undefined {
+  const candidates = featureCosts.filter(
+    (c) => c.featureType === featureType && c.active !== false,
+  );
+  if (candidates.length === 0) return undefined;
+  const name = planName?.trim().toLowerCase();
+  if (!name) return candidates[0];
+  const scoped = candidates.filter((c) => {
+    const names = c.availablePlanNames;
+    if (!names || names.length === 0) return true;
+    return names.some((n) => String(n).trim().toLowerCase() === name);
+  });
+  // Prefer a plan-scoped row when both global and scoped exist.
+  const onlyScoped = scoped.filter(
+    (c) => Array.isArray(c.availablePlanNames) && c.availablePlanNames.length > 0,
+  );
+  return onlyScoped[0] ?? scoped[0] ?? candidates[0];
+}
+
 function creditsNeededForUsage(
   usage: Record<string, number>,
   featureCosts: FeatureCostLike[],
+  planName?: string | null,
 ): number {
   let creditsNeeded = 0;
   for (const [featureType, count] of Object.entries(usage)) {
-    const cost = featureCosts.find((c) => c.featureType === featureType && c.active !== false);
+    const cost = featureCostForPlan(featureCosts, featureType, planName);
     const range = cost ? featureCostRange(cost) : null;
     if (range) creditsNeeded += range.max * count;
   }
   return creditsNeeded;
+}
+
+/**
+ * Apply plan allowances to usage, then convert remaining to credits.
+ * Unlimited → 0 billable; quantities deducted; not_included flagged.
+ */
+export function billableCreditsForTier(
+  usage: Record<string, number>,
+  tier: PlanTierLike,
+  featureCosts: FeatureCostLike[],
+): {
+  creditsNeeded: number;
+  unavailableFeatures: string[];
+  incomplete: boolean;
+  includedCredits: number;
+} {
+  const allowances = resolvePlanAllowances(tier);
+  const planName = tier.name;
+  const unavailableFeatures: string[] = [];
+  let incomplete = false;
+  let creditsNeeded = 0;
+
+  // Shared credit pool from tokens / included_credits allowances.
+  let includedCredits = numOrNull(tier.includedTokens) ?? 0;
+  for (const a of allowances) {
+    if (a.accessType === 'included_credits' && a.featureKey === 'shared_credits') {
+      const q = monthlyQuantityFromAllowance(a);
+      if (q != null) includedCredits = Math.max(includedCredits, q);
+    }
+  }
+
+  for (const [featureType, count] of Object.entries(usage)) {
+    if (!count || count <= 0) continue;
+    const allowanceKeys = USAGE_TO_ALLOWANCE_KEYS[featureType] ?? [featureType];
+    const allowance = findAllowance(allowances, allowanceKeys);
+
+    if (allowance?.accessType === 'not_included') {
+      unavailableFeatures.push(featureType);
+      continue;
+    }
+    if (allowance?.accessType === 'unlimited') {
+      continue;
+    }
+
+    let billable = count;
+    if (
+      allowance &&
+      (allowance.accessType === 'included_quantity' || allowance.accessType === 'included_credits')
+    ) {
+      // included_credits on a feature key other than shared_credits rarely used;
+      // quantity allowances reduce unit usage before credit conversion.
+      if (allowance.accessType === 'included_quantity') {
+        const included = monthlyQuantityFromAllowance(allowance) ?? 0;
+        billable = Math.max(0, count - included);
+      }
+    }
+
+    if (billable <= 0) continue;
+
+    if (allowance?.accessType === 'included_unspecified') {
+      const cost = featureCostForPlan(featureCosts, featureType, planName);
+      const range = cost ? featureCostRange(cost) : null;
+      if (!range) {
+        incomplete = true;
+        continue;
+      }
+      creditsNeeded += range.max * billable;
+      continue;
+    }
+
+    const cost = featureCostForPlan(featureCosts, featureType, planName);
+    const range = cost ? featureCostRange(cost) : null;
+    if (range) {
+      creditsNeeded += range.max * billable;
+    } else if (hasExplicitAllowances(tier) && !allowance) {
+      // Explicit allowance economy but no cost and no matching allowance → incomplete.
+      incomplete = true;
+    } else if (range == null && billable > 0 && hasExplicitAllowances(tier)) {
+      incomplete = true;
+    }
+  }
+
+  return { creditsNeeded, unavailableFeatures, incomplete, includedCredits };
 }
 
 function topUpCostForShortfall(shortfall: number, packages: CreditPackageLike[]): number | null {
@@ -379,10 +591,12 @@ export function estimateBillingPlans(
       };
     }
 
-    const includedCredits = numOrNull(best.tier.includedTokens) ?? 0;
-    const creditsNeeded = creditsNeededForUsage(scenario.usage, featureCosts);
-    const shortfall = Math.max(0, creditsNeeded - includedCredits);
-    const topUpPerMonth = topUpCostForShortfall(shortfall, packages);
+    const billed = billableCreditsForTier(scenario.usage, best.tier, featureCosts);
+    const shortfall = Math.max(0, billed.creditsNeeded - billed.includedCredits);
+    const topUpPerMonth =
+      billed.unavailableFeatures.length > 0 || billed.incomplete
+        ? null
+        : topUpCostForShortfall(shortfall, packages);
     const months = MONTHS_PER_INTERVAL[interval] ?? 1;
     const planPerMonth = round2(best.opt.price / months);
     const totalPerMonth =
@@ -402,26 +616,24 @@ export function estimateBillingPlans(
 }
 
 /**
- * Estimated total monthly cost for a usage scenario: cheapest plan +
- * top-ups needed to cover the credit shortfall at the best package rate.
- * Uses max cost for range-priced features (conservative estimate).
+ * Estimated monthly cost for a usage scenario on a specific subscription tier.
+ * Applies plan allowances before feature costs / shared credits / top-ups.
  */
-export function scenarioMonthlyCost(
+export function scenarioMonthlyCostForTier(
   scenario: UsageScenario,
-  tiers: PlanTierLike[],
+  tier: PlanTierLike,
   featureCosts: FeatureCostLike[],
   packages: CreditPackageLike[],
 ): ScenarioResult | null {
-  const tier = cheapestMonthlyTier(tiers);
-  if (!tier) return null;
+  if (tier.active === false) return null;
   const opt = tierBillingOptions(tier).find((o) => o.active !== false && o.interval === 'monthly');
   if (!opt) return null;
 
-  const includedCredits = numOrNull(tier.includedTokens) ?? 0;
-  const creditsNeeded = creditsNeededForUsage(scenario.usage, featureCosts);
-  const shortfall = Math.max(0, creditsNeeded - includedCredits);
-  const topUpCost = topUpCostForShortfall(shortfall, packages);
-  const months = MONTHS_PER_INTERVAL.monthly;
+  const billed = billableCreditsForTier(scenario.usage, tier, featureCosts);
+  const shortfall = Math.max(0, billed.creditsNeeded - billed.includedCredits);
+  const blocked = billed.unavailableFeatures.length > 0 || billed.incomplete;
+  const topUpCost = blocked ? null : topUpCostForShortfall(shortfall, packages);
+  const months = MONTHS_PER_INTERVAL.monthly ?? 1;
 
   return {
     planCost: opt.price,
@@ -431,7 +643,42 @@ export function scenarioMonthlyCost(
     creditShortfall: shortfall,
     topUpCost,
     totalMonthly: topUpCost === null ? null : round2(opt.price / months + topUpCost),
+    planName: tier.name ? String(tier.name) : undefined,
+    unavailableFeatures: billed.unavailableFeatures,
+    incomplete: billed.incomplete,
   };
+}
+
+/**
+ * Estimated total monthly cost for a usage scenario: reference/cheapest plan +
+ * top-ups needed to cover the credit shortfall at the best package rate.
+ * Uses max cost for range-priced features (conservative estimate).
+ */
+export function scenarioMonthlyCost(
+  scenario: UsageScenario,
+  tiers: PlanTierLike[],
+  featureCosts: FeatureCostLike[],
+  packages: CreditPackageLike[],
+  referencePlanName?: string | null,
+): ScenarioResult | null {
+  const tier = resolveReferenceTier(tiers, referencePlanName);
+  if (!tier) return null;
+  return scenarioMonthlyCostForTier(scenario, tier, featureCosts, packages);
+}
+
+/** Per-tier monthly totals for usage scenario cards. */
+export function scenarioMonthlyCostByTier(
+  scenario: UsageScenario,
+  tiers: PlanTierLike[],
+  featureCosts: FeatureCostLike[],
+  packages: CreditPackageLike[],
+): Array<{ tier: PlanTierLike; result: ScenarioResult | null }> {
+  return tiers
+    .filter((t) => t.active !== false)
+    .map((tier) => ({
+      tier,
+      result: scenarioMonthlyCostForTier(scenario, tier, featureCosts, packages),
+    }));
 }
 
 // ---------------------------------------------------------------------------

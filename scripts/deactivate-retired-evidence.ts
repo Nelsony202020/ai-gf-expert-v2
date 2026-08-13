@@ -11,11 +11,6 @@ import { init } from '@instantdb/admin';
 
 import { RETIRED_EVIDENCE_SLUGS } from '../src/lib/testing/retiredEvidence';
 
-const RETIRED_EVIDENCE = [...RETIRED_EVIDENCE_SLUGS].map((slug) => ({
-  category: 'pricing' as const,
-  slug,
-}));
-
 function loadEnv(): Record<string, string> {
   const out: Record<string, string> = {};
   try {
@@ -54,13 +49,10 @@ async function main() {
 
   const txs: ReturnType<typeof db.tx.evidenceDefinitions[string]['update']>[] = [];
   for (const def of evidenceDefinitions as any[]) {
-    const catSlug = def.subscore?.category?.slug;
-    if (
-      RETIRED_EVIDENCE.some((r) => r.slug === def.slug && r.category === catSlug) &&
-      def.active !== false
-    ) {
-      txs.push(db.tx.evidenceDefinitions[def.id].update({ active: false }));
-      console.log(`Deactivating ${catSlug}/${def.slug} (${def.name})`);
+    const slug = String(def.slug ?? '');
+    if (RETIRED_EVIDENCE_SLUGS.has(slug) && def.active !== false) {
+      txs.push(db.tx.evidenceDefinitions[def.id].update({ active: false, required: false }));
+      console.log(`Deactivating ${slug} (${def.name})`);
     }
   }
 

@@ -45,8 +45,6 @@ const DEACTIVATE_KEYS = new Set([
   'privacy|consent-controls',
   'privacy|billing-privacy',
   'privacy|account-security',
-  'pricing|image-cost',
-  'pricing|video-cost',
   'pricing|real-cost',
   'pricing|heavy-use-cost',
   'pricing|category-comparison',

@@ -10,6 +10,25 @@ export function json(data: unknown, status = 200): Response {
   });
 }
 
+function publicApiErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return 'Internal error';
+  const message = error.message;
+  const cause =
+    error.cause instanceof Error
+      ? error.cause.message
+      : typeof error.cause === 'object' && error.cause && 'code' in error.cause
+        ? String((error.cause as { code?: string }).code ?? '')
+        : '';
+  const blob = `${message} ${cause}`;
+  if (/UND_ERR_HEADERS_TIMEOUT|Headers Timeout|timed out|TimeoutError|AbortError/i.test(blob)) {
+    return 'Upload timed out talking to file storage. Try again — or skip the photo and add it later.';
+  }
+  if (/fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|GOAWAY/i.test(blob)) {
+    return 'Could not reach the database or file storage. Check your connection and try again.';
+  }
+  return message || 'Internal error';
+}
+
 /** Wrap a handler so thrown HttpErrors become clean JSON error responses. */
 export function handler(fn: APIRoute): APIRoute {
   return async (ctx) => {
@@ -20,8 +39,7 @@ export function handler(fn: APIRoute): APIRoute {
         return json({ error: error.message }, error.status);
       }
       console.error('[api]', error);
-      const message = error instanceof Error ? error.message : 'Internal error';
-      return json({ error: message }, 500);
+      return json({ error: publicApiErrorMessage(error) }, 500);
     }
   };
 }

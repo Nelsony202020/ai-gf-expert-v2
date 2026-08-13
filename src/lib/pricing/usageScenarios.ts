@@ -1,7 +1,11 @@
 // Plain-language usage personas for “what will I actually spend?” estimates.
 
 import type { FeatureCostLike, CreditPackageLike, PlanTierLike, BillingPlanEstimate } from './calc';
-import { estimateBillingPlans, scenarioMonthlyCost } from './calc';
+import {
+  estimateBillingPlans,
+  scenarioMonthlyCost,
+  scenarioMonthlyCostByTier,
+} from './calc';
 
 export type PresetId = 'casual' | 'regular' | 'power';
 
@@ -97,6 +101,8 @@ export interface ProfileEstimate {
   planCost: number | null;
   topUpCost: number | null;
   missingData: boolean;
+  /** Compact per-tier monthly totals when plans differ. */
+  byPlan?: Array<{ planName: string; totalMonthly: number | null }>;
 }
 
 export function estimateProfile(
@@ -104,11 +110,18 @@ export function estimateProfile(
   tiers: PlanTierLike[],
   costs: FeatureCostLike[],
   packages: CreditPackageLike[],
+  referencePlanName?: string | null,
 ): ProfileEstimate {
   const usage = buildUsageMap(profile, costs);
   const scenario = { usage };
-  const monthly = scenarioMonthlyCost(scenario, tiers, costs, packages);
+  const monthly = scenarioMonthlyCost(scenario, tiers, costs, packages, referencePlanName);
   const billingPlans = estimateBillingPlans(scenario, tiers, costs, packages);
+  const byPlan = scenarioMonthlyCostByTier(scenario, tiers, costs, packages)
+    .filter((row) => row.tier.name)
+    .map((row) => ({
+      planName: String(row.tier.name),
+      totalMonthly: row.result?.totalMonthly ?? null,
+    }));
   return {
     profile,
     billingPlans,
@@ -116,6 +129,7 @@ export function estimateProfile(
     planCost: monthly?.planCost ?? null,
     topUpCost: monthly?.topUpCost ?? null,
     missingData: monthly === null,
+    byPlan: byPlan.length > 1 ? byPlan : undefined,
   };
 }
 

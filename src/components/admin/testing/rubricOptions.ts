@@ -2,7 +2,18 @@
 
 import type { DefOption } from './presentation';
 
+/** Shared 5-point quality scale → percentage for linear 0–100 scoring (100 = 10/10). */
+export const QUALITY_LIKERT_OPTIONS: DefOption[] = [
+  { value: 0, label: 'Very bad', description: 'Almost all profiles/photos feel poor' },
+  { value: 25, label: 'Bad', description: 'Mostly weak or incomplete' },
+  { value: 50, label: 'Neutral', description: 'Mixed — average overall' },
+  { value: 75, label: 'Good', description: 'Mostly solid and useful' },
+  { value: 100, label: 'Very good', description: 'Consistently strong — 10/10' },
+];
+
 export const TESTER_RUBRIC_OPTIONS: Record<string, DefOption[]> = {
+  'profile-quality': QUALITY_LIKERT_OPTIONS,
+  'visual-quality': QUALITY_LIKERT_OPTIONS,
   'policy-clarity': [
     { value: 0, label: 'Unclear', description: 'Policies leave major questions unanswered' },
     { value: 50, label: 'Neutral', description: 'Some answers clear, others vague or missing' },

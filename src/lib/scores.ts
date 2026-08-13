@@ -103,8 +103,9 @@ export function categoryScoreChipClasses(
   score: number | null | undefined,
   size?: ScoreChipSize,
 ): string {
+  /* sm / omitted = default chip scale (same as overall tooltip header scores) */
   const sizeClass =
-    size === 'xs' || size === 'sm'
+    size === 'xs'
       ? 'rt-score-chip--xs'
       : size === 'md'
         ? 'rt-score-chip--md'
@@ -114,10 +115,10 @@ export function categoryScoreChipClasses(
   return ['rt-score-chip', sizeClass, getScoreChipClass(score)].filter(Boolean).join(' ');
 }
 
-/** Subscores and evidence rows — bordered outline chips. */
+/** Subscores and evidence rows — bordered outline chips. Default matches filled header chips. */
 export function subscoreScoreChipClasses(
   score: number | null | undefined,
-  size: ScoreChipSize = 'xs',
+  size: ScoreChipSize = 'sm',
 ): string {
   return `${categoryScoreChipClasses(score, size)} rt-score-chip--outline`;
 }

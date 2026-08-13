@@ -50,9 +50,18 @@ import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
 import { SimpleFeatureCosts } from './SimpleFeatureCosts';
 import { UsageScenariosPanel } from './UsageScenariosPanel';
+import {
+  allowancesFromPlanRow,
+  PlanAllowancesEditor,
+} from './PlanAllowancesEditor';
 import { PricingImportCard } from '../../ai-pricing/PricingImportCard';
 import { PricingReviewModal, type PricingDraftClient } from '../../ai-pricing/PricingReviewModal';
 import { ProofThumb } from '../../testing/ProofThumb';
+import {
+  legacyFieldsFromAllowances,
+  normalizeAllowanceLabel,
+  type PlanAllowance,
+} from '../../../../lib/pricing/planAllowances';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -201,7 +210,12 @@ export function PricingTab() {
       <div className="space-y-4">
         {/* 1. Pricing status / snapshot header */}
         {snapshot ? (
-          <PricingHeader snapshot={snapshot} canEdit={canEdit} onPatch={patchSnapshot} />
+          <PricingHeader
+            snapshot={snapshot}
+            tiers={tiers}
+            canEdit={canEdit}
+            onPatch={patchSnapshot}
+          />
         ) : (
           <SnapshotSetupCard canEdit={canEdit} />
         )}
@@ -296,7 +310,8 @@ export function PricingTab() {
                   />
                 </div>
                 <p className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400 dark:border-slate-800">
-                  All tokens expire after {DEFAULT_TOKEN_EXPIRATION_PERIOD}.
+                  Feature costs apply when a plan does not already include the usage. All tokens
+                  expire after {DEFAULT_TOKEN_EXPIRATION_PERIOD}.
                 </p>
               </section>
             )}
@@ -567,10 +582,12 @@ function SnapshotSetupCard({ canEdit }: { canEdit: boolean }) {
 
 function PricingHeader({
   snapshot,
+  tiers,
   canEdit,
   onPatch,
 }: {
   snapshot: EntityRow;
+  tiers: EntityRow[];
   canEdit: boolean;
   onPatch: (patch: Record<string, unknown>) => void;
 }) {
@@ -578,6 +595,8 @@ function PricingHeader({
   const daysSinceVerified = snapshot.verifiedAt
     ? Math.floor((Date.now() - Number(snapshot.verifiedAt)) / 86_400_000)
     : null;
+  const activeTier = tiers.filter((t) => t.active !== false && String(t.name ?? '').trim());
+  const referencePlanName = String(snapshot.referencePlanName ?? '');
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -603,6 +622,29 @@ function PricingHeader({
           </Button>
         )}
       </div>
+      {activeTier.length > 0 && (
+        <label className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <span>Reference plan for metrics</span>
+          <select
+            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            value={referencePlanName}
+            disabled={!canEdit}
+            onChange={(e) =>
+              onPatch({ referencePlanName: e.target.value.trim() || undefined })
+            }
+          >
+            <option value="">Cheapest monthly (default)</option>
+            {activeTier.map((t) => (
+              <option key={t.id} value={String(t.name)}>
+                {String(t.name)}
+              </option>
+            ))}
+          </select>
+          <span className="text-[11px] text-slate-400">
+            Used for autofill and typical spend when plans differ.
+          </span>
+        </label>
+      )}
       <div className="mt-3">
         <PricingEvidence entity="pricingSnapshots" row={snapshot} canEdit={canEdit} compact />
       </div>
@@ -921,6 +963,9 @@ function TierPlanModal({
   const [includedCredits, setIncludedCredits] = useState(
     tier?.includedTokens != null ? String(tier.includedTokens) : '',
   );
+  const [allowances, setAllowances] = useState<PlanAllowance[]>(() =>
+    allowancesFromPlanRow(tier),
+  );
   const [active, setActive] = useState(tier ? Boolean(tier.active) : true);
   const { busy, error, run } = useAsyncToast();
 
@@ -968,13 +1013,38 @@ function TierPlanModal({
       });
     }
     const mirror = legacyMirror(options);
+    const cleanedAllowances = allowances
+      .map((a) => ({
+        ...a,
+        sourceLabel: a.sourceLabel.trim(),
+        featureKey: a.featureKey.trim() || normalizeAllowanceLabel(a.sourceLabel),
+      }))
+      .filter((a) => a.sourceLabel);
+    const legacyFromAllowances = legacyFieldsFromAllowances(cleanedAllowances);
+    const includedTokens =
+      showIncludedCredits
+        ? (numOrUndef(includedCredits) ?? legacyFromAllowances.includedTokens)
+        : legacyFromAllowances.includedTokens;
     const fields: Record<string, unknown> = {
       name: name.trim(),
       billingOptions: options,
       billingInterval: mirror?.billingInterval ?? 'monthly',
       price: mirror?.price ?? 0,
       currency: mirror?.currency ?? currency.toUpperCase() ?? 'USD',
-      includedTokens: showIncludedCredits ? numOrUndef(includedCredits) : undefined,
+      includedTokens,
+      allowances: cleanedAllowances.length > 0 ? cleanedAllowances : undefined,
+      ...(legacyFromAllowances.includedImages != null
+        ? { includedImages: legacyFromAllowances.includedImages }
+        : {}),
+      ...(legacyFromAllowances.includedVideos != null
+        ? { includedVideos: legacyFromAllowances.includedVideos }
+        : {}),
+      ...(legacyFromAllowances.includedVoiceMinutes != null
+        ? { includedVoiceMinutes: legacyFromAllowances.includedVoiceMinutes }
+        : {}),
+      ...(legacyFromAllowances.unlimitedFeatures
+        ? { unlimitedFeatures: legacyFromAllowances.unlimitedFeatures }
+        : {}),
       active,
       sortOrder: tier?.sortOrder ?? sortOrder ?? 0,
     };
@@ -1067,6 +1137,7 @@ function TierPlanModal({
             <Toggle checked={active} onChange={setActive} label="Active" />
           </div>
         </div>
+        <PlanAllowancesEditor value={allowances} onChange={setAllowances} disabled={busy} />
         {tier && (
           <PricingEvidence entity="subscriptionPlans" row={tier} canEdit />
         )}
@@ -1082,6 +1153,7 @@ function TierPlanModal({
     </Modal>
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // Credit packages table

@@ -15,6 +15,15 @@ import {
   variantFieldsToFeatureCost,
   type ExtractFeatureCategory,
 } from '../../../lib/pricing/featureCostGroups';
+import {
+  countAllowancesNeedingReview,
+  legacyFieldsFromAllowances,
+  newAllowanceId,
+  normalizeAllowanceLabel,
+  parsePlanAllowances,
+  type PlanAllowance,
+} from '../../../lib/pricing/planAllowances';
+import { PlanAllowancesEditor } from '../workspace/tabs/PlanAllowancesEditor';
 
 // Mirrors PricingDraft from src/lib/ai-pricing/extract.ts (client-side shape).
 export interface PricingDraftClient {
@@ -30,6 +39,15 @@ export interface PricingDraftClient {
     includedTokensPerMonth?: number | null;
     freeTrial?: boolean | null;
     trialLength?: string | null;
+    allowances?: Array<{
+      sourceLabel: string;
+      featureKey?: string | null;
+      accessType?: string | null;
+      quantity?: number | null;
+      unit?: string | null;
+      resetInterval?: string | null;
+      notes?: string | null;
+    }> | null;
   }>;
   packages: Array<{
     name?: string | null;
@@ -83,7 +101,28 @@ interface PlanRow {
   annualTotalPrice: string;
   currency: string;
   includedTokens: string;
+  allowances: PlanAllowance[];
   matchId: string | null;
+}
+
+function draftAllowancesToPlan(
+  raw: PricingDraftClient['plans'][number]['allowances'],
+  mediaIds: string[],
+): PlanAllowance[] {
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  return parsePlanAllowances(
+    raw.map((a) => ({
+      id: newAllowanceId(),
+      sourceLabel: a.sourceLabel,
+      featureKey: a.featureKey || normalizeAllowanceLabel(a.sourceLabel),
+      accessType: a.accessType ?? 'included_unspecified',
+      quantity: a.quantity ?? undefined,
+      unit: a.unit ?? undefined,
+      resetInterval: a.resetInterval ?? undefined,
+      notes: a.notes ?? undefined,
+      evidenceMediaIds: mediaIds,
+    })),
+  );
 }
 
 interface PackageRow {
@@ -191,6 +230,29 @@ function matchByName(rows: EntityRow[], name: string): EntityRow | undefined {
   return rows.find((r) => String(r.name ?? '').trim().toLowerCase() === n);
 }
 
+function planMonthlyPriceLabel(row: PlanRow): string {
+  const monthly = num(row.monthlyPrice);
+  const currency = (row.currency || 'USD').toUpperCase();
+  if (monthly != null) {
+    const formatted = monthly.toLocaleString('en-US', {
+      style: 'currency',
+      currency: /^[A-Z]{3}$/.test(currency) ? currency : 'USD',
+      maximumFractionDigits: 2,
+    });
+    return `${formatted}/month`;
+  }
+  const annualMo = num(row.annualMonthlyPrice);
+  if (annualMo != null) {
+    const formatted = annualMo.toLocaleString('en-US', {
+      style: 'currency',
+      currency: /^[A-Z]{3}$/.test(currency) ? currency : 'USD',
+      maximumFractionDigits: 2,
+    });
+    return `${formatted}/mo billed yearly`;
+  }
+  return 'Price not found';
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -231,6 +293,7 @@ export function PricingReviewModal({
       annualTotalPrice: p.annualTotalPrice != null ? String(p.annualTotalPrice) : '',
       currency: normCurrency(p.currency, fallbackCurrency),
       includedTokens: p.includedTokensPerMonth != null ? String(p.includedTokensPerMonth) : '',
+      allowances: draftAllowancesToPlan(p.allowances, draft.mediaIds),
       matchId: matchByName(existingPlans, p.name)?.id ?? null,
     })),
   );
@@ -266,7 +329,7 @@ export function PricingReviewModal({
         qualityTier: cleaned.model || null,
         durationProduced: cleaned.durationSeconds ? Number(cleaned.durationSeconds) : null,
         customLabel: cleaned.label || null,
-      } as EntityRow;
+      } as unknown as EntityRow;
       const match = matchExistingVariant(existingFeatureCosts, candidate);
       return {
         key: keyCounter++,
@@ -296,6 +359,11 @@ export function PricingReviewModal({
 
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedPlanKey, setExpandedPlanKey] = useState<number | null>(
+    () => plans[0]?.key ?? null,
+  );
+  const [editingPlanPricingKey, setEditingPlanPricingKey] = useState<number | null>(null);
+  const [sourceTextPlanKey, setSourceTextPlanKey] = useState<number | null>(null);
 
   const total = plans.length + packages.length + costs.length + promos.length;
   const creates = useMemo(
@@ -303,6 +371,14 @@ export function PricingReviewModal({
       [...plans, ...packages, ...promos].filter((r) => !r.matchId).length +
       costs.filter((r) => !r.matchId).length,
     [plans, packages, costs, promos],
+  );
+  const totalBenefits = useMemo(
+    () => plans.reduce((n, p) => n + p.allowances.length, 0),
+    [plans],
+  );
+  const totalNeedsReview = useMemo(
+    () => plans.reduce((n, p) => n + countAllowancesNeedingReview(p.allowances), 0),
+    [plans],
   );
 
   async function apply() {
@@ -344,13 +420,37 @@ export function PricingReviewModal({
 
         const legacy =
           options.find((o) => o.interval === 'monthly') ?? options.find((o) => o.interval === 'yearly') ?? options[0];
+        const cleanedAllowances = row.allowances
+          .map((a) => ({
+            ...a,
+            sourceLabel: a.sourceLabel.trim(),
+            featureKey: a.featureKey.trim() || normalizeAllowanceLabel(a.sourceLabel),
+            evidenceMediaIds: mergeEvidence(a.evidenceMediaIds, mediaIds),
+          }))
+          .filter((a) => a.sourceLabel);
+        const legacyFromAllowances = legacyFieldsFromAllowances(cleanedAllowances);
+        const includedTokens =
+          intOrUndef(row.includedTokens) ?? legacyFromAllowances.includedTokens;
         const fields: Record<string, unknown> = {
           name: row.name.trim(),
           billingInterval: legacy.interval,
           price: legacy.price,
           currency,
           billingOptions: options,
-          includedTokens: intOrUndef(row.includedTokens),
+          includedTokens,
+          allowances: cleanedAllowances.length > 0 ? cleanedAllowances : undefined,
+          ...(legacyFromAllowances.includedImages != null
+            ? { includedImages: legacyFromAllowances.includedImages }
+            : {}),
+          ...(legacyFromAllowances.includedVideos != null
+            ? { includedVideos: legacyFromAllowances.includedVideos }
+            : {}),
+          ...(legacyFromAllowances.includedVoiceMinutes != null
+            ? { includedVoiceMinutes: legacyFromAllowances.includedVoiceMinutes }
+            : {}),
+          ...(legacyFromAllowances.unlimitedFeatures
+            ? { unlimitedFeatures: legacyFromAllowances.unlimitedFeatures }
+            : {}),
           active: existing ? existing.active !== false : true,
           sortOrder: existing?.sortOrder ?? existingPlans.length + i,
           evidenceMediaIds: mergeEvidence(existing?.evidenceMediaIds, mediaIds),
@@ -414,6 +514,7 @@ export function PricingReviewModal({
           minCost: undefined,
           maxCost: undefined,
           costType: 'fixed',
+          creditCost: cost,
           active: true,
           sortOrder: existing?.sortOrder ?? existingFeatureCosts.length + i,
           evidenceMediaIds: mergeEvidence(existing?.evidenceMediaIds, mediaIds),
@@ -485,29 +586,300 @@ export function PricingReviewModal({
 
         {plans.length > 0 && (
           <ReviewSection title="Subscription plans">
-            <p className="mb-2 text-[11px] text-slate-400">
-              One row = one subscription tier. Enter monthly, 3-month total, and annual total — not separate tiers per interval.
+            <p className="mb-3 text-[11px] text-slate-400">
+              {plans.length} plan{plans.length === 1 ? '' : 's'}
+              {totalBenefits > 0 ? ` · ${totalBenefits} benefit${totalBenefits === 1 ? '' : 's'}` : ''}
+              {totalNeedsReview > 0 ? (
+                <span className="text-amber-600 dark:text-amber-400">
+                  {' '}
+                  · {totalNeedsReview} need{totalNeedsReview === 1 ? 's' : ''} review
+                </span>
+              ) : totalBenefits > 0 ? (
+                <span className="text-emerald-600 dark:text-emerald-400"> · All looks good</span>
+              ) : null}
+              . Expand a plan to review benefits — edit only when something looks wrong.
             </p>
-            <div className="grid grid-cols-1 gap-y-1.5">
-              <div className="col-span-full grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_0.8fr_0.7fr_0.8fr_auto_auto] items-center gap-x-2">
-                <HeaderCells labels={['Name', 'Monthly $', '3-mo total', 'Annual $/mo', 'Annual total', 'Currency', 'Tokens/mo']} />
-              </div>
-              {plans.map((row) => (
-                <RowCells
-                  key={row.key}
-                  gridClass="grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_0.8fr_0.7fr_0.8fr_auto_auto]"
-                  status={row.matchId ? 'update' : 'create'}
-                  onRemove={() => setPlans((p) => p.filter((r) => r.key !== row.key))}
-                >
-                  <TextInput className={inputCls} value={row.name} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, name: e.target.value, matchId: matchByName(existingPlans, e.target.value)?.id ?? null } : r)))} />
-                  <TextInput className={inputCls} inputMode="decimal" value={row.monthlyPrice} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, monthlyPrice: e.target.value } : r)))} />
-                  <TextInput className={inputCls} inputMode="decimal" value={row.quarterlyTotalPrice} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, quarterlyTotalPrice: e.target.value } : r)))} />
-                  <TextInput className={inputCls} inputMode="decimal" value={row.annualMonthlyPrice} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, annualMonthlyPrice: e.target.value } : r)))} />
-                  <TextInput className={inputCls} inputMode="decimal" value={row.annualTotalPrice} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, annualTotalPrice: e.target.value } : r)))} />
-                  <TextInput className={inputCls} value={row.currency} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, currency: e.target.value.toUpperCase() } : r)))} />
-                  <TextInput className={inputCls} inputMode="numeric" value={row.includedTokens} onChange={(e) => setPlans((p) => p.map((r) => (r.key === row.key ? { ...r, includedTokens: e.target.value } : r)))} />
-                </RowCells>
-              ))}
+            <div className="space-y-2">
+              {plans.map((row) => {
+                const open = expandedPlanKey === row.key;
+                const needs = countAllowancesNeedingReview(row.allowances);
+                const priceLabel = planMonthlyPriceLabel(row);
+                const editingPricing = editingPlanPricingKey === row.key;
+                const showSource = sourceTextPlanKey === row.key;
+                return (
+                  <div
+                    key={row.key}
+                    className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/50"
+                  >
+                    <div className="flex w-full items-start gap-2 px-3 py-3">
+                      <button
+                        type="button"
+                        className="flex min-w-0 flex-1 items-start gap-3 text-left transition-colors"
+                        onClick={() =>
+                          setExpandedPlanKey((k) => (k === row.key ? null : row.key))
+                        }
+                      >
+                        <Icon
+                          name={open ? 'expand_more' : 'chevron_right'}
+                          className="mt-0.5 !text-[18px] text-slate-400"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-semibold uppercase tracking-wide text-slate-900 dark:text-slate-50">
+                              {row.name.trim() || 'Untitled plan'}
+                            </p>
+                            <Badge tone={row.matchId ? 'blue' : 'green'}>
+                              {row.matchId ? 'will update' : 'will create'}
+                            </Badge>
+                          </div>
+                          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                            {priceLabel}
+                            {row.allowances.length > 0
+                              ? ` · ${row.allowances.length} benefit${row.allowances.length === 1 ? '' : 's'}`
+                              : ''}
+                            {needs > 0 ? (
+                              <span className="text-amber-600 dark:text-amber-400">
+                                {' '}
+                                · {needs} need{needs === 1 ? 's' : ''} review
+                              </span>
+                            ) : row.allowances.length > 0 ? (
+                              <span className="text-emerald-600 dark:text-emerald-400">
+                                {' '}
+                                · All looks good
+                              </span>
+                            ) : null}
+                          </p>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Remove plan"
+                        className="shrink-0 text-slate-300 transition-colors hover:text-red-500"
+                        onClick={() => {
+                          setPlans((p) => p.filter((r) => r.key !== row.key));
+                          if (expandedPlanKey === row.key) setExpandedPlanKey(null);
+                        }}
+                      >
+                        <Icon name="close" className="!text-[14px]" />
+                      </button>
+                    </div>
+
+                    {open && (
+                      <div className="space-y-4 border-t border-slate-100 px-3 py-3 dark:border-slate-800">
+                        {editingPricing ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                Edit plan pricing
+                              </p>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="!py-0.5 text-[11px]"
+                                onClick={() => setEditingPlanPricingKey(null)}
+                              >
+                                Done
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                              <label className="block">
+                                <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">
+                                  Name
+                                </span>
+                                <TextInput
+                                  className={inputCls}
+                                  value={row.name}
+                                  onChange={(e) =>
+                                    setPlans((p) =>
+                                      p.map((r) =>
+                                        r.key === row.key
+                                          ? {
+                                              ...r,
+                                              name: e.target.value,
+                                              matchId:
+                                                matchByName(existingPlans, e.target.value)?.id ??
+                                                null,
+                                            }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">
+                                  Monthly $
+                                </span>
+                                <TextInput
+                                  className={inputCls}
+                                  inputMode="decimal"
+                                  value={row.monthlyPrice}
+                                  onChange={(e) =>
+                                    setPlans((p) =>
+                                      p.map((r) =>
+                                        r.key === row.key
+                                          ? { ...r, monthlyPrice: e.target.value }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">
+                                  3-mo total
+                                </span>
+                                <TextInput
+                                  className={inputCls}
+                                  inputMode="decimal"
+                                  value={row.quarterlyTotalPrice}
+                                  onChange={(e) =>
+                                    setPlans((p) =>
+                                      p.map((r) =>
+                                        r.key === row.key
+                                          ? { ...r, quarterlyTotalPrice: e.target.value }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">
+                                  Annual $/mo
+                                </span>
+                                <TextInput
+                                  className={inputCls}
+                                  inputMode="decimal"
+                                  value={row.annualMonthlyPrice}
+                                  onChange={(e) =>
+                                    setPlans((p) =>
+                                      p.map((r) =>
+                                        r.key === row.key
+                                          ? { ...r, annualMonthlyPrice: e.target.value }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">
+                                  Annual total
+                                </span>
+                                <TextInput
+                                  className={inputCls}
+                                  inputMode="decimal"
+                                  value={row.annualTotalPrice}
+                                  onChange={(e) =>
+                                    setPlans((p) =>
+                                      p.map((r) =>
+                                        r.key === row.key
+                                          ? { ...r, annualTotalPrice: e.target.value }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">
+                                  Currency
+                                </span>
+                                <TextInput
+                                  className={inputCls}
+                                  value={row.currency}
+                                  onChange={(e) =>
+                                    setPlans((p) =>
+                                      p.map((r) =>
+                                        r.key === row.key
+                                          ? { ...r, currency: e.target.value.toUpperCase() }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-1 block text-[10px] font-medium uppercase text-slate-400">
+                                  Tokens / mo
+                                </span>
+                                <TextInput
+                                  className={inputCls}
+                                  inputMode="numeric"
+                                  value={row.includedTokens}
+                                  onChange={(e) =>
+                                    setPlans((p) =>
+                                      p.map((r) =>
+                                        r.key === row.key
+                                          ? { ...r, includedTokens: e.target.value }
+                                          : r,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
+                            <div>
+                              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                                {priceLabel}
+                              </p>
+                              <p className="text-[11px] text-slate-400">
+                                {row.matchId ? 'Existing plan · will update' : 'New plan · will create'}
+                                {row.includedTokens.trim()
+                                  ? ` · ${row.includedTokens} tokens/mo`
+                                  : ''}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="!py-0.5 text-[11px]"
+                              onClick={() => setEditingPlanPricingKey(row.key)}
+                            >
+                              Edit plan pricing
+                            </Button>
+                          </div>
+                        )}
+
+                        <PlanAllowancesEditor
+                          value={row.allowances}
+                          onChange={(next) =>
+                            setPlans((p) =>
+                              p.map((r) => (r.key === row.key ? { ...r, allowances: next } : r)),
+                            )
+                          }
+                        />
+
+                        {row.allowances.some((a) => a.sourceLabel.trim()) && (
+                          <div>
+                            <button
+                              type="button"
+                              className="text-[11px] font-medium text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+                              onClick={() =>
+                                setSourceTextPlanKey((k) => (k === row.key ? null : row.key))
+                              }
+                            >
+                              {showSource ? 'Hide extracted source text' : 'View extracted source text'}
+                            </button>
+                            {showSource && (
+                              <p className="mt-1.5 rounded-md bg-slate-50 px-2.5 py-2 text-[11px] leading-relaxed text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+                                {row.allowances
+                                  .map((a) => a.sourceLabel.trim())
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </ReviewSection>
         )}

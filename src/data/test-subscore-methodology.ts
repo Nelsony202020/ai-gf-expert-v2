@@ -723,31 +723,28 @@ const charactersQuality: TestSubscoreMethodologyContent = {
   },
   evidenceHierarchy: {
     explanation:
-      'Quality is organized into 4 evidence groups. Each group contains one scored test: Duplicates, Originality, Profile Quality, and Visual Quality. All four tests count equally toward the final Quality score.',
-    sectionIntro: 'Quality has 4 evidence groups made up of 4 scored tests.',
+      'Quality is organized into 3 evidence groups: Duplicate profiles found, Profile Quality, and Visual Quality. Duplicate count is worth half of Quality; the two quality ratings share the rest.',
+    sectionIntro: 'Quality has 3 evidence groups made up of 3 scored tests.',
   },
   evidenceGroupContent: {
     duplicates: {
       intro: [
-        'Duplicates measures how many characters in the sample appear to be copies or near-copies of another profile.',
+        'Duplicate profiles found counts how many characters in the sample appear to be copies or near-copies of another profile.',
       ],
       whyItMatters:
         'A large number of duplicates can make a big library feel much smaller than it looks.',
     },
-    originality: {
-      intro: ['Originality measures how different the characters feel from one another.'],
-      whyItMatters:
-        'Changing the name or hair color is not enough when the personality and scenario are still almost identical.',
-    },
     'profile-quality': {
       intro: [
-        'Profile Quality measures whether character profiles give you enough useful information before you start chatting.',
+        'Profile Quality rates overall profile usefulness from very bad to very good for the same sample.',
       ],
       whyItMatters:
         'A good profile should explain who the character is and what kind of conversation or relationship to expect.',
     },
     'visual-quality': {
-      intro: ['Visual Quality measures how clear and well made the main character images look.'],
+      intro: [
+        'Visual Quality rates overall photo quality from very bad to very good for the same sample.',
+      ],
       whyItMatters:
         'A profile image is often the first thing you see. Broken faces, damaged bodies, or blurry images can make the whole library feel rushed.',
     },
@@ -755,12 +752,12 @@ const charactersQuality: TestSubscoreMethodologyContent = {
   evidenceSections: [
     {
       id: 'duplicates',
-      title: 'Duplicates',
-      whatItMeasures: 'The percentage of reviewed profiles that repeat another character.',
+      title: 'Duplicate profiles found',
+      whatItMeasures: 'How many reviewed profiles repeat another character in the sample (0–25).',
       whyItMatters:
         'Duplicate profiles make a large library feel smaller and less worth exploring.',
       howWeTest:
-        'We review every character in the fixed sample and compare it with the other profiles. We count a profile as a duplicate when most of these parts are nearly the same: main image, name, description, personality, and scenario.',
+        'We review every character in the fixed sample (usually 25) and count near-copies. A profile counts as a duplicate when most of these parts are nearly the same: main image, name, description, personality, and scenario.',
       whatWeCount: [
         'The same profile image with only a small change',
         'Nearly identical names and descriptions',
@@ -773,54 +770,34 @@ const charactersQuality: TestSubscoreMethodologyContent = {
         'Small similarities that are common across the whole app',
         'Profiles that use the same visual style but represent different characters',
       ],
-      displayedResult: '3 duplicates in a sample of 50 profiles',
-      displayedResultExtra: 'Duplicate rate: 6%',
+      displayedResult: '3 duplicate profiles in a sample of 25',
+      displayedResultExtra: '0 is best · 25 is worst',
       scoringIntro: 'Fewer duplicates means a higher score.',
       scoringLines: [
-        '0% = 10/10',
-        '20% = 8/10',
-        '40% = 6/10',
-        '60% = 4/10',
-        '80% = 2/10',
-        '100% = 0/10',
+        '0 found = 10/10',
+        '5 found = 8/10',
+        '10 found = 6/10',
+        '15 found = 4/10',
+        '20 found = 2/10',
+        '25 found = 0/10',
       ],
-      scoringNote: 'The exact score moves with the duplicate rate.',
-      scoringFootnote: 'A duplicate rate of 6% scores 9.4/10.',
+      scoringNote: 'The exact score moves with the duplicate count (inverted 0–25 scale).',
+      scoringFootnote: 'Finding 3 duplicates in a sample of 25 scores 8.8/10.',
       showWhyItMatters: false,
       edgeCases:
         'This test looks for clear copies or near-copies. Two characters are not marked as duplicates just because they share one feature.',
     },
     {
       id: 'originality',
-      title: 'Originality',
-      whatItMeasures: 'The percentage of reviewed characters that feel original.',
-      whyItMatters:
-        'A library full of near-identical personalities and scenarios feels repetitive even when the photos look different.',
-      howWeTest:
-        'We review the same fixed sample. Each character receives one point for a distinct appearance, a distinct personality, and a distinct scenario. A character passes when it gets at least 2 out of 3 points.',
-      whatWeCount: [
-        'A look that is clearly different from the other profiles',
-        'A personality that changes how the character behaves',
-        'A scenario that gives the conversation a different starting point',
-      ],
-      whatWeDoNotCount: [
-        'A name change on an otherwise copied profile',
-        'A small color change to the same image',
-        'Rewording the same personality description',
-        'Reusing the same relationship or roleplay idea with minor changes',
-      ],
-      displayedResult: '41 of 50 characters passed',
-      displayedResultExtra: 'Originality rate: 82%',
-      scoringIntro: 'A higher originality rate means a higher score.',
-      scoringLines: [
-        '20% = 2/10',
-        '40% = 4/10',
-        '60% = 6/10',
-        '80% = 8/10',
-        '100% = 10/10',
-      ],
-      scoringNote: 'The exact score matches the percentage.',
-      scoringFootnote: 'A result of 82% scores 8.2/10.',
+      title: 'Originality (retired)',
+      whatItMeasures: 'Retired — folded into Duplicate profiles found.',
+      whyItMatters: 'Unique vs duplicate is the same test from opposite sides.',
+      howWeTest: 'No longer scored separately.',
+      whatWeCount: [],
+      whatWeDoNotCount: [],
+      displayedResult: 'Retired',
+      scoringIntro: 'This evidence is no longer used in scoring.',
+      scoringLines: [],
       showWhyItMatters: false,
       edgeCases:
         'A character does not need to be completely unique in every way. It passes when at least two of the three areas feel different.',
@@ -828,54 +805,49 @@ const charactersQuality: TestSubscoreMethodologyContent = {
     {
       id: 'profile-quality',
       title: 'Profile Quality',
-      whatItMeasures: 'How complete and useful the character profiles are.',
+      whatItMeasures: 'Overall quality of character profiles (very bad → very good).',
       whyItMatters:
         'Useful profile information helps you choose a character before you spend time starting a chat.',
       howWeTest:
-        'We review the same fixed sample. Each profile receives one point for including a name, a clear description, personality information, relationship or scenario information, and example dialogue or an opening message. Each profile can receive up to five points.',
+        'We review the same fixed sample and rate overall profile quality: Very bad, Bad, Neutral, Good, or Very good.',
       whatWeCount: [
-        'Information clearly shown on the profile',
-        'A description that explains who the character is',
-        'Personality details that help set expectations',
-        'A clear relationship or scenario',
-        'An opening message or example of how the character talks',
+        'Clear names and descriptions',
+        'Personality and scenario details that set expectations',
+        'Profiles that feel complete enough to start chatting',
       ],
       whatWeDoNotCount: [
         'Information that only appears after starting the chat',
         'Empty or placeholder text',
-        'Repeated text copied across several profiles',
-        'Vague descriptions that do not explain the character',
+        'Personal preference for one personality style over another',
       ],
-      displayedResult: '210 of 250 profile checks passed',
-      displayedResultExtra: 'Profile Quality: 84%',
-      scoringIntro: 'More completed profile checks means a higher score.',
+      displayedResult: 'Good',
+      displayedResultExtra: 'Profile Quality: Good (75% → 7.5/10)',
+      scoringIntro: 'We rate overall profile quality on a five-point scale.',
       scoringLines: [
-        '20% = 2/10',
-        '40% = 4/10',
-        '60% = 6/10',
-        '80% = 8/10',
-        '100% = 10/10',
+        'Very bad = 0/10',
+        'Bad = 2.5/10',
+        'Neutral = 5/10',
+        'Good = 7.5/10',
+        'Very good = 10/10',
       ],
-      scoringNote: 'The exact score matches the percentage.',
-      scoringFootnote: 'A result of 84% scores 8.4/10.',
+      scoringNote: 'Very good maps to 100% (10/10).',
+      scoringFootnote: 'A “Good” rating scores 7.5/10.',
       showWhyItMatters: false,
       edgeCases:
-        'A profile can still receive some points when it is missing information. The final result is based on all profile checks across the full sample.',
+        'This is an overall judgment for the whole sample, not a per-field checklist count.',
     },
     {
       id: 'visual-quality',
       title: 'Visual Quality',
-      whatItMeasures: 'The quality and consistency of the main profile images.',
+      whatItMeasures: 'Overall quality of the main profile images (very bad → very good).',
       whyItMatters:
         'Poor profile images make even a large library feel rushed or low effort.',
       howWeTest:
-        'We review the main image of every character in the same fixed sample. Each image receives one point for a clear face, a clear body, no major anatomy errors, no obvious image damage, and good overall presentation. Each image can receive up to five points.',
+        'We review the main images in the same fixed sample and rate overall photo quality: Very bad, Bad, Neutral, Good, or Very good.',
       whatWeCount: [
-        'The face is clear and easy to see',
-        'The body looks complete and believable',
-        'Hands, limbs, and clothing are not badly broken',
-        'The image is not blurry, corrupted, or heavily damaged',
-        'The image looks suitable for a finished character profile',
+        'Clear faces and complete bodies',
+        'Believable anatomy and presentation',
+        'Images that look finished and suitable for a profile',
       ],
       whatWeDoNotCount: [
         'Small style choices that are clearly intentional',
@@ -883,18 +855,18 @@ const charactersQuality: TestSubscoreMethodologyContent = {
         'Personal preference for realistic or anime art',
         'Image quality inside the chat or image generator',
       ],
-      displayedResult: '225 of 250 image checks passed',
-      displayedResultExtra: 'Visual Quality: 90%',
-      scoringIntro: 'More visual checks passed means a higher score.',
+      displayedResult: 'Very good',
+      displayedResultExtra: 'Visual Quality: Very good (100% → 10/10)',
+      scoringIntro: 'We rate overall photo quality on a five-point scale.',
       scoringLines: [
-        '20% = 2/10',
-        '40% = 4/10',
-        '60% = 6/10',
-        '80% = 8/10',
-        '100% = 10/10',
+        'Very bad = 0/10',
+        'Bad = 2.5/10',
+        'Neutral = 5/10',
+        'Good = 7.5/10',
+        'Very good = 10/10',
       ],
-      scoringNote: 'The exact score matches the percentage.',
-      scoringFootnote: 'A result of 90% scores 9.0/10.',
+      scoringNote: 'Very good maps to 100% (10/10).',
+      scoringFootnote: 'A “Very good” rating scores 10/10.',
       showWhyItMatters: false,
       edgeCases:
         'This test only reviews the main profile images in the character library. Generated images are tested separately under Images.',
@@ -905,7 +877,7 @@ const charactersQuality: TestSubscoreMethodologyContent = {
     paragraphs: [
       'Quality is based on a fixed sample, not every character in the library. The sample helps us spot clear patterns, but it cannot guarantee that every profile has the same level of quality.',
       'Character libraries also change regularly. New profiles may be added and weak profiles may be improved or removed after testing.',
-      'Originality and visual quality can involve some judgement. We reduce this by using the same checklist for every platform.',
+      'Profile and photo quality ratings involve some judgement. We use the same five-point scale for every platform.',
       'Public community characters may have very different quality from characters made by the platform. We record which type of library was included in the sample.',
     ],
   },
@@ -933,7 +905,7 @@ const customizationAppearance: TestSubscoreMethodologyContent = {
     title: 'How we test Appearance',
     paragraphs: [
       'We use a paid account and open the full character creator.',
-      'We go through the creator once and count every selectable option for age, ethnicity, eye color, body type, breast size, hair style, hair color, and outfits.',
+      'We go through the creator once and count every selectable option for age, ethnicity, eye color, body type, breast size, ass size, hair style, hair color, and outfits.',
       'We also count the basic personality presets offered during creation because they are part of the current Appearance score.',
       'We only count options that normal users can select. We do not count options that are shown in marketing images but are not available inside the creator.',
       'When the app uses a slider or custom color picker instead of normal presets, we record how the control works and explain any limit that affects the count.',
@@ -1017,7 +989,7 @@ const customizationAppearance: TestSubscoreMethodologyContent = {
         'It is scored separately because some apps offer several body types but almost no control over this specific feature.',
     },
     'ss-size': {
-      intro: ['SS Size measures how many SS size choices are available for adult female characters.'],
+      intro: ['Ass Size measures how many ass size choices are available for adult female characters.'],
       whyItMatters:
         'It is scored separately because some apps offer several body types but almost no control over this specific feature.',
     },
@@ -1177,12 +1149,12 @@ const customizationAppearance: TestSubscoreMethodologyContent = {
     },
     {
       id: 'ss-size',
-      title: 'SS Size',
-      whatItMeasures: 'How many SS size choices are available for adult female characters.',
+      title: 'Ass Size',
+      whatItMeasures: 'How many ass size choices are available for adult female characters.',
       whyItMatters:
         'It is scored separately because some apps offer several body types but almost no control over this specific feature.',
       howWeTest:
-        'We count every clearly selectable SS size option shown for adult characters.',
+        'We count every clearly selectable ass size option shown for adult characters.',
       whatWeCount: [
         'Clearly labelled size presets',
         'A working size slider with separate settings',
@@ -1194,7 +1166,7 @@ const customizationAppearance: TestSubscoreMethodologyContent = {
         'Tiny changes that do not create a noticeable difference',
         'Options shown only in marketing images',
       ],
-      displayedResult: '5 SS size options',
+      displayedResult: '5 ass size options',
       scoringEvidenceSlug: 'ss-size',
       scoringIntro: 'More options means a higher score.',
       showWhyItMatters: false,

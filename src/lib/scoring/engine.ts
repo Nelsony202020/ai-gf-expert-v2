@@ -156,6 +156,11 @@ export function normalizeEvidence(input: EvidenceInput): {
     return { score: null, status: 'na', detail: 'Not applicable — removed, weights re-scaled' };
   }
 
+  // Explicit "unknown" answers are complete for publish and excluded from scores.
+  if (input.isUnknown) {
+    return { score: null, status: 'unknown', detail: 'Unknown — excluded from score' };
+  }
+
   if (input.slug === 'mode-types') {
     const chatRaw = input.relatedAnswers?.['chat-modes'];
     if (
@@ -501,15 +506,17 @@ export function computeScores(
   });
 
   function hasRecordedAnswer(input: EvidenceInput): boolean {
-    if (input.notApplicable) return true;
+    if (input.notApplicable || input.isUnknown) return true;
     return input.rawValue !== undefined && input.rawValue !== null;
   }
 
   // Block only when required evidence has no recorded answer. Manual-scoring
   // items with an answer count as complete for publish — they may still need a
   // 0–10 override before they contribute to the calculated score.
+  // "Unknown" / NA answers are complete and must not block publish.
   const missingRequired = evidenceComputed.filter((e, i) => {
     if (!e.required) return false;
+    if (e.status === 'na' || e.status === 'unknown') return false;
     const input = evidence[i];
     if (e.status === 'missing') return true;
     if (e.status === 'needs_manual' && !hasRecordedAnswer(input)) return true;

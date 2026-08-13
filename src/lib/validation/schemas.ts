@@ -280,6 +280,27 @@ export const billingOptionSchema = z.object({
 });
 export type BillingOption = z.infer<typeof billingOptionSchema>;
 
+/** Plan-level entitlement (what this tier includes before feature costs apply). */
+export const planAllowanceSchema = z.object({
+  id: z.string().min(1).max(80),
+  featureKey: z.string().min(1).max(60),
+  sourceLabel: z.string().min(1).max(120),
+  accessType: z.enum([
+    'unlimited',
+    'included_quantity',
+    'included_credits',
+    'pay_as_you_go',
+    'not_included',
+    'included_unspecified',
+  ]),
+  quantity: z.number().nonnegative().optional(),
+  unit: z.string().max(40).optional(),
+  resetInterval: z.enum(['day', 'month', 'billing_cycle', 'one_time', 'none']).optional(),
+  notes: z.string().max(300).optional(),
+  evidenceMediaIds: z.array(z.string()).optional(),
+});
+export type PlanAllowanceInput = z.infer<typeof planAllowanceSchema>;
+
 export const subscriptionPlanSchema = z.object({
   name: z.string().min(1).max(120),
   // Legacy single-price fields (fallback for pre-tier records)
@@ -299,6 +320,8 @@ export const subscriptionPlanSchema = z.object({
   lastVerifiedAt: dateMs.optional(),
   // Plan-tier fields
   billingOptions: z.array(billingOptionSchema).optional(),
+  /** Generalized plan entitlements (source of truth when present). */
+  allowances: z.array(planAllowanceSchema).max(80).optional(),
   description: z.string().max(500).optional(),
   creditRefresh: z
     .enum(['once', 'weekly', 'monthly', 'per_billing_cycle', 'yearly', 'none', 'custom'])
@@ -374,6 +397,8 @@ export const pricingSnapshotSchema = z.object({
   status: z.enum(PRICING_SNAPSHOT_STATUSES),
   pricingModel: z.enum(PRICING_MODELS).optional(),
   creditCurrency: creditCurrencySchema.optional(),
+  /** Plan name used for autofill / normalized metrics (optional). */
+  referencePlanName: z.string().max(120).optional(),
   effectiveFrom: dateMs.optional(),
   effectiveUntil: dateMs.optional(),
   verifiedAt: dateMs.optional(),
@@ -443,7 +468,18 @@ export const featureCostSchema = z
     creditCost: z.number().nonnegative().optional(),
     minCost: z.number().nonnegative().optional(),
     maxCost: z.number().nonnegative().optional(),
-    costType: z.enum(['fixed', 'range', 'variable']).optional(),
+    costType: z
+      .enum([
+        'fixed',
+        'range',
+        'variable',
+        'included',
+        'unlimited',
+        'pay_as_you_go',
+        'not_available',
+        'unknown',
+      ])
+      .optional(),
     unit: z.enum(FEATURE_UNITS),
     quantityProduced: z.number().positive().optional(),
     durationProduced: z.number().positive().optional(),

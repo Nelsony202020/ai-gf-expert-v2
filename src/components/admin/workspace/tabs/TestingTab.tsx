@@ -422,11 +422,17 @@ export function TestingTab() {
   // Suggested answers computed from the Pricing tab data (plan prices, credit
   // packages, feature costs), keyed by evidence-definition id.
   const suggestionByDef = useMemo(() => {
+    const activeSnapshot =
+      ws.related.pricingSnapshots.find((s) => s.status === 'active' && !s.deletedAt) ??
+      ws.related.pricingSnapshots.find((s) => !s.deletedAt);
     const bySlugKey = computePricingSuggestions({
       plans: ws.related.plans,
       packages: ws.related.packages,
       featureCosts: ws.related.featureCosts,
       paymentProfile: ws.related.paymentProfile,
+      referencePlanName: activeSnapshot?.referencePlanName
+        ? String(activeSnapshot.referencePlanName)
+        : null,
     });
     const map = new Map<string, AutofillSuggestion>();
     if (bySlugKey.size === 0) return map;
@@ -445,6 +451,7 @@ export function TestingTab() {
     ws.related.packages,
     ws.related.featureCosts,
     ws.related.paymentProfile,
+    ws.related.pricingSnapshots,
     mvCategories,
     structureByCategory,
     ws.fields,

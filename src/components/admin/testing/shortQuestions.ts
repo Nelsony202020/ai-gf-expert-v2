@@ -76,20 +76,16 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Do 10 browsing tasks. Answer Yes if browsing is easy overall, No if not. Add task details in the note."
   },
   "characters|duplicates": {
-    "q": "Characters: any duplicates?",
-    "hint": "In your sample above, count near-copy profiles. Only enter the number found."
-  },
-  "characters|originality": {
-    "q": "Characters: how unique?",
-    "hint": "In your sample, count that feel original."
+    "q": "Characters: duplicate profiles found?",
+    "hint": "In your sample above (e.g. 25), enter how many near-copy profiles you found. 0 is best, up to the sample size is worst."
   },
   "characters|profile-quality": {
     "q": "Characters: good profiles?",
-    "hint": "In your sample, count complete useful profiles."
+    "hint": "Rate overall profile quality for your sample: very bad → very good."
   },
   "characters|visual-quality": {
     "q": "Characters: good photos?",
-    "hint": "In your sample, count clear good profile photos."
+    "hint": "Rate overall photo quality for your sample: very bad → very good."
   },
   "customization|ethnicity": {
     "q": "Creator: ethnicity options?",
@@ -112,8 +108,8 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Count breast size choices if offered."
   },
   "customization|ss-size": {
-    "q": "Creator: SS size options?",
-    "hint": "Count SS size choices if offered."
+    "q": "Creator: Ass size options?",
+    "hint": "Count ass size choices if offered."
   },
   "customization|hair-style": {
     "q": "Creator: hair style options?",
@@ -625,23 +621,23 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "pricing|free-chat": {
     "q": "Free chat?",
-    "hint": "How many messages can a free user send? Use a short label like 20 messages."
+    "hint": "How many messages can a free user send? Enter the count and choose Total, Per day, or Per month (default Total)."
   },
   "pricing|free-images": {
     "q": "Free images?",
-    "hint": "How many images can a free user generate? e.g. 3 images."
+    "hint": "How many images can a free user generate? Enter the count and choose Total, Per day, or Per month (default Total)."
   },
   "pricing|free-video": {
     "q": "Free video?",
-    "hint": "How many videos can a free user create? e.g. 1 video."
+    "hint": "How many videos can a free user create? Enter the count and choose Total, Per day, or Per month (default Total)."
   },
   "pricing|free-voice": {
     "q": "Free voice?",
-    "hint": "Free voice allowance in seconds — e.g. 30 sec voice."
+    "hint": "Free voice allowance in seconds. Enter the count and choose Total, Per day, or Per month (default Total)."
   },
   "pricing|free-characters": {
     "q": "Free characters?",
-    "hint": "How many characters can a free user create or chat with? e.g. 1 character."
+    "hint": "How many characters can a free user create or chat with? Enter the count and choose Total, Per day, or Per month (default Total)."
   },
   "pricing|free-value": {
     "q": "Free trial without credit card?",
@@ -650,10 +646,6 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   "pricing|pricing-clarity": {
     "q": "Price clarity?",
     "hint": "How clearly does the site explain costs, limits, expiry, and refunds before checkout?"
-  },
-  "pricing|paywalls": {
-    "q": "Which features are paywalled?",
-    "hint": "Tick features that require a higher tier or extra payment beyond the normal plan. Choose None if nothing extra is paywalled (full points)."
   },
   "pricing|credit-expiry": {
     "q": "Credit expiry?",
