@@ -30,6 +30,7 @@ import {
   readReviewDraft,
   writeReviewDraft,
 } from '../../../../lib/review/reviewDraftStorage';
+import { flushLiveRebuild, scheduleLiveRebuild } from '../../../../lib/admin/scheduleLiveRebuild';
 
 const ReviewEditor = lazyImport(() => import('../../review/ReviewEditor'), 'ReviewEditor');
 
@@ -249,6 +250,11 @@ export function ReviewTab() {
         setSaveStatus('saved');
         clearReviewDraft(ws.productId);
         setDraftOffer(null);
+
+        // Published product pages are static — schedule a live-site rebuild.
+        if (ws.fields.status === 'published' || ws.original?.status === 'published') {
+          scheduleLiveRebuild(`review article saved for ${ws.fields.slug ?? ws.productId}`);
+        }
         return true;
       } catch (e) {
         if (seq === saveSeqRef.current) {
@@ -317,13 +323,22 @@ export function ReviewTab() {
   useEffect(() => {
     if (!canEdit) return;
     const onHide = () => {
-      if (JSON.stringify(docRef.current) === savedDocJson.current) return;
+      if (JSON.stringify(docRef.current) === savedDocJson.current) {
+        if (ws.fields.status === 'published' || ws.original?.status === 'published') {
+          flushLiveRebuild(`review flush for ${ws.fields.slug ?? ws.productId}`);
+        }
+        return;
+      }
       writeReviewDraft(ws.productId, docRef.current);
       if (autosaveTimerRef.current) {
         window.clearTimeout(autosaveTimerRef.current);
         autosaveTimerRef.current = null;
       }
-      void persistToServer(docRef.current);
+      void persistToServer(docRef.current).then(() => {
+        if (ws.fields.status === 'published' || ws.original?.status === 'published') {
+          flushLiveRebuild(`review flush for ${ws.fields.slug ?? ws.productId}`);
+        }
+      });
     };
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') onHide();
@@ -394,7 +409,7 @@ export function ReviewTab() {
           <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Couldn&apos;t save
         </span>
       ) : saveStatus === 'saved' || (!isDirty && lastSaved) ? (
-        <span className="flex items-center gap-1 text-xs text-green-700 dark:text-green-400">
+        <span className="flex items-center gap-1 text-xs text-green-700 dark:text-green-400" title="Database saved. Live public page rebuilds shortly after.">
           <Icon name="cloud_done" className="!text-[14px]" /> Saved
         </span>
       ) : null}

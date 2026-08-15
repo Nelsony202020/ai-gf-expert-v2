@@ -8,6 +8,7 @@ import { normalizeListField } from '../../../lib/ai-verdict/notesSchema';
 import { sanitizeCategoryVerdictDraft } from './verdict/categoryVerdictProgress';
 import type { CategoryVerdict } from './verdict/types';
 import { computeProductCompletion, type ProductCompletion } from './completion';
+import { scheduleLiveRebuild } from '../../../lib/admin/scheduleLiveRebuild';
 
 export interface ScoreHistoryRun {
   runId: string;
@@ -406,6 +407,12 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
       await dataApi.update('products', productId, payload, linksRef.current);
       await reloadProduct();
       setLastSavedAt(Date.now());
+      const published =
+        String(payload.status ?? original?.status ?? '') === 'published' ||
+        original?.status === 'published';
+      if (published) {
+        scheduleLiveRebuild(`product fields saved for ${String(payload.slug ?? original?.slug ?? productId)}`);
+      }
       return true;
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : String(e));
