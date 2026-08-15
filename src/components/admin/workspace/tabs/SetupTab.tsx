@@ -39,7 +39,6 @@ export function SetupTab() {
   const justCreated = searchParams.get('created') === '1';
 
   const status = String(fields.status ?? 'draft');
-  const statusEditable = status === 'draft' || status === 'archived';
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
@@ -118,25 +117,6 @@ export function SetupTab() {
                   className={fieldErrors.slug ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : ''}
                 />
                 {fieldErrors.slug && <p className="mt-1 text-xs text-red-600">{fieldErrors.slug}</p>}
-              </Field>
-              <Field
-                label="Status"
-                hint={
-                  statusEditable
-                    ? 'Publishing happens from the Publish tab after all checks pass.'
-                    : 'Manage publication from the Publish tab.'
-                }
-              >
-                {statusEditable ? (
-                  <Select value={status} onChange={(e) => set('status', e.target.value)} className="capitalize">
-                    <option value="draft">draft</option>
-                    <option value="archived">archived</option>
-                  </Select>
-                ) : (
-                  <div className="flex h-[34px] items-center">
-                    <Badge tone={status === 'published' ? 'green' : 'blue'}>{status.replace('_', ' ')}</Badge>
-                  </div>
-                )}
               </Field>
               <Field label="Short tagline" hint="Brief description shown in listings and previews.">
                 <TextInput
@@ -326,28 +306,34 @@ function DirectoryLabelField() {
   }
 
   return (
-    <div className="space-y-2">
-      <Field label="Directory label">
-        <Select
-          value={award.kind === 'none' || !award.kind ? 'none' : award.kind}
-          onChange={(e) => setAward({ kind: e.target.value })}
-        >
-          {AWARD_KIND_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
-      </Field>
-      {award.kind === 'custom' && (
-        <Field label="Custom label">
-          <TextInput
-            value={award.customLabel ?? ''}
-            onChange={(e) => setAward({ kind: 'custom', customLabel: e.target.value })}
-            placeholder="e.g. Best for Beginners"
-            maxLength={80}
-          />
+    <div className="flex flex-wrap items-end gap-2">
+      <div className="w-[11.5rem] shrink-0">
+        <Field label="Label">
+          <Select
+            value={award.kind === 'none' || !award.kind ? 'none' : award.kind}
+            onChange={(e) => setAward({ kind: e.target.value })}
+            className="w-full text-xs"
+          >
+            {AWARD_KIND_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
         </Field>
+      </div>
+      {award.kind === 'custom' && (
+        <div className="min-w-[10rem] max-w-xs flex-1">
+          <Field label="Custom">
+            <TextInput
+              value={award.customLabel ?? ''}
+              onChange={(e) => setAward({ kind: 'custom', customLabel: e.target.value })}
+              placeholder="Custom label"
+              maxLength={80}
+              className="text-xs"
+            />
+          </Field>
+        </div>
       )}
     </div>
   );
