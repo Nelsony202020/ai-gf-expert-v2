@@ -14,7 +14,12 @@ const hasSavedReview = reviewBlocks.length > 0;
 const mediaById = product.reviewMediaById ?? {};
 if (Object.keys(mediaById).length === 0) {
   for (const item of product.mediaItems ?? []) {
-    mediaById[item.id] = { url: item.src, altText: item.alt, mediaType: item.type };
+    mediaById[item.id] = {
+      url: item.src,
+      altText: item.alt,
+      mediaType: item.type,
+      adult: Boolean(item.nsfw),
+    };
   }
 }
 for (const item of product.gallery ?? []) {
@@ -558,6 +563,44 @@ const reviewVideoId = product.videoReview?.embedUrl
     overflow: hidden;
   }
 
+  .review-blocks .review-figure--nsfw:not(.review-figure--nsfw-revealed) .review-figure__zoom {
+    filter: blur(18px);
+    transform: scale(1.04);
+  }
+
+  .review-blocks .review-figure__nsfw {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    margin: 0;
+    border: 0;
+    border-radius: inherit;
+    background: rgba(15, 23, 42, 0.45);
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .review-blocks .review-figure__nsfw span:first-child {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .review-blocks .review-figure__nsfw-hint {
+    font-size: 0.7rem;
+    opacity: 0.85;
+  }
+
+  .review-blocks .review-figure--nsfw-revealed .review-figure__nsfw {
+    display: none;
+  }
+
   .review-blocks .review-figure__zoom {
     display: block;
     width: 100%;
@@ -785,6 +828,23 @@ const reviewVideoId = product.videoReview?.embedUrl
     headings.forEach((h) => observer.observe(h));
   }
 
+  function initReviewNsfwReveal() {
+    document.querySelectorAll('[data-nsfw-reveal]').forEach((btn) => {
+      if ((btn as HTMLElement).dataset.bound === 'true') return;
+      (btn as HTMLElement).dataset.bound = 'true';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const figure = (btn as HTMLElement).closest('.review-figure');
+        figure?.classList.add('review-figure--nsfw-revealed');
+      });
+    });
+  }
+
   initReviewToc();
-  document.addEventListener('astro:page-load', initReviewToc);
+  initReviewNsfwReveal();
+  document.addEventListener('astro:page-load', () => {
+    initReviewToc();
+    initReviewNsfwReveal();
+  });
 </script>

@@ -250,6 +250,7 @@ export interface MediaLookupEntry {
   url: string;
   altText?: string;
   mediaType: 'image' | 'video';
+  adult?: boolean;
 }
 
 /** Resolve all product-linked media rows to a stable id → public URL map for review rendering. */
@@ -263,6 +264,7 @@ export function buildMediaLookup(rows: MediaRowLike[]): Record<string, MediaLook
       url,
       altText: row.altText ? String(row.altText) : undefined,
       mediaType: row.mediaType === 'video' ? 'video' : 'image',
+      adult: Boolean(row.adult),
     };
   }
   return out;

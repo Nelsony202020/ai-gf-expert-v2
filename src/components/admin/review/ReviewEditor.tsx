@@ -42,6 +42,8 @@ import { DynamicBlockNode, defaultBlockData } from './DynamicBlockNode';
 import { MediaPickerModal, type PickedMedia } from './MediaPickerModal';
 import { SlashCommands, type SlashCommandItem } from './SlashMenu';
 import { createClipboardImagePaste } from './clipboardImagePaste';
+import { LinkDialog } from './LinkDialog';
+import { isImageFile, isVideoFile, uploadReviewMedia } from './uploadReviewMedia';
 import { useToast } from '../Toast';
 import {
   ReviewEditorUIContext,
@@ -73,6 +75,7 @@ const ReviewImage = Image.extend({
       borderRadiusPercent: { default: 0 },
       clipFocusX: { default: 50 },
       clipFocusY: { default: 50 },
+      nsfw: { default: false },
     };
   },
 
@@ -737,15 +740,12 @@ function ToolbarDivider() {
   return <span className="mx-0.5 h-5 w-px bg-slate-200 dark:bg-slate-700" />;
 }
 
-function editLink(editor: Editor) {
-  const previous = editor.getAttributes('link').href as string | undefined;
-  const url = window.prompt('Link URL (leave empty to remove the link):', previous ?? 'https://');
-  if (url === null) return;
-  if (url.trim() === '') {
+function applyLink(editor: Editor, href: string | null) {
+  if (!href) {
     editor.chain().focus().extendMarkRange('link').unsetLink().run();
     return;
   }
-  editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
+  editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
 }
 
 /** Dropdown listing all insertable blocks (same items as the slash menu). */
@@ -830,7 +830,9 @@ export default function ReviewEditor({
 }: ReviewEditorProps) {
   const [imagePickerHandler, setImagePickerHandler] = useState<((m: PickedMedia) => void) | null>(null);
   const [youtubeDialogOpen, setYoutubeDialogOpen] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [pasteUploading, setPasteUploading] = useState(false);
+  const [mediaDropActive, setMediaDropActive] = useState(false);
   const onImageInspectorChangeRef = useRef(onImageInspectorChange);
   onImageInspectorChangeRef.current = onImageInspectorChange;
   const { toast } = useToast();
@@ -841,6 +843,8 @@ export default function ReviewEditor({
   const toastRef = useRef(toast);
   toastRef.current = toast;
   const openUploadedInspectorRef = useRef<(uploaded: { id: string; url: string; altText: string }) => void>(() => {});
+  const openLinkDialogRef = useRef(() => setLinkDialogOpen(true));
+  openLinkDialogRef.current = () => setLinkDialogOpen(true);
 
   const clipboardPasteExtension = useMemo(
     () =>
@@ -860,6 +864,22 @@ export default function ReviewEditor({
         onError: (message) => toastRef.current('error', 'Paste upload failed', { message }),
         onUploaded: (uploaded) => openUploadedInspectorRef.current(uploaded),
       })),
+    [],
+  );
+
+  const linkShortcutExtension = useMemo(
+    () =>
+      Extension.create({
+        name: 'linkShortcut',
+        addKeyboardShortcuts() {
+          return {
+            'Mod-k': () => {
+              openLinkDialogRef.current();
+              return true;
+            },
+          };
+        },
+      }),
     [],
   );
 
@@ -930,6 +950,7 @@ export default function ReviewEditor({
       BlockIdAttribute,
       SlashCommands.configure({ getItems: () => itemsRef.current }),
       clipboardPasteExtension,
+      linkShortcutExtension,
     ],
     content,
     onUpdate: ({ editor: e }) => onChangeRef.current(e.getJSON() as JSONDoc),
@@ -1004,7 +1025,7 @@ export default function ReviewEditor({
             <ToolbarDivider />
             <ToolBtn icon="format_bold" label="Bold" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} />
             <ToolBtn icon="format_italic" label="Italic" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} />
-            <ToolBtn icon="link" label="Link" active={editor.isActive('link')} onClick={() => editLink(editor)} />
+            <ToolBtn icon="link" label="Link (⌘K)" active={editor.isActive('link')} onClick={() => setLinkDialogOpen(true)} />
             <ToolbarDivider />
             <ToolBtn icon="format_list_bulleted" label="Bullet list" active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()} />
             <ToolBtn icon="format_list_numbered" label="Numbered list" active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()} />
@@ -1059,15 +1080,91 @@ export default function ReviewEditor({
           <div className="flex items-center gap-0.5 rounded-lg border border-slate-200 bg-white p-0.5 shadow-lg dark:border-slate-700 dark:bg-slate-900">
             <ToolBtn icon="format_bold" label="Bold" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} />
             <ToolBtn icon="format_italic" label="Italic" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} />
-            <ToolBtn icon="link" label="Link" active={editor.isActive('link')} onClick={() => editLink(editor)} />
+            <ToolBtn icon="link" label="Link (⌘K)" active={editor.isActive('link')} onClick={() => setLinkDialogOpen(true)} />
           </div>
         </BubbleMenu>
 
         {/* Writing canvas */}
-        <div className="relative rounded-xl border border-slate-200 bg-white px-6 py-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:px-10 md:py-8">
+        <div
+          className={`relative rounded-xl border bg-white px-6 py-6 shadow-sm dark:bg-slate-900 md:px-10 md:py-8 ${
+            mediaDropActive
+              ? 'border-pink-400 ring-2 ring-pink-200 dark:border-pink-500 dark:ring-pink-900'
+              : 'border-slate-200 dark:border-slate-800'
+          }`}
+          onDragEnter={(e) => {
+            if (![...e.dataTransfer.types].includes('Files')) return;
+            e.preventDefault();
+            setMediaDropActive(true);
+          }}
+          onDragOver={(e) => {
+            if (![...e.dataTransfer.types].includes('Files')) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+          }}
+          onDragLeave={(e) => {
+            if (e.currentTarget.contains(e.relatedTarget as globalThis.Node | null)) return;
+            setMediaDropActive(false);
+          }}
+          onDrop={(e) => {
+            setMediaDropActive(false);
+            const files = Array.from(e.dataTransfer.files ?? []);
+            const videos = files.filter(isVideoFile);
+            const images = files.filter(isImageFile);
+            if (videos.length === 0 && images.length === 0) return;
+            e.preventDefault();
+            e.stopPropagation();
+            void (async () => {
+              try {
+                setPasteUploading(true);
+                for (const file of [...images, ...videos]) {
+                  toastRef.current('info', `Uploading ${file.name}…`);
+                  const uploaded = await uploadReviewMedia(file, productIdRef.current);
+                  if (uploaded.mediaType === 'video') {
+                    editor
+                      .chain()
+                      .focus()
+                      .insertDynamicBlock('video', {
+                        url: uploaded.url,
+                        mediaId: uploaded.id,
+                        mediaType: 'video',
+                        caption: '',
+                      })
+                      .run();
+                  } else {
+                    editor
+                      .chain()
+                      .focus()
+                      .insertContent({
+                        type: 'image',
+                        attrs: {
+                          src: uploaded.url,
+                          alt: '',
+                          mediaId: uploaded.id,
+                          caption: '',
+                        },
+                      })
+                      .run();
+                    openUploadedInspectorRef.current(uploaded);
+                  }
+                }
+              } catch (err) {
+                toastRef.current('error', 'Upload failed', {
+                  message: err instanceof Error ? err.message : String(err),
+                });
+              } finally {
+                setPasteUploading(false);
+              }
+            })();
+          }}
+        >
           {pasteUploading && (
             <span className="pointer-events-none absolute right-4 top-3 z-10 rounded-md bg-slate-900/75 px-2.5 py-1 text-xs text-white dark:bg-slate-100/90 dark:text-slate-900">
-              Uploading image…
+              Uploading…
+            </span>
+          )}
+          {mediaDropActive && (
+            <span className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-pink-50/80 text-sm font-medium text-pink-700 dark:bg-pink-950/50 dark:text-pink-200">
+              Drop images or videos to upload
             </span>
           )}
           <EditorContent editor={editor} />
@@ -1086,16 +1183,39 @@ export default function ReviewEditor({
 
         {youtubeDialogOpen && (
           <YoutubeDialog
+            productId={productId}
             onClose={() => setYoutubeDialogOpen(false)}
             onSubmit={(url, caption) => {
               setYoutubeDialogOpen(false);
               if (isYouTubeUrl(url)) {
                 editor.chain().focus().insertContent({ type: 'youtube', attrs: { src: url, caption } }).run();
               } else {
-                // Non-YouTube URLs become the generic video block (rendered
-                // as a player from structured data on the live page).
                 editor.chain().focus().insertDynamicBlock('video', { url, caption }).run();
               }
+            }}
+            onUploadedVideo={(uploaded, caption) => {
+              setYoutubeDialogOpen(false);
+              editor
+                .chain()
+                .focus()
+                .insertDynamicBlock('video', {
+                  url: uploaded.url,
+                  mediaId: uploaded.id,
+                  mediaType: 'video',
+                  caption,
+                })
+                .run();
+            }}
+          />
+        )}
+
+        {linkDialogOpen && (
+          <LinkDialog
+            initialHref={String(editor.getAttributes('link').href ?? '')}
+            onClose={() => setLinkDialogOpen(false)}
+            onApply={(href) => {
+              setLinkDialogOpen(false);
+              applyLink(editor, href);
             }}
           />
         )}
@@ -1105,18 +1225,44 @@ export default function ReviewEditor({
 }
 
 function YoutubeDialog({
+  productId,
   onClose,
   onSubmit,
+  onUploadedVideo,
 }: {
+  productId: string;
   onClose: () => void;
   onSubmit: (url: string, caption: string) => void;
+  onUploadedVideo: (uploaded: { id: string; url: string }, caption: string) => void;
 }) {
   const [url, setUrl] = useState('');
   const [caption, setCaption] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dropActive, setDropActive] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function uploadFile(file: File) {
+    if (!isVideoFile(file)) {
+      setError('Choose an MP4 or WebM video.');
+      return;
+    }
+    setError(null);
+    setUploading(true);
+    try {
+      const uploaded = await uploadReviewMedia(file, productId);
+      onUploadedVideo(uploaded, caption.trim());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <Modal title="Insert video" onClose={onClose}>
       <div className="space-y-3">
-        <Field label="Video URL" required>
+        <Field label="Video URL">
           <TextInput
             value={url}
             onChange={(e) => setUrl(e.target.value)}
@@ -1127,14 +1273,63 @@ function YoutubeDialog({
         <Field label="Caption (optional)">
           <TextInput value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Caption" />
         </Field>
+
+        <div
+          className={`rounded-md border border-dashed px-3 py-4 text-center text-xs transition-colors ${
+            dropActive
+              ? 'border-pink-400 bg-pink-50 text-pink-700 dark:border-pink-600 dark:bg-pink-950/40 dark:text-pink-200'
+              : 'border-slate-300 text-slate-500 dark:border-slate-600 dark:text-slate-400'
+          }`}
+          onDragEnter={(e) => {
+            e.preventDefault();
+            setDropActive(true);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+          }}
+          onDragLeave={(e) => {
+            if (e.currentTarget.contains(e.relatedTarget as globalThis.Node | null)) return;
+            setDropActive(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDropActive(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) void uploadFile(file);
+          }}
+        >
+          <p className="font-medium text-slate-600 dark:text-slate-300">Or drop a video here</p>
+          <p className="mt-0.5 text-[11px] text-slate-400">MP4 / WebM · small files work best</p>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void uploadFile(file);
+            }}
+          />
+          <button
+            type="button"
+            className="mt-2 text-[11px] font-medium text-pink-600 hover:underline dark:text-pink-400"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? 'Uploading…' : 'Choose file'}
+          </button>
+          {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
+        </div>
+
         <p className="text-xs text-slate-400">
-          YouTube links embed a player. Other URLs are stored as a video block rendered on the live page.
+          YouTube links embed a player. Uploaded files and other URLs use the native video block on the live page.
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={() => url.trim() && onSubmit(url.trim(), caption.trim())} disabled={!url.trim()}>
+          <Button onClick={() => url.trim() && onSubmit(url.trim(), caption.trim())} disabled={!url.trim() || uploading}>
             Insert video
           </Button>
         </div>

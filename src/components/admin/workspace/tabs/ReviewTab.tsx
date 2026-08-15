@@ -24,11 +24,25 @@ import { ImageInspectorPanel } from '../../review/ImageInspectorPanel';
 import type { ImageInspectorTarget, ReviewEditorUI } from '../../review/reviewEditorContext';
 import { useWorkspace } from '../context';
 import { makeBlock, normalizeReviewHeadingLevels, reviewTemplateHeadings, type ReviewBlock } from '../reviewBlocks';
+import {
+  clearReviewDraft,
+  draftIsNewerThanSaved,
+  readReviewDraft,
+  writeReviewDraft,
+} from '../../../../lib/review/reviewDraftStorage';
 
 const ReviewEditor = lazyImport(() => import('../../review/ReviewEditor'), 'ReviewEditor');
 
 const MAX_REVISIONS = 10;
 const READING_WPM = 200;
+/** Wait this long after the last keystroke before writing to InstantDB. */
+const SERVER_AUTOSAVE_MS = 1000;
+/** Local draft writes sooner so a hard crash still has something. */
+const LOCAL_DRAFT_MS = 400;
+/** Don't spam revision history on every autosave — snapshot at most this often. */
+const REVISION_SNAPSHOT_MS = 5 * 60 * 1000;
+
+type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
 function templateDoc(productName: string): JSONDoc {
   return {
@@ -56,14 +70,31 @@ export function ReviewTab() {
   const [showRevisions, setShowRevisions] = useState(false);
   const [templateDismissed, setTemplateDismissed] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imageInspector, setImageInspector] = useState<ImageInspectorTarget | null>(null);
+  const [draftOffer, setDraftOffer] = useState<{ savedAt: number; doc: JSONDoc } | null>(null);
   const editorUiRef = useRef<ReviewEditorUI | null>(null);
   useToastError(error, () => setError(null));
   const savedDocJson = useRef('');
+  const reviewIdRef = useRef<string | null>(review?.id ?? null);
+  const lastRevisionPushAtRef = useRef<number>(0);
+  const saveSeqRef = useRef(0);
+  const inFlightRef = useRef(false);
+  const docRef = useRef(doc);
+  docRef.current = doc;
+  const autosaveTimerRef = useRef<number | null>(null);
+  const localDraftTimerRef = useRef<number | null>(null);
+  const persistRef = useRef<(doc: JSONDoc, opts?: { forceRevision?: boolean }) => Promise<boolean>>(
+    async () => false,
+  );
 
   const canEdit = can('content.edit');
+
+  useEffect(() => {
+    if (review?.id) reviewIdRef.current = review.id;
+  }, [review?.id]);
 
   const conversionCtx = useMemo<ConversionContext>(() => {
     const mediaById: NonNullable<ConversionContext['mediaById']> = {};
@@ -104,70 +135,189 @@ export function ReviewTab() {
     savedDocJson.current = JSON.stringify(nextDoc);
     setLoadedFromId(review?.id ?? null);
     setTemplateDismissed(false);
+
+    const draft = readReviewDraft(ws.productId);
+    if (
+      draftIsNewerThanSaved(
+        draft,
+        JSON.stringify(nextDoc),
+        typeof review?.lastEditedAt === 'number' ? review.lastEditedAt : null,
+      )
+    ) {
+      setDraftOffer({ savedAt: draft!.savedAt, doc: draft!.doc });
+    } else {
+      setDraftOffer(null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [review?.id, ws.relatedLoading]);
+  }, [review?.id, ws.relatedLoading, ws.productId]);
 
   const isDirty = useMemo(() => JSON.stringify(doc) !== savedDocJson.current, [doc]);
   const analysis = useMemo(() => analyzeDoc(doc), [doc]);
 
-  // Unsaved-change protection for the document.
+  const persistToServer = useCallback(
+    async (docToSave: JSONDoc, opts?: { forceRevision?: boolean }): Promise<boolean> => {
+      if (!canEdit || !ws.productId) return false;
+      const json = JSON.stringify(docToSave);
+      if (json === savedDocJson.current && reviewIdRef.current) return true;
+
+      const seq = ++saveSeqRef.current;
+      inFlightRef.current = true;
+      setBusy(true);
+      setSaveStatus('saving');
+      setError(null);
+
+      try {
+        const blocks = normalizeReviewHeadingLevels(docToBlocks(docToSave));
+        const now = Date.now();
+        const fields: Record<string, unknown> = {
+          blocks,
+          lastEditedBy: me.email,
+          lastEditedAt: now,
+        };
+
+        const existingId = reviewIdRef.current;
+        if (existingId) {
+          const shouldPushRevision =
+            Boolean(opts?.forceRevision) ||
+            lastRevisionPushAtRef.current === 0 ||
+            now - lastRevisionPushAtRef.current >= REVISION_SNAPSHOT_MS;
+          const snapshotBlocks =
+            Array.isArray(review?.blocks) && (review.blocks as ReviewBlock[]).length > 0
+              ? (review.blocks as ReviewBlock[])
+              : null;
+          if (shouldPushRevision && snapshotBlocks) {
+            const revisions = Array.isArray(review?.revisions) ? [...(review.revisions as object[])] : [];
+            revisions.unshift({
+              savedAt: review?.lastEditedAt ?? review?.updatedAt ?? now,
+              savedBy: review?.lastEditedBy,
+              blocks: snapshotBlocks,
+            });
+            fields.revisions = revisions.slice(0, MAX_REVISIONS);
+            lastRevisionPushAtRef.current = now;
+          }
+          await dataApi.update('reviews', existingId, fields);
+        } else {
+          const created = await dataApi.create('reviews', fields, {
+            product: ws.productId,
+            author: ws.links.author ?? null,
+            factChecker: ws.links.factChecker ?? null,
+          });
+          reviewIdRef.current = created.id;
+          setLoadedFromId(created.id);
+          lastRevisionPushAtRef.current = now;
+          // Pull the new review into workspace related once so Revisions UI works.
+          void ws.refreshRelated();
+        }
+
+        // Ignore stale responses if a newer edit started another save.
+        if (seq !== saveSeqRef.current) return false;
+
+        savedDocJson.current = json;
+        setSavedAt(now);
+        setSaveStatus('saved');
+        clearReviewDraft(ws.productId);
+        setDraftOffer(null);
+
+        // If the user kept typing during this save, persist the newer doc next.
+        if (JSON.stringify(docRef.current) !== savedDocJson.current) {
+          window.setTimeout(() => {
+            void persistRef.current(docRef.current);
+          }, SERVER_AUTOSAVE_MS);
+        }
+        return true;
+      } catch (e) {
+        if (seq === saveSeqRef.current) {
+          setError(e instanceof Error ? e.message : String(e));
+          setSaveStatus('error');
+        }
+        return false;
+      } finally {
+        if (seq === saveSeqRef.current) {
+          inFlightRef.current = false;
+          setBusy(false);
+        }
+      }
+    },
+    [canEdit, me.email, review, ws],
+  );
+  persistRef.current = persistToServer;
+
+  const scheduleServerAutosave = useCallback(() => {
+    if (!canEdit) return;
+    setSaveStatus((s) => (s === 'saving' ? s : 'pending'));
+    if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = window.setTimeout(() => {
+      autosaveTimerRef.current = null;
+      void persistToServer(docRef.current);
+    }, SERVER_AUTOSAVE_MS);
+  }, [canEdit, persistToServer]);
+
+  const flushSave = useCallback(async () => {
+    if (autosaveTimerRef.current) {
+      window.clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    writeReviewDraft(ws.productId, docRef.current);
+    if (JSON.stringify(docRef.current) === savedDocJson.current) return;
+    await persistToServer(docRef.current);
+  }, [persistToServer, ws.productId]);
+
+  // Local draft + debounced server autosave while typing / editing.
   useEffect(() => {
-    if (!isDirty) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    if (!canEdit || !ws.productId || !isDirty) return;
+
+    if (localDraftTimerRef.current) window.clearTimeout(localDraftTimerRef.current);
+    localDraftTimerRef.current = window.setTimeout(() => {
+      writeReviewDraft(ws.productId, doc);
+    }, LOCAL_DRAFT_MS);
+
+    scheduleServerAutosave();
+
+    return () => {
+      if (localDraftTimerRef.current) window.clearTimeout(localDraftTimerRef.current);
+    };
+  }, [canEdit, ws.productId, doc, isDirty, scheduleServerAutosave]);
+
+  // Flush when the tab hides / unloads so closing the window still persists.
+  useEffect(() => {
+    if (!canEdit) return;
+    const onHide = () => {
+      if (JSON.stringify(docRef.current) === savedDocJson.current) return;
+      writeReviewDraft(ws.productId, docRef.current);
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+      void persistToServer(docRef.current);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') onHide();
+    };
+    const onBeforeUnload = () => {
+      if (JSON.stringify(docRef.current) === savedDocJson.current) return;
+      writeReviewDraft(ws.productId, docRef.current);
+      void persistToServer(docRef.current);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', onHide);
     window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [isDirty]);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', onHide);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, [canEdit, persistToServer, ws.productId]);
 
   const handleChange = useCallback((next: JSONDoc) => setDoc(next), []);
 
-  async function save() {
-    setBusy(true);
-    setError(null);
-    try {
-      const blocks = normalizeReviewHeadingLevels(docToBlocks(doc));
-      const now = Date.now();
-      const fields: Record<string, unknown> = {
-        blocks,
-        lastEditedBy: me.email,
-        lastEditedAt: now,
-      };
-      if (review) {
-        // Keep a bounded revision history of the previously saved document.
-        const prevBlocks = Array.isArray(review.blocks) ? review.blocks : null;
-        if (prevBlocks && prevBlocks.length > 0) {
-          const revisions = Array.isArray(review.revisions) ? [...review.revisions] : [];
-          revisions.unshift({
-            savedAt: review.lastEditedAt ?? review.updatedAt ?? now,
-            savedBy: review.lastEditedBy,
-            blocks: prevBlocks,
-          });
-          fields.revisions = revisions.slice(0, MAX_REVISIONS);
-        }
-        await dataApi.update('reviews', review.id, fields);
-      } else {
-        const created = await dataApi.create('reviews', fields, {
-          product: ws.productId,
-          author: ws.links.author ?? null,
-          factChecker: ws.links.factChecker ?? null,
-        });
-        // Prevent the load effect from resetting the editor once the newly
-        // created review arrives from refreshRelated.
-        setLoadedFromId(created.id);
-      }
-      savedDocJson.current = JSON.stringify(doc);
-      setSavedAt(Date.now());
-      await ws.refreshRelated();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
+  async function saveNow() {
+    await flushSave();
   }
 
   function restoreRevision(rev: { savedAt: number; blocks: ReviewBlock[] }) {
     if (
       !confirm(
-        `Restore the revision from ${fmtDate(rev.savedAt)}? Unsaved changes will be replaced (nothing is stored until you save).`,
+        `Restore the revision from ${fmtDate(rev.savedAt)}? Current editor content will be replaced (autosave will write the restored version).`,
       )
     )
       return;
@@ -200,18 +350,24 @@ export function ReviewTab() {
 
   const saveControls = canEdit ? (
     <>
-      {isDirty ? (
-        <span className="flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Unsaved
+      {saveStatus === 'saving' || saveStatus === 'pending' ? (
+        <span className="flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400" /> Saving…
         </span>
-      ) : savedAt ? (
+      ) : saveStatus === 'error' ? (
+        <span className="flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Couldn&apos;t save
+        </span>
+      ) : saveStatus === 'saved' || (!isDirty && lastSaved) ? (
         <span className="flex items-center gap-1 text-xs text-green-700 dark:text-green-400">
-          <Icon name="check" className="!text-[13px]" /> Saved
+          <Icon name="cloud_done" className="!text-[14px]" /> Saved
         </span>
       ) : null}
-      <Button className="text-xs" onClick={() => void save()} disabled={busy || !isDirty}>
-        {busy ? 'Saving…' : 'Save review'}
-      </Button>
+      {saveStatus === 'error' ? (
+        <Button className="text-xs" onClick={() => void saveNow()} disabled={busy}>
+          Retry
+        </Button>
+      ) : null}
     </>
   ) : undefined;
 
@@ -225,6 +381,37 @@ export function ReviewTab() {
             </Button>
           )}
         </div>
+
+        {draftOffer && canEdit && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+            <span>
+              Local draft found from {fmtDate(draftOffer.savedAt)} — recover it before it&apos;s lost?
+            </span>
+            <span className="flex gap-2">
+              <Button
+                className="text-xs"
+                onClick={() => {
+                  setDoc(draftOffer.doc);
+                  setContentKey((k) => k + 1);
+                  setDraftOffer(null);
+                  setTemplateDismissed(true);
+                }}
+              >
+                Restore draft
+              </Button>
+              <Button
+                variant="secondary"
+                className="text-xs"
+                onClick={() => {
+                  clearReviewDraft(ws.productId);
+                  setDraftOffer(null);
+                }}
+              >
+                Discard
+              </Button>
+            </span>
+          </div>
+        )}
 
         {showRevisions && revisions.length > 0 && (
           <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">

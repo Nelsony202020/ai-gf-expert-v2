@@ -178,8 +178,15 @@ function renderImageFigure(
   const caption = String(item.caption ?? '').trim();
   const radius = clampRadiusPercent(item.borderRadiusPercent);
   const cropped = isCircleCrop(radius);
+  const nsfw = Boolean(item.nsfw) || Boolean(mediaId && opts?.mediaById?.[mediaId]?.adult);
   const cellClass = opts?.rowCell ? 'review-figure review-image-row__cell' : 'review-figure';
-  const figureClass = cropped ? `${cellClass} review-figure--crop` : cellClass;
+  const figureClass = [
+    cellClass,
+    cropped ? 'review-figure--crop' : '',
+    nsfw ? 'review-figure--nsfw' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   const figureStyle = publicFigureStyle({
     widthPercent: item.widthPercent,
     borderRadiusPercent: item.borderRadiusPercent,
@@ -198,7 +205,10 @@ function renderImageFigure(
       ? `<video class="review-video-native review-video-native--preview" src="${escapeHtml(src)}" muted playsinline preload="metadata" style="${imageStyle}pointer-events:none"></video>`
       : `<img src="${escapeHtml(src)}" alt="${alt}" loading="eager" decoding="async" style="${imageStyle}" />`;
   const mediaHtml = renderLightboxTrigger(payload, innerMedia);
-  let html = `<figure class="${figureClass}" style="${figureStyle}">${mediaHtml}`;
+  const nsfwOverlay = nsfw
+    ? `<button type="button" class="review-figure__nsfw" data-nsfw-reveal aria-label="Show 18+ image"><span>18+</span><span class="review-figure__nsfw-hint">Tap to show</span></button>`
+    : '';
+  let html = `<figure class="${figureClass}" style="${figureStyle}"${nsfw ? ' data-nsfw="true"' : ''}>${mediaHtml}${nsfwOverlay}`;
   if (caption) html += `<figcaption>${escapeHtml(caption)}</figcaption>`;
   html += '</figure>';
   return { html, lightboxItem: payload };

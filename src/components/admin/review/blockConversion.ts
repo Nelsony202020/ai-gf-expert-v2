@@ -305,6 +305,7 @@ export function blocksToDoc(blocks: ReviewBlock[], ctx?: ConversionContext): JSO
             borderRadiusPercent: Number(d.borderRadiusPercent ?? 0),
             clipFocusX: Number(d.clipFocusX ?? 50),
             clipFocusY: Number(d.clipFocusY ?? 50),
+            nsfw: Boolean(d.nsfw),
             blockId,
           },
         });
@@ -497,6 +498,7 @@ export function docToBlocks(doc: JSONDoc | null | undefined): ReviewBlock[] {
         const focusY = Number(node.attrs?.clipFocusY ?? 50);
         if (focusX !== 50) data.clipFocusX = focusX;
         if (focusY !== 50) data.clipFocusY = focusY;
+        if (node.attrs?.nsfw) data.nsfw = true;
         blocks.push({ id: takeId(node, seen), type: 'image', data });
         break;
       }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { dataApi } from '../api';
 import { Field, Icon, TextInput } from '../ui';
 import type { ImageInspectorTarget } from './reviewEditorContext';
 
@@ -19,10 +20,32 @@ export function ImageInspectorPanel({
   const [caption, setCaption] = useState(initial.caption);
   const [widthPercent, setWidthPercent] = useState(initial.widthPercent);
   const [borderRadiusPercent, setBorderRadiusPercent] = useState(initial.borderRadiusPercent);
+  const [nsfw, setNsfw] = useState(initial.nsfw);
+
+  // Re-sync local fields when a different image is selected.
+  useEffect(() => {
+    const next = readTargetAttrs(target);
+    setAlt(next.alt);
+    setCaption(next.caption);
+    setWidthPercent(next.widthPercent);
+    setBorderRadiusPercent(next.borderRadiusPercent);
+    setNsfw(next.nsfw);
+  }, [target]);
 
   useEffect(() => {
-    applyTargetPatch(target, { alt, caption, widthPercent, borderRadiusPercent });
-  }, [target, alt, caption, widthPercent, borderRadiusPercent]);
+    applyTargetPatch(target, { alt, caption, widthPercent, borderRadiusPercent, nsfw });
+  }, [target, alt, caption, widthPercent, borderRadiusPercent, nsfw]);
+
+  async function onNsfwChange(checked: boolean) {
+    setNsfw(checked);
+    const mediaId = target.attrs.mediaId ? String(target.attrs.mediaId) : '';
+    if (!mediaId) return;
+    try {
+      await dataApi.update('media', mediaId, { adult: checked, ageGated: checked });
+    } catch {
+      /* block attr still updates; media sync is best-effort */
+    }
+  }
 
   return (
     <aside className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -91,6 +114,16 @@ export function ImageInspectorPanel({
             className="!py-1.5 text-xs"
           />
         </Field>
+        <label className="flex cursor-pointer items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+          <input
+            type="checkbox"
+            checked={nsfw}
+            onChange={(e) => void onNsfwChange(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-slate-300 text-pink-600 focus:ring-pink-500 dark:border-slate-600"
+          />
+          <span className="font-medium">NSFW</span>
+          <span className="text-slate-400">18+ blur on public page</span>
+        </label>
         <Field label="Width">
           <PercentPicker value={widthPercent} presets={WIDTH_PRESETS} suffix="%" onChange={setWidthPercent} />
         </Field>
@@ -119,6 +152,7 @@ function readTargetAttrs(target: ImageInspectorTarget) {
     caption: String(attrs.caption ?? ''),
     widthPercent: Math.min(100, Math.max(30, Number(attrs.widthPercent ?? 100))),
     borderRadiusPercent: Math.min(100, Math.max(0, Number(attrs.borderRadiusPercent ?? 0))),
+    nsfw: Boolean(attrs.nsfw),
   };
 }
 
