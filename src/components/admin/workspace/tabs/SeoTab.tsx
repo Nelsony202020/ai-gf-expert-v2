@@ -116,7 +116,7 @@ export function SeoTab() {
                       toast.success('Rebuild started — live pages update in a minute or two.');
                     } else {
                       toast.error(
-                        'Rebuild skipped: set VERCEL_DEPLOY_HOOK_URL in Vercel Production env, then redeploy.',
+                        'Deploy hook missing. In Vercel → Project → Settings → Git → Deploy Hooks, create a Production hook, then add VERCEL_DEPLOY_HOOK_URL (that URL) under Environment Variables → Production, and redeploy.',
                       );
                     }
                   } catch (e) {
