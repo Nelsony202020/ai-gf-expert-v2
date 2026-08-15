@@ -1206,6 +1206,12 @@
   grid-template-rows: 1fr;
   margin-bottom: 1.25rem;
   opacity: 1;
+  position: relative;
+  z-index: 50;
+}
+
+.dir-customize-wrap.is-open .dir-customize-wrap__inner {
+  overflow: visible;
 }
 
 .dir-customize-wrap__inner {

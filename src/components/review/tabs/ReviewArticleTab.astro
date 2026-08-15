@@ -563,9 +563,20 @@ const reviewVideoId = product.videoReview?.embedUrl
     overflow: hidden;
   }
 
+  .review-blocks .review-figure--nsfw:not(.review-figure--nsfw-revealed) {
+    overflow: hidden;
+  }
+
+  /* Blur on the media element itself so DevTools inspect still shows a blurred image. */
+  .review-blocks .review-figure--nsfw:not(.review-figure--nsfw-revealed) img,
+  .review-blocks .review-figure--nsfw:not(.review-figure--nsfw-revealed) video {
+    filter: blur(28px) brightness(0.75);
+    transform: scale(1.08);
+  }
+
   .review-blocks .review-figure--nsfw:not(.review-figure--nsfw-revealed) .review-figure__zoom {
-    filter: blur(18px);
-    transform: scale(1.04);
+    filter: none;
+    transform: none;
   }
 
   .review-blocks .review-figure__nsfw {
@@ -590,11 +601,6 @@ const reviewVideoId = product.videoReview?.embedUrl
     font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 0.04em;
-  }
-
-  .review-blocks .review-figure__nsfw-hint {
-    font-size: 0.7rem;
-    opacity: 0.85;
   }
 
   .review-blocks .review-figure--nsfw-revealed .review-figure__nsfw {
@@ -836,7 +842,14 @@ const reviewVideoId = product.videoReview?.embedUrl
         e.preventDefault();
         e.stopPropagation();
         const figure = (btn as HTMLElement).closest('.review-figure');
-        figure?.classList.add('review-figure--nsfw-revealed');
+        if (!figure) return;
+        figure.classList.add('review-figure--nsfw-revealed');
+        figure.querySelectorAll('[data-nsfw-blurred]').forEach((el) => {
+          const node = el as HTMLElement;
+          node.style.filter = '';
+          node.style.transform = '';
+          node.removeAttribute('data-nsfw-blurred');
+        });
       });
     });
   }

@@ -41,8 +41,8 @@ async function transactChunks(db: ReturnType<typeof getDb>, chunks: unknown[]) {
 }
 
 /**
- * Multipart upload. The original file is stored untouched in InstantDB
- * storage; crops/focal points live on the media record as metadata.
+ * Multipart upload to Bunny CDN. Media metadata is stored in InstantDB;
+ * the binary file always lives on Bunny (no InstantDB storage fallback).
  *
  * Form fields: file (File, required), altText, caption, credit,
  * adult ("1"/"0", required), role, productId, evidenceResultId
@@ -77,38 +77,22 @@ export const POST: APIRoute = handler(async ({ request }) => {
   const path = `media/${Date.now()}-${safeName}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const useBunny = isBunnyConfigured();
-  let fileUrl: string | undefined;
-  let instantFileId: string | undefined;
-
-  async function uploadToInstantDb() {
-    const uploaded = await db.storage.uploadFile(path, buffer, { contentType });
-    instantFileId = uploaded.data.id;
-
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const { $files } = await db.query({
-        $files: { $: { where: { id: uploaded.data.id } } },
-      });
-      fileUrl = $files[0]?.url as string | undefined;
-      if (fileUrl) break;
-      await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
-    }
+  // Bunny is required. InstantDB storage is never used for new uploads — a silent
+  // fallback previously reintroduced expiring files.instantdb.com URLs on the live site.
+  if (!isBunnyConfigured()) {
+    throw new HttpError(
+      503,
+      'Bunny CDN is not configured on this server. Set BUNNY_STORAGE_ZONE, BUNNY_STORAGE_API_KEY, and BUNNY_CDN_HOSTNAME (plus PUBLIC_CDN_URL) in Vercel env, then redeploy.',
+    );
   }
 
-  if (useBunny) {
-    try {
-      fileUrl = await uploadToBunny(path, buffer, contentType);
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      console.warn('[media/upload] Bunny upload failed — falling back to InstantDB storage:', detail);
-      await uploadToInstantDb();
-    }
-  } else {
-    await uploadToInstantDb();
-  }
-
-  if (!fileUrl) {
-    throw new HttpError(502, 'Upload succeeded but no file URL was returned. Try again.');
+  let fileUrl: string;
+  try {
+    fileUrl = await uploadToBunny(path, buffer, contentType);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error('[media/upload] Bunny upload failed:', detail);
+    throw new HttpError(502, `Bunny CDN upload failed: ${detail}`);
   }
 
   const featuresTagged = form.get('features') === '1' || form.get('features') === 'true';
@@ -174,7 +158,6 @@ export const POST: APIRoute = handler(async ({ request }) => {
 
   function mediaChunk(fields: Record<string, unknown>) {
     let chunk = db.tx.media[mediaId].update(fields);
-    if (instantFileId) chunk = chunk.link({ file: instantFileId });
     if (productId) chunk = chunk.link({ product: productId });
     if (evidenceResultId) chunk = chunk.link({ evidenceResult: evidenceResultId });
     return chunk;

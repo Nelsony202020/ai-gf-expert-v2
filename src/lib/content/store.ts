@@ -33,6 +33,7 @@ import {
   buildMediaLookup,
 } from '../media/catalog';
 import { resolveMediaUrl, isUsablePublicMediaUrl } from '../media/url';
+import { awardRibbonKey, resolveAwardLabel } from '../awards';
 
 /** Fixed public category order — matches methodology template. */
 const CATEGORY_DISPLAY_ORDER = [
@@ -496,27 +497,9 @@ function deriveFeatureSpecs(p: any): FeatureSpec[] {
   ];
 }
 
-const AWARD_LABELS: Record<string, string> = {
-  best_overall: 'Best Overall',
-  best_chat: 'Best for Chat',
-  best_images: 'Best for Images',
-  best_video: 'Best for Video',
-  best_roleplay: 'Best for Roleplay',
-  best_voice: 'Best for Voice',
-  best_memory: 'Best for Memory',
-  best_value: 'Best Value',
-  best_free: 'Best Free Option',
-};
-
 /** Resolve the structured award to a display label (null when none/inactive/expired). */
 function awardLabel(p: any): string | null {
-  const a = p.award;
-  if (!a || a.kind === 'none' || a.active === false) return null;
-  const now = Date.now();
-  if (typeof a.startAt === 'number' && now < a.startAt) return null;
-  if (typeof a.endAt === 'number' && now > a.endAt) return null;
-  if (a.kind === 'custom') return a.customLabel?.trim() || null;
-  return AWARD_LABELS[a.kind] ?? null;
+  return resolveAwardLabel(p);
 }
 
 function deriveOverview(p: any, monthlyPriceLabel: string | null): Product['overview'] {
@@ -910,6 +893,9 @@ export async function overlayExplorerAppsWithDb<
     paidAccountTested: boolean;
     lastTestedLabel: string;
     pricingVerifiedLabel: string;
+    ribbon?: string;
+    ribbonKey?: string;
+    roundupRibbonLabel?: string;
   },
 >(apps: T[]): Promise<T[]> {
   if (!isDbConfigured()) return apps;
@@ -966,6 +952,10 @@ export async function overlayExplorerAppsWithDb<
         ? buildExplorerPaymentsFromProfile(dbProduct.paymentProfile)
         : app.payments;
 
+      // Directory ribbon comes from Setup → Visibility label (unique per platform).
+      const label = resolveAwardLabel(dbProduct);
+      const ribbonKey = awardRibbonKey(dbProduct.award) ?? app.ribbonKey;
+
       return {
         ...app,
         logo,
@@ -978,6 +968,9 @@ export async function overlayExplorerAppsWithDb<
         paidAccountTested: Boolean(dbProduct.lastTestedAt),
         lastTestedLabel: fmtDate(dbProduct.lastTestedAt) || app.lastTestedLabel,
         pricingVerifiedLabel: lastVerifiedMs ? fmtDate(lastVerifiedMs) : app.pricingVerifiedLabel,
+        ribbon: label ?? '',
+        roundupRibbonLabel: label ?? '',
+        ribbonKey: label ? ribbonKey : app.ribbonKey,
       };
     });
   } catch (error) {

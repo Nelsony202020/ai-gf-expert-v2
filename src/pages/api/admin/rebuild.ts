@@ -21,6 +21,6 @@ export const POST: APIRoute = handler(async ({ request }) => {
   } catch {
     /* empty body ok */
   }
-  await triggerRebuild(reason);
-  return json({ ok: true });
+  const rebuildTriggered = await triggerRebuild(reason);
+  return json({ ok: true, rebuildTriggered });
 });

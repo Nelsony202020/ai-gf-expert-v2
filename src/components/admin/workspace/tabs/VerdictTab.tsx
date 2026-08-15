@@ -23,7 +23,8 @@ import { VerdictProgressHeader } from '../verdict/VerdictProgressHeader';
 import { VerdictStepFooter } from '../verdict/VerdictStepFooter';
 import { VerdictStepNav } from '../verdict/VerdictStepNav';
 import { VerdictTestingSummary } from '../verdict/VerdictTestingSummary';
-import type { Award, CategoryVerdict, VerdictStepId } from '../verdict/types';
+import { AWARD_KIND_OPTIONS, type ProductAward } from '../../../../lib/awards';
+import type { CategoryVerdict, VerdictStepId } from '../verdict/types';
 import {
   computeVerdictProgress,
   VERDICT_STEPS,
@@ -32,19 +33,12 @@ import { sanitizeCategoryVerdictDraft, patchCategoryProsOrCons } from '../verdic
 import { useVerdictTestingSummary, countCategoryRemainingRequired } from '../verdict/useVerdictTestingSummary';
 import { workspaceTabPath } from '../completion';
 
-const AWARD_OPTIONS: { value: string; label: string }[] = [
-  { value: 'none', label: 'No award' },
-  { value: 'best_overall', label: 'Best Overall' },
-  { value: 'best_chat', label: 'Best for Chat' },
-  { value: 'best_images', label: 'Best for Images' },
-  { value: 'best_video', label: 'Best for Video' },
-  { value: 'best_roleplay', label: 'Best for Roleplay' },
-  { value: 'best_voice', label: 'Best for Voice' },
-  { value: 'best_memory', label: 'Best for Memory' },
-  { value: 'best_value', label: 'Best Value' },
-  { value: 'best_free', label: 'Best Free Option' },
-  { value: 'custom', label: 'Custom award' },
-];
+type Award = ProductAward;
+
+const AWARD_OPTIONS = AWARD_KIND_OPTIONS.map((o) => ({
+  value: o.value,
+  label: o.value === 'none' ? 'No award' : o.value === 'custom' ? 'Custom award' : o.label,
+}));
 
 function splitLegacy(text: unknown): string[] {
   if (typeof text !== 'string' || !text.trim()) return [];

@@ -110,9 +110,11 @@ export const productSchema = z.object({
       kind: z.enum([
         'none',
         'best_overall',
+        'best_ai_girlfriend',
         'best_chat',
         'best_images',
         'best_video',
+        'best_media',
         'best_roleplay',
         'best_voice',
         'best_memory',

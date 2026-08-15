@@ -5,11 +5,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { dataApi, type EntityRow } from '../../api';
+import { api, dataApi, type EntityRow } from '../../api';
 import { AiFieldAssist } from '../../ai-verdict/AiFieldAssist';
 import { useCan } from '../../context';
 import { CharCounter, FieldHint, PreviewViewToggle, ToggleWithHint } from '../../FieldHint';
-import { Badge, Field, Icon, TextArea, TextInput } from '../../ui';
+import { Badge, Button, Field, Icon, TextArea, TextInput } from '../../ui';
+import { useToast } from '../../Toast';
 import { resolveMediaUrl } from '../../../../lib/media/url';
 import { resolveProductSeoMeta } from '../../../../lib/seo/productMeta';
 import { SEO_TEMPLATE_TAGS } from '../../../../lib/seo/templateTags';
@@ -22,10 +23,12 @@ const SITE_HOST = 'aigirlfriend.expert';
 export function SeoTab() {
   const ws = useWorkspace();
   const can = useCan();
+  const toast = useToast();
   const canEdit = can('content.edit');
   const { fields, set, links, related, completion, productId } = ws;
   const testing = useVerdictTestingSummary(related.testRuns);
   const testRunId = testing.currentRun?.id ?? testing.publishedRun?.id;
+  const [clearingCache, setClearingCache] = useState(false);
 
   const templateContext = useMemo(
     () => ({ productName: String(fields.name ?? '').trim() }),
@@ -93,6 +96,43 @@ export function SeoTab() {
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
       <div className="space-y-4">
+        {canEdit && (
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Clear cache</p>
+              <p className="text-xs text-slate-500">Rebuild the live site so InstantDB changes show on public pages.</p>
+            </div>
+            <Button
+              disabled={clearingCache}
+              onClick={() => {
+                void (async () => {
+                  setClearingCache(true);
+                  try {
+                    const res = await api.post<{ ok?: boolean; rebuildTriggered?: boolean }>(
+                      '/api/admin/rebuild',
+                      { reason: `clear cache from SEO for ${String(fields.slug ?? productId)}` },
+                    );
+                    if (res?.rebuildTriggered) {
+                      toast.success('Rebuild started — live pages update in a minute or two.');
+                    } else {
+                      toast.error(
+                        'Rebuild skipped: set VERCEL_DEPLOY_HOOK_URL in Vercel Production env, then redeploy.',
+                      );
+                    }
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : 'Rebuild failed');
+                  } finally {
+                    setClearingCache(false);
+                  }
+                })();
+              }}
+            >
+              <Icon name="cached" className="!text-[16px]" />
+              {clearingCache ? 'Clearing…' : 'Clear cache'}
+            </Button>
+          </section>
+        )}
+
         {/* Missing-field warnings from the shared completion service */}
         {(missingRequired.length > 0 || missingRecommended.length > 0) && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900 dark:bg-amber-950/40">

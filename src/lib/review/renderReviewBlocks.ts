@@ -202,11 +202,11 @@ function renderImageFigure(
   const payload = reviewLightboxItem(item, src, mediaType, opts?.mediaById);
   const innerMedia =
     mediaType === 'video'
-      ? `<video class="review-video-native review-video-native--preview" src="${escapeHtml(src)}" muted playsinline preload="metadata" style="${imageStyle}pointer-events:none"></video>`
-      : `<img src="${escapeHtml(src)}" alt="${alt}" loading="eager" decoding="async" style="${imageStyle}" />`;
+      ? `<video class="review-video-native review-video-native--preview" src="${escapeHtml(src)}" muted playsinline preload="metadata" style="${imageStyle}pointer-events:none${nsfw ? ';filter:blur(28px) brightness(0.75);transform:scale(1.08)' : ''}"${nsfw ? ' data-nsfw-blurred="true"' : ''}></video>`
+      : `<img src="${escapeHtml(src)}" alt="${alt}" loading="eager" decoding="async" style="${imageStyle}${nsfw ? 'filter:blur(28px) brightness(0.75);transform:scale(1.08)' : ''}"${nsfw ? ' data-nsfw-blurred="true"' : ''} />`;
   const mediaHtml = renderLightboxTrigger(payload, innerMedia);
   const nsfwOverlay = nsfw
-    ? `<button type="button" class="review-figure__nsfw" data-nsfw-reveal aria-label="Show 18+ image"><span>18+</span><span class="review-figure__nsfw-hint">Tap to show</span></button>`
+    ? `<button type="button" class="review-figure__nsfw" data-nsfw-reveal aria-label="Show 18+ image"><span>18+</span></button>`
     : '';
   let html = `<figure class="${figureClass}" style="${figureStyle}"${nsfw ? ' data-nsfw="true"' : ''}>${mediaHtml}${nsfwOverlay}`;
   if (caption) html += `<figcaption>${escapeHtml(caption)}</figcaption>`;

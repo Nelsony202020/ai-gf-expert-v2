@@ -29,6 +29,7 @@ import {
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
 import { workspaceTabPath } from '../completion';
+import { AWARD_KIND_OPTIONS, type ProductAward } from '../../../../lib/awards';
 
 export function SetupTab() {
   const ws = useWorkspace();
@@ -269,6 +270,7 @@ export function SetupTab() {
 
           <ProductFormSection num={4} title="Visibility" divider>
             <div className="flex flex-col gap-4">
+              <DirectoryLabelField />
               <ToggleWithHint
                 checked={fields.verified}
                 onChange={(v) => set('verified', v)}
@@ -299,6 +301,54 @@ export function SetupTab() {
       </div>
 
       <CompletionSidebar />
+    </div>
+  );
+}
+
+function DirectoryLabelField() {
+  const ws = useWorkspace();
+  const { fields, set } = ws;
+  const award: ProductAward =
+    (fields.award as ProductAward | undefined) ??
+    (fields.bestForLabel
+      ? { kind: 'custom', customLabel: String(fields.bestForLabel), active: true }
+      : { kind: 'none', active: true });
+
+  function setAward(patch: Partial<ProductAward>) {
+    const next: ProductAward = {
+      ...award,
+      ...patch,
+      active: patch.active ?? true,
+    };
+    set('award', next);
+    if (next.kind !== 'custom') set('bestForLabel', '');
+    else if (next.customLabel) set('bestForLabel', next.customLabel);
+  }
+
+  return (
+    <div className="space-y-2">
+      <Field label="Directory label">
+        <Select
+          value={award.kind === 'none' || !award.kind ? 'none' : award.kind}
+          onChange={(e) => setAward({ kind: e.target.value })}
+        >
+          {AWARD_KIND_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      {award.kind === 'custom' && (
+        <Field label="Custom label">
+          <TextInput
+            value={award.customLabel ?? ''}
+            onChange={(e) => setAward({ kind: 'custom', customLabel: e.target.value })}
+            placeholder="e.g. Best for Beginners"
+            maxLength={80}
+          />
+        </Field>
+      )}
     </div>
   );
 }

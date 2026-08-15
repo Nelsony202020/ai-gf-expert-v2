@@ -409,8 +409,8 @@ export function ReviewTab() {
           <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Couldn&apos;t save
         </span>
       ) : saveStatus === 'saved' || (!isDirty && lastSaved) ? (
-        <span className="flex items-center gap-1 text-xs text-green-700 dark:text-green-400" title="Database saved. Live public page rebuilds shortly after.">
-          <Icon name="cloud_done" className="!text-[14px]" /> Saved
+        <span className="flex items-center gap-1 text-xs text-green-700 dark:text-green-400" title="Saved to InstantDB. The public /reviews page is static HTML — it only updates after a Vercel rebuild (needs VERCEL_DEPLOY_HOOK_URL). Use /reviews/preview/{slug} to see live DB content now.">
+          <Icon name="cloud_done" className="!text-[14px]" /> Saved to DB
         </span>
       ) : null}
       {saveStatus === 'error' ? (

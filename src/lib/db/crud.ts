@@ -19,6 +19,8 @@ import {
   syncHomepageSlotToProduct,
   syncProductHomepageSlot,
 } from '../homepage/featuredProducts';
+import { clearConflictingProductAwards } from './clearConflictingAwards';
+import type { ProductAward } from '../awards';
 
 export interface WritePayload {
   fields: Record<string, unknown>;
@@ -273,6 +275,9 @@ export async function createEntity(
       typeof fields.displayOrder === 'number' ? fields.displayOrder : null,
     );
   }
+  if (entity === 'products' && fields.award) {
+    await clearConflictingProductAwards(recordId, fields.award as ProductAward);
+  }
   if (entity === 'homepageSlots' && fields.kind === 'featured_character' && payload.links?.character) {
     await syncHomepageSlotToCharacter(
       recordId,
@@ -372,6 +377,9 @@ export async function updateEntity(
         ? fields.displayOrder
         : (existing.displayOrder as number | null | undefined) ?? null,
     );
+  }
+  if (entity === 'products' && 'award' in fields) {
+    await clearConflictingProductAwards(recordId, fields.award as ProductAward);
   }
   if (entity === 'homepageSlots') {
     const kind = String(fields.kind ?? existing.kind ?? '');

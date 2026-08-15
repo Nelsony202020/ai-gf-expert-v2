@@ -122,7 +122,6 @@ export function ImageInspectorPanel({
             className="h-3.5 w-3.5 rounded border-slate-300 text-pink-600 focus:ring-pink-500 dark:border-slate-600"
           />
           <span className="font-medium">NSFW</span>
-          <span className="text-slate-400">18+ blur on public page</span>
         </label>
         <Field label="Width">
           <PercentPicker value={widthPercent} presets={WIDTH_PRESETS} suffix="%" onChange={setWidthPercent} />

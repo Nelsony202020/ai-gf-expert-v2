@@ -230,17 +230,19 @@ export async function changeProductSlug(
   return { changed: true, redirect };
 }
 
-/** Trigger a static rebuild via Vercel deploy hook (no-op if not configured). */
-export async function triggerRebuild(reason: string): Promise<void> {
+/** Trigger a static rebuild via Vercel deploy hook. Returns false if not configured. */
+export async function triggerRebuild(reason: string): Promise<boolean> {
   const hook = env('VERCEL_DEPLOY_HOOK_URL') ?? '';
   if (!hook) {
     console.log(`[publish] rebuild skipped (no deploy hook configured): ${reason}`);
-    return;
+    return false;
   }
   try {
     await fetch(hook, { method: 'POST' });
     console.log(`[publish] rebuild triggered: ${reason}`);
+    return true;
   } catch (error) {
     console.error('[publish] deploy hook failed', error);
+    return false;
   }
 }

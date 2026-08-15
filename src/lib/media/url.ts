@@ -1,7 +1,7 @@
 // Resolve a public URL for a media record (cached url or linked storage file).
 
 import { cdnBaseUrlFromEnv } from './cdnClient';
-import { isPermanentCdnUrl } from './permanentUrl';
+import { isInstantDbFileUrl, isPermanentCdnUrl } from './permanentUrl';
 
 function instantDbFileUrl(media: { file?: { url?: unknown } | null }): string {
   const fileUrl = media.file?.url;
@@ -9,13 +9,21 @@ function instantDbFileUrl(media: { file?: { url?: unknown } | null }): string {
 }
 
 /**
- * Prefer a permanent CDN URL (Bunny) when present.
- * InstantDB signed file URLs are only a fallback for unmigrated media.
+ * Prefer Bunny CDN always.
+ * InstantDB signed file URLs are only a last-resort fallback for unmigrated media.
  */
 function resolveCachedUrl(cached: string, fileUrl: string): string {
-  if (!cached) return fileUrl;
   if (isPermanentCdnUrl(cached)) return cached;
-  return fileUrl || cached;
+  if (isPermanentCdnUrl(fileUrl)) return fileUrl;
+
+  // Any non-InstantDB https URL on media.url beats InstantDB signed links.
+  if (cached && !isInstantDbFileUrl(cached) && /^https?:\/\//i.test(cached)) {
+    return cached;
+  }
+
+  // Legacy / unmigrated only.
+  if (fileUrl) return fileUrl;
+  return cached;
 }
 
 export function resolveMediaUrl(

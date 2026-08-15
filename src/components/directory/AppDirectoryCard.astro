@@ -20,13 +20,15 @@ const overallVisual = getScoreVisual(app.overallScore);
 {/* Filtering data attributes live on the directory item wrapper (AppDirectory.astro). */}
 <article class="home-app-card">
   <div class="home-app-card__media">
-    <a
-      href={app.roundupHref}
-      class={`home-app-card__ribbon home-app-card__ribbon--${app.ribbonKey}`}
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">star</span>
-      {app.roundupRibbonLabel}
-    </a>
+    {app.roundupRibbonLabel && (
+      <a
+        href={app.roundupHref}
+        class={`home-app-card__ribbon home-app-card__ribbon--${app.ribbonKey}`}
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">star</span>
+        {app.roundupRibbonLabel}
+      </a>
+    )}
     <div class="home-app-card__media-actions">
       <button
         type="button"
