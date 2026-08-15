@@ -6,7 +6,7 @@
 // public rendering keep working untouched.
 
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
-import { dataApi } from '../../api';
+import { dataApi, linkedEntityId } from '../../api';
 import { useCan, useMe } from '../../context';
 import { useToastError } from '../../Toast';
 import { Button, Icon, fmtDate } from '../../ui';
@@ -82,6 +82,7 @@ export function ReviewTab() {
   const lastRevisionPushAtRef = useRef<number>(0);
   const saveSeqRef = useRef(0);
   const inFlightRef = useRef(false);
+  const pendingAfterFlightRef = useRef(false);
   const docRef = useRef(doc);
   docRef.current = doc;
   const autosaveTimerRef = useRef<number | null>(null);
@@ -156,9 +157,16 @@ export function ReviewTab() {
 
   const persistToServer = useCallback(
     async (docToSave: JSONDoc, opts?: { forceRevision?: boolean }): Promise<boolean> => {
-      if (!canEdit || !ws.productId) return false;
+      if (!canEdit || !ws.productId || ws.relatedLoading) return false;
       const json = JSON.stringify(docToSave);
       if (json === savedDocJson.current && reviewIdRef.current) return true;
+
+      // Serialize writes — overlapping creates hit the unique product link.
+      if (inFlightRef.current) {
+        pendingAfterFlightRef.current = true;
+        setSaveStatus((s) => (s === 'saving' ? s : 'pending'));
+        return false;
+      }
 
       const seq = ++saveSeqRef.current;
       inFlightRef.current = true;
@@ -175,7 +183,19 @@ export function ReviewTab() {
           lastEditedAt: now,
         };
 
-        const existingId = reviewIdRef.current;
+        // Prefer live workspace review id, then cached ref, then list lookup.
+        let existingId = review?.id ?? reviewIdRef.current;
+        if (!existingId) {
+          try {
+            const { rows } = await dataApi.list('reviews');
+            const hit = rows.find((r) => linkedEntityId(r.product) === ws.productId);
+            if (hit?.id) existingId = hit.id;
+          } catch {
+            /* fall through to create */
+          }
+        }
+        if (existingId) reviewIdRef.current = existingId;
+
         if (existingId) {
           const shouldPushRevision =
             Boolean(opts?.forceRevision) ||
@@ -197,16 +217,28 @@ export function ReviewTab() {
           }
           await dataApi.update('reviews', existingId, fields);
         } else {
-          const created = await dataApi.create('reviews', fields, {
-            product: ws.productId,
-            author: ws.links.author ?? null,
-            factChecker: ws.links.factChecker ?? null,
-          });
-          reviewIdRef.current = created.id;
-          setLoadedFromId(created.id);
-          lastRevisionPushAtRef.current = now;
-          // Pull the new review into workspace related once so Revisions UI works.
-          void ws.refreshRelated();
+          try {
+            const created = await dataApi.create('reviews', fields, {
+              product: ws.productId,
+              author: ws.links.author ?? null,
+              factChecker: ws.links.factChecker ?? null,
+            });
+            reviewIdRef.current = created.id;
+            setLoadedFromId(created.id);
+            lastRevisionPushAtRef.current = now;
+            void ws.refreshRelated();
+          } catch (createErr) {
+            // Race / stale UI: review already linked to this product → update it.
+            const msg = createErr instanceof Error ? createErr.message : String(createErr);
+            if (!/unique|already exists/i.test(msg)) throw createErr;
+            const { rows } = await dataApi.list('reviews');
+            const hit = rows.find((r) => linkedEntityId(r.product) === ws.productId);
+            if (!hit?.id) throw createErr;
+            reviewIdRef.current = hit.id;
+            setLoadedFromId(hit.id);
+            await dataApi.update('reviews', hit.id, fields);
+            void ws.refreshRelated();
+          }
         }
 
         // Ignore stale responses if a newer edit started another save.
@@ -217,13 +249,6 @@ export function ReviewTab() {
         setSaveStatus('saved');
         clearReviewDraft(ws.productId);
         setDraftOffer(null);
-
-        // If the user kept typing during this save, persist the newer doc next.
-        if (JSON.stringify(docRef.current) !== savedDocJson.current) {
-          window.setTimeout(() => {
-            void persistRef.current(docRef.current);
-          }, SERVER_AUTOSAVE_MS);
-        }
         return true;
       } catch (e) {
         if (seq === saveSeqRef.current) {
@@ -235,6 +260,16 @@ export function ReviewTab() {
         if (seq === saveSeqRef.current) {
           inFlightRef.current = false;
           setBusy(false);
+          if (pendingAfterFlightRef.current) {
+            pendingAfterFlightRef.current = false;
+            window.setTimeout(() => {
+              void persistRef.current(docRef.current);
+            }, 50);
+          } else if (JSON.stringify(docRef.current) !== savedDocJson.current) {
+            window.setTimeout(() => {
+              void persistRef.current(docRef.current);
+            }, SERVER_AUTOSAVE_MS);
+          }
         }
       }
     },
@@ -264,7 +299,7 @@ export function ReviewTab() {
 
   // Local draft + debounced server autosave while typing / editing.
   useEffect(() => {
-    if (!canEdit || !ws.productId || !isDirty) return;
+    if (!canEdit || !ws.productId || !isDirty || ws.relatedLoading) return;
 
     if (localDraftTimerRef.current) window.clearTimeout(localDraftTimerRef.current);
     localDraftTimerRef.current = window.setTimeout(() => {
@@ -276,7 +311,7 @@ export function ReviewTab() {
     return () => {
       if (localDraftTimerRef.current) window.clearTimeout(localDraftTimerRef.current);
     };
-  }, [canEdit, ws.productId, doc, isDirty, scheduleServerAutosave]);
+  }, [canEdit, ws.productId, ws.relatedLoading, doc, isDirty, scheduleServerAutosave]);
 
   // Flush when the tab hides / unloads so closing the window still persists.
   useEffect(() => {

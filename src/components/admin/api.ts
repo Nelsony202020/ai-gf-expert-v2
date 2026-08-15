@@ -93,6 +93,23 @@ export interface EntityRow {
   [key: string]: any;
 }
 
+/**
+ * InstantDB (and our admin list API) may return a link as:
+ * - `{ id }` object
+ * - `[{ id }]` array (has-one sometimes serializes this way)
+ * - bare id string
+ */
+export function linkedEntityId(value: unknown): string | null {
+  if (value == null || value === '') return null;
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return linkedEntityId(value[0]);
+  if (typeof value === 'object' && 'id' in (value as object)) {
+    const id = (value as { id?: unknown }).id;
+    return typeof id === 'string' && id ? id : null;
+  }
+  return null;
+}
+
 export const dataApi = {
   list: (entity: string) => api.get<{ rows: EntityRow[] }>(`/api/admin/data/${entity}`),
   get: (entity: string, id: string) => api.get<{ row: EntityRow }>(`/api/admin/data/${entity}/${id}`),

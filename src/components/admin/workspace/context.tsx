@@ -3,7 +3,7 @@
 // Tabs consume this instead of fetching or computing progress themselves.
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { api, dataApi, type EntityRow } from '../api';
+import { api, dataApi, linkedEntityId, type EntityRow } from '../api';
 import { normalizeListField } from '../../../lib/ai-verdict/notesSchema';
 import { sanitizeCategoryVerdictDraft } from './verdict/categoryVerdictProgress';
 import type { CategoryVerdict } from './verdict/types';
@@ -202,7 +202,8 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
           dataApi.list('featureCosts').catch(() => ({ rows: [] as EntityRow[] })),
           dataApi.list('pricingPromotions').catch(() => ({ rows: [] as EntityRow[] })),
         ]);
-      const byProduct = (rows: EntityRow[]) => rows.filter((r) => r.product?.id === productId);
+      const byProduct = (rows: EntityRow[]) =>
+        rows.filter((r) => linkedEntityId(r.product) === productId);
       setRelated({
         authors: authors.rows,
         mediaAll: media.rows,
@@ -243,7 +244,7 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
   async function refreshProductMedia() {
     try {
       const media = await dataApi.list('media');
-      const byProduct = media.rows.filter((r) => r.product?.id === productId);
+      const byProduct = media.rows.filter((r) => linkedEntityId(r.product) === productId);
       setRelated((prev) => ({
         ...prev,
         mediaAll: media.rows,
