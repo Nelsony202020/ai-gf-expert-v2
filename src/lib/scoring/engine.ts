@@ -161,6 +161,66 @@ export function normalizeEvidence(input: EvidenceInput): {
     return { score: null, status: 'unknown', detail: 'Unknown — excluded from score' };
   }
 
+  // Retention: "Not stated" is a full penalty; unknown stays excluded via isUnknown above.
+  if (
+    input.slug === 'retention' &&
+    input.rawValue &&
+    typeof input.rawValue === 'object' &&
+    'status' in input.rawValue &&
+    input.rawValue.status === 'not_stated'
+  ) {
+    return {
+      score: 0,
+      status: 'scored',
+      detail: 'Retention not stated — scored 0/10',
+    };
+  }
+
+  // Customization presets with custom prompt → maximum flexibility (10/10).
+  if (
+    input.rawValue &&
+    typeof input.rawValue === 'object' &&
+    'value' in input.rawValue &&
+    'detail' in input.rawValue &&
+    (input.rawValue.detail as Record<string, unknown> | undefined)?.customPromptAvailable === true &&
+    [
+      'outfits',
+      'clothing',
+      'creator-personalities',
+      'traits',
+      'interests',
+      'relationship',
+      'role',
+      'kink-options',
+      'voice',
+    ].includes(input.slug)
+  ) {
+    return {
+      score: 10,
+      status: 'scored',
+      detail: 'Custom prompt available — maximum customization flexibility 10/10',
+    };
+  }
+
+  // Library variety "not disclosed" only — not_countable now stores a top-band value.
+  if (
+    input.rawValue &&
+    typeof input.rawValue === 'object' &&
+    'status' in input.rawValue &&
+    input.rawValue.status === 'unknown' &&
+    (input.slug === 'ethnicities' ||
+      input.slug === 'personalities' ||
+      input.slug === 'scenarios' ||
+      input.slug === 'amount' ||
+      input.slug.endsWith('-count'))
+  ) {
+    return {
+      score: null,
+      status: 'unknown',
+      detail: 'Not disclosed — excluded from score',
+    };
+  }
+
   if (input.slug === 'mode-types') {
     const chatRaw = input.relatedAnswers?.['chat-modes'];
     if (

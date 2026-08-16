@@ -8,6 +8,7 @@ import {
 export {
   filterGenderGatedItems,
   GENDER_COUNT_SLUGS,
+  genderCountSlugsToClear,
   isGenderCountApplicable,
   parseGenderGroupsFromRaw,
 } from './genderCountGating';

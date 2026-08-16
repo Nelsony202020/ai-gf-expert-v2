@@ -313,7 +313,26 @@ function breadcrumbParts(breadcrumb: string): string[] {
                     {ec.testResults.map((m) => (
                       <tr>
                         <td>{m.label}</td>
-                        <td class="ratings-drawer-results__num tabular-nums">{m.value}</td>
+                        <td class="ratings-drawer-results__num tabular-nums">
+                          {m.detailLines && m.detailLines.length > 0 ? (
+                            <div class="text-left font-normal normal-case tracking-normal">
+                              <p class="mb-1.5 font-semibold tabular-nums">{m.value}</p>
+                              <ul class="space-y-1.5 text-xs leading-snug">
+                                {m.detailLines.map((line) => (
+                                  <li class="break-words">
+                                    <span class="font-medium text-slate-700 dark:text-slate-200"
+                                      >{line.label}:</span
+                                    >
+                                    {' '}
+                                    <span class="text-slate-500 dark:text-slate-400">{line.value}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : (
+                            m.value
+                          )}
+                        </td>
                         <td>
                           <span class={interpClass(m.interpretationTone)}>
                             {m.interpretation ?? '—'}

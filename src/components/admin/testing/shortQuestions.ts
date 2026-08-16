@@ -9,7 +9,7 @@ export interface ShortQuestion {
 export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   "characters|amount": {
     "q": "How many total characters?",
-    "hint": "Count all ready-made characters shown in the library."
+    "hint": "Enter an exact count, or pick 100k+ / 500k+ / 1M+ / Not disclosed for huge or undisclosed libraries."
   },
   "characters|female-count": {
     "q": "Characters: how many female?",
@@ -45,19 +45,19 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
   },
   "characters|genders": {
     "q": "Which gender groups are offered?",
-    "hint": "Tick each gender category in the library. Add any others in the text field."
+    "hint": "Tick each gender category. Count fields appear immediately underneath for selected groups."
   },
   "characters|ethnicities": {
-    "q": "Characters: which ethnicities?",
-    "hint": "Tick each ethnicity option in the library."
+    "q": "Characters: ethnicity variety?",
+    "hint": "Pick Low–Very high, or Not countable / community-generated (full points). Not disclosed excludes this metric."
   },
   "characters|personalities": {
-    "q": "Characters: which personalities?",
-    "hint": "Tick each personality type offered."
+    "q": "Characters: personality variety?",
+    "hint": "Pick Low–Very high, or Not countable / community-generated (full points). Optional sample note e.g. 31 types in 50 characters."
   },
   "characters|scenarios": {
-    "q": "Characters: which scenarios?",
-    "hint": "Tick each roleplay scenario type."
+    "q": "Characters: scenario variety?",
+    "hint": "Pick Low–Very high, or Not countable / community-generated (full points)."
   },
   "characters|filters": {
     "q": "Characters: how many filters?",

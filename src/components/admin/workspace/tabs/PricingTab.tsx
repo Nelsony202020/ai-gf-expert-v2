@@ -212,7 +212,6 @@ export function PricingTab() {
         {snapshot ? (
           <PricingHeader
             snapshot={snapshot}
-            tiers={tiers}
             canEdit={canEdit}
             productId={ws.productId}
             onPatch={patchSnapshot}
@@ -584,14 +583,12 @@ function SnapshotSetupCard({ canEdit }: { canEdit: boolean }) {
 
 function PricingHeader({
   snapshot,
-  tiers,
   canEdit,
   productId,
   onPatch,
   onAiDraft,
 }: {
   snapshot: EntityRow;
-  tiers: EntityRow[];
   canEdit: boolean;
   productId: string;
   onPatch: (patch: Record<string, unknown>) => void;
@@ -604,8 +601,6 @@ function PricingHeader({
   const daysSinceVerified = snapshot.verifiedAt
     ? Math.floor((Date.now() - Number(snapshot.verifiedAt)) / 86_400_000)
     : null;
-  const activeTier = tiers.filter((t) => t.active !== false && String(t.name ?? '').trim());
-  const referencePlanName = String(snapshot.referencePlanName ?? '');
   const evidenceIds: string[] = Array.isArray(snapshot.evidenceMediaIds)
     ? snapshot.evidenceMediaIds.map(String)
     : [];
@@ -645,56 +640,28 @@ function PricingHeader({
         )}
         <span className="flex-1" />
         {canEdit && (
-          <Button
-            variant="secondary"
-            className="text-xs"
-            onClick={() => onPatch({ verifiedAt: Date.now(), verifiedBy: me.email })}
-          >
-            <Icon name="verified" className="!text-[14px]" /> Mark verified today
-          </Button>
+          <div className="flex flex-col items-end gap-0.5">
+            <Button
+              variant="secondary"
+              className="text-xs"
+              onClick={() => onPatch({ verifiedAt: Date.now(), verifiedBy: me.email })}
+            >
+              <Icon name="verified" className="!text-[14px]" /> Mark verified today
+            </Button>
+            <Button
+              variant="ghost"
+              className="!px-1.5 !py-0.5 text-xs font-medium text-pink-600 hover:bg-transparent hover:text-pink-700 disabled:text-slate-300 dark:text-pink-400 dark:hover:bg-transparent dark:hover:text-pink-300"
+              disabled={extracting}
+              onClick={() => void extractFromEvidence()}
+            >
+              <Icon name="auto_awesome" className="!text-[14px]" />
+              {extracting
+                ? `Reading ${evidenceIds.length || ''} screenshot${evidenceIds.length === 1 ? '' : 's'}…`
+                : 'AI adjust from screenshots'}
+            </Button>
+          </div>
         )}
       </div>
-      {canEdit && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Button
-            variant="secondary"
-            className="text-xs"
-            disabled={extracting}
-            onClick={() => void extractFromEvidence()}
-          >
-            <Icon name="auto_awesome" className="!text-[14px]" />
-            {extracting
-              ? `Reading ${evidenceIds.length || ''} screenshot${evidenceIds.length === 1 ? '' : 's'}…`
-              : 'AI adjust from screenshots'}
-          </Button>
-          <span className="text-[11px] text-slate-400">
-            Reads the evidence images below and opens a review to update numbers.
-          </span>
-        </div>
-      )}
-      {activeTier.length > 0 && (
-        <label className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-          <span>Reference plan for metrics</span>
-          <select
-            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-            value={referencePlanName}
-            disabled={!canEdit}
-            onChange={(e) =>
-              onPatch({ referencePlanName: e.target.value.trim() || undefined })
-            }
-          >
-            <option value="">Cheapest monthly (default)</option>
-            {activeTier.map((t) => (
-              <option key={t.id} value={String(t.name)}>
-                {String(t.name)}
-              </option>
-            ))}
-          </select>
-          <span className="text-[11px] text-slate-400">
-            Used for autofill and typical spend when plans differ.
-          </span>
-        </label>
-      )}
       <div className="mt-3">
         <PricingEvidence entity="pricingSnapshots" row={snapshot} canEdit={canEdit} compact />
       </div>

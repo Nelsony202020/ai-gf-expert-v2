@@ -11,6 +11,19 @@ import {
 } from '../../../lib/testing/freeAccessAllowance';
 import { formatSecurityIncidentsSummary } from '../../../lib/testing/securityIncidents';
 import { controlKind, testerQuestion } from './presentation';
+import {
+  formatLibraryAmountSummary,
+  formatLibraryVarietySummary,
+  formatGenderCountSummary,
+  isGenderCountAnswerSlug,
+  isLibraryAmountSlug,
+  isLibraryVarietyQualitativeSlug,
+} from '../../../lib/testing/libraryVariety';
+import {
+  formatCustomPromptPresetSummary,
+  isCustomPromptPresetSlug,
+} from '../../../lib/testing/customPromptPreset';
+import { formatSupportChannelsSummary } from '../../../lib/testing/supportChannelsDisplay';
 
 export interface SessionItem {
   def: EntityRow;
@@ -22,7 +35,7 @@ export type RowState = 'done' | 'na' | 'todo' | 'unsaved';
 export function formatAnswerSummary(def: EntityRow, raw: RawValue | undefined, na: boolean): string {
   if (na) return 'N/A';
   if (!raw) return '—';
-  if (String(def.slug) === 'retention' && 'value' in raw) {
+  if (String(def.slug) === 'retention' && ('value' in raw || 'status' in raw)) {
     return formatRetentionPeriodSummary(raw);
   }
   if (isFreeAccessAllowanceSlug(String(def.slug))) {
@@ -31,6 +44,21 @@ export function formatAnswerSummary(def: EntityRow, raw: RawValue | undefined, n
   if (String(def.slug) === 'security-incidents') {
     return formatSecurityIncidentsSummary(raw);
   }
+  if (String(def.slug) === 'support-channels') {
+    return formatSupportChannelsSummary(raw) ?? '—';
+  }
+  if (isLibraryVarietyQualitativeSlug(String(def.slug))) {
+    return formatLibraryVarietySummary(raw, String(def.slug)) ?? '—';
+  }
+  if (isLibraryAmountSlug(String(def.slug))) {
+    return formatLibraryAmountSummary(raw) ?? '—';
+  }
+  if (isGenderCountAnswerSlug(String(def.slug))) {
+    return formatGenderCountSummary(raw) ?? '—';
+  }
+  if (isCustomPromptPresetSlug(String(def.slug))) {
+    return formatCustomPromptPresetSummary(raw) ?? '—';
+  }
   if ('status' in raw) {
     if (raw.status === 'na') return 'N/A';
     if (raw.status === 'yes') return 'Yes';
@@ -38,6 +66,7 @@ export function formatAnswerSummary(def: EntityRow, raw: RawValue | undefined, n
     if (raw.status === 'limited') return 'Limited';
     if (raw.status === 'optional') return 'Optional';
     if (raw.status === 'unknown') return 'Unknown';
+    if (raw.status === 'not_stated') return 'Not stated';
     return String(raw.status);
   }
   if ('value' in raw) {

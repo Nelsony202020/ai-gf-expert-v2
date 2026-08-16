@@ -47,6 +47,8 @@ export interface DraftMeasurement {
   interpretation?: string;
   /** good / fair / poor / na for colored interpretation labels. */
   interpretationTone?: 'good' | 'fair' | 'poor' | 'neutral' | 'na';
+  /** Optional multi-line breakdown (e.g. support channel links). */
+  detailLines?: { label: string; value: string }[];
 }
 
 export interface DraftEvidenceCalculationRow {

@@ -21,6 +21,32 @@ import {
 import { formatChecklistAnswer } from '../../../lib/testing/evidenceFormat';
 import { MultiSelectField } from './MultiSelectField';
 import { nearestRubricValue } from './rubricOptions';
+import {
+  LIBRARY_AMOUNT_PRESET_OPTIONS,
+  LIBRARY_VARIETY_LEVEL_OPTIONS,
+  GENDER_COUNT_PRESET_OPTIONS,
+  buildGenderCountFromNumber,
+  buildGenderCountFromPreset,
+  buildLibraryAmountFromNumber,
+  buildLibraryAmountFromPreset,
+  buildLibraryVarietyRaw,
+  isGenderCountAnswerSlug,
+  isLibraryAmountSlug,
+  isLibraryVarietyQualitativeSlug,
+  parseGenderCountPreset,
+  parseLibraryAmountPreset,
+  parseLibrarySampleNote,
+  parseLibraryVarietyLevelForSlug,
+  type GenderCountPreset,
+  type LibraryAmountPreset,
+  type LibraryVarietyLevel,
+  type LibraryVarietyQualitativeSlug,
+} from '../../../lib/testing/libraryVariety';
+import {
+  isCustomPromptPresetSlug,
+  parseCustomPromptAvailable,
+  withCustomPromptAvailable,
+} from '../../../lib/testing/customPromptPreset';
 
 export type RawValue =
   | { value: number; detail?: Record<string, unknown> }
@@ -128,6 +154,43 @@ export function EvidenceInput({
     );
   }
 
+  if (isLibraryVarietyQualitativeSlug(slug)) {
+    return (
+      <LibraryVarietyQualitativeInput
+        slug={slug}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        compact={compact}
+        className={wide}
+      />
+    );
+  }
+
+  if (isLibraryAmountSlug(slug)) {
+    return (
+      <LibraryAmountInput
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        compact={compact}
+        className={wide}
+      />
+    );
+  }
+
+  if (isGenderCountAnswerSlug(slug)) {
+    return (
+      <GenderCountInput
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        compact={compact}
+        className={wide}
+      />
+    );
+  }
+
   switch (kind) {
     case 'boolean':
     case 'ynl': {
@@ -181,8 +244,10 @@ export function EvidenceInput({
         slug === 'duplicates'
           ? duplicateCountMax(fixedDenominator ?? maxFromRule)
           : maxFromRule;
+      const customPromptSlug = isCustomPromptPresetSlug(slug);
+      const customPromptOn = customPromptSlug && parseCustomPromptAvailable(value);
       return (
-        <div className={`flex items-center gap-2 ${compact ? 'w-full' : ''}`}>
+        <div className={`flex flex-wrap items-center gap-2 ${compact ? 'w-full' : ''}`}>
           <TextInput
             type="number"
             min={0}
@@ -193,20 +258,60 @@ export function EvidenceInput({
             disabled={disabled}
             onChange={(e) => {
               const n = nonNegative(e.target.value, max);
-              onChange(
-                n === undefined
-                  ? undefined
-                  : {
-                      value: n,
-                      detail:
-                        slug === 'duplicates'
-                          ? { count: n, max: max ?? 25 }
-                          : undefined,
-                    },
-              );
+              if (n === undefined) {
+                onChange(undefined);
+                return;
+              }
+              const next: RawValue = {
+                value: n,
+                detail:
+                  slug === 'duplicates'
+                    ? { count: n, max: max ?? 25 }
+                    : value && 'detail' in value && value.detail
+                      ? { ...value.detail }
+                      : undefined,
+              };
+              if (customPromptSlug) {
+                onChange(
+                  withCustomPromptAvailable(
+                    next as { value: number; detail?: Record<string, unknown> },
+                    customPromptOn,
+                  ) as RawValue,
+                );
+              } else {
+                onChange(
+                  next.detail
+                    ? next
+                    : {
+                        value: n,
+                        detail:
+                          slug === 'duplicates' ? { count: n, max: max ?? 25 } : undefined,
+                      },
+                );
+              }
             }}
           />
           {unit && <span className="shrink-0 text-xs text-slate-500">{unit}</span>}
+          {customPromptSlug && (
+            <label className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+              <input
+                type="checkbox"
+                className="rounded border-slate-300"
+                checked={customPromptOn}
+                disabled={disabled || current === ''}
+                onChange={(e) => {
+                  if (!value || !('value' in value)) return;
+                  onChange(
+                    withCustomPromptAvailable(
+                      { value: value.value, detail: value.detail },
+                      e.target.checked,
+                    ) as RawValue,
+                  );
+                }}
+              />
+              Custom prompt available
+            </label>
+          )}
         </div>
       );
     }
@@ -558,5 +663,183 @@ function StatusSelect({
         </option>
       ))}
     </Select>
+  );
+}
+
+function LibraryVarietyQualitativeInput({
+  slug,
+  value,
+  onChange,
+  disabled,
+  compact,
+  className,
+}: {
+  slug: LibraryVarietyQualitativeSlug;
+  value: RawValue | undefined;
+  onChange: (v: RawValue | undefined) => void;
+  disabled?: boolean;
+  compact?: boolean;
+  className?: string;
+}) {
+  const level = parseLibraryVarietyLevelForSlug(slug, value);
+  const sampleNote = parseLibrarySampleNote(value);
+  const showNote = Boolean(level);
+
+  return (
+    <div className={`space-y-1.5 ${compact ? 'w-full min-w-[14rem]' : 'max-w-sm'}`}>
+      <StatusSelect
+        options={LIBRARY_VARIETY_LEVEL_OPTIONS.map((o) => ({
+          value: o.value,
+          label: o.label,
+        }))}
+        value={level}
+        disabled={disabled}
+        className={className}
+        placeholder="Choose variety level…"
+        onChange={(v) => {
+          onChange(
+            buildLibraryVarietyRaw(
+              slug,
+              (v || '') as LibraryVarietyLevel | '',
+              sampleNote,
+            ) as RawValue | undefined,
+          );
+        }}
+      />
+      {showNote && (
+        <TextInput
+          type="text"
+          disabled={disabled}
+          className={compact ? 'testing-input-wide w-full min-w-[14rem]' : 'w-full'}
+          placeholder="Optional sample note (e.g. 31 types in 50 characters)"
+          value={sampleNote}
+          onChange={(e) =>
+            onChange(
+              buildLibraryVarietyRaw(slug, level, e.target.value) as RawValue | undefined,
+            )
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+function LibraryAmountInput({
+  value,
+  onChange,
+  disabled,
+  compact,
+  className,
+}: {
+  value: RawValue | undefined;
+  onChange: (v: RawValue | undefined) => void;
+  disabled?: boolean;
+  compact?: boolean;
+  className?: string;
+}) {
+  const preset = parseLibraryAmountPreset(value);
+  const numeric =
+    !preset && value && 'value' in value && typeof value.value === 'number'
+      ? String(value.value)
+      : '';
+
+  return (
+    <div className={`space-y-1.5 ${compact ? 'w-full min-w-[14rem]' : 'max-w-sm'}`}>
+      <div className={`flex flex-wrap items-center gap-2 ${compact ? 'w-full' : ''}`}>
+        <TextInput
+          type="number"
+          min={0}
+          step={1}
+          disabled={disabled || Boolean(preset)}
+          className={compact ? `${className ?? ''} max-w-none flex-1` : 'max-w-[160px]'}
+          placeholder="Exact count"
+          value={preset ? '' : numeric}
+          onChange={(e) => {
+            const n = nonNegative(e.target.value);
+            onChange(buildLibraryAmountFromNumber(n) as RawValue | undefined);
+          }}
+        />
+        <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+          or
+        </span>
+        <StatusSelect
+          options={LIBRARY_AMOUNT_PRESET_OPTIONS.map((o) => ({
+            value: o.value,
+            label: o.label,
+          }))}
+          value={preset}
+          disabled={disabled}
+          className={compact ? 'min-w-[8.5rem] flex-1' : 'min-w-[8.5rem]'}
+          placeholder="Approx / undisclosed…"
+          onChange={(v) => {
+            onChange(
+              buildLibraryAmountFromPreset((v || '') as LibraryAmountPreset | '') as
+                | RawValue
+                | undefined,
+            );
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function GenderCountInput({
+  value,
+  onChange,
+  disabled,
+  compact,
+  className,
+}: {
+  value: RawValue | undefined;
+  onChange: (v: RawValue | undefined) => void;
+  disabled?: boolean;
+  compact?: boolean;
+  className?: string;
+}) {
+  const preset = parseGenderCountPreset(value);
+  const numeric =
+    !preset && value && 'value' in value && typeof value.value === 'number'
+      ? String(value.value)
+      : '';
+
+  return (
+    <div className={`space-y-1.5 ${compact ? 'w-full min-w-[14rem]' : 'max-w-sm'}`}>
+      <div className={`flex flex-wrap items-center gap-2 ${compact ? 'w-full' : ''}`}>
+        <TextInput
+          type="number"
+          min={0}
+          step={1}
+          disabled={disabled || Boolean(preset)}
+          className={compact ? `${className ?? ''} max-w-none flex-1` : 'max-w-[160px]'}
+          placeholder="Exact count"
+          value={preset ? '' : numeric}
+          onChange={(e) => {
+            const n = nonNegative(e.target.value);
+            onChange(buildGenderCountFromNumber(n) as RawValue | undefined);
+          }}
+        />
+        <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+          or
+        </span>
+        <StatusSelect
+          options={GENDER_COUNT_PRESET_OPTIONS.map((o) => ({
+            value: o.value,
+            label: o.label,
+          }))}
+          value={preset}
+          disabled={disabled}
+          className={compact ? 'min-w-[9rem] flex-1' : 'min-w-[9rem]'}
+          placeholder="Approx / other…"
+          onChange={(v) => {
+            onChange(
+              buildGenderCountFromPreset((v || '') as GenderCountPreset | '') as
+                | RawValue
+                | undefined,
+            );
+          }}
+        />
+      </div>
+    </div>
   );
 }

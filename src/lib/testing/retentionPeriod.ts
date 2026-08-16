@@ -47,11 +47,18 @@ export function retentionPeriodToRaw(parsed: RetentionPeriod): RawValue | undefi
 }
 
 export function isRetentionPeriodComplete(raw: RawValue | undefined): boolean {
+  if (!raw) return false;
+  if ('status' in raw && (raw.status === 'unknown' || raw.status === 'not_stated')) return true;
   const parsed = parseRetentionPeriod(raw);
   return typeof parsed.amount === 'number' && parsed.amount > 0 && parsed.unit !== '';
 }
 
 export function formatRetentionPeriodSummary(raw: RawValue | undefined): string {
+  if (!raw) return '—';
+  if ('status' in raw) {
+    if (raw.status === 'unknown') return 'Unknown';
+    if (raw.status === 'not_stated') return 'Not stated';
+  }
   const parsed = parseRetentionPeriod(raw);
   if (typeof parsed.amount !== 'number' || parsed.amount <= 0 || !parsed.unit) return '—';
   const unitLabel = parsed.amount === 1 ? SINGULAR_UNIT[parsed.unit] : parsed.unit;

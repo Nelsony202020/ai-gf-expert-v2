@@ -1,6 +1,17 @@
 // Client-safe evidence answer formatting — no DB or Node built-ins.
 // Used by the admin UI; server export code lives in evidenceExport.ts.
 
+import {
+  formatLibraryAmountSummary,
+  formatLibraryVarietySummary,
+  formatGenderCountSummary,
+  isGenderCountAnswerSlug,
+  isLibraryAmountSlug,
+  isLibraryVarietyQualitativeSlug,
+} from './libraryVariety';
+import { formatCustomPromptPresetSummary, isCustomPromptPresetSlug } from './customPromptPreset';
+import { formatSupportChannelsSummary } from './supportChannelsDisplay';
+
 type RawValue =
   | { value: number; detail?: Record<string, unknown> }
   | { status: string; detail?: Record<string, unknown> }
@@ -61,9 +72,35 @@ export function formatEvidenceAnswer(
   isUnknown: boolean,
 ): string {
   if (notApplicable) return 'N/A';
-  if (isUnknown) return 'Unknown';
-  if (!raw || typeof raw !== 'object') return '';
+  if (!raw || typeof raw !== 'object') {
+    if (isUnknown) return 'Unknown';
+    return '';
+  }
   const rv = raw as RawValue;
+
+  // Prefer qualitative library-variety labels (including unknown / not countable).
+  if (def.slug && isLibraryVarietyQualitativeSlug(def.slug)) {
+    const summary = formatLibraryVarietySummary(rv, def.slug);
+    if (summary) return summary;
+  }
+  if (def.slug && isLibraryAmountSlug(def.slug)) {
+    const summary = formatLibraryAmountSummary(rv);
+    if (summary) return summary;
+  }
+  if (def.slug && isGenderCountAnswerSlug(def.slug)) {
+    const summary = formatGenderCountSummary(rv);
+    if (summary) return summary;
+  }
+  if (def.slug && isCustomPromptPresetSlug(def.slug)) {
+    const summary = formatCustomPromptPresetSummary(rv);
+    if (summary) return summary;
+  }
+  if (def.slug === 'support-channels') {
+    const summary = formatSupportChannelsSummary(rv);
+    if (summary) return summary;
+  }
+
+  if (isUnknown) return 'Unknown';
 
   const checklistLabel =
     def.slug === 'included-features' || def.slug === 'pricing-clarity' ? 'features' : 'items';
@@ -102,6 +139,7 @@ export function formatEvidenceAnswer(
       limited: 'Limited',
       optional: 'Optional',
       unknown: 'Unknown',
+      not_stated: 'Not stated',
     };
     return map[String(rv.status)] ?? String(rv.status);
   }

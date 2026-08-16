@@ -246,9 +246,19 @@ export function normalizePrivacyAnswerRaws(
     }
 
     if (a.slug === 'retention') {
+      const rec = asRecord(a.raw);
+      const statusToken =
+        typeof rec?.status === 'string' ? rec.status.toLowerCase().trim().replace(/\s+/g, '_') : '';
+      if (statusToken === 'unknown' || statusToken === 'not_stated') {
+        return { ...a, raw: { status: statusToken } };
+      }
+      if (statusToken === 'not_found' || a.status === 'not_found') {
+        // Policy never states a period → Not stated (full penalty), not a blank skip.
+        return { ...a, status: 'filled', raw: { status: 'not_stated' }, confidence: a.confidence };
+      }
       const retention = normalizeRetentionRaw(a.raw);
       if (!retention) {
-        return { ...a, status: 'not_found', raw: undefined, confidence: 'low' };
+        return { ...a, status: 'filled', raw: { status: 'not_stated' }, confidence: 'low' };
       }
       return { ...a, raw: retention };
     }

@@ -11,4 +11,5 @@ export const PRICING_AUTOFILL_SLUGS = new Set([
   'video-cost',
   'monthly-spend',
   'payment-privacy',
+  'billing-descriptor',
 ]);

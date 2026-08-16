@@ -1,10 +1,10 @@
 /** Hide / exclude gender count tests when that group was not selected on genders. */
 
-const GENDER_COUNT_REQUIRES: Record<string, string | '__other__'> = {
+const GENDER_COUNT_REQUIRES: Record<string, string | string[] | '__other__'> = {
   'female-count': 'Female',
-  'anime-female-count': 'Female',
+  'anime-female-count': ['Anime Female', 'Female'],
   'male-count': 'Male',
-  'anime-male-count': 'Male',
+  'anime-male-count': ['Anime Male', 'Male'],
   'transgender-count': 'Transgender',
   'non-binary-count': 'Non-binary',
   'other-count': '__other__',
@@ -53,7 +53,15 @@ export function isGenderCountApplicable(
   if (groups.size === 0) return false;
 
   if (required === '__other__') return groups.has('__other__');
+  if (Array.isArray(required)) return required.some((g) => groups.has(g));
   return groups.has(required);
+}
+
+/** Count-field slugs that should be cleared when their gender group is deselected. */
+export function genderCountSlugsToClear(gendersRaw: unknown): string[] {
+  return [...GENDER_COUNT_SLUGS].filter(
+    (slug) => !isGenderCountApplicable('characters', slug, gendersRaw),
+  );
 }
 
 export function filterGenderGatedItems<T extends { def: { slug?: unknown } }>(

@@ -26,9 +26,10 @@ const SLUG_SPECS: Record<
   },
   retention: {
     question: 'How long does the company keep user data?',
-    options: 'raw: { "value": <positive number>, "detail": { "unit": "weeks"|"months"|"years" } }',
+    options:
+      'raw: { "value": <positive number>, "detail": { "unit": "weeks"|"months"|"years" } } OR raw: { "status": "unknown" } OR raw: { "status": "not_stated" }',
     notes:
-      'Pick the longest clearly stated fixed duration. Convert days to weeks/months when clear (e.g. 30 days → value 1 unit months, or value 4 unit weeks). If only "as long as necessary" with no number, use status not_found and omit raw or use unknown — do NOT invent a duration.',
+      'Prefer a clearly stated fixed duration (longest when several are listed). Convert days when clear. Use status "not_stated" when the policy never states a retention period (this scores 0). Use status "unknown" only when the policy is ambiguous or contradictory. Do NOT invent a duration.',
   },
   'policy-clarity': {
     question: 'How clear is the privacy policy overall for key data-use questions?',

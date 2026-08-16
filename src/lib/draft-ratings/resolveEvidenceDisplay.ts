@@ -6,6 +6,8 @@ import {
   formatFreeAccessAllowanceSummary,
   isFreeAccessAllowanceSlug,
 } from '../testing/freeAccessAllowance';
+import { formatSupportChannelsSummary } from '../testing/supportChannelsDisplay';
+import { formatCustomPromptPresetSummary, isCustomPromptPresetSlug } from '../testing/customPromptPreset';
 import { fmtMoney } from '../pricing/calc';
 import { renderPublicResult } from '../../components/admin/testing/presentation';
 
@@ -188,6 +190,16 @@ export function resolveEvidenceDisplayValue(def: EvidenceDef, row: EvidenceRow):
   if (def.slug === 'platform-extras-list' && raw) {
     const formatted = formatPlatformExtrasDisplay(raw);
     if (formatted) return formatted;
+  }
+
+  if (def.slug === 'support-channels' && raw) {
+    const summary = formatSupportChannelsSummary(raw);
+    if (summary) return summary;
+  }
+
+  if (def.slug && isCustomPromptPresetSlug(def.slug) && raw) {
+    const summary = formatCustomPromptPresetSummary(raw);
+    if (summary) return summary;
   }
 
   if (!raw) return published ?? '';

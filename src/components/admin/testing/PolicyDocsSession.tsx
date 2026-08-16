@@ -290,10 +290,6 @@ export const PolicyDocsSession = forwardRef<
 
       <label className="block text-xs">
         <span className="mb-1 block font-medium text-slate-700 dark:text-slate-200">Policy page URLs</span>
-        <span className="mb-1.5 block text-[11px] text-slate-500">
-          Paste every policy link (one per line). We detect the document type from the URL, scrape the
-          pages, and propose answers. Links are saved when you click Save and continue.
-        </span>
         <TextArea
           rows={5}
           value={urlBulk}

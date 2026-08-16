@@ -146,9 +146,6 @@ export function ChatModesField({
   return (
     <div className="space-y-4 testing-input-wide w-full min-w-[14rem]">
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">
-          Different chat modes?
-        </label>
         <Select
           value={parsed.hasModes}
           disabled={disabled}

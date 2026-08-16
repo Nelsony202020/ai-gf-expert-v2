@@ -247,8 +247,7 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'policy-docs',
       title: 'Upload privacy documents',
-      intro:
-        'Add privacy policy, terms, and related pages (include a refund policy URL if you want AI to propose a refunds answer). Scraping fetches text only — AI then proposes answers for specific questions in Policy review and Data controls (plus refunds when applicable). Delete chats and export data stay manual test-account checks.',
+      intro: 'Upload policy page URLs, then review AI proposals in Policy review and Data controls.',
       icon: 'upload_file',
       slugs: [],
     },
@@ -276,12 +275,11 @@ export const TEST_SESSIONS: Record<string, TestSessionDef[]> = {
     {
       id: 'security-billing',
       title: 'Security & billing',
-      intro: 'Encryption, two-factor authentication, billing descriptor, and security incidents.',
+      intro: 'Encryption, two-factor authentication, and security incidents. Discrete billing comes from the Pricing tab.',
       icon: 'lock',
       slugs: [
         'encryption',
         'two-factor-authentication',
-        'billing-descriptor',
         'security-incidents',
       ],
     },

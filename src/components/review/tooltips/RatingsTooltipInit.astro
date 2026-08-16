@@ -321,7 +321,7 @@
 
     if (activeTrigger === trigger && activePanel) {
       if (isMobileTrigger) {
-        hidePanel();
+        // Keep open on mobile — close only via X / backdrop (tap does not toggle-close).
         return;
       }
       cancelHide();
@@ -359,8 +359,6 @@
       if (trigger.dataset.tooltipBound === 'true') return;
       trigger.dataset.tooltipBound = 'true';
 
-      trigger.addEventListener('mouseenter', () => showPanel(trigger));
-      trigger.addEventListener('mouseleave', scheduleHide);
       trigger.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -375,8 +373,14 @@
         }
         showPanel(trigger);
       });
-      trigger.addEventListener('focus', () => showPanel(trigger));
-      trigger.addEventListener('blur', scheduleHide);
+
+      // Hover/focus only on desktop — on mobile, focus+click was opening then instantly closing.
+      if (!isMobileViewport()) {
+        trigger.addEventListener('mouseenter', () => showPanel(trigger));
+        trigger.addEventListener('mouseleave', scheduleHide);
+        trigger.addEventListener('focus', () => showPanel(trigger));
+        trigger.addEventListener('blur', scheduleHide);
+      }
     });
 
     if (document.body.dataset.ratingsTooltipGlobalBound !== 'true') {

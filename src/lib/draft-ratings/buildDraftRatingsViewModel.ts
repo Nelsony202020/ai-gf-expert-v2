@@ -19,6 +19,7 @@ import {
 } from './notApplicableExplanation';
 import { mediaMatchesProofTag, bonusExtraCaption, LIVE_CAM_PROOF_TAG } from '../../components/admin/testing/proofTags';
 import { formatBonusFeaturesSummaryLine } from './resolveEvidenceDisplay';
+import { formatSupportChannelsDetailLines } from '../testing/supportChannelsDisplay';
 import { evidenceGroupsForSubscore, scopeForContributor } from '../ratings/evidenceCategoryMapping';
 import { resolveDbEvidenceSlug, buildSubscoreCalcDrawer, computeWeightedGroupScore } from '../ratings/evidenceGroupScoring';
 import { buildEvidenceIndex, type EvidenceIndex } from '../ratings/evidenceIndex';
@@ -322,6 +323,10 @@ function measurementFromRow(
     status: mapStatus(row),
     normalizedScore: row.normalizedScore ?? null,
   };
+  if (slug === 'support-channels' && row.rawValue) {
+    const lines = formatSupportChannelsDetailLines(row.rawValue);
+    if (lines.length > 0) measurement.detailLines = lines;
+  }
   if (isUnavailableMeasurement(measurement)) {
     return { ...measurement, normalizedScore: null };
   }

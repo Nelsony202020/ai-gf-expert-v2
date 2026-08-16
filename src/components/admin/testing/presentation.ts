@@ -129,6 +129,8 @@ export function checklistConfig(def: EntityRow): ChecklistConfig | null {
 const GENDER_GROUP_OPTIONS: DefOption[] = [
   { value: 'Female', label: 'Female' },
   { value: 'Male', label: 'Male' },
+  { value: 'Anime Female', label: 'Anime Female' },
+  { value: 'Anime Male', label: 'Anime Male' },
   { value: 'Transgender', label: 'Transgender' },
   { value: 'Non-binary', label: 'Non-binary' },
 ];

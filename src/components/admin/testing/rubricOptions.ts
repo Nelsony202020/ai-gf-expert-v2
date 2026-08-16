@@ -74,6 +74,18 @@ export const NA_OPTION_HIDDEN_SLUGS = new Set([
   'support-helpfulness',
   'paywalls',
   'restrictions',
+  'amount',
+  'ethnicities',
+  'personalities',
+  'scenarios',
+  'female-count',
+  'male-count',
+  'anime-female-count',
+  'anime-male-count',
+  'transgender-count',
+  'non-binary-count',
+  'other-count',
+  'retention',
   ...Object.keys(TESTER_RUBRIC_OPTIONS),
 ]);
 

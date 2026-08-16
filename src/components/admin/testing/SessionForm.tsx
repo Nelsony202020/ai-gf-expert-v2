@@ -35,6 +35,16 @@ import {
   formatFreeAccessAllowanceSummary,
   isFreeAccessAllowanceSlug,
 } from '../../../lib/testing/freeAccessAllowance';
+import {
+  formatLibraryAmountSummary,
+  formatLibraryVarietySummary,
+  isLibraryAmountSlug,
+  isLibraryVarietyQualitativeSlug,
+} from '../../../lib/testing/libraryVariety';
+import {
+  formatCustomPromptPresetSummary,
+  isCustomPromptPresetSlug,
+} from '../../../lib/testing/customPromptPreset';
 import { PolicyDocsSession, type PolicyDocsSessionHandle } from './PolicyDocsSession';
 import { readAiPrivacyDetails, resolvedEvidenceRaw } from '../../../lib/ai-privacy/clientHelpers';
 import { isAiPrivacySlug } from '../../../lib/ai-privacy/types';
@@ -44,7 +54,8 @@ import { AiPrivacyEvidencePanel } from './AiPrivacyEvidencePanel';
 import { buildProofCountMap } from './proofCounts';
 import { PROOF_ACCEPTED_TYPES, uploadProofFilesParallel } from './proofUpload';
 import { COMBINED_EVIDENCE_SLUGS, type TestSessionDef } from './sessions';
-import { readImageEditingStatus, isGenderCountApplicable } from './capabilityGating';
+import { readImageEditingStatus } from './capabilityGating';
+import { isGenderCountApplicable, genderCountSlugsToClear } from '../../../lib/testing/genderCountGating';
 import {
   isDedicatedVideoGenerationBlocked,
   VIDEO_NOT_POSSIBLE_DETAIL,
@@ -387,6 +398,31 @@ export const SessionForm = forwardRef<SessionFormHandle, {
     if (draft?.raw !== undefined) return draft.raw;
     return resultByDef.get(gendersDef.id)?.rawValue;
   }, [items, drafts, resultByDef]);
+
+  // When a gender group is deselected, hide its count field and clear the draft answer.
+  useEffect(() => {
+    if (categorySlug !== 'characters') return;
+    const toClear = new Set(genderCountSlugsToClear(gendersRaw));
+    if (toClear.size === 0) return;
+    setDrafts((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const { def } of items) {
+        const slug = String(def.slug ?? '');
+        if (!toClear.has(slug)) continue;
+        const cur = next[def.id] ?? initialDraft(resultByDef.get(def.id));
+        if (cur.raw === undefined && !cur.na && !cur.dirty) continue;
+        next[def.id] = {
+          ...cur,
+          raw: undefined,
+          na: false,
+          dirty: true,
+        };
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [gendersRaw, categorySlug, items, resultByDef]);
 
   const visibleStandaloneItems = useMemo(
     () =>
@@ -838,7 +874,16 @@ export const SessionForm = forwardRef<SessionFormHandle, {
             const isUnknown = Boolean(raw && 'status' in raw && raw.status === 'unknown');
 
             let publicResult = (existing?.publicResult as string | undefined) ?? undefined;
-            if (!draft.na && draft.raw && isFreeAccessAllowanceSlug(String(def.slug))) {
+            if (!draft.na && draft.raw && isLibraryVarietyQualitativeSlug(String(def.slug))) {
+              const formatted = formatLibraryVarietySummary(draft.raw, String(def.slug));
+              if (formatted) publicResult = formatted;
+            } else if (!draft.na && draft.raw && isLibraryAmountSlug(String(def.slug))) {
+              const formatted = formatLibraryAmountSummary(draft.raw);
+              if (formatted) publicResult = formatted;
+            } else if (!draft.na && draft.raw && isCustomPromptPresetSlug(String(def.slug))) {
+              const formatted = formatCustomPromptPresetSummary(draft.raw);
+              if (formatted) publicResult = formatted;
+            } else if (!draft.na && draft.raw && isFreeAccessAllowanceSlug(String(def.slug))) {
               const formatted = formatFreeAccessAllowanceSummary(String(def.slug), draft.raw);
               if (formatted !== '—') publicResult = formatted;
             } else if (!draft.na && draft.raw && !publicResult) {

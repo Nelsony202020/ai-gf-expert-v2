@@ -430,13 +430,20 @@ export function computePricingSuggestions(source: PricingSourceData): Map<string
   if (profile) {
     const discreet = Boolean(profile.discreetBilling);
     const descriptor = String(profile.billingDescriptor ?? '').trim();
+    const discreetRaw = discreet
+      ? { status: 'yes' as const, detail: descriptor ? { label: descriptor } : undefined }
+      : { status: 'no' as const };
+    const discreetNote = discreet
+      ? `Discreet billing enabled${descriptor ? ` (${descriptor})` : ''} — from the Pricing tab.`
+      : 'Discreet billing not enabled — from the Pricing tab.';
     out.set('pricing/payment-privacy', {
-      raw: discreet
-        ? { status: 'yes' as const, detail: descriptor ? { label: descriptor } : undefined }
-        : { status: 'no' as const },
-      note: discreet
-        ? `Discreet billing enabled${descriptor ? ` (${descriptor})` : ''} — from the Pricing tab.`
-        : 'Discreet billing not enabled — from the Pricing tab.',
+      raw: discreetRaw,
+      note: discreetNote,
+    });
+    // Privacy "billing descriptor" score is driven by the Pricing tab toggle (not a separate test Q).
+    out.set('privacy/billing-descriptor', {
+      raw: discreetRaw,
+      note: discreetNote,
     });
   }
 
