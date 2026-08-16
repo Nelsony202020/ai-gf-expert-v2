@@ -3,7 +3,7 @@
 // them as proof media, then one AI call classifies + extracts everything.
 
 import { useRef, useState } from 'react';
-import { api, dataApi } from '../api';
+import { api } from '../api';
 import { Button, ErrorNote, Icon } from '../ui';
 import { ImageHoverThumb } from '../testing/ProofThumb';
 import { PRICING_PROOF_CAPTION } from '../../../lib/media/catalog';
@@ -27,7 +27,6 @@ export function PricingImportCard({
   const [extracting, setExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [addToGallery, setAddToGallery] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   async function addFiles(files: File[]) {
@@ -40,19 +39,11 @@ export function PricingImportCard({
         const form = new FormData();
         form.set('file', file);
         form.set('adult', '0');
-        form.set('role', addToGallery ? 'gallery' : 'proof');
+        form.set('role', 'proof');
         form.set('caption', PRICING_PROOF_CAPTION);
         form.set('testCategory', 'pricing');
         form.set('productId', productId);
         const created = await api.upload<{ id: string; url?: string }>('/api/admin/media/upload', form);
-        if (addToGallery) {
-          await dataApi.update('media', created.id, {
-            approved: true,
-            role: 'gallery',
-            caption: PRICING_PROOF_CAPTION,
-            testCategory: 'pricing',
-          });
-        }
         setShots((prev) => [
           ...prev,
           { mediaId: created.id, url: created.url ?? URL.createObjectURL(file), name: file.name },
@@ -122,15 +113,6 @@ export function PricingImportCard({
           </button>
           .
         </p>
-        <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-          <input
-            type="checkbox"
-            checked={addToGallery}
-            onChange={(e) => setAddToGallery(e.target.checked)}
-            className="rounded border-slate-300"
-          />
-          Add to gallery
-        </label>
         <input
           ref={fileInput}
           type="file"

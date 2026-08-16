@@ -214,7 +214,9 @@ export function PricingTab() {
             snapshot={snapshot}
             tiers={tiers}
             canEdit={canEdit}
+            productId={ws.productId}
             onPatch={patchSnapshot}
+            onAiDraft={setAiDraft}
           />
         ) : (
           <SnapshotSetupCard canEdit={canEdit} />
@@ -584,19 +586,49 @@ function PricingHeader({
   snapshot,
   tiers,
   canEdit,
+  productId,
   onPatch,
+  onAiDraft,
 }: {
   snapshot: EntityRow;
   tiers: EntityRow[];
   canEdit: boolean;
+  productId: string;
   onPatch: (patch: Record<string, unknown>) => void;
+  onAiDraft: (draft: PricingDraftClient) => void;
 }) {
   const me = useMe();
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
+  useToastError(extractError, () => setExtractError(null));
   const daysSinceVerified = snapshot.verifiedAt
     ? Math.floor((Date.now() - Number(snapshot.verifiedAt)) / 86_400_000)
     : null;
   const activeTier = tiers.filter((t) => t.active !== false && String(t.name ?? '').trim());
   const referencePlanName = String(snapshot.referencePlanName ?? '');
+  const evidenceIds: string[] = Array.isArray(snapshot.evidenceMediaIds)
+    ? snapshot.evidenceMediaIds.map(String)
+    : [];
+
+  async function extractFromEvidence() {
+    if (evidenceIds.length === 0) {
+      setExtractError('Add pricing screenshots below first, then run AI adjust.');
+      return;
+    }
+    setExtractError(null);
+    setExtracting(true);
+    try {
+      const { draft } = await api.post<{ draft: PricingDraftClient }>('/api/admin/ai-pricing/extract', {
+        productId,
+        mediaIds: evidenceIds,
+      });
+      onAiDraft(draft);
+    } catch (e) {
+      setExtractError(e instanceof Error ? e.message : 'AI extract failed');
+    } finally {
+      setExtracting(false);
+    }
+  }
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -622,6 +654,24 @@ function PricingHeader({
           </Button>
         )}
       </div>
+      {canEdit && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            className="text-xs"
+            disabled={extracting}
+            onClick={() => void extractFromEvidence()}
+          >
+            <Icon name="auto_awesome" className="!text-[14px]" />
+            {extracting
+              ? `Reading ${evidenceIds.length || ''} screenshot${evidenceIds.length === 1 ? '' : 's'}…`
+              : 'AI adjust from screenshots'}
+          </Button>
+          <span className="text-[11px] text-slate-400">
+            Reads the evidence images below and opens a review to update numbers.
+          </span>
+        </div>
+      )}
       {activeTier.length > 0 && (
         <label className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
           <span>Reference plan for metrics</span>
