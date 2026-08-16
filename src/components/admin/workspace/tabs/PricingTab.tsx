@@ -1285,7 +1285,6 @@ function PricingEvidence({
   const [error, setError] = useState<string | null>(null);
   useToastError(error, () => setError(null));
   const fileInput = useRef<HTMLInputElement>(null);
-  const [addToGallery, setAddToGallery] = useState(false);
   const ids: string[] = Array.isArray(row.evidenceMediaIds) ? row.evidenceMediaIds : [];
   const mediaById = new Map(ws.related.mediaAll.map((m) => [m.id, m]));
 
@@ -1302,11 +1301,7 @@ function PricingEvidence({
   async function detachEvidence(id: string) {
     const removed = mediaById.get(id);
     await patch(ids.filter((x) => x !== id));
-    if (
-      removed &&
-      !addToGallery &&
-      !pricingProofVisibleInLibrary(removed, ws.related.pricingSnapshots)
-    ) {
+    if (removed && !pricingProofVisibleInLibrary(removed, ws.related.pricingSnapshots)) {
       try {
         await dataApi.update('media', id, { deletedAt: Date.now() });
         decrementPricingUnverifiedUploads(1);
@@ -1331,28 +1326,19 @@ function PricingEvidence({
         const form = new FormData();
         form.set('file', file);
         form.set('adult', '0');
-        form.set('role', addToGallery ? 'gallery' : 'proof');
+        form.set('role', 'proof');
         form.set('caption', PRICING_PROOF_CAPTION);
         form.set('testCategory', 'pricing');
         form.set('productId', ws.productId);
         const created = await api.upload<{ id: string }>('/api/admin/media/upload', form);
-        if (addToGallery) {
-          await dataApi.update('media', created.id, {
-            approved: true,
-            role: 'gallery',
-            caption: PRICING_PROOF_CAPTION,
-            testCategory: 'pricing',
-          });
-        }
+        await dataApi.update('media', created.id, pricingProofMediaPatch());
         newIds.push(created.id);
       }
       await patch(newIds);
-      if (!addToGallery) {
-        incrementPricingUnverifiedUploads(images.length);
-        setPricingUnverifiedUploadCount(
-          countUnverifiedPricingProof(ws.related.mediaAll, ws.related.pricingSnapshots) + images.length,
-        );
-      }
+      incrementPricingUnverifiedUploads(images.length);
+      setPricingUnverifiedUploadCount(
+        countUnverifiedPricingProof(ws.related.mediaAll, ws.related.pricingSnapshots) + images.length,
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
@@ -1426,19 +1412,6 @@ function PricingEvidence({
         )}
         {!canEdit && ids.length === 0 && <span className="text-xs text-slate-400">none</span>}
       </div>
-      {canEdit && (
-        <div className={compact ? 'mt-1.5' : 'mt-2'}>
-          <label className="inline-flex cursor-pointer items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-            <input
-              type="checkbox"
-              checked={addToGallery}
-              onChange={(e) => setAddToGallery(e.target.checked)}
-              className="rounded border-slate-300"
-            />
-            Add to gallery
-          </label>
-        </div>
-      )}
       {error && <p className="mt-1 text-[10px] text-red-500">{error}</p>}
       <input
         ref={fileInput}
@@ -1459,16 +1432,7 @@ function PricingEvidence({
             setShowPicker(false);
             void (async () => {
               try {
-                if (addToGallery) {
-                  await dataApi.update('media', id, {
-                    approved: true,
-                    role: 'gallery',
-                    caption: PRICING_PROOF_CAPTION,
-                    testCategory: 'pricing',
-                  });
-                } else {
-                  await dataApi.update('media', id, pricingProofMediaPatch());
-                }
+                await dataApi.update('media', id, pricingProofMediaPatch());
                 await ws.refreshRelated();
                 await patch([...ids, id]);
               } catch (e) {
@@ -1684,10 +1648,7 @@ function PaymentProfileModal({
                 }`}
               >
                 {selected && (
-                  <Icon
-                    name="check_circle"
-                    className="absolute right-1.5 top-1.5 !text-[14px] text-pink-500"
-                  />
+                  <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-pink-500" aria-hidden="true" />
                 )}
                 <Icon name={m.icon} className="!text-[22px]" />
                 <span className="text-xs font-medium">{m.label}</span>

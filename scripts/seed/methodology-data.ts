@@ -53,7 +53,7 @@ export interface EvidenceDefSeed {
   scoringRule: ScoringRule;
 }
 
-export const METHODOLOGY_VERSION = 'v3.2';
+export const METHODOLOGY_VERSION = 'v3.1';
 
 export const categorySeeds: CategorySeed[] = [
   {

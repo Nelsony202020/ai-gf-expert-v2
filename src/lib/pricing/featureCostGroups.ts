@@ -27,6 +27,7 @@ export interface FeatureCostFamilyDef {
 }
 
 export const EXTRACT_FEATURE_CATEGORIES = [
+  'chat_message',
   'standard_image',
   'video_generation',
   'voice_message',
@@ -37,6 +38,14 @@ export const EXTRACT_FEATURE_CATEGORIES = [
 export type ExtractFeatureCategory = (typeof EXTRACT_FEATURE_CATEGORIES)[number];
 
 export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
+  {
+    key: 'chat_message',
+    label: 'Chat message',
+    featureTypes: ['chat_message', 'text_message', 'message'],
+    defaultFeatureType: 'chat_message',
+    defaultUnit: 'per_message',
+    unitOptions: ['per_message', 'per_request'],
+  },
   {
     key: 'standard_image',
     label: 'Standard image',
@@ -50,7 +59,7 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
     ],
     defaultFeatureType: 'standard_image',
     defaultUnit: 'per_image',
-    unitOptions: ['per_image', 'per_batch'],
+    unitOptions: ['per_image', 'per_batch', 'per_message'],
   },
   {
     key: 'voice_message',
@@ -58,7 +67,7 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
     featureTypes: ['voice_message'],
     defaultFeatureType: 'voice_message',
     defaultUnit: 'per_message',
-    unitOptions: ['per_message', 'per_second'],
+    unitOptions: ['per_message', 'per_second', 'per_minute'],
   },
   {
     key: 'voice_call',
@@ -66,7 +75,7 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
     featureTypes: ['voice_call'],
     defaultFeatureType: 'voice_call',
     defaultUnit: 'per_minute',
-    unitOptions: ['per_minute', 'per_second'],
+    unitOptions: ['per_minute', 'per_second', 'per_message'],
   },
   {
     key: 'video_generation',
@@ -81,7 +90,7 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
     ],
     defaultFeatureType: 'standard_video',
     defaultUnit: 'per_generation',
-    unitOptions: ['per_generation', 'per_second', 'per_video'],
+    unitOptions: ['per_generation', 'per_second', 'per_video', 'per_message'],
   },
 ] as const;
 

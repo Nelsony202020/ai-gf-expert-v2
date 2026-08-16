@@ -1350,8 +1350,10 @@ function NewRunModal({
     dataApi
       .list('methodologyVersions')
       .then((r) => {
-        setVersions(r.rows);
-        const active = r.rows.find((v) => v.status === 'active');
+        // Only v3.1 for now — hide v3.2 from new runs.
+        const allowed = r.rows.filter((v) => !String(v.version ?? '').includes('3.2'));
+        setVersions(allowed);
+        const active = allowed.find((v) => v.status === 'active') ?? allowed[0];
         if (active) setVersionId(active.id);
       })
       .catch(() => {});

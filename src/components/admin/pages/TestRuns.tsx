@@ -123,8 +123,9 @@ function NewRunModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
   useEffect(() => {
     dataApi.list('products').then((r) => setProducts(r.rows)).catch(() => {});
     dataApi.list('methodologyVersions').then((r) => {
-      setVersions(r.rows);
-      const active = r.rows.find((v) => v.status === 'active');
+      const allowed = r.rows.filter((v) => !String(v.version ?? '').includes('3.2'));
+      setVersions(allowed);
+      const active = allowed.find((v) => v.status === 'active') ?? allowed[0];
       if (active) setVersionId(active.id);
     }).catch(() => {});
   }, []);

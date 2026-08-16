@@ -18,22 +18,19 @@ import {
 
 export { FEATURE_COST_FAMILIES, PREDEFINED_FEATURE_COSTS } from '../../../../lib/pricing/featureCostGroups';
 
-type CostMode =
-  | 'priced'
-  | 'included'
-  | 'unlimited'
-  | 'pay_as_you_go'
-  | 'not_available'
-  | 'unknown';
+type CostMode = 'priced' | 'unlimited' | 'not_available' | 'unknown';
 
 const COST_MODE_OPTIONS: Array<{ value: CostMode; label: string }> = [
-  { value: 'priced', label: 'Credit cost' },
-  { value: 'included', label: 'Included' },
-  { value: 'unlimited', label: 'Unlimited' },
-  { value: 'pay_as_you_go', label: 'Pay as you go' },
-  { value: 'not_available', label: 'Not available' },
   { value: 'unknown', label: 'Cost unknown' },
+  { value: 'not_available', label: 'Not available' },
+  { value: 'priced', label: 'Credit cost' },
+  { value: 'unlimited', label: 'Unlimited' },
 ];
+
+/** Modes where a unit (per minute, etc.) does not apply. */
+function unitLocked(mode: CostMode): boolean {
+  return mode === 'unlimited' || mode === 'not_available' || mode === 'unknown';
+}
 
 interface VariantDraft {
   id: string | null;
@@ -48,15 +45,14 @@ interface VariantDraft {
 function costModeFromRow(cost: EntityRow): CostMode {
   const availability = featureCostAvailability(cost as any);
   if (availability === 'priced') return 'priced';
-  if (
-    availability === 'included' ||
-    availability === 'unlimited' ||
-    availability === 'pay_as_you_go' ||
-    availability === 'not_available' ||
-    availability === 'unknown'
-  ) {
-    return availability;
+  if (availability === 'unlimited' || availability === 'included') return 'unlimited';
+  if (availability === 'not_available') return 'not_available';
+  if (availability === 'pay_as_you_go') {
+    // Legacy: treat pay-as-you-go with a number as credit cost.
+    const range = featureCostRange(cost as any);
+    return range && range.min > 0 ? 'priced' : 'unknown';
   }
+  if (availability === 'unknown') return 'unknown';
   return 'unknown';
 }
 
@@ -172,6 +168,8 @@ export function SimpleFeatureCosts({
             !summary && modes.size === 1
               ? COST_MODE_OPTIONS.find((o) => o.value === [...modes][0])?.label
               : null;
+          const hideUnit =
+            variants.length > 0 && variants.every((v) => unitLocked(costModeFromRow(v)));
 
           return (
             <tr key={family.key} className="border-b border-slate-50 dark:border-slate-800/60">
@@ -191,7 +189,13 @@ export function SimpleFeatureCosts({
                 )}
               </td>
               <td className="px-2 py-2 align-top text-slate-600 dark:text-slate-300">
-                {unit === 'mixed' ? 'mixed' : (UNIT_LABELS[unit] ?? unit)}
+                {hideUnit ? (
+                  <span className="text-slate-400">—</span>
+                ) : unit === 'mixed' ? (
+                  'mixed'
+                ) : (
+                  UNIT_LABELS[unit] ?? unit
+                )}
               </td>
               <td className="px-2 py-2 text-right align-top">
                 {canEdit && variants.length > 0 && !loading && (
@@ -333,30 +337,22 @@ function FeatureVariantsModal({
         ) {
           throw new Error('Enter a coin cost for label-only variants (e.g. Video with audio), or set status to Cost unknown.');
         }
-        if ((mode === 'priced' || mode === 'pay_as_you_go') && creditCost == null && !v.id) {
-          // Allow empty new priced rows to be skipped; existing rows can become unknown.
-        }
 
         const mapped = variantFieldsToFeatureCost(family, {
           model: v.model.trim() || null,
           durationSeconds: duration ?? null,
           label: v.customLabel.trim() || null,
-          creditCost: mode === 'priced' || mode === 'pay_as_you_go' ? creditCost ?? null : null,
-          unit: v.unit,
+          creditCost: mode === 'priced' ? creditCost ?? null : null,
+          unit: unitLocked(mode) ? family.defaultUnit : v.unit,
         });
         const costType =
-          mode === 'priced'
-            ? creditCost != null
-              ? 'fixed'
-              : 'unknown'
-            : mode;
+          mode === 'priced' ? (creditCost != null ? 'fixed' : 'unknown') : mode;
         const fields: Record<string, unknown> = {
           ...mapped,
           minCost: undefined,
           maxCost: undefined,
           costType,
-          creditCost:
-            mode === 'priced' || mode === 'pay_as_you_go' ? creditCost ?? undefined : undefined,
+          creditCost: mode === 'priced' ? creditCost ?? undefined : undefined,
           active: true,
           sortOrder: i,
         };
@@ -461,9 +457,13 @@ function FeatureVariantsModal({
                 <Field label="Status">
                   <Select
                     value={v.costMode}
-                    onChange={(e) =>
-                      patchVariant(index, { costMode: e.target.value as CostMode })
-                    }
+                    onChange={(e) => {
+                      const next = e.target.value as CostMode;
+                      patchVariant(index, {
+                        costMode: next,
+                        ...(next !== 'priced' ? { creditCost: '' } : {}),
+                      });
+                    }}
                   >
                     {COST_MODE_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>
@@ -472,7 +472,7 @@ function FeatureVariantsModal({
                     ))}
                   </Select>
                 </Field>
-                {(v.costMode === 'priced' || v.costMode === 'pay_as_you_go') && (
+                {v.costMode === 'priced' && (
                   <Field label={`Cost in ${creditLabel}`}>
                     <TextInput
                       inputMode="decimal"
@@ -485,7 +485,12 @@ function FeatureVariantsModal({
                   </Field>
                 )}
                 <Field label="Unit">
-                  <Select value={v.unit} onChange={(e) => patchVariant(index, { unit: e.target.value })}>
+                  <Select
+                    value={v.unit}
+                    disabled={unitLocked(v.costMode)}
+                    onChange={(e) => patchVariant(index, { unit: e.target.value })}
+                    className={unitLocked(v.costMode) ? 'cursor-not-allowed opacity-50' : undefined}
+                  >
                     {family.unitOptions.map((u) => (
                       <option key={u} value={u}>
                         {UNIT_LABELS[u] ?? u}
