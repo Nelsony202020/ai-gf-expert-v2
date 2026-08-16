@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '../ui';
 import { ResultExplanationsPanel } from './explanations/ResultExplanationsPanel';
 import { setExplanationLeaveGuard } from './explanations/explanationLeaveGuard';
 import { SubscoreTakeawaysPanel } from './takeaways/SubscoreTakeawaysPanel';
@@ -48,33 +49,43 @@ export function ReviewCopyPanel({
             AI-generated drawer text for evidence groups and subscore calculations.
           </p>
         </div>
-        <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-900">
+        <div
+          role="tablist"
+          aria-label="Review copy sections"
+          className="inline-flex rounded-xl border border-slate-200/90 bg-slate-100/80 p-1 shadow-inner dark:border-slate-700 dark:bg-slate-900/80"
+        >
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === 'explanations'}
             onClick={() => setTab('explanations')}
-            className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
               tab === 'explanations'
-                ? 'bg-white text-pink-700 shadow-sm dark:bg-slate-800 dark:text-pink-300'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                ? 'bg-white text-pink-700 shadow-sm ring-1 ring-slate-200/80 dark:bg-slate-800 dark:text-pink-300 dark:ring-slate-600'
+                : 'text-slate-600 hover:bg-white/60 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
             }`}
           >
-            Evidence explanations
+            <Icon name="description" className="!text-[15px]" />
+            Evidence
             {explanationsNeedsReview > 0 && (
-              <span className="ml-1 text-amber-600">({explanationsNeedsReview})</span>
+              <span className="ml-0.5 font-medium text-amber-600">({explanationsNeedsReview})</span>
             )}
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === 'takeaways'}
             onClick={() => setTab('takeaways')}
-            className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
               tab === 'takeaways'
-                ? 'bg-white text-pink-700 shadow-sm dark:bg-slate-800 dark:text-pink-300'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                ? 'bg-white text-pink-700 shadow-sm ring-1 ring-slate-200/80 dark:bg-slate-800 dark:text-pink-300 dark:ring-slate-600'
+                : 'text-slate-600 hover:bg-white/60 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
             }`}
           >
-            Subscore takeaways
+            <Icon name="analytics" className="!text-[15px]" />
+            Subscore
             {takeawaysNeedsReview > 0 && (
-              <span className="ml-1 text-amber-600">({takeawaysNeedsReview})</span>
+              <span className="ml-0.5 font-medium text-amber-600">({takeawaysNeedsReview})</span>
             )}
           </button>
         </div>

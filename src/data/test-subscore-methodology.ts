@@ -2735,11 +2735,11 @@ const chatFeaturesMedia: TestSubscoreMethodologyContent = {
       'The live methodology gives more weight to media you receive from the character than media you send yourself.',
     ],
     evidenceWeights: [
-      { label: 'Images Sent', weight: 7 },
-      { label: 'Images Received', weight: 21 },
-      { label: 'Voice Sent', weight: 7 },
-      { label: 'Voice Received', weight: 23 },
-      { label: 'Chat Video', weight: 20 },
+      { label: 'Images you can send', weight: 7 },
+      { label: 'In-chat images', weight: 21 },
+      { label: 'Voice messages you can send', weight: 7 },
+      { label: 'Voice message generation', weight: 23 },
+      { label: 'In-chat video', weight: 20 },
       { label: 'GIFs', weight: 2 },
       { label: 'Reactions', weight: 20 },
     ],
@@ -2766,7 +2766,7 @@ const chatFeaturesMedia: TestSubscoreMethodologyContent = {
   },
   evidenceHierarchy: {
     explanation:
-      'Media is organized into 7 evidence groups. Each group contains one scored test: Images Sent, Images Received, Voice Sent, Voice Received, Chat Video, GIFs, and Reactions.',
+      'Media is organized into 7 evidence groups. Each group contains one scored test: Images you can send, In-chat images, Voice messages you can send, Voice message generation, In-chat video, GIFs, and Reactions.',
     sectionIntro: 'Media has 7 evidence groups made up of 7 scored tests.',
   },
   evidenceGroupContent: {
@@ -3093,10 +3093,10 @@ const chatFeaturesInteraction: TestSubscoreMethodologyContent = {
     paragraphs: [
       'Every test gets a score from 0 to 10.',
       'We multiply each test score by how much it counts. We then add all the points together to calculate the final Interaction score.',
-      'Voice Calls has the highest weight. Group Chat has the lowest weight.',
+      'AI phone calls has the highest weight. Group Chat has the lowest weight.',
     ],
     evidenceWeights: [
-      { label: 'Voice Calls', weight: 27 },
+      { label: 'AI phone calls', weight: 27 },
       { label: 'Chat Modes', weight: 22 },
       { label: 'Mode Types', weight: 17 },
       { label: 'Group Chat', weight: 5 },
@@ -3126,7 +3126,7 @@ const chatFeaturesInteraction: TestSubscoreMethodologyContent = {
   },
   evidenceHierarchy: {
     explanation:
-      'Interaction is organized into 6 evidence groups. Each group contains one scored test: Voice Calls, Chat Modes, Mode Types, Group Chat, Double Texting, and Proactive Messages.',
+      'Interaction is organized into 6 evidence groups. Each group contains one scored test: AI phone calls, Chat Modes, Mode Types, Group Chat, Double Texting, and Proactive Messages.',
     sectionIntro: 'Interaction has 6 evidence groups made up of 6 scored tests.',
   },
   evidenceGroupContent: {
@@ -4883,12 +4883,12 @@ const videoCapabilities: TestSubscoreMethodologyContent = {
       'We multiply each test score by how much it counts. We then add all the points together to calculate the final Capabilities score.',
       'Capabilities makes up 34% of the Video score.',
       'The stored test weights do not add up to 100%, so we convert them into the percentages below.',
-      'The live system gives Text-to-Video the smallest weight. Image-to-Video, Chat Video, and Audio count the most.',
+      'The live system gives Text-to-Video the smallest weight. Image-to-Video, In-chat video, and Audio count the most.',
     ],
     evidenceWeights: [
       { label: 'Text-to-Video', weight: 5.68 },
       { label: 'Image-to-Video', weight: 19.32 },
-      { label: 'Chat Video', weight: 19.32 },
+      { label: 'In-chat video', weight: 19.32 },
       { label: 'Audio', weight: 19.32 },
       { label: 'Maximum Length', weight: 18.18 },
       { label: 'Maximum Resolution', weight: 18.18 },
@@ -4916,7 +4916,7 @@ const videoCapabilities: TestSubscoreMethodologyContent = {
   },
   evidenceHierarchy: {
     explanation:
-      'Capabilities is organized into 6 evidence groups. Each group contains one scored test: Text-to-Video, Image-to-Video, Chat Video, Audio, Maximum Length, and Maximum Resolution.',
+      'Capabilities is organized into 6 evidence groups. Each group contains one scored test: Text-to-Video, Image-to-Video, In-chat video, Audio, Maximum Length, and Maximum Resolution.',
     sectionIntro: 'Capabilities has 6 evidence groups made up of 6 scored tests.',
   },
   evidenceGroupContent: {

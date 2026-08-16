@@ -316,7 +316,17 @@ export function computePricingSuggestions(source: PricingSourceData): Map<string
       return;
     }
 
-    if (!bestPkg) return;
+    if (!bestPkg) {
+      for (const key of slugKeys) {
+        out.set(key, {
+          raw: { text: 'Cost unknown' },
+          note:
+            'Feature has a credit cost, but no token package with both a price and credits — cannot convert to dollars.',
+          isUnknown: true,
+        });
+      }
+      return;
+    }
     const money = estimatedFeatureMoneyCost(bestPkg, cost);
     if (!money) {
       for (const key of slugKeys) {
@@ -386,6 +396,15 @@ export function computePricingSuggestions(source: PricingSourceData): Map<string
             : `Smallest: ${fmt(smallest)} · Largest: ${fmt(largest)}`,
       },
       note: rate !== null ? `Best rate: ${fmtMoney(rate)} per 100 credits.` : 'From the Pricing tab packages.',
+    });
+  } else {
+    out.set('pricing/top-up-value', {
+      raw: { text: 'No top-up packages' },
+      note:
+        packages.length === 0
+          ? 'No token packages in the Pricing tab.'
+          : 'Token packages are missing a usable price and/or credits total.',
+      isUnknown: true,
     });
   }
 

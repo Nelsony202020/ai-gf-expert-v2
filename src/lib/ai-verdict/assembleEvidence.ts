@@ -7,6 +7,10 @@ import {
   applyPricingAutofillToEvidence,
   type PricingAutofillDef,
 } from '../testing/pricingAutofill';
+import {
+  evidenceDisplayName,
+  isAvailabilityMeasurement,
+} from '../testing/evidencePublicLabels';
 
 export interface AssembledEvidenceItem {
   id: string;
@@ -17,6 +21,9 @@ export interface AssembledEvidenceItem {
   subscoreName?: string;
   required: boolean;
   weight: number;
+  measurementType?: string;
+  /** True when Yes/No/Limited only means the feature exists — not that quality is good. */
+  availabilityOnly?: boolean;
   publicResult: string | null;
   publicExplanation: string | null;
   normalizedScore: number | null;
@@ -203,15 +210,18 @@ export async function assembleEvidence(opts: {
           scoringRule: def.scoringRule,
           unit: def.unit ? String(def.unit) : undefined,
         });
+        const measurementType = String(def.measurementType ?? '');
         evidence.push({
           id: def.id,
           slug: def.slug,
-          name: def.name,
+          name: evidenceDisplayName(String(def.slug), String(def.name ?? def.slug)),
           categorySlug: cat.slug,
           subscoreSlug: sub.slug,
           subscoreName: String(sub.name ?? sub.slug),
           required: Boolean(def.required),
           weight: def.weight ?? 1,
+          measurementType,
+          availabilityOnly: isAvailabilityMeasurement(measurementType),
           publicResult: result?.publicResult ?? null,
           publicExplanation: result?.publicExplanation ?? null,
           normalizedScore: result?.normalizedScore ?? null,

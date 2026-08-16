@@ -20,11 +20,15 @@ STYLE
 - Use evidence-group names from the breakdown (e.g. "Amount", "Genders") — not raw test counts.
 - Say "scored well" or "scored lower" — keep it simple.
 
+AVAILABILITY ≠ QUALITY
+- A high score on a Yes/No feature group means the feature was available in testing — not that quality is excellent. Prefer "scored well on availability" language over "fantastic" quality praise.
+
 DO NOT
 - Do not list individual test counts (no "146 female characters").
 - Do not explain methodology, weights, or math.
 - Do not use "in contrast", "mainly focused", "not ideal for those looking for".
 - Do not speak to the reader ("you should", "if you want").
+- Do not paste evidence IDs or UUIDs into the text.
 
 NEVER USE
 - strong overall / room to improve / well-rounded / impressive

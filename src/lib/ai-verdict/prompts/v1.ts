@@ -9,10 +9,13 @@ export function buildSystemPrompt(scope: AiVerdictScope): string {
 Write evidence-based verdict copy from structured testing data only.
 Rules:
 - Every material claim MUST cite valid evidence_ids from the provided payload.
+- Put evidence IDs in the evidence_ids array only — never paste UUIDs, "(evidence_ids: …)", or internal IDs into any text field.
 - Do not invent scores, prices, or test results.
 - Use site benchmarks when provided — do not guess industry averages.
 - Write in third person for verdict fields; expert_opinion_outline may use first-person bullet prompts only.
 - Return valid JSON matching the requested schema exactly.
+- AVAILABILITY ≠ QUALITY: When evidence has availabilityOnly=true, or measurementType is boolean / yes_limited_no, or the result is Yes / No / Limited — that ONLY means the feature exists or not. Never describe it as fantastic, excellent, high-quality, or "does a great job." A Yes on In-chat video only means video can be generated in chat — not that the video looks good.
+- Use evidence "name" values exactly as given (e.g. "In-chat video", "In-chat images", "Voice message generation", "AI phone calls").
 - Scope: ${scope}.
 - Never mention that you are an AI.`;
 }
@@ -56,6 +59,8 @@ export function buildUserPrompt(
           publicResult: e.publicResult,
           publicExplanation: e.publicExplanation,
           normalizedScore: e.normalizedScore,
+          measurementType: e.measurementType,
+          availabilityOnly: e.availabilityOnly,
           isUnknown: e.isUnknown,
           notApplicable: e.notApplicable,
           internalNotes: e.internalNotes,

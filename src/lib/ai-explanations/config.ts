@@ -1,6 +1,6 @@
 import { env } from '../env';
 
-export const PROMPT_VERSION = 'explanations-v5';
+export const PROMPT_VERSION = 'explanations-v6';
 
 export function aiExplanationsConfig() {
   return {

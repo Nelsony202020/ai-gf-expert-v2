@@ -122,16 +122,16 @@ const PUBLIC_EVIDENCE_GROUP_DISPLAY: Record<string, PublicEvidenceGroupDisplay[]
     { label: 'Recovery', slug: 'recovery', memberSectionIds: ['recovery'] },
   ],
   'chat-features/media': [
-    { label: 'Images Sent', slug: 'images-sent', memberSectionIds: ['images-sent'] },
-    { label: 'Images Received', slug: 'images-received', memberSectionIds: ['images-received'] },
-    { label: 'Voice Sent', slug: 'voice-sent', memberSectionIds: ['voice-sent'] },
-    { label: 'Voice Received', slug: 'voice-received', memberSectionIds: ['voice-received'] },
-    { label: 'Chat Video', slug: 'chat-video', memberSectionIds: ['chat-video'] },
+    { label: 'Images you can send', slug: 'images-sent', memberSectionIds: ['images-sent'] },
+    { label: 'In-chat images', slug: 'images-received', memberSectionIds: ['images-received'] },
+    { label: 'Voice messages you can send', slug: 'voice-sent', memberSectionIds: ['voice-sent'] },
+    { label: 'Voice message generation', slug: 'voice-received', memberSectionIds: ['voice-received'] },
+    { label: 'In-chat video', slug: 'chat-video', memberSectionIds: ['chat-video'] },
     { label: 'GIFs', slug: 'gifs', memberSectionIds: ['gifs'] },
     { label: 'Reactions', slug: 'reactions', memberSectionIds: ['reactions'] },
   ],
   'chat-features/interaction': [
-    { label: 'Voice Calls', slug: 'voice-calls', memberSectionIds: ['voice-calls'] },
+    { label: 'AI phone calls', slug: 'voice-calls', memberSectionIds: ['voice-calls'] },
     { label: 'Chat Modes', slug: 'chat-modes', memberSectionIds: ['chat-modes'] },
     { label: 'Mode Types', slug: 'mode-types', memberSectionIds: ['mode-types'] },
     { label: 'Group Chat', slug: 'group-chat', memberSectionIds: ['group-chat'] },
@@ -211,7 +211,7 @@ const PUBLIC_EVIDENCE_GROUP_DISPLAY: Record<string, PublicEvidenceGroupDisplay[]
   'video/capabilities': [
     { label: 'Text-to-Video', slug: 'text-to-video', memberSectionIds: ['text-to-video'] },
     { label: 'Image-to-Video', slug: 'image-to-video', memberSectionIds: ['image-to-video'] },
-    { label: 'Chat Video', slug: 'chat-video', memberSectionIds: ['chat-video'] },
+    { label: 'In-chat video', slug: 'chat-video', memberSectionIds: ['chat-video'] },
     { label: 'Audio', slug: 'audio', memberSectionIds: ['audio'] },
     { label: 'Maximum Length', slug: 'maximum-length', memberSectionIds: ['maximum-length'] },
     {

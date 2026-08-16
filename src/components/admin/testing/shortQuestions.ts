@@ -268,7 +268,7 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Send three different image files in three separate chats."
   },
   "chat-features|images-received": {
-    "q": "Chat: images received?",
+    "q": "Chat: in-chat images?",
     "hint": "Request one image in three separate chats."
   },
   "chat-features|voice-sent": {
@@ -276,11 +276,11 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Send three voice messages in three separate chats."
   },
   "chat-features|voice-received": {
-    "q": "Chat: voice received?",
+    "q": "Chat: voice message generation?",
     "hint": "Request a voice reply in three separate chats."
   },
   "chat-features|chat-video": {
-    "q": "Chat: chat video?",
+    "q": "Chat: in-chat video?",
     "hint": "Request one video in three separate chats."
   },
   "chat-features|gifs": {
@@ -292,7 +292,7 @@ export const SHORT_QUESTIONS: Record<string, ShortQuestion> = {
     "hint": "Try to react to three separate messages."
   },
   "chat-features|voice-calls": {
-    "q": "Chat: voice calls?",
+    "q": "Chat: AI phone calls?",
     "hint": "Start three voice calls on three different days."
   },
   "chat-features|chat-modes": {

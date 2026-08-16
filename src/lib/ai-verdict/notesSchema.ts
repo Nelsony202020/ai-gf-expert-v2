@@ -2,12 +2,12 @@ import { z } from 'zod';
 import type { VerdictStepId } from '../../components/admin/workspace/verdict/types';
 import type { AiVerdictScope } from './types';
 import type { CategoryPerformanceDto } from './categoryPerformance';
-import { enforceMaxWords, PRO_CON_MAX_WORDS } from './fieldPromptHelpers';
+import { formatSkimmableProCon, PRO_CON_MAX_WORDS } from './fieldPromptHelpers';
 import type { AiSuggestionOutput, KeyFinding } from './suggestionSchema';
 import { sanitizeKeyFindings, sanitizeSuggestionText } from './sanitizeEvidenceCitations';
 
 /** Max words per category pros/cons suggestion in the analysis panel. */
-export const CATEGORY_PRO_CON_MAX_WORDS = 7;
+export const CATEGORY_PRO_CON_MAX_WORDS = PRO_CON_MAX_WORDS;
 
 export const aiNotesSectionKeySchema = z.string().min(1);
 
@@ -143,7 +143,7 @@ export function normalizeFieldSuggestions(raw: Record<string, unknown>): Record<
     if (listKeys.has(key) || Array.isArray(value)) {
       let items = normalizeListField(value);
       if (key === 'pros' || key === 'cons') {
-        items = items.map((s) => enforceMaxWords(s, PRO_CON_MAX_WORDS));
+        items = items.map((s) => formatSkimmableProCon(s, PRO_CON_MAX_WORDS));
       }
       out[key] = items;
     } else {
@@ -155,13 +155,13 @@ export function normalizeFieldSuggestions(raw: Record<string, unknown>): Record<
   return out;
 }
 
-/** Normalize category analysis pros/cons to 3–4 words each. */
+/** Normalize category analysis pros/cons to short punchy phrases. */
 export function normalizeCategoryProsCons(raw: Record<string, unknown>): Record<string, unknown> {
   const out = normalizeFieldSuggestions(raw);
   for (const key of ['pros', 'cons'] as const) {
     const items = out[key];
     if (Array.isArray(items)) {
-      out[key] = items.map((s) => enforceMaxWords(String(s), CATEGORY_PRO_CON_MAX_WORDS));
+      out[key] = items.map((s) => formatSkimmableProCon(String(s), CATEGORY_PRO_CON_MAX_WORDS));
     }
   }
   return out;

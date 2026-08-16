@@ -8,6 +8,7 @@ import { resolveEvidenceDisplayValue } from '../draft-ratings/resolveEvidenceDis
 import { buildPublicHowWeTested } from '../draft-ratings/evidenceDrawerContent';
 import { computeWeightedGroupScore } from '../ratings/evidenceGroupScoring';
 import { buildEvidenceIndex, type EvidenceIndex } from '../ratings/evidenceIndex';
+import { evidenceDisplayName } from '../testing/evidencePublicLabels';
 import {
   findEvidenceGroup,
   memberSlugsForGroup,
@@ -203,7 +204,7 @@ export function assembleExplanationContextFromBundle(
     const value = row ? resolveEvidenceDisplayValue(def, row) : '—';
     return {
       slug,
-      label: String(def.name ?? slug),
+      label: evidenceDisplayName(slug, String(def.name ?? slug)),
       value: value || '—',
       normalizedScore: row?.notApplicable ? null : row?.normalizedScore ?? null,
     };

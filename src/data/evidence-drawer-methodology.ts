@@ -30,11 +30,11 @@ export const SUBSCORE_METHODOLOGY: Record<string, SubscoreMethodologyCopy> = {
   },
   'chat-features/interaction': {
     whatItMeasures: 'Checks which features make conversations feel more active than normal one-to-one text chat.',
-    scoreCalculation: 'This score combines Voice Calls, Chat Modes, Mode Types, Group Chat, Double Texting, and Proactive Messages.',
+    scoreCalculation: 'This score combines AI phone calls, Chat Modes, Mode Types, Group Chat, Double Texting, and Proactive Messages.',
   },
   'chat-features/media': {
     whatItMeasures: 'Checks which types of media you and the AI can send inside the chat.',
-    scoreCalculation: 'This score combines Images Sent, Images Received, Voice Sent, Voice Received, Chat Video, GIFs, and Reactions.',
+    scoreCalculation: 'This score combines Images you can send, In-chat images, Voice messages you can send, Voice message generation, In-chat video, GIFs, and Reactions.',
   },
   'chat-features/platform-extras': {
     whatItMeasures: 'Checks whether the app offers bigger experiences beyond normal chat, images, video, and calls.',
@@ -110,7 +110,7 @@ export const SUBSCORE_METHODOLOGY: Record<string, SubscoreMethodologyCopy> = {
   },
   'video/capabilities': {
     whatItMeasures: 'Checks what types of AI video the app can create and the limits of those videos.',
-    scoreCalculation: 'This score combines Text-to-Video, Image-to-Video, Chat Video, Audio, Maximum Length, and Maximum Resolution.',
+    scoreCalculation: 'This score combines Text-to-Video, Image-to-Video, In-chat video, Audio, Maximum Length, and Maximum Resolution.',
   },
   'video/experience': {
     whatItMeasures: 'Checks how fast, reliable, and easy the video tools are to use.',

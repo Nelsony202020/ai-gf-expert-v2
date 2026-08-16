@@ -1,6 +1,6 @@
 import { env } from '../env';
 
-export const PROMPT_VERSION = 'takeaways-v2';
+export const PROMPT_VERSION = 'takeaways-v3';
 
 export function subscoreTakeawaysConfig() {
   return {

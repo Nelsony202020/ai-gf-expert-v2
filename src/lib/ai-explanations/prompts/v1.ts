@@ -26,11 +26,16 @@ STRUCTURE
 - Sentence 2: the key number or gap (if needed).
 - Sentence 3 (optional): who this is good or bad for — one short line.
 
+AVAILABILITY ≠ QUALITY
+- Yes / Limited / No only means the feature exists (or not). Never say it is fantastic, excellent, high-quality, or "does a great job" from a Yes alone.
+- Prefer names like "in-chat video", "in-chat images", "voice message generation", "AI phone calls" when those features appear in the results.
+
 DO NOT
 - Do not explain how we tested or how the score was calculated.
 - Do not list every test result line by line.
 - Do not compare with other products.
 - Do not hedge with "may", "might", "could", "not ideal for those looking for".
+- Do not paste evidence IDs or UUIDs into the text.
 
 NEVER USE
 - in contrast
@@ -109,6 +114,7 @@ export function buildExplanationUserPrompt(context: {
     '- First-year high school reading level. Very simple words.',
     '- At most 2 numbers in the whole answer.',
     '- Do not list every result — summarize the main story.',
+    '- Yes / Limited / No means the feature is present or missing — never a quality judgment.',
     '- 2–3 short sentences, 25–50 words.',
     '- Return only the required JSON.',
   );
