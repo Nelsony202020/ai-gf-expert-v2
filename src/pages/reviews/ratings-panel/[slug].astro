@@ -1,0 +1,33 @@
+---
+import FragmentLayout from '../../../layouts/FragmentLayout.astro';
+import RatingsSpecsTab from '../../../components/review/tabs/RatingsSpecsTab.astro';
+import { loadPublishedReviewSlugs, loadReviewPageProduct } from '../../../lib/content/store';
+import { loadDraftRatingsViewModel } from '../../../lib/draft-ratings/loadDraftRatingsData';
+import { DEV_REVIEW_SLUGS } from '../../../lib/content/reviewDevProducts';
+
+export async function getStaticPaths() {
+  const slugs = await loadPublishedReviewSlugs();
+  if (import.meta.env.DEV) {
+    for (const slug of DEV_REVIEW_SLUGS) {
+      if (!slugs.includes(slug)) slugs.push(slug);
+    }
+  }
+  return slugs.map((slug) => ({ params: { slug } }));
+}
+
+const { slug } = Astro.params;
+const pageLoad = slug ? await loadReviewPageProduct(slug) : null;
+
+if (!pageLoad) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const { product, useDraftRatings } = pageLoad;
+const ratingsModel = useDraftRatings
+  ? await loadDraftRatingsViewModel(product, { preview: true })
+  : undefined;
+---
+
+<FragmentLayout title={`${product.name} ratings`}>
+  <RatingsSpecsTab product={product} preview={useDraftRatings} ratingsModel={ratingsModel} />
+</FragmentLayout>

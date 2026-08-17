@@ -151,7 +151,7 @@ function readTargetAttrs(target: ImageInspectorTarget) {
     alt: String(attrs.alt ?? ''),
     caption: String(attrs.caption ?? ''),
     widthPercent: Math.min(100, Math.max(30, Number(attrs.widthPercent ?? 100))),
-    borderRadiusPercent: Math.min(100, Math.max(0, Number(attrs.borderRadiusPercent ?? 0))),
+    borderRadiusPercent: Math.min(100, Math.max(0, Number(attrs.borderRadiusPercent ?? 12))),
     nsfw: Boolean(attrs.nsfw),
   };
 }

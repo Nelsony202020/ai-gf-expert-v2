@@ -158,6 +158,7 @@ export const REVIEW_BLOCK_TYPES = [
   'paragraph',
   'h2',
   'h3',
+  'h4',
   'bulletList',
   'numberedList',
   'image',

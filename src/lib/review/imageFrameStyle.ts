@@ -6,13 +6,18 @@ export function clampWidthPercent(value: unknown): number {
   return Math.min(100, Math.max(30, Number(value ?? 100)));
 }
 
+/** Default corner radius for review article images (px). Missing values use this. */
+export const DEFAULT_IMAGE_BORDER_RADIUS_PX = 12;
+
 /**
  * Rounding intensity stored on image blocks (legacy field name: borderRadiusPercent).
  * 0–99 → pixel corner radius (even on any aspect ratio).
  * ≥100 → circle crop.
+ * `null` / `undefined` → default 12px.
  */
 export function clampRadiusPercent(value: unknown): number {
-  return Math.min(100, Math.max(0, Number(value ?? 0)));
+  if (value == null || value === '') return DEFAULT_IMAGE_BORDER_RADIUS_PX;
+  return Math.min(100, Math.max(0, Number(value)));
 }
 
 export function clampFocusPercent(value: unknown): number {

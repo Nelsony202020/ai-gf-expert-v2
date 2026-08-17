@@ -23,7 +23,7 @@ const ctaRel = affiliateRel(product.affiliateRel);
     <span class="inline-flex items-center justify-center min-w-[3.25rem] text-3xl font-black tabular-nums">{fmtScore(product.overallScore)}</span>
     <span class="text-lg font-bold flex items-center gap-1.5">
       Overall Performance
-      <OverallScoreTooltip product={product}>
+      <OverallScoreTooltip product={product} instance="sidebar">
         <span class="inline-flex text-white/90 hover:text-white">
           <InfoIcon size="xs" />
         </span>
@@ -47,7 +47,7 @@ const ctaRel = affiliateRel(product.affiliateRel);
             <span class="font-bold text-on-surface group-hover:text-accent transition-colors truncate">
               {category.name}
             </span>
-            <CategoryScoreTooltip category={category}>
+            <CategoryScoreTooltip category={category} instance="sidebar">
               <span class="inline-flex text-tertiary/70 group-hover:text-accent shrink-0">
                 <InfoIcon size="xs" />
               </span>

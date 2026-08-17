@@ -83,6 +83,7 @@
 
 @media (min-width: 1024px) {
   .overview-sidebar-stack {
-    top: calc(var(--site-header-height) + var(--review-tabbar-height));
+    /* Subtle gap under sticky header + tab bar */
+    top: calc(var(--site-header-height) + var(--review-tabbar-height) + 0.625rem);
   }
 }

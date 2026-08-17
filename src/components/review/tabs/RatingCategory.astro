@@ -1,10 +1,10 @@
 ---
 import type { RatingCategory as RatingCategoryType } from '../../../data/products';
 import type { DraftCategory, DraftEvidenceCategory } from '../../../lib/draft-ratings/types';
-import { fmtScore } from '../../../lib/scores';
-import { getDraftScoreChipClass, getDraftScoreVisual } from '../../../lib/draft-ratings/scoreBands';
+import { getDraftScoreVisual } from '../../../lib/draft-ratings/scoreBands';
 import { deferPricingBenchmarkScores, PRICING_BENCHMARK_PENDING_NOTE } from '../../../lib/ratings/evidenceIcons';
 import { evidenceCategoriesToTooltipItems } from '../../../lib/ratings/evidenceTooltipItems';
+import { fmtScore } from '../../../lib/scores';
 import DraftScorePill from '../DraftScorePill.astro';
 import EvidenceCategoryTable from '../EvidenceCategoryTable.astro';
 import SubscoreScoreTooltip from '../tooltips/SubscoreScoreTooltip.astro';
@@ -58,7 +58,6 @@ const subscorePanels = category.subscores.map((sub, i) => {
     evidenceItems: evidenceCategoriesToTooltipItems(evidenceCategories, deferScores),
     calcDrawerId,
     contributorDrawerIds: contributorDrawerIdsForSub(i, sub, evidenceCategories),
-    categoryCount: evidenceCategories.length,
     deferScores,
   };
 });
@@ -89,7 +88,7 @@ const sectionHash = buildReviewRatingsHash(category.key);
         <div class="ratings-accordion__toggle-copy">
           <div class="ratings-accordion__title-row">
             <h3 class="ratings-accordion__title">{categoryLabel}</h3>
-            <CategoryScoreTooltip category={category} />
+            <CategoryScoreTooltip category={category} instance="ratings" />
           </div>
           <p class="ratings-accordion__meta">{subscoreMeta}</p>
         </div>
@@ -100,8 +99,8 @@ const sectionHash = buildReviewRatingsHash(category.key);
 
   <div data-accordion-content class:list={['ratings-accordion__content', !open && 'hidden']}>
     <div class="ratings-accordion__expanded" data-subscore-grid>
-      <p class="ratings-subscore-nav__label">Subscores</p>
-      <div class="ratings-subscore-stack" data-subscore-list>
+      <p class="ratings-subscore-nav__label ratings-tree-eyebrow">Subscores</p>
+      <div class="ratings-subscore-stack ratings-tree ratings-tree--subscores" data-subscore-list>
         {
           subscorePanels.map(
             ({
@@ -111,7 +110,6 @@ const sectionHash = buildReviewRatingsHash(category.key);
               contributorDrawerIds,
               evidenceItems,
               evidenceCategories,
-              categoryCount,
             }) => {
               const sv = getDraftScoreVisual(sub.score);
               const enrichedSub = enrichedCategory?.subscores.find((s) => s.name === sub.name);
@@ -121,7 +119,6 @@ const sectionHash = buildReviewRatingsHash(category.key);
                 enrichedSub &&
                 deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
               const tableId = `evidence-${category.key}-${sub.name}`.replace(/[^a-zA-Z0-9_-]/g, '-');
-              const evidenceCount = categoryCount || sub.contributors.length;
               const deferScores =
                 enrichedSub && productSlug && deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
               return (
@@ -165,33 +162,25 @@ const sectionHash = buildReviewRatingsHash(category.key);
                     data-subscore-index={i}
                     class="ratings-subscore-panel-inline hidden"
                   >
-                    <div class="ratings-subscore-panel__header">
-                      <div class="ratings-subscore-panel__heading">
-                        <div class="ratings-subscore-panel__title-row ratings-subscore-panel__title-row--desktop">
-                          <h4 class="ratings-subscore-panel__title">{sub.name}</h4>
-                          <span
-                            class={`rt-score-chip rt-score-chip--outline rt-score-chip--md ratings-subscore-panel__score tabular-nums ${getDraftScoreChipClass(sub.score)}`}
-                            aria-label={`Score ${fmtScore(sub.score)} out of 10`}
+                    <div class="ratings-evidence-head">
+                      <p class="ratings-evidence-head__title">
+                        <span class="ratings-evidence-head__title-full">Evidence breakdown</span>
+                        <span class="ratings-evidence-head__title-short">Evidence</span>
+                      </p>
+                      {
+                        calcDrawerId && (
+                          <button
+                            type="button"
+                            class="ratings-subscore-panel__calc-link"
+                            data-ratings-open-drawer={calcDrawerId}
+                            aria-haspopup="dialog"
+                            aria-label={`Why ${deferScores ? 'this score' : fmtScore(sub.score)}? Open score calculation`}
                           >
-                            {fmtScore(sub.score)}
-                          </span>
-                        </div>
-                        <p class="ratings-subscore-panel__meta">
-                          Based on {evidenceCount} evidence {evidenceCount === 1 ? 'category' : 'categories'}
-                        </p>
-                        {
-                          calcDrawerId && (
-                            <button
-                              type="button"
-                              class="ratings-subscore-panel__calc-link"
-                              data-ratings-open-drawer={calcDrawerId}
-                              aria-haspopup="dialog"
-                            >
-                              View score calculation →
-                            </button>
-                          )
-                        }
-                      </div>
+                            Why {deferScores ? 'this score' : fmtScore(sub.score)}?
+                            <span class="ratings-subscore-panel__calc-arrow" aria-hidden="true">→</span>
+                          </button>
+                        )
+                      }
                     </div>
 
                     {
@@ -202,28 +191,30 @@ const sectionHash = buildReviewRatingsHash(category.key);
                       )
                     }
 
-                    {
-                      evidenceCategories.length > 0 ? (
-                        <EvidenceCategoryTable tableId={tableId} items={evidenceCategories} hideScores={deferScores} />
-                      ) : (
-                        <EvidenceCategoryTable
-                          tableId={tableId}
-                          hideScores={deferScores}
-                          items={sub.contributors.map((c, ci) => ({
-                            slug: c.label.toLowerCase().replace(/\s+/g, '-'),
-                            name: c.label,
-                            score: deferScores ? null : c.internalScore ?? sub.score,
-                            summary: c.value,
-                            cardTeaser: c.value,
-                            testResults: [],
-                            drawerId: `evidence-fallback-${category.key}-${i}-${ci}`,
-                            proofCount: 0,
-                            proofLabel: '',
-                            selectedProof: [],
-                          }))}
-                        />
-                      )
-                    }
+                    <div class="ratings-tree ratings-tree--evidence">
+                      {
+                        evidenceCategories.length > 0 ? (
+                          <EvidenceCategoryTable tableId={tableId} items={evidenceCategories} hideScores={deferScores} />
+                        ) : (
+                          <EvidenceCategoryTable
+                            tableId={tableId}
+                            hideScores={deferScores}
+                            items={sub.contributors.map((c, ci) => ({
+                              slug: c.label.toLowerCase().replace(/\s+/g, '-'),
+                              name: c.label,
+                              score: deferScores ? null : c.internalScore ?? sub.score,
+                              summary: c.value,
+                              cardTeaser: c.value,
+                              testResults: [],
+                              drawerId: `evidence-fallback-${category.key}-${i}-${ci}`,
+                              proofCount: 0,
+                              proofLabel: '',
+                              selectedProof: [],
+                            }))}
+                          />
+                        )
+                      }
+                    </div>
                   </div>
                 </div>
               );

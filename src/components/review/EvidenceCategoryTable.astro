@@ -34,6 +34,7 @@ const { tableId, items, hideScores = false } = Astro.props;
             role="row"
             data-ratings-open-drawer={item.drawerId}
             aria-haspopup="dialog"
+            aria-label={`${item.name}, score ${fmtScore(displayScore)}. Open evidence details.`}
           >
             <span class="evidence-cat-table__score" role="cell">
               <span class={`rt-score-chip rt-score-chip--outline ${chip}`}>{fmtScore(displayScore)}</span>
@@ -43,7 +44,7 @@ const { tableId, items, hideScores = false } = Astro.props;
             <span class="evidence-cat-table__proof" role="cell">
               <span class="evidence-cat-table__proof-link" aria-hidden="true">
                 <span class="material-symbols-outlined">attach_file</span>
-                {item.proofCount > 0 ? item.proofCount : null}
+                {item.proofCount > 0 ? <span class="evidence-cat-table__proof-count">{item.proofCount}</span> : null}
               </span>
             </span>
           </button>

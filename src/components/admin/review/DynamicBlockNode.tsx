@@ -110,7 +110,7 @@ export function defaultBlockData(type: string): Record<string, unknown> {
 }
 
 const KNOWN_TYPES = new Set([
-  'paragraph', 'h2', 'h3', 'bulletList', 'numberedList', 'image', 'video', 'table',
+  'paragraph', 'h2', 'h3', 'h4', 'bulletList', 'numberedList', 'image', 'video', 'table',
   'quote', 'callout', 'prosCons', 'faq', 'relatedGuide', 'cta', 'scoreOverall',
   'scoreCategory', 'pricingTable', 'characterGallery', 'publicGallery',
   'evidenceSummary', 'methodologyLink',

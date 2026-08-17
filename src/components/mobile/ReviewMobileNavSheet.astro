@@ -124,7 +124,7 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
       }
 
       // Fallback: walk rendered headings (H3 section / H4 subheading)
-      return Array.from(panel.querySelectorAll<HTMLElement>('h3.review-heading[id], h4.review-heading[id]'))
+      return Array.from(panel.querySelectorAll<HTMLElement>('h2.review-heading[id], h3.review-heading[id], h4.review-heading[id]'))
         .map((el) => {
           const label = cleanLabel(
             el.querySelector('.review-heading__text')?.textContent || el.textContent || '',
