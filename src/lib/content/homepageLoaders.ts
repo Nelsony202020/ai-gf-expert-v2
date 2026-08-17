@@ -2,7 +2,7 @@ import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
 import type { HomeFeaturedCharacter, HomeGuide, HomeRecentUpdate } from '../../data/homepage';
 import { getDb, isDbConfigured } from '../db/server';
 import { loadFeaturedCharactersFromDb } from '../homepage/featuredCharacters';
-import { MAX_HOMEPAGE_TOP_PICKS, reconcileFeaturedProductSlots } from '../homepage/featuredProducts';
+import { MAX_HOMEPAGE_TOP_PICKS } from '../homepage/featuredProducts';
 import { reviewPageUrl } from '../slugs';
 import { loadPublishedProducts } from './store';
 import {
@@ -40,8 +40,6 @@ export async function loadHomepageTopPicks(
   }
 
   try {
-    await reconcileFeaturedProductSlots();
-
     const db = getDb();
     const { homepageSlots } = await (db.query as any)({
       homepageSlots: {

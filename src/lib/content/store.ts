@@ -802,9 +802,25 @@ const PUBLISHED_PRODUCTS_QUERY = {
  * File fallbacks fill gaps for products not yet published in the admin.
  * Used for tooltips, nav, sitemap, and the global products catalog.
  */
+const PUBLISHED_PRODUCTS_CACHE_MS = 30_000;
+let publishedProductsCache: { at: number; products: Product[] } | null = null;
+let publishedProductsInflight: Promise<Product[]> | null = null;
+
 export async function loadPublishedProducts(fileProducts: Product[] = []): Promise<Product[]> {
   if (!isDbConfigured()) return fileProducts;
 
+  if (publishedProductsCache && Date.now() - publishedProductsCache.at < PUBLISHED_PRODUCTS_CACHE_MS) {
+    return publishedProductsCache.products;
+  }
+  if (publishedProductsInflight) return publishedProductsInflight;
+
+  publishedProductsInflight = loadPublishedProductsUncached(fileProducts).finally(() => {
+    publishedProductsInflight = null;
+  });
+  return publishedProductsInflight;
+}
+
+async function loadPublishedProductsUncached(fileProducts: Product[]): Promise<Product[]> {
   try {
     const db = getDb();
     const { products: dbProducts } = await (db.query as any)({
@@ -841,6 +857,7 @@ export async function loadPublishedProducts(fileProducts: Product[] = []): Promi
     for (const fp of fileProducts) {
       if (!dbSlugs.has(fp.slug) && !allSlugsInDb.has(fp.slug)) out.push(fp);
     }
+    publishedProductsCache = { at: Date.now(), products: out };
     return out;
   } catch (error) {
     console.error('[content] published products load failed — using file data', error);
