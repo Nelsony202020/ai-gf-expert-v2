@@ -23,6 +23,8 @@ interface Props {
   compareTableOnly?: boolean;
   /** Roundup pages — link test pages from labels instead of vial icons */
   inlineTestLinks?: boolean;
+  /** Distinguishes duplicate tooltips on the same page (overview vs sidebar vs ratings). */
+  instance?: string;
 }
 
 const {
@@ -34,8 +36,9 @@ const {
   compareMode = false,
   compareTableOnly = false,
   inlineTestLinks = false,
+  instance,
 } = Astro.props;
-const tooltipId = `cat-${category.key}${compact ? '-compact' : ''}${compareAverageOnly ? '-compare' : ''}${compareMode ? '-compare-mode' : ''}${compareTableOnly ? '-compare-table' : ''}${inlineTestLinks ? '-inline' : ''}`;
+const tooltipId = `cat-${category.key}${instance ? `-${instance}` : ''}${compact ? '-compact' : ''}${compareAverageOnly ? '-compare' : ''}${compareMode ? '-compare-mode' : ''}${compareTableOnly ? '-compare-table' : ''}${inlineTestLinks ? '-inline' : ''}`;
 const hideSiteAverage = compareAverageOnly || compareMode;
 const hideScoreBlock = compareAverageOnly || compareTableOnly;
 const linksMethodologyOnly = methodologyOnly || compareMode;

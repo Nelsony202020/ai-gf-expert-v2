@@ -109,10 +109,11 @@ function renderInline(
 }
 
 function headingLevel(type: string, data: Record<string, unknown>): 2 | 3 | 4 {
-  // Legacy h2 blocks and all section headings render as H3 — the page title is the only H2.
-  if (type === 'h2') return 3;
+  if (type === 'h2') return 2;
+  if (type === 'h4') return 4;
   const stored = Number(data.level);
   if (stored === 4) return 4;
+  if (stored === 2) return 2;
   return 3;
 }
 
@@ -257,13 +258,12 @@ function renderImageFigure(
 export function buildReviewToc(blocks: ReviewBlockPublic[]): ReviewTocEntry[] {
   const toc: ReviewTocEntry[] = [];
   for (const block of blocks) {
-    if (block.type !== 'h2' && block.type !== 'h3') continue;
+    if (block.type !== 'h2' && block.type !== 'h3' && block.type !== 'h4') continue;
     const data = block.data ?? {};
     const text = String(data.text ?? '').trim();
     if (!text) continue;
     const renderedLevel = headingLevel(block.type, data);
-    // Editor: H3 = section, H4 = subheading. TOC uses 2/3 for parent/child.
-    const tocLevel: 2 | 3 = renderedLevel === 4 ? 3 : 2;
+    const tocLevel: 2 | 3 = renderedLevel === 2 ? 2 : 3;
     toc.push({
       id: headingId(text, block.id),
       label: text,
@@ -288,6 +288,7 @@ function blockPlainText(block: ReviewBlockPublic): string {
     case 'paragraph':
     case 'h2':
     case 'h3':
+    case 'h4':
     case 'quote':
       return String(d.text ?? '');
     case 'bulletList':
@@ -372,14 +373,15 @@ export function renderReviewBlocksHtml(
         break;
       }
       case 'h2':
-      case 'h3': {
+      case 'h3':
+      case 'h4': {
         const text = String(data.text ?? '');
         const id = headingId(text, block.id);
-        if (type === 'h2' && glossary) {
+        if ((type === 'h2' || headingLevel(type, data) === 2) && glossary) {
           setGlossarySection(glossary.state, id);
         }
         const level = headingLevel(type, data);
-        const tag = level === 4 ? 'h4' : 'h3';
+        const tag = level === 2 ? 'h2' : level === 4 ? 'h4' : 'h3';
         const cls = 'review-heading';
         parts.push(renderHeading(tag, id, cls, renderInline(data, glossary, { skipGlossary: true })));
         break;

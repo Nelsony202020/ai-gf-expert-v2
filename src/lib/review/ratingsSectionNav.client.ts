@@ -2,7 +2,7 @@ import { parseReviewRatingsHash, subscoreSlugFromLabel } from './ratingsDeepLink
 
 export type ToggleAccordionFn = (toggle: HTMLElement, force?: boolean) => void;
 
-export function navigateToRatingsSection(
+export async function navigateToRatingsSection(
   options: {
     categoryKey?: string;
     subscoreSlug?: string;
@@ -12,15 +12,15 @@ export function navigateToRatingsSection(
   deps: {
     getScrollOffset: () => number;
     toggleAccordion: ToggleAccordionFn;
-    setActiveTab: (id: string, scroll?: boolean, hashOverride?: string) => void;
+    setActiveTab: (id: string, scroll?: boolean, hashOverride?: string) => void | Promise<void>;
   },
-): void {
+): Promise<void> {
   const { categoryKey, subscoreSlug, scroll = true, highlight = true } = options;
   const hash = categoryKey
     ? `#ratings--${categoryKey}${subscoreSlug ? `--${subscoreSlug}` : ''}`
     : '#ratings';
 
-  deps.setActiveTab('ratings', false, hash);
+  await deps.setActiveTab('ratings', false, hash);
 
   const ratingsRoot = document.querySelector<HTMLElement>('[data-ratings-root]');
   if (ratingsRoot && ratingsRoot.dataset.detailLevel !== 'all-in' && subscoreSlug) {
@@ -73,7 +73,7 @@ export function applyReviewRatingsHashFromLocation(
   deps: {
     getScrollOffset: () => number;
     toggleAccordion: ToggleAccordionFn;
-    setActiveTab: (id: string, scroll?: boolean, hashOverride?: string) => void;
+    setActiveTab: (id: string, scroll?: boolean, hashOverride?: string) => void | Promise<void>;
     isTabHash: (hash: string) => boolean;
   },
 ): boolean {
@@ -82,23 +82,19 @@ export function applyReviewRatingsHashFromLocation(
 
   const deep = parseReviewRatingsHash(hash);
   if (deep) {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        navigateToRatingsSection(
-          {
-            categoryKey: deep.categoryKey,
-            subscoreSlug: deep.subscoreSlug,
-            scroll: true,
-          },
-          deps,
-        );
-      });
-    });
+    void navigateToRatingsSection(
+      {
+        categoryKey: deep.categoryKey,
+        subscoreSlug: deep.subscoreSlug,
+        scroll: true,
+      },
+      deps,
+    );
     return true;
   }
 
   if (deps.isTabHash(hash)) {
-    deps.setActiveTab(hash, false);
+    void deps.setActiveTab(hash, false);
     return true;
   }
 

@@ -17,9 +17,11 @@ export function isBunnyImageUrl(url: string): boolean {
 }
 
 export interface ImageOptimizeOpts {
-  /** Max display width in CSS pixels (1x). We request 2x for retina. */
+  /** Max display width in CSS pixels (1x). Multiplied by `dpr` unless `dpr` is 1. */
   width?: number;
   quality?: number;
+  /** Device pixel ratio. Default 2. Use 1 when `width` is already a srcset pixel width. */
+  dpr?: number;
 }
 
 /**
@@ -41,7 +43,8 @@ export function optimizedImageUrl(url: string | undefined | null, opts: ImageOpt
 
   const params = new URLSearchParams();
   if (opts.width && opts.width > 0) {
-    params.set('width', String(Math.min(Math.round(opts.width * 2), 1600)));
+    const dpr = opts.dpr ?? 2;
+    params.set('width', String(Math.min(Math.round(opts.width * dpr), 1600)));
   }
   params.set('quality', String(opts.quality ?? 75));
 
@@ -52,6 +55,6 @@ export function optimizedImageUrl(url: string | undefined | null, opts: ImageOpt
 export function imageSrcSet(url: string, widths: number[], quality = 75): string {
   return widths
     .filter((w) => w > 0)
-    .map((w) => `${optimizedImageUrl(url, { width: w, quality })} ${w}w`)
+    .map((w) => `${optimizedImageUrl(url, { width: w, quality, dpr: 1 })} ${w}w`)
     .join(', ');
 }

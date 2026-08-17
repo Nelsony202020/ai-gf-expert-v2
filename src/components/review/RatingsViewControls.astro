@@ -1,0 +1,676 @@
+---
+import type { Product } from '../../data/products';
+import VerdictCategoryIcon from './VerdictCategoryIcon.astro';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const defaultCategory = product.categories[0];
+const defaultLabel = defaultCategory
+  ? defaultCategory.key === 'pricing'
+    ? 'Pricing'
+    : defaultCategory.name
+  : 'Categories';
+
+const detailOptions = [
+  {
+    id: 'skim',
+    label: 'Skim',
+    description: 'Category scores only',
+  },
+  {
+    id: 'medium',
+    label: 'Medium',
+    description: 'Scores + subscores',
+  },
+  {
+    id: 'all-in',
+    label: 'All In',
+    description: 'Every test & evidence',
+  },
+] as const;
+
+const categories = product.categories.map((category) => ({
+  key: category.key,
+  label: category.key === 'pricing' ? 'Pricing' : category.name,
+}));
+---
+
+<div class="ratings-view-controls" data-ratings-view-controls>
+  <div class="ratings-view-field" data-ratings-field="category">
+    <span class="ratings-view-field__label" id="ratings-jump-label">Jump to</span>
+    <div class="ratings-view-field__wrap">
+      <button
+        type="button"
+        class="ratings-view-controls__trigger"
+        data-category-jump-open
+        aria-haspopup="listbox"
+        aria-expanded="false"
+        aria-labelledby="ratings-jump-label"
+        aria-controls="category-jump-menu"
+      >
+        <span class="ratings-view-controls__value" data-category-jump-label>{defaultLabel}</span>
+        <span class="material-symbols-outlined ratings-view-controls__chevron" aria-hidden="true">expand_more</span>
+      </button>
+
+      <div
+        class="ratings-view-menu"
+        id="category-jump-menu"
+        data-category-jump-menu
+        role="listbox"
+        aria-labelledby="ratings-jump-label"
+        hidden
+      >
+        {
+          categories.map((category, index) => (
+            <button
+              type="button"
+              role="option"
+              class:list={['ratings-view-menu__option', index === 0 && 'is-active']}
+              data-goto-category={category.key}
+              data-category-jump-option={category.key}
+              data-category-jump-option-label={category.label}
+              aria-selected={index === 0 ? 'true' : 'false'}
+            >
+              <span class="ratings-view-menu__option-label">{category.label}</span>
+              <span class="material-symbols-outlined ratings-view-menu__check" aria-hidden="true">check</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="ratings-view-field" data-ratings-field="detail">
+    <span class="ratings-view-field__label" id="ratings-detail-label">Detail</span>
+    <div class="ratings-view-field__wrap">
+      <button
+        type="button"
+        class="ratings-view-controls__trigger"
+        data-detail-level-open
+        aria-haspopup="listbox"
+        aria-expanded="false"
+        aria-labelledby="ratings-detail-label"
+        aria-controls="detail-level-menu"
+      >
+        <span class="ratings-view-controls__value" data-detail-level-label>Skim</span>
+        <span class="material-symbols-outlined ratings-view-controls__chevron" aria-hidden="true">expand_more</span>
+      </button>
+
+      <div
+        class="ratings-view-menu ratings-view-menu--detail"
+        id="detail-level-menu"
+        data-detail-level-menu
+        role="listbox"
+        aria-labelledby="ratings-detail-label"
+        hidden
+      >
+        {
+          detailOptions.map((opt, index) => (
+            <button
+              type="button"
+              role="option"
+              class:list={['ratings-view-menu__option', 'ratings-view-menu__option--stacked', index === 0 && 'is-active']}
+              data-detail-level-option={opt.id}
+              aria-selected={index === 0 ? 'true' : 'false'}
+            >
+              <span class="ratings-view-menu__option-copy">
+                <span class="ratings-view-menu__option-label">{opt.label}</span>
+                <span class="ratings-view-menu__option-desc">{opt.description}</span>
+              </span>
+              <span class="material-symbols-outlined ratings-view-menu__check" aria-hidden="true">check</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+{/* Mobile bottom sheets */}
+<div
+  class="mobile-sheet category-jump-sheet"
+  id="category-jump-sheet"
+  data-category-jump-sheet
+  hidden
+  aria-hidden="true"
+>
+  <button type="button" class="mobile-sheet__backdrop" data-category-jump-close aria-label="Close"></button>
+  <div
+    class="mobile-sheet__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="category-jump-sheet-title"
+  >
+    <div class="mobile-sheet__handle" aria-hidden="true"></div>
+    <header class="mobile-sheet__head">
+      <h2 id="category-jump-sheet-title" class="mobile-sheet__title">Jump to category</h2>
+      <button type="button" class="mobile-sheet__close" data-category-jump-close aria-label="Close">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </header>
+    <div class="mobile-sheet__body ratings-view-sheet__body">
+      <div class="ratings-view-sheet__list" role="listbox" aria-label="Rating categories">
+        {
+          categories.map((category, index) => (
+            <button
+              type="button"
+              role="option"
+              class:list={['ratings-view-sheet__option', index === 0 && 'is-active']}
+              data-goto-category={category.key}
+              data-category-jump-option={category.key}
+              data-category-jump-option-label={category.label}
+              aria-selected={index === 0 ? 'true' : 'false'}
+            >
+              <span class="ratings-view-sheet__option-icon" aria-hidden="true">
+                <VerdictCategoryIcon id={category.key} class="w-5 h-5" />
+              </span>
+              <span class="ratings-view-sheet__option-copy">
+                <span class="ratings-view-sheet__option-label">{category.label}</span>
+              </span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="mobile-sheet detail-level-sheet"
+  id="detail-level-sheet"
+  data-detail-level-sheet
+  hidden
+  aria-hidden="true"
+>
+  <button type="button" class="mobile-sheet__backdrop" data-detail-level-close aria-label="Close"></button>
+  <div
+    class="mobile-sheet__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="detail-level-sheet-title"
+  >
+    <div class="mobile-sheet__handle" aria-hidden="true"></div>
+    <header class="mobile-sheet__head">
+      <h2 id="detail-level-sheet-title" class="mobile-sheet__title">Detail level</h2>
+      <button type="button" class="mobile-sheet__close" data-detail-level-close aria-label="Close">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </header>
+    <div class="mobile-sheet__body ratings-view-sheet__body">
+      <div class="ratings-view-sheet__list" role="listbox" aria-label="Detail level">
+        {
+          detailOptions.map((opt, index) => (
+            <button
+              type="button"
+              role="option"
+              class:list={['ratings-view-sheet__option', 'ratings-view-sheet__option--stacked', index === 0 && 'is-active']}
+              data-detail-level-option={opt.id}
+              aria-selected={index === 0 ? 'true' : 'false'}
+            >
+              <span class="ratings-view-sheet__option-copy">
+                <span class="ratings-view-sheet__option-label">{opt.label}</span>
+                <span class="ratings-view-sheet__option-desc">{opt.description}</span>
+              </span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .ratings-view-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    margin: 0;
+    width: 100%;
+  }
+
+  .ratings-view-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
+  .ratings-view-field__label {
+    margin: 0;
+    font-size: 0.625rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+  }
+
+  .ratings-view-field__wrap {
+    position: relative;
+    min-width: 0;
+  }
+
+  .ratings-view-controls__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    padding: 0.45rem 0.45rem 0.45rem 0.75rem;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 999px;
+    background: var(--color-surface-container-lowest, #fff);
+    color: var(--color-on-surface);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .ratings-view-controls__trigger:hover,
+  .ratings-view-controls__trigger:focus-visible {
+    border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-surface-variant));
+    outline: none;
+  }
+
+  .ratings-view-controls__trigger[aria-expanded='true'] {
+    border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-surface-variant));
+  }
+
+  .ratings-view-controls__value {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ratings-view-controls__chevron {
+    flex-shrink: 0;
+    font-size: 1.125rem;
+    color: var(--color-accent);
+  }
+
+  .ratings-view-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 40;
+    display: none;
+    min-width: 100%;
+    width: max-content;
+    max-width: min(18rem, calc(100vw - 2rem));
+    padding: 0.35rem;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 0.75rem;
+    background: var(--color-surface-container-lowest, #fff);
+    box-shadow: 0 10px 28px rgb(15 23 42 / 12%);
+  }
+
+  .ratings-view-menu--detail {
+    right: 0;
+    left: auto;
+  }
+
+  .ratings-view-menu.is-open {
+    display: block;
+  }
+
+  .ratings-view-menu__option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 40px;
+    padding: 0.45rem 0.65rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--color-on-surface);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .ratings-view-menu__option--stacked {
+    min-height: 52px;
+    align-items: flex-start;
+  }
+
+  .ratings-view-menu__option:hover,
+  .ratings-view-menu__option:focus-visible {
+    background: var(--color-surface-container-low);
+    outline: none;
+  }
+
+  .ratings-view-menu__option.is-active {
+    background: rgb(219 39 119 / 7%);
+  }
+
+  .ratings-view-menu__option-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ratings-view-menu__option-label {
+    flex: 1;
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .ratings-view-menu__option.is-active .ratings-view-menu__option-label {
+    color: var(--color-accent);
+  }
+
+  .ratings-view-menu__option-desc {
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-tertiary);
+  }
+
+  .ratings-view-menu__check {
+    flex-shrink: 0;
+    font-size: 1.05rem;
+    color: var(--color-accent);
+    opacity: 0;
+  }
+
+  .ratings-view-menu__option.is-active .ratings-view-menu__check {
+    opacity: 1;
+  }
+
+  .ratings-view-sheet__body {
+    padding-top: 0.25rem;
+  }
+
+  .ratings-view-sheet__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .ratings-view-sheet__option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.55rem 0.75rem;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-on-surface);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease;
+  }
+
+  .ratings-view-sheet__option--stacked {
+    min-height: 56px;
+  }
+
+  .ratings-view-sheet__option:hover,
+  .ratings-view-sheet__option:focus-visible {
+    background: var(--color-surface-container-low);
+    outline: none;
+  }
+
+  .ratings-view-sheet__option.is-active {
+    background: rgb(219 39 119 / 7%);
+  }
+
+  .ratings-view-sheet__option-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--color-tertiary);
+  }
+
+  .ratings-view-sheet__option.is-active .ratings-view-sheet__option-icon {
+    color: var(--color-accent);
+  }
+
+  .ratings-view-sheet__option-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+  }
+
+  .ratings-view-sheet__option-label {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .ratings-view-sheet__option.is-active .ratings-view-sheet__option-label {
+    color: var(--color-accent);
+  }
+
+  .ratings-view-sheet__option-desc {
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-tertiary);
+  }
+
+  @media (min-width: 768px) {
+    .ratings-view-controls {
+      width: auto;
+      grid-template-columns: minmax(8.5rem, 11rem) minmax(6.75rem, 8.5rem);
+      gap: 0.65rem;
+      flex-shrink: 0;
+    }
+
+    .ratings-view-controls__trigger {
+      min-height: 36px;
+      padding: 0.35rem 0.35rem 0.35rem 0.7rem;
+    }
+  }
+
+  [data-theme='dark'] .ratings-view-controls__trigger,
+  [data-theme='dark'] .ratings-view-menu {
+    background: var(--color-surface-container-lowest);
+    border-color: var(--dark-border-subtle);
+  }
+
+  [data-theme='dark'] .ratings-view-menu {
+    box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+  }
+
+  [data-theme='dark'] .ratings-view-menu__option.is-active,
+  [data-theme='dark'] .ratings-view-sheet__option.is-active {
+    background: rgb(219 39 119 / 12%);
+  }
+</style>
+
+<script>
+  import { closeSheet, openSheet } from '../../lib/ui/bottomSheet.ts';
+
+  function initRatingsViewControls() {
+    const root = document.querySelector<HTMLElement>('[data-ratings-view-controls]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
+
+    const categoryOpen = root.querySelector<HTMLElement>('[data-category-jump-open]');
+    const categoryMenu = document.querySelector<HTMLElement>('[data-category-jump-menu]');
+    const categorySheet = document.querySelector<HTMLElement>('[data-category-jump-sheet]');
+    const categoryPanel = categorySheet?.querySelector<HTMLElement>('.mobile-sheet__panel');
+    const categoryLabel = root.querySelector<HTMLElement>('[data-category-jump-label]');
+
+    const detailOpen = root.querySelector<HTMLElement>('[data-detail-level-open]');
+    const detailMenu = document.querySelector<HTMLElement>('[data-detail-level-menu]');
+    const detailSheet = document.querySelector<HTMLElement>('[data-detail-level-sheet]');
+    const detailPanel = detailSheet?.querySelector<HTMLElement>('.mobile-sheet__panel');
+
+    let releaseFocus: (() => void) | null = null;
+    let openKind: 'category' | 'detail' | null = null;
+
+    function setCategoryActive(key: string, label?: string) {
+      if (label && categoryLabel) categoryLabel.textContent = label;
+      document.querySelectorAll<HTMLElement>('[data-category-jump-option]').forEach((opt) => {
+        const active = opt.dataset.categoryJumpOption === key;
+        opt.classList.toggle('is-active', active);
+        opt.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+    }
+
+    function closeMenus() {
+      categoryMenu?.classList.remove('is-open');
+      categoryMenu?.setAttribute('hidden', '');
+      detailMenu?.classList.remove('is-open');
+      detailMenu?.setAttribute('hidden', '');
+      categoryOpen?.setAttribute('aria-expanded', 'false');
+      detailOpen?.setAttribute('aria-expanded', 'false');
+    }
+
+    function closeMobileSheets() {
+      if (categorySheet && !categorySheet.hidden) {
+        closeSheet(categorySheet, () => {
+          releaseFocus?.();
+          releaseFocus = null;
+        });
+      }
+      if (detailSheet && !detailSheet.hidden) {
+        closeSheet(detailSheet, () => {
+          releaseFocus?.();
+          releaseFocus = null;
+        });
+      }
+      categoryOpen?.setAttribute('aria-expanded', 'false');
+      detailOpen?.setAttribute('aria-expanded', 'false');
+    }
+
+    function closeAll() {
+      closeMenus();
+      closeMobileSheets();
+      openKind = null;
+    }
+
+    function openDesktopMenu(kind: 'category' | 'detail') {
+      closeMobileSheets();
+      const openingSame = openKind === kind;
+      closeMenus();
+      if (openingSame) {
+        openKind = null;
+        return;
+      }
+      const menu = kind === 'category' ? categoryMenu : detailMenu;
+      const trigger = kind === 'category' ? categoryOpen : detailOpen;
+      if (!menu || !trigger) return;
+      menu.hidden = false;
+      menu.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
+      openKind = kind;
+      requestAnimationFrame(() => {
+        menu.querySelector<HTMLElement>('.ratings-view-menu__option.is-active')?.focus();
+      });
+    }
+
+    function openMobileSheet(kind: 'category' | 'detail') {
+      closeMenus();
+      const sheet = kind === 'category' ? categorySheet : detailSheet;
+      const panel = kind === 'category' ? categoryPanel : detailPanel;
+      const trigger = kind === 'category' ? categoryOpen : detailOpen;
+      if (!sheet || !panel || !trigger) return;
+      if (openKind && openKind !== kind) closeMobileSheets();
+      if (openKind === kind && !sheet.hidden) {
+        closeMobileSheets();
+        openKind = null;
+        return;
+      }
+      releaseFocus?.();
+      releaseFocus = openSheet(sheet, panel, {
+        focusSelector: '.ratings-view-sheet__option.is-active',
+      });
+      trigger.setAttribute('aria-expanded', 'true');
+      openKind = kind;
+    }
+
+    categoryOpen?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (isMobile()) openMobileSheet('category');
+      else openDesktopMenu('category');
+    });
+
+    detailOpen?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (isMobile()) openMobileSheet('detail');
+      else openDesktopMenu('detail');
+    });
+
+    categorySheet?.querySelectorAll('[data-category-jump-close]').forEach((el) => {
+      el.addEventListener('click', () => {
+        closeMobileSheets();
+        openKind = null;
+      });
+    });
+    detailSheet?.querySelectorAll('[data-detail-level-close]').forEach((el) => {
+      el.addEventListener('click', () => {
+        closeMobileSheets();
+        openKind = null;
+      });
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-category-jump-option]').forEach((opt) => {
+      opt.addEventListener('click', () => {
+        const key = opt.dataset.categoryJumpOption;
+        const label = opt.dataset.categoryJumpOptionLabel;
+        if (!key) return;
+        setCategoryActive(key, label);
+        closeAll();
+      });
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-detail-level-option]').forEach((opt) => {
+      opt.addEventListener('click', () => {
+        const level = opt.dataset.detailLevelOption;
+        if (!level) return;
+        document.dispatchEvent(new CustomEvent('detail-level-set', { detail: { level } }));
+        closeAll();
+      });
+    });
+
+    if (document.body.dataset.ratingsViewControlsGlobal !== 'true') {
+      document.body.dataset.ratingsViewControlsGlobal = 'true';
+      document.addEventListener('pointerdown', (event) => {
+        const target = event.target;
+        if (!(target instanceof Node)) return;
+        if (root.contains(target)) return;
+        if (categoryMenu?.contains(target) || detailMenu?.contains(target)) return;
+        if (categorySheet?.contains(target) || detailSheet?.contains(target)) return;
+        closeMenus();
+        openKind = openKind && !isMobile() ? null : openKind;
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeAll();
+      });
+      window.addEventListener('resize', () => {
+        // Avoid leaving a desktop menu open after rotating to mobile, etc.
+        closeAll();
+      });
+    }
+  }
+
+  initRatingsViewControls();
+  document.addEventListener('astro:page-load', initRatingsViewControls);
+</script>

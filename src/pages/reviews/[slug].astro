@@ -9,7 +9,6 @@ import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
 import ReviewArticleTab from '../../components/review/tabs/ReviewArticleTab.astro';
 import MarketDataTab from '../../components/review/tabs/MarketDataTab.astro';
 import AlternativesTab from '../../components/review/tabs/AlternativesTab.astro';
-import RatingsSpecsTab from '../../components/review/tabs/RatingsSpecsTab.astro';
 import PlaceholderTab from '../../components/review/tabs/PlaceholderTab.astro';
 import PhotosVideosTab from '../../components/review/tabs/PhotosVideosTab.astro';
 import PricingTab from '../../components/review/tabs/PricingTab.astro';
@@ -23,7 +22,6 @@ import {
   loadPublishedReviewSlugs,
   loadReviewPageProduct,
 } from '../../lib/content/store';
-import { loadDraftRatingsViewModel } from '../../lib/draft-ratings/loadDraftRatingsData';
 import {
   DEV_REVIEW_SLUGS,
   hasAlternativesTab,
@@ -53,11 +51,8 @@ if (!pageLoad) {
   return new Response(null, { status: 404, statusText: 'Not Found' });
 }
 
-const { product, isDraft, useDraftRatings } = pageLoad;
+const { product, isDraft } = pageLoad;
 const featuredIn = await getProductFeaturedIn(product.slug);
-const ratingsModel = useDraftRatings
-  ? await loadDraftRatingsViewModel(product, { preview: true })
-  : undefined;
 const head = resolveProductPageHead(product, { astroSite: Astro.site, draft: isDraft });
 const showMarketDataTab = hasMarketDataTab(product.slug) && (import.meta.env.DEV || isDraft);
 const showAlternativesTab = hasAlternativesTab(product.slug) && (import.meta.env.DEV || isDraft);
@@ -129,12 +124,19 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
       <div data-tab-panel="overview">
         <OverviewTab product={product} />
       </div>
-      <div data-tab-panel="ratings" class="hidden">
-        <RatingsSpecsTab
-          product={product}
-          preview={useDraftRatings}
-          ratingsModel={ratingsModel}
-        />
+      <div
+        data-tab-panel="ratings"
+        class="hidden"
+        data-ratings-src={`/reviews/ratings-panel/${product.slug}`}
+      >
+        <div data-ratings-placeholder class="section-container px-4 py-12 md:px-8">
+          <p class="text-on-surface-variant">Loading ratings…</p>
+        </div>
+        <noscript>
+          <p class="section-container px-4 pb-8 md:px-8">
+            <a href={`/reviews/ratings-panel/${product.slug}`}>View full ratings and specs</a>
+          </p>
+        </noscript>
       </div>
       <div data-tab-panel="review" class="hidden">
         <ReviewArticleTab product={product} />
@@ -195,6 +197,7 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
     navigateToRatingsSection,
   } from '../../lib/review/ratingsSectionNav.client.ts';
   import { hydratePanelMedia } from '../../lib/review/hydratePanelMedia.client.ts';
+  import { loadRatingsPanel } from '../../lib/review/loadRatingsPanel.client.ts';
   import { subscoreSlugFromLabel } from '../../lib/review/ratingsDeepLink.ts';
 
   const TABBAR_OFFSET = 52;
@@ -216,7 +219,7 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
     const tabTriggers = Array.from(document.querySelectorAll<HTMLElement>('[data-tab]'));
     const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-tab-panel]'));
 
-    function setActiveTab(id: string, scroll = true, hashOverride?: string) {
+    async function setActiveTab(id: string, scroll = true, hashOverride?: string) {
       let matched = false;
       let activePanel: HTMLElement | null = null;
       panels.forEach((panel) => {
@@ -228,6 +231,13 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
         }
       });
       if (!matched) return;
+      if (id === 'ratings' && activePanel) {
+        try {
+          await loadRatingsPanel(activePanel);
+        } catch {
+          /* placeholder stays visible */
+        }
+      }
       tabButtons.forEach((btn) => btn.setAttribute('aria-current', btn.dataset.tab === id ? 'true' : 'false'));
       if (history.replaceState) history.replaceState(null, '', hashOverride ?? `#${id}`);
       if (activePanel) {
@@ -273,21 +283,22 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
     tabTriggers.forEach((trigger) => {
       trigger.addEventListener('click', () => {
         const id = trigger.dataset.tab;
-        if (id) setActiveTab(id);
+        if (id) void setActiveTab(id);
       });
     });
 
-    document.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((toggle) => {
-      toggle.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement).closest('.rt-tooltip-trigger')) return;
-        toggleAccordion(toggle);
-      });
-      toggle.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggleAccordion(toggle);
-        }
-      });
+    panelsWrap.addEventListener('click', (e) => {
+      const toggle = (e.target as HTMLElement).closest<HTMLElement>('[data-accordion-toggle]');
+      if (!toggle || !panelsWrap.contains(toggle)) return;
+      if ((e.target as HTMLElement).closest('.rt-tooltip-trigger')) return;
+      toggleAccordion(toggle);
+    });
+    panelsWrap.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const toggle = (e.target as HTMLElement).closest<HTMLElement>('[data-accordion-toggle]');
+      if (!toggle || !panelsWrap.contains(toggle)) return;
+      e.preventDefault();
+      toggleAccordion(toggle);
     });
 
     // Sidebar / tooltip category jumps -> ratings tab + expand + scroll
@@ -359,4 +370,34 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
 
   initReview();
   document.addEventListener('astro:page-load', initReview);
+
+  // #region agent log
+  (function logReviewPayload() {
+    const ratings = document.querySelector<HTMLElement>('[data-tab-panel="ratings"]');
+    const accordion = ratings?.querySelector('[data-accordion-group]') ?? null;
+    const drawerEl = ratings?.querySelector('[data-ratings-drawer]') ?? ratings?.lastElementChild;
+    fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5c7f40' },
+      body: JSON.stringify({
+        sessionId: '5c7f40',
+        runId: 'psi-plan',
+        hypothesisId: 'B',
+        location: 'reviews/[slug].astro',
+        message: 'review tab payload breakdown',
+        data: {
+          path: location.pathname,
+          ratingsBytes: ratings?.innerHTML.length ?? 0,
+          accordionBytes: accordion?.innerHTML.length ?? 0,
+          drawerHintBytes: drawerEl && drawerEl !== accordion ? drawerEl.innerHTML.length : 0,
+          tooltipTemplates: document.querySelectorAll('template[id^="tooltip-"]').length,
+          distBins: document.querySelectorAll('[data-dist-bins]').length,
+          evidenceTables: document.querySelectorAll('.evidence-cat-table').length,
+          drawerHooks: document.querySelectorAll('[data-ratings-drawer]').length,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  })();
+  // #endregion
 </script>

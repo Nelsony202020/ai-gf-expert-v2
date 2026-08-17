@@ -1,6 +1,6 @@
 ---
 import type { GalleryImage, Product } from '../../data/products';
-import { optimizedImageUrl } from '../../lib/media/optimize';
+import { imageSrcSet, optimizedImageUrl } from '../../lib/media/optimize';
 import VideoReviewLightbox from './VideoReviewLightbox.astro';
 
 interface Props {
@@ -11,7 +11,8 @@ interface Props {
 const { images, product } = Astro.props;
 const hero = images[0];
 const heroIsVideo = (hero?.mediaType ?? 'image') === 'video';
-const heroImgSrc = heroIsVideo ? undefined : optimizedImageUrl(hero?.full, { width: 900, quality: 72 });
+const heroImgSrc = heroIsVideo ? undefined : optimizedImageUrl(hero?.full, { width: 800, quality: 72, dpr: 1 });
+const heroImgSrcSet = heroIsVideo || !hero?.full ? '' : imageSrcSet(hero.full, [480, 800, 1200], 72);
 const galleryLightboxItems = JSON.stringify(
   images
     .filter((image) => image.full)
@@ -42,6 +43,8 @@ const galleryLightboxItems = JSON.stringify(
           heroIsVideo ? 'hidden' : '',
         ]}
         src={heroImgSrc}
+        srcset={heroImgSrcSet || undefined}
+        sizes="(max-width: 767px) 100vw, 640px"
         width="1280"
         height="720"
         loading="eager"
@@ -146,6 +149,26 @@ const galleryLightboxItems = JSON.stringify(
     root.dataset.bound = 'true';
 
     const mainImg = root.querySelector<HTMLImageElement>('[data-gallery-main-img]');
+    // #region agent log
+    fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5c7f40' },
+      body: JSON.stringify({
+        sessionId: '5c7f40',
+        runId: 'post-fix',
+        hypothesisId: 'E',
+        location: 'Gallery.astro',
+        message: 'gallery hero image urls',
+        data: {
+          path: location.pathname,
+          src: mainImg?.getAttribute('src') ?? '',
+          srcset: (mainImg?.getAttribute('srcset') ?? '').slice(0, 400),
+          currentSrc: mainImg?.currentSrc ?? '',
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     const mainVideo = root.querySelector<HTMLVideoElement>('[data-gallery-main-video]');
     const playOverlay = root.querySelector<HTMLElement>('[data-gallery-play-overlay]');
     const actionIcon = root.querySelector<HTMLElement>('[data-gallery-action-icon]');

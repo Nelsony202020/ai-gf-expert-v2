@@ -8,6 +8,7 @@ export type ReviewBlockType =
   | 'paragraph'
   | 'h2'
   | 'h3'
+  | 'h4'
   | 'bulletList'
   | 'numberedList'
   | 'image'
@@ -58,6 +59,7 @@ export const BLOCK_META: BlockMeta[] = [
   { type: 'paragraph', label: 'Paragraph', icon: 'notes', group: 'Text' },
   { type: 'h2', label: 'Heading (H2)', icon: 'format_h2', group: 'Text' },
   { type: 'h3', label: 'Heading (H3)', icon: 'format_h3', group: 'Text' },
+  { type: 'h4', label: 'Heading (H4)', icon: 'format_h4', group: 'Text' },
   { type: 'bulletList', label: 'Bullet list', icon: 'format_list_bulleted', group: 'Text' },
   { type: 'numberedList', label: 'Numbered list', icon: 'format_list_numbered', group: 'Text' },
   { type: 'quote', label: 'Quote', icon: 'format_quote', group: 'Text' },
@@ -154,9 +156,16 @@ export function buildDefaultTemplate(productName = ''): ReviewBlock[] {
   ]);
 }
 
-/** Persist section headings as H3 blocks (page title is the only H2 on the public review). */
+/** Normalize legacy heading storage (`h3` + `data.level = 4` → `h4`). */
 export function normalizeReviewHeadingLevels(blocks: ReviewBlock[]): ReviewBlock[] {
-  return blocks.map((block) => (block.type === 'h2' ? { ...block, type: 'h3' } : block));
+  return blocks.map((block) => {
+    if (block.type === 'h3' && Number(block.data?.level) === 4) {
+      const data = { ...(block.data ?? {}) };
+      delete data.level;
+      return { ...block, type: 'h4' as const, data };
+    }
+    return block;
+  });
 }
 
 /** @deprecated Prefer reviewTemplateHeadings — category-scored outline kept for reference. */

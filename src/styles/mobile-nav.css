@@ -59,7 +59,8 @@
   height: auto;
   padding: 0 var(--mobile-nav-float-inset-x)
     calc(var(--mobile-nav-float-bottom) + env(safe-area-inset-bottom, 0px));
-  background: none;
+  /* Opaque page bg under the pill + home-indicator — stops score colors bleeding into Safari chrome */
+  background: var(--color-background);
   border: none;
   box-shadow: none;
   backdrop-filter: none;
@@ -68,7 +69,7 @@
 }
 
 .mobile-bottom-nav--glass {
-  background: none;
+  background: var(--color-background);
   border: none;
   box-shadow: none;
   backdrop-filter: none;

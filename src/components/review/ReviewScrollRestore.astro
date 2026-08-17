@@ -28,7 +28,7 @@ const { productSlug } = Astro.props;
       JSON.stringify({
         slug: productSlug,
         y: window.scrollY,
-        tab: window.location.hash.replace('#', '') || 'ratings',
+        tab: window.location.hash.replace('#', '') || 'overview',
         categoryKey: openCategory?.dataset.category ?? null,
         subscoreIndex: activeSub?.dataset.subscoreIndex ?? null,
         detailLevel: ratingsRoot?.dataset.detailLevel ?? 'skim',
@@ -49,7 +49,14 @@ const { productSlug } = Astro.props;
     sessionStorage.removeItem(STORAGE_KEY);
 
     const apply = () => {
-      const tab = state.tab || 'ratings';
+      const tab = (state.tab || 'overview').startsWith('ratings') ? 'ratings' : state.tab || 'overview';
+      const ratingsPanel = document.querySelector('[data-tab-panel="ratings"]');
+      if (tab === 'ratings' && ratingsPanel && ratingsPanel.dataset.ratingsReady !== 'true') {
+        import('../../lib/review/loadRatingsPanel.client.ts').then(({ loadRatingsPanel }) => {
+          loadRatingsPanel(ratingsPanel).then(apply);
+        });
+        return;
+      }
       document.querySelectorAll('[data-tab-panel]').forEach((panel) => {
         panel.classList.toggle('hidden', panel.dataset.tabPanel !== tab);
       });

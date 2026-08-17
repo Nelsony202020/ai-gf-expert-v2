@@ -1,51 +1,11 @@
 ---
-const options = [
-  { id: 'skim', label: 'Skim' },
-  { id: 'medium', label: 'Medium' },
-  { id: 'all-in', label: 'All In' },
-];
+/**
+ * Detail-level behavior + CSS for Ratings & Specs.
+ * UI triggers live in RatingsViewControls.astro.
+ */
 ---
 
-<div class="flex justify-end mb-6" data-detail-level-control>
-  <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-    <span class="text-[11px] font-black uppercase tracking-widest text-on-surface-variant sm:text-right">
-      Detail level
-    </span>
-    <div
-      class="inline-flex p-1 rounded-lg border border-surface-variant bg-surface-container-low"
-      role="tablist"
-      aria-label="Detail level"
-    >
-      {
-        options.map((opt, index) => (
-          <button
-            type="button"
-            role="tab"
-            data-detail-level-tab={opt.id}
-            aria-selected={index === 0 ? 'true' : 'false'}
-            class="detail-level-tab block px-3 py-1.5 text-xs font-bold rounded-md transition-colors text-on-surface-variant hover:text-on-surface"
-          >
-            {opt.label}
-          </button>
-        ))
-      }
-    </div>
-  </div>
-</div>
-
 <style is:global>
-  .detail-level-tab[aria-selected='true'] {
-    background: var(--color-brand-lime);
-    color: var(--color-on-brand-lime);
-    box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
-  }
-
-  [data-theme='dark'] .detail-level-tab[aria-selected='true'] {
-    background: #db2777;
-    color: #fff;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
-  }
-
   [data-ratings-root][data-detail-level='skim'] [data-detail-tier='deep'] {
     display: none !important;
   }
@@ -141,10 +101,19 @@ const options = [
     });
   }
 
-  function syncDetailLevelTabs(level: DetailLevel) {
-    document.querySelectorAll<HTMLButtonElement>('[data-detail-level-tab]').forEach((tab) => {
-      const active = tab.dataset.detailLevelTab === level;
-      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+  function syncDetailLevelUi(level: DetailLevel) {
+    document.querySelectorAll<HTMLElement>('[data-detail-level-label]').forEach((el) => {
+      const labels: Record<DetailLevel, string> = {
+        skim: 'Skim',
+        medium: 'Medium',
+        'all-in': 'All In',
+      };
+      el.textContent = labels[level];
+    });
+    document.querySelectorAll<HTMLElement>('[data-detail-level-option]').forEach((opt) => {
+      const active = opt.dataset.detailLevelOption === level;
+      opt.classList.toggle('is-active', active);
+      opt.setAttribute('aria-selected', active ? 'true' : 'false');
     });
   }
 
@@ -156,7 +125,7 @@ const options = [
     const normalized = (level === 'medium' || level === 'all-in' ? level : 'skim') as DetailLevel;
     root.dataset.detailLevel = normalized;
 
-    syncDetailLevelTabs(normalized);
+    syncDetailLevelUi(normalized);
     syncAccordionVisibility(normalized);
 
     requestAnimationFrame(() => {
@@ -173,20 +142,13 @@ const options = [
     if (html.dataset.detailLevelBound !== 'true') {
       html.dataset.detailLevelBound = 'true';
 
-      document.addEventListener('click', (event) => {
-        const tab = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-detail-level-tab]');
-        if (!tab || !tab.closest('[data-detail-level-control]')) return;
-        const level = tab.dataset.detailLevelTab;
-        if (level) applyDetailLevel(level);
-      });
-
       document.addEventListener('detail-level-set', ((event: CustomEvent<{ level: string }>) => {
         if (event.detail?.level) applyDetailLevel(event.detail.level);
       }) as EventListener);
     }
 
-    const level = root.dataset.detailLevel || 'skim';
-    syncDetailLevelTabs(level as DetailLevel);
+    const level = (root.dataset.detailLevel || 'skim') as DetailLevel;
+    syncDetailLevelUi(level);
 
     if (root.dataset.detailLevelInitialized !== 'true') {
       root.dataset.detailLevelInitialized = 'true';

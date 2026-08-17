@@ -104,11 +104,11 @@
     panel.classList.toggle('ratings-tooltip-panel--mobile-sheet', isMobileSheet);
 
     if (isMobileSheet) {
-      const maxH = viewportH - margin * 2;
-      // Measure unconstrained content, then lock height so the body can scroll.
-      const contentH = panel.scrollHeight;
+      // Always lock sheet height so the inner body becomes the scroll container
+      // (iOS won't scroll a flex child unless the parent has a definite height).
+      const maxH = Math.min(viewportH - margin * 2, Math.round(viewportH * 0.88));
       panel.style.maxHeight = `${maxH}px`;
-      panel.style.height = contentH > maxH ? `${maxH}px` : '';
+      panel.style.height = `${maxH}px`;
     }
 
     const panelWidth = panel.offsetWidth || maxWidth;
@@ -123,6 +123,14 @@
       panel.classList.remove('ratings-tooltip-panel--below', 'ratings-tooltip-panel--above');
       panel.style.left = `${left}px`;
       panel.style.top = `${top}px`;
+
+      const body = panel.querySelector<HTMLElement>('.ratings-tooltip-panel__body');
+      if (body) {
+        body.style.overflowY = 'scroll';
+        body.style.setProperty('-webkit-overflow-scrolling', 'touch');
+        body.style.touchAction = 'pan-y';
+        body.scrollTop = 0;
+      }
       return;
     }
 
@@ -349,6 +357,11 @@
 
     const portal = document.getElementById('ratings-tooltip-portal');
     if (!portal) return;
+
+    // Keep portal on body so fixed sheets aren't clipped by transformed ancestors.
+    if (portal.parentElement !== document.body) {
+      document.body.appendChild(portal);
+    }
 
     portal.appendChild(panel);
     activePanel = panel;

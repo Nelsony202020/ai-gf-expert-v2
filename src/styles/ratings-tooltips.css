@@ -1022,12 +1022,22 @@ a.rt-inline-test-link.rt-comp-name {
 
   .ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__body,
   .ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__body--compact {
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
-    max-height: none;
-    overflow-y: auto;
+    max-height: none !important;
+    overflow-x: hidden;
+    overflow-y: scroll;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  .ratings-tooltip-panel--overall.ratings-tooltip-panel--mobile-sheet {
+    display: flex;
+    flex-direction: column;
+    height: min(88dvh, calc(100dvh - 24px));
+    max-height: min(88dvh, calc(100dvh - 24px));
+    overflow: hidden;
   }
 
   .ratings-tooltip-panel--methodology.ratings-tooltip-panel--mobile-sheet {

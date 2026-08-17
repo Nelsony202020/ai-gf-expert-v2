@@ -1,4 +1,11 @@
 <script>
+  const THEME_COLORS = { light: '#f9f9f9', dark: '#020617' };
+
+  function syncThemeColor(dark) {
+    const meta = document.querySelector('meta[name="theme-color"][data-theme-color]');
+    if (meta) meta.setAttribute('content', dark ? THEME_COLORS.dark : THEME_COLORS.light);
+  }
+
   function initThemeToggles() {
     const buttons = document.querySelectorAll('[data-theme-toggle]');
     if (!buttons.length) return;
@@ -13,10 +20,12 @@
         root.removeAttribute('data-theme');
         localStorage.setItem('theme', 'light');
       }
+      syncThemeColor(dark);
     }
 
     function syncAll() {
       const dark = root.getAttribute('data-theme') === 'dark';
+      syncThemeColor(dark);
       buttons.forEach((btn) => {
         const icon = btn.querySelector('.theme-toggle__icon');
         const label = btn.querySelector('.theme-toggle__label');

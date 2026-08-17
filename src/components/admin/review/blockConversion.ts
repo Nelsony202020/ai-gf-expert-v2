@@ -10,8 +10,8 @@
 //       fields (unchanged public contract) plus an optional `rich` /
 //       `richItems` key holding TipTap inline JSON when the editor added
 //       marks (bold/italic/link) that plain text cannot express.
-//     - H4 headings (whitelist only has h2/h3) are stored as `h3` with
-//       `data.level = 4`.
+//     - H4 was previously stored as `h3` with `data.level = 4`; readers still
+//       accept that shape and writers emit first-class `h4` blocks.
 //     - Horizontal rules (no whitelist type) are stored as an empty
 //       `paragraph` with `data.divider = true`.
 // - Every non-text-flow block (dynamic product data, structured blocks, and
@@ -53,6 +53,7 @@ const TEXT_FLOW_TYPES = new Set<string>([
   'paragraph',
   'h2',
   'h3',
+  'h4',
   'bulletList',
   'numberedList',
   'quote',
@@ -259,7 +260,7 @@ export function blocksToDoc(blocks: ReviewBlock[], ctx?: ConversionContext): JSO
                     caption: String(item.caption ?? ''),
                     mediaId: item.mediaId ? String(item.mediaId) : null,
                     widthPercent: Number(item.widthPercent ?? 100),
-                    borderRadiusPercent: Number(item.borderRadiusPercent ?? 0),
+                    borderRadiusPercent: Number(item.borderRadiusPercent ?? 12),
                     clipFocusX: Number(item.clipFocusX ?? 50),
                     clipFocusY: Number(item.clipFocusY ?? 50),
                   };
@@ -273,9 +274,11 @@ export function blocksToDoc(blocks: ReviewBlock[], ctx?: ConversionContext): JSO
         break;
       }
       case 'h2':
-      case 'h3': {
-        const stored = Number(d.level);
-        const level = stored === 4 ? 4 : 3;
+      case 'h3':
+      case 'h4': {
+        const legacyLevel = Number(d.level);
+        const level =
+          block.type === 'h2' ? 2 : block.type === 'h4' || legacyLevel === 4 ? 4 : 3;
         const node: JSONNode = { type: 'heading', attrs: { level, blockId } };
         const inline = dataToInline(d);
         if (inline.length > 0) node.content = inline;
@@ -302,7 +305,7 @@ export function blocksToDoc(blocks: ReviewBlock[], ctx?: ConversionContext): JSO
             caption: String(d.caption ?? ''),
             mediaId,
             widthPercent: Number(d.widthPercent ?? 100),
-            borderRadiusPercent: Number(d.borderRadiusPercent ?? 0),
+            borderRadiusPercent: Number(d.borderRadiusPercent ?? 12),
             clipFocusX: Number(d.clipFocusX ?? 50),
             clipFocusY: Number(d.clipFocusY ?? 50),
             nsfw: Boolean(d.nsfw),
@@ -448,8 +451,8 @@ export function docToBlocks(doc: JSONDoc | null | undefined): ReviewBlock[] {
                     if (alt) stored.alt = alt;
                     const width = Number(item.widthPercent ?? 100);
                     if (width !== 100) stored.widthPercent = width;
-                    const radius = Number(item.borderRadiusPercent ?? 0);
-                    if (radius > 0) stored.borderRadiusPercent = radius;
+                    const radius = Number(item.borderRadiusPercent ?? 12);
+                    if (Number.isFinite(radius) && radius !== 12) stored.borderRadiusPercent = radius;
                     const focusX = Number(item.clipFocusX ?? 50);
                     const focusY = Number(item.clipFocusY ?? 50);
                     if (focusX !== 50) stored.clipFocusX = focusX;
@@ -466,8 +469,8 @@ export function docToBlocks(doc: JSONDoc | null | undefined): ReviewBlock[] {
       case 'heading': {
         const level = Number(node.attrs?.level ?? 3);
         const data: Record<string, unknown> = inlineToData(node.content);
-        if (level >= 4) data.level = 4;
-        blocks.push({ id: takeId(node, seen), type: 'h3', data });
+        const type: ReviewBlockType = level <= 2 ? 'h2' : level >= 4 ? 'h4' : 'h3';
+        blocks.push({ id: takeId(node, seen), type, data });
         break;
       }
       case 'bulletList':
@@ -492,8 +495,8 @@ export function docToBlocks(doc: JSONDoc | null | undefined): ReviewBlock[] {
         if (alt) data.alt = alt;
         const width = Number(node.attrs?.widthPercent ?? 100);
         if (width !== 100) data.widthPercent = width;
-        const radius = Number(node.attrs?.borderRadiusPercent ?? 0);
-        if (radius > 0) data.borderRadiusPercent = radius;
+        const radius = Number(node.attrs?.borderRadiusPercent ?? 12);
+        if (Number.isFinite(radius) && radius !== 12) data.borderRadiusPercent = radius;
         const focusX = Number(node.attrs?.clipFocusX ?? 50);
         const focusY = Number(node.attrs?.clipFocusY ?? 50);
         if (focusX !== 50) data.clipFocusX = focusX;

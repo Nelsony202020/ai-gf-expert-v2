@@ -8,10 +8,12 @@ interface Props {
   methodologyOnly?: boolean;
   /** Roundup pages — link test pages from labels instead of vial icons */
   inlineTestLinks?: boolean;
+  /** Distinguishes duplicate tooltips on the same page (overview vs sidebar). */
+  instance?: string;
 }
 
-const { product, methodologyOnly = false, inlineTestLinks = false } = Astro.props;
-const tooltipId = `overall-${product.slug}`;
+const { product, methodologyOnly = false, inlineTestLinks = false, instance } = Astro.props;
+const tooltipId = `overall-${product.slug}${instance ? `-${instance}` : ''}`;
 ---
 
 <span
