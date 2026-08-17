@@ -22,7 +22,7 @@
 /* Category icon on the top-left border — white ring crops PNG’s baked-in black edge */
 .ratings-tooltip-panel__badge {
   position: absolute;
-  top: -14px;
+  top: 0;
   left: -10px;
   z-index: 5;
   box-sizing: border-box;
@@ -33,6 +33,7 @@
   border: 0;
   background: #fff;
   box-shadow: 0 1px 4px color-mix(in srgb, #000 12%, transparent);
+  transform: translateY(-50%);
   pointer-events: none;
   overflow: hidden;
 }
@@ -106,7 +107,7 @@
   category badge so the title isn’t mid-icon.
 */
 .ratings-tooltip-panel--has-badge .ratings-tooltip-panel__what-block {
-  padding-top: 1.35rem;
+  padding-top: 0.85rem;
 }
 
 /* Legacy inline brand slot — kept inert so old markup doesn't break layout */
@@ -144,22 +145,39 @@
 }
 
 @media (max-width: 767px) {
-  /* Keep badge fully inside so overflow:hidden can enable body scroll. */
-  .ratings-tooltip-panel__badge {
-    top: 10px;
-    left: 12px;
+  /*
+    Category badge straddles the top border (same as glossary tooltips):
+    half above the sheet, half on it.
+  */
+  .ratings-tooltip-panel--has-badge .ratings-tooltip-panel__badge,
+  .ratings-tooltip-panel--category .ratings-tooltip-panel__badge {
+    top: 0;
+    left: 14px;
     width: 40px;
     height: 40px;
     padding: 3px;
-    transform: none;
+    transform: translateY(-50%);
   }
 
   .ratings-tooltip-panel--has-badge .ratings-tooltip-panel__what-block {
-    padding-top: 2.15rem;
+    /* Only the lower half of the badge sits inside — light clearance + a touch more air */
+    padding-top: 0.85rem;
   }
 
   .ratings-tooltip-panel--mobile-sheet {
     padding-top: 0;
+  }
+
+  /* Don’t clip the overlapping badge on category sheets */
+  .ratings-tooltip-panel--category.ratings-tooltip-panel--mobile-sheet,
+  .ratings-tooltip-panel--has-badge.ratings-tooltip-panel--mobile-sheet {
+    overflow: visible;
+  }
+
+  .ratings-tooltip-panel--category.ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__body,
+  .ratings-tooltip-panel--has-badge.ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__body {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
   }
 }
 
@@ -460,6 +478,49 @@
 @media (max-width: 480px) {
   .ratings-tooltip-panel__split {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Overall mobile sheet: keep desktop side-by-side (Where this sits | Category scores) */
+@media (max-width: 767px) {
+  .ratings-tooltip-panel--overall.ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__split {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 0.65rem;
+  }
+
+  .ratings-tooltip-panel--overall.ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__split-col {
+    min-width: 0;
+  }
+
+  .ratings-tooltip-panel--overall.ratings-tooltip-panel--mobile-sheet .rt-pipeline__step {
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 0.4rem;
+  }
+
+  .ratings-tooltip-panel--overall.ratings-tooltip-panel--mobile-sheet .rt-pipeline__node {
+    width: 22px;
+    height: 22px;
+  }
+
+  .ratings-tooltip-panel--overall.ratings-tooltip-panel--mobile-sheet .rt-pipeline__node-icon {
+    font-size: 12px;
+  }
+
+  .ratings-tooltip-panel--overall.ratings-tooltip-panel--mobile-sheet .rt-pipeline__card {
+    padding: 4px 6px 6px;
+  }
+
+  .ratings-tooltip-panel--overall.ratings-tooltip-panel--mobile-sheet .rt-comp-row__main {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .ratings-tooltip-panel--overall.ratings-tooltip-panel--mobile-sheet .rt-comp-name {
+    font-size: 11px;
+  }
+
+  .ratings-tooltip-panel--overall.ratings-tooltip-panel--mobile-sheet .rt-tooltip-actions--compact {
+    display: none;
   }
 }
 
@@ -1035,9 +1096,19 @@ a.rt-inline-test-link.rt-comp-name {
   .ratings-tooltip-panel--overall.ratings-tooltip-panel--mobile-sheet {
     display: flex;
     flex-direction: column;
-    height: min(88dvh, calc(100dvh - 24px));
+    /* Hug content; JS caps height when content is taller than the viewport */
+    height: auto;
     max-height: min(88dvh, calc(100dvh - 24px));
     overflow: hidden;
+  }
+
+  .ratings-tooltip-panel--category.ratings-tooltip-panel--mobile-sheet {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    max-height: min(88dvh, calc(100dvh - 24px));
+    /* Keep overflow visible so the border-straddling badge isn’t clipped */
+    overflow: visible;
   }
 
   .ratings-tooltip-panel--methodology.ratings-tooltip-panel--mobile-sheet {
@@ -1090,19 +1161,26 @@ a.rt-inline-test-link.rt-comp-name {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    margin: -2px 0 0;
+    width: 40px;
+    height: 40px;
+    margin: -4px -2px 0 0;
     padding: 0;
     border: none;
     border-radius: 999px;
-    background: rgb(0 0 0 / 6%);
-    color: var(--color-on-surface-variant);
+    background: transparent;
+    color: var(--color-tertiary, #5f5e5e);
     cursor: pointer;
   }
 
+  .ratings-tooltip-panel__close:hover,
+  .ratings-tooltip-panel__close:focus-visible {
+    color: var(--color-on-surface);
+    background: var(--color-surface-container-low, rgb(0 0 0 / 6%));
+    outline: none;
+  }
+
   .ratings-tooltip-panel__close .material-symbols-outlined {
-    font-size: 18px;
+    font-size: 22px;
   }
 
   .ratings-tooltip-panel--methodology .ratings-tooltip-panel__body {

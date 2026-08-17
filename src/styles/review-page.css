@@ -28,10 +28,12 @@
   z-index: 50;
 }
 
-/* Flat while in-flow: part of the page (page background) */
+/* In-flow under the hero: page/hero background — not sticky.
+   Sticky here would keep the bar under the header while scrolling up,
+   but with the unpinned (white) color — which looks broken. */
 [data-tabbar].review-tabbar {
-  position: sticky;
-  top: calc(var(--site-header-height) + var(--site-header-offset));
+  position: relative;
+  top: auto;
   z-index: 45;
   background: var(--color-background);
   border-bottom: 1px solid var(--color-surface-variant);
@@ -39,8 +41,9 @@
 }
 
 /*
-  Sticky/attached: one continuous nav surface with the header.
-  Same header cream, no seam between them, single separator under tabs.
+  Joined to the main header: fixed under it, same header surface color.
+  Stays this color while pinned — including when scrolling back up —
+  until JS unpins and it returns to in-flow (hero/page background).
 */
 [data-tabbar].review-tabbar.review-tabbar--pinned {
   position: fixed;

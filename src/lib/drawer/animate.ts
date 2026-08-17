@@ -1,5 +1,5 @@
 /** Match right-side drawer slide transition (see drawer panel CSS). */
-export const DRAWER_TRANSITION_MS = 360;
+export const DRAWER_TRANSITION_MS = 520;
 
 /** Wait slightly longer than the CSS transition before unmounting. */
 export const DRAWER_UNMOUNT_MS = DRAWER_TRANSITION_MS + 24;

@@ -22,6 +22,8 @@ export interface ImageOptimizeOpts {
   quality?: number;
   /** Device pixel ratio. Default 2. Use 1 when `width` is already a srcset pixel width. */
   dpr?: number;
+  /** Bunny Optimizer output format. Use jpeg for huge/animated webp avatars. */
+  format?: 'jpeg' | 'webp' | 'png';
 }
 
 /**
@@ -47,6 +49,7 @@ export function optimizedImageUrl(url: string | undefined | null, opts: ImageOpt
     params.set('width', String(Math.min(Math.round(opts.width * dpr), 1600)));
   }
   params.set('quality', String(opts.quality ?? 75));
+  if (opts.format) params.set('format', opts.format);
 
   const qs = params.toString();
   return qs ? `${src}${src.includes('?') ? '&' : '?'}${qs}` : src;

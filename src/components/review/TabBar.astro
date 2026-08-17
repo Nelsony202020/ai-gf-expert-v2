@@ -110,7 +110,12 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
     function updatePin() {
       const headerH = header?.offsetHeight ?? 52;
       const tabbarH = tabbar.offsetHeight;
-      const shouldPin = window.scrollY >= naturalTop - headerH - 1;
+      // Slight hysteresis: unpin a bit later when scrolling up so color
+      // doesn't flicker at the attachment threshold.
+      const isPinned = tabbar.classList.contains('review-tabbar--pinned');
+      const pinAt = naturalTop - headerH - 1;
+      const unpinAt = naturalTop - headerH - 12;
+      const shouldPin = isPinned ? window.scrollY >= unpinAt : window.scrollY >= pinAt;
 
       if (shouldPin) {
         tabbar.classList.add('review-tabbar--pinned');

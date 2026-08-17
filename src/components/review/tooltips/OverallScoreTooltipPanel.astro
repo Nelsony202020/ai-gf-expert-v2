@@ -72,13 +72,6 @@ const panelClass = [
     <div class="ratings-tooltip-panel__split">
       <div
         class="ratings-tooltip-panel__split-col"
-        {...(annotate ? { 'data-annotation-target': '3' } : {})}
-      >
-        <p class="ratings-tooltip-panel__section-title">Where this sits</p>
-        <RatingHierarchyPipeline highlight="overall" brandName={product.name} showTitle={false} />
-      </div>
-      <div
-        class="ratings-tooltip-panel__split-col"
         {...(annotate ? { 'data-annotation-target': '4' } : {})}
       >
         <p class="ratings-tooltip-panel__section-title">Category scores</p>
@@ -113,6 +106,13 @@ const panelClass = [
             })
           }
         </div>
+      </div>
+      <div
+        class="ratings-tooltip-panel__split-col"
+        {...(annotate ? { 'data-annotation-target': '3' } : {})}
+      >
+        <p class="ratings-tooltip-panel__section-title">Where this sits</p>
+        <RatingHierarchyPipeline highlight="overall" brandName={product.name} showTitle={false} />
       </div>
     </div>
     <div class="ratings-tooltip-panel__distribution">

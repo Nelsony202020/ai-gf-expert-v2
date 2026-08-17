@@ -2,6 +2,7 @@
 import type { StoryHighlightCharacter } from '../../../data/products';
 import { pickCharacterDisplayImage } from '../../lib/characters/public';
 import { cdnAsset } from '../../lib/media/cdn';
+import { optimizedImageUrl } from '../../lib/media/optimize';
 import VerifiedCheck from '../ui/VerifiedCheck.astro';
 
 export type { StoryHighlightCharacter };
@@ -53,22 +54,23 @@ function modalSlidesFor(char: StoryHighlightCharacter): string[] {
 
 const modalChars: ModalCharacter[] = displayChars.map((char) => ({
   ...char,
-  displayAvatar: pickCharacterDisplayImage(
-    char.avatar,
-    char.storySlides,
-    'avatar-first',
-    char.storyImageSlides,
+  displayAvatar: optimizedImageUrl(
+    pickCharacterDisplayImage(
+      char.avatar,
+      char.storySlides,
+      'avatar-first',
+      char.storyImageSlides,
+    ),
+    { width: 64, quality: 70, format: 'jpeg' },
   ),
-  modalSlides: modalSlidesFor(char),
+  modalSlides: modalSlidesFor(char).map((url) =>
+    optimizedImageUrl(url, { width: 400, quality: 72, dpr: 1, format: 'jpeg' }),
+  ),
 }));
 
-function buildSeamlessLoopChars<T>(chars: T[], minItems = 12): T[] {
+function buildSeamlessLoopChars<T>(chars: T[]): T[] {
   if (chars.length === 0) return [];
-  let expanded = [...chars];
-  while (expanded.length < minItems) {
-    expanded = [...expanded, ...chars];
-  }
-  return [...expanded, ...expanded];
+  return [...chars, ...chars];
 }
 
 const carouselChars = manualDrag || !staticCarousel ? buildSeamlessLoopChars(modalChars) : modalChars;
@@ -144,7 +146,15 @@ const headingText = heading ?? 'Featured characters';
                   <div class:list={['char-stories__avatar-wrap', !hasStory && 'char-stories__avatar-wrap--plain']}>
                     {
                       hasImage ? (
-                        <img src={thumb} alt={char.name} class="char-stories__avatar" loading="lazy" width="64" height="64" />
+                        <img
+                          src={optimizedImageUrl(thumb, { width: 64, quality: 70, format: 'jpeg' })}
+                          alt={char.name}
+                          class="char-stories__avatar"
+                          loading="lazy"
+                          width="64"
+                          height="64"
+                          decoding="async"
+                        />
                       ) : (
                         <span class="char-stories__avatar char-stories__avatar--placeholder" aria-hidden="true">
                           {char.name.charAt(0).toUpperCase()}

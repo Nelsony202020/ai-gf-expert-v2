@@ -63,10 +63,6 @@ const avgScore = scorePoints.length
           <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
             <div class="ratings-tooltip-panel__split">
               <div class="ratings-tooltip-panel__split-col">
-                <p class="ratings-tooltip-panel__section-title">Where this sits</p>
-                <RatingHierarchyPipeline highlight="overall" brandName={app.name} showTitle={false} />
-              </div>
-              <div class="ratings-tooltip-panel__split-col">
                 <p class="ratings-tooltip-panel__section-title">Category scores</p>
                 <div class="rt-comp-list rt-comp-list--dense">
                   {
@@ -86,6 +82,10 @@ const avgScore = scorePoints.length
                     })
                   }
                 </div>
+              </div>
+              <div class="ratings-tooltip-panel__split-col">
+                <p class="ratings-tooltip-panel__section-title">Where this sits</p>
+                <RatingHierarchyPipeline highlight="overall" brandName={app.name} showTitle={false} />
               </div>
             </div>
           </div>
