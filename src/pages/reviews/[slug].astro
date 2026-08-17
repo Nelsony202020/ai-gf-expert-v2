@@ -370,34 +370,4 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
 
   initReview();
   document.addEventListener('astro:page-load', initReview);
-
-  // #region agent log
-  (function logReviewPayload() {
-    const ratings = document.querySelector<HTMLElement>('[data-tab-panel="ratings"]');
-    const accordion = ratings?.querySelector('[data-accordion-group]') ?? null;
-    const drawerEl = ratings?.querySelector('[data-ratings-drawer]') ?? ratings?.lastElementChild;
-    fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5c7f40' },
-      body: JSON.stringify({
-        sessionId: '5c7f40',
-        runId: 'psi-plan',
-        hypothesisId: 'B',
-        location: 'reviews/[slug].astro',
-        message: 'review tab payload breakdown',
-        data: {
-          path: location.pathname,
-          ratingsBytes: ratings?.innerHTML.length ?? 0,
-          accordionBytes: accordion?.innerHTML.length ?? 0,
-          drawerHintBytes: drawerEl && drawerEl !== accordion ? drawerEl.innerHTML.length : 0,
-          tooltipTemplates: document.querySelectorAll('template[id^="tooltip-"]').length,
-          distBins: document.querySelectorAll('[data-dist-bins]').length,
-          evidenceTables: document.querySelectorAll('.evidence-cat-table').length,
-          drawerHooks: document.querySelectorAll('[data-ratings-drawer]').length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  })();
-  // #endregion
 </script>

@@ -84,27 +84,6 @@ export async function loadRatingsPanel(panel: HTMLElement | null | undefined): P
     document.dispatchEvent(new Event('astro:page-load'));
     panel.dataset.ratingsReady = 'true';
     delete panel.dataset.ratingsLoading;
-    // #region agent log
-    fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5c7f40' },
-      body: JSON.stringify({
-        sessionId: '5c7f40',
-        runId: 'post-fix',
-        hypothesisId: 'B',
-        location: 'loadRatingsPanel.client.ts',
-        message: 'ratings panel lazy-loaded',
-        data: {
-          path: location.pathname,
-          src,
-          fragmentBytes: html.length,
-          injectedBytes: panel.innerHTML.length,
-          pageHtmlBytes: document.documentElement.outerHTML.length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   })();
 
   (panel as HTMLElement & { _ratingsLoad?: Promise<void> })._ratingsLoad = load;

@@ -44,7 +44,7 @@ const lcpPreload = lcpImage ? optimizedImageUrl(lcpImage, { width: 800, quality:
 const TEXT_FONTS_HREF =
   'https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap';
 const ICON_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,300..700,0..1,0&display=swap';
+  'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap';
 ---
 
 <!doctype html>
@@ -107,88 +107,5 @@ const ICON_FONTS_HREF =
     <ThemeToggleInit />
     <ComingSoonLayer />
     <ExternalLinksInit />
-    <script is:inline>
-      // #region agent log
-      (function () {
-        function send(message, data, hypothesisId) {
-          fetch('http://127.0.0.1:7312/ingest/3642bd41-13da-4f13-9a24-64f7a557b0e1', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5c7f40' },
-            body: JSON.stringify({
-              sessionId: '5c7f40',
-              runId: 'psi-plan',
-              hypothesisId: hypothesisId,
-              location: 'BaseLayout.astro',
-              message: message,
-              data: data,
-              timestamp: Date.now(),
-            }),
-          }).catch(function () {});
-        }
-        var htmlLen = document.documentElement.outerHTML.length;
-        var imgs = document.images.length;
-        var nodes = document.getElementsByTagName('*').length;
-        var ids = {};
-        var dupes = [];
-        var all = document.querySelectorAll('[id]');
-        for (var i = 0; i < all.length; i++) {
-          var id = all[i].id;
-          ids[id] = (ids[id] || 0) + 1;
-        }
-        for (var key in ids) {
-          if (ids[key] > 1) dupes.push({ id: key, count: ids[key] });
-        }
-        var panels = {};
-        var panelEls = document.querySelectorAll('[data-tab-panel]');
-        for (var p = 0; p < panelEls.length; p++) {
-          var name = panelEls[p].getAttribute('data-tab-panel') || 'unknown';
-          panels[name] = {
-            bytes: panelEls[p].innerHTML.length,
-            imgs: panelEls[p].querySelectorAll('img').length,
-            nodes: panelEls[p].getElementsByTagName('*').length,
-            hidden: panelEls[p].classList.contains('hidden'),
-          };
-        }
-        send(
-          'page payload snapshot',
-          {
-            path: location.pathname,
-            htmlBytes: htmlLen,
-            imgCount: imgs,
-            nodeCount: nodes,
-            duplicateIds: dupes.slice(0, 20),
-            duplicateIdCount: dupes.length,
-            panels: panels,
-            scriptCount: document.scripts.length,
-          },
-          'A',
-        );
-        if (window.PerformanceObserver) {
-          try {
-            var po = new PerformanceObserver(function (list) {
-              var entries = list.getEntries();
-              var last = entries[entries.length - 1];
-              if (!last) return;
-              var el = last.element;
-              send(
-                'lcp candidate',
-                {
-                  path: location.pathname,
-                  startTime: Math.round(last.startTime),
-                  size: last.size,
-                  url: last.url || '',
-                  tag: el ? el.tagName : '',
-                  id: el ? el.id : '',
-                  className: el && el.className ? String(el.className).slice(0, 80) : '',
-                },
-                'E',
-              );
-            });
-            po.observe({ type: 'largest-contentful-paint', buffered: true });
-          } catch (e) {}
-        }
-      })();
-      // #endregion
-    </script>
   </body>
 </html>

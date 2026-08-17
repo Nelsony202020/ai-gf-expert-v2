@@ -46,7 +46,7 @@ const portrait = spotlight
       {portrait && (
       <img
         class="home-featured-spotlight__portrait"
-        src={optimizedImageUrl(portrait, { width: 320, quality: 70 })}
+        src={optimizedImageUrl(portrait, { width: 320, quality: 70, format: 'jpeg' })}
         alt={`${spotlight.name} profile`}
         width="320"
         height="420"
