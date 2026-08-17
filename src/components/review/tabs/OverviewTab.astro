@@ -1,7 +1,7 @@
 ---
 import type { Product, VerdictItem } from '../../../data/products';
 import { getAuthor } from '../../../data/authors';
-import { getScoreVisual, fmtScore } from '../../../lib/scores';
+import { getScoreVisual } from '../../../lib/scores';
 import ScoreRect from '../ScoreRect.astro';
 import InfoIcon from '../../ui/InfoIcon.astro';
 import VerifiedCheck from '../../ui/VerifiedCheck.astro';
@@ -10,6 +10,7 @@ import CategoryScoreTooltip from '../tooltips/CategoryScoreTooltip.astro';
 import VerdictCategoryIcon from '../VerdictCategoryIcon.astro';
 import CharacterStoryHighlights from '../CharacterStoryHighlights.astro';
 import CmsField from '../../cms/CmsField.astro';
+import { cdnAsset } from '../../../lib/media/cdn';
 
 interface Props {
   product: Product;
@@ -32,12 +33,12 @@ const verdictEntries = product.verdicts.map((v) => ({
 const categoryByKey = Object.fromEntries(product.categories.map((c) => [c.key, c]));
 const defaultVerdict = verdictEntries.find((v) => v.id === 'overall') ?? verdictEntries[0];
 const herman = getAuthor('herman-carter');
+const hermanAvatar = herman ? cdnAsset(herman.avatar) : '';
 const showExpertOpinion = Boolean(product.expertOpinion?.trim());
 const showBestFor = overview.bestForList.length > 0;
 const showNotIdeal = overview.notIdealList.length > 0;
 const showDecisionSidebar = showBestFor || showNotIdeal;
 const showCharacters = overview.characters.length > 0;
-
 function verdictCmsField(
   verdictId: string,
   kind: 'headline' | 'verdict' | 'pros' | 'cons',
@@ -57,17 +58,81 @@ function verdictCmsField(
 
 <section class="bg-background py-12 md:py-14 pb-16 md:pb-20" data-verdict-overview>
   <div class="section-container px-4 md:px-8">
-    <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-8 md:mb-10">Our Verdict</h2>
+    <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-6 md:mb-10">Our Verdict</h2>
+
+    {/* Mobile-only: compact pill + drawer (replaces icon grid) */}
+    <div class="verdict-jump" data-verdict-jump>
+      <p class="verdict-jump__label">Jump to score</p>
+      <button
+        type="button"
+        class="verdict-jump__trigger"
+        data-verdict-jump-open
+        aria-haspopup="dialog"
+        aria-expanded="false"
+        aria-controls="verdict-jump-sheet"
+      >
+        <span class="verdict-jump__trigger-label" data-verdict-jump-label>{defaultVerdict?.label ?? 'Overall Performance'}</span>
+        <span class="material-symbols-outlined verdict-jump__trigger-chevron" aria-hidden="true">expand_more</span>
+      </button>
+    </div>
+
+    <div
+      class="mobile-sheet verdict-jump-sheet"
+      id="verdict-jump-sheet"
+      data-verdict-jump-sheet
+      hidden
+      aria-hidden="true"
+    >
+      <button type="button" class="mobile-sheet__backdrop" data-verdict-jump-close aria-label="Close"></button>
+      <div
+        class="mobile-sheet__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="verdict-jump-sheet-title"
+      >
+        <div class="mobile-sheet__handle" aria-hidden="true"></div>
+        <header class="mobile-sheet__head">
+          <h2 id="verdict-jump-sheet-title" class="mobile-sheet__title">Jump to score</h2>
+          <button type="button" class="mobile-sheet__close" data-verdict-jump-close aria-label="Close">
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+          </button>
+        </header>
+        <div class="mobile-sheet__body verdict-jump-sheet__body">
+          <div class="verdict-jump-sheet__list" role="listbox" aria-label="Verdict categories">
+            {
+              verdictEntries.map((verdict) => {
+                const isDefault = verdict.id === defaultVerdict.id;
+                return (
+                    <button
+                      type="button"
+                      role="option"
+                      class:list={['verdict-jump-sheet__option', isDefault && 'is-active']}
+                      data-verdict-jump-option={verdict.id}
+                      aria-selected={isDefault ? 'true' : 'false'}
+                    >
+                      <span class="verdict-jump-sheet__option-icon" aria-hidden="true">
+                        <VerdictCategoryIcon id={verdict.id} class="w-5 h-5" />
+                      </span>
+                      <span class="verdict-jump-sheet__option-label">{verdict.label}</span>
+                    </button>
+                );
+              })
+            }
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
-      <!-- Vertical icon navigation -->
-      <nav class="verdict-icon-nav shrink-0" data-verdict-nav aria-label="Verdict categories">
+      <!-- Desktop: vertical icon navigation -->
+      <nav class="verdict-icon-nav shrink-0" data-verdict-nav role="tablist" aria-label="Verdict categories">
         {
           verdictEntries.map((verdict) => {
             const isDefault = verdict.id === defaultVerdict.id;
             return (
               <button
                 type="button"
+                role="tab"
                 data-verdict-nav={verdict.id}
                 aria-selected={isDefault ? 'true' : 'false'}
                 aria-label={verdict.label}
@@ -170,24 +235,24 @@ function verdictCmsField(
           {
             showExpertOpinion && herman && (
               <div class="mt-10 pt-8 border-t border-surface-variant">
-                <div class="rounded-xl bg-surface-container-low border border-surface-variant p-5 md:p-6">
-                  <p class="text-[11px] font-black uppercase tracking-widest text-accent mb-4">
-                    Our Experts' Opinion
-                  </p>
-                  <div class="flex items-start gap-4">
-                    <img
-                      src={herman.avatar}
-                      alt={herman.name}
-                      class="w-12 h-12 rounded-full object-contain border-2 border-white shadow-sm shrink-0 bg-white p-0.5"
-                    />
-                    <div class="min-w-0">
-                      <div class="flex items-center gap-1 mb-2">
-                        <p class="text-sm font-bold text-on-surface">{herman.name}</p>
-                        <VerifiedCheck class="w-[18px] h-[18px]" />
-                      </div>
-                      <CmsField field="expertOpinion" as="p" class="text-sm md:text-base text-on-surface leading-relaxed">{product.expertOpinion}</CmsField>
+                <div class="expert-opinion">
+                  <div class="expert-opinion__badge" aria-hidden="true">
+                    <div class="expert-opinion__badge-clip">
+                      <img src={hermanAvatar} alt="" width="40" height="40" loading="lazy" decoding="async" />
                     </div>
                   </div>
+                  <p class="expert-opinion__eyebrow">Our Experts' Opinion</p>
+                  <div class="expert-opinion__byline">
+                    <p class="expert-opinion__name">{herman.name}</p>
+                    <VerifiedCheck class="w-[18px] h-[18px]" />
+                  </div>
+                  <CmsField
+                    field="expertOpinion"
+                    as="p"
+                    class="expert-opinion__body"
+                  >
+                    {product.expertOpinion}
+                  </CmsField>
                 </div>
               </div>
             )
@@ -240,11 +305,13 @@ function verdictCmsField(
 
           {
             showCharacters && (
-          <CharacterStoryHighlights
-            characters={overview.characters}
-            productName={product.name}
-            heading="Featured characters"
-          />
+              <div id="overview-characters" data-overview-characters>
+                <CharacterStoryHighlights
+                  characters={overview.characters}
+                  productName={product.name}
+                  heading="Featured characters"
+                />
+              </div>
             )
           }
         </aside>
@@ -254,6 +321,253 @@ function verdictCmsField(
 </section>
 
 <style is:global>
+  .expert-opinion {
+    position: relative;
+    overflow: visible;
+    border-radius: 12px;
+    border: 1px solid var(--color-surface-variant);
+    background: var(--color-surface-container-low);
+    padding: 1.35rem 1.25rem 1.25rem;
+  }
+
+  /* Same border-badge logic as ratings/glossary tooltips */
+  .expert-opinion__badge {
+    position: absolute;
+    top: -14px;
+    left: -10px;
+    z-index: 2;
+    box-sizing: border-box;
+    width: 40px;
+    height: 40px;
+    padding: 3px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 1px 4px color-mix(in srgb, #000 12%, transparent);
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .expert-opinion__badge-clip {
+    width: 100%;
+    height: 100%;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .expert-opinion__badge img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .expert-opinion__eyebrow {
+    margin: 0 0 0.75rem;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .expert-opinion__byline {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .expert-opinion__name {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-on-surface);
+  }
+
+  .expert-opinion__body {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--color-on-surface);
+  }
+
+  @media (min-width: 768px) {
+    .expert-opinion {
+      padding: 1.5rem 1.5rem 1.35rem;
+    }
+
+    /* Clear the overlapping corner badge so the title isn’t mid-icon */
+    .expert-opinion__eyebrow {
+      padding-top: 0.35rem;
+    }
+
+    .expert-opinion__body {
+      font-size: 1rem;
+    }
+  }
+
+  @media (max-width: 767px) {
+    /* Match mobile tooltip badges: sit fully inside the panel */
+    .expert-opinion__badge {
+      top: 10px;
+      left: 12px;
+      transform: none;
+    }
+
+    .expert-opinion {
+      padding: 3.15rem 1rem 1rem;
+    }
+  }
+
+  [data-theme='dark'] .expert-opinion__badge {
+    background: var(--color-surface-container-lowest, #0f172a);
+  }
+
+  /* —— Mobile jump-to-score (compact pill + drawer) —— */
+  .verdict-jump {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .verdict-jump {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.65rem;
+      margin: 0 0 1.25rem;
+    }
+
+    .verdict-icon-nav {
+      display: none !important;
+    }
+  }
+
+  .verdict-jump__label {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+  }
+
+  .verdict-jump__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 100%;
+    min-height: 32px;
+    padding: 0.3rem 0.45rem 0.3rem 0.7rem;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 999px;
+    background: var(--color-surface-container-lowest, #fff);
+    color: var(--color-on-surface);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .verdict-jump__trigger:hover,
+  .verdict-jump__trigger:focus-visible {
+    border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-surface-variant));
+    outline: none;
+  }
+
+  .verdict-jump__trigger[aria-expanded='true'] {
+    border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-surface-variant));
+  }
+
+  .verdict-jump__trigger-label {
+    min-width: 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .verdict-jump__trigger-chevron {
+    flex-shrink: 0;
+    font-size: 1.125rem;
+    color: var(--color-accent);
+  }
+
+  .verdict-jump-sheet__body {
+    padding-top: 0.25rem;
+  }
+
+  .verdict-jump-sheet__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .verdict-jump-sheet__option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.55rem 0.75rem;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-on-surface);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease;
+  }
+
+  .verdict-jump-sheet__option:hover,
+  .verdict-jump-sheet__option:focus-visible {
+    background: var(--color-surface-container-low);
+    outline: none;
+  }
+
+  .verdict-jump-sheet__option.is-active {
+    background: rgb(219 39 119 / 7%);
+  }
+
+  .verdict-jump-sheet__option-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--color-tertiary);
+  }
+
+  .verdict-jump-sheet__option.is-active .verdict-jump-sheet__option-icon {
+    color: var(--color-accent);
+  }
+
+  .verdict-jump-sheet__option-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+
+  .verdict-jump-sheet__option.is-active .verdict-jump-sheet__option-label {
+    color: var(--color-accent);
+  }
+
+  [data-theme='dark'] .verdict-jump__trigger {
+    background: var(--color-surface-container-lowest);
+    border-color: var(--dark-border-subtle);
+  }
+
+  [data-theme='dark'] .verdict-jump-sheet__option.is-active {
+    background: rgb(219 39 119 / 12%);
+  }
+
   .verdict-icon-nav {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -381,7 +695,17 @@ function verdictCmsField(
   }
 </style>
 
-<script define:vars={{ verdictMeta: verdictEntries.map((v) => ({ id: v.id, label: v.label })), defaultVerdictId: defaultVerdict.id }}>
+<script
+  define:vars={{
+    verdictMeta: verdictEntries.map((v) => ({
+      id: v.id,
+      label: v.label,
+    })),
+    defaultVerdictId: defaultVerdict.id,
+  }}
+>
+  import { closeSheet, openSheet } from '../../../lib/ui/bottomSheet.ts';
+
   function initVerdictOverview() {
     const root = document.querySelector('[data-verdict-overview]');
     if (!root || root.dataset.bound === 'true') return;
@@ -389,6 +713,25 @@ function verdictCmsField(
 
     const navBtns = Array.from(root.querySelectorAll('[data-verdict-nav]'));
     const panels = Array.from(root.querySelectorAll('[data-verdict-panel]'));
+    const jumpOpen = root.querySelector('[data-verdict-jump-open]');
+    const jumpSheet = root.querySelector('[data-verdict-jump-sheet]');
+    const jumpPanel = jumpSheet?.querySelector('.mobile-sheet__panel');
+    const jumpLabel = root.querySelector('[data-verdict-jump-label]');
+    const jumpOptions = Array.from(root.querySelectorAll('[data-verdict-jump-option]'));
+    const metaById = Object.fromEntries(verdictMeta.map((v) => [v.id, v]));
+
+    let releaseFocus = null;
+
+    function updateJumpTrigger(id) {
+      const meta = metaById[id];
+      if (!meta) return;
+      if (jumpLabel) jumpLabel.textContent = meta.label;
+      jumpOptions.forEach((opt) => {
+        const active = opt.dataset.verdictJumpOption === id;
+        opt.classList.toggle('is-active', active);
+        opt.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+    }
 
     function show(id) {
       panels.forEach((panel) => {
@@ -399,6 +742,25 @@ function verdictCmsField(
         btn.setAttribute('aria-selected', active ? 'true' : 'false');
         btn.classList.toggle('verdict-icon-nav__btn--active', active);
       });
+      updateJumpTrigger(id);
+    }
+
+    function closeJumpSheet() {
+      if (!jumpSheet) return;
+      closeSheet(jumpSheet, () => {
+        releaseFocus?.();
+        releaseFocus = null;
+      });
+      jumpOpen?.setAttribute('aria-expanded', 'false');
+    }
+
+    function openJumpSheet() {
+      if (!jumpSheet || !jumpPanel) return;
+      releaseFocus?.();
+      releaseFocus = openSheet(jumpSheet, jumpPanel, {
+        focusSelector: '.verdict-jump-sheet__option.is-active',
+      });
+      jumpOpen?.setAttribute('aria-expanded', 'true');
     }
 
     navBtns.forEach((btn) => {
@@ -410,6 +772,24 @@ function verdictCmsField(
         btn.addEventListener('focus', () => show(id));
       }
       btn.addEventListener('click', () => show(id));
+    });
+
+    jumpOpen?.addEventListener('click', openJumpSheet);
+    jumpSheet?.querySelectorAll('[data-verdict-jump-close]').forEach((el) => {
+      el.addEventListener('click', closeJumpSheet);
+    });
+
+    jumpOptions.forEach((opt) => {
+      opt.addEventListener('click', () => {
+        const id = opt.dataset.verdictJumpOption;
+        if (!id) return;
+        show(id);
+        closeJumpSheet();
+        requestAnimationFrame(() => {
+          const panel = root.querySelector(`[data-verdict-panel="${id}"]`);
+          panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
     });
 
     if (defaultVerdictId) show(defaultVerdictId);

@@ -203,10 +203,10 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
     padding: 0.85rem 0 0.95rem;
     border: 0;
     background: transparent;
-    color: var(--color-on-surface-variant, #64748b);
+    color: color-mix(in srgb, var(--color-on-surface-variant, #64748b) 82%, transparent);
     font: inherit;
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.2;
     white-space: nowrap;
     cursor: pointer;
@@ -235,7 +235,7 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
     left: 50%;
     bottom: 0;
     width: 1.75rem;
-    height: 2.5px;
+    height: 3px;
     border-radius: 999px;
     background: var(--color-accent);
     transform: translateX(-50%);
@@ -275,7 +275,13 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
 
     .review-tabbar__btn {
       font-size: 0.875rem;
+      font-weight: 500;
       padding: 0.9rem 0 1rem;
+      color: var(--color-on-surface-variant, #64748b);
+    }
+
+    .review-tabbar__btn[aria-current='true'] {
+      font-weight: 600;
     }
 
     .review-tabbar__btn[aria-current='true']::after {
@@ -295,25 +301,39 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
       max-width: none;
     }
 
+    .review-tabbar__rail,
     .review-tabbar__list {
-      gap: 1.35rem;
-      min-height: 48px;
+      min-height: 47px;
+    }
+
+    .review-tabbar__list {
+      gap: 1.25rem;
       padding-inline: 1rem;
     }
 
     .review-tabbar__btn {
       font-size: 0.8125rem;
-      padding: 0.8rem 0 0.9rem;
+      font-weight: 500;
+      padding: 0.7rem 0 0.8rem;
+      color: color-mix(in srgb, var(--color-on-surface-variant, #5a4136) 72%, #9ca3af);
+    }
+
+    .review-tabbar__btn[aria-current='true'] {
+      font-weight: 600;
     }
 
     .review-tabbar__btn[aria-current='true']::after {
       width: 1.5rem;
-      height: 2.5px;
+      height: 3px;
+    }
+
+    .review-tabbar__fade {
+      width: 2rem;
     }
   }
 
   [data-theme='dark'] .review-tabbar__btn {
-    color: color-mix(in srgb, var(--color-on-surface) 58%, transparent);
+    color: color-mix(in srgb, var(--color-on-surface) 48%, transparent);
   }
 
   [data-theme='dark'] .review-tabbar__btn:hover {

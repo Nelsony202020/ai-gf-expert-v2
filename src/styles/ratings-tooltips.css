@@ -102,13 +102,11 @@
 }
 
 /*
-  Desktop: keep content on the normal left edge, but start below the
-  overlapping category badge so “What it is” isn’t mid-icon.
+  Keep “What it is” on the normal left edge, but start below the
+  category badge so the title isn’t mid-icon.
 */
-@media (min-width: 768px) {
-  .ratings-tooltip-panel--has-badge .ratings-tooltip-panel__what-block {
-    padding-top: 1.35rem; /* clears the badge that hangs into the panel */
-  }
+.ratings-tooltip-panel--has-badge .ratings-tooltip-panel__what-block {
+  padding-top: 1.35rem;
 }
 
 /* Legacy inline brand slot — kept inert so old markup doesn't break layout */
@@ -146,17 +144,22 @@
 }
 
 @media (max-width: 767px) {
+  /* Keep badge fully inside so overflow:hidden can enable body scroll. */
   .ratings-tooltip-panel__badge {
-    top: 0;
-    left: 22px;
+    top: 10px;
+    left: 12px;
     width: 40px;
     height: 40px;
     padding: 3px;
-    transform: translateY(-50%);
+    transform: none;
+  }
+
+  .ratings-tooltip-panel--has-badge .ratings-tooltip-panel__what-block {
+    padding-top: 2.15rem;
   }
 
   .ratings-tooltip-panel--mobile-sheet {
-    padding-top: 0.35rem;
+    padding-top: 0;
   }
 }
 
@@ -780,7 +783,7 @@ a.rt-inline-test-link.rt-comp-name {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .rt-dist-chart__apps[hidden] {
@@ -788,7 +791,7 @@ a.rt-inline-test-link.rt-comp-name {
 }
 
 .rt-dist-chart__app {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
   padding: 4px 0;
@@ -798,14 +801,21 @@ a.rt-inline-test-link.rt-comp-name {
   color: inherit;
 }
 
-.rt-dist-chart__app span:first-child {
+.rt-dist-chart__app .rt-score-chip {
+  flex: 0 0 2.75em;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.rt-dist-chart__app-name {
+  min-width: 0;
   color: var(--color-accent, #db2777);
   text-decoration: underline;
   text-underline-offset: 2px;
   text-decoration-color: rgb(219 39 119 / 45%);
 }
 
-.rt-dist-chart__app:hover span:first-child {
+.rt-dist-chart__app:hover .rt-dist-chart__app-name {
   text-decoration-color: var(--color-accent, #db2777);
 }
 
@@ -962,8 +972,8 @@ a.rt-inline-test-link.rt-comp-name {
     display: flex;
     flex-direction: column;
     max-height: calc(100dvh - 24px);
-    /* Keep overflow visible so the category border badge isn't clipped */
-    overflow: visible;
+    /* Required so sticky header + scrolling body work on oversized sheets */
+    overflow: hidden;
   }
 
   .ratings-tooltip-panel--mobile-sheet::before {

@@ -214,12 +214,14 @@ const overviewGroups = overviewSections.map((section) => {
 
     <div class="media-overview" data-media-overview>
       <div class="media-overview__grid">
-        {
-          overviewGroups.map((group) => (
-            <section
-              class:list={['media-overview__panel', group.fullWidth && 'media-overview__panel--full']}
-              data-overview-panel={group.id}
-            >
+          {
+            overviewGroups.map((group) => (
+              <section
+                class:list={['media-overview__panel', group.fullWidth && 'media-overview__panel--full']}
+                data-overview-panel={group.id}
+                id={`media-${group.id}`}
+                data-page-toc={group.title}
+              >
               <header class="media-overview__header">
                 <div class="media-overview__heading">
                   <h3 class="media-overview__title">{group.title}</h3>

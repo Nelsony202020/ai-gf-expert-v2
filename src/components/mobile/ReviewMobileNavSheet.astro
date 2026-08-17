@@ -8,15 +8,19 @@ interface Props {
 }
 
 const { tabs, pageTitle, pageUrl } = Astro.props;
+
+const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
 ---
 
 <div
   class="roundup-sheet roundup-nav-sheet"
   data-nav-sheet="page"
+  data-review-section-toc
   hidden
   aria-hidden="true"
   data-page-title={pageTitle}
   data-page-url={pageUrl}
+  data-tab-labels={JSON.stringify(tabLabels)}
 >
   <div class="roundup-sheet__backdrop" data-sheet-backdrop tabindex="-1"></div>
   <div
@@ -26,21 +30,16 @@ const { tabs, pageTitle, pageUrl } = Astro.props;
     aria-labelledby="review-nav-sheet-title"
   >
     <div class="roundup-sheet__handle" aria-hidden="true"></div>
+    <p class="roundup-nav-sheet__section-eyebrow" data-review-toc-section>Overview</p>
     <h2 id="review-nav-sheet-title" class="roundup-nav-sheet__toc-title">On this page</h2>
 
-    <nav class="roundup-nav-sheet__toc" aria-label="Review sections">
-      <ul class="roundup-nav-sheet__toc-list">
-        {
-          tabs.map((tab) => (
-            <li>
-              <button type="button" class="roundup-nav-sheet__toc-link" data-review-toc-tab={tab.id}>
-                {tab.tocLabel ?? tab.label}
-              </button>
-            </li>
-          ))
-        }
-      </ul>
+    <nav class="roundup-nav-sheet__toc" aria-label="On this page">
+      <ul class="roundup-nav-sheet__toc-list" data-review-toc-list></ul>
     </nav>
+
+    <p class="roundup-nav-sheet__toc-empty" data-review-toc-empty hidden>
+      No subsections in this part of the review.
+    </p>
 
     <button type="button" class="roundup-sheet__cancel" data-sheet-close>Close</button>
   </div>
@@ -48,10 +47,301 @@ const { tabs, pageTitle, pageUrl } = Astro.props;
 
 <script>
   function initReviewMobileNavSheet() {
-    const sheet = document.querySelector<HTMLElement>('[data-nav-sheet="page"]');
+    const sheet = document.querySelector<HTMLElement>('[data-review-section-toc]');
     if (!sheet || sheet.dataset.bound === 'true') return;
-    if (!sheet.querySelector('[data-review-toc-tab]')) return;
     sheet.dataset.bound = 'true';
+
+    const listEl = sheet.querySelector<HTMLElement>('[data-review-toc-list]');
+    const sectionEl = sheet.querySelector<HTMLElement>('[data-review-toc-section]');
+    const emptyEl = sheet.querySelector<HTMLElement>('[data-review-toc-empty]');
+    if (!listEl || !sectionEl || !emptyEl) return;
+
+    let tabLabels: Record<string, string> = {};
+    try {
+      tabLabels = JSON.parse(sheet.dataset.tabLabels || '{}');
+    } catch {
+      tabLabels = {};
+    }
+
+    function getScrollOffset() {
+      const header = document.querySelector<HTMLElement>('[data-site-header]');
+      const tabbar = document.querySelector<HTMLElement>('[data-tabbar]');
+      return (header?.offsetHeight ?? 52) + (tabbar?.offsetHeight ?? 0);
+    }
+
+    function getActiveTabId(): string {
+      const active = document.querySelector<HTMLElement>('[data-tabbar] [aria-current="true"]');
+      return active?.dataset.tab || 'overview';
+    }
+
+    function getActivePanel(tabId: string): HTMLElement | null {
+      return document.querySelector<HTMLElement>(`[data-tab-panel="${tabId}"]`);
+    }
+
+    type TocItem = {
+      label: string;
+      id?: string;
+      /** 2 = parent section, 3 = nested subheading */
+      level: 2 | 3;
+      categoryKey?: string;
+      verdictId?: string;
+      mediaJump?: string;
+    };
+
+    function cleanLabel(raw: string): string {
+      return raw.replace(/\s+/g, ' ').trim();
+    }
+
+    function collectExplicit(panel: HTMLElement): TocItem[] {
+      return Array.from(panel.querySelectorAll<HTMLElement>('[data-page-toc]'))
+        .map((el) => {
+          const label = cleanLabel(el.getAttribute('data-page-toc') || '');
+          if (!label) return null;
+          const levelAttr = Number(el.getAttribute('data-page-toc-level') || 2);
+          return {
+            label,
+            id: el.id || undefined,
+            level: levelAttr === 3 ? (3 as const) : (2 as const),
+          };
+        })
+        .filter((item): item is TocItem => Boolean(item));
+    }
+
+    function collectReview(panel: HTMLElement): TocItem[] {
+      const links = Array.from(panel.querySelectorAll<HTMLAnchorElement>('[data-review-toc-link]'));
+      if (links.length) {
+        return links
+          .map((a) => {
+            const label = cleanLabel(a.textContent || '');
+            const id = (a.getAttribute('href') || '').replace(/^#/, '');
+            if (!label || !id) return null;
+            const levelAttr = Number(a.dataset.reviewTocLevel || 0);
+            const fromLi = a.closest('.review-toc__item--h3') ? 3 : 2;
+            const level: 2 | 3 = levelAttr === 3 || levelAttr === 2 ? (levelAttr as 2 | 3) : fromLi;
+            return { label, id, level };
+          })
+          .filter((item): item is TocItem => Boolean(item));
+      }
+
+      // Fallback: walk rendered headings (H3 section / H4 subheading)
+      return Array.from(panel.querySelectorAll<HTMLElement>('h3.review-heading[id], h4.review-heading[id]'))
+        .map((el) => {
+          const label = cleanLabel(
+            el.querySelector('.review-heading__text')?.textContent || el.textContent || '',
+          );
+          if (!label || !el.id) return null;
+          const level: 2 | 3 = el.tagName === 'H4' ? 3 : 2;
+          return { label, id: el.id, level };
+        })
+        .filter((item): item is TocItem => Boolean(item));
+    }
+
+    function collectRatings(panel: HTMLElement): TocItem[] {
+      return Array.from(panel.querySelectorAll<HTMLElement>('[data-category]'))
+        .map((el) => {
+          const key = el.dataset.category;
+          const label = cleanLabel(
+            el.querySelector('.ratings-accordion__title')?.textContent || key || '',
+          );
+          if (!key || !label) return null;
+          return { label, id: el.id || undefined, categoryKey: key, level: 2 as const };
+        })
+        .filter((item): item is TocItem => Boolean(item));
+    }
+
+    function collectOverview(panel: HTMLElement): TocItem[] {
+      const jumpOptions = Array.from(
+        panel.querySelectorAll<HTMLElement>('[data-verdict-jump-option]'),
+      );
+      const source =
+        jumpOptions.length > 0
+          ? jumpOptions.map((btn) => ({
+              id: btn.dataset.verdictJumpOption,
+              label: cleanLabel(
+                btn.querySelector('.verdict-jump-sheet__option-label')?.textContent ||
+                  btn.textContent ||
+                  '',
+              ),
+            }))
+          : Array.from(panel.querySelectorAll<HTMLElement>('[data-verdict-nav]')).map((btn) => ({
+              id: btn.dataset.verdictNav,
+              label: cleanLabel(btn.getAttribute('aria-label') || btn.textContent || ''),
+            }));
+
+      const items: TocItem[] = source
+        .map((entry) => {
+          if (!entry.id || !entry.label) return null;
+          return { label: entry.label, verdictId: entry.id, level: 2 as const };
+        })
+        .filter((item): item is TocItem => Boolean(item));
+
+      const characters = panel.querySelector<HTMLElement>('[data-overview-characters]');
+      if (characters) {
+        items.push({
+          label: 'Featured characters',
+          id: characters.id || 'overview-characters',
+          level: 2,
+        });
+      }
+
+      return items;
+    }
+
+    function collectMedia(panel: HTMLElement): TocItem[] {
+      return Array.from(panel.querySelectorAll<HTMLElement>('[data-overview-panel]'))
+        .map((el) => {
+          const label = cleanLabel(el.querySelector('.media-overview__title')?.textContent || '');
+          const mediaJump = el.querySelector<HTMLElement>('[data-media-filter-jump]')?.dataset
+            .mediaFilterJump;
+          if (!label) return null;
+          if (!el.id) {
+            el.id = `media-${el.dataset.overviewPanel || label.toLowerCase().replace(/\s+/g, '-')}`;
+          }
+          return { label, id: el.id, mediaJump, level: 2 as const };
+        })
+        .filter((item): item is TocItem => Boolean(item));
+    }
+
+    function collectGenericHeadings(panel: HTMLElement): TocItem[] {
+      return Array.from(panel.querySelectorAll<HTMLElement>('h2[id], h3[id], h4[id], [data-page-toc]'))
+        .map((el) => {
+          const label = cleanLabel(el.getAttribute('data-page-toc') || el.textContent || '');
+          if (!label) return null;
+          const id = el.id || undefined;
+          if (!id && !el.hasAttribute('data-page-toc')) return null;
+          const tag = el.tagName;
+          const level: 2 | 3 = tag === 'H4' ? 3 : 2;
+          return { label, id, level };
+        })
+        .filter((item): item is TocItem => Boolean(item));
+    }
+
+    function collectToc(tabId: string, panel: HTMLElement): TocItem[] {
+      const explicit = collectExplicit(panel);
+      if (explicit.length) return explicit;
+
+      if (tabId === 'review') return collectReview(panel);
+      if (tabId === 'ratings') return collectRatings(panel);
+      if (tabId === 'overview') return collectOverview(panel);
+      if (tabId === 'photos') return collectMedia(panel);
+      return collectGenericHeadings(panel);
+    }
+
+    function scrollToEl(el: HTMLElement) {
+      const y = el.getBoundingClientRect().top + window.scrollY - getScrollOffset() - 8;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    }
+
+    function activateItem(item: TocItem) {
+      if (item.verdictId) {
+        const jumpOpt = document.querySelector<HTMLElement>(
+          `[data-verdict-jump-option="${item.verdictId}"]`,
+        );
+        if (jumpOpt) {
+          jumpOpt.click();
+          return;
+        }
+        const btn = document.querySelector<HTMLElement>(`[data-verdict-nav="${item.verdictId}"]`);
+        btn?.click();
+        const panel = document.querySelector<HTMLElement>(`[data-verdict-panel="${item.verdictId}"]`);
+        if (panel) scrollToEl(panel);
+        return;
+      }
+
+      if (item.categoryKey) {
+        const jump = document.querySelector<HTMLElement>(`[data-goto-category="${item.categoryKey}"]`);
+        if (jump) {
+          jump.click();
+          return;
+        }
+      }
+
+      if (item.mediaJump) {
+        const jumpBtn = document.querySelector<HTMLElement>(
+          `[data-media-filter-jump="${item.mediaJump}"]`,
+        );
+        if (jumpBtn) {
+          jumpBtn.click();
+          return;
+        }
+      }
+
+      if (item.id) {
+        const target = document.getElementById(item.id);
+        if (target) {
+          if (history.replaceState) history.replaceState(null, '', `#${item.id}`);
+          scrollToEl(target);
+        }
+      }
+    }
+
+    /** Which TOC entry is currently in view (document order). */
+    function resolveActiveId(items: TocItem[]): string | null {
+      const hash = window.location.hash.replace(/^#/, '');
+      if (hash && items.some((i) => i.id === hash)) return hash;
+
+      const desktopActive = document.querySelector<HTMLAnchorElement>(
+        '[data-review-toc-link].is-active',
+      );
+      const desktopId = desktopActive?.getAttribute('href')?.replace(/^#/, '');
+      if (desktopId && items.some((i) => i.id === desktopId)) return desktopId;
+
+      const marker = getScrollOffset() + 20;
+      let current: string | null = null;
+      for (const item of items) {
+        if (!item.id) continue;
+        const el = document.getElementById(item.id);
+        if (!el) continue;
+        if (el.getBoundingClientRect().top - marker <= 0) current = item.id;
+      }
+      return current;
+    }
+
+    function renderToc() {
+      const tabId = getActiveTabId();
+      const panel = getActivePanel(tabId);
+      const label = tabLabels[tabId] || tabId;
+      sectionEl.textContent = label;
+
+      listEl.innerHTML = '';
+      const items = panel ? collectToc(tabId, panel) : [];
+
+      if (!items.length) {
+        emptyEl.hidden = false;
+        return;
+      }
+
+      emptyEl.hidden = true;
+      const activeId = resolveActiveId(items);
+
+      items.forEach((item) => {
+        const li = document.createElement('li');
+        if (item.level === 3) li.className = 'roundup-nav-sheet__toc-item--child';
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className =
+          item.level === 3
+            ? 'roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h3'
+            : 'roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h2';
+        btn.textContent = item.label;
+        if (item.id) btn.dataset.tocTarget = item.id;
+        if (item.id && item.id === activeId) {
+          btn.classList.add('is-active');
+          btn.setAttribute('aria-current', 'true');
+        }
+
+        btn.addEventListener('click', () => {
+          closeSheet();
+          requestAnimationFrame(() => activateItem(item));
+        });
+        li.appendChild(btn);
+        listEl.appendChild(li);
+      });
+
+      const activeBtn = listEl.querySelector<HTMLElement>('.roundup-nav-sheet__toc-link.is-active');
+      activeBtn?.scrollIntoView({ block: 'nearest' });
+    }
 
     function closeSheet() {
       sheet.hidden = true;
@@ -60,32 +350,20 @@ const { tabs, pageTitle, pageUrl } = Astro.props;
     }
 
     function openSheet() {
+      renderToc();
       sheet.hidden = false;
       sheet.setAttribute('aria-hidden', 'false');
       document.body.classList.add('roundup-sheet-open');
     }
 
     document.querySelectorAll('[data-nav-sheet-open]').forEach((btn) => {
-      if (btn.dataset.bound === 'true') return;
-      btn.dataset.bound = 'true';
+      if ((btn as HTMLElement).dataset.bound === 'true') return;
+      (btn as HTMLElement).dataset.bound = 'true';
       btn.addEventListener('click', openSheet);
     });
 
     sheet.querySelector('[data-sheet-close]')?.addEventListener('click', closeSheet);
     sheet.querySelector('[data-sheet-backdrop]')?.addEventListener('click', closeSheet);
-
-    sheet.querySelectorAll<HTMLElement>('[data-review-toc-tab]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const tabId = btn.dataset.reviewTocTab;
-        closeSheet();
-        if (!tabId) return;
-        const tabBtn = document.querySelector<HTMLElement>(`[data-tabbar] [data-tab="${tabId}"]`);
-        tabBtn?.click();
-        requestAnimationFrame(() => {
-          document.querySelector('[data-tabbar]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-      });
-    });
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && sheet && !sheet.hidden) closeSheet();

@@ -261,12 +261,13 @@ export function buildReviewToc(blocks: ReviewBlockPublic[]): ReviewTocEntry[] {
     const data = block.data ?? {};
     const text = String(data.text ?? '').trim();
     if (!text) continue;
-    const level = headingLevel(block.type, data);
-    if (level === 4) continue;
+    const renderedLevel = headingLevel(block.type, data);
+    // Editor: H3 = section, H4 = subheading. TOC uses 2/3 for parent/child.
+    const tocLevel: 2 | 3 = renderedLevel === 4 ? 3 : 2;
     toc.push({
       id: headingId(text, block.id),
       label: text,
-      level: level as 2 | 3,
+      level: tocLevel,
     });
   }
   return toc;

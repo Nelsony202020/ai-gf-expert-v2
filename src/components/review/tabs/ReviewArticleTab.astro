@@ -87,7 +87,12 @@ const reviewVideoId = product.videoReview?.embedUrl
               {
                 sections.map((s) => (
                   <li class:list={[{ 'review-toc__item--h3': s.level === 3 }]}>
-                    <a href={`#${s.id}`} class="review-toc__link" data-review-toc-link>
+                    <a
+                      href={`#${s.id}`}
+                      class="review-toc__link"
+                      data-review-toc-link
+                      data-review-toc-level={s.level}
+                    >
                       {s.label}
                     </a>
                   </li>

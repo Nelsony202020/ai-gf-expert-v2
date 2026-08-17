@@ -99,18 +99,16 @@
     panel.style.width = `${Math.min(maxWidth, viewportW - margin * 2)}px`;
     panel.style.display = 'block';
     panel.style.visibility = 'hidden';
+    panel.style.height = '';
     panel.style.maxHeight = '';
     panel.classList.toggle('ratings-tooltip-panel--mobile-sheet', isMobileSheet);
 
     if (isMobileSheet) {
       const maxH = viewportH - margin * 2;
+      // Measure unconstrained content, then lock height so the body can scroll.
+      const contentH = panel.scrollHeight;
       panel.style.maxHeight = `${maxH}px`;
-      // Bound height so flex children (header sticky + body scroll) can overflow.
-      if (panel.scrollHeight > maxH) {
-        panel.style.height = `${maxH}px`;
-      } else {
-        panel.style.height = '';
-      }
+      panel.style.height = contentH > maxH ? `${maxH}px` : '';
     }
 
     const panelWidth = panel.offsetWidth || maxWidth;
@@ -258,7 +256,7 @@
         const a = document.createElement('a');
         a.href = distAppHref(app.slug);
         a.className = 'rt-dist-chart__app';
-        a.innerHTML = `<span>${app.name}</span><span class="rt-score-chip ${scoreChipClass(app.score)}">${app.score.toFixed(1)}</span>`;
+        a.innerHTML = `<span class="rt-score-chip ${scoreChipClass(app.score)}">${app.score.toFixed(1)}</span><span class="rt-dist-chart__app-name">${app.name}</span>`;
         appsEl!.appendChild(a);
       });
     }
@@ -356,8 +354,9 @@
     activePanel = panel;
     activeTrigger = trigger;
 
-    positionPanel(trigger, panel);
+    // Chrome first so close-button layout is included in height measurement.
     bindMobileSheetChrome(panel);
+    positionPanel(trigger, panel);
     bindDistribution(panel);
     bindTooltipPanelActions(panel);
 

@@ -792,7 +792,7 @@ export function getHomeSearchIndex(): SearchResult[] {
 }
 
 export const homeMeta = {
-  title: 'AI Girlfriend Expert — Independent AI Companion Reviews',
+  title: 'AI Girlfriend Expert - Objective & Data-Driven AI Girlfriend Reviews',
   description:
     'We purchase, test, score, and compare AI girlfriend apps so you can choose with confidence. Browse 24+ tested apps, expert reviews, and side-by-side comparisons.',
   heroImage: fileAiGirlfriendRoundup.featuredImage,

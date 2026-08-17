@@ -136,8 +136,11 @@ const categoryIcons = tooltipCategoryIconsByKey;
   function buildPanel(trigger) {
     const term = escapeHtml(trigger.dataset.glossaryTerm || 'Term');
     const definition = escapeHtml(trigger.dataset.glossaryDefinition || '');
+    const customHref = String(trigger.dataset.glossaryHref || '').trim();
     const anchor = encodeURIComponent(trigger.dataset.glossaryAnchor || '');
+    const href = escapeHtml(customHref || `/glossary/#${anchor}`);
     const cta = escapeHtml(withCtaArrow(trigger.dataset.glossaryCta || 'Learn more'));
+    const eyebrow = escapeHtml(trigger.dataset.glossaryEyebrow || 'Glossary term');
     const alsoCalled = String(trigger.dataset.glossaryAlsoCalled || '').trim();
     const iconSrc = escapeHtml(iconForCategory(trigger.dataset.glossaryCategory));
     const alsoHtml = alsoCalled
@@ -157,11 +160,11 @@ const categoryIcons = tooltipCategoryIconsByKey;
       `<span class="material-symbols-outlined" aria-hidden="true">close</span>` +
       `</button>` +
       `<div class="glossary-tooltip__body">` +
-      `<p class="glossary-tooltip__eyebrow">Glossary term</p>` +
+      `<p class="glossary-tooltip__eyebrow">${eyebrow}</p>` +
       `<p class="glossary-tooltip__term">${term}</p>` +
       alsoHtml +
       `<p class="glossary-tooltip__def">${definition}</p>` +
-      `<a class="glossary-tooltip__link" href="/glossary/#${anchor}">${cta}</a>` +
+      `<a class="glossary-tooltip__link" href="${href}">${cta}</a>` +
       `</div>`;
     return panel;
   }
@@ -245,9 +248,7 @@ const categoryIcons = tooltipCategoryIconsByKey;
   }
 
   function initGlossaryTooltips() {
-    const root = document.querySelector('[data-review-article]');
-    if (!root) return;
-    for (const trigger of root.querySelectorAll('[data-glossary-trigger]')) {
+    for (const trigger of document.querySelectorAll('[data-glossary-trigger]')) {
       if (trigger instanceof HTMLElement) bindTrigger(trigger);
     }
 
