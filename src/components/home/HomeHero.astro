@@ -3,10 +3,19 @@ import { homeMeta } from '../../data/homepage';
 import { buildMegaMenuColumns } from '../../data/nav-mega-menu';
 import { buildSearchIndex } from '../../data/site-search';
 import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
+import { imageSrcSet, optimizedImageUrl } from '../../lib/media/optimize';
 
+interface Props {
+  heroImage?: string;
+  heroImageAlt?: string;
+}
+
+const { heroImage = homeMeta.heroImage, heroImageAlt = homeMeta.heroImageAlt } = Astro.props;
 const publishedProducts = await loadComparisonProducts();
 const megaMenuColumns = buildMegaMenuColumns(publishedProducts);
 const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
+const heroSrc = optimizedImageUrl(heroImage, { width: 800, quality: 72 });
+const heroSrcSet = imageSrcSet(heroImage, [480, 800, 1200], 72);
 ---
 
 <section class="home-hero" aria-labelledby="home-hero-title">
@@ -50,12 +59,15 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
     <div class="home-hero__visual">
       <div class="home-hero__image-wrap">
         <img
-          src={homeMeta.heroImage}
-          alt={homeMeta.heroImageAlt}
+          src={heroSrc}
+          srcset={heroSrcSet || undefined}
+          sizes="(max-width: 1023px) 100vw, 42vw"
+          alt={heroImageAlt}
           class="home-hero__image"
           width="800"
           height="640"
           loading="eager"
+          fetchpriority="high"
           decoding="async"
         />
       </div>

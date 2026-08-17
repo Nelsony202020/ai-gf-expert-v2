@@ -57,6 +57,7 @@ import { formatAudienceList, splitLegacyLines } from '../cms/format';
 import { mapCharacterForPublic, selectPublicHighlightCharacters } from '../characters/public';
 import { affiliateRel, DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
 import { cdnAsset } from '../media/cdn';
+import { isPlaceholderImage, PUBLIC_HERO_FALLBACK } from '../media/optimize';
 import { buildGroupedContributors } from '../ratings/groupContributors';
 import type { Roundup, RoundupPick } from '../../data/roundups/ai-girlfriend';
 import { hydrateRoundupPicks, minimalRoundupPickFromProduct } from './roundupPick';
@@ -682,7 +683,11 @@ export async function loadRoundupForPublic(
         ? {
             title: dbRoundup.title ?? fileTemplate.title,
             metaDescription: dbRoundup.seoDescription ?? fileTemplate.metaDescription,
-            featuredImage: dbRoundup.ogImageUrl ?? fileTemplate.featuredImage,
+            featuredImage: cdnAsset(
+              isPlaceholderImage(dbRoundup.ogImageUrl ?? fileTemplate.featuredImage)
+                ? PUBLIC_HERO_FALLBACK
+                : (dbRoundup.ogImageUrl ?? fileTemplate.featuredImage),
+            ),
           }
         : {}),
       picks,

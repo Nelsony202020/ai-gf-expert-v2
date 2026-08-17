@@ -1,5 +1,6 @@
 ---
 import type { GalleryImage, Product } from '../../data/products';
+import { optimizedImageUrl } from '../../lib/media/optimize';
 import VideoReviewLightbox from './VideoReviewLightbox.astro';
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 const { images, product } = Astro.props;
 const hero = images[0];
 const heroIsVideo = (hero?.mediaType ?? 'image') === 'video';
+const heroImgSrc = heroIsVideo ? undefined : optimizedImageUrl(hero?.full, { width: 900, quality: 72 });
 const galleryLightboxItems = JSON.stringify(
   images
     .filter((image) => image.full)
@@ -39,7 +41,12 @@ const galleryLightboxItems = JSON.stringify(
           'w-full h-full object-cover transition group-hover:scale-[1.01]',
           heroIsVideo ? 'hidden' : '',
         ]}
-        src={heroIsVideo ? undefined : hero?.full}
+        src={heroImgSrc}
+        width="1280"
+        height="720"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
       />
       <video
         data-gallery-main-video
@@ -104,7 +111,15 @@ const galleryLightboxItems = JSON.stringify(
                     </span>
                   </>
                 ) : (
-                  <img alt={image.alt} class="w-full h-full object-cover" src={image.thumb} loading="lazy" />
+                  <img
+                    alt={image.alt}
+                    class="w-full h-full object-cover"
+                    src={optimizedImageUrl(image.thumb, { width: 160, quality: 70 })}
+                    width="112"
+                    height="72"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 )
               }
             </button>

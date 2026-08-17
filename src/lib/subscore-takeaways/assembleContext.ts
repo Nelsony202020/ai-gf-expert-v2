@@ -65,7 +65,13 @@ function computeFinalScore(
 
 function formatBreakdownText(breakdown: BreakdownItem[]): string {
   return breakdown
-    .map((b) => `${b.name}: ${b.score != null ? b.score.toFixed(1) : '—'}`)
+    .map((b) => {
+      if (b.score == null) return `${b.name}: —`;
+      const n = b.score;
+      const band =
+        n < 3 ? 'very weak' : n < 5 ? 'weak/middling' : n < 6.5 ? 'mixed/okay' : n < 8 ? 'solid' : 'strong';
+      return `${b.name}: ${n.toFixed(1)}/10 (${band})`;
+    })
     .join('\n');
 }
 

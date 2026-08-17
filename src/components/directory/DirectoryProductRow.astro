@@ -7,6 +7,7 @@ import AppBrandTooltip from './AppBrandTooltip.astro';
 import AppOverallScoreTooltip from './AppOverallScoreTooltip.astro';
 import DirectoryPaymentIcons from './DirectoryPaymentIcons.astro';
 import CmsField from '../cms/CmsField.astro';
+import { optimizedImageUrl } from '../../lib/media/optimize';
 
 interface Props {
   app: HomeExplorerApp;
@@ -31,11 +32,12 @@ const overallVisual = getScoreVisual(app.overallScore);
     <a href={reviewHref} class="dir-row__image-link" tabindex="-1" aria-hidden="true">
       <img
         class="dir-row__image"
-        src={app.gallery[0]?.full ?? app.logo}
+        src={optimizedImageUrl(app.gallery[0]?.full ?? app.logo, { width: 400, quality: 70 })}
         alt={app.gallery[0]?.alt ?? `${app.name} screenshot`}
         width="640"
         height="400"
         loading="lazy"
+        decoding="async"
       />
     </a>
   </div>
@@ -43,7 +45,7 @@ const overallVisual = getScoreVisual(app.overallScore);
   <div class="dir-row__middle">
     <div class="dir-row__middle-header">
       <div class="dir-row__identity">
-        <img class="dir-row__logo" src={app.logo} alt="" width="40" height="40" loading="lazy" />
+        <img class="dir-row__logo" src={optimizedImageUrl(app.logo, { width: 40, quality: 70 })} alt="" width="40" height="40" loading="lazy" decoding="async" />
         <div class="dir-row__identity-copy">
           <div class="dir-row__name-row">
             <h3 class="dir-row__name">

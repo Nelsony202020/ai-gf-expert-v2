@@ -1,5 +1,6 @@
 ---
 import type { HomeGuide } from '../../data/homepage';
+import { optimizedImageUrl } from '../../lib/media/optimize';
 
 interface Props {
   guides: HomeGuide[];
@@ -28,7 +29,7 @@ const typeLabels: Record<HomeGuide['type'], string> = {
       guides.map((guide) => (
         <a href={guide.href} class="home-guide-card">
           <div class="home-guide-card__media">
-            <img class="home-guide-card__image" src={guide.image} alt={guide.imageAlt} width="640" height="400" loading="lazy" />
+            <img class="home-guide-card__image" src={optimizedImageUrl(guide.image, { width: 480, quality: 70 })} alt={guide.imageAlt} width="640" height="400" loading="lazy" decoding="async" />
           </div>
           <div class="home-guide-card__body">
             <span class="home-guide-card__type">{typeLabels[guide.type]}</span>

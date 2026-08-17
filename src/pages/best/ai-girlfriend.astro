@@ -28,6 +28,8 @@ import { loadRoundupForPublic } from '../../lib/content/store';
 import JsonLd from '../../components/seo/JsonLd.astro';
 import { buildRoundupItemListSchema } from '../../lib/seo/jsonld';
 
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=180, stale-while-revalidate=86400');
+
 const { roundup, isDraft } = await loadRoundupForPublic('ai-girlfriend', fileAiGirlfriendRoundup);
 
 const monthYear = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
@@ -45,6 +47,7 @@ const jsonLdGraph = !isDraft
   title={pageTitle}
   description={roundup.metaDescription}
   image={roundup.featuredImage}
+  lcpImage={roundup.featuredImage}
   robots={isDraft ? 'noindex, nofollow' : undefined}
   canonical={canonical}
 >

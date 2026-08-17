@@ -202,7 +202,8 @@ export function GlossaryPage() {
       ctaLabel: editing.ctaLabel.trim(),
       fullDefinition: editing.fullDefinition,
       aliases: editing.aliases,
-      displayAliases: [],
+      // Until a separate “Other names” UI exists, mirror matching aliases for the public line.
+      displayAliases: editing.aliases,
       category: editing.category,
       status,
       autoTooltip: editing.autoTooltip,
@@ -238,6 +239,7 @@ export function GlossaryPage() {
         ctaLabel: draftEntry.ctaLabel,
         fullDefinition: draftEntry.fullDefinition,
         aliases: draftEntry.aliases,
+        displayAliases: draftEntry.displayAliases,
         category: draftEntry.category,
         status,
         autoTooltip: draftEntry.autoTooltip,

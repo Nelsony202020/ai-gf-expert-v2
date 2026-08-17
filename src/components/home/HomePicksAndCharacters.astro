@@ -5,6 +5,7 @@ import { getRoundupRibbonHref, getRoundupRibbonLabel } from '../../data/homepage
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 import HomeFeaturedCharacterShowcase from './HomeFeaturedCharacterShowcase.astro';
 import CmsField from '../cms/CmsField.astro';
+import { optimizedImageUrl } from '../../lib/media/optimize';
 
 interface Props {
   picks: RoundupPick[];
@@ -57,7 +58,7 @@ const { picks, characters } = Astro.props;
               <article class:list={['home-pick-card', index === 0 && 'home-pick-card--featured']}>
                 <div class="home-pick-card__inner">
                   <div class="home-pick-card__main">
-                    <img class="home-pick-card__thumb" src={thumb} alt="" width="72" height="72" loading="lazy" />
+                    <img class="home-pick-card__thumb" src={optimizedImageUrl(thumb, { width: 72, quality: 70 })} alt="" width="72" height="72" loading="lazy" decoding="async" />
                     <div class="home-pick-card__copy">
                       <h3 class="home-pick-card__name"><CmsField field="name">{pick.name}</CmsField></h3>
                       <a href={getRoundupRibbonHref(pick)} class="home-pick-card__ribbon">

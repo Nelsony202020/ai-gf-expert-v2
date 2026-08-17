@@ -339,7 +339,7 @@ const fileRoundup: Roundup = {
   slug: 'ai-girlfriend',
   title: 'Best AI Girlfriend Apps',
   titleYear: 2026,
-  featuredImage: img('roundup-ai-gf-hero', 1600, 640),
+  featuredImage: '/brand/herman-youtube-review.png',
   featuredImageAlt: 'Collage of top AI girlfriend app interfaces tested in 2026',
   metaDescription:
     'We tested and ranked the best AI girlfriend apps of 2026. Compare conversation quality, customization, images, privacy, and pricing — updated by independent reviewers.',
@@ -363,7 +363,7 @@ const fileRoundup: Roundup = {
       'We purchase every plan, run real conversations for weeks, and score each app with the same eight-category framework we use in our full reviews — so rankings reflect hands-on testing, not marketing pages.',
     processHref: '/test/',
     processLabel: 'See our full testing process',
-    videoPoster: img('roundup-testing-lab', 1280, 720),
+    videoPoster: '/brand/herman-youtube-review.png',
     stats: [
       { icon: 'grid_view', title: '24 apps', subtitle: 'Tested in this roundup cycle' },
       { icon: 'calendar_today', title: '30+ days', subtitle: 'Minimum hands-on per finalist' },
