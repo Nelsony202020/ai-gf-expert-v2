@@ -6,6 +6,7 @@ export function ConfirmDialog({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   danger,
+  busy,
   onConfirm,
   onCancel,
   children,
@@ -15,6 +16,8 @@ export function ConfirmDialog({
   confirmLabel?: string;
   cancelLabel?: string;
   danger?: boolean;
+  /** Disables actions and shows a spinner on the confirm button. */
+  busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
   children?: React.ReactNode;
@@ -26,6 +29,7 @@ export function ConfirmDialog({
         role="alertdialog"
         aria-labelledby="confirm-dialog-title"
         aria-describedby={message ? 'confirm-dialog-desc' : undefined}
+        aria-busy={busy || undefined}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
@@ -40,14 +44,22 @@ export function ConfirmDialog({
         </div>
         {children && <div className="px-5 py-4">{children}</div>}
         <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-3 dark:border-slate-800">
-          <Button variant="secondary" onClick={onCancel}>
+          <Button variant="secondary" onClick={onCancel} disabled={busy}>
             {cancelLabel}
           </Button>
           <Button
             className={danger ? '!bg-red-600 hover:!bg-red-700' : ''}
             onClick={onConfirm}
+            disabled={busy}
           >
-            {danger && <Icon name="delete" className="!text-[18px]" />}
+            {busy ? (
+              <span
+                className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                aria-hidden
+              />
+            ) : danger ? (
+              <Icon name="delete" className="!text-[18px]" />
+            ) : null}
             {confirmLabel}
           </Button>
         </div>

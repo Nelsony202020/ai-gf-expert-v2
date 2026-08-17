@@ -159,7 +159,7 @@ export function PublishTab() {
               Publish the test run first
             </p>
             <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
-              Go to Testing, finish required questions, then click <strong>Review and publish</strong>.
+              Go to Testing, finish required questions, then click <strong>Publish changes</strong>.
             </p>
             <Link
               to={workspaceTabPath(ws.productId, 'testing')}

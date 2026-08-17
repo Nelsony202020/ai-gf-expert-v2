@@ -48,6 +48,7 @@ import {
 } from '../../ui';
 import { useWorkspace } from '../context';
 import { workspaceTabPath } from '../completion';
+import { ConfirmDialog } from '../../ConfirmDialog';
 import { ReviewCopyPanel } from '../../testing/ReviewCopyPanel';
 
 interface ScoreTreeDto {
@@ -112,7 +113,7 @@ function runPrimaryAction(opts: {
   const testingComplete = opts.remainingRequired === 0;
   if (testingComplete && opts.canPublish) {
     return {
-      label: opts.isLiveRun ? 'Republish changes' : 'Review and publish',
+      label: opts.isLiveRun ? 'Republish changes' : 'Publish changes',
       icon: 'publish',
       onClick: opts.onPublish,
     };
@@ -163,6 +164,8 @@ export function TestingTab() {
   const [guidedFocusNonce, setGuidedFocusNonce] = useState(0);
   const [showNewRun, setShowNewRun] = useState(false);
   const [showDeleteRun, setShowDeleteRun] = useState(false);
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [calcError, setCalcError] = useState(false);
   const { busy, setError, run: exec } = useAsyncToast();
   const calculateTimerRef = useRef<number | null>(null);
@@ -282,28 +285,25 @@ export function TestingTab() {
 
   async function publishRun() {
     if (!currentRun) return;
-    const republish = Boolean(currentRun.isCurrentPublished);
-    if (
-      !confirm(
-        republish
-          ? 'Republish this test run? Live scores on the site will update to match your latest answers.'
-          : 'Publish this test run? It becomes the live score source and supersedes the previous published run.',
-      )
-    )
-      return;
-    const res = await exec(() =>
-      api.post<{ tree: ScoreTreeDto; affectedRoundups: string[] }>(
-        `/api/admin/test-runs/${currentRun.id}/publish`,
-      ),
-    );
-    if (res) {
-      setTree(res.tree);
-      toast.success('Test run published — scores are now live.', {
-        message: 'Next: publish the product on the Publish tab.',
-        durationMs: 8000,
-      });
-      await ws.refreshRelated();
-      navigate(workspaceTabPath(ws.productId, 'publish'));
+    setPublishing(true);
+    try {
+      const res = await exec(() =>
+        api.post<{ tree: ScoreTreeDto; affectedRoundups: string[] }>(
+          `/api/admin/test-runs/${currentRun.id}/publish`,
+        ),
+      );
+      if (res) {
+        setTree(res.tree);
+        setShowPublishConfirm(false);
+        toast.success('Test run published — scores are now live.', {
+          message: 'Next: publish the product on the Publish tab.',
+          durationMs: 8000,
+        });
+        await ws.refreshRelated();
+        navigate(workspaceTabPath(ws.productId, 'publish'));
+      }
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -717,7 +717,7 @@ export function TestingTab() {
       }
       return;
     }
-    await publishRun();
+    setShowPublishConfirm(true);
   }
 
   const primary = runPrimaryAction({
@@ -737,7 +737,7 @@ export function TestingTab() {
     onTestingCompleteNoPermission: () => {
       toast.info('Testing is complete', {
         message: can('content.publish')
-          ? 'Use Review and publish to make this run live.'
+          ? 'Use Publish changes to make this run live.'
           : 'Ask an admin with publish permission to publish this test run, then publish the product on the Publish tab.',
       });
     },
@@ -842,7 +842,7 @@ export function TestingTab() {
 
         {testingComplete && !isPublished && (
           <p className="mt-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800 dark:border-green-900/50 dark:bg-green-950/30 dark:text-green-300">
-            All required testing is complete. Click <strong>Review and publish</strong> to make this
+            All required testing is complete. Click <strong>Publish changes</strong> to make this
             run the live score, then open the <strong>Publish</strong> tab to publish the product.
           </p>
         )}
@@ -1130,6 +1130,23 @@ export function TestingTab() {
           busy={busy}
           onClose={() => setShowDeleteRun(false)}
           onConfirm={() => void deleteRun()}
+        />
+      )}
+      {showPublishConfirm && currentRun && (
+        <ConfirmDialog
+          title={isLiveRun ? 'Republish changes?' : 'Publish changes?'}
+          message={
+            isLiveRun
+              ? 'Live scores on the site will update to match your latest answers.'
+              : 'This test run becomes the live score source and supersedes the previous published run.'
+          }
+          confirmLabel={publishing ? 'Saving…' : 'Save'}
+          cancelLabel="Cancel"
+          busy={publishing}
+          onCancel={() => {
+            if (!publishing) setShowPublishConfirm(false);
+          }}
+          onConfirm={() => void publishRun()}
         />
       )}
     </div>
