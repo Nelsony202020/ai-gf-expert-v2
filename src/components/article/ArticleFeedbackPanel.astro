@@ -136,12 +136,14 @@ import { brandIcons } from '../../lib/brand-icons';
       <BrandIcon
         src={brandIcons.scientist.dark}
         srcLight={brandIcons.scientist.light}
-        width={64}
-        height={64}
+        width={56}
+        height={56}
         class="article-feedback__success-icon"
       />
-      <p class="article-feedback__success-text">Thanks—Herman will review it.</p>
-      <button type="button" class="article-feedback__success-close" data-feedback-close>Close</button>
+      <p class="article-feedback__success-title">Thanks!</p>
+      <p class="article-feedback__success-text">
+        Herman will take a look at your feedback ASAP.
+      </p>
     </div>
   </div>
 </div>
@@ -168,9 +170,26 @@ import { brandIcons } from '../../lib/brand-icons';
     const categoryHint = root.querySelector<HTMLElement>('[data-feedback-category-hint]');
     const categoryGroup = root.querySelector<HTMLElement>('[data-feedback-category-group]');
     const submitBtn = form?.querySelector<HTMLButtonElement>('[data-feedback-submit]');
+    const titleEl = root.querySelector<HTMLElement>('#article-feedback-title');
+    const closeBtn = root.querySelector<HTMLElement>('.article-feedback__close');
 
     let pageTitle = document.title;
     let pageUrl = window.location.href;
+    let lockedScrollY = 0;
+
+    function lockBodyScroll(lock: boolean) {
+      if (lock) {
+        lockedScrollY = window.scrollY;
+        document.documentElement.classList.add('article-feedback-open');
+        document.body.classList.add('article-feedback-open');
+        document.body.style.top = `-${lockedScrollY}px`;
+      } else {
+        document.documentElement.classList.remove('article-feedback-open');
+        document.body.classList.remove('article-feedback-open');
+        document.body.style.top = '';
+        window.scrollTo(0, lockedScrollY);
+      }
+    }
 
     function updateSubmitState() {
       const hasCategory = Boolean(categoryInput?.value);
@@ -201,6 +220,8 @@ import { brandIcons } from '../../lib/brand-icons';
       if (counter) counter.textContent = '0/500';
       formView?.classList.remove('hidden');
       successView?.classList.add('hidden');
+      panel?.classList.remove('article-feedback__panel--success');
+      if (titleEl) titleEl.textContent = 'Help us improve this article';
       updateSubmitState();
     }
 
@@ -210,7 +231,7 @@ import { brandIcons } from '../../lib/brand-icons';
       root.hidden = false;
       root.setAttribute('aria-hidden', 'false');
       root.classList.remove('is-visible');
-      document.body.classList.add('article-feedback-open');
+      lockBodyScroll(true);
       playOverlayOpen(root);
       window.setTimeout(() => categoryBtns[0]?.focus(), overlayDurationMs() + 40);
     }
@@ -220,7 +241,7 @@ import { brandIcons } from '../../lib/brand-icons';
       playOverlayClose(root, () => {
         root.hidden = true;
         root.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('article-feedback-open');
+        lockBodyScroll(false);
       });
     }
 
@@ -231,6 +252,18 @@ import { brandIcons } from '../../lib/brand-icons';
     root.querySelectorAll('[data-feedback-close]').forEach((el) => {
       el.addEventListener('click', closeFeedback);
     });
+
+    root.addEventListener(
+      'touchmove',
+      (e) => {
+        if (!root.classList.contains('is-visible')) return;
+        const target = e.target as HTMLElement | null;
+        if (!target?.closest('.article-feedback__panel')) {
+          e.preventDefault();
+        }
+      },
+      { passive: false },
+    );
 
     categoryBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -294,6 +327,9 @@ import { brandIcons } from '../../lib/brand-icons';
       submitButton?.removeAttribute('disabled');
       formView?.classList.add('hidden');
       successView?.classList.remove('hidden');
+      panel?.classList.add('article-feedback__panel--success');
+      if (titleEl) titleEl.textContent = 'Feedback sent';
+      closeBtn?.focus();
     });
 
     document.addEventListener('keydown', (e) => {

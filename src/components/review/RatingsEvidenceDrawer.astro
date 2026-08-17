@@ -132,21 +132,21 @@ function breadcrumbParts(breadcrumb: string): string[] {
           hidden
         >
           <div class="ratings-drawer-panel__header">
+            <h2 id={`ratings-drawer-title-${ec.drawerId}`} class="ratings-drawer-panel__title">
+              {ec.name}
+            </h2>
             <button
               type="button"
-              class="drawer-close-text ratings-drawer-panel__close"
+              class="ratings-drawer-panel__close"
               data-ratings-close-drawer
               aria-label="Close evidence details"
             >
-              <span aria-hidden="true">✕</span> Close
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
             </button>
           </div>
 
           <div class="ratings-drawer-panel__body">
             <header class="ratings-drawer-hero">
-              <h2 id={`ratings-drawer-title-${ec.drawerId}`} class="ratings-drawer-hero__title">
-                {ec.name}
-              </h2>
               {ec.breadcrumb && (
                 <p class="ratings-drawer-breadcrumb">
                   {
@@ -467,6 +467,7 @@ function breadcrumbParts(breadcrumb: string): string[] {
 
             <DrawerNavFooter {...nav} />
           </div>
+          <div class="ratings-drawer-panel__scroll-fade" aria-hidden="true"></div>
         </aside>
         </template>
       );
@@ -497,20 +498,20 @@ function breadcrumbParts(breadcrumb: string): string[] {
           hidden
         >
           <div class="ratings-drawer-panel__header">
+            <h2 id={`ratings-calc-title-${calc.drawerId}`} class="ratings-drawer-panel__title">
+              {calc.subscoreName} score calculation
+            </h2>
             <button
               type="button"
-              class="drawer-close-text ratings-drawer-panel__close"
+              class="ratings-drawer-panel__close"
               data-ratings-close-drawer
               aria-label="Close score calculation"
             >
-              <span aria-hidden="true">✕</span> Close
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
             </button>
           </div>
 
           <div class="ratings-drawer-panel__body ratings-drawer-panel__body--calc">
-            <h2 id={`ratings-calc-title-${calc.drawerId}`} class="ratings-drawer-calc__title">
-              How the {calc.subscoreName} score was calculated
-            </h2>
             <p class="ratings-drawer-breadcrumb">
               <span class="ratings-drawer-breadcrumb__parent">{calc.categoryName}</span>
               <span class="material-symbols-outlined ratings-drawer-breadcrumb__sep" aria-hidden="true">
@@ -630,6 +631,7 @@ function breadcrumbParts(breadcrumb: string): string[] {
               nextLabel={calc.nextLabel}
             />
           </div>
+          <div class="ratings-drawer-panel__scroll-fade" aria-hidden="true"></div>
         </aside>
         </template>
       );

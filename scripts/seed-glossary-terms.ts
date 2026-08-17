@@ -169,6 +169,7 @@ These videos usually cost tokens, so it is worth checking how much each generati
   {
     term: 'In-chat Image Generator',
     category: 'Images',
+    aliases: ['in-chat image', 'in-chat images'],
     ctaLabel: 'How in-chat images work →',
     tooltipDefinition:
       'An image generator built into the chat, so you can create or receive images of your AI character without leaving the conversation.',

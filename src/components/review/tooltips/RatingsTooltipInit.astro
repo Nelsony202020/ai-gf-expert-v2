@@ -104,11 +104,15 @@
     panel.classList.toggle('ratings-tooltip-panel--mobile-sheet', isMobileSheet);
 
     if (isMobileSheet) {
-      // Always lock sheet height so the inner body becomes the scroll container
-      // (iOS won't scroll a flex child unless the parent has a definite height).
+      // Hug content up to ~88vh — don't force a tall empty sheet when content is short.
+      // Only lock a definite height when content overflows (helps iOS body scroll).
       const maxH = Math.min(viewportH - margin * 2, Math.round(viewportH * 0.88));
+      panel.style.height = 'auto';
       panel.style.maxHeight = `${maxH}px`;
-      panel.style.height = `${maxH}px`;
+      const naturalH = Math.ceil(panel.getBoundingClientRect().height || panel.scrollHeight || 0);
+      if (naturalH >= maxH - 2) {
+        panel.style.height = `${maxH}px`;
+      }
     }
 
     const panelWidth = panel.offsetWidth || maxWidth;

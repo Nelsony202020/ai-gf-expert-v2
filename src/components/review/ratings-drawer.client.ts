@@ -28,6 +28,7 @@ function trapFocus(panel: HTMLElement) {
 
 let releaseFocus: (() => void) | null = null;
 let lastTrigger: HTMLElement | null = null;
+let releaseScrollFade: (() => void) | null = null;
 
 function getDrawerPanels() {
   const mount = document.querySelector<HTMLElement>('[data-ratings-drawer-mount]');
@@ -54,6 +55,33 @@ function getOrCreatePanel(id: string): HTMLElement | null {
   return mount.querySelector<HTMLElement>(`[data-ratings-drawer-panel="${id}"]`);
 }
 
+function updateScrollFade(panel: HTMLElement) {
+  const body = panel.querySelector<HTMLElement>('.ratings-drawer-panel__body');
+  if (!body) {
+    panel.dataset.scrollMore = 'false';
+    return;
+  }
+  const remaining = body.scrollHeight - body.scrollTop - body.clientHeight;
+  panel.dataset.scrollMore = remaining > 8 ? 'true' : 'false';
+}
+
+function bindScrollFade(panel: HTMLElement) {
+  releaseScrollFade?.();
+  releaseScrollFade = null;
+
+  const body = panel.querySelector<HTMLElement>('.ratings-drawer-panel__body');
+  if (!body) return;
+
+  const onScroll = () => updateScrollFade(panel);
+  body.addEventListener('scroll', onScroll, { passive: true });
+  requestAnimationFrame(() => updateScrollFade(panel));
+
+  releaseScrollFade = () => {
+    body.removeEventListener('scroll', onScroll);
+    panel.dataset.scrollMore = 'false';
+  };
+}
+
 function closeDrawer() {
   const root = document.querySelector<HTMLElement>('[data-ratings-drawer-root]');
   const backdrop = document.querySelector<HTMLElement>('[data-ratings-drawer-backdrop]');
@@ -68,6 +96,8 @@ function closeDrawer() {
       document.body.style.overflow = '';
       releaseFocus?.();
       releaseFocus = null;
+      releaseScrollFade?.();
+      releaseScrollFade = null;
       lastTrigger?.focus();
       lastTrigger = null;
     },
@@ -115,6 +145,7 @@ function openDrawer(id: string, trigger?: HTMLElement) {
   document.body.style.overflow = 'hidden';
   releaseFocus?.();
   releaseFocus = trapFocus(panel);
+  bindScrollFade(panel);
   panel.querySelector<HTMLElement>('[data-ratings-close-drawer]')?.focus();
 }
 
