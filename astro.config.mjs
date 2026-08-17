@@ -32,9 +32,11 @@ export default defineConfig({
       AI_VERDICT_ENABLED: envField.string({ context: 'server', access: 'secret', optional: true }),
       AI_PRICING_ENABLED: envField.string({ context: 'server', access: 'secret', optional: true }),
       AI_ALT_TEXT_ENABLED: envField.string({ context: 'server', access: 'secret', optional: true }),
+      RESEND_API_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
+      CONTACT_INBOX: envField.string({ context: 'server', access: 'secret', optional: true }),
+      RESEND_FROM: envField.string({ context: 'server', access: 'secret', optional: true }),
     },
-  },
-  // Public pages stay prerendered (static HTML for SEO). Server routes
+  },  // Public pages stay prerendered (static HTML for SEO). Server routes
   // (/admin, /api, /go) opt out with `export const prerender = false`.
   output: 'static',
   // Privacy scrape+analyze and other AI admin routes need longer than the

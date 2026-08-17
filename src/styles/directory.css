@@ -1207,7 +1207,7 @@
   margin-bottom: 1.25rem;
   opacity: 1;
   position: relative;
-  z-index: 50;
+  z-index: 10;
 }
 
 .dir-customize-wrap.is-open .dir-customize-wrap__inner {
@@ -1221,6 +1221,15 @@
 
 .dir-customize-wrap .home-explorer__customize {
   margin-bottom: 0;
+}
+
+/* Priority pickers: above directory cards, below sticky site header (z-index: 50). */
+.dir-customize-wrap .home-explorer__priority-slot:has(.home-priority-picker__trigger[aria-expanded='true']) {
+  z-index: 15;
+}
+
+.dir-customize-wrap .home-priority-picker__menu {
+  z-index: 20;
 }
 
 /* Relevant-score mode on cards: three tiles in one row */

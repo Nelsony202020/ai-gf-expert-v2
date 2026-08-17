@@ -4,6 +4,7 @@ import { Extension } from '@tiptap/core';
 import { Plugin } from '@tiptap/pm/state';
 import { api } from '../api';
 import { fileWithInferredMime } from '../../../lib/media/mime';
+import { sanitizePastedHtml } from '../tiptap/sanitizePastedHtml';
 
 export interface PastedImageResult {
   id: string;
@@ -167,7 +168,12 @@ export function createClipboardImagePaste(getOptions: () => ClipboardPasteOption
                     img.setAttribute('alt', '');
                   }
 
-                  editor.chain().focus().insertContent(doc.body.innerHTML).run();
+                  const cleaned = sanitizePastedHtml(doc.body.innerHTML, {
+                    preserveImages: true,
+                    minHeading: 2,
+                    maxHeading: 4,
+                  });
+                  editor.chain().focus().insertContent(cleaned).run();
 
                   const { state } = editor;
                   const tr = state.tr;

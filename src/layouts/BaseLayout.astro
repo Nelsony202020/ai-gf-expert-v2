@@ -7,12 +7,15 @@ import ComingSoonLayer from '../components/ui/ComingSoonLayer.astro';
 import MobileNavShell from '../components/mobile/MobileNavShell.astro';
 import { getMobileNavMode } from '../lib/mobile-nav/modes';
 import { cdnAsset, getCdnBaseUrl } from '../lib/media/cdn';
+import { optimizedImageUrl } from '../lib/media/optimize';
 import { canonicalPublicUrl, resolveCanonicalUrl } from '../lib/siteOrigin';
 
 interface Props {
   title?: string;
   description?: string;
   image?: string;
+  /** Above-the-fold image URL to preload (homepage hero, review gallery, roundup banner). */
+  lcpImage?: string;
   robots?: string;
   canonical?: string;
   ogTitle?: string;
@@ -23,6 +26,7 @@ const {
   title = 'AI Girlfriend Expert — Independent AI Companion Reviews',
   description = 'Independent, data-driven reviews of AI girlfriend and AI companion apps. Deep scoring, safety audits, and side-by-side specs.',
   image,
+  lcpImage,
   robots,
   canonical: canonicalOverride,
   ogTitle,
@@ -36,6 +40,9 @@ const ogTitleResolved = ogTitle ?? title;
 const ogDescriptionResolved = ogDescription ?? description;
 const cdnBase = getCdnBaseUrl();
 const mobileNavMode = getMobileNavMode(Astro.url.pathname);
+const lcpPreload = lcpImage ? optimizedImageUrl(lcpImage, { width: 800, quality: 72 }) : '';
+const ICON_FONTS_HREF =
+  'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,300..700,0..1,0&display=swap';
 ---
 
 <!doctype html>
@@ -63,17 +70,18 @@ const mobileNavMode = getMobileNavMode(Astro.url.pathname);
     <meta name="twitter:description" content={ogDescriptionResolved} />
     {image && <meta name="twitter:image" content={image} />}
 
-    <!-- Fonts (from DESIGN.md: Hanken Grotesk / Inter / JetBrains Mono) -->
+    <!-- Critical text fonts only. Icons + mono load after first paint. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
-      rel="stylesheet"
-    />
+    <link rel="preload" as="style" href={ICON_FONTS_HREF} onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript>
+      <link rel="stylesheet" href={ICON_FONTS_HREF} />
+    </noscript>
+    {lcpPreload && <link rel="preload" as="image" href={lcpPreload} fetchpriority="high" />}
     <link rel="stylesheet" href={globalStylesUrl} />
     <slot name="head" />
   </head>

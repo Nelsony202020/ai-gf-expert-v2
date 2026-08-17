@@ -1,0 +1,250 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
+import ArticleUtilityRail from '../components/article/ArticleUtilityRail.astro';
+import JsonLd from '../components/seo/JsonLd.astro';
+import { buildWebPageSchema } from '../lib/seo/jsonld';
+import { canonicalPublicUrl } from '../lib/siteOrigin';
+import { loadPublishedGlossaryEntries } from '../lib/glossary/load';
+import { renderGlossaryTipTapHtml } from '../lib/glossary/renderTipTap';
+import { GLOSSARY_CATEGORY_OPTIONS, glossaryAlsoCalledText } from '../lib/glossary/types';
+import '../styles/glossary.css';
+
+const entries = await loadPublishedGlossaryEntries();
+const pageTitle = 'AI Girlfriend Glossary';
+const metaTitle = 'AI Girlfriend Glossary: Terms & Definitions';
+const description =
+  'Plain-language definitions of AI girlfriend app terms — tokens, context windows, in-chat images, privacy settings, and more.';
+const canonical = canonicalPublicUrl('/glossary/', Astro.site);
+
+const usedCategories = GLOSSARY_CATEGORY_OPTIONS.filter((cat) =>
+  entries.some((e) => e.category === cat),
+);
+
+const letterOf = (term: string) => {
+  const ch = term.trim().charAt(0).toUpperCase();
+  return /[A-Z]/.test(ch) ? ch : '#';
+};
+
+const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const byLetter = new Map<string, typeof entries>();
+for (const entry of entries) {
+  const letter = letterOf(entry.term);
+  const list = byLetter.get(letter) ?? [];
+  list.push(entry);
+  byLetter.set(letter, list);
+}
+for (const list of byLetter.values()) {
+  list.sort((a, b) => a.term.localeCompare(b.term));
+}
+const letterKeys = [...byLetter.keys()].sort((a, b) => {
+  if (a === '#') return 1;
+  if (b === '#') return -1;
+  return a.localeCompare(b);
+});
+
+const jsonLdGraph = buildWebPageSchema({
+  pathname: '/glossary/',
+  name: pageTitle,
+  description,
+  breadcrumbs: [
+    { label: 'Home', href: '/' },
+    { label: 'Glossary' },
+  ],
+});
+---
+
+<BaseLayout title={metaTitle} description={description} canonical={canonical}>
+  <JsonLd slot="head" graph={jsonLdGraph} />
+  <Header />
+  <main class="glossary-page">
+    <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">
+      <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Glossary' }]} />
+
+      <header class="glossary-page__hero">
+        <p class="glossary-page__eyebrow">Reference</p>
+        <h1 class="glossary-page__title">AI Girlfriend Glossary</h1>
+        <p class="glossary-page__intro">
+          Everything you need to understand the terms we use when testing AI companion apps.
+        </p>
+      </header>
+
+      {
+        entries.length === 0 ? (
+          <p class="glossary-page__empty">
+            Glossary terms will appear here as we publish definitions. Check back soon.
+          </p>
+        ) : (
+          <>
+            <div class="glossary-page__controls" data-glossary-controls>
+              <label class="sr-only" for="glossary-search">Search the glossary</label>
+              <input
+                id="glossary-search"
+                class="glossary-page__search"
+                type="search"
+                placeholder="Search the glossary..."
+                autocomplete="off"
+                data-glossary-search
+              />
+              <div class="glossary-page__categories" role="group" aria-label="Filter by category">
+                <button type="button" class="glossary-page__chip is-active" data-glossary-category="all">
+                  All
+                </button>
+                {usedCategories.map((cat) => (
+                  <button type="button" class="glossary-page__chip" data-glossary-category={cat}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <nav class="glossary-page__az" aria-label="Jump to letter">
+              {alphabet.map((letter) => {
+                const active = byLetter.has(letter);
+                return active ? (
+                  <a class="glossary-page__az-link is-active" href={`#letter-${letter}`} data-glossary-az={letter}>
+                    {letter}
+                  </a>
+                ) : (
+                  <span class="glossary-page__az-link is-disabled" aria-disabled="true">
+                    {letter}
+                  </span>
+                );
+              })}
+            </nav>
+
+            <p class="glossary-page__no-results" data-glossary-empty hidden>
+              No terms match your search.
+            </p>
+
+            {letterKeys.map((letter) => (
+              <section
+                class="glossary-letter"
+                id={letter === '#' ? 'letter-other' : `letter-${letter}`}
+                data-glossary-letter={letter}
+              >
+                <h2 class="glossary-letter__heading">{letter === '#' ? '#' : letter}</h2>
+                {(byLetter.get(letter) ?? []).map((entry) => {
+                  const bodyHtml = renderGlossaryTipTapHtml(entry.fullDefinition);
+                  const searchBlob = [
+                    entry.term,
+                    ...entry.aliases,
+                    entry.tooltipDefinition,
+                    entry.category,
+                  ]
+                    .join(' ')
+                    .toLowerCase();
+                  return (
+                    <article
+                      class="glossary-term"
+                      id={entry.anchor}
+                      data-glossary-term
+                      data-category={entry.category}
+                      data-search={searchBlob}
+                    >
+                      <div class="glossary-term__header">
+                        <h3 class="glossary-term__title">{entry.term}</h3>
+                        <a
+                          class="glossary-term__anchor"
+                          href={`/glossary/#${entry.anchor}`}
+                          aria-label={`Link to ${entry.term}`}
+                          data-glossary-copy-link
+                          title="Copy link"
+                        >
+                          <span class="material-symbols-outlined text-[1.1rem]" aria-hidden="true">link</span>
+                        </a>
+                      </div>
+                      <p class="glossary-term__meta">
+                        <span class="glossary-term__category">{entry.category}</span>
+                        {glossaryAlsoCalledText(entry.term, entry.aliases) ? (
+                          <span class="glossary-term__aliases">
+                            Also called: {glossaryAlsoCalledText(entry.term, entry.aliases)}
+                          </span>
+                        ) : null}
+                      </p>
+                      {bodyHtml ? (
+                        <div class="glossary-term__body" set:html={bodyHtml} />
+                      ) : (
+                        <div class="glossary-term__body">
+                          <p>{entry.tooltipDefinition}</p>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </section>
+            ))}
+          </>
+        )
+      }
+    </div>
+  </main>
+  <Footer />
+  <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal />
+</BaseLayout>
+
+<script>
+  function initGlossaryPage() {
+    const root = document.querySelector('[data-glossary-controls]');
+    if (!root || root instanceof HTMLElement === false) return;
+    if ((root as HTMLElement).dataset.bound === 'true') return;
+    (root as HTMLElement).dataset.bound = 'true';
+
+    const search = document.querySelector<HTMLInputElement>('[data-glossary-search]');
+    const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-glossary-category]'));
+    const terms = Array.from(document.querySelectorAll<HTMLElement>('[data-glossary-term]'));
+    const letters = Array.from(document.querySelectorAll<HTMLElement>('[data-glossary-letter]'));
+    const empty = document.querySelector<HTMLElement>('[data-glossary-empty]');
+    let category = 'all';
+
+    function applyFilter() {
+      const q = (search?.value ?? '').trim().toLowerCase();
+      let visibleCount = 0;
+      for (const term of terms) {
+        const cat = term.dataset.category ?? '';
+        const blob = term.dataset.search ?? '';
+        const catOk = category === 'all' || cat === category;
+        const qOk = !q || blob.includes(q);
+        const show = catOk && qOk;
+        term.classList.toggle('is-hidden', !show);
+        if (show) visibleCount += 1;
+      }
+      for (const letter of letters) {
+        const hasVisible = letter.querySelector('[data-glossary-term]:not(.is-hidden)');
+        letter.classList.toggle('is-hidden', !hasVisible);
+      }
+      if (empty) {
+        empty.hidden = visibleCount > 0;
+        empty.classList.toggle('is-visible', visibleCount === 0);
+      }
+    }
+
+    search?.addEventListener('input', applyFilter);
+    for (const chip of chips) {
+      chip.addEventListener('click', () => {
+        category = chip.dataset.glossaryCategory ?? 'all';
+        for (const c of chips) c.classList.toggle('is-active', c === chip);
+        applyFilter();
+      });
+    }
+
+    for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-glossary-copy-link]')) {
+      link.addEventListener('click', async (event) => {
+        const href = link.getAttribute('href');
+        if (!href) return;
+        const absolute = new URL(href, window.location.origin).toString();
+        try {
+          await navigator.clipboard.writeText(absolute);
+          event.preventDefault();
+        } catch {
+          /* fall through to native hash navigation */
+        }
+      });
+    }
+  }
+
+  initGlossaryPage();
+  document.addEventListener('astro:page-load', initGlossaryPage);
+</script>

@@ -16,9 +16,10 @@ import PlaceholderTab from '../../../components/review/tabs/PlaceholderTab.astro
 import PhotosVideosTab from '../../../components/review/tabs/PhotosVideosTab.astro';
 import PricingTab from '../../../components/review/tabs/PricingTab.astro';
 import RatingsTooltipInit from '../../../components/review/tooltips/RatingsTooltipInit.astro';
+import GlossaryTooltipInit from '../../../components/review/tooltips/GlossaryTooltipInit.astro';
 import ReviewScrollRestore from '../../../components/review/ReviewScrollRestore.astro';
 import ArticleUtilityRail from '../../../components/article/ArticleUtilityRail.astro';
-import ReviewMobileUtilitySheet from '../../../components/mobile/ReviewMobileUtilitySheet.astro';
+import ReviewMobileNavSheet from '../../../components/mobile/ReviewMobileNavSheet.astro';
 import RoundupAffiliateFineprint from '../../../components/roundup/RoundupAffiliateFineprint.astro';
 import { getProductFeaturedIn, loadProductPreviewBySlug } from '../../../lib/content/store';
 import { loadDraftRatingsViewModel } from '../../../lib/draft-ratings/loadDraftRatingsData';
@@ -28,6 +29,7 @@ import {
   hasPhotosVideosTab,
   hasPricingTab,
 } from '../../../lib/content/reviewDevProducts';
+import { PREVIEW_COOKIE_NAME, verifyPreviewToken } from '../../../lib/previewSession';
 
 // Previews expose unpublished products, so production requires the editor
 // cookie issued by /api/admin/preview-session (set automatically on admin
@@ -58,15 +60,15 @@ const showAlternativesTab = hasAlternativesTab(product.slug);
 const showPricingTab = hasPricingTab(product.slug);
 
 const tabs: Tab[] = [
-  { id: 'overview', label: 'Overview', mobileLabel: 'Overview' },
-  { id: 'ratings', label: 'Ratings & Specs', mobileLabel: 'Ratings' },
-  { id: 'review', label: 'Review', mobileLabel: 'Review' },
-  { id: 'photos', label: 'Photos & Videos', mobileLabel: 'Media' },
-  { id: 'pricing', label: 'Pricing', mobileLabel: 'Pricing' },
-  { id: 'market-data', label: 'Market Data', mobileLabel: 'Data' },
+  { id: 'overview', label: 'Overview', tocLabel: 'Overview' },
+  { id: 'ratings', label: 'Ratings', tocLabel: 'Ratings & Specs' },
+  { id: 'review', label: 'Review', tocLabel: 'Review' },
+  { id: 'photos', label: 'Media', tocLabel: 'Photos & Videos' },
+  { id: 'pricing', label: 'Pricing', tocLabel: 'Pricing' },
+  { id: 'market-data', label: 'Market Data', tocLabel: 'Market Data' },
 ];
 if (showAlternativesTab) {
-  tabs.push({ id: 'alternatives', label: 'Alternatives', mobileLabel: 'Alt.' });
+  tabs.push({ id: 'alternatives', label: 'Alternatives', tocLabel: 'Alternatives' });
 }
 
 const shareUrl = head.canonical;
@@ -89,7 +91,7 @@ const shareUrl = head.canonical;
     Draft preview — this page is only visible to editors. Not indexed. Publish the product for the live URL at
     <a href={`/reviews/${product.slug}`} class="font-medium underline underline-offset-2">/reviews/{product.slug}</a>.
   </div>
-  <main>
+  <main id="review-top">
     <div class="roundup-affiliate-bar">
       <div class="section-container px-4 md:px-8">
         <RoundupAffiliateFineprint />
@@ -165,8 +167,9 @@ const shareUrl = head.canonical;
   </main>
   <Footer />
   <ArticleUtilityRail pageTitle={head.title} pageUrl={shareUrl} />
-  <ReviewMobileUtilitySheet pageTitle={head.title} pageUrl={shareUrl} />
+  <ReviewMobileNavSheet tabs={tabs} pageTitle={head.title} pageUrl={shareUrl} />
   <RatingsTooltipInit />
+  <GlossaryTooltipInit />
   <ReviewScrollRestore productSlug={product.slug} />
 </BaseLayout>
 
@@ -275,6 +278,7 @@ const shareUrl = head.canonical;
       if (viewBtn) {
         e.preventDefault();
         e.stopPropagation();
+        window.dispatchEvent(new CustomEvent('ratings-tooltip:hide'));
         const categoryKey = viewBtn.dataset.category;
         const subscoreName = viewBtn.dataset.subscore;
         const contributor = viewBtn.dataset.contributor;

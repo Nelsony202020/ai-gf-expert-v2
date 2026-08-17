@@ -861,6 +861,37 @@ export const authorSchema = z.object({
   sortOrder: z.number().int().optional(),
 });
 
+export const GLOSSARY_CATEGORIES = [
+  'General',
+  'Characters',
+  'Customization',
+  'Chat',
+  'Chat Features',
+  'Images',
+  'Video',
+  'Privacy',
+  'Pricing',
+] as const;
+
+export const glossaryEntrySchema = z.object({
+  term: z.string().min(1).max(120),
+  anchor: z
+    .string()
+    .min(1)
+    .max(120)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Use lowercase letters, numbers, and hyphens only.'),
+  tooltipDefinition: z.string().max(500).optional(),
+  ctaLabel: z.string().max(80).optional(),
+  fullDefinition: z.unknown().optional(),
+  aliases: z.array(z.string().min(1).max(120)).max(40).optional(),
+  displayAliases: z.array(z.string().min(1).max(120)).max(20).optional(),
+  category: z.enum(GLOSSARY_CATEGORIES),
+  status: z.enum(['draft', 'published']),
+  autoTooltip: z.boolean(),
+  scope: z.string().max(40).optional(),
+  publishedAt: dateMs.optional(),
+});
+
 export const siteSettingSchema = z.object({
   key: z.string().min(1).max(120),
   value: z.unknown(),

@@ -1,5 +1,8 @@
 ---
 import ThemeToggle from '../ui/ThemeToggle.astro';
+import { cdnAsset } from '../../lib/media/cdn';
+
+const logoSrc = cdnAsset('/brand/girlfriend-expert-logo.png');
 ---
 
 <div class="mobile-sheet mobile-more-sheet" data-mobile-more-sheet hidden aria-hidden="true">
@@ -13,6 +16,16 @@ import ThemeToggle from '../ui/ThemeToggle.astro';
       </button>
     </header>
     <div class="mobile-sheet__body">
+      <a href="/" class="mobile-sheet__home" data-mobile-more-home>
+        <img class="mobile-sheet__home-logo" src={logoSrc} alt="" width="36" height="36" />
+        <span class="mobile-sheet__home-copy">
+          <span class="mobile-sheet__home-brand">AI Girlfriend Expert</span>
+          <span class="mobile-sheet__home-label">Home</span>
+        </span>
+        <span class="material-symbols-outlined mobile-sheet__home-chevron" aria-hidden="true">chevron_right</span>
+      </a>
+
+      <p class="mobile-sheet__section-label">This page</p>
       <button type="button" class="mobile-sheet__link" data-mobile-more-share>
         <span class="material-symbols-outlined" aria-hidden="true">share</span>
         Share
@@ -26,15 +39,39 @@ import ThemeToggle from '../ui/ThemeToggle.astro';
         Back to top
       </button>
 
-      <a href="/contact/" class="mobile-sheet__link">
-        <span class="material-symbols-outlined" aria-hidden="true">mail</span>
-        Contact us
+      <div class="mobile-sheet__divider"></div>
+
+      <p class="mobile-sheet__section-label">Explore</p>
+      <a href="/test/" class="mobile-sheet__link">
+        <span class="material-symbols-outlined" aria-hidden="true">science</span>
+        How We Test
+      </a>
+      <a href="/glossary/" class="mobile-sheet__link">
+        <span class="material-symbols-outlined" aria-hidden="true">menu_book</span>
+        Glossary
       </a>
 
       <div class="mobile-sheet__divider"></div>
 
+      <p class="mobile-sheet__section-label">Company</p>
+      <a href="/about/" class="mobile-sheet__link">
+        <span class="material-symbols-outlined" aria-hidden="true">info</span>
+        About Us
+      </a>
+      <a href="/contact/" class="mobile-sheet__link">
+        <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+        Contact Us
+      </a>
+      <a href="/editorial-guidelines/" class="mobile-sheet__link">
+        <span class="material-symbols-outlined" aria-hidden="true">policy</span>
+        Editorial Guidelines
+      </a>
+
+      <div class="mobile-sheet__divider"></div>
+
+      <p class="mobile-sheet__section-label">Appearance</p>
       <div class="mobile-sheet__theme-row">
-        <ThemeToggle variant="footer" />
+        <ThemeToggle variant="switch" />
       </div>
     </div>
   </div>
@@ -44,7 +81,8 @@ import ThemeToggle from '../ui/ThemeToggle.astro';
   import { closeSheet, openSheet } from '../../lib/ui/bottomSheet.ts';
 
   function getPageMeta() {
-    const navSheet = document.querySelector('[data-nav-sheet]');
+    const navSheet =
+      document.querySelector('[data-nav-sheet="page"]') || document.querySelector('[data-nav-sheet]');
     const hubRoot = document.querySelector('[data-hub-root]');
     const roundupRoot = document.querySelector('[data-roundup-root]');
     return {
@@ -99,6 +137,7 @@ import ThemeToggle from '../ui/ThemeToggle.astro';
         document.querySelector('#roundup-top') ||
         document.querySelector('#buying-guide-top') ||
         document.querySelector('#test-hub-top') ||
+        document.querySelector('#review-top') ||
         document.querySelector('main');
       if (top) top.scrollIntoView({ behavior: 'smooth', block: 'start' });
       else window.scrollTo({ top: 0, behavior: 'smooth' });

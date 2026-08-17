@@ -1,7 +1,12 @@
 ---
 import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
+import { cdnAsset } from '../../lib/media/cdn';
+import { isPlaceholderImage, optimizedImageUrl, PUBLIC_HERO_FALLBACK } from '../../lib/media/optimize';
 
 const { testing } = fileAiGirlfriendRoundup;
+const poster = cdnAsset(
+  isPlaceholderImage(testing.videoPoster) ? PUBLIC_HERO_FALLBACK : testing.videoPoster,
+);
 ---
 
 <section class="home-section section-container px-4 md:px-8" aria-labelledby="home-testing-title">
@@ -35,7 +40,7 @@ const { testing } = fileAiGirlfriendRoundup;
       </div>
     </div>
     <div class="home-testing__video">
-      <img src={testing.videoPoster} alt="Our AI companion testing setup" width="960" height="600" loading="lazy" />
+      <img src={optimizedImageUrl(poster, { width: 640, quality: 70 })} alt="Our AI companion testing setup" width="960" height="600" loading="lazy" decoding="async" />
     </div>
   </div>
 </section>

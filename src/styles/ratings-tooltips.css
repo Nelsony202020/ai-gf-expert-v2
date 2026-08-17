@@ -12,11 +12,45 @@
   font-size: 14px;
   line-height: 1.45;
   color: var(--color-on-surface, #1b1b1b);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ratings-tooltip-panel--wide {
   width: min(380px, calc(100vw - 16px));
+}
+
+/* Category icon on the top-left border — white ring crops PNG’s baked-in black edge */
+.ratings-tooltip-panel__badge {
+  position: absolute;
+  top: -14px;
+  left: -10px;
+  z-index: 5;
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 0;
+  background: #fff;
+  box-shadow: 0 1px 4px color-mix(in srgb, #000 12%, transparent);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ratings-tooltip-panel__badge-clip {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ratings-tooltip-panel__badge img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.14);
+  transform-origin: center center;
 }
 
 .ratings-tooltip-panel--open::before {
@@ -59,33 +93,36 @@
 }
 
 .ratings-tooltip-panel__what-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  display: block;
   min-width: 0;
 }
 
 .ratings-tooltip-panel__what-row .ratings-tooltip-panel__desc {
-  flex: 1;
   min-width: 0;
 }
 
+/*
+  Desktop: keep content on the normal left edge, but start below the
+  overlapping category badge so “What it is” isn’t mid-icon.
+*/
+@media (min-width: 768px) {
+  .ratings-tooltip-panel--has-badge .ratings-tooltip-panel__what-block {
+    padding-top: 1.35rem; /* clears the badge that hangs into the panel */
+  }
+}
+
+/* Legacy inline brand slot — kept inert so old markup doesn't break layout */
 .ratings-tooltip-panel__brand-slot {
-  flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  display: none !important;
 }
 
 .ratings-tooltip-panel__brand-slot .brand-icon-pair,
 .ratings-tooltip-panel__brand-slot img {
-  display: block;
-  width: 56px;
-  height: 56px;
+  display: none;
 }
 
 .ratings-tooltip-panel__brand-slot .brand-icon-pair img {
-  width: 100%;
-  height: 100%;
+  display: none;
 }
 
 /* Legacy — keep for any remaining absolute brand icons */
@@ -96,37 +133,36 @@
 }
 
 .ratings-tooltip-panel__brand-icon {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 56px;
-  height: 56px;
-  pointer-events: none;
+  display: none !important;
 }
 
 .ratings-tooltip-panel__brand-icon img,
 .ratings-tooltip-panel__brand-icon .brand-icon-pair {
-  width: 100%;
-  height: 100%;
+  display: none;
 }
 
 .ratings-tooltip-panel__brand-icon .brand-icon-pair img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .ratings-tooltip-panel__badge {
+    top: 0;
+    left: 22px;
+    width: 40px;
+    height: 40px;
+    padding: 3px;
+    transform: translateY(-50%);
+  }
+
+  .ratings-tooltip-panel--mobile-sheet {
+    padding-top: 0.35rem;
+  }
 }
 
 @media (max-width: 420px) {
   .ratings-tooltip-panel__brand-slot {
-    width: 44px;
-    height: 44px;
-  }
-
-  .ratings-tooltip-panel__brand-slot .brand-icon-pair,
-  .ratings-tooltip-panel__brand-slot img {
-    width: 44px;
-    height: 44px;
+    display: none !important;
   }
 }
 
@@ -926,7 +962,8 @@ a.rt-inline-test-link.rt-comp-name {
     display: flex;
     flex-direction: column;
     max-height: calc(100dvh - 24px);
-    overflow: hidden;
+    /* Keep overflow visible so the category border badge isn't clipped */
+    overflow: visible;
   }
 
   .ratings-tooltip-panel--mobile-sheet::before {
@@ -935,7 +972,12 @@ a.rt-inline-test-link.rt-comp-name {
 
   .ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__header {
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 2;
     padding: 12px 14px;
+    background: var(--color-surface-container-lowest, #fff);
+    border-bottom: 1px solid var(--color-surface-variant, rgb(0 0 0 / 8%));
   }
 
   .ratings-tooltip-panel--mobile-sheet .ratings-tooltip-panel__header--closable {

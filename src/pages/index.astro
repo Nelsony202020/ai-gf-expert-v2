@@ -11,6 +11,7 @@ import HomeRecentUpdates from '../components/home/HomeRecentUpdates.astro';
 import HomeHowWeTest from '../components/home/HomeHowWeTest.astro';
 import HomeGuides from '../components/home/HomeGuides.astro';
 import HomeFinalCta from '../components/home/HomeFinalCta.astro';
+import PageMobileNavSheet from '../components/mobile/PageMobileNavSheet.astro';
 import {
   loadExplorerApps,
   loadFeaturedCharactersShowcase,
@@ -24,9 +25,12 @@ import {
 } from '../lib/content/homepageLoaders';
 import JsonLd from '../components/seo/JsonLd.astro';
 import { buildHomepageSchema } from '../lib/seo/jsonld';
+import { cdnAsset } from '../lib/media/cdn';
+import { isPlaceholderImage, PUBLIC_HERO_FALLBACK } from '../lib/media/optimize';
 
 // SSR so admin homepage slots appear without a full rebuild.
 export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=180, stale-while-revalidate=86400');
 
 const apps = await loadExplorerApps();
 const featuredCharactersShowcase = await loadFeaturedCharactersShowcase();
@@ -34,15 +38,35 @@ const topPicks = await loadHomepageTopPicks(fileAiGirlfriendRoundup.picks);
 const recentUpdates = await loadHomepageRecentUpdates();
 const featuredGuides = await loadHomepageGuides();
 const jsonLdGraph = buildHomepageSchema();
+const heroImage = cdnAsset(
+  isPlaceholderImage(homeMeta.heroImage) ? PUBLIC_HERO_FALLBACK : homeMeta.heroImage,
+);
+
+const homeToc = [
+  { id: 'home-hero', label: 'Search & intro' },
+  { id: 'home-top-picks', label: 'Top picks' },
+  { id: 'explore-apps', label: 'Find an app' },
+  { id: 'home-testing', label: 'How we test' },
+  { id: 'home-guides', label: 'Guides' },
+];
 ---
 
-<BaseLayout title={homeMeta.title} description={homeMeta.description} image={homeMeta.heroImage}>
+<BaseLayout
+  title={homeMeta.title}
+  description={homeMeta.description}
+  image={heroImage}
+  lcpImage={heroImage}
+>
   <JsonLd slot="head" graph={jsonLdGraph} />
   <Header />
   <main>
-    <HomeHero />
+    <div id="home-hero">
+      <HomeHero heroImage={heroImage} heroImageAlt={homeMeta.heroImageAlt} />
+    </div>
     <HomeTrustStrip />
-    <HomePicksAndCharacters picks={topPicks} characters={featuredCharactersShowcase} />
+    <div id="home-top-picks" class="scroll-mt-24">
+      <HomePicksAndCharacters picks={topPicks} characters={featuredCharactersShowcase} />
+    </div>
     <HomeQuickFinder apps={apps} />
 
     <section class="home-section section-container px-4 md:px-8">
@@ -52,9 +76,18 @@ const jsonLdGraph = buildHomepageSchema();
       </div>
     </section>
 
-    <HomeHowWeTest />
-    <HomeGuides guides={featuredGuides} />
+    <div id="home-testing" class="scroll-mt-24">
+      <HomeHowWeTest />
+    </div>
+    <div id="home-guides" class="scroll-mt-24">
+      <HomeGuides guides={featuredGuides} />
+    </div>
     <HomeFinalCta />
   </main>
   <Footer />
+  <PageMobileNavSheet
+    sections={homeToc}
+    pageTitle={homeMeta.title}
+    pageUrl="https://aigirlfriend.expert/"
+  />
 </BaseLayout>

@@ -16,48 +16,70 @@ import {
   evidenceDefinitionsModule,
   adminUsersModule,
 } from './modules';
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { AdminErrorBoundary } from './ErrorBoundary';
 import { Spinner } from './ui';
+import { lazyImport } from './lazyImport';
 
-const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })));
-const ProductsPage = lazy(() => import('./pages/Products').then((m) => ({ default: m.ProductsPage })));
-const NewProductPage = lazy(() =>
-  import('./pages/NewProduct').then((m) => ({ default: m.NewProductPage })),
+const Dashboard = lazyImport(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })), 'Dashboard');
+const ProductsPage = lazyImport(
+  () => import('./pages/Products').then((m) => ({ default: m.ProductsPage })),
+  'Products',
 );
-const ProductWorkspace = lazy(() =>
-  import('./workspace/ProductWorkspace').then((m) => ({ default: m.ProductWorkspace })),
+const NewProductPage = lazyImport(
+  () => import('./pages/NewProduct').then((m) => ({ default: m.NewProductPage })),
+  'NewProduct',
 );
-const TestRunsPage = lazy(() =>
-  import('./pages/TestRuns').then((m) => ({ default: m.TestRunsPage })),
+const ProductWorkspace = lazyImport(
+  () => import('./workspace/ProductWorkspace').then((m) => ({ default: m.ProductWorkspace })),
+  'ProductWorkspace',
 );
-const TestRunDetail = lazy(() =>
-  import('./pages/TestRuns').then((m) => ({ default: m.TestRunDetail })),
+const TestRunsPage = lazyImport(
+  () => import('./pages/TestRuns').then((m) => ({ default: m.TestRunsPage })),
+  'TestRuns',
 );
-const HomepagePage = lazy(() =>
-  import('./pages/Homepage').then((m) => ({ default: m.HomepagePage })),
+const TestRunDetail = lazyImport(
+  () => import('./pages/TestRuns').then((m) => ({ default: m.TestRunDetail })),
+  'TestRunDetail',
 );
-const RedirectsPage = lazy(() =>
-  import('./pages/Redirects').then((m) => ({ default: m.RedirectsPage })),
+const HomepagePage = lazyImport(
+  () => import('./pages/Homepage').then((m) => ({ default: m.HomepagePage })),
+  'Homepage',
 );
-const AffiliateLinksPage = lazy(() =>
-  import('./pages/AffiliateLinks').then((m) => ({ default: m.AffiliateLinksPage })),
+const RedirectsPage = lazyImport(
+  () => import('./pages/Redirects').then((m) => ({ default: m.RedirectsPage })),
+  'Redirects',
 );
-const SeoOverviewPage = lazy(() =>
-  import('./pages/seo/Overview').then((m) => ({ default: m.SeoOverviewPage })),
+const AffiliateLinksPage = lazyImport(
+  () => import('./pages/AffiliateLinks').then((m) => ({ default: m.AffiliateLinksPage })),
+  'AffiliateLinks',
 );
-const SeoPagesPage = lazy(() =>
-  import('./pages/seo/Pages').then((m) => ({ default: m.SeoPagesPage })),
+const SeoOverviewPage = lazyImport(
+  () => import('./pages/seo/Overview').then((m) => ({ default: m.SeoOverviewPage })),
+  'SeoOverview',
 );
-const SeoIndexingPage = lazy(() =>
-  import('./pages/seo/Indexing').then((m) => ({ default: m.SeoIndexingPage })),
+const SeoPagesPage = lazyImport(
+  () => import('./pages/seo/Pages').then((m) => ({ default: m.SeoPagesPage })),
+  'SeoPages',
 );
-const SeoSitemapsPage = lazy(() =>
-  import('./pages/seo/Sitemaps').then((m) => ({ default: m.SeoSitemapsPage })),
+const SeoIndexingPage = lazyImport(
+  () => import('./pages/seo/Indexing').then((m) => ({ default: m.SeoIndexingPage })),
+  'SeoIndexing',
 );
-const AuditPage = lazy(() => import('./pages/Audit').then((m) => ({ default: m.AuditPage })));
-const RolesPage = lazy(() => import('./pages/Roles').then((m) => ({ default: m.RolesPage })));
-const ComingSoon = lazy(() => import('./pages/ComingSoon').then((m) => ({ default: m.ComingSoon })));
+const SeoSitemapsPage = lazyImport(
+  () => import('./pages/seo/Sitemaps').then((m) => ({ default: m.SeoSitemapsPage })),
+  'SeoSitemaps',
+);
+const GlossaryPage = lazyImport(
+  () => import('./pages/Glossary').then((m) => ({ default: m.GlossaryPage })),
+  'Glossary',
+);
+const AuditPage = lazyImport(() => import('./pages/Audit').then((m) => ({ default: m.AuditPage })), 'Audit');
+const RolesPage = lazyImport(() => import('./pages/Roles').then((m) => ({ default: m.RolesPage })), 'Roles');
+const ComingSoon = lazyImport(
+  () => import('./pages/ComingSoon').then((m) => ({ default: m.ComingSoon })),
+  'ComingSoon',
+);
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
 const THEME_KEY = 'theme';
@@ -149,6 +171,7 @@ const NAV: NavGroup[] = [
     items: [
       { to: '/seo/overview', label: 'Overview' },
       { to: '/seo/pages', label: 'Pages' },
+      { to: '/seo/glossary', label: 'Glossary' },
       { to: '/seo/redirects', label: 'Redirects', permission: 'redirects.edit' },
       { to: '/seo/indexing', label: 'Indexing' },
       { to: '/seo/sitemaps', label: 'Sitemaps' },
@@ -508,6 +531,7 @@ export function AdminLayout({ onSignOut }: { onSignOut: () => void }) {
 
           <Route path="/seo/overview" element={<SeoOverviewPage />} />
           <Route path="/seo/pages" element={<SeoPagesPage />} />
+          <Route path="/seo/glossary" element={<GlossaryPage />} />
           <Route path="/seo/metadata" element={<Navigate to="/seo/overview" replace />} />
           <Route path="/seo/redirects" element={<RedirectsPage />} />
           <Route path="/seo/indexing" element={<SeoIndexingPage />} />

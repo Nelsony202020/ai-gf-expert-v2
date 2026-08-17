@@ -1,17 +1,38 @@
 ---
 interface Props {
-  variant?: 'header' | 'footer';
+  variant?: 'header' | 'footer' | 'switch';
 }
 
 const { variant = 'header' } = Astro.props;
 ---
 
-<button
-  type="button"
-  class={`theme-toggle theme-toggle--${variant}`}
-  data-theme-toggle
-  aria-label="Toggle dark mode"
->
-  <span class="material-symbols-outlined theme-toggle__icon" aria-hidden="true">dark_mode</span>
-  <span class="theme-toggle__label">Dark mode</span>
-</button>
+{
+  variant === 'switch' ? (
+    <button
+      type="button"
+      class="theme-toggle theme-toggle--switch"
+      data-theme-toggle
+      role="switch"
+      aria-checked="false"
+      aria-label="Toggle dark mode"
+    >
+      <span class="theme-toggle__switch-main">
+        <span class="material-symbols-outlined theme-toggle__icon" aria-hidden="true">contrast</span>
+        <span class="theme-toggle__label">Dark mode</span>
+      </span>
+      <span class="theme-toggle__track" aria-hidden="true">
+        <span class="theme-toggle__thumb"></span>
+      </span>
+    </button>
+  ) : (
+    <button
+      type="button"
+      class={`theme-toggle theme-toggle--${variant}`}
+      data-theme-toggle
+      aria-label="Toggle dark mode"
+    >
+      <span class="material-symbols-outlined theme-toggle__icon" aria-hidden="true">dark_mode</span>
+      <span class="theme-toggle__label">Dark mode</span>
+    </button>
+  )
+}

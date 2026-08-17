@@ -53,10 +53,12 @@ import {
 import {
   figureFrameStyle,
   figureImageStyle,
+  figureMediaFrameStyle,
   clampRadiusPercent,
   clampFocusPercent,
   isCircleCrop,
 } from '../../../lib/review/imageFrameStyle';
+import { applyLink, reviewEditorPasteProps } from '../tiptap/sharedTextExtensions';
 import './editor.css';
 
 // ---------------------------------------------------------------------------
@@ -122,11 +124,17 @@ function ImageView({ node, selected, editor, updateAttributes, deleteNode, getPo
     clipFocusX: node.attrs.clipFocusX,
     clipFocusY: node.attrs.clipFocusY,
   });
+  const mediaStyle = figureMediaFrameStyle({
+    borderRadiusPercent: node.attrs.borderRadiusPercent,
+    clipFocusX: node.attrs.clipFocusX,
+    clipFocusY: node.attrs.clipFocusY,
+  });
   const imgStyle = figureImageStyle({
     borderRadiusPercent: node.attrs.borderRadiusPercent,
     clipFocusX: node.attrs.clipFocusX,
     clipFocusY: node.attrs.clipFocusY,
   });
+  const caption = String(node.attrs.caption ?? '').trim();
 
   return (
     <NodeViewWrapper
@@ -142,7 +150,7 @@ function ImageView({ node, selected, editor, updateAttributes, deleteNode, getPo
         setAdjustFocus(true);
       }}
     >
-      <span data-drag-handle draggable={editable} className={`block ${editable ? 'cursor-grab' : ''}`}>
+      <span data-drag-handle draggable={editable} className={`block ${editable ? 'cursor-grab' : ''}`} style={mediaStyle}>
         {src ? (
           <button
             type="button"
@@ -176,6 +184,9 @@ function ImageView({ node, selected, editor, updateAttributes, deleteNode, getPo
           </span>
         )}
       </span>
+      {caption ? (
+        <figcaption className="mt-2 text-center text-xs italic text-slate-500">{caption}</figcaption>
+      ) : null}
       {adjustFocus && (
         <span
           className="pointer-events-none absolute z-10 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-pink-500 shadow"
@@ -350,11 +361,17 @@ function ImageRowCell({
     rowCell: true,
     rowWidth: item.widthPercent ?? 50,
   });
+  const mediaStyle = figureMediaFrameStyle({
+    borderRadiusPercent: item.borderRadiusPercent,
+    clipFocusX: item.clipFocusX,
+    clipFocusY: item.clipFocusY,
+  });
   const imgStyle = figureImageStyle({
     borderRadiusPercent: item.borderRadiusPercent,
     clipFocusX: item.clipFocusX,
     clipFocusY: item.clipFocusY,
   });
+  const caption = String(item.caption ?? '').trim();
 
   return (
     <figure
@@ -368,19 +385,24 @@ function ImageRowCell({
         setAdjustFocus(true);
       }}
     >
-      {item.src ? (
-        <button
-          type="button"
-          className="block w-full cursor-pointer border-0 bg-transparent p-0"
-          onClick={() => editable && onOpenInspector()}
-        >
-          <img src={item.src} alt={item.alt ?? ''} style={imgStyle} />
-        </button>
-      ) : (
-        <span className="flex h-32 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400 dark:bg-slate-800">
-          Image missing
-        </span>
-      )}
+      <div style={mediaStyle}>
+        {item.src ? (
+          <button
+            type="button"
+            className="block w-full cursor-pointer border-0 bg-transparent p-0"
+            onClick={() => editable && onOpenInspector()}
+          >
+            <img src={item.src} alt={item.alt ?? ''} style={imgStyle} />
+          </button>
+        ) : (
+          <span className="flex h-32 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400 dark:bg-slate-800">
+            Image missing
+          </span>
+        )}
+      </div>
+      {caption ? (
+        <figcaption className="mt-1.5 text-center text-xs italic text-slate-500">{caption}</figcaption>
+      ) : null}
       {adjustFocus && (
         <span
           className="pointer-events-none absolute z-10 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-pink-500 shadow"
@@ -740,14 +762,6 @@ function ToolbarDivider() {
   return <span className="mx-0.5 h-5 w-px bg-slate-200 dark:bg-slate-700" />;
 }
 
-function applyLink(editor: Editor, href: string | null) {
-  if (!href) {
-    editor.chain().focus().extendMarkRange('link').unsetLink().run();
-    return;
-  }
-  editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
-}
-
 /** Dropdown listing all insertable blocks (same items as the slash menu). */
 function InsertBlockMenu({ editor, items }: { editor: Editor; items: SlashCommandItem[] }) {
   const [open, setOpen] = useState(false);
@@ -953,6 +967,7 @@ export default function ReviewEditor({
       linkShortcutExtension,
     ],
     content,
+    editorProps: reviewEditorPasteProps,
     onUpdate: ({ editor: e }) => onChangeRef.current(e.getJSON() as JSONDoc),
     onSelectionUpdate: ({ editor: e }) => {
       if (e.isActive('image') || e.isActive('imageRow')) return;

@@ -130,12 +130,13 @@ export function ImageInspectorPanel({
           <PercentPicker
             value={borderRadiusPercent}
             presets={RADIUS_PRESETS}
-            suffix="%"
+            suffix="px"
             onChange={setBorderRadiusPercent}
           />
           {borderRadiusPercent >= 100 && (
             <p className="mt-1 text-[10px] leading-snug text-slate-500">
-              Double-click the image in the editor, then drag to move the circle focal point.
+              Circle crop — double-click the image in the editor, then drag to move the focal point.
+              (100 = full circle; lower values are pixel corner radius.)
             </p>
           )}
         </Field>

@@ -6,8 +6,7 @@ import { buildAllScoreBins } from '../../../lib/score-distribution';
 import TooltipActionLinks from './TooltipActionLinks.astro';
 import InlineTestLink from './InlineTestLink.astro';
 import ScoreDistributionChart from './ScoreDistributionChart.astro';
-import { getCategoryBrandIcon, getCategoryBrandIconLight } from '../../../lib/category-brand-icons';
-import BrandIcon from '../../ui/BrandIcon.astro';
+import { getCategoryBrandIcon } from '../../../lib/category-brand-icons';
 import { getCategoryTooltipDescription } from '../../../data/subscore-descriptions';
 import InfoIcon from '../../ui/InfoIcon.astro';
 
@@ -52,8 +51,6 @@ const avgScore = scorePoints.length
 
 const bins = buildAllScoreBins(scorePoints);
 const brandIcon = getCategoryBrandIcon(category.key);
-const brandIconLight = getCategoryBrandIconLight(category.key);
-const useDarkBrandIconOnly = category.key === 'customization' || category.key === 'chat';
 const categoryWhatItIs = getCategoryTooltipDescription(category.key);
 ---
 
@@ -70,42 +67,21 @@ const categoryWhatItIs = getCategoryTooltipDescription(category.key);
 </span>
 
 <template id={`tooltip-${tooltipId}`}>
-  <div class={`ratings-tooltip-panel ${compact ? 'ratings-tooltip-panel--compact ratings-tooltip-panel--category' : ''}${compareAverageOnly || compareTableOnly ? ' ratings-tooltip-panel--compare-avg' : ''}`}>
+  <div class={`ratings-tooltip-panel ${compact ? 'ratings-tooltip-panel--compact ratings-tooltip-panel--category' : ''}${compareAverageOnly || compareTableOnly ? ' ratings-tooltip-panel--compare-avg' : ''}${brandIcon ? ' ratings-tooltip-panel--has-badge' : ''}`}>
+    {
+      brandIcon && (
+        <div class="ratings-tooltip-panel__badge" aria-hidden="true">
+          <div class="ratings-tooltip-panel__badge-clip">
+            <img src={brandIcon} alt="" width="40" height="40" loading="lazy" decoding="async" />
+          </div>
+        </div>
+      )
+    }
     <div class={`ratings-tooltip-panel__header${compact ? ' ratings-tooltip-panel__header--compact' : ''}`}>
       <div class="ratings-tooltip-panel__header-grid">
         <div class="ratings-tooltip-panel__what-block min-w-0">
           <p class="ratings-tooltip-panel__section-title">What it is</p>
-          {
-            compareTableOnly ? (
-              <p class="ratings-tooltip-panel__desc">{categoryWhatItIs}</p>
-            ) : (
-              <div class="ratings-tooltip-panel__what-row">
-                <p class="ratings-tooltip-panel__desc">{categoryWhatItIs}</p>
-                {
-                  brandIcon && (
-                    <div class="ratings-tooltip-panel__brand-slot" aria-hidden="true">
-                      {
-                        useDarkBrandIconOnly ? (
-                          <img
-                            src={brandIcon}
-                            alt=""
-                            width="56"
-                            height="56"
-                            loading="lazy"
-                            class="brand-icon brand-icon--dark brand-icon--always"
-                          />
-                        ) : brandIconLight ? (
-                          <BrandIcon src={brandIcon} srcLight={brandIconLight} width={56} height={56} />
-                        ) : (
-                          <img src={brandIcon} alt="" width="56" height="56" loading="lazy" class={brandIcon.endsWith('.png') ? 'brand-icon' : ''} />
-                        )
-                      }
-                    </div>
-                  )
-                }
-              </div>
-            )
-          }
+          <p class="ratings-tooltip-panel__desc">{categoryWhatItIs}</p>
         </div>
         {
           compareTableOnly ? (

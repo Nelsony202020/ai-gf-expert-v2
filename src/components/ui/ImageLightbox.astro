@@ -45,8 +45,10 @@
     />
   </div>
 
-  <p data-lightbox-caption class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium text-center max-w-lg pointer-events-none"></p>
-  <p data-lightbox-counter class="absolute bottom-12 left-1/2 -translate-x-1/2 text-white/55 text-xs font-semibold tabular-nums pointer-events-none hidden"></p>
+  <div class="image-lightbox__caption-bar" aria-hidden="true">
+    <p data-lightbox-caption class="image-lightbox__caption"></p>
+    <p data-lightbox-counter class="image-lightbox__counter hidden"></p>
+  </div>
 </div>
 
 <style is:global>
@@ -95,19 +97,53 @@
     opacity: 1;
   }
 
-  .image-lightbox [data-lightbox-caption],
-  .image-lightbox [data-lightbox-counter] {
+  .image-lightbox__caption-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    padding: 1.25rem 1.5rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    pointer-events: none;
+    text-align: center;
     opacity: 0;
-    transition:
-      opacity 0.28s ease 0.1s,
-      transform 0.28s ease 0.1s;
-    transform: translate(-50%, 6px);
+    transition: opacity 0.28s ease 0.1s;
   }
 
-  .image-lightbox.is-visible [data-lightbox-caption],
-  .image-lightbox.is-visible [data-lightbox-counter]:not(.hidden) {
+  .image-lightbox.is-visible .image-lightbox__caption-bar {
     opacity: 1;
-    transform: translate(-50%, 0);
+  }
+
+  .image-lightbox__caption {
+    margin: 0;
+    max-width: min(36rem, calc(100% - 2rem));
+    color: rgb(255 255 255 / 82%);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  .image-lightbox__caption:empty {
+    display: none;
+  }
+
+  .image-lightbox__counter {
+    margin: 0;
+    color: rgb(255 255 255 / 55%);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+
+  .image-lightbox__counter.hidden {
+    display: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -115,10 +151,8 @@
     .image-lightbox__stage,
     .image-lightbox [data-lightbox-close],
     .image-lightbox__nav,
-    .image-lightbox [data-lightbox-caption],
-    .image-lightbox [data-lightbox-counter] {
+    .image-lightbox__caption-bar {
       transition: none !important;
-      transform: none !important;
     }
 
     .image-lightbox.is-visible .image-lightbox__stage {
@@ -274,7 +308,7 @@
       const isVideo = item.type === 'video';
 
       const apply = () => {
-        if (caption) caption.textContent = item.caption ?? item.alt ?? '';
+        if (caption) caption.textContent = (item.caption ?? '').trim();
         if (isVideo && video) {
           img.classList.add('hidden');
           img.removeAttribute('src');
@@ -364,7 +398,7 @@
         parsed = Array.from(gallery.querySelectorAll<HTMLElement>('[data-thumb]')).map((btn) => ({
           src: btn.dataset.full ?? '',
           alt: btn.dataset.alt ?? '',
-          caption: btn.dataset.alt ?? '',
+          caption: btn.dataset.caption ?? '',
           type: (btn.dataset.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
         }));
       }
@@ -385,7 +419,7 @@
         {
           src: trigger.dataset.lightboxOpen ?? '',
           alt: trigger.dataset.lightboxAlt,
-          caption: trigger.dataset.lightboxCaption ?? trigger.dataset.lightboxAlt,
+          caption: trigger.dataset.lightboxCaption ?? '',
           type: trigger.dataset.lightboxType === 'video' ? 'video' : 'image',
         },
       ]);

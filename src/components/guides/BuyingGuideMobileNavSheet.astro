@@ -13,7 +13,7 @@ const { pageTitle, pageUrl } = Astro.props;
 
 <div
   class="roundup-sheet roundup-nav-sheet buying-guide-nav-sheet"
-  data-nav-sheet
+  data-nav-sheet="page"
   hidden
   aria-hidden="true"
   data-page-title={pageTitle}
@@ -27,7 +27,7 @@ const { pageTitle, pageUrl } = Astro.props;
     aria-labelledby="buying-guide-nav-sheet-title"
   >
     <div class="roundup-sheet__handle" aria-hidden="true"></div>
-    <h2 id="buying-guide-nav-sheet-title" class="roundup-nav-sheet__toc-title">Contents</h2>
+    <h2 id="buying-guide-nav-sheet-title" class="roundup-nav-sheet__toc-title">On this page</h2>
 
     <nav class="roundup-nav-sheet__toc" aria-label="Table of contents">
       <ul class="roundup-nav-sheet__toc-list">

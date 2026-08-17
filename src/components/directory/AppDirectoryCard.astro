@@ -6,6 +6,7 @@ import AppOverallScoreTooltip from './AppOverallScoreTooltip.astro';
 import DirectoryCategoryScoresCard from './DirectoryCategoryScoresCard.astro';
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 import { reviewPageUrl } from '../../lib/slugs';
+import { optimizedImageUrl } from '../../lib/media/optimize';
 
 interface Props {
   app: HomeExplorerApp;
@@ -52,11 +53,12 @@ const overallVisual = getScoreVisual(app.overallScore);
     <a href={reviewHref} class="home-app-card__media-link" tabindex="-1" aria-hidden="true">
       <img
         class="home-app-card__image"
-        src={app.gallery[0]?.full ?? app.logo}
+        src={optimizedImageUrl(app.gallery[0]?.full ?? app.logo, { width: 480, quality: 70 })}
         alt={app.gallery[0]?.alt ?? `${app.name} screenshot`}
         width="640"
         height="400"
         loading="lazy"
+        decoding="async"
       />
     </a>
   </div>
@@ -64,7 +66,7 @@ const overallVisual = getScoreVisual(app.overallScore);
   <div class="home-app-card__body">
     <div class="home-app-card__top">
       <div class="home-app-card__brand">
-        <img class="home-app-card__logo" src={app.logo} alt="" width="48" height="48" loading="lazy" />
+        <img class="home-app-card__logo" src={optimizedImageUrl(app.logo, { width: 48, quality: 70 })} alt="" width="48" height="48" loading="lazy" decoding="async" />
         <h3 class="home-app-card__name">
           <a href={reviewHref}>{app.name}</a>
           <AppBrandTooltip app={app} />

@@ -6,6 +6,7 @@ import {
 } from '../../lib/mobile-nav/modes';
 import MobileBottomNav from './MobileBottomNav.astro';
 import MobileMoreSheet from './MobileMoreSheet.astro';
+import DefaultMobileNavSheet from './DefaultMobileNavSheet.astro';
 
 interface Props {
   pathname: string;
@@ -22,6 +23,7 @@ const bottomNav = showMobileBottomNav(mode);
     <>
       <MobileBottomNav mode={mode} activeItem={activeItem} />
       <MobileMoreSheet />
+      <DefaultMobileNavSheet />
     </>
   )
 }

@@ -103,7 +103,14 @@
     panel.classList.toggle('ratings-tooltip-panel--mobile-sheet', isMobileSheet);
 
     if (isMobileSheet) {
-      panel.style.maxHeight = `${viewportH - margin * 2}px`;
+      const maxH = viewportH - margin * 2;
+      panel.style.maxHeight = `${maxH}px`;
+      // Bound height so flex children (header sticky + body scroll) can overflow.
+      if (panel.scrollHeight > maxH) {
+        panel.style.height = `${maxH}px`;
+      } else {
+        panel.style.height = '';
+      }
     }
 
     const panelWidth = panel.offsetWidth || maxWidth;
@@ -111,7 +118,7 @@
     panel.style.visibility = '';
 
     if (isMobileSheet) {
-      panelHeight = Math.min(panel.offsetHeight, viewportH - margin * 2);
+      panelHeight = Math.min(panel.offsetHeight || viewportH - margin * 2, viewportH - margin * 2);
       const left = Math.max(margin, (viewportW - panelWidth) / 2);
       const top = Math.max(margin, (viewportH - panelHeight) / 2);
 
@@ -169,6 +176,12 @@
     panel.dataset.actionsBound = 'true';
 
     panel.addEventListener('click', (e) => {
+      const viewResults = (e.target as HTMLElement).closest<HTMLElement>('[data-view-results]');
+      if (viewResults) {
+        hidePanel();
+        return;
+      }
+
       const drawerBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-ratings-open-drawer]');
       if (!drawerBtn?.dataset.ratingsOpenDrawer) return;
 
@@ -402,6 +415,7 @@
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') hidePanel();
       });
+      document.addEventListener('ratings-tooltip:hide', hidePanel);
     }
   }
 

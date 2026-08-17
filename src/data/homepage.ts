@@ -740,7 +740,7 @@ export const featuredGuides: HomeGuide[] = [
     title: 'How to Choose an AI Girlfriend App',
     excerpt: 'Chat-first, media-first, or balanced? Avoid common mistakes and narrow your options using tested results.',
     href: '/guides/how-to-choose-an-ai-girlfriend-app',
-    image: 'https://picsum.photos/seed/buying-guide-hero/960/540',
+    image: '/guides/how-to-choose/girlfinder-fake-review.png',
     imageAlt: 'How to choose an AI girlfriend app buying guide',
     date: 'Jul 26, 2026',
     type: 'guide',

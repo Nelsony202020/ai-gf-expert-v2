@@ -1,7 +1,7 @@
 /** Cmd/Ctrl+K link picker: paste a URL or pick an internal review/guide page. */
 
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
-import { dataApi } from '../api';
+import { dataApi, type EntityRow } from '../api';
 import { Button, Field, Icon, Modal, TextInput } from '../ui';
 
 export interface InternalLinkSuggestion {
@@ -19,7 +19,7 @@ const STATIC_INTERNAL: InternalLinkSuggestion[] = [
   { label: 'How We Test', href: '/test/', meta: 'Methodology' },
   { label: 'App Directory', href: '/ai-girlfriend-apps', meta: 'Directory' },
   { label: 'Reviews Hub', href: '/reviews/', meta: 'Reviews' },
-  { label: 'Best AI Girlfriend Apps', href: '/best-ai-girlfriend-apps', meta: 'Roundup' },
+  { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend/', meta: 'Roundup' },
 ];
 
 function normalizeQuery(q: string): string {
@@ -58,16 +58,26 @@ export function LinkDialog({
     let cancelled = false;
     void (async () => {
       try {
-        const { rows } = await dataApi.list('products');
+        const [productsRes, glossaryRes] = await Promise.all([
+          dataApi.list('products'),
+          dataApi.list('glossaryEntries').catch(() => ({ rows: [] as EntityRow[] })),
+        ]);
         if (cancelled) return;
-        const fromProducts: InternalLinkSuggestion[] = rows
+        const fromProducts: InternalLinkSuggestion[] = productsRes.rows
           .filter((p) => p.active !== false && !p.deletedAt && p.slug)
           .map((p) => ({
             label: `${String(p.name ?? p.slug)} Review`,
             href: `/reviews/${String(p.slug)}`,
             meta: 'Review',
           }));
-        setInternal([...fromProducts, ...STATIC_INTERNAL]);
+        const fromGlossary: InternalLinkSuggestion[] = glossaryRes.rows
+          .filter((g) => g.anchor)
+          .map((g) => ({
+            label: String(g.term ?? g.anchor),
+            href: `/glossary/#${String(g.anchor)}`,
+            meta: 'Glossary',
+          }));
+        setInternal([...fromProducts, ...fromGlossary, ...STATIC_INTERNAL]);
       } catch {
         /* static list still works */
       }
@@ -86,7 +96,7 @@ export function LinkDialog({
       .map((item) => ({ item, score: scoreMatch(item, q) }))
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score || a.item.label.localeCompare(b.item.label))
-      .slice(0, 8)
+      .slice(0, 12)
       .map((x) => x.item);
   }, [internal, query, href]);
 
@@ -127,7 +137,7 @@ export function LinkDialog({
   return (
     <Modal title="Add link" onClose={onClose}>
       <div className="space-y-3" onKeyDown={onKeyDown}>
-        <Field label="URL or search" help="Paste a link, or type a product name / slug (e.g. candy ai). Enter to apply.">
+        <Field label="URL or search" help="Paste a link, or type to search reviews, guides, roundups, and glossary anchors. Enter to apply.">
           <TextInput
             value={query || href}
             onChange={(e) => {
@@ -143,7 +153,7 @@ export function LinkDialog({
                 setQuery(text.trim());
               }
             }}
-            placeholder="https://… or candy ai"
+            placeholder="Search pages or paste a URL…"
             autoFocus
             className="font-mono text-sm"
           />

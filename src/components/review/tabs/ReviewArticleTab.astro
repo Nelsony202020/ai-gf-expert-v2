@@ -1,6 +1,7 @@
 ---
 import type { Product } from '../../../data/products';
 import { buildReviewToc, renderReviewBlocksHtml, reviewReadingMinutes } from '../../../lib/review/renderReviewBlocks';
+import { getPublishedGlossaryTermsForTooltips } from '../../../lib/glossary/load';
 
 interface Props {
   product: Product;
@@ -42,8 +43,10 @@ const sections = hasSavedReview
       { id: 'final-recommendation', label: 'Final Recommendation', level: 3 as const },
     ];
 
+const glossaryTerms = hasSavedReview ? await getPublishedGlossaryTermsForTooltips() : [];
+
 const savedReviewHtml = hasSavedReview
-  ? renderReviewBlocksHtml(reviewBlocks, { mediaById })
+  ? renderReviewBlocksHtml(reviewBlocks, { mediaById, glossaryTerms })
   : '';
 
 const readingMinutes = hasSavedReview ? reviewReadingMinutes(reviewBlocks) : null;
@@ -557,26 +560,41 @@ const reviewVideoId = product.videoReview?.embedUrl
     box-sizing: border-box;
     margin: 0 0 1.25rem;
     position: relative;
+    overflow: visible;
+  }
+
+  .review-blocks .review-figure__media {
+    position: relative;
+    display: block;
+    width: 100%;
+    line-height: 0;
   }
 
   .review-blocks .review-figure--crop {
+    overflow: visible;
+  }
+
+  .review-blocks .review-figure--crop .review-figure__media {
+    overflow: hidden;
+    height: 100%;
+  }
+
+  /* Permanent 18+ blur — click shows coming-soon notice */
+  .review-blocks .review-figure--nsfw .review-figure__media {
     overflow: hidden;
   }
 
-  .review-blocks .review-figure--nsfw:not(.review-figure--nsfw-revealed) {
-    overflow: hidden;
-  }
-
-  /* Blur on the media element itself so DevTools inspect still shows a blurred image. */
-  .review-blocks .review-figure--nsfw:not(.review-figure--nsfw-revealed) img,
-  .review-blocks .review-figure--nsfw:not(.review-figure--nsfw-revealed) video {
+  .review-blocks .review-figure--nsfw img,
+  .review-blocks .review-figure--nsfw video {
     filter: blur(28px) brightness(0.75);
     transform: scale(1.08);
   }
 
-  .review-blocks .review-figure--nsfw:not(.review-figure--nsfw-revealed) .review-figure__zoom {
+  .review-blocks .review-figure--nsfw .review-figure__zoom {
     filter: none;
     transform: none;
+    pointer-events: auto;
+    cursor: pointer;
   }
 
   .review-blocks .review-figure__nsfw {
@@ -594,17 +612,55 @@ const reviewVideoId = product.videoReview?.embedUrl
     background: rgba(15, 23, 42, 0.45);
     color: #fff;
     font: inherit;
-    cursor: pointer;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .review-nsfw-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+    z-index: 240;
+    max-width: min(20rem, calc(100vw - 2rem));
+    padding: 0.65rem 1rem;
+    border-radius: 999px;
+    background: rgb(15 23 42 / 92%);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-align: center;
+    box-shadow: 0 10px 30px rgb(0 0 0 / 28%);
+    transform: translate(-50%, 12px);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.2s ease,
+      transform 0.22s cubic-bezier(0.34, 1.2, 0.64, 1);
+  }
+
+  @media (min-width: 768px) {
+    .review-nsfw-toast {
+      bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
+  .review-nsfw-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .review-nsfw-toast {
+      transition: none;
+      transform: translate(-50%, 0);
+    }
   }
 
   .review-blocks .review-figure__nsfw span:first-child {
     font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 0.04em;
-  }
-
-  .review-blocks .review-figure--nsfw-revealed .review-figure__nsfw {
-    display: none;
   }
 
   .review-blocks .review-figure__zoom {
@@ -615,7 +671,6 @@ const reviewVideoId = product.videoReview?.embedUrl
     background: transparent;
     cursor: zoom-in;
     text-align: inherit;
-    border-radius: inherit;
     overflow: hidden;
     outline: none;
     line-height: 0;
@@ -640,7 +695,7 @@ const reviewVideoId = product.videoReview?.embedUrl
     outline-offset: 2px;
   }
 
-  .review-blocks .review-figure__zoom:hover img {
+  .review-blocks .review-figure:not(.review-figure--nsfw) .review-figure__zoom:hover img {
     opacity: 0.96;
   }
 
@@ -677,7 +732,7 @@ const reviewVideoId = product.videoReview?.embedUrl
   .review-blocks .review-image-row__cell img {
     width: 100%;
     height: auto;
-    border-radius: 10px;
+    border-radius: 0;
     transition: opacity 0.15s ease;
   }
 
@@ -686,6 +741,7 @@ const reviewVideoId = product.videoReview?.embedUrl
     font-size: 0.8125rem;
     font-style: italic;
     color: var(--color-tertiary);
+    text-align: center;
   }
 
   .review-blocks .review-figure img {
@@ -693,7 +749,7 @@ const reviewVideoId = product.videoReview?.embedUrl
     width: 100%;
     max-width: 100%;
     height: auto;
-    border-radius: 10px;
+    border-radius: 0;
     transition: opacity 0.15s ease;
   }
 
@@ -701,15 +757,16 @@ const reviewVideoId = product.videoReview?.embedUrl
     display: block;
     width: 100%;
     height: auto;
-    border-radius: 10px;
+    border-radius: 0;
     background: #000;
   }
 
   .review-blocks .review-figure figcaption {
-    margin-top: 6px;
+    margin-top: 8px;
     font-size: 0.8125rem;
     font-style: italic;
     color: var(--color-tertiary);
+    text-align: center;
   }
 
   .review-blocks .review-video-embed {
@@ -760,9 +817,14 @@ const reviewVideoId = product.videoReview?.embedUrl
     color: var(--color-tertiary);
   }
 
-  .review-blocks a {
+  .review-blocks a:not(.glossary-tooltip__link) {
     color: var(--color-accent);
-    text-decoration: underline;
+    text-decoration: none;
+  }
+
+  .review-blocks a:not(.glossary-tooltip__link):hover {
+    color: color-mix(in srgb, var(--color-accent) 85%, #000);
+    text-decoration: none;
   }
 
   [data-theme='dark'] .review-toc__toggle {
@@ -786,6 +848,51 @@ const reviewVideoId = product.videoReview?.embedUrl
 </style>
 
 <script>
+  function showNsfwComingSoonToast() {
+    let toast = document.querySelector<HTMLElement>('[data-nsfw-toast]');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'review-nsfw-toast';
+      toast.dataset.nsfwToast = 'true';
+      toast.setAttribute('role', 'status');
+      toast.textContent = '18+ Content coming soon..';
+      document.body.appendChild(toast);
+    }
+
+    toast.classList.remove('is-visible');
+    // Force reflow so repeat clicks replay the enter animation.
+    void toast.offsetWidth;
+    toast.classList.add('is-visible');
+
+    window.clearTimeout(Number(toast.dataset.hideTimer || 0));
+    const timer = window.setTimeout(() => {
+      toast?.classList.remove('is-visible');
+    }, 2200);
+    toast.dataset.hideTimer = String(timer);
+  }
+
+  function initNsfwGates() {
+    const root = document.querySelector('[data-review-article]');
+    if (!root || root.dataset.nsfwBound === 'true') return;
+    root.dataset.nsfwBound = 'true';
+
+    root.addEventListener('click', (e) => {
+      const gate = (e.target as HTMLElement).closest<HTMLElement>('[data-nsfw-gate]');
+      if (!gate || !root.contains(gate)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      showNsfwComingSoonToast();
+    });
+
+    root.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const gate = (e.target as HTMLElement).closest<HTMLElement>('[data-nsfw-gate]');
+      if (!gate || !root.contains(gate)) return;
+      e.preventDefault();
+      showNsfwComingSoonToast();
+    });
+  }
+
   function initReviewToc() {
     const root = document.querySelector('[data-review-article]');
     if (!root || root.dataset.bound === 'true') return;
@@ -834,30 +941,10 @@ const reviewVideoId = product.videoReview?.embedUrl
     headings.forEach((h) => observer.observe(h));
   }
 
-  function initReviewNsfwReveal() {
-    document.querySelectorAll('[data-nsfw-reveal]').forEach((btn) => {
-      if ((btn as HTMLElement).dataset.bound === 'true') return;
-      (btn as HTMLElement).dataset.bound = 'true';
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const figure = (btn as HTMLElement).closest('.review-figure');
-        if (!figure) return;
-        figure.classList.add('review-figure--nsfw-revealed');
-        figure.querySelectorAll('[data-nsfw-blurred]').forEach((el) => {
-          const node = el as HTMLElement;
-          node.style.filter = '';
-          node.style.transform = '';
-          node.removeAttribute('data-nsfw-blurred');
-        });
-      });
-    });
-  }
-
   initReviewToc();
-  initReviewNsfwReveal();
+  initNsfwGates();
   document.addEventListener('astro:page-load', () => {
     initReviewToc();
-    initReviewNsfwReveal();
+    initNsfwGates();
   });
 </script>

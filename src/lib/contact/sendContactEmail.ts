@@ -61,7 +61,9 @@ function buildEmail(payload: ContactEmailPayload): { subject: string; html: stri
 export async function sendContactEmail(payload: ContactEmailPayload): Promise<void> {
   const apiKey = env('RESEND_API_KEY')?.trim();
   if (!apiKey) {
-    throw new Error('Email is not configured (missing RESEND_API_KEY)');
+    throw new Error(
+      'Email is not configured yet. Add RESEND_API_KEY in Vercel Environment Variables, then redeploy.',
+    );
   }
 
   const to = env('CONTACT_INBOX')?.trim() || DEFAULT_INBOX;
@@ -85,6 +87,11 @@ export async function sendContactEmail(payload: ContactEmailPayload): Promise<vo
 
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    throw new Error(`Email send failed (${res.status}): ${detail || res.statusText}`);
+    console.error('[contact] Resend error', res.status, detail);
+    // Keep user-facing message short; Resend often rejects unverified from-domains.
+    if (res.status === 403 || /not verified|domain/i.test(detail)) {
+      throw new Error('Email sender is not verified yet. Check RESEND_FROM in Resend.');
+    }
+    throw new Error('Could not send email right now. Please try again in a moment.');
   }
 }
