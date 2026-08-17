@@ -42,23 +42,16 @@ export function getMobileNavMode(pathname: string): MobileNavMode {
 
 export function getActiveBottomNavItem(pathname: string): BottomNavId | null {
   const path = normalizePath(pathname);
-  const mode = getMobileNavMode(pathname);
 
-  if (mode === 'hub') {
-    if (path === ROUNDUP_PATH) return 'best-apps';
-    if (path === BUYING_GUIDE_PATH) return 'buying-guide';
-    if (path === '/test' || path.startsWith('/test/')) return 'how-we-test';
-  }
-
-  if (mode === 'site') {
-    if (path === '/') return 'home';
-    if (path === '/reviews' || path === '/ai-girlfriend-apps') return 'reviews';
-    if (path.startsWith('/reviews/')) return 'reviews';
-  }
+  if (path === ROUNDUP_PATH) return 'best-apps';
+  if (path === BUYING_GUIDE_PATH) return 'buying-guide';
+  if (path === '/reviews' || path === '/ai-girlfriend-apps') return 'reviews';
+  if (path.startsWith('/reviews/')) return 'reviews';
 
   return null;
 }
 
-export function showMobileBottomNav(mode: MobileNavMode): boolean {
-  return mode === 'site' || mode === 'hub';
+/** Unified bottom nav on every public page (including individual reviews). */
+export function showMobileBottomNav(_mode: MobileNavMode): boolean {
+  return true;
 }

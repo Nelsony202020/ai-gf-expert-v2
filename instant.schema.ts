@@ -778,6 +778,26 @@ const _schema = i.schema({
       hitCount: i.number().optional(),
       createdAt: i.date(),
     }),
+
+    // ------------------------------------------------------------------
+    // Glossary (public /glossary/ + review auto-tooltips)
+    // ------------------------------------------------------------------
+    glossaryEntries: i.entity({
+      term: i.string().indexed(),
+      anchor: i.string().unique().indexed(),
+      tooltipDefinition: i.string(),
+      ctaLabel: i.string().optional(), // Tooltip link text; fallback "Read full definition →"
+      fullDefinition: i.json(), // TipTap JSONDoc
+      aliases: i.json(), // string[] — matching phrases for auto-tooltips
+      displayAliases: i.json().optional(), // string[] — public "Also called" labels only
+      category: i.string().indexed(),
+      status: i.string().indexed(), // draft | published
+      autoTooltip: i.boolean(),
+      scope: i.string().optional(), // V1: "reviews"
+      publishedAt: i.date().optional(),
+      createdAt: i.date(),
+      updatedAt: i.date(),
+    }),
   },
 
   links: {

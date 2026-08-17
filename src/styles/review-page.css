@@ -3,13 +3,14 @@
 :root {
   --site-header-height: 3.25rem;
   --site-header-offset: 0px;
-  --review-tabbar-height: 3.5rem;
+  --review-tabbar-height: 3rem;
   --roundup-hub-nav-height: 2.625rem;
 }
 
 @media (min-width: 768px) {
   :root {
     --site-header-height: 4.25rem;
+    --review-tabbar-height: 3.25rem;
     --roundup-hub-nav-height: 2.75rem;
   }
 }
@@ -27,20 +28,33 @@
   z-index: 50;
 }
 
+/* Flat while in-flow: part of the page (page background) */
 [data-tabbar].review-tabbar {
   position: sticky;
   top: calc(var(--site-header-height) + var(--site-header-offset));
   z-index: 45;
-  background: var(--color-header-surface);
+  background: var(--color-background);
   border-bottom: 1px solid var(--color-surface-variant);
+  box-shadow: none;
 }
 
+/*
+  Sticky/attached: one continuous nav surface with the header.
+  Same header cream, no seam between them, single separator under tabs.
+*/
 [data-tabbar].review-tabbar.review-tabbar--pinned {
   position: fixed;
   left: 0;
   right: 0;
   z-index: 45;
-  box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
+  background: var(--color-header-surface);
+  border-bottom: 1px solid #e5e9df;
+  box-shadow: none;
+}
+
+/* Hide the header’s own bottom border while tabs are joined underneath */
+.site-header.site-header--joined-tabs {
+  border-bottom-color: transparent;
 }
 
 [data-tabbar-spacer][hidden] {
@@ -48,12 +62,17 @@
 }
 
 [data-theme='dark'] [data-tabbar].review-tabbar {
-  background: var(--color-header-surface);
-  border-color: var(--dark-border-subtle);
+  background: var(--color-background);
+  border-bottom-color: var(--dark-border-subtle);
 }
 
 [data-theme='dark'] [data-tabbar].review-tabbar.review-tabbar--pinned {
-  box-shadow: 0 4px 16px rgb(0 0 0 / 24%);
+  background: var(--color-header-surface);
+  border-bottom-color: #1e293b;
+}
+
+[data-theme='dark'] .site-header.site-header--joined-tabs {
+  border-bottom-color: transparent !important;
 }
 
 @media (max-width: 767px) {
@@ -64,6 +83,6 @@
 
 @media (min-width: 1024px) {
   .overview-sidebar-stack {
-    top: var(--review-tabbar-height);
+    top: calc(var(--site-header-height) + var(--review-tabbar-height));
   }
 }

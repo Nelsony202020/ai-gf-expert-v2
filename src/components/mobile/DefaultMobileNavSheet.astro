@@ -1,0 +1,78 @@
+---
+/**
+ * Fallback "On this page" sheet for pages without a custom TOC.
+ * Skipped when a page sheet (data-nav-sheet="page") is present.
+ */
+---
+
+<div
+  class="roundup-sheet roundup-nav-sheet"
+  data-nav-sheet="default"
+  hidden
+  aria-hidden="true"
+>
+  <div class="roundup-sheet__backdrop" data-sheet-backdrop tabindex="-1"></div>
+  <div
+    class="roundup-sheet__panel roundup-nav-sheet__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="default-nav-sheet-title"
+  >
+    <div class="roundup-sheet__handle" aria-hidden="true"></div>
+    <h2 id="default-nav-sheet-title" class="roundup-nav-sheet__toc-title">On this page</h2>
+
+    <nav class="roundup-nav-sheet__toc" aria-label="On this page">
+      <ul class="roundup-nav-sheet__toc-list">
+        <li>
+          <button type="button" class="roundup-nav-sheet__toc-link" data-default-nav-top>
+            Back to top
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <button type="button" class="roundup-sheet__cancel" data-sheet-close>Close</button>
+  </div>
+</div>
+
+<script>
+  function initDefaultMobileNavSheet() {
+    if (document.querySelector('[data-nav-sheet="page"]')) return;
+
+    const sheet = document.querySelector<HTMLElement>('[data-nav-sheet="default"]');
+    if (!sheet || sheet.dataset.bound === 'true') return;
+    sheet.dataset.bound = 'true';
+
+    function closeSheet() {
+      sheet.hidden = true;
+      sheet.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('roundup-sheet-open');
+    }
+
+    function openSheet() {
+      sheet.hidden = false;
+      sheet.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('roundup-sheet-open');
+    }
+
+    document.querySelectorAll('[data-nav-sheet-open]').forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+      btn.addEventListener('click', openSheet);
+    });
+
+    sheet.querySelector('[data-sheet-close]')?.addEventListener('click', closeSheet);
+    sheet.querySelector('[data-sheet-backdrop]')?.addEventListener('click', closeSheet);
+    sheet.querySelector('[data-default-nav-top]')?.addEventListener('click', () => {
+      closeSheet();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sheet && !sheet.hidden) closeSheet();
+    });
+  }
+
+  initDefaultMobileNavSheet();
+  document.addEventListener('astro:page-load', initDefaultMobileNavSheet);
+</script>

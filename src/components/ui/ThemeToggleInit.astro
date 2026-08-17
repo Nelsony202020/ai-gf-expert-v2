@@ -20,10 +20,17 @@
       buttons.forEach((btn) => {
         const icon = btn.querySelector('.theme-toggle__icon');
         const label = btn.querySelector('.theme-toggle__label');
-        if (icon) icon.textContent = dark ? 'light_mode' : 'dark_mode';
-        if (label) label.textContent = dark ? 'Light mode' : 'Dark mode';
-        btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
-        btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+        const isSwitch = btn.classList.contains('theme-toggle--switch');
+        if (isSwitch) {
+          if (label) label.textContent = 'Dark mode';
+          btn.setAttribute('aria-checked', dark ? 'true' : 'false');
+          btn.setAttribute('aria-label', dark ? 'Turn off dark mode' : 'Turn on dark mode');
+        } else {
+          if (icon) icon.textContent = dark ? 'light_mode' : 'dark_mode';
+          if (label) label.textContent = dark ? 'Light mode' : 'Dark mode';
+          btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+          btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+        }
       });
     }
 

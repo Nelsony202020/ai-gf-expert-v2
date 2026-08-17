@@ -204,6 +204,13 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
     sitemapSection: 'resources',
   });
 
+  push({
+    title: 'AI Girlfriend Glossary',
+    url: '/glossary/',
+    contentType: 'glossary',
+    sitemapSection: 'resources',
+  });
+
   for (const author of Object.values(authors)) {
     push({
       title: author.name,

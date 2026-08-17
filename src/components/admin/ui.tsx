@@ -442,11 +442,14 @@ export function Modal({
   title,
   onClose,
   children,
+  footer,
   wide,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  /** Sticky footer outside the scroll region (e.g. Cancel / Save). */
+  footer?: ReactNode;
   wide?: boolean;
 }) {
   useEffect(() => {
@@ -470,6 +473,11 @@ export function Modal({
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">{children}</div>
+        {footer ? (
+          <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+            {footer}
+          </div>
+        ) : null}
       </div>
     </div>
   );

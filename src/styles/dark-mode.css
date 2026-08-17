@@ -88,8 +88,13 @@ html[data-theme='dark'] section.bg-background {
 }
 
 html[data-theme='dark'] .review-tabbar {
+  background-color: var(--color-background) !important;
+  border-color: var(--color-surface-variant) !important;
+}
+
+html[data-theme='dark'] .review-tabbar.review-tabbar--pinned {
   background-color: var(--color-header-surface) !important;
-  border-color: var(--dark-border-subtle) !important;
+  border-color: #1e293b !important;
 }
 
 /* Homepage tags & misc surfaces */

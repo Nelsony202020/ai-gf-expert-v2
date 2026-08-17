@@ -6,6 +6,11 @@ export function clampWidthPercent(value: unknown): number {
   return Math.min(100, Math.max(30, Number(value ?? 100)));
 }
 
+/**
+ * Rounding intensity stored on image blocks (legacy field name: borderRadiusPercent).
+ * 0–99 → pixel corner radius (even on any aspect ratio).
+ * ≥100 → circle crop.
+ */
 export function clampRadiusPercent(value: unknown): number {
   return Math.min(100, Math.max(0, Number(value ?? 0)));
 }
@@ -16,6 +21,13 @@ export function clampFocusPercent(value: unknown): number {
 
 export function isCircleCrop(radius: number): boolean {
   return radius >= 100;
+}
+
+/** Pixel corner radius for non-circle rounding. */
+export function radiusToCss(radius: number): string {
+  if (radius <= 0) return '0';
+  if (isCircleCrop(radius)) return '9999px';
+  return `${Math.round(radius)}px`;
 }
 
 export function figureFrameStyle(attrs: {
@@ -37,24 +49,47 @@ export function figureFrameStyle(attrs: {
     const base: CSSProperties = {
       flex: `0 0 calc(${widthPercent}% - 6px)`,
       maxWidth: `calc(${widthPercent}% - 6px)`,
-      overflow: 'hidden',
     };
     if (isCircleCrop(radius)) {
-      return { ...base, aspectRatio: '1 / 1', clipPath: `circle(50% at ${focusX}% ${focusY}%)` };
+      return { ...base, aspectRatio: '1 / 1', overflow: 'hidden', clipPath: `circle(50% at ${focusX}% ${focusY}%)` };
     }
-    return { ...base, borderRadius: `${radius}%` };
+    return base;
   }
 
   const base: CSSProperties = {
     width: `${widthPercent}%`,
     maxWidth: '100%',
     marginInline: widthPercent < 100 ? 'auto' : undefined,
-    overflow: 'hidden',
   };
   if (isCircleCrop(radius)) {
-    return { ...base, aspectRatio: '1 / 1', clipPath: `circle(50% at ${focusX}% ${focusY}%)` };
+    return { ...base, aspectRatio: '1 / 1', overflow: 'hidden', clipPath: `circle(50% at ${focusX}% ${focusY}%)` };
   }
-  return { ...base, borderRadius: `${radius}%` };
+  return base;
+}
+
+/** Style for the media frame only (not figcaption). */
+export function figureMediaFrameStyle(attrs: {
+  borderRadiusPercent?: unknown;
+  clipFocusX?: unknown;
+  clipFocusY?: unknown;
+}): CSSProperties {
+  const radius = clampRadiusPercent(attrs.borderRadiusPercent);
+  const focusX = clampFocusPercent(attrs.clipFocusX);
+  const focusY = clampFocusPercent(attrs.clipFocusY);
+  if (isCircleCrop(radius)) {
+    return {
+      position: 'relative',
+      overflow: 'hidden',
+      width: '100%',
+      height: '100%',
+      clipPath: `circle(50% at ${focusX}% ${focusY}%)`,
+    };
+  }
+  return {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: radiusToCss(radius),
+  };
 }
 
 export function figureImageStyle(attrs: {
@@ -92,9 +127,24 @@ export function publicFigureStyle(attrs: {
     ? `flex:0 0 calc(${width}% - 6px);max-width:calc(${width}% - 6px);`
     : `width:${width}%;max-width:100%;margin-inline:${width < 100 ? 'auto' : '0'};`;
   if (isCircleCrop(radius)) {
-    return `${widthStyle}aspect-ratio:1/1;overflow:hidden;clip-path:circle(50% at ${focusX}% ${focusY}%);`;
+    return `${widthStyle}aspect-ratio:1/1;`;
   }
-  return `${widthStyle}border-radius:${radius}%;overflow:hidden;`;
+  return widthStyle;
+}
+
+/** Inline style for the media frame wrapper (radius applies here, not on the figure). */
+export function publicMediaFrameStyle(attrs: {
+  borderRadiusPercent?: unknown;
+  clipFocusX?: unknown;
+  clipFocusY?: unknown;
+}): string {
+  const radius = clampRadiusPercent(attrs.borderRadiusPercent);
+  const focusX = clampFocusPercent(attrs.clipFocusX);
+  const focusY = clampFocusPercent(attrs.clipFocusY);
+  if (isCircleCrop(radius)) {
+    return `position:relative;overflow:hidden;width:100%;height:100%;clip-path:circle(50% at ${focusX}% ${focusY}%);`;
+  }
+  return `position:relative;overflow:hidden;border-radius:${radiusToCss(radius)};`;
 }
 
 export function publicImageStyle(attrs: {

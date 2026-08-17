@@ -63,6 +63,7 @@ const STATIC_PAGES: StaticPageDef[] = [
   { path: '/about/', title: 'About Us', contentType: 'company', sourceFile: 'src/pages/about.astro' },
   { path: '/contact/', title: 'Contact Us', contentType: 'company', sourceFile: 'src/pages/contact.astro' },
   { path: '/editorial-guidelines/', title: 'Editorial Guidelines', contentType: 'methodology', sourceFile: 'src/pages/editorial-guidelines.astro' },
+  { path: '/glossary/', title: 'AI Girlfriend Glossary', contentType: 'glossary', sourceFile: 'src/pages/glossary.astro' },
   { path: '/ai-girlfriend-apps/', title: 'App Directory', contentType: 'directory', sourceFile: 'src/pages/ai-girlfriend-apps.astro', notes: 'Supports ?page= and ?sort= query params' },
   { path: '/reviews/', title: 'All Reviews', contentType: 'hub', sourceFile: 'src/pages/reviews/index.astro' },
   { path: '/guides/', title: 'All Guides', contentType: 'hub', sourceFile: 'src/pages/guides/index.astro' },
@@ -100,6 +101,7 @@ const ADMIN_STATIC = [
   '/admin/content/authors',
   '/admin/seo/overview',
   '/admin/seo/pages',
+  '/admin/seo/glossary',
   '/admin/seo/redirects',
   '/admin/seo/indexing',
   '/admin/seo/sitemaps',
@@ -224,6 +226,7 @@ function friendlyPageType(row: Pick<RegistryUrl, 'path' | 'contentType' | 'statu
     '/test/all/': 'All Tests page',
     '/legal/': 'Legal',
     '/editorial-guidelines/': 'Editorial Guidelines',
+    '/glossary/': 'Glossary',
     '/about/': 'About',
     '/contact/': 'Contact',
     '/sitemap/': 'HTML Sitemap',
@@ -248,6 +251,8 @@ function friendlyPageType(row: Pick<RegistryUrl, 'path' | 'contentType' | 'statu
       return 'Author';
     case 'legal':
       return 'Legal';
+    case 'glossary':
+      return 'Glossary';
     case 'company':
       return 'Company page';
     case 'directory':

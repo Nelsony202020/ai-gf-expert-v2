@@ -78,28 +78,30 @@ const SUBSCORE_BY_SESSION: Record<string, string> = {
 
 function slugToSubscore(session: TestSessionDef, categorySlug: string): string {
   if (SUBSCORE_BY_SESSION[session.id]) return SUBSCORE_BY_SESSION[session.id];
-  // Heuristic: first slug prefix or session id segment
-  const first = session.slugs[0];
-  if (first?.includes('privacy') || categorySlug === 'privacy') return session.id.split('-')[0] ?? session.id;
   if (categorySlug === 'pricing') {
     if (session.id.includes('plan-value') || session.id.includes('plan')) return 'plan-value';
     if (session.id.includes('free-access') || session.id.includes('free')) return 'free-access';
     if (session.id.includes('billing') || session.id.includes('policies')) return 'billing';
     return 'usage-costs';
   }
+  // Prefer an explicit mapping above — do not invent subscores from session id prefixes
+  // (e.g. policy-docs → "policy"), which leaks admin-only steps onto public reviews.
   return session.id;
 }
 
 export function mappedTestGroupsForCategory(categorySlug: string): MappedTestGroup[] {
   const sessions = TEST_SESSIONS[categorySlug] ?? [];
-  return sessions.map((session) => ({
-    id: session.id,
-    title: TITLE_OVERRIDES[session.id] ?? session.title,
-    intro: session.intro,
-    categorySlug,
-    subscoreSlug: slugToSubscore(session, categorySlug),
-    slugs: [...session.slugs],
-  }));
+  // Skip assist-only sessions (e.g. policy-docs upload) — no evidence slugs, admin UI only.
+  return sessions
+    .filter((session) => session.slugs.length > 0)
+    .map((session) => ({
+      id: session.id,
+      title: TITLE_OVERRIDES[session.id] ?? session.title,
+      intro: session.intro,
+      categorySlug,
+      subscoreSlug: slugToSubscore(session, categorySlug),
+      slugs: [...session.slugs],
+    }));
 }
 
 export function allMappedTestGroups(): MappedTestGroup[] {

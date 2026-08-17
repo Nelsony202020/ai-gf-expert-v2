@@ -10,6 +10,7 @@ export type SitemapContentType =
   | 'test-subscore'
   | 'test-archive'
   | 'methodology'
+  | 'glossary'
   | 'author'
   | 'legal'
   | 'company'

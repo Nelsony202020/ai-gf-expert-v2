@@ -10,139 +10,99 @@ interface Props {
 
 const { mode, activeItem } = Astro.props;
 const items = getBottomNavItems(mode);
-const isHub = mode === 'hub';
-const hubLayout = isHub ? getHubNavLayout(items) : null;
+const hubLayout = getHubNavLayout(items);
 ---
 
-{
-  isHub && hubLayout ? (
-    <nav class="mobile-bottom-nav mobile-bottom-nav--glass mobile-bottom-nav--hub" aria-label="Hub navigation" data-mobile-bottom-nav="hub">
-      <div class="mobile-bottom-nav__pill-inner mobile-bottom-nav__pill-inner--hub">
-        <ul class="mobile-bottom-nav__side mobile-bottom-nav__side--left">
-          {
-            hubLayout.left.map((item) => {
-              const isActive = activeItem === item.id;
-              if (item.type === 'more') {
-                return (
-                  <li class="mobile-bottom-nav__item">
-                    <button
-                      type="button"
-                      class="mobile-bottom-nav__button"
-                      data-mobile-more-open
-                      aria-label="More options"
-                    >
-                      <span class="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </button>
-                  </li>
-                );
-              }
-              return (
-                <li class="mobile-bottom-nav__item">
-                  <a
-                    href={item.href!}
-                    class:list={['mobile-bottom-nav__link', isActive && 'is-active']}
-                    aria-current={isActive ? 'page' : undefined}
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </a>
-                </li>
-              );
-            })
-          }
-        </ul>
-
-        {
-          hubLayout.center && (
-            <button
-              type="button"
-              class="mobile-bottom-nav__fab"
-              data-nav-sheet-open
-              aria-label="Open table of contents"
-            >
-              <span class="mobile-bottom-nav__fab-icon material-symbols-outlined" aria-hidden="true">
-                {hubLayout.center.icon}
-              </span>
-              <span class="mobile-bottom-nav__fab-label sr-only">{hubLayout.center.label}</span>
-            </button>
-          )
-        }
-
-        <ul class="mobile-bottom-nav__side mobile-bottom-nav__side--right">
-          {
-            hubLayout.right.map((item) => {
-              const isActive = activeItem === item.id;
-              if (item.type === 'more') {
-                return (
-                  <li class="mobile-bottom-nav__item">
-                    <button
-                      type="button"
-                      class="mobile-bottom-nav__button"
-                      data-mobile-more-open
-                      aria-label="More options"
-                    >
-                      <span class="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </button>
-                  </li>
-                );
-              }
-              return (
-                <li class="mobile-bottom-nav__item">
-                  <a
-                    href={item.href!}
-                    class:list={['mobile-bottom-nav__link', isActive && 'is-active']}
-                    aria-current={isActive ? 'page' : undefined}
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </a>
-                </li>
-              );
-            })
-          }
-        </ul>
-      </div>
-    </nav>
-  ) : (
-    <nav class="mobile-bottom-nav mobile-bottom-nav--glass mobile-bottom-nav--site" aria-label="Site navigation" data-mobile-bottom-nav="site">
-      <div class="mobile-bottom-nav__pill-inner">
-        <ul class="mobile-bottom-nav__list">
-        {
-          items.map((item) => {
-            const isActive = activeItem === item.id;
-            if (item.type === 'more') {
-              return (
-                <li class="mobile-bottom-nav__item">
-                  <button
-                    type="button"
-                    class="mobile-bottom-nav__button"
-                    data-mobile-more-open
-                    aria-label="More options"
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </button>
-                </li>
-              );
-            }
+<nav
+  class="mobile-bottom-nav mobile-bottom-nav--glass mobile-bottom-nav--hub"
+  aria-label="Site navigation"
+  data-mobile-bottom-nav="hub"
+>
+  <div class="mobile-bottom-nav__pill-inner mobile-bottom-nav__pill-inner--hub">
+    <ul class="mobile-bottom-nav__side mobile-bottom-nav__side--left">
+      {
+        hubLayout.left.map((item) => {
+          const isActive = activeItem === item.id;
+          if (item.type === 'more') {
             return (
               <li class="mobile-bottom-nav__item">
-                <a
-                  href={item.href!}
-                  class:list={['mobile-bottom-nav__link', isActive && 'is-active']}
-                  aria-current={isActive ? 'page' : undefined}
+                <button
+                  type="button"
+                  class="mobile-bottom-nav__button"
+                  data-mobile-more-open
+                  aria-label="More options"
                 >
                   <span class="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
                   <span>{item.label}</span>
-                </a>
+                </button>
               </li>
             );
-          })
-        }
-      </ul>
-      </div>
-    </nav>
-  )
-}
+          }
+          return (
+            <li class="mobile-bottom-nav__item">
+              <a
+                href={item.href!}
+                class:list={['mobile-bottom-nav__link', isActive && 'is-active']}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
+                <span>{item.label}</span>
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+
+    {
+      hubLayout.center && (
+        <button
+          type="button"
+          class="mobile-bottom-nav__fab"
+          data-nav-sheet-open
+          aria-label="On this page"
+        >
+          <span class="mobile-bottom-nav__fab-icon material-symbols-outlined" aria-hidden="true">
+            {hubLayout.center.icon}
+          </span>
+          <span class="mobile-bottom-nav__fab-label sr-only">On this page</span>
+        </button>
+      )
+    }
+
+    <ul class="mobile-bottom-nav__side mobile-bottom-nav__side--right">
+      {
+        hubLayout.right.map((item) => {
+          const isActive = activeItem === item.id;
+          if (item.type === 'more') {
+            return (
+              <li class="mobile-bottom-nav__item">
+                <button
+                  type="button"
+                  class="mobile-bottom-nav__button"
+                  data-mobile-more-open
+                  aria-label="More options"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            );
+          }
+          return (
+            <li class="mobile-bottom-nav__item">
+              <a
+                href={item.href!}
+                class:list={['mobile-bottom-nav__link', isActive && 'is-active']}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
+                <span>{item.label}</span>
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</nav>

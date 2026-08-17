@@ -23,7 +23,6 @@ interface Props {
 
 const { category, enrichedCategory, productName, productSlug, open = false, isFirst = false, isLast = false } = Astro.props;
 const categoryLabel = category.key === 'pricing' ? 'Pricing' : category.name;
-const visual = getDraftScoreVisual(category.score);
 const subscoreCount = category.subscores.length;
 const subscoreMeta = `${subscoreCount} subscore${subscoreCount === 1 ? '' : 's'} · ${category.weight}% of overall score`;
 
@@ -101,120 +100,135 @@ const sectionHash = buildReviewRatingsHash(category.key);
 
   <div data-accordion-content class:list={['ratings-accordion__content', !open && 'hidden']}>
     <div class="ratings-accordion__expanded" data-subscore-grid>
-      <div class="ratings-subscore-nav" data-subscore-list>
-        <p class="ratings-subscore-nav__label">Subscores</p>
+      <p class="ratings-subscore-nav__label">Subscores</p>
+      <div class="ratings-subscore-stack" data-subscore-list>
         {
-          subscorePanels.map(({ sub, index: i, calcDrawerId, contributorDrawerIds, evidenceItems }) => {
-            const sv = getDraftScoreVisual(sub.score);
-            return (
-              <div
-                class="ratings-subscore-nav__item"
-                data-subscore-select
-                data-subscore-index={i}
-                data-score-text={sv.text}
-                role="button"
-                tabindex="0"
-                aria-selected="false"
-              >
-                <DraftScorePill score={sub.score} size="sm" variant="outline" />
-                <span class="ratings-subscore-nav__label-row">
-                  <span data-subscore-label class="ratings-subscore-nav__name">{sub.name}</span>
-                  <SubscoreScoreTooltip
-                    categoryKey={category.key}
-                    categoryName={category.name}
-                    brandName={productName}
-                    sub={sub}
-                    compact
-                    calcDrawerId={calcDrawerId}
-                    contributorDrawerIds={contributorDrawerIds}
-                    evidenceItems={evidenceItems.length > 0 ? evidenceItems : undefined}
-                  />
-                </span>
-                <span data-subscore-chevron class="material-symbols-outlined ratings-subscore-nav__chevron" aria-hidden="true">
-                  chevron_right
-                </span>
-              </div>
-            );
-          })
-        }
-      </div>
-
-      <div class="ratings-subscore-panel" data-subscore-breakdown data-detail-tier="deep">
-        {
-          subscorePanels.map(({ sub, index, evidenceCategories, calcDrawerId, categoryCount }) => {
-            const enrichedSub = enrichedCategory?.subscores.find((s) => s.name === sub.name);
-            const showBenchmarkNote =
-              category.key === 'pricing' &&
-              productSlug &&
-              enrichedSub &&
-              deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
-            const tableId = `evidence-${category.key}-${sub.name}`.replace(/[^a-zA-Z0-9_-]/g, '-');
-            const evidenceCount = categoryCount || sub.contributors.length;
-            const deferScores = enrichedSub && productSlug && deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
-            return (
-              <div data-subscore-panel data-subscore-index={index} class="hidden">
-                <div class="ratings-subscore-panel__header">
-                  <div class="ratings-subscore-panel__heading">
-                    <div class="ratings-subscore-panel__title-row">
-                      <h4 class="ratings-subscore-panel__title">{sub.name}</h4>
-                      <span
-                        class={`rt-score-chip rt-score-chip--outline rt-score-chip--md ratings-subscore-panel__score tabular-nums ${getDraftScoreChipClass(sub.score)}`}
-                        aria-label={`Score ${fmtScore(sub.score)} out of 10`}
-                      >
-                        {fmtScore(sub.score)}
-                      </span>
-                    </div>
-                    <p class="ratings-subscore-panel__meta">
-                      Based on {evidenceCount} evidence {evidenceCount === 1 ? 'category' : 'categories'}
-                    </p>
+          subscorePanels.map(
+            ({
+              sub,
+              index: i,
+              calcDrawerId,
+              contributorDrawerIds,
+              evidenceItems,
+              evidenceCategories,
+              categoryCount,
+            }) => {
+              const sv = getDraftScoreVisual(sub.score);
+              const enrichedSub = enrichedCategory?.subscores.find((s) => s.name === sub.name);
+              const showBenchmarkNote =
+                category.key === 'pricing' &&
+                productSlug &&
+                enrichedSub &&
+                deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
+              const tableId = `evidence-${category.key}-${sub.name}`.replace(/[^a-zA-Z0-9_-]/g, '-');
+              const evidenceCount = categoryCount || sub.contributors.length;
+              const deferScores =
+                enrichedSub && productSlug && deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
+              return (
+                <div class="ratings-subscore-block" data-subscore-block data-subscore-index={i}>
+                  <div
+                    class="ratings-subscore-nav__item"
+                    data-subscore-select
+                    data-subscore-index={i}
+                    data-score-text={sv.text}
+                    role="button"
+                    tabindex="0"
+                    aria-selected="false"
+                  >
+                    <DraftScorePill score={sub.score} size="sm" variant="outline" />
+                    <span class="ratings-subscore-nav__label-row">
+                      <span data-subscore-label class="ratings-subscore-nav__name">{sub.name}</span>
+                      <SubscoreScoreTooltip
+                        categoryKey={category.key}
+                        categoryName={category.name}
+                        brandName={productName}
+                        sub={sub}
+                        compact
+                        calcDrawerId={calcDrawerId}
+                        contributorDrawerIds={contributorDrawerIds}
+                        evidenceItems={evidenceItems.length > 0 ? evidenceItems : undefined}
+                      />
+                    </span>
+                    <span
+                      data-subscore-chevron
+                      class="material-symbols-outlined ratings-subscore-nav__chevron"
+                      aria-hidden="true"
+                    >
+                      chevron_right
+                    </span>
                   </div>
-                  {
-                    calcDrawerId && (
-                      <button
-                        type="button"
-                        class="ratings-subscore-panel__calc-link"
-                        data-ratings-open-drawer={calcDrawerId}
-                        aria-haspopup="dialog"
-                      >
-                        View score calculation →
-                      </button>
-                    )
-                  }
+
+                  <div
+                    data-subscore-panel
+                    data-subscore-breakdown
+                    data-detail-tier="deep"
+                    data-subscore-index={i}
+                    class="ratings-subscore-panel-inline hidden"
+                  >
+                    <div class="ratings-subscore-panel__header">
+                      <div class="ratings-subscore-panel__heading">
+                        <div class="ratings-subscore-panel__title-row ratings-subscore-panel__title-row--desktop">
+                          <h4 class="ratings-subscore-panel__title">{sub.name}</h4>
+                          <span
+                            class={`rt-score-chip rt-score-chip--outline rt-score-chip--md ratings-subscore-panel__score tabular-nums ${getDraftScoreChipClass(sub.score)}`}
+                            aria-label={`Score ${fmtScore(sub.score)} out of 10`}
+                          >
+                            {fmtScore(sub.score)}
+                          </span>
+                        </div>
+                        <p class="ratings-subscore-panel__meta">
+                          Based on {evidenceCount} evidence {evidenceCount === 1 ? 'category' : 'categories'}
+                        </p>
+                        {
+                          calcDrawerId && (
+                            <button
+                              type="button"
+                              class="ratings-subscore-panel__calc-link"
+                              data-ratings-open-drawer={calcDrawerId}
+                              aria-haspopup="dialog"
+                            >
+                              View score calculation →
+                            </button>
+                          )
+                        }
+                      </div>
+                    </div>
+
+                    {
+                      showBenchmarkNote && (
+                        <p class="ratings-subscore-panel__benchmark-note" role="note">
+                          {PRICING_BENCHMARK_PENDING_NOTE}
+                        </p>
+                      )
+                    }
+
+                    {
+                      evidenceCategories.length > 0 ? (
+                        <EvidenceCategoryTable tableId={tableId} items={evidenceCategories} hideScores={deferScores} />
+                      ) : (
+                        <EvidenceCategoryTable
+                          tableId={tableId}
+                          hideScores={deferScores}
+                          items={sub.contributors.map((c, ci) => ({
+                            slug: c.label.toLowerCase().replace(/\s+/g, '-'),
+                            name: c.label,
+                            score: deferScores ? null : c.internalScore ?? sub.score,
+                            summary: c.value,
+                            cardTeaser: c.value,
+                            testResults: [],
+                            drawerId: `evidence-fallback-${category.key}-${i}-${ci}`,
+                            proofCount: 0,
+                            proofLabel: '',
+                            selectedProof: [],
+                          }))}
+                        />
+                      )
+                    }
+                  </div>
                 </div>
-
-                {
-                  showBenchmarkNote && (
-                    <p class="ratings-subscore-panel__benchmark-note" role="note">
-                      {PRICING_BENCHMARK_PENDING_NOTE}
-                    </p>
-                  )
-                }
-
-                {
-                  evidenceCategories.length > 0 ? (
-                    <EvidenceCategoryTable tableId={tableId} items={evidenceCategories} hideScores={deferScores} />
-                  ) : (
-                    <EvidenceCategoryTable
-                      tableId={tableId}
-                      hideScores={deferScores}
-                      items={sub.contributors.map((c, ci) => ({
-                        slug: c.label.toLowerCase().replace(/\s+/g, '-'),
-                        name: c.label,
-                        score: deferScores ? null : c.internalScore ?? sub.score,
-                        summary: c.value,
-                        cardTeaser: c.value,
-                        testResults: [],
-                        drawerId: `evidence-fallback-${category.key}-${index}-${ci}`,
-                        proofCount: 0,
-                        proofLabel: '',
-                        selectedProof: [],
-                      }))}
-                    />
-                  )
-                }
-              </div>
-            );
-          })
+              );
+            },
+          )
         }
       </div>
     </div>
@@ -231,10 +245,16 @@ const sectionHash = buildReviewRatingsHash(category.key);
       const panels = Array.from(categoryEl.querySelectorAll<HTMLElement>('[data-subscore-panel]'));
       if (!cards.length || !panels.length) return;
 
+      function setChevron(card: HTMLElement, open: boolean) {
+        const chevron = card.querySelector<HTMLElement>('[data-subscore-chevron]');
+        if (chevron) chevron.textContent = open ? 'expand_less' : 'chevron_right';
+      }
+
       function clearSubscoreSelection() {
         cards.forEach((card) => {
           card.setAttribute('aria-selected', 'false');
           card.classList.remove('ratings-subscore-nav__item--active');
+          setChevron(card, false);
         });
         panels.forEach((panel) => panel.classList.add('hidden'));
         categoryEl.querySelector<HTMLElement>('[data-subscore-grid]')?.removeAttribute('data-subscore-open');
@@ -245,6 +265,7 @@ const sectionHash = buildReviewRatingsHash(category.key);
           const isActive = card.dataset.subscoreIndex === index;
           card.setAttribute('aria-selected', isActive ? 'true' : 'false');
           card.classList.toggle('ratings-subscore-nav__item--active', isActive);
+          setChevron(card, isActive);
         });
 
         panels.forEach((panel) => {
@@ -255,7 +276,10 @@ const sectionHash = buildReviewRatingsHash(category.key);
 
         if (scrollToBreakdown) {
           requestAnimationFrame(() => {
-            categoryEl.querySelector<HTMLElement>('[data-subscore-breakdown]')?.scrollIntoView({
+            const activePanel = categoryEl.querySelector<HTMLElement>(
+              `[data-subscore-panel][data-subscore-index="${index}"]:not(.hidden)`,
+            );
+            (activePanel ?? categoryEl.querySelector<HTMLElement>('[data-subscore-grid]'))?.scrollIntoView({
               behavior: 'smooth',
               block: 'nearest',
             });
@@ -275,7 +299,7 @@ const sectionHash = buildReviewRatingsHash(category.key);
           const root = document.querySelector<HTMLElement>('[data-ratings-root]');
           const level = root?.dataset.detailLevel ?? 'skim';
 
-          if (level === 'medium') {
+          if (level === 'medium' || window.matchMedia('(max-width: 1023px)').matches) {
             const isActive = card.getAttribute('aria-selected') === 'true';
             if (isActive) {
               clearSubscoreSelection();

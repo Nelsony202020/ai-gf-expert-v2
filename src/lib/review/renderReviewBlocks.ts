@@ -1,8 +1,16 @@
 // Server-side HTML renderer for persisted review blocks (public review article tab).
 
 import { isUsablePublicMediaUrl, inferMediaTypeFromUrl } from '../media/url';
+import { optimizedImageUrl } from '../media/optimize';
 import type { MediaLookupEntry } from '../media/catalog';
-import { publicFigureStyle, publicImageStyle, isCircleCrop, clampRadiusPercent } from './imageFrameStyle';
+import { publicFigureStyle, publicMediaFrameStyle, publicImageStyle, isCircleCrop, clampRadiusPercent } from './imageFrameStyle';
+import {
+  createGlossaryDecorateState,
+  decorateGlossaryPlainText,
+  setGlossarySection,
+  type GlossaryDecorateState,
+} from '../glossary/decorate';
+import type { PublishedGlossaryTerm } from '../glossary/types';
 
 export interface ReviewBlockPublic {
   id: string;
@@ -21,6 +29,11 @@ interface InlineNode {
   text?: string;
   marks?: { type: string; attrs?: Record<string, unknown> }[];
   content?: InlineNode[];
+}
+
+interface GlossaryRenderContext {
+  terms: PublishedGlossaryTerm[];
+  state: GlossaryDecorateState;
 }
 
 const DYNAMIC_BLOCK_TYPES = new Set([
@@ -50,13 +63,22 @@ function isInlineArray(value: unknown): value is InlineNode[] {
   return Array.isArray(value) && value.every((n) => n && typeof n === 'object' && typeof (n as InlineNode).type === 'string');
 }
 
-function renderRichNodes(nodes: InlineNode[] | undefined): string {
+function renderRichNodes(
+  nodes: InlineNode[] | undefined,
+  glossary?: GlossaryRenderContext | null,
+): string {
   if (!nodes) return '';
   let out = '';
   for (const node of nodes) {
     if (node.type === 'text') {
-      let html = escapeHtml(String(node.text ?? ''));
-      for (const mark of node.marks ?? []) {
+      const text = String(node.text ?? '');
+      const marks = node.marks ?? [];
+      const hasLink = marks.some((m) => m.type === 'link');
+      let html =
+        glossary && !hasLink
+          ? decorateGlossaryPlainText(text, glossary.terms, glossary.state)
+          : escapeHtml(text);
+      for (const mark of marks) {
         if (mark.type === 'bold') html = `<strong>${html}</strong>`;
         else if (mark.type === 'italic') html = `<em>${html}</em>`;
         else if (mark.type === 'link') {
@@ -68,15 +90,22 @@ function renderRichNodes(nodes: InlineNode[] | undefined): string {
     } else if (node.type === 'hardBreak') {
       out += '<br />';
     } else if (node.content) {
-      out += renderRichNodes(node.content);
+      out += renderRichNodes(node.content, glossary);
     }
   }
   return out;
 }
 
-function renderInline(data: Record<string, unknown>): string {
-  if (isInlineArray(data.rich)) return renderRichNodes(data.rich);
-  return escapeHtml(String(data.text ?? ''));
+function renderInline(
+  data: Record<string, unknown>,
+  glossary?: GlossaryRenderContext | null,
+  opts?: { skipGlossary?: boolean },
+): string {
+  const ctx = opts?.skipGlossary ? null : glossary;
+  if (isInlineArray(data.rich)) return renderRichNodes(data.rich, ctx);
+  const text = String(data.text ?? '');
+  if (!ctx) return escapeHtml(text);
+  return decorateGlossaryPlainText(text, ctx.terms, ctx.state);
 }
 
 function headingLevel(type: string, data: Record<string, unknown>): 2 | 3 | 4 {
@@ -150,7 +179,8 @@ function reviewLightboxItem(
   return {
     src,
     alt,
-    caption: caption || alt,
+    // Never fall back to alt — alt is accessibility-only, never shown as caption UI.
+    caption,
     type: mediaType,
   };
 }
@@ -160,6 +190,10 @@ function renderLightboxTrigger(payload: ReviewLightboxItem, innerHtml: string): 
     ? ` data-lightbox-caption="${escapeAttr(payload.caption)}"`
     : '';
   return `<div role="button" tabindex="0" class="review-figure__zoom" data-lightbox-open="${escapeAttr(payload.src)}" data-lightbox-alt="${escapeAttr(payload.alt)}" data-lightbox-type="${payload.type}"${captionAttr} aria-label="Enlarge ${payload.type}">${innerHtml}</div>`;
+}
+
+function renderNsfwGate(innerHtml: string): string {
+  return `<div role="button" tabindex="0" class="review-figure__zoom review-figure__zoom--nsfw" data-nsfw-gate aria-label="18+ content">${innerHtml}</div>`;
 }
 
 function renderImageFigure(
@@ -194,6 +228,11 @@ function renderImageFigure(
     clipFocusY: item.clipFocusY,
     rowCell: opts?.rowCell,
   });
+  const mediaFrameStyle = publicMediaFrameStyle({
+    borderRadiusPercent: item.borderRadiusPercent,
+    clipFocusX: item.clipFocusX,
+    clipFocusY: item.clipFocusY,
+  });
   const imageStyle = publicImageStyle({
     borderRadiusPercent: item.borderRadiusPercent,
     clipFocusX: item.clipFocusX,
@@ -203,15 +242,16 @@ function renderImageFigure(
   const innerMedia =
     mediaType === 'video'
       ? `<video class="review-video-native review-video-native--preview" src="${escapeHtml(src)}" muted playsinline preload="metadata" style="${imageStyle}pointer-events:none${nsfw ? ';filter:blur(28px) brightness(0.75);transform:scale(1.08)' : ''}"${nsfw ? ' data-nsfw-blurred="true"' : ''}></video>`
-      : `<img src="${escapeHtml(src)}" alt="${alt}" loading="eager" decoding="async" style="${imageStyle}${nsfw ? 'filter:blur(28px) brightness(0.75);transform:scale(1.08)' : ''}"${nsfw ? ' data-nsfw-blurred="true"' : ''} />`;
-  const mediaHtml = renderLightboxTrigger(payload, innerMedia);
+      : `<img src="${escapeHtml(optimizedImageUrl(src, { width: 800, quality: 72 }))}" alt="${alt}" loading="lazy" decoding="async" width="800" height="500" style="${imageStyle}${nsfw ? 'filter:blur(28px) brightness(0.75);transform:scale(1.08)' : ''}"${nsfw ? ' data-nsfw-blurred="true"' : ''} />`;
+  // NSFW stays blurred — no lightbox; click shows a coming-soon notice.
+  const mediaHtml = nsfw ? renderNsfwGate(innerMedia) : renderLightboxTrigger(payload, innerMedia);
   const nsfwOverlay = nsfw
-    ? `<button type="button" class="review-figure__nsfw" data-nsfw-reveal aria-label="Show 18+ image"><span>18+</span></button>`
+    ? `<div class="review-figure__nsfw" aria-hidden="true"><span>18+</span></div>`
     : '';
-  let html = `<figure class="${figureClass}" style="${figureStyle}"${nsfw ? ' data-nsfw="true"' : ''}>${mediaHtml}${nsfwOverlay}`;
+  let html = `<figure class="${figureClass}" style="${figureStyle}"${nsfw ? ' data-nsfw="true"' : ''}><div class="review-figure__media" style="${mediaFrameStyle}">${mediaHtml}${nsfwOverlay}</div>`;
   if (caption) html += `<figcaption>${escapeHtml(caption)}</figcaption>`;
   html += '</figure>';
-  return { html, lightboxItem: payload };
+  return { html, lightboxItem: nsfw ? null : payload };
 }
 
 export function buildReviewToc(blocks: ReviewBlockPublic[]): ReviewTocEntry[] {
@@ -278,9 +318,17 @@ function renderPlaceholder(type: string): string {
 
 export function renderReviewBlocksHtml(
   blocks: ReviewBlockPublic[],
-  opts?: { mediaById?: Record<string, MediaLookupEntry> },
+  opts?: {
+    mediaById?: Record<string, MediaLookupEntry>;
+    glossaryTerms?: PublishedGlossaryTerm[];
+  },
 ): string {
   const parts: string[] = [];
+  const glossaryTerms = opts?.glossaryTerms ?? [];
+  const glossary: GlossaryRenderContext | null =
+    glossaryTerms.length > 0
+      ? { terms: glossaryTerms, state: createGlossaryDecorateState() }
+      : null;
 
   for (const block of blocks) {
     const data = block.data ?? {};
@@ -317,19 +365,22 @@ export function renderReviewBlocksHtml(
           }
           break;
         }
-        const inner = renderInline(data);
+        const inner = renderInline(data, glossary);
         if (!inner.trim()) break;
         parts.push(`<p>${inner}</p>`);
         break;
       }
       case 'h2':
       case 'h3': {
-        const level = headingLevel(type, data);
         const text = String(data.text ?? '');
         const id = headingId(text, block.id);
+        if (type === 'h2' && glossary) {
+          setGlossarySection(glossary.state, id);
+        }
+        const level = headingLevel(type, data);
         const tag = level === 4 ? 'h4' : 'h3';
         const cls = 'review-heading';
-        parts.push(renderHeading(tag, id, cls, renderInline(data)));
+        parts.push(renderHeading(tag, id, cls, renderInline(data, glossary, { skipGlossary: true })));
         break;
       }
       case 'bulletList':
@@ -342,14 +393,18 @@ export function renderReviewBlocksHtml(
         const lis: string[] = [];
         for (let i = 0; i < count; i++) {
           const rich = richItems?.[i];
-          const inner = isInlineArray(rich) ? renderRichNodes(rich) : escapeHtml(items[i] ?? '');
+          const inner = isInlineArray(rich)
+            ? renderRichNodes(rich, glossary)
+            : glossary
+              ? decorateGlossaryPlainText(items[i] ?? '', glossary.terms, glossary.state)
+              : escapeHtml(items[i] ?? '');
           lis.push(`<li>${inner}</li>`);
         }
         parts.push(`<${tag} class="review-list">${lis.join('')}</${tag}>`);
         break;
       }
       case 'quote': {
-        const body = renderInline(data);
+        const body = renderInline(data, glossary);
         const attribution = String(data.attribution ?? '').trim();
         let html = `<blockquote class="review-quote"><p>${body}</p>`;
         if (attribution) html += `<footer>— ${escapeHtml(attribution)}</footer>`;
@@ -374,8 +429,8 @@ export function renderReviewBlocksHtml(
         } else if (url) {
           const payload: ReviewLightboxItem = {
             src: url,
-            alt: caption || 'Review video',
-            caption: caption || 'Review video',
+            alt: 'Review video',
+            caption,
             type: 'video',
           };
           const videoBtn = renderLightboxTrigger(

@@ -10,21 +10,8 @@ export interface BottomNavItem {
   href?: string;
 }
 
-const DISCOVERY_ITEMS: BottomNavItem[] = [
-  { id: 'home', label: 'Home', icon: 'home', type: 'link', href: '/' },
-  { id: 'reviews', label: 'Reviews', icon: 'rate_review', type: 'link', href: '/reviews/' },
-  {
-    id: 'best-apps',
-    label: 'Best Apps',
-    icon: 'emoji_events',
-    type: 'link',
-    href: '/best/ai-girlfriend/',
-  },
-  { id: 'testing', label: 'Testing', icon: 'science', type: 'link', href: '/test/' },
-  { id: 'more', label: 'More', icon: 'more_horiz', type: 'more' },
-];
-
-const HUB_ITEMS: BottomNavItem[] = [
+/** Sitewide mobile bar — same layout everywhere; center FAB is page-aware. */
+const GLOBAL_ITEMS: BottomNavItem[] = [
   {
     id: 'best-apps',
     label: 'Best Apps',
@@ -41,18 +28,17 @@ const HUB_ITEMS: BottomNavItem[] = [
   },
   { id: 'contents', label: 'Contents', icon: 'menu', type: 'contents' },
   {
-    id: 'how-we-test',
-    label: 'Testing',
-    icon: 'science',
+    id: 'reviews',
+    label: 'Reviews',
+    icon: 'rate_review',
     type: 'link',
-    href: '/test/',
+    href: '/reviews/',
   },
   { id: 'more', label: 'More', icon: 'more_horiz', type: 'more' },
 ];
 
-export function getBottomNavItems(mode: MobileNavMode): BottomNavItem[] {
-  if (mode === 'hub') return HUB_ITEMS;
-  return DISCOVERY_ITEMS;
+export function getBottomNavItems(_mode: MobileNavMode): BottomNavItem[] {
+  return GLOBAL_ITEMS;
 }
 
 export function getHubNavLayout(items: BottomNavItem[]) {
@@ -65,3 +51,5 @@ export function getHubNavLayout(items: BottomNavItem[]) {
     right: sideItems.slice(mid),
   };
 }
+
+export type { BottomNavId };

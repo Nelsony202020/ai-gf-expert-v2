@@ -1,0 +1,274 @@
+/* Glossary tooltips — category badge on the border */
+
+.glossary-trigger {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: help;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  text-decoration-skip-ink: none;
+  text-decoration-color: rgb(233 37 118 / 70%);
+  transition: color 0.12s ease, text-decoration-color 0.12s ease;
+}
+
+.glossary-trigger:hover,
+.glossary-trigger:focus-visible,
+.glossary-trigger[aria-expanded='true'] {
+  color: #e92576;
+  text-decoration-color: #e92576;
+  outline: none;
+}
+
+.glossary-tooltip-portal {
+  position: relative;
+  z-index: 10000;
+}
+
+.glossary-tooltip {
+  position: fixed;
+  z-index: 10000;
+  width: min(340px, calc(100vw - 24px));
+  padding: 1rem 1rem 0.85rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-surface-variant);
+  background: var(--color-surface-container-lowest);
+  color: var(--color-on-surface);
+  box-shadow:
+    0 10px 28px color-mix(in srgb, #000 12%, transparent),
+    0 2px 6px color-mix(in srgb, #000 6%, transparent);
+  opacity: 0;
+  transform: translateY(4px) scale(0.98);
+  pointer-events: none;
+}
+
+.glossary-tooltip.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+/* Category icon on the border — white ring wrapper crops PNG’s baked-in black edge */
+.glossary-tooltip__badge {
+  position: absolute;
+  top: -14px;
+  left: -10px;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 0;
+  background: #fff;
+  box-shadow: 0 1px 4px color-mix(in srgb, #000 12%, transparent);
+  transform: rotate(-2deg);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.glossary-tooltip.is-open .glossary-tooltip__badge {
+  transform: rotate(0deg);
+  transition: transform 200ms ease;
+}
+
+.glossary-tooltip__badge-clip {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.glossary-tooltip__badge img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.14);
+  transform-origin: center center;
+}
+
+.glossary-tooltip__close {
+  display: none;
+}
+
+.glossary-tooltip__body {
+  /* Shared content column — eyebrow, term, other-names, def, CTA all start here */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0.85rem 0 0; /* clear the overlapping category badge */
+  margin: 0;
+}
+
+.glossary-tooltip__eyebrow {
+  margin: 0 0 0.35rem;
+  padding: 0;
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--color-accent);
+}
+
+.glossary-tooltip__term {
+  font-family: var(--font-display);
+  font-size: 0.8125rem; /* 13px — compact uppercase label */
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--color-on-surface);
+  margin: 0 0 0.2rem;
+  padding: 0;
+}
+
+.glossary-tooltip__also {
+  margin: 0 0 1.125rem; /* ~18px before definition */
+  padding: 0;
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4;
+  font-weight: 400;
+  color: color-mix(in srgb, var(--color-on-surface) 52%, transparent);
+}
+
+.glossary-tooltip__also strong {
+  font-weight: 400;
+  color: inherit;
+}
+
+.glossary-tooltip__def {
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--color-on-surface);
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+/* When there is no “Other names” line, keep a bit of space under the term */
+.glossary-tooltip__term + .glossary-tooltip__def {
+  margin-top: 0.65rem;
+}
+
+.glossary-tooltip__link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.glossary-tooltip__link:hover,
+.glossary-tooltip__link:focus-visible {
+  color: color-mix(in srgb, var(--color-accent) 88%, #000);
+  text-decoration: none;
+  outline: none;
+}
+
+.glossary-tooltip-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: color-mix(in srgb, #000 28%, transparent);
+}
+
+@media (max-width: 767px) {
+  /* Compact tap card — body copy gets full width */
+  .glossary-tooltip--mobile {
+    width: calc(100vw - 32px);
+    max-width: 420px;
+    padding: 1.65rem 1rem 1rem;
+    border-radius: 0.875rem;
+  }
+
+  /* Category icon sits on the top border (costs vertical, not horizontal) */
+  .glossary-tooltip--mobile .glossary-tooltip__badge {
+    top: 0;
+    left: 22px;
+    width: 40px;
+    height: 40px;
+    padding: 3px;
+    transform: translateY(-50%) rotate(-2deg);
+  }
+
+  .glossary-tooltip--mobile.is-open .glossary-tooltip__badge {
+    transform: translateY(-50%) rotate(0deg);
+  }
+
+  .glossary-tooltip--mobile .glossary-tooltip__body {
+    padding-top: 0.35rem; /* panel already clears the top-mounted badge */
+    padding-right: 2.25rem; /* room for close */
+  }
+
+  .glossary-tooltip--mobile .glossary-tooltip__def {
+    margin-bottom: 0.85rem;
+  }
+
+  .glossary-tooltip--mobile .glossary-tooltip__close {
+    display: inline-flex;
+    position: absolute;
+    top: 0.55rem;
+    right: 0.45rem;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-tertiary);
+    cursor: pointer;
+  }
+
+  .glossary-tooltip--mobile .glossary-tooltip__close:hover,
+  .glossary-tooltip--mobile .glossary-tooltip__close:focus-visible {
+    color: var(--color-on-surface);
+    background: var(--color-surface-container-low);
+    outline: none;
+  }
+
+  .glossary-tooltip--mobile .glossary-tooltip__close .material-symbols-outlined {
+    font-size: 1.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glossary-tooltip,
+  .glossary-tooltip.is-open,
+  .glossary-tooltip__badge,
+  .glossary-tooltip.is-open .glossary-tooltip__badge {
+    transition: none;
+  }
+
+  .glossary-tooltip,
+  .glossary-tooltip.is-open {
+    transform: none;
+  }
+
+  .glossary-tooltip__badge,
+  .glossary-tooltip.is-open .glossary-tooltip__badge {
+    transform: rotate(0deg);
+  }
+
+  .glossary-tooltip--mobile .glossary-tooltip__badge,
+  .glossary-tooltip--mobile.is-open .glossary-tooltip__badge {
+    transform: translateY(-50%);
+  }
+}

@@ -31,6 +31,7 @@ import {
   redirectSchema,
   adminUserSchema,
   authorSchema,
+  glossaryEntrySchema,
   siteSettingSchema,
 } from '../validation/schemas';
 
@@ -277,6 +278,25 @@ export const ENTITIES: Record<string, EntityConfig> = {
     readPermission: 'content.view',
     writePermission: 'content.edit',
     uniqueFields: ['slug'],
+  },
+  glossaryEntries: {
+    namespace: 'glossaryEntries',
+    schema: glossaryEntrySchema,
+    readPermission: 'content.view',
+    writePermission: 'content.edit',
+    uniqueFields: ['anchor'],
+    timestampFields: ['createdAt', 'updatedAt'],
+    createDefaults: () => ({
+      status: 'draft',
+      autoTooltip: true,
+      scope: 'reviews',
+      aliases: [],
+      displayAliases: [],
+      tooltipDefinition: '',
+      ctaLabel: '',
+      fullDefinition: { type: 'doc', content: [{ type: 'paragraph' }] },
+      category: 'General',
+    }),
   },
   siteSettings: {
     namespace: 'siteSettings',

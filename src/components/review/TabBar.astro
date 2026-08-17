@@ -1,7 +1,11 @@
 ---
 export interface Tab {
   id: string;
+  /** Short label used in the sticky jump rail */
   label: string;
+  /** Optional longer label for the mobile “On this page” TOC */
+  tocLabel?: string;
+  /** @deprecated Use `label` — kept for older call sites */
   mobileLabel?: string;
 }
 
@@ -14,14 +18,14 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
 ---
 
 <nav
-  class="review-tabbar border-surface-variant z-40 border-b"
+  class="review-tabbar z-40"
   data-tabbar
   aria-label="Review sections"
-  style={`--review-tab-count: ${tabs.length}`}
 >
-  <div class="review-tabbar__shell">
-    <div class="section-container px-2 md:px-8">
-      <ul class="review-tabbar__list" role="tablist">
+  <div class="review-tabbar__shell section-container px-4 md:px-8">
+    <div class="review-tabbar__rail" data-tabbar-rail>
+      <div class="review-tabbar__fade review-tabbar__fade--start" data-tabbar-fade="start" aria-hidden="true"></div>
+      <ul class="review-tabbar__list" role="tablist" data-tabbar-list>
         {
           tabs.map((tab) => (
             <li role="presentation" class="review-tabbar__item">
@@ -30,15 +34,15 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
                 role="tab"
                 data-tab={tab.id}
                 aria-current={tab.id === active ? 'true' : 'false'}
-                class="tab-btn review-tabbar__btn transition-colors cursor-pointer pb-2 md:-mb-3 border-b-2 border-transparent hover:text-accent"
+                class="tab-btn review-tabbar__btn"
               >
-                <span class="md:hidden review-tabbar__mobile-label">{tab.mobileLabel ?? tab.label}</span>
-                <span class="hidden md:inline">{tab.label}</span>
+                {tab.label}
               </button>
             </li>
           ))
         }
       </ul>
+      <div class="review-tabbar__fade review-tabbar__fade--end" data-tabbar-fade="end" aria-hidden="true"></div>
     </div>
   </div>
 </nav>
@@ -51,6 +55,10 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
     tabbar.dataset.pinBound = 'true';
 
     const header = document.querySelector('[data-site-header]');
+    const list = tabbar.querySelector('[data-tabbar-list]');
+    const fadeStart = tabbar.querySelector('[data-tabbar-fade="start"]');
+    const fadeEnd = tabbar.querySelector('[data-tabbar-fade="end"]');
+
     let spacer = tabbar.nextElementSibling;
     if (!spacer?.matches('[data-tabbar-spacer]')) {
       spacer = document.createElement('div');
@@ -66,13 +74,40 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
       if (wasPinned) {
         tabbar.classList.remove('review-tabbar--pinned');
         tabbar.style.top = '';
+        header?.classList.remove('site-header--joined-tabs');
         spacer.hidden = true;
         spacer.style.height = '0';
       }
       naturalTop = tabbar.getBoundingClientRect().top + window.scrollY;
     }
 
-    function update() {
+    function updateFades() {
+      if (!list || !fadeStart || !fadeEnd) return;
+      const maxScroll = list.scrollWidth - list.clientWidth;
+      if (maxScroll <= 2) {
+        fadeStart.classList.remove('is-visible');
+        fadeEnd.classList.remove('is-visible');
+        return;
+      }
+      fadeStart.classList.toggle('is-visible', list.scrollLeft > 4);
+      fadeEnd.classList.toggle('is-visible', list.scrollLeft < maxScroll - 4);
+    }
+
+    function scrollActiveTabIntoView(smooth = true) {
+      if (!list) return;
+      const activeBtn = tabbar.querySelector('.review-tabbar__btn[aria-current="true"]');
+      if (!activeBtn) return;
+      const listRect = list.getBoundingClientRect();
+      const btnRect = activeBtn.getBoundingClientRect();
+      const offset = btnRect.left - listRect.left - (listRect.width - btnRect.width) / 2;
+      list.scrollTo({
+        left: Math.max(0, list.scrollLeft + offset),
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+      window.requestAnimationFrame(updateFades);
+    }
+
+    function updatePin() {
       const headerH = header?.offsetHeight ?? 52;
       const tabbarH = tabbar.offsetHeight;
       const shouldPin = window.scrollY >= naturalTop - headerH - 1;
@@ -80,11 +115,13 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
       if (shouldPin) {
         tabbar.classList.add('review-tabbar--pinned');
         tabbar.style.top = `${headerH}px`;
+        header?.classList.add('site-header--joined-tabs');
         spacer.style.height = `${tabbarH}px`;
         spacer.hidden = false;
       } else {
         tabbar.classList.remove('review-tabbar--pinned');
         tabbar.style.top = '';
+        header?.classList.remove('site-header--joined-tabs');
         spacer.hidden = true;
         spacer.style.height = '0';
       }
@@ -92,13 +129,25 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
 
     function remeasureAndUpdate() {
       measureNaturalTop();
-      update();
+      updatePin();
+      updateFades();
     }
 
-    window.addEventListener('scroll', update, { passive: true });
+    list?.addEventListener('scroll', updateFades, { passive: true });
+
+    const observer = new MutationObserver(() => {
+      scrollActiveTabIntoView(true);
+      updateFades();
+    });
+    tabbar.querySelectorAll('.review-tabbar__btn').forEach((btn) => {
+      observer.observe(btn, { attributes: true, attributeFilter: ['aria-current'] });
+    });
+
+    window.addEventListener('scroll', updatePin, { passive: true });
     window.addEventListener('resize', remeasureAndUpdate, { passive: true });
     document.addEventListener('site-header-offset-change', remeasureAndUpdate);
     remeasureAndUpdate();
+    scrollActiveTabIntoView(false);
   }
 
   initReviewTabbarPin();
@@ -106,82 +155,176 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
 </script>
 
 <style>
+  .review-tabbar__shell {
+    display: flex;
+    justify-content: center;
+  }
+
+  .review-tabbar__rail {
+    --review-tabbar-fade-bg: var(--color-background);
+    position: relative;
+    width: 100%;
+    min-height: 48px;
+  }
+
   .review-tabbar__list {
     display: flex;
-    overflow-x: auto;
-    white-space: nowrap;
-    gap: 1.5rem;
+    align-items: stretch;
+    gap: 1.35rem;
+    width: 100%;
+    min-height: 48px;
     margin: 0;
-    padding: 0.75rem 0;
+    padding: 0;
     list-style: none;
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--color-tertiary);
-    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .review-tabbar__list::-webkit-scrollbar {
     display: none;
   }
 
+  .review-tabbar__item {
+    flex: 0 0 auto;
+    display: flex;
+    scroll-snap-align: center;
+  }
+
+  .review-tabbar__btn {
+    appearance: none;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0.85rem 0 0.95rem;
+    border: 0;
+    background: transparent;
+    color: var(--color-on-surface-variant, #64748b);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+
+  .review-tabbar__btn:hover {
+    color: var(--color-on-surface);
+  }
+
+  .review-tabbar__btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .review-tabbar__btn[aria-current='true'] {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  /* Short pink underline — stronger than a dot, quieter than a pill */
+  .review-tabbar__btn[aria-current='true']::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 1.75rem;
+    height: 2.5px;
+    border-radius: 999px;
+    background: var(--color-accent);
+    transform: translateX(-50%);
+  }
+
+  .review-tabbar__fade {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1.75rem;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+
+  .review-tabbar__fade.is-visible {
+    opacity: 1;
+  }
+
+  .review-tabbar__fade--start {
+    left: 0;
+    background: linear-gradient(to right, var(--review-tabbar-fade-bg) 30%, transparent);
+  }
+
+  .review-tabbar__fade--end {
+    right: 0;
+    background: linear-gradient(to left, var(--review-tabbar-fade-bg) 30%, transparent);
+  }
+
   @media (min-width: 768px) {
     .review-tabbar__list {
-      gap: 2rem;
       justify-content: center;
-    }
-  }
-
-  .tab-btn[aria-current='true'] {
-    color: var(--color-accent);
-    border-bottom-color: var(--color-accent);
-  }
-
-  @media (max-width: 767px) {
-    .review-tabbar__list {
-      display: grid;
-      grid-template-columns: repeat(var(--review-tab-count, 5), minmax(0, 1fr));
-      gap: 0;
+      gap: 1.75rem;
       overflow: visible;
-      white-space: normal;
-      padding: 0.25rem 0;
-    }
-
-    .review-tabbar__item {
-      min-width: 0;
     }
 
     .review-tabbar__btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
+      font-size: 0.875rem;
+      padding: 0.9rem 0 1rem;
+    }
+
+    .review-tabbar__btn[aria-current='true']::after {
+      width: 1.85rem;
+      height: 3px;
+    }
+
+    .review-tabbar__fade {
+      display: none;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .review-tabbar__shell {
+      padding-left: 0;
+      padding-right: 0;
+      max-width: none;
+    }
+
+    .review-tabbar__list {
+      gap: 1.35rem;
       min-height: 48px;
-      padding: 0.5rem 0.25rem 0.5625rem;
-      margin: 0;
-      border-bottom: none !important;
-      font-size: 0.75rem;
-      font-weight: 700;
-      line-height: 1.15;
-      text-align: center;
+      padding-inline: 1rem;
     }
 
-    .review-tabbar__mobile-label {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 100%;
+    .review-tabbar__btn {
+      font-size: 0.8125rem;
+      padding: 0.8rem 0 0.9rem;
     }
 
-    .tab-btn[aria-current='true']::after {
-      content: '';
-      width: 0.25rem;
-      height: 0.25rem;
-      border-radius: 999px;
-      background: var(--color-accent);
-      margin-top: 2px;
+    .review-tabbar__btn[aria-current='true']::after {
+      width: 1.5rem;
+      height: 2.5px;
     }
+  }
+
+  [data-theme='dark'] .review-tabbar__btn {
+    color: color-mix(in srgb, var(--color-on-surface) 58%, transparent);
+  }
+
+  [data-theme='dark'] .review-tabbar__btn:hover {
+    color: var(--color-on-surface);
+  }
+
+  [data-theme='dark'] .review-tabbar__btn[aria-current='true'] {
+    color: #f472b6;
+  }
+
+  .review-tabbar--pinned .review-tabbar__rail {
+    --review-tabbar-fade-bg: var(--color-header-surface);
   }
 </style>
