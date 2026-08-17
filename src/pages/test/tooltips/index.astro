@@ -364,7 +364,7 @@ const canonical = canonicalPublicUrl(Astro.url.pathname, Astro.site);
             const a = document.createElement('a');
             a.href = distAppHref(app.slug, chart);
             a.className = 'rt-dist-chart__app';
-            a.innerHTML = `<span>${app.name}</span><span class="rt-score-chip ${scoreChipClass(app.score)}">${app.score.toFixed(1)}</span>`;
+            a.innerHTML = `<span class="rt-score-chip ${scoreChipClass(app.score)}">${app.score.toFixed(1)}</span><span class="rt-dist-chart__app-name">${app.name}</span>`;
             appsEl!.appendChild(a);
           });
         }

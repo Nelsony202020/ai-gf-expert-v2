@@ -119,8 +119,8 @@ const distLinkSubscore = subscoreName?.trim()
                       href={reviewRatingsSectionUrl(app.slug, categoryKey, subscoreName)}
                       class="rt-dist-chart__app"
                     >
-                      <span>{app.name}</span>
                       <span class={`rt-score-chip ${chipClass}`}>{fmtScore(app.score)}</span>
+                      <span class="rt-dist-chart__app-name">{app.name}</span>
                     </a>
                   );
                 })

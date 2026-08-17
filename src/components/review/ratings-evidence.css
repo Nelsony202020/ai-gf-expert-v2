@@ -171,37 +171,83 @@
 }
 
 @media (max-width: 1023px) {
-  .ratings-subscore-panel__title-row--desktop {
-    display: none;
+  /* Hide the duplicate “Data Use 4.4” heading — the row above already shows it */
+  .ratings-subscore-panel-inline .ratings-subscore-panel__title-row--desktop {
+    display: none !important;
+  }
+
+  .ratings-accordion__expanded {
+    padding: 1rem 0.75rem 1.15rem;
+    gap: 0.35rem;
+  }
+
+  /*
+    Connected accordion: active subscore + evidence as one inset panel.
+    Replaces the pink left rail (too timeline-like on mobile).
+  */
+  .ratings-subscore-block:has(> .ratings-subscore-nav__item--active) {
+    border: 1px solid color-mix(in srgb, var(--color-surface-variant) 88%, #c4b8a8);
+    border-radius: 8px;
+    background: #faf9f7;
+    overflow: hidden;
+  }
+
+  .ratings-subscore-block:has(> .ratings-subscore-nav__item--active) .ratings-subscore-nav__item--active {
+    border-left-color: transparent;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .ratings-subscore-panel-inline:not(.hidden) {
-    margin: 0.15rem 0 0.5rem 0.75rem;
-    padding: 0.65rem 0 0.75rem 0.9rem;
-    border-left: 2px solid rgb(219 39 119 / 28%);
+    margin: 0;
+    padding: 0.75rem 0.875rem 0.9rem;
+    border-left: none;
+    border-top: 1px solid color-mix(in srgb, var(--color-surface-variant) 90%, #c4b8a8);
+    background: transparent;
   }
 
   .ratings-subscore-panel-inline .ratings-subscore-panel__header {
     margin-bottom: 0.65rem;
-    padding-bottom: 0.65rem;
+    padding-bottom: 0;
     border-bottom: none;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.35rem;
+    gap: 0.25rem;
   }
 
   .ratings-subscore-panel-inline .ratings-subscore-panel__meta {
     margin: 0;
   }
 
-  .ratings-subscore-nav__item--active {
-    border-radius: 0.5rem;
+  .ratings-subscore-panel-inline .ratings-subscore-panel__calc-link {
+    margin-top: 0.1rem;
+  }
+
+  /* Restore square-ish evidence score boxes (undo flat wide chips) */
+  .evidence-cat-table__score {
+    width: 2.5rem;
   }
 
   .evidence-cat-table__score .rt-score-chip {
-    font-size: 0.6875rem;
-    padding: 1px 5px;
-    min-width: 1.75rem;
+    box-sizing: border-box;
+    width: 2.5rem;
+    min-width: 2.5rem;
+    aspect-ratio: 1;
+    height: auto;
+    padding: 0;
+    font-size: 0.75rem;
+    line-height: 1;
+    border-radius: 6px;
+  }
+
+  [data-theme='dark'] .ratings-subscore-block:has(> .ratings-subscore-nav__item--active) {
+    background: color-mix(in srgb, var(--color-surface-container-low) 92%, #000);
+    border-color: var(--dark-border-subtle, rgb(255 255 255 / 12%));
+  }
+
+  [data-theme='dark'] .ratings-subscore-panel-inline:not(.hidden) {
+    border-top-color: var(--dark-border-subtle, rgb(255 255 255 / 12%));
   }
 }
 
@@ -1603,11 +1649,13 @@
   }
 
   .evidence-cat-table__row {
-    grid-template-columns: 3.25rem 1fr auto;
+    grid-template-columns: 2.5rem 1fr auto;
     grid-template-areas:
       'score name proof'
       'score summary proof';
-    gap: 0.35rem 0.75rem;
+    gap: 0.35rem 0.65rem;
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
   }
 
   .evidence-cat-table__name {
@@ -1621,13 +1669,13 @@
   .evidence-cat-table__score {
     grid-area: score;
     align-self: start;
-    padding-top: 0.1rem;
+    padding-top: 0;
   }
 
   .evidence-cat-table__proof {
     grid-area: proof;
     align-self: start;
-    padding-top: 0.1rem;
+    padding-top: 0.15rem;
   }
 }
 

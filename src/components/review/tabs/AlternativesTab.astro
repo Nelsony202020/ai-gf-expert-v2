@@ -45,7 +45,7 @@ function productPrice(p: Product): string {
 
     {
       vm.testingPeers.length > 0 && (
-        <section class="alt-section" aria-labelledby="alt-best-title">
+        <section class="alt-section" aria-labelledby="alt-best-title" id="alt-best" data-page-toc="Best alternatives">
           <h3 id="alt-best-title" class="alt-section__kicker">Best alternatives</h3>
           <div class="alt-compact-grid">
             {
@@ -63,7 +63,12 @@ function productPrice(p: Product): string {
       )
     }
 
-    <section class="alt-section" aria-label="Comparison with closest alternatives">
+    <section
+      class="alt-section"
+      aria-label="Comparison with closest alternatives"
+      id="alt-comparison"
+      data-page-toc="Comparison"
+    >
       <AlternativesComparisonTable
         sourceName={vm.source.name}
         rows={vm.comparisonTableRows}
@@ -75,7 +80,12 @@ function productPrice(p: Product): string {
 
     {
       vm.marketTrafficChart.length > 0 && (
-        <section class="alt-section alt-market-section" aria-labelledby="alt-market-title">
+        <section
+          class="alt-section alt-market-section"
+          aria-labelledby="alt-market-title"
+          id="alt-market"
+          data-page-toc="Market competitors"
+        >
           <h3 id="alt-market-title" class="alt-section__heading">
             Market competitors
             <InfoIcon title="Search market data from Ahrefs — not our review scores" />
@@ -112,7 +122,12 @@ function productPrice(p: Product): string {
       )
     }
 
-    <section class="alt-section" aria-labelledby="alt-choose-title">
+    <section
+      class="alt-section"
+      aria-labelledby="alt-choose-title"
+      id="alt-choose"
+      data-page-toc="Which should you choose?"
+    >
       <h3 id="alt-choose-title" class="alt-section__kicker">Which should you choose?</h3>
       <div class="alt-choose-grid">
         {

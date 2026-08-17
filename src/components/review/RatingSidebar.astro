@@ -68,12 +68,60 @@ const ctaRel = affiliateRel(product.affiliateRel);
       >
         Visit {product.name}
       </a>
-      <p class="text-center text-[10px] text-tertiary uppercase font-bold">
-        <span class="inline-flex items-center justify-center gap-1">
-          <span class="material-symbols-outlined text-[12px]">verified_user</span>
-          Affiliate Link · Secure Site
+      <p class="rating-sidebar__cta-note">
+        <span class="rating-sidebar__cta-note-inner">
+          <span class="material-symbols-outlined rating-sidebar__cta-note-icon" aria-hidden="true">verified_user</span>
+          <button
+            type="button"
+            class="glossary-trigger rating-sidebar__affiliate-trigger"
+            data-glossary-trigger
+            aria-expanded="false"
+            data-glossary-term="Affiliate link"
+            data-glossary-definition="A special link that lets us earn a commission if you sign up or buy something through it. You don't pay anything extra."
+            data-glossary-cta="Affiliate Disclosure"
+            data-glossary-href="/legal/affiliate-disclosure/"
+            data-glossary-eyebrow="Disclosure"
+            data-glossary-category="pricing"
+          >
+            Affiliate link
+          </button>
+          <span aria-hidden="true">·</span>
+          <span>Secure site</span>
         </span>
       </p>
     </div>
   </div>
 </div>
+
+<style>
+  .rating-sidebar__cta-note {
+    margin: 0;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-tertiary);
+  }
+
+  .rating-sidebar__cta-note-inner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .rating-sidebar__cta-note-icon {
+    font-size: 12px;
+  }
+
+  .rating-sidebar__affiliate-trigger {
+    font-size: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+    text-underline-offset: 3px;
+  }
+</style>

@@ -7,24 +7,21 @@ const logoSrc = cdnAsset('/brand/girlfriend-expert-logo.png');
 
 <div class="mobile-sheet mobile-more-sheet" data-mobile-more-sheet hidden aria-hidden="true">
   <button type="button" class="mobile-sheet__backdrop" data-mobile-more-close aria-label="Close menu"></button>
-  <div class="mobile-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="mobile-more-title">
+  <div class="mobile-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="mobile-more-home-label">
     <div class="mobile-sheet__handle" aria-hidden="true"></div>
-    <header class="mobile-sheet__head">
-      <h2 id="mobile-more-title" class="mobile-sheet__title">More</h2>
+    <header class="mobile-sheet__head mobile-sheet__head--brand">
+      <a href="/" class="mobile-sheet__home" data-mobile-more-home>
+        <img class="mobile-sheet__home-logo" src={logoSrc} alt="" width="36" height="36" />
+        <span class="mobile-sheet__home-copy">
+          <span class="mobile-sheet__home-brand">AI Girlfriend Expert</span>
+          <span id="mobile-more-home-label" class="mobile-sheet__home-label">Home</span>
+        </span>
+      </a>
       <button type="button" class="mobile-sheet__close" data-mobile-more-close aria-label="Close">
         <span class="material-symbols-outlined">close</span>
       </button>
     </header>
     <div class="mobile-sheet__body">
-      <a href="/" class="mobile-sheet__home" data-mobile-more-home>
-        <img class="mobile-sheet__home-logo" src={logoSrc} alt="" width="36" height="36" />
-        <span class="mobile-sheet__home-copy">
-          <span class="mobile-sheet__home-brand">AI Girlfriend Expert</span>
-          <span class="mobile-sheet__home-label">Home</span>
-        </span>
-        <span class="material-symbols-outlined mobile-sheet__home-chevron" aria-hidden="true">chevron_right</span>
-      </a>
-
       <p class="mobile-sheet__section-label">This page</p>
       <button type="button" class="mobile-sheet__link" data-mobile-more-share>
         <span class="material-symbols-outlined" aria-hidden="true">share</span>

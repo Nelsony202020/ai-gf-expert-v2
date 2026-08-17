@@ -9,30 +9,103 @@ interface Props {
 }
 
 const { product } = Astro.props;
+const defaultCategory = product.categories[0];
+const defaultLabel = defaultCategory
+  ? defaultCategory.key === 'pricing'
+    ? 'Pricing'
+    : defaultCategory.name
+  : 'Categories';
 ---
 
-<nav class="category-jump-nav" aria-label="Jump to category scores">
-  <p class="category-jump-nav__label">Jump to category</p>
-  <ul class="category-jump-nav__list">
-    {
-      product.categories.map((category) => (
-        <li>
-          <a
-            href={`#${buildReviewRatingsHash(category.key)}`}
-            class="category-jump-nav__link group"
-            data-goto-category={category.key}
-          >
-            <span class="category-jump-nav__icon" aria-hidden="true">
-              <VerdictCategoryIcon id={category.key} />
-            </span>
-            <span class="category-jump-nav__name">{category.name}</span>
-            <ScorePill score={category.score} size="sm" class="shrink-0" />
-          </a>
-        </li>
-      ))
-    }
-  </ul>
+<nav class="category-jump-nav" aria-label="Jump to category scores" data-category-jump>
+  <div class="category-jump-nav__mobile" data-category-jump-mobile>
+    <p class="category-jump-nav__label">Jump to category</p>
+    <button
+      type="button"
+      class="category-jump-nav__trigger"
+      data-category-jump-open
+      aria-haspopup="dialog"
+      aria-expanded="false"
+      aria-controls="category-jump-sheet"
+    >
+      <span class="category-jump-nav__trigger-label" data-category-jump-label>{defaultLabel}</span>
+      <span class="material-symbols-outlined category-jump-nav__trigger-chevron" aria-hidden="true">expand_more</span>
+    </button>
+  </div>
+
+  <div class="category-jump-nav__desktop">
+    <p class="category-jump-nav__label">Jump to category</p>
+    <ul class="category-jump-nav__list">
+      {
+        product.categories.map((category) => (
+          <li>
+            <a
+              href={`#${buildReviewRatingsHash(category.key)}`}
+              class="category-jump-nav__link group"
+              data-goto-category={category.key}
+            >
+              <span class="category-jump-nav__icon" aria-hidden="true">
+                <VerdictCategoryIcon id={category.key} />
+              </span>
+              <span class="category-jump-nav__name">{category.key === 'pricing' ? 'Pricing' : category.name}</span>
+              <ScorePill score={category.score} size="sm" class="shrink-0" />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
 </nav>
+
+<div
+  class="mobile-sheet category-jump-sheet"
+  id="category-jump-sheet"
+  data-category-jump-sheet
+  hidden
+  aria-hidden="true"
+>
+  <button type="button" class="mobile-sheet__backdrop" data-category-jump-close aria-label="Close"></button>
+  <div
+    class="mobile-sheet__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="category-jump-sheet-title"
+  >
+    <div class="mobile-sheet__handle" aria-hidden="true"></div>
+    <header class="mobile-sheet__head">
+      <h2 id="category-jump-sheet-title" class="mobile-sheet__title">Jump to category</h2>
+      <button type="button" class="mobile-sheet__close" data-category-jump-close aria-label="Close">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </header>
+    <div class="mobile-sheet__body category-jump-sheet__body">
+      <div class="category-jump-sheet__list" role="listbox" aria-label="Rating categories">
+        {
+          product.categories.map((category, index) => {
+            const label = category.key === 'pricing' ? 'Pricing' : category.name;
+            const isDefault = index === 0;
+            return (
+              <button
+                type="button"
+                role="option"
+                class:list={['category-jump-sheet__option', isDefault && 'is-active']}
+                data-goto-category={category.key}
+                data-category-jump-option={category.key}
+                data-category-jump-option-label={label}
+                aria-selected={isDefault ? 'true' : 'false'}
+              >
+                <span class="category-jump-sheet__option-icon" aria-hidden="true">
+                  <VerdictCategoryIcon id={category.key} class="w-5 h-5" />
+                </span>
+                <span class="category-jump-sheet__option-label">{label}</span>
+              </button>
+            );
+          })
+        }
+      </div>
+    </div>
+  </div>
+</div>
 
 <style>
   .category-jump-nav {
@@ -42,6 +115,34 @@ const { product } = Astro.props;
     padding: 1rem 1.25rem 1.25rem;
   }
 
+  .category-jump-nav__mobile {
+    display: none;
+  }
+
+  .category-jump-nav__desktop {
+    display: block;
+  }
+
+  @media (max-width: 767px) {
+    .category-jump-nav {
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      padding: 0;
+    }
+
+    .category-jump-nav__mobile {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.65rem;
+    }
+
+    .category-jump-nav__desktop {
+      display: none;
+    }
+  }
+
   .category-jump-nav__label {
     margin: 0 0 0.75rem;
     font-size: 0.6875rem;
@@ -49,6 +150,56 @@ const { product } = Astro.props;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--color-tertiary);
+  }
+
+  @media (max-width: 767px) {
+    .category-jump-nav__label {
+      margin: 0;
+      letter-spacing: 0.08em;
+    }
+  }
+
+  .category-jump-nav__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 100%;
+    min-height: 32px;
+    padding: 0.3rem 0.45rem 0.3rem 0.7rem;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 999px;
+    background: var(--color-surface-container-lowest, #fff);
+    color: var(--color-on-surface);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .category-jump-nav__trigger:hover,
+  .category-jump-nav__trigger:focus-visible {
+    border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-surface-variant));
+    outline: none;
+  }
+
+  .category-jump-nav__trigger[aria-expanded='true'] {
+    border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-surface-variant));
+  }
+
+  .category-jump-nav__trigger-label {
+    min-width: 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .category-jump-nav__trigger-chevron {
+    flex-shrink: 0;
+    font-size: 1.125rem;
+    color: var(--color-accent);
   }
 
   .category-jump-nav__list {
@@ -113,4 +264,139 @@ const { product } = Astro.props;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  .category-jump-sheet__body {
+    padding-top: 0.25rem;
+  }
+
+  .category-jump-sheet__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .category-jump-sheet__option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.55rem 0.75rem;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-on-surface);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease;
+  }
+
+  .category-jump-sheet__option:hover,
+  .category-jump-sheet__option:focus-visible {
+    background: var(--color-surface-container-low);
+    outline: none;
+  }
+
+  .category-jump-sheet__option.is-active {
+    background: rgb(219 39 119 / 7%);
+  }
+
+  .category-jump-sheet__option-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--color-tertiary);
+  }
+
+  .category-jump-sheet__option.is-active .category-jump-sheet__option-icon {
+    color: var(--color-accent);
+  }
+
+  .category-jump-sheet__option-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+
+  .category-jump-sheet__option.is-active .category-jump-sheet__option-label {
+    color: var(--color-accent);
+  }
+
+  [data-theme='dark'] .category-jump-nav__trigger {
+    background: var(--color-surface-container-lowest);
+    border-color: var(--dark-border-subtle);
+  }
+
+  [data-theme='dark'] .category-jump-sheet__option.is-active {
+    background: rgb(219 39 119 / 12%);
+  }
 </style>
+
+<script>
+  import { closeSheet, openSheet } from '../../lib/ui/bottomSheet.ts';
+
+  function initCategoryJumpNav() {
+    const nav = document.querySelector<HTMLElement>('[data-category-jump]');
+    const sheet = document.querySelector<HTMLElement>('[data-category-jump-sheet]');
+    if (!nav || !sheet || nav.dataset.bound === 'true') return;
+    nav.dataset.bound = 'true';
+
+    const openBtn = nav.querySelector<HTMLElement>('[data-category-jump-open]');
+    const panel = sheet.querySelector<HTMLElement>('.mobile-sheet__panel');
+    const labelEl = nav.querySelector<HTMLElement>('[data-category-jump-label]');
+    const options = Array.from(sheet.querySelectorAll<HTMLElement>('[data-category-jump-option]'));
+    let releaseFocus: (() => void) | null = null;
+
+    function setActive(key: string, label?: string) {
+      if (label && labelEl) labelEl.textContent = label;
+      options.forEach((opt) => {
+        const active = opt.dataset.categoryJumpOption === key;
+        opt.classList.toggle('is-active', active);
+        opt.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+    }
+
+    function closeJumpSheet() {
+      closeSheet(sheet, () => {
+        releaseFocus?.();
+        releaseFocus = null;
+      });
+      openBtn?.setAttribute('aria-expanded', 'false');
+    }
+
+    function openJumpSheet() {
+      if (!panel) return;
+      releaseFocus?.();
+      releaseFocus = openSheet(sheet, panel, {
+        focusSelector: '.category-jump-sheet__option.is-active',
+      });
+      openBtn?.setAttribute('aria-expanded', 'true');
+    }
+
+    openBtn?.addEventListener('click', openJumpSheet);
+    sheet.querySelectorAll('[data-category-jump-close]').forEach((el) => {
+      el.addEventListener('click', closeJumpSheet);
+    });
+
+    options.forEach((opt) => {
+      opt.addEventListener('click', () => {
+        const key = opt.dataset.categoryJumpOption;
+        const label = opt.dataset.categoryJumpOptionLabel;
+        if (!key) return;
+        setActive(key, label);
+        closeJumpSheet();
+        // Let the existing document click handler on [data-goto-category] open the accordion.
+      });
+    });
+  }
+
+  initCategoryJumpNav();
+  document.addEventListener('astro:page-load', initCategoryJumpNav);
+</script>

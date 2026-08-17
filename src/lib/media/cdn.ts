@@ -19,11 +19,16 @@ export function getCdnBaseUrl(): string {
   return host ? `https://${host}` : '';
 }
 
-/** Site brand marks that ship with the app — don't require a CDN upload to render. */
-const SAME_ORIGIN_PUBLIC_PATHS = new Set([
-  '/brand/girlfriend-expert-logo.png',
-  '/brand/girlfriend-expert-logo-white.png',
-]);
+/** Local-only public files that are not on the Bunny pull zone yet. */
+const SAME_ORIGIN_PUBLIC_PATHS = new Set<string>();
+
+/** Prefixes served from the app origin until (or unless) they exist on the pull zone. */
+const SAME_ORIGIN_PUBLIC_PREFIXES = ['/brand/tooltip-categories/'];
+
+function isSameOriginPublicAsset(path: string): boolean {
+  if (SAME_ORIGIN_PUBLIC_PATHS.has(path)) return true;
+  return SAME_ORIGIN_PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
 
 function isDevRuntime(): boolean {
   const metaEnv = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env;
@@ -39,7 +44,7 @@ export function cdnAsset(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`;
 
   // Local dev + unreleased brand files: serve from Astro/public, not the pull zone.
-  if (isDevRuntime() || SAME_ORIGIN_PUBLIC_PATHS.has(normalized)) {
+  if (isDevRuntime() || isSameOriginPublicAsset(normalized)) {
     return normalized;
   }
 

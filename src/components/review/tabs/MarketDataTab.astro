@@ -198,7 +198,7 @@ const takeaways = vm.takeaways;
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)] gap-6 mb-10">
-      <div class="md-panel">
+      <div class="md-panel" id="market-search-interest" data-page-toc="Search Interest Over Time">
         <div class="flex items-center justify-between gap-3 mb-4">
           <div class="flex items-center gap-1.5">
             <h3 class="text-lg font-black text-on-surface">Search Interest Over Time</h3>
@@ -267,7 +267,7 @@ const takeaways = vm.takeaways;
         </div>
       </div>
 
-      <div class="md-panel">
+      <div class="md-panel" id="market-rank" data-page-toc="Market Rank">
         <div class="flex items-center gap-1.5 mb-1">
           <h3 class="text-lg font-black text-on-surface">Market Rank</h3>
           <InlineHelpTooltip
@@ -319,7 +319,7 @@ const takeaways = vm.takeaways;
       </div>
     </div>
 
-    <div class="md-panel mb-10 overflow-hidden p-0">
+    <div class="md-panel mb-10 overflow-hidden p-0" id="market-comparison" data-page-toc="Market Comparison">
       <div class="p-5 border-b border-surface-variant">
         <h3 class="text-lg font-black text-on-surface">Market Comparison</h3>
         <p class="text-xs text-tertiary mt-1">Market metrics only — search interest, growth, and rank.</p>
@@ -374,7 +374,7 @@ const takeaways = vm.takeaways;
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-      <div class="md-panel">
+      <div class="md-panel" id="market-price-position" data-page-toc="Price Position">
         <div class="flex items-center gap-1.5 mb-4">
           <h3 class="text-lg font-black text-on-surface">Price Position</h3>
           <InlineHelpTooltip
@@ -442,7 +442,7 @@ const takeaways = vm.takeaways;
         }
       </div>
 
-      <div class="md-panel">
+      <div class="md-panel" id="market-value" data-page-toc="Value for Money">
         <div class="flex items-center gap-1.5 mb-4">
           <h3 class="text-lg font-black text-on-surface">Value for Money</h3>
           <InlineHelpTooltip
@@ -485,7 +485,7 @@ const takeaways = vm.takeaways;
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,0.52fr)_minmax(0,0.48fr)] gap-6">
-      <div class="md-panel">
+      <div class="md-panel" id="market-takeaways" data-page-toc="Key Takeaways">
         <h3 class="text-lg font-black text-on-surface mb-4">Key Takeaways</h3>
         <ul class="space-y-4">
           {
@@ -503,7 +503,7 @@ const takeaways = vm.takeaways;
 
       {
         herman && (
-          <div class="md-panel md-expert">
+          <div class="md-panel md-expert" id="market-expert" data-page-toc="Expert Analysis">
             <h3 class="text-lg font-black text-on-surface mb-4">Expert Analysis</h3>
             {
               vm.expertAnalysis.map((paragraph) => (

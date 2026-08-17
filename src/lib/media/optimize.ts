@@ -41,7 +41,7 @@ export function optimizedImageUrl(url: string | undefined | null, opts: ImageOpt
 
   const params = new URLSearchParams();
   if (opts.width && opts.width > 0) {
-    params.set('width', String(Math.min(Math.round(opts.width * 2), 2400)));
+    params.set('width', String(Math.min(Math.round(opts.width * 2), 1600)));
   }
   params.set('quality', String(opts.quality ?? 75));
 

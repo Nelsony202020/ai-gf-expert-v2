@@ -14,8 +14,8 @@ const { heroImage = homeMeta.heroImage, heroImageAlt = homeMeta.heroImageAlt } =
 const publishedProducts = await loadComparisonProducts();
 const megaMenuColumns = buildMegaMenuColumns(publishedProducts);
 const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
-const heroSrc = optimizedImageUrl(heroImage, { width: 800, quality: 72 });
-const heroSrcSet = imageSrcSet(heroImage, [480, 800, 1200], 72);
+const heroSrc = optimizedImageUrl(heroImage, { width: 400, quality: 72 });
+const heroSrcSet = imageSrcSet(heroImage, [400, 800], 72);
 ---
 
 <section class="home-hero" aria-labelledby="home-hero-title">
@@ -41,17 +41,26 @@ const heroSrcSet = imageSrcSet(heroImage, [480, 800, 1200], 72);
               class="home-hero__search-input"
               placeholder="Search reviews, roundups, and guides…"
               autocomplete="off"
+              role="combobox"
+              aria-autocomplete="list"
               aria-label="Search the site"
               aria-expanded="false"
               aria-controls="home-search-results"
               data-home-search-input
             />
-            <button type="submit" class="home-hero__search-btn">
+            <button type="submit" class="home-hero__search-btn" aria-label="Search">
               <span class="material-symbols-outlined text-[18px]" aria-hidden="true">search</span>
               <span class="hidden sm:inline">Search</span>
             </button>
           </form>
-          <div id="home-search-results" class="home-hero__search-panel" hidden data-home-search-panel></div>
+          <div
+            id="home-search-results"
+            class="home-hero__search-panel"
+            hidden
+            role="listbox"
+            aria-label="Search results"
+            data-home-search-panel
+          ></div>
         </div>
       </div>
     </div>

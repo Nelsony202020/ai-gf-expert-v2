@@ -213,7 +213,7 @@ const usagePayload = JSON.stringify(
 
     <!-- Plans + usage -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
-      <div class="pt-panel">
+      <div class="pt-panel" id="pricing-plans" data-page-toc="Plans & what you get">
         <h3 class="pt-panel__title">
           Plans & what you get
           <InfoIcon title="Plan features and included credits from our pricing research." />
@@ -264,7 +264,13 @@ const usagePayload = JSON.stringify(
         }
       </div>
 
-      <div class="pt-panel" data-pt-usage data-pt-usage-payload={usagePayload}>
+      <div
+        class="pt-panel"
+        id="pricing-real-world-cost"
+        data-page-toc="What you'll actually pay"
+        data-pt-usage
+        data-pt-usage-payload={usagePayload}
+      >
         <h3 class="pt-panel__title">
           What you'll actually pay
           <InfoIcon title="Estimated monthly spend for light, regular, and heavy usage based on our usage scenarios." />
@@ -329,7 +335,7 @@ const usagePayload = JSON.stringify(
 
     <!-- Feature costs + comparison -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <div class="pt-panel">
+      <div class="pt-panel" id="pricing-feature-costs" data-page-toc="Cost per feature">
         <h3 class="pt-panel__title">
           Cost per feature
           <InfoIcon title="Estimated money cost per feature use at the best available top-up rate." />
@@ -349,7 +355,7 @@ const usagePayload = JSON.stringify(
         </ul>
       </div>
 
-      <div class="pt-panel">
+      <div class="pt-panel" id="pricing-comparison" data-page-toc={`How ${vm.productName} compares`}>
         <h3 class="pt-panel__title">
           How {vm.productName} compares
           <InfoIcon title="Compared with the average across apps we’ve reviewed with pricing data." />
