@@ -28,15 +28,15 @@ import { buildHomepageSchema } from '../lib/seo/jsonld';
 import { cdnAsset } from '../lib/media/cdn';
 import { isPlaceholderImage, PUBLIC_HERO_FALLBACK } from '../lib/media/optimize';
 
-// SSR so admin homepage slots appear without a full rebuild.
-export const prerender = false;
-Astro.response.headers.set('Cache-Control', 'public, s-maxage=180, stale-while-revalidate=86400');
-
-const apps = await loadExplorerApps();
-const featuredCharactersShowcase = await loadFeaturedCharactersShowcase();
-const topPicks = await loadHomepageTopPicks(fileAiGirlfriendRoundup.picks);
-const recentUpdates = await loadHomepageRecentUpdates();
-const featuredGuides = await loadHomepageGuides();
+// Static HTML at the edge. Google lands here — SSR + InstantDB was ~5.5s TTFB.
+// Homepage slots update on the next publish/rebuild (same as review pages).
+const [apps, featuredCharactersShowcase, topPicks, recentUpdates, featuredGuides] = await Promise.all([
+  loadExplorerApps(),
+  loadFeaturedCharactersShowcase(),
+  loadHomepageTopPicks(fileAiGirlfriendRoundup.picks),
+  loadHomepageRecentUpdates(),
+  loadHomepageGuides(),
+]);
 const jsonLdGraph = buildHomepageSchema();
 const heroImage = cdnAsset(
   isPlaceholderImage(homeMeta.heroImage) ? PUBLIC_HERO_FALLBACK : homeMeta.heroImage,

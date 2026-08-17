@@ -1,6 +1,4 @@
 ---
-export const prerender = false;
-
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
@@ -27,8 +25,6 @@ import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
 import { loadRoundupForPublic } from '../../lib/content/store';
 import JsonLd from '../../components/seo/JsonLd.astro';
 import { buildRoundupItemListSchema } from '../../lib/seo/jsonld';
-
-Astro.response.headers.set('Cache-Control', 'public, s-maxage=180, stale-while-revalidate=86400');
 
 const { roundup, isDraft } = await loadRoundupForPublic('ai-girlfriend', fileAiGirlfriendRoundup);
 
