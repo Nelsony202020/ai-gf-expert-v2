@@ -333,6 +333,16 @@
   transform: translateY(0);
 }
 
+@media (max-width: 767px) {
+  .mobile-sheet {
+    transition-duration: 0.48s;
+  }
+
+  .mobile-sheet__panel {
+    transition-duration: 0.52s;
+  }
+}
+
 .mobile-sheet__handle {
   flex-shrink: 0;
   width: 36px;
@@ -376,6 +386,11 @@
   background: rgb(0 0 0 / 5%);
   color: var(--color-tertiary);
   cursor: pointer;
+}
+
+.mobile-sheet__panel > .sheet-scroll-host {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .mobile-sheet__body {

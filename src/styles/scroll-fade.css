@@ -22,7 +22,24 @@
   transition: opacity 0.2s ease;
 }
 
-.ui-scroll-fade-host[data-scroll-more='true'] .ui-scroll-fade {
+.ui-scroll-fade--top {
+  top: 0;
+  bottom: auto;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(
+    to bottom,
+    var(--color-surface-container-lowest) 12%,
+    color-mix(in srgb, var(--color-surface-container-lowest) 55%, transparent) 55%,
+    transparent
+  );
+}
+
+.ui-scroll-fade-host[data-scroll-more='true'] .ui-scroll-fade:not(.ui-scroll-fade--top) {
+  display: block;
+  opacity: 1;
+}
+
+.ui-scroll-fade-host[data-scroll-more-above='true'] .ui-scroll-fade--top {
   display: block;
   opacity: 1;
 }

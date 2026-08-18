@@ -31,7 +31,8 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
     <div class="roundup-sheet__handle" aria-hidden="true"></div>
     <h2 id="nav-sheet-title" class="roundup-nav-sheet__toc-title">On this page</h2>
 
-    <nav class="roundup-nav-sheet__toc" aria-label="Table of contents">
+    <div class="sheet-scroll-host">
+    <nav class="roundup-nav-sheet__toc sheet-scroll" data-sheet-scroll aria-label="Table of contents">
       <ul class="roundup-nav-sheet__toc-list">
         {
           mainSections.map((section) => (
@@ -63,6 +64,7 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
         }
       </ul>
     </nav>
+    </div>
 
     <button type="button" class="roundup-sheet__cancel" data-sheet-close>Close</button>
   </div>

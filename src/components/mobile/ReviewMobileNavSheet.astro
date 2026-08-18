@@ -33,19 +33,25 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
     <p class="roundup-nav-sheet__section-eyebrow" data-review-toc-section>Overview</p>
     <h2 id="review-nav-sheet-title" class="roundup-nav-sheet__toc-title">On this page</h2>
 
-    <nav class="roundup-nav-sheet__toc" aria-label="On this page">
-      <ul class="roundup-nav-sheet__toc-list" data-review-toc-list></ul>
-    </nav>
+    <div class="sheet-scroll-host">
+      <div class="sheet-scroll" data-sheet-scroll>
+        <nav class="roundup-nav-sheet__toc" aria-label="On this page">
+          <ul class="roundup-nav-sheet__toc-list" data-review-toc-list></ul>
+        </nav>
 
-    <p class="roundup-nav-sheet__toc-empty" data-review-toc-empty hidden>
-      No subsections in this part of the review.
-    </p>
+        <p class="roundup-nav-sheet__toc-empty" data-review-toc-empty hidden>
+          No subsections in this part of the review.
+        </p>
+      </div>
+    </div>
 
     <button type="button" class="roundup-sheet__cancel" data-sheet-close>Close</button>
   </div>
 </div>
 
 <script>
+  import { sheetDurationMs } from '../../lib/ui/bottomSheet';
+
   function initReviewMobileNavSheet() {
     const sheet = document.querySelector<HTMLElement>('[data-review-section-toc]');
     if (!sheet) return;
@@ -247,6 +253,10 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
       });
     }
 
+    function isMobileViewport() {
+      return window.matchMedia('(max-width: 767px)').matches;
+    }
+
     function scrollToEl(el: HTMLElement) {
       const y = el.getBoundingClientRect().top + window.scrollY - getScrollOffset() - 8;
       window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
@@ -264,7 +274,7 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
         const btn = document.querySelector<HTMLElement>(`[data-verdict-nav="${item.verdictId}"]`);
         btn?.click();
         const panel = document.querySelector<HTMLElement>(`[data-verdict-panel="${item.verdictId}"]`);
-        if (panel) scrollToEl(panel);
+        if (panel && !isMobileViewport()) scrollToEl(panel);
         return;
       }
 
@@ -382,9 +392,12 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
     }
 
     function closeSheet() {
-      sheet.hidden = true;
-      sheet.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('roundup-sheet-open');
+      sheet.classList.remove('is-open');
+      window.setTimeout(() => {
+        sheet.hidden = true;
+        sheet.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('roundup-sheet-open');
+      }, sheetDurationMs());
     }
 
     function openSheet(e?: Event) {
@@ -394,6 +407,11 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
       sheet.hidden = false;
       sheet.setAttribute('aria-hidden', 'false');
       document.body.classList.add('roundup-sheet-open');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          sheet.classList.add('is-open');
+        });
+      });
     }
 
     document.querySelectorAll('[data-nav-sheet-open]').forEach((btn) => {

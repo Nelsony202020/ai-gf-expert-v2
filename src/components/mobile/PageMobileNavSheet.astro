@@ -32,19 +32,21 @@ const { sections, pageTitle, pageUrl, title = 'On this page' } = Astro.props;
     <div class="roundup-sheet__handle" aria-hidden="true"></div>
     <h2 id="page-nav-sheet-title" class="roundup-nav-sheet__toc-title">{title}</h2>
 
-    <nav class="roundup-nav-sheet__toc" aria-label="On this page">
-      <ul class="roundup-nav-sheet__toc-list">
-        {
-          sections.map((section) => (
-            <li>
-              <a class="roundup-nav-sheet__toc-link" href={`#${section.id}`} data-toc-link={section.id}>
-                {section.label}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
+    <div class="sheet-scroll-host">
+      <nav class="roundup-nav-sheet__toc sheet-scroll" data-sheet-scroll aria-label="On this page">
+        <ul class="roundup-nav-sheet__toc-list">
+          {
+            sections.map((section) => (
+              <li>
+                <a class="roundup-nav-sheet__toc-link" href={`#${section.id}`} data-toc-link={section.id}>
+                  {section.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </div>
 
     <button type="button" class="roundup-sheet__cancel" data-sheet-close>Close</button>
   </div>
