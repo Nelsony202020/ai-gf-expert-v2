@@ -64,7 +64,7 @@ export function resolveProductPageHead(
   const h1 = h1Override || `${product.name} Review`;
 
   const canonical = resolveCanonicalUrl(
-    `/reviews/${product.slug}`,
+    `/reviews/${product.slug}/`,
     seo.canonicalUrl,
     opts.astroSite,
   );

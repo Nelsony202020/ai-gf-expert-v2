@@ -1,4 +1,24 @@
 {
+  "redirects": [
+    { "source": "/reviews/:slug", "destination": "/reviews/:slug/", "permanent": true },
+    { "source": "/reviews/preview/:slug", "destination": "/reviews/preview/:slug/", "permanent": true },
+    { "source": "/best/:slug", "destination": "/best/:slug/", "permanent": true },
+    { "source": "/guides/:slug", "destination": "/guides/:slug/", "permanent": true },
+    { "source": "/author/:slug", "destination": "/author/:slug/", "permanent": true },
+    { "source": "/legal/:slug", "destination": "/legal/:slug/", "permanent": true },
+    { "source": "/test/:category/:subscore", "destination": "/test/:category/:subscore/", "permanent": true },
+    { "source": "/test/:category", "destination": "/test/:category/", "permanent": true },
+    { "source": "/about", "destination": "/about/", "permanent": true },
+    { "source": "/contact", "destination": "/contact/", "permanent": true },
+    { "source": "/glossary", "destination": "/glossary/", "permanent": true },
+    { "source": "/sitemap", "destination": "/sitemap/", "permanent": true },
+    { "source": "/guides", "destination": "/guides/", "permanent": true },
+    { "source": "/reviews", "destination": "/reviews/", "permanent": true },
+    { "source": "/legal", "destination": "/legal/", "permanent": true },
+    { "source": "/test", "destination": "/test/", "permanent": true },
+    { "source": "/editorial-guidelines", "destination": "/editorial-guidelines/", "permanent": true },
+    { "source": "/ai-girlfriend-apps", "destination": "/ai-girlfriend-apps/", "permanent": true }
+  ],
   "env": {
     "PUBLIC_SITE_URL": "https://aigirlfriend.expert",
     "PUBLIC_CDN_URL": "https://aigirlfriendpull.b-cdn.net",

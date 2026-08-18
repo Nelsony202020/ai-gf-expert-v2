@@ -46,7 +46,7 @@ export function reviewRatingsSectionUrl(
   categoryKey?: string,
   subscoreName?: string,
 ): string {
-  return `/reviews/${productSlug}#${buildReviewRatingsHash(categoryKey, subscoreName)}`;
+  return `/reviews/${productSlug}/#${buildReviewRatingsHash(categoryKey, subscoreName)}`;
 }
 
 /** Match a subscore nav item by slugified label. */

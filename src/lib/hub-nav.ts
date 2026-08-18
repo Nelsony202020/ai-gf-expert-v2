@@ -9,11 +9,11 @@ export interface HubTab {
 export type HubTabId = 'best-apps' | 'buying-guide' | 'how-we-test';
 
 export const HUB_NAV_TABS: HubTab[] = [
-  { id: 'best-apps', label: 'Best apps', href: '/best/ai-girlfriend', icon: 'emoji_events' },
+  { id: 'best-apps', label: 'Best apps', href: '/best/ai-girlfriend/', icon: 'emoji_events' },
   {
     id: 'buying-guide',
     label: 'Buying guide',
-    href: '/guides/how-to-choose-an-ai-girlfriend-app',
+    href: '/guides/how-to-choose-an-ai-girlfriend-app/',
     icon: 'shopping_cart',
   },
   {

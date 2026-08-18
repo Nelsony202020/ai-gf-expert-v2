@@ -50,7 +50,7 @@ const { picks, characters } = Astro.props;
       <div class="home-picks__stack">
         {
           picks.map((pick, index) => {
-            const reviewHref = pick.reviewUrl ?? `/reviews/${pick.slug}`;
+            const reviewHref = pick.reviewUrl ?? `/reviews/${pick.slug}/`;
             const thumb = pick.gallery[0]?.full ?? pick.logo;
             const thumbIsLogo = !pick.gallery[0]?.full;
             const scoreVisual = getScoreVisual(pick.overallScore);

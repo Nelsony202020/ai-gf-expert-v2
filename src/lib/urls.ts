@@ -1,6 +1,6 @@
 /**
  * Canonical public URL paths. The site uses trailing slashes on all HTML pages
- * (Astro `trailingSlash: 'always'`). Use these helpers anywhere a path is
+ * (canonical + production `trailingSlash: 'always'`). Use these helpers anywhere a path is
  * stored, compared, or submitted to sitemaps / the SEO registry.
  */
 

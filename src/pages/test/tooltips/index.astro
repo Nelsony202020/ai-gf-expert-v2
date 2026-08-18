@@ -347,7 +347,7 @@ const canonical = canonicalPublicUrl(Astro.url.pathname, Astro.site);
             hash = `ratings--${categoryKey}`;
             if (subscoreSlug) hash += `--${subscoreSlug}`;
           }
-          return `/reviews/${slug}#${hash}`;
+          return `/reviews/${slug}/#${hash}`;
         }
 
         function renderApps(selected: (typeof bins)[number]) {

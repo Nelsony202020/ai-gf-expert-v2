@@ -104,8 +104,8 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
       >
         Draft — not published. This page is only for localhost testing and is not indexed.
         Publish the product in admin for the live URL at
-        <a href={`/reviews/${product.slug}`} class="font-medium underline underline-offset-2">
-          /reviews/{product.slug}
+        <a href={`/reviews/${product.slug}/`} class="font-medium underline underline-offset-2">
+          /reviews/{product.slug}/
         </a>.
       </div>
     )
