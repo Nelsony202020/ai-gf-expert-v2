@@ -8,7 +8,7 @@ import EditorialAwardBadge from '../ui/EditorialAwardBadge.astro';
 import { getPrimaryAward, getSecondaryAwards } from '../../lib/awards/compute';
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 import { reviewPageUrl } from '../../lib/slugs';
-import { optimizedImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
+import { optimizedCardImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
 
 interface Props {
   app: HomeExplorerApp;
@@ -64,7 +64,7 @@ const secondaryAwards = getSecondaryAwards(app.awards ?? []);
     <a href={reviewHref} class="home-app-card__media-link" tabindex="-1" aria-hidden="true">
       <img
         class="home-app-card__image"
-        src={optimizedImageUrl(app.gallery[0]?.full ?? app.logo, { width: 480, quality: 70 })}
+        src={optimizedCardImageUrl(app.gallery[0]?.full ?? app.logo, 560)}
         alt={app.gallery[0]?.alt ?? `${app.name} screenshot`}
         width="640"
         height="400"

@@ -207,7 +207,7 @@ export function SetupTab() {
               />
               <ProductMediaField
                 label="Featured image"
-                hint="This is the featured image for the review."
+                hint="Review post hero art — shown on the review page gallery and social previews."
                 supportedText="JPG or PNG • Recommended 16:9 • Max 5MB"
                 role="featured"
                 accept="image/png,image/jpeg,image/webp"
@@ -220,11 +220,11 @@ export function SetupTab() {
                 onUploaded={() => void ws.refreshRelated()}
               />
               <ProductMediaField
-                label="Secondary logo"
-                hint="Optional secondary logo for the platform, if one exists (e.g. wordmark or alternate mark)."
-                supportedText="PNG, JPG, JPEG, or SVG • Max 2MB"
+                label="Pop art logo"
+                hint="Large branded pop-art image for the directory, homepage cards, and roundup media carousel."
+                supportedText="PNG or JPG • Recommended 16:9 • Max 5MB"
                 role="secondaryLogo"
-                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                accept="image/png,image/jpeg,image/webp"
                 productId={ws.productId}
                 value={links.secondaryLogo ?? null}
                 mediaRows={related.mediaAll}

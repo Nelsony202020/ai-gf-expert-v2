@@ -3,7 +3,6 @@ import { buildMegaMenuColumns } from '../data/nav-mega-menu';
 import { buildSearchIndex } from '../data/site-search';
 import { loadComparisonProducts } from '../lib/content/comparisonProducts';
 import { cdnAsset } from '../lib/media/cdn';
-import { optimizedImageUrl } from '../lib/media/optimize';
 import ThemeToggle from './ui/ThemeToggle.astro';
 
 const publishedProducts = await loadComparisonProducts();
@@ -16,7 +15,7 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
     <div class="site-header__left">
       <a href="/" class="site-logo-link site-header__logo-link shrink-0">
         <img
-          src={optimizedImageUrl(cdnAsset('/brand/girlfriend-expert-logo.png'), { width: 160, quality: 72, dpr: 1 })}
+          src={cdnAsset('/brand/girlfriend-expert-logo.png')}
           alt="Girlfriend Expert AI"
           class="site-header__logo site-header__logo--light"
           width="148"
@@ -26,7 +25,7 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
           decoding="async"
         />
         <img
-          src={optimizedImageUrl(cdnAsset('/brand/girlfriend-expert-logo-white.png'), { width: 160, quality: 72, dpr: 1 })}
+          src={cdnAsset('/brand/girlfriend-expert-logo-white.png')}
           alt=""
           class="site-header__logo site-header__logo--dark"
           width="148"

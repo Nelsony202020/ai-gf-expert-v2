@@ -6,19 +6,54 @@
   --roundup-content-max: 48rem;
   --roundup-header-bg: #f8faf3;
   --roundup-intro-offset: 1.5rem;
+  --roundup-sidebar-sticky-gap: 0.5rem;
   --site-header-height: 3.25rem;
+}
+
+/* Native 1024×256 card — do not stretch past source or it goes soft. */
+.roundup-hero-stage {
+  --roundup-hero-height: clamp(8rem, 25vw, 16rem);
 }
 
 @media (min-width: 768px) {
   .roundup-page {
     --site-header-height: 4.25rem;
   }
+
+  .roundup-hero-stage {
+    --roundup-hero-height: 16rem;
+  }
 }
 
-body:has(.roundup-page) .site-header {
+/* Hub banner page: fixed header over sticky hero (glass styles are global) */
+body:has(.roundup-hero-stage) .site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+/* Sticky hero — content scrolls up over it (Foxy-style depth) */
+.roundup-hero-stage {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 0;
+  height: var(--roundup-hero-height);
+  overflow: hidden;
+  background: #141414;
+}
+
+.roundup-page--covers-hero {
+  position: relative;
+  z-index: 2;
+  margin-top: -0.75rem;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: var(--color-surface);
+  box-shadow: 0 -10px 40px rgb(0 0 0 / 8%);
+}
+
+[data-theme='dark'] .roundup-page--covers-hero {
+  box-shadow: 0 -10px 40px rgb(0 0 0 / 35%);
 }
 
 [data-theme='dark'] .roundup-page {
@@ -235,16 +270,48 @@ body:has(.roundup-page) .site-header {
 }
 
 .roundup-featured {
-  width: 100%;
-  aspect-ratio: 5 / 2;
-  max-height: 320px;
-  object-fit: cover;
+  width: auto;
+  height: auto;
+  max-width: min(100%, 1024px);
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 
 @media (min-width: 768px) {
   .roundup-featured {
     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   }
+}
+
+/* Center the 1024px card — stretching it full-bleed is what made type look muddy. */
+.roundup-hero--scroll-under {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100%;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    repeating-linear-gradient(
+      -18deg,
+      #1c1c1c 0 36px,
+      #171717 36px 72px
+    );
+}
+
+.roundup-hero--scroll-under .roundup-featured {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(100%, 1024px);
+  max-height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  object-fit: contain;
 }
 
 .roundup-affiliate-bar {
@@ -319,10 +386,10 @@ body:has(.roundup-page) .site-header {
     display: flex;
     flex-direction: column;
     position: sticky;
-    top: calc(var(--site-header-height, 4.25rem) + 1.5rem);
+    top: calc(var(--site-header-height, 4.25rem) + var(--roundup-sidebar-sticky-gap));
     align-self: start;
-    padding-top: var(--roundup-intro-offset);
-    max-height: calc(100vh - var(--site-header-height, 4.25rem) - 2rem);
+    padding-top: 0;
+    max-height: calc(100vh - var(--site-header-height, 4.25rem) - var(--roundup-sidebar-sticky-gap) - 0.5rem);
   }
 
   .roundup-toc {
@@ -2337,6 +2404,10 @@ body.roundup-sheet-open {
   font-weight: 500;
   line-height: 1.35;
   color: var(--color-on-surface);
+}
+
+.roundup-at-glance__value .multi-value {
+  white-space: nowrap;
 }
 
 .roundup-at-glance__value--muted {

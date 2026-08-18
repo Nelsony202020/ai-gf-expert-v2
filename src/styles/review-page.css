@@ -21,16 +21,25 @@
   }
 }
 
-/* Keep site header visible so the tab bar has a stable anchor */
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
+/* Tab bar pins under the glass header — match header surface when joined */
+[data-tabbar].review-tabbar.review-tabbar--pinned {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  background: var(--site-header-glass-bg);
+  backdrop-filter: blur(var(--site-header-glass-blur)) saturate(var(--site-header-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--site-header-glass-blur)) saturate(var(--site-header-glass-saturate));
+  border-bottom: 1px solid var(--site-header-glass-border);
+  box-shadow: none;
 }
 
-/* In-flow under the hero: page/hero background — not sticky.
-   Sticky here would keep the bar under the header while scrolling up,
-   but with the unpinned (white) color — which looks broken. */
+/* Hide the header’s own bottom border while tabs are joined underneath */
+.site-header.site-header--joined-tabs {
+  border-bottom-color: transparent;
+}
+
+/* In-flow under the hero: page/hero background — not sticky. */
 [data-tabbar].review-tabbar {
   position: relative;
   top: auto;
@@ -38,26 +47,6 @@
   background: var(--color-background);
   border-bottom: 1px solid var(--color-surface-variant);
   box-shadow: none;
-}
-
-/*
-  Joined to the main header: fixed under it, same header surface color.
-  Stays this color while pinned — including when scrolling back up —
-  until JS unpins and it returns to in-flow (hero/page background).
-*/
-[data-tabbar].review-tabbar.review-tabbar--pinned {
-  position: fixed;
-  left: 0;
-  right: 0;
-  z-index: 45;
-  background: var(--color-header-surface);
-  border-bottom: 1px solid #e5e9df;
-  box-shadow: none;
-}
-
-/* Hide the header’s own bottom border while tabs are joined underneath */
-.site-header.site-header--joined-tabs {
-  border-bottom-color: transparent;
 }
 
 [data-tabbar-spacer][hidden] {
@@ -70,8 +59,8 @@
 }
 
 [data-theme='dark'] [data-tabbar].review-tabbar.review-tabbar--pinned {
-  background: var(--color-header-surface);
-  border-bottom-color: #1e293b;
+  background: var(--site-header-glass-bg);
+  border-bottom-color: var(--site-header-glass-border);
 }
 
 [data-theme='dark'] .site-header.site-header--joined-tabs {

@@ -129,6 +129,7 @@ const SETUP_CHECKS: Check[] = [
   { key: 'author', label: 'Author', severity: 'required', done: (i) => Boolean(i.links.author) },
   { key: 'tagline', label: 'Tagline', severity: 'recommended', done: (i) => textFilled(i.fields.tagline) },
   { key: 'featuredImage', label: 'Featured image', severity: 'recommended', done: (i) => Boolean(i.links.featuredImage) },
+  { key: 'secondaryLogo', label: 'Pop art logo', severity: 'recommended', done: (i) => Boolean(i.links.secondaryLogo) },
   { key: 'youtubeReviewUrl', label: 'YouTube review URL', severity: 'recommended', done: (i) => textFilled(i.fields.youtubeReviewUrl) },
   { key: 'factChecker', label: 'Fact checker', severity: 'recommended', done: (i) => Boolean(i.links.factChecker) },
   {

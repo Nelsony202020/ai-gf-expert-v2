@@ -1,6 +1,6 @@
 ---
 import type { GalleryImage, Product } from '../../data/products';
-import { imageSrcSet, optimizedImageUrl } from '../../lib/media/optimize';
+import { heroImageSrcSet, optimizedHeroImageUrl, optimizedImageUrl } from '../../lib/media/optimize';
 import VideoReviewLightbox from './VideoReviewLightbox.astro';
 
 interface Props {
@@ -11,8 +11,10 @@ interface Props {
 const { images, product } = Astro.props;
 const hero = images[0];
 const heroIsVideo = (hero?.mediaType ?? 'image') === 'video';
-const heroImgSrc = heroIsVideo ? undefined : optimizedImageUrl(hero?.full, { width: 800, quality: 72, dpr: 1 });
-const heroImgSrcSet = heroIsVideo || !hero?.full ? '' : imageSrcSet(hero.full, [480, 800], 72);
+const singleImage = images.length <= 1;
+const HERO_WIDTHS = [640, 960, 1280, 1600, 1920];
+const heroImgSrc = heroIsVideo ? undefined : optimizedHeroImageUrl(hero?.full, 1280);
+const heroImgSrcSet = heroIsVideo || !hero?.full ? '' : heroImageSrcSet(hero.full, HERO_WIDTHS, 90);
 const galleryLightboxItems = JSON.stringify(
   images
     .filter((image) => image.full)
@@ -26,7 +28,7 @@ const galleryLightboxItems = JSON.stringify(
 ---
 
 <div class="space-y-3" data-gallery data-gallery-images={galleryLightboxItems}>
-  <div class="relative rounded-xl overflow-hidden aspect-video shadow-lg border border-surface-variant/40 bg-surface-container w-full">
+  <div class="relative rounded-xl overflow-hidden aspect-[5/2] max-h-[min(52vw,420px)] shadow-lg border border-surface-variant/40 bg-[#141414] w-full">
     <button
       type="button"
       class="relative w-full h-full block group cursor-zoom-in"
@@ -39,12 +41,12 @@ const galleryLightboxItems = JSON.stringify(
         data-gallery-main-img
         alt={hero?.alt ?? ''}
         class:list={[
-          'w-full h-full object-cover transition group-hover:scale-[1.01]',
+          'w-full h-full object-contain transition group-hover:scale-[1.01]',
           heroIsVideo ? 'hidden' : '',
         ]}
         src={heroImgSrc}
         srcset={heroImgSrcSet || undefined}
-        sizes="(max-width: 767px) 100vw, 640px"
+        sizes="(max-width: 767px) 100vw, (max-width: 1279px) 68vw, 860px"
         width="1280"
         height="720"
         loading="eager"
@@ -54,7 +56,7 @@ const galleryLightboxItems = JSON.stringify(
       <video
         data-gallery-main-video
         src={heroIsVideo ? hero?.full : undefined}
-        class:list={['w-full h-full object-cover pointer-events-none', heroIsVideo ? '' : 'hidden']}
+        class:list={['w-full h-full object-contain pointer-events-none', heroIsVideo ? '' : 'hidden']}
         muted
         playsinline
         preload="metadata"
@@ -82,16 +84,23 @@ const galleryLightboxItems = JSON.stringify(
     <VideoReviewLightbox product={product} />
   </div>
 
+  {
+    !singleImage && (
   <div class="relative">
     <div class="flex overflow-x-auto gap-2 pb-1 no-scrollbar" data-thumb-track>
       {
         images.map((image, i) => {
           const isVideo = (image.mediaType ?? 'image') === 'video';
+          const thumbSrc = isVideo
+            ? image.thumb
+            : optimizedImageUrl(image.thumb, { width: 112, quality: 82 });
+          const mainSrc = isVideo ? image.full : optimizedHeroImageUrl(image.full);
           return (
             <button
               type="button"
               data-thumb
               data-full={image.full}
+              data-main-src={mainSrc}
               data-alt={image.alt}
               data-media-type={image.mediaType ?? 'image'}
               aria-current={image.full === hero?.full ? 'true' : 'false'}
@@ -117,7 +126,7 @@ const galleryLightboxItems = JSON.stringify(
                   <img
                     alt={image.alt}
                     class="w-full h-full object-cover"
-                    src={optimizedImageUrl(image.thumb, { width: 160, quality: 70 })}
+                    src={thumbSrc}
                     width="112"
                     height="72"
                     loading="lazy"
@@ -131,6 +140,8 @@ const galleryLightboxItems = JSON.stringify(
       }
     </div>
   </div>
+    )
+  }
 </div>
 
 <style>
@@ -156,15 +167,17 @@ const galleryLightboxItems = JSON.stringify(
     const mainTrigger = root.querySelector<HTMLButtonElement>('[data-gallery-main-trigger]');
     const thumbs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-thumb]'));
 
-    function setMain(full: string, alt: string, mediaType: string) {
+    function setMain(full: string, alt: string, mediaType: string, mainSrc?: string) {
       const isVideo = mediaType === 'video';
       if (mainImg) {
         if (isVideo) {
           mainImg.classList.add('hidden');
           mainImg.removeAttribute('src');
+          mainImg.removeAttribute('srcset');
         } else {
           mainImg.classList.remove('hidden');
-          mainImg.src = full;
+          mainImg.src = mainSrc || full;
+          mainImg.removeAttribute('srcset');
           mainImg.alt = alt;
         }
       }
@@ -198,7 +211,8 @@ const galleryLightboxItems = JSON.stringify(
         const full = thumb.dataset.full ?? '';
         const alt = thumb.dataset.alt ?? '';
         const mediaType = thumb.dataset.mediaType ?? 'image';
-        setMain(full, alt, mediaType);
+        const mainSrc = thumb.dataset.mainSrc;
+        setMain(full, alt, mediaType, mainSrc);
         thumbs.forEach((t) => t.setAttribute('aria-current', 'false'));
         thumb.setAttribute('aria-current', 'true');
       });

@@ -5,7 +5,7 @@ import { getRoundupRibbonHref, getRoundupRibbonLabel } from '../../data/homepage
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 import HomeFeaturedCharacterShowcase from './HomeFeaturedCharacterShowcase.astro';
 import CmsField from '../cms/CmsField.astro';
-import { optimizedImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
+import { optimizedHeroImageUrl } from '../../lib/media/optimize';
 
 interface Props {
   picks: RoundupPick[];
@@ -63,7 +63,7 @@ const { picks, characters } = Astro.props;
                       class:list={['home-pick-card__thumb', thumbIsLogo && 'product-logo-img']}
                       src={thumbIsLogo
                         ? optimizedLogoUrl(thumb, 72)
-                        : optimizedImageUrl(thumb, { width: 72, quality: 70, dpr: 1, format: 'jpeg' })}
+                        : optimizedHeroImageUrl(thumb, 72)}
                       alt=""
                       width="72"
                       height="72"

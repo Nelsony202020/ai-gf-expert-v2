@@ -1,7 +1,7 @@
 // Server-side HTML renderer for persisted review blocks (public review article tab).
 
 import { isUsablePublicMediaUrl, inferMediaTypeFromUrl } from '../media/url';
-import { optimizedImageUrl } from '../media/optimize';
+import { optimizedHeroImageUrl } from '../media/optimize';
 import type { MediaLookupEntry } from '../media/catalog';
 import { publicFigureStyle, publicMediaFrameStyle, publicImageStyle, isCircleCrop, clampRadiusPercent } from './imageFrameStyle';
 import {
@@ -243,7 +243,7 @@ function renderImageFigure(
   const innerMedia =
     mediaType === 'video'
       ? `<video class="review-video-native review-video-native--preview" src="${escapeHtml(src)}" muted playsinline preload="metadata" style="${imageStyle}pointer-events:none${nsfw ? ';filter:blur(28px) brightness(0.75);transform:scale(1.08)' : ''}"${nsfw ? ' data-nsfw-blurred="true"' : ''}></video>`
-      : `<img src="${escapeHtml(optimizedImageUrl(src, { width: 800, quality: 72 }))}" alt="${alt}" loading="lazy" decoding="async" width="800" height="500" style="${imageStyle}${nsfw ? 'filter:blur(28px) brightness(0.75);transform:scale(1.08)' : ''}"${nsfw ? ' data-nsfw-blurred="true"' : ''} />`;
+      : `<img src="${escapeHtml(optimizedHeroImageUrl(src))}" alt="${alt}" loading="lazy" decoding="async" width="800" height="500" style="${imageStyle}${nsfw ? 'filter:blur(28px) brightness(0.75);transform:scale(1.08)' : ''}"${nsfw ? ' data-nsfw-blurred="true"' : ''} />`;
   // NSFW stays blurred — no lightbox; click shows a coming-soon notice.
   const mediaHtml = nsfw ? renderNsfwGate(innerMedia) : renderLightboxTrigger(payload, innerMedia);
   const nsfwOverlay = nsfw

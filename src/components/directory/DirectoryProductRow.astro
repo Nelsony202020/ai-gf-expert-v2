@@ -9,7 +9,7 @@ import DirectoryPaymentIcons from './DirectoryPaymentIcons.astro';
 import EditorialAwardBadge from '../ui/EditorialAwardBadge.astro';
 import { getPrimaryAward, getSecondaryAwards } from '../../lib/awards/compute';
 import CmsField from '../cms/CmsField.astro';
-import { optimizedImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
+import { optimizedCardImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
 
 interface Props {
   app: HomeExplorerApp;
@@ -44,7 +44,7 @@ const secondaryAwards = getSecondaryAwards(app.awards ?? []);
     <a href={reviewHref} class="dir-row__image-link" tabindex="-1" aria-hidden="true">
       <img
         class="dir-row__image"
-        src={optimizedImageUrl(app.gallery[0]?.full ?? app.logo, { width: 400, quality: 70 })}
+        src={optimizedCardImageUrl(app.gallery[0]?.full ?? app.logo, 480)}
         alt={app.gallery[0]?.alt ?? `${app.name} screenshot`}
         width="640"
         height="400"

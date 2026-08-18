@@ -1,0 +1,168 @@
+---
+import {
+  joinMultiValueParts,
+  segmentMultiValues,
+} from '../../lib/ui/multiValueDisplay';
+
+interface Props {
+  values: string[];
+  /** Stable id for popover aria wiring (e.g. pick slug + stat id). */
+  uid: string;
+  muted?: boolean;
+}
+
+const { values, uid, muted = false } = Astro.props;
+const { visible, overflow, overflowCount } = segmentMultiValues(values);
+const popoverId = `mv-popover-${uid}`;
+---
+
+{
+  values.length === 0 ? null : values.length === 1 ? (
+    <span class:list={['multi-value', muted && 'multi-value--muted']}>{values[0]}</span>
+  ) : (
+    <span class:list={['multi-value', muted && 'multi-value--muted']} data-multi-value-root={uid}>
+      <span class="multi-value__inline">{joinMultiValueParts(visible)}</span>
+      {
+        overflowCount > 0 && (
+          <>
+            <span class="multi-value__sep" aria-hidden="true">
+              {' · '}
+            </span>
+            <button
+              type="button"
+              class="multi-value__more"
+              data-multi-value-trigger={uid}
+              aria-expanded="false"
+              aria-controls={popoverId}
+            >
+              +{overflowCount}
+            </button>
+            <span
+              id={popoverId}
+              class="multi-value__popover"
+              role="tooltip"
+              hidden
+              data-multi-value-popover={uid}
+            >
+              {joinMultiValueParts(overflow)}
+            </span>
+          </>
+        )
+      }
+    </span>
+  )
+}
+
+<script>
+  function initMultiValuePopovers(root: ParentNode = document) {
+    root.querySelectorAll<HTMLElement>('[data-multi-value-root]').forEach((wrap) => {
+      const uid = wrap.dataset.multiValueRoot;
+      if (!uid || wrap.dataset.mvInit === '1') return;
+      wrap.dataset.mvInit = '1';
+
+      const trigger = wrap.querySelector<HTMLButtonElement>(`[data-multi-value-trigger="${uid}"]`);
+      const popover = wrap.querySelector<HTMLElement>(`[data-multi-value-popover="${uid}"]`);
+      if (!trigger || !popover) return;
+
+      let hideTimer: ReturnType<typeof setTimeout> | undefined;
+
+      const show = () => {
+        if (hideTimer) clearTimeout(hideTimer);
+        popover.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+      };
+
+      const hide = () => {
+        hideTimer = setTimeout(() => {
+          popover.hidden = true;
+          trigger.setAttribute('aria-expanded', 'false');
+        }, 120);
+      };
+
+      trigger.addEventListener('mouseenter', show);
+      trigger.addEventListener('mouseleave', hide);
+      trigger.addEventListener('focus', show);
+      trigger.addEventListener('blur', hide);
+      trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (popover.hidden) show();
+        else {
+          popover.hidden = true;
+          trigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      popover.addEventListener('mouseenter', show);
+      popover.addEventListener('mouseleave', hide);
+    });
+  }
+
+  initMultiValuePopovers();
+  document.addEventListener('astro:page-load', () => initMultiValuePopovers());
+</script>
+
+<style>
+  .multi-value {
+    display: inline;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    color: inherit;
+  }
+
+  .multi-value--muted {
+    font-weight: 400;
+    color: var(--color-tertiary);
+  }
+
+  .multi-value__inline {
+    display: inline;
+  }
+
+  .multi-value__sep {
+    display: inline;
+  }
+
+  .multi-value__more {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: var(--color-primary);
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+  }
+
+  .multi-value__more:hover,
+  .multi-value__more:focus-visible {
+    color: var(--color-on-surface);
+  }
+
+  .multi-value__popover {
+    position: absolute;
+    z-index: 40;
+    margin-top: 0.25rem;
+    min-width: 12rem;
+    max-width: min(28rem, 92vw);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--color-surface-variant);
+    background: var(--color-surface);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--color-on-surface);
+    white-space: nowrap;
+  }
+
+  [data-multi-value-root] {
+    position: relative;
+  }
+</style>

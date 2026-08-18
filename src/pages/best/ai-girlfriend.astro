@@ -15,7 +15,6 @@ import RoundupCompare from '../../components/roundup/RoundupCompare.astro';
 import RoundupTestingSection from '../../components/roundup/RoundupTestingSection.astro';
 import RoundupFaq from '../../components/roundup/RoundupFaq.astro';
 import RoundupConclusion from '../../components/roundup/RoundupConclusion.astro';
-import RoundupAffiliateFineprint from '../../components/roundup/RoundupAffiliateFineprint.astro';
 import RoundupScoreBarAnimate from '../../components/roundup/RoundupScoreBarAnimate.astro';
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
@@ -51,8 +50,11 @@ const jsonLdGraph = !isDraft
 >
   {jsonLdGraph.length > 0 && <JsonLd slot="head" graph={jsonLdGraph} />}
   <Header />
+  <div class="roundup-hero-stage">
+    <RoundupHero roundup={roundup} variant="scroll-under" />
+  </div>
   <main
-    class="roundup-page"
+    class="roundup-page roundup-page--covers-hero"
     id="roundup-top"
     data-roundup-root
     data-hub-root
@@ -60,13 +62,6 @@ const jsonLdGraph = !isDraft
     data-page-title={pageTitle}
     data-page-url={canonical}
   >
-    <div class="roundup-affiliate-bar">
-      <div class="section-container px-4 md:px-8">
-        <RoundupAffiliateFineprint />
-      </div>
-    </div>
-    <RoundupHero roundup={roundup} />
-
     <div class="section-container px-4 md:px-8 pb-16 md:pb-24">
       <div class="roundup-layout">
         <RoundupSidebar roundup={roundup} picks={roundup.picks} />
