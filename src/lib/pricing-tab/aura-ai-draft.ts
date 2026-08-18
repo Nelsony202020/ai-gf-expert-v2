@@ -160,6 +160,8 @@ export function getAuraAiDraftPricing(product: Product): PricingTabViewModel {
     scoreCaveat: 'Media-heavy usage can increase the real monthly cost.',
     advertisedMonthly,
     regularUseMonthly,
+    pricingModel: 'subscription_credits',
+    powerUserMonthly: heavyUseMonthly,
     categoryAvgMonthly,
     reviewedAppCount,
     heroCheaperPct: cheaperPct,

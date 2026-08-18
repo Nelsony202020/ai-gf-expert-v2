@@ -1,16 +1,45 @@
 ---
 import { tooltipCategoryIconsByKey } from '../../../lib/tooltip-category-icons-cdn';
+import type { PublishedGlossaryTerm } from '../../../lib/glossary/types';
 
-const categoryIcons = tooltipCategoryIconsByKey;
+interface Props {
+  /** When set with autoDecorate, client-wraps matching terms before binding. */
+  terms?: PublishedGlossaryTerm[];
+  autoDecorate?: boolean;
+}
+
+const { terms = [], autoDecorate = false } = Astro.props;
+const categoryIconsJson = JSON.stringify(tooltipCategoryIconsByKey);
+const decorateTermsJson = autoDecorate && terms.length > 0 ? JSON.stringify(terms) : '';
 ---
 
 <div id="glossary-tooltip-portal" class="glossary-tooltip-portal" aria-live="polite"></div>
+<script type="application/json" id="glossary-category-icons" set:html={categoryIconsJson} />
+{
+  decorateTermsJson && (
+    <script type="application/json" id="glossary-decorate-terms" set:html={decorateTermsJson} />
+  )
+}
 
-<script define:vars={{ categoryIcons }}>
-  let activePanel = null;
-  let activeTrigger = null;
-  let activeBackdrop = null;
-  let hideTimer = null;
+<script>
+  import { decorateGlossaryDom } from '../../../lib/glossary/decorateDom.client.ts';
+
+  let activePanel: HTMLElement | null = null;
+  let activeTrigger: HTMLElement | null = null;
+  let activeBackdrop: HTMLElement | null = null;
+  let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function readJson<T>(id: string, fallback: T): T {
+    const el = document.getElementById(id);
+    if (!el?.textContent) return fallback;
+    try {
+      return JSON.parse(el.textContent) as T;
+    } catch {
+      return fallback;
+    }
+  }
+
+  const categoryIcons = readJson<Record<string, string>>('glossary-category-icons', {});
 
   function prefersReducedMotion() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -45,7 +74,7 @@ const categoryIcons = tooltipCategoryIconsByKey;
     hideTimer = setTimeout(hidePanel, 140);
   }
 
-  function escapeHtml(value) {
+  function escapeHtml(value: unknown) {
     return String(value ?? '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -53,13 +82,14 @@ const categoryIcons = tooltipCategoryIconsByKey;
       .replace(/"/g, '&quot;');
   }
 
-  function iconForCategory(raw) {
+  function iconForCategory(raw: string | undefined) {
+    const icons = readJson<Record<string, string>>('glossary-category-icons', categoryIcons);
     const key = String(raw || 'General')
       .trim()
       .toLowerCase()
       .replace(/[_/]+/g, '-')
       .replace(/\s+/g, '-');
-    const aliases = {
+    const aliases: Record<string, string> = {
       general: 'general',
       characters: 'characters',
       customization: 'customization',
@@ -72,10 +102,10 @@ const categoryIcons = tooltipCategoryIconsByKey;
       pricing: 'pricing',
     };
     const resolved = aliases[key] || 'general';
-    return categoryIcons[resolved] || categoryIcons.general;
+    return icons[resolved] || icons.general;
   }
 
-  function positionPanel(trigger, panel) {
+  function positionPanel(trigger: HTMLElement, panel: HTMLElement) {
     const rect = trigger.getBoundingClientRect();
     const margin = 16;
     const gap = 10;
@@ -91,13 +121,11 @@ const categoryIcons = tooltipCategoryIconsByKey;
     panel.style.width = `${width}px`;
     panel.style.visibility = 'hidden';
     panel.style.display = 'block';
-    // Extra top clearance so border badge isn't clipped when measuring.
     const height = panel.offsetHeight || 140;
     panel.style.visibility = '';
 
     if (mobile) {
       const left = Math.max(16, (viewportW - width) / 2);
-      // Prefer below the word; otherwise center in viewport.
       let top = rect.bottom + gap + 12;
       if (top + height + margin > viewportH) {
         top = Math.max(margin + 20, (viewportH - height) / 2);
@@ -127,13 +155,13 @@ const categoryIcons = tooltipCategoryIconsByKey;
     panel.dataset.placement = placeAbove ? 'above' : 'below';
   }
 
-  function withCtaArrow(label) {
+  function withCtaArrow(label: string) {
     const text = String(label || '').trim() || 'Learn more';
     if (/→\s*$/.test(text) || /->\s*$/.test(text)) return text.replace(/->\s*$/, '→');
     return `${text} →`;
   }
 
-  function buildPanel(trigger) {
+  function buildPanel(trigger: HTMLElement) {
     const term = escapeHtml(trigger.dataset.glossaryTerm || 'Term');
     const definition = escapeHtml(trigger.dataset.glossaryDefinition || '');
     const customHref = String(trigger.dataset.glossaryHref || '').trim();
@@ -169,7 +197,7 @@ const categoryIcons = tooltipCategoryIconsByKey;
     return panel;
   }
 
-  function showPanel(trigger) {
+  function showPanel(trigger: HTMLElement) {
     cancelHide();
     if (activeTrigger === trigger && activePanel) {
       positionPanel(trigger, activePanel);
@@ -214,7 +242,7 @@ const categoryIcons = tooltipCategoryIconsByKey;
     }
   }
 
-  function onTriggerEnter(event) {
+  function onTriggerEnter(event: Event) {
     const trigger = event.currentTarget;
     if (!(trigger instanceof HTMLElement)) return;
     if (isMobileViewport()) return;
@@ -226,7 +254,7 @@ const categoryIcons = tooltipCategoryIconsByKey;
     scheduleHide();
   }
 
-  function onTriggerActivate(event) {
+  function onTriggerActivate(event: Event) {
     const trigger = event.currentTarget;
     if (!(trigger instanceof HTMLElement)) return;
     event.preventDefault();
@@ -237,7 +265,7 @@ const categoryIcons = tooltipCategoryIconsByKey;
     showPanel(trigger);
   }
 
-  function bindTrigger(trigger) {
+  function bindTrigger(trigger: HTMLElement) {
     if (trigger.dataset.glossaryBound === 'true') return;
     trigger.dataset.glossaryBound = 'true';
     trigger.addEventListener('mouseenter', onTriggerEnter);
@@ -248,6 +276,16 @@ const categoryIcons = tooltipCategoryIconsByKey;
   }
 
   function initGlossaryTooltips() {
+    const decorateTerms = readJson('glossary-decorate-terms', [] as unknown[]);
+    if (decorateTerms.length > 0) {
+      document.querySelectorAll('[data-glossary-decorate]').forEach((root) => {
+        if (!(root instanceof HTMLElement)) return;
+        if (root.dataset.glossaryDecorated === 'true') return;
+        decorateGlossaryDom(root, decorateTerms as Parameters<typeof decorateGlossaryDom>[1]);
+        root.dataset.glossaryDecorated = 'true';
+      });
+    }
+
     for (const trigger of document.querySelectorAll('[data-glossary-trigger]')) {
       if (trigger instanceof HTMLElement) bindTrigger(trigger);
     }

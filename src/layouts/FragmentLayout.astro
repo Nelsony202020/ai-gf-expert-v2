@@ -1,5 +1,6 @@
 ---
 import globalStylesUrl from '../styles/global.css?url';
+import reviewStylesUrl from '../styles/page-review.css?url';
 
 interface Props {
   title?: string;
@@ -16,6 +17,7 @@ const { title = 'Ratings' } = Astro.props;
     <meta name="robots" content="noindex, nofollow" />
     <title>{title}</title>
     <link rel="stylesheet" href={globalStylesUrl} />
+    <link rel="stylesheet" href={reviewStylesUrl} />
   </head>
   <body class="bg-background text-on-surface">
     <slot />

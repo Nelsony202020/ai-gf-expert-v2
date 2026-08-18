@@ -52,8 +52,16 @@
   color: var(--color-accent);
 }
 
-.site-header__menu-toggle .material-symbols-outlined {
+.site-header__menu-toggle .material-symbols-outlined,
+.site-header__menu-toggle .site-header__icon {
   font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.site-header__icon {
+  display: block;
+  flex-shrink: 0;
 }
 
 @media (max-width: 767px) {
@@ -467,8 +475,11 @@ body.site-header-menu-open {
   overflow: hidden;
 }
 
-.site-header__search-toggle .material-symbols-outlined {
+.site-header__search-toggle .material-symbols-outlined,
+.site-header__search-toggle .site-header__icon {
   font-size: 22px;
+  width: 22px;
+  height: 22px;
 }
 
 .site-header__search-field {
@@ -501,6 +512,8 @@ body.site-header-menu-open {
 
 .site-header__search-field-icon {
   font-size: 20px;
+  width: 20px;
+  height: 20px;
   color: var(--color-tertiary);
   flex-shrink: 0;
 }

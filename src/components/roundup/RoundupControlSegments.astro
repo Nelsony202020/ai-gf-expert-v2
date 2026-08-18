@@ -170,8 +170,9 @@ const defaultReading = ROUNDUP_READING_OPTIONS[0];
     }
 
     function applyValue(value: string) {
+      const escaped = CSS.escape(value);
       const input = document.querySelector<HTMLInputElement>(
-        `${config.sheetSel} input[name="${config.inputName}"][value="${value}"]`,
+        `input[name="${config.inputName}"][value="${escaped}"]`,
       );
       if (!input) return;
 
@@ -180,6 +181,11 @@ const defaultReading = ROUNDUP_READING_OPTIONS[0];
         input.dispatchEvent(new Event('change', { bubbles: true }));
       } else {
         syncSelected(value);
+        if (config.inputName === 'roundup-sort') {
+          document.dispatchEvent(
+            new CustomEvent('roundup:sort-request', { detail: { value }, bubbles: true }),
+          );
+        }
       }
     }
 

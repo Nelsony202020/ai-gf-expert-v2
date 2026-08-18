@@ -3,6 +3,7 @@ import { buildMegaMenuColumns } from '../data/nav-mega-menu';
 import { buildSearchIndex } from '../data/site-search';
 import { loadComparisonProducts } from '../lib/content/comparisonProducts';
 import { cdnAsset } from '../lib/media/cdn';
+import { optimizedImageUrl } from '../lib/media/optimize';
 import ThemeToggle from './ui/ThemeToggle.astro';
 
 const publishedProducts = await loadComparisonProducts();
@@ -10,21 +11,22 @@ const megaMenuColumns = buildMegaMenuColumns(publishedProducts);
 const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
 ---
 
-<header class="site-header relative z-50" data-site-header>
+<header class="site-header relative z-50" data-site-header data-glossary-skip>
   <div class="section-container px-4 md:px-8 site-header__inner">
     <div class="site-header__left">
       <a href="/" class="site-logo-link site-header__logo-link shrink-0">
         <img
-          src={cdnAsset('/brand/girlfriend-expert-logo.png')}
+          src={optimizedImageUrl(cdnAsset('/brand/girlfriend-expert-logo.png'), { width: 160, quality: 72, dpr: 1 })}
           alt="Girlfriend Expert AI"
           class="site-header__logo site-header__logo--light"
           width="148"
           height="82"
           loading="eager"
+          fetchpriority="low"
           decoding="async"
         />
         <img
-          src={cdnAsset('/brand/girlfriend-expert-logo-white.png')}
+          src={optimizedImageUrl(cdnAsset('/brand/girlfriend-expert-logo-white.png'), { width: 160, quality: 72, dpr: 1 })}
           alt=""
           class="site-header__logo site-header__logo--dark"
           width="148"
@@ -64,11 +66,15 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
           aria-expanded="false"
           aria-label="Search"
         >
-          <span class="material-symbols-outlined">search</span>
+          <svg class="site-header__icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M15.5 14h-.8l-.3-.3a6.5 6.5 0 1 0-.7.7l.3.3v.8l5 5 1.5-1.5-5-5Zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z" />
+          </svg>
         </button>
 
         <div class="site-header__search-field" data-search-field>
-          <span class="material-symbols-outlined site-header__search-field-icon">search</span>
+          <svg class="site-header__icon site-header__search-field-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M15.5 14h-.8l-.3-.3a6.5 6.5 0 1 0-.7.7l.3.3v.8l5 5 1.5-1.5-5-5Zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z" />
+          </svg>
           <input
             type="search"
             class="site-header__search-input"
@@ -107,7 +113,12 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
         aria-controls="site-mobile-menu"
         aria-label="Open menu"
       >
-        <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+        <svg class="site-header__icon site-header__menu-icon--bars" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M3 6h18v2H3V6Zm0 5h18v2H3v-2Zm0 5h18v2H3v-2Z" />
+        </svg>
+        <svg class="site-header__icon site-header__menu-icon--close hidden" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4Z" />
+        </svg>
       </button>
     </div>
   </div>
@@ -212,8 +223,8 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
       document.querySelectorAll('[data-mobile-menu-toggle]').forEach((btn) => {
         btn.setAttribute('aria-expanded', 'false');
         btn.setAttribute('aria-label', 'Open menu');
-        const icon = btn.querySelector('.material-symbols-outlined');
-        if (icon) icon.textContent = 'menu';
+        btn.querySelector('.site-header__menu-icon--bars')?.classList.remove('hidden');
+        btn.querySelector('.site-header__menu-icon--close')?.classList.add('hidden');
       });
       header.classList.remove('site-header--menu-open');
       document.body.classList.remove('site-header-menu-open');
@@ -230,8 +241,8 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
       mobileMenuBackdrop?.setAttribute('aria-hidden', 'false');
       toggle.setAttribute('aria-expanded', 'true');
       toggle.setAttribute('aria-label', 'Close menu');
-      const icon = toggle.querySelector('.material-symbols-outlined');
-      if (icon) icon.textContent = 'close';
+      toggle.querySelector('.site-header__menu-icon--bars')?.classList.add('hidden');
+      toggle.querySelector('.site-header__menu-icon--close')?.classList.remove('hidden');
       header.classList.add('site-header--menu-open');
       document.body.classList.add('site-header-menu-open');
     }

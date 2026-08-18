@@ -1,0 +1,135 @@
+---
+import type { AtGlanceData, AtGlanceStat } from '../../data/roundups/ai-girlfriend';
+import { atGlanceValueTone } from '../../lib/roundup/atGlance';
+import InfoIcon from '../ui/InfoIcon.astro';
+
+interface Props {
+  atGlance?: AtGlanceData;
+  pickSlug: string;
+}
+
+const { atGlance, pickSlug } = Astro.props;
+
+function hasStats(stats: AtGlanceStat[] | undefined): stats is AtGlanceStat[] {
+  return Boolean(stats?.length);
+}
+
+function valueClass(value: string): string {
+  return atGlanceValueTone(value) === 'muted'
+    ? 'roundup-at-glance__value roundup-at-glance__value--muted'
+    : 'roundup-at-glance__value';
+}
+---
+
+{
+  atGlance && (hasStats(atGlance.features) || hasStats(atGlance.pricing)) && (
+    <div class="roundup-at-glance" data-glossary-skip>
+      {
+        hasStats(atGlance.features) && (
+          <section class="roundup-at-glance__section" aria-labelledby={`at-glance-features-${pickSlug}`}>
+            <div class="roundup-at-glance__section-head">
+              <h3 class="roundup-at-glance__heading" id={`at-glance-features-${pickSlug}`}>
+                At a glance
+              </h3>
+              <span class="roundup-at-glance__heading-rule" aria-hidden="true"></span>
+            </div>
+            <dl class="roundup-at-glance__grid">
+              {
+                atGlance.features.map((item) => (
+                  <div class="roundup-at-glance__item">
+                    <span class="material-symbols-outlined roundup-at-glance__icon" aria-hidden="true">
+                      {item.icon}
+                    </span>
+                    <div class="roundup-at-glance__content">
+                      <dt class="roundup-at-glance__label-row">
+                        <span class="roundup-at-glance__label">{item.label}</span>
+                      </dt>
+                      <dd class={valueClass(item.value)}>{item.value}</dd>
+                    </div>
+                  </div>
+                ))
+              }
+            </dl>
+          </section>
+        )
+      }
+
+      {
+        hasStats(atGlance.pricing) && (
+          <section class="roundup-at-glance__section" aria-labelledby={`at-glance-pricing-${pickSlug}`}>
+            <div class="roundup-at-glance__section-head">
+              <h3 class="roundup-at-glance__heading" id={`at-glance-pricing-${pickSlug}`}>
+                Real-world pricing
+              </h3>
+              <span class="roundup-at-glance__heading-rule" aria-hidden="true"></span>
+            </div>
+            <dl class="roundup-at-glance__grid">
+              {
+                atGlance.pricing.map((item) => {
+                  const tooltipId = `at-glance-${pickSlug}-${item.id}`;
+                  return (
+                    <div class="roundup-at-glance__item">
+                      <span class="material-symbols-outlined roundup-at-glance__icon" aria-hidden="true">
+                        {item.icon}
+                      </span>
+                      <div class="roundup-at-glance__content">
+                        <dt class="roundup-at-glance__label-row">
+                          <span class="roundup-at-glance__label">{item.label}</span>
+                          {
+                            item.tooltip && (
+                              <span class="roundup-at-glance__info">
+                                <span
+                                  role="button"
+                                  tabindex="0"
+                                  class="rt-tooltip-trigger inline-flex cursor-help"
+                                  data-ratings-tooltip-trigger={tooltipId}
+                                  aria-label={`About ${item.label.toLowerCase()}`}
+                                >
+                                  <InfoIcon size="xs" class="text-tertiary/50 hover:text-tertiary/80" />
+                                </span>
+                              </span>
+                            )
+                          }
+                        </dt>
+                        <dd class={valueClass(item.value)}>{item.value}</dd>
+                      </div>
+                      {
+                        item.tooltip && (
+                          <template id={`tooltip-${tooltipId}`}>
+                            <div class="ratings-tooltip-panel ratings-tooltip-panel--help">
+                              <div class="ratings-tooltip-panel__header">
+                                <p class="ratings-tooltip-panel__section-title">{item.tooltip.title}</p>
+                              </div>
+                              <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
+                                <p class="roundup-at-glance-tooltip__amount">{item.tooltip.amount}</p>
+                                <p class="ratings-tooltip-panel__desc">{item.tooltip.description}</p>
+                                {
+                                  item.tooltip.breakdown && item.tooltip.breakdown.length > 0 && (
+                                    <ul class="roundup-at-glance-tooltip__breakdown">
+                                      {item.tooltip.breakdown.map((line) => <li>{line}</li>)}
+                                    </ul>
+                                  )
+                                }
+                                <a
+                                  href={item.tooltip.pricingHref}
+                                  class="roundup-at-glance-tooltip__cta rt-tooltip-actions__btn rt-tooltip-actions__btn--primary"
+                                >
+                                  See full pricing breakdown
+                                  <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                                </a>
+                              </div>
+                            </div>
+                          </template>
+                        )
+                      }
+                    </div>
+                  );
+                })
+              }
+            </dl>
+          </section>
+        )
+      }
+    </div>
+  )
+}

@@ -5,7 +5,7 @@ import { getRoundupRibbonHref, getRoundupRibbonLabel } from '../../data/homepage
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 import HomeFeaturedCharacterShowcase from './HomeFeaturedCharacterShowcase.astro';
 import CmsField from '../cms/CmsField.astro';
-import { optimizedImageUrl } from '../../lib/media/optimize';
+import { optimizedImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
 
 interface Props {
   picks: RoundupPick[];
@@ -51,22 +51,37 @@ const { picks, characters } = Astro.props;
         {
           picks.map((pick, index) => {
             const reviewHref = pick.reviewUrl ?? `/reviews/${pick.slug}`;
-            const thumb = pick.logo;
+            const thumb = pick.gallery[0]?.full ?? pick.logo;
+            const thumbIsLogo = !pick.gallery[0]?.full;
             const scoreVisual = getScoreVisual(pick.overallScore);
             const ribbonLabel = getRoundupRibbonLabel(pick);
             return (
               <article class:list={['home-pick-card', index === 0 && 'home-pick-card--featured']}>
                 <div class="home-pick-card__inner">
                   <div class="home-pick-card__main">
-                    <img class="home-pick-card__thumb" src={optimizedImageUrl(thumb, { width: 72, quality: 70 })} alt="" width="72" height="72" loading="lazy" decoding="async" />
+                    <img
+                      class:list={['home-pick-card__thumb', thumbIsLogo && 'product-logo-img']}
+                      src={thumbIsLogo
+                        ? optimizedLogoUrl(thumb, 72)
+                        : optimizedImageUrl(thumb, { width: 72, quality: 70, dpr: 1, format: 'jpeg' })}
+                      alt=""
+                      width="72"
+                      height="72"
+                      loading="lazy"
+                      decoding="async"
+                    />
                     <div class="home-pick-card__copy">
                       <h3 class="home-pick-card__name"><CmsField field="name">{pick.name}</CmsField></h3>
-                      <a href={getRoundupRibbonHref(pick)} class="home-pick-card__ribbon">
-                        {index === 0 && (
-                          <span class="material-symbols-outlined home-pick-card__ribbon-icon" aria-hidden="true">star</span>
-                        )}
-                        <CmsField field="award">{ribbonLabel}</CmsField>
-                      </a>
+                      {
+                        ribbonLabel ? (
+                          <a href={getRoundupRibbonHref(pick)} class="home-pick-card__ribbon">
+                            {index === 0 && (
+                              <span class="material-symbols-outlined home-pick-card__ribbon-icon" aria-hidden="true">emoji_events</span>
+                            )}
+                            <CmsField field="award">{ribbonLabel}</CmsField>
+                          </a>
+                        ) : null
+                      }
                       <p class="home-pick-card__summary"><CmsField field="oneLineVerdict">{pick.overallSummary}</CmsField></p>
                       <a href={reviewHref} class="home-pick-card__cta">
                         Read review
@@ -76,7 +91,7 @@ const { picks, characters } = Astro.props;
                   </div>
                   <div class="home-pick-card__score-panel">
                     <div class={`home-pick-card__score-value ${scoreVisual.bg}`}>{fmtScore(pick.overallScore)}</div>
-                    <span class="home-pick-card__score-caption">{pick.ribbon}</span>
+                    {pick.ribbon ? <span class="home-pick-card__score-caption">{pick.ribbon}</span> : null}
                   </div>
                 </div>
               </article>

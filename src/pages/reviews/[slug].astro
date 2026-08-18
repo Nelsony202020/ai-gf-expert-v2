@@ -15,10 +15,12 @@ import PricingTab from '../../components/review/tabs/PricingTab.astro';
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
 import GlossaryTooltipInit from '../../components/review/tooltips/GlossaryTooltipInit.astro';
 import ReviewScrollRestore from '../../components/review/ReviewScrollRestore.astro';
+import ImageLightbox from '../../components/ui/ImageLightbox.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import ReviewMobileNavSheet from '../../components/mobile/ReviewMobileNavSheet.astro';
 import {
   getProductFeaturedIn,
+  loadPublishedProducts,
   loadPublishedReviewSlugs,
   loadReviewPageProduct,
 } from '../../lib/content/store';
@@ -86,6 +88,7 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
   ogTitle={head.ogTitle}
   ogDescription={head.ogDescription}
   robots={head.robots}
+  theme="review"
 >
   {jsonLdGraph.length > 0 && <JsonLd slot="head" graph={jsonLdGraph} />}
   <Header />
@@ -189,6 +192,7 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
   <RatingsTooltipInit />
   <GlossaryTooltipInit />
   <ReviewScrollRestore productSlug={product.slug} />
+  <ImageLightbox />
 </BaseLayout>
 
 <script>

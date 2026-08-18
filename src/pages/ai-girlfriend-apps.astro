@@ -20,7 +20,7 @@ const jsonLdGraph = buildDirectoryItemListSchema(apps, {
 });
 ---
 
-<BaseLayout title={pageTitle} description={pageDescription}>
+<BaseLayout title={pageTitle} description={pageDescription} theme="directory">
   {jsonLdGraph.length > 0 && <JsonLd slot="head" graph={jsonLdGraph} />}
   <Header />
   <main>

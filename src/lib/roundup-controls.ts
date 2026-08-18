@@ -31,32 +31,22 @@ export const ROUNDUP_READING_OPTIONS: RoundupReadingOption[] = [
   },
 ];
 
-export function buildRoundupSortOptions(picks: RoundupPick[]): RoundupSortOption[] {
-  const ribbonOptions = picks
-    .filter((p) => p.ribbonKey !== 'overall')
-    .map((p) => ({
-      value: p.ribbonKey,
-      label: p.ribbon,
-      shortLabel: p.ribbon.replace(/^Best for /i, '').replace(/^Best /i, ''),
-    }));
+export const ROUNDUP_AWARD_SORT_OPTIONS: RoundupSortOption[] = [
+  { value: 'overall', label: 'Best Overall', shortLabel: 'Overall' },
+  { value: 'images', label: 'Best Images', shortLabel: 'Images' },
+  { value: 'videos', label: 'Best Videos', shortLabel: 'Videos' },
+  { value: 'roleplay', label: 'Best Roleplay', shortLabel: 'Roleplay' },
+  { value: 'price', label: 'Best Price', shortLabel: 'Price' },
+];
 
-  return [
-    { value: 'overall', label: 'Overall rating', shortLabel: 'Overall' },
-    ...ribbonOptions,
-    { value: 'price-asc', label: 'Price: low to high', shortLabel: 'Price ↑' },
-    { value: 'price-desc', label: 'Price: high to low', shortLabel: 'Price ↓' },
-  ];
+export function buildRoundupSortOptions(_picks?: RoundupPick[]): RoundupSortOption[] {
+  return ROUNDUP_AWARD_SORT_OPTIONS;
 }
 
 export const ROUNDUP_SORT_LABELS: Record<string, string> = {
-  overall: 'Ranked by overall rating',
-  voice: 'Ranked by voice',
-  roleplay: 'Ranked by roleplay',
-  video: 'Ranked by video',
-  images: 'Ranked by images',
-  privacy: 'Ranked by privacy',
-  free: 'Ranked by free tier',
-  value: 'Ranked by value',
-  'price-asc': 'Ranked by price (low to high)',
-  'price-desc': 'Ranked by price (high to low)',
+  overall: 'Ranked by best overall',
+  images: 'Ranked by best images',
+  videos: 'Ranked by best videos',
+  roleplay: 'Ranked by best roleplay',
+  price: 'Ranked by best price',
 };

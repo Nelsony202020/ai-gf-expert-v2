@@ -183,6 +183,18 @@ export interface ProductSeo {
   breadcrumbLabel?: string;
 }
 
+/** Capability flags from the canonical product record (admin / InstantDB). */
+export interface ProductCapabilities {
+  realisticCharacters?: boolean;
+  animeCharacters?: boolean;
+  voiceCalls?: boolean;
+  voiceMessages?: boolean;
+  tokenSystem?: boolean;
+  freePlan?: boolean;
+  imageGeneration?: boolean;
+  videoGeneration?: boolean;
+}
+
 export interface Product {
   slug: string;
   name: string;
@@ -215,6 +227,8 @@ export interface Product {
   verdicts: VerdictItem[];
   expertOpinion: string;
   pricingDisplay: { monthly: string; typicalMonthly?: string | null; storeLabel: string };
+  /** Structured capability flags from the product record (InstantDB). */
+  capabilities?: ProductCapabilities;
   videoReview?: VideoReview;
   /** Saved review body blocks (admin editor). Empty when no draft exists. */
   reviewBlocks?: ReviewBlock[];

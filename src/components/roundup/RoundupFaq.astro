@@ -1,9 +1,11 @@
 ---
-import type { RoundupFaqItem } from '../../data/roundups/ai-girlfriend';
+import type { RoundupFaqItem, RoundupPick } from '../../data/roundups/ai-girlfriend';
+import { renderRoundupText } from '../../lib/roundup/renderRoundupText';
 import { cdnAsset } from '../../lib/media/cdn';
 
 interface Props {
   items: RoundupFaqItem[];
+  picks?: RoundupPick[];
   sectionId?: string;
   heading?: string;
   subheading?: string;
@@ -12,6 +14,7 @@ interface Props {
 
 const {
   items,
+  picks = [],
   sectionId = 'roundup-faq',
   heading = 'Frequently asked questions',
   subheading = 'Real questions. Honest answers.',
@@ -59,15 +62,17 @@ const stickers: ({ emoji: string; position: 'tl' | 'tr' } | null)[] = [
               </summary>
               <div class="roundup-faq__answer-row">
                 <div class="roundup-faq__bubble roundup-faq__bubble--answer">
-                  <p>{item.answer}</p>
+                  <p set:html={renderRoundupText(item.answer, picks)} />
                   {
                     item.answerList?.length ? (
                       <ul class="roundup-faq__answer-list">
-                        {item.answerList.map((entry) => <li>{entry}</li>)}
+                        {item.answerList.map((entry) => (
+                          <li set:html={renderRoundupText(entry, picks)} />
+                        ))}
                       </ul>
                     ) : null
                   }
-                  {item.answerAfter && <p>{item.answerAfter}</p>}
+                  {item.answerAfter && <p set:html={renderRoundupText(item.answerAfter, picks)} />}
                 </div>
                 <img class="roundup-faq__avatar" src={hermanAvatar} alt="Herman Carter" width="36" height="36" loading="lazy" />
               </div>

@@ -9,7 +9,7 @@ import {
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 import { reviewPageUrl } from '../../lib/slugs';
 import CmsField from '../cms/CmsField.astro';
-import { optimizedImageUrl } from '../../lib/media/optimize';
+import { optimizedImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
 
 interface Props {
   apps: HomeExplorerApp[];
@@ -80,7 +80,7 @@ function categoryScore(app: HomeExplorerApp, key: string): number {
               hidden={index >= VISIBLE_COUNT}
             >
               <div class="home-finder-card__top">
-                <img class="home-finder-card__logo" src={optimizedImageUrl(app.logo, { width: 44, quality: 70 })} alt="" width="44" height="44" loading="lazy" decoding="async" />
+                <img class="home-finder-card__logo" src={optimizedLogoUrl(app.logo, 44)} alt="" width="44" height="44" loading="lazy" decoding="async" />
                 <div class="home-finder-card__title-wrap">
                   <h3 class="home-finder-card__name">
                     <a href={reviewHref}>{app.name}</a>

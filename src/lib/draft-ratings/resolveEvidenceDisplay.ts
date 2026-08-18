@@ -197,6 +197,19 @@ export function resolveEvidenceDisplayValue(def: EvidenceDef, row: EvidenceRow):
     if (summary) return summary;
   }
 
+  if (def.slug === 'styles' && raw && typeof raw === 'object' && 'detail' in raw) {
+    const detail = (raw as { detail?: Record<string, unknown> }).detail;
+    const selected = Array.isArray(detail?.selected)
+      ? detail!.selected.map((item) => String(item).trim()).filter(Boolean)
+      : [];
+    if (selected.length) return selected.join(' + ');
+  }
+
+  if (def.slug === 'styles' && raw && typeof raw === 'object' && 'value' in raw) {
+    // Count-only style answers need named selections in test data — don't show a bare number publicly.
+    return '';
+  }
+
   if (def.slug && isCustomPromptPresetSlug(def.slug) && raw) {
     const summary = formatCustomPromptPresetSummary(raw);
     if (summary) return summary;

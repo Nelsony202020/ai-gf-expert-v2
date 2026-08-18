@@ -1,0 +1,22 @@
+---
+/**
+ * Public glossary tooltips for editorial pages (reviews, roundup, guides, /test).
+ * When `autoDecorate` is true, wraps matching terms in the DOM before binding tooltips.
+ * Reviews already decorate server-side — pass autoDecorate={false} (default).
+ */
+import { getPublishedGlossaryTermsForTooltips } from '../../lib/glossary/load';
+import GlossaryTooltipInit from '../review/tooltips/GlossaryTooltipInit.astro';
+import type { PublishedGlossaryTerm } from '../../lib/glossary/types';
+
+interface Props {
+  /** Client-side wrap of matching terms under [data-glossary-decorate] / main content. */
+  autoDecorate?: boolean;
+  /** Optional preloaded terms (avoids a second DB read). */
+  terms?: PublishedGlossaryTerm[];
+}
+
+const { autoDecorate = false, terms: termsProp } = Astro.props;
+const terms = termsProp ?? (await getPublishedGlossaryTermsForTooltips());
+---
+
+{terms.length > 0 && <GlossaryTooltipInit terms={terms} autoDecorate={autoDecorate} />}

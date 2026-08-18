@@ -1,7 +1,7 @@
 ---
 import type { HomeFeaturedCharacter } from '../../data/homepage';
 import { pickCharacterDisplayImage } from '../../lib/characters/public';
-import CharacterStoryHighlights from '../review/CharacterStoryHighlights.astro';
+import HomeCharacterCarousel from './HomeCharacterCarousel.astro';
 import { optimizedImageUrl } from '../../lib/media/optimize';
 
 interface Props {
@@ -24,16 +24,7 @@ const portrait = spotlight
 
 <div class="home-featured-chars">
   <div class="home-featured-chars__carousel-wrap">
-    <CharacterStoryHighlights
-      characters={carouselChars}
-      productName="homepage-featured"
-      hideHeading={true}
-      maxDisplay={6}
-      showPlatform={true}
-      showVerified={false}
-      layout="contained"
-      autoScrollSpeed={0.09}
-    />
+    <HomeCharacterCarousel characters={carouselChars} />
   </div>
 
   {spotlight && (
@@ -46,7 +37,7 @@ const portrait = spotlight
       {portrait && (
       <img
         class="home-featured-spotlight__portrait"
-        src={optimizedImageUrl(portrait, { width: 320, quality: 70, format: 'jpeg' })}
+        src={optimizedImageUrl(portrait, { width: 280, quality: 70, dpr: 1, format: 'jpeg' })}
         alt={`${spotlight.name} profile`}
         width="320"
         height="420"

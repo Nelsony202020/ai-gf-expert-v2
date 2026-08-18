@@ -6,17 +6,6 @@
 @import './coming-soon.css';
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
-@import './ratings-tooltips.css';
-@import './glossary-tooltips.css';
-@import './market-data.css';
-@import './alternatives.css';
-@import './pricing-tab.css';
-@import './video-review-modal.css';
-@import './roundup.css';
-@import './article-utilities.css';
-@import './homepage.css';
-@import './directory.css';
-@import './review-page.css';
 @import './mobile-nav.css';
 @import './breadcrumbs.css';
 @import './cms-fields.css';
@@ -135,6 +124,44 @@
   h6 {
     font-family: var(--font-display);
   }
+
+  /*
+    Brand pink scrollbars site-wide (vertical + horizontal).
+    Matches roundup quick-overview accent; stays pink in dark mode.
+    `.no-scrollbar` / `scrollbar-width: none` still hide intentionally.
+  */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-accent) var(--color-surface-container);
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--color-surface-container);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-accent);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--color-accent) 88%, #000);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  [data-theme='dark'] *::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--color-accent) 82%, #fff);
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -231,6 +258,8 @@ html.theme-transition *::after {
   --color-on-surface: #f1f5f9;
   --color-on-surface-variant: #94a3b8;
   --color-tertiary: #94a3b8;
+  /* Keep brand pink for accents + scrollbars in dark mode */
+  --color-accent: #db2777;
   --color-accent-soft: rgb(219 39 119 / 14%);
   --color-footer: #0f172a;
   --color-footer-muted: #94a3b8;
@@ -421,6 +450,114 @@ html.theme-transition *::after {
 :is(a, button) .material-symbols-outlined,
 :is(a, button) svg {
   text-decoration: none !important;
+}
+
+/*
+  Site-wide editorial internal links — bold + light pink underline
+  (matches roundup final recommendation pick links).
+  Glossary terms keep their dotted underline via .glossary-trigger.
+*/
+:root {
+  --content-link-underline: rgb(219 39 119 / 35%);
+}
+
+.content-link,
+.roundup-conclusion__pick-link {
+  font-weight: 800;
+  color: var(--color-on-surface);
+  text-decoration: underline;
+  text-decoration-color: var(--content-link-underline);
+  text-decoration-thickness: from-font;
+  text-underline-offset: 3px;
+  text-decoration-skip-ink: none;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.content-link:hover,
+.content-link:focus-visible,
+.roundup-conclusion__pick-link:hover,
+.roundup-conclusion__pick-link:focus-visible {
+  color: var(--color-accent);
+  text-decoration-color: currentColor;
+  outline: none;
+}
+
+/* Bare anchors in editorial prose / article bodies */
+:is(
+  .prose-review,
+  .review-blocks,
+  .review-section,
+  .guide-prose,
+  .legal-prose,
+  .roundup-conclusion__lead,
+  .roundup-conclusion__alternate,
+  .roundup-conclusion__copy,
+  .roundup-faq__bubble--answer,
+  .test-prose,
+  .test-methodology-prose
+)
+  a[href]:not([class]):not([role='button']) {
+  font-weight: 800;
+  color: var(--color-on-surface);
+  text-decoration: underline;
+  text-decoration-color: var(--content-link-underline);
+  text-decoration-thickness: from-font;
+  text-underline-offset: 3px;
+  text-decoration-skip-ink: none;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+:is(
+  .prose-review,
+  .review-blocks,
+  .review-section,
+  .guide-prose,
+  .legal-prose,
+  .roundup-conclusion__lead,
+  .roundup-conclusion__alternate,
+  .roundup-conclusion__copy,
+  .roundup-faq__bubble--answer,
+  .test-prose,
+  .test-methodology-prose
+)
+  a[href]:not([class]):not([role='button']):hover,
+:is(
+  .prose-review,
+  .review-blocks,
+  .review-section,
+  .guide-prose,
+  .legal-prose,
+  .roundup-conclusion__lead,
+  .roundup-conclusion__alternate,
+  .roundup-conclusion__copy,
+  .roundup-faq__bubble--answer,
+  .test-prose,
+  .test-methodology-prose
+)
+  a[href]:not([class]):not([role='button']):focus-visible {
+  color: var(--color-accent);
+  text-decoration-color: currentColor;
+  outline: none;
+}
+
+/* Glossary stays dotted — never inherit solid content-link underline */
+.glossary-trigger,
+button.glossary-trigger,
+:is(.prose-review, .review-blocks, .review-section, .guide-prose, .legal-prose) .glossary-trigger {
+  font-weight: inherit;
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  text-decoration-color: rgb(233 37 118 / 70%);
+}
+
+.glossary-trigger:hover,
+.glossary-trigger:focus-visible,
+.glossary-trigger[aria-expanded='true'] {
+  color: #e92576;
+  text-decoration-color: #e92576;
 }
 
 /* Branded Herman PNG stickers */

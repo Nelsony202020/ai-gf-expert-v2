@@ -14,7 +14,7 @@ import { resolveCharacterDestination } from '../../../../lib/characters/destinat
 import { MAX_CHARACTER_STORY_SLIDES } from '../../../../lib/characters/limits';
 import { fileWithInferredMime } from '../../../../lib/media/mime';
 import { resolveMediaUrl } from '../../../../lib/media/url';
-import { Badge, Button, Field, Icon, Modal, TextInput, Toggle } from '../../ui';
+import { Badge, Button, Field, Icon, Modal, Select, TextInput, Toggle } from '../../ui';
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
 
@@ -359,13 +359,18 @@ function QuickCreateModal({
   const ws = useWorkspace();
   const [name, setName] = useState(template ? `${template.name} copy` : '');
   const [destinationUrl, setDestinationUrl] = useState(String(template?.destinationUrl ?? ''));
+  const [skipReferralSuffix, setSkipReferralSuffix] = useState(Boolean(template?.skipReferralSuffix));
   const [imageId, setImageId] = useState<string | null>(template?.image?.id ?? null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(template?.image?.url ?? null);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const { busy, error, setError, run } = useAsyncToast();
 
-  const trackedUrl = resolveCharacterDestination(destinationUrl, ws.fields.referralSuffix);
+  const trackedUrl = resolveCharacterDestination(
+    destinationUrl,
+    ws.fields.referralSuffix,
+    skipReferralSuffix,
+  );
 
   async function onCropped(blob: Blob) {
     setCropFile(null);
@@ -387,6 +392,7 @@ function QuickCreateModal({
           active: true,
           adult: true,
           destinationUrl: destinationUrl.trim(),
+          skipReferralSuffix,
           ...(template?.featured ? { featured: template.featured } : {}),
         };
         const created = await dataApi.create('characters', fields, {
@@ -410,6 +416,7 @@ function QuickCreateModal({
       active: true,
       adult: true,
       destinationUrl: destinationUrl.trim() || undefined,
+      skipReferralSuffix,
       ...(template?.featured ? { featured: template.featured } : {}),
     };
     const created = await run(() =>
@@ -431,7 +438,7 @@ function QuickCreateModal({
           <Field
             label="Character link"
             required
-            hint="Direct URL to this character on the platform (referral suffix from Setup is appended automatically)."
+            hint="Platform character URL, or a full tracking URL when manual override is on."
           >
             <TextInput
               value={destinationUrl}
@@ -439,8 +446,18 @@ function QuickCreateModal({
               required
               placeholder="https://candy.ai/character/luna"
             />
+            <div className="mt-2">
+              <Toggle
+                checked={skipReferralSuffix}
+                onChange={setSkipReferralSuffix}
+                label="Manual affiliate URL (don’t append product referral suffix)"
+              />
+            </div>
             {trackedUrl && (
-              <p className="mt-1 break-all text-[11px] leading-snug text-slate-400">{trackedUrl}</p>
+              <p className="mt-1 break-all text-[11px] leading-snug text-slate-400">
+                {skipReferralSuffix ? 'Outbound: ' : 'With suffix: '}
+                {trackedUrl}
+              </p>
             )}
           </Field>
           <div className="flex justify-center pt-1">
@@ -484,6 +501,8 @@ function CharacterEditorModal({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [featured, setFeatured] = useState(Boolean(character.featured));
   const [destinationUrl, setDestinationUrl] = useState(String(character.destinationUrl ?? ''));
+  const [skipReferralSuffix, setSkipReferralSuffix] = useState(Boolean(character.skipReferralSuffix));
+  const [affiliateLinkId, setAffiliateLinkId] = useState<string>(character.affiliateLink?.id ?? '');
   const [imageId, setImageId] = useState<string | null>(character.image?.id ?? null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(character.image?.url ?? null);
   const [slides, setSlides] = useState<EntityRow[]>([]);
@@ -497,7 +516,11 @@ function CharacterEditorModal({
   const [removeSlideTarget, setRemoveSlideTarget] = useState<EntityRow | null>(null);
   const { busy, error, setError, run } = useAsyncToast();
 
-  const trackedUrl = resolveCharacterDestination(destinationUrl, ws.fields.referralSuffix);
+  const trackedUrl = resolveCharacterDestination(
+    destinationUrl,
+    ws.fields.referralSuffix,
+    skipReferralSuffix,
+  );
   const activeSlides = slides.filter((s) => s.active !== false);
 
   async function loadSlides() {
@@ -621,8 +644,13 @@ function CharacterEditorModal({
           adult: true,
           active: true,
           destinationUrl: destinationUrl.trim() || undefined,
+          skipReferralSuffix,
         },
-        { product: ws.productId, image: imageId },
+        {
+          product: ws.productId,
+          image: imageId,
+          affiliateLink: affiliateLinkId || null,
+        },
       );
       return true;
     });
@@ -678,10 +706,47 @@ function CharacterEditorModal({
                 }}
                 placeholder="https://candy.ai/character/luna"
               />
+              <div className="mt-2">
+                <Toggle
+                  checked={skipReferralSuffix}
+                  onChange={(v) => {
+                    setSkipReferralSuffix(v);
+                    setDirty(true);
+                  }}
+                  label="Manual affiliate URL (don’t append product referral suffix)"
+                />
+              </div>
               {trackedUrl && (
-                <p className="mt-1 break-all text-[11px] leading-snug text-slate-400">{trackedUrl}</p>
+                <p className="mt-1 break-all text-[11px] leading-snug text-slate-400">
+                  {skipReferralSuffix ? 'Outbound: ' : 'With suffix: '}
+                  {trackedUrl}
+                </p>
               )}
             </Field>
+
+            {ws.related.affiliateLinks.length > 0 && (
+              <Field
+                label="Cloaked affiliate link"
+                hint="Optional. When set, public CTAs use /go/[slug] instead of the character URL above."
+              >
+                <Select
+                  value={affiliateLinkId}
+                  onChange={(e) => {
+                    setAffiliateLinkId(e.target.value);
+                    setDirty(true);
+                  }}
+                >
+                  <option value="">— none (use character link) —</option>
+                  {ws.related.affiliateLinks.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      /go/{l.cloakedSlug}
+                      {l.active ? '' : ' (inactive)'}
+                      {l.campaign ? ` · ${l.campaign}` : ''}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            )}
 
             <Toggle
               checked={featured}

@@ -18,6 +18,7 @@ import PricingTab from '../../../components/review/tabs/PricingTab.astro';
 import RatingsTooltipInit from '../../../components/review/tooltips/RatingsTooltipInit.astro';
 import GlossaryTooltipInit from '../../../components/review/tooltips/GlossaryTooltipInit.astro';
 import ReviewScrollRestore from '../../../components/review/ReviewScrollRestore.astro';
+import ImageLightbox from '../../../components/ui/ImageLightbox.astro';
 import ArticleUtilityRail from '../../../components/article/ArticleUtilityRail.astro';
 import ReviewMobileNavSheet from '../../../components/mobile/ReviewMobileNavSheet.astro';
 import { getProductFeaturedIn, loadProductPreviewBySlug } from '../../../lib/content/store';
@@ -81,6 +82,7 @@ const shareUrl = head.canonical;
   ogTitle={head.ogTitle}
   ogDescription={head.ogDescription}
   robots={head.robots}
+  theme="review"
 >
   <Header />
   <div
@@ -165,6 +167,7 @@ const shareUrl = head.canonical;
   <RatingsTooltipInit />
   <GlossaryTooltipInit />
   <ReviewScrollRestore productSlug={product.slug} />
+  <ImageLightbox />
 </BaseLayout>
 
 <script>

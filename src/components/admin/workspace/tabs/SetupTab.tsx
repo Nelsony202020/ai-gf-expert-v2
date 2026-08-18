@@ -169,7 +169,7 @@ export function SetupTab() {
                 </div>
                 <Field
                   label="Referral suffix"
-                  hint="Appended to every character destination URL — e.g. ?ref=yourcode or &via=affiliate"
+                  hint="Appended to character links unless a character uses “Manual affiliate URL”. Leave empty when each destination needs its own full tracking URL (e.g. OurDream UIDs)."
                 >
                   <ReferralSuffixField
                     value={fields.referralSuffix ?? ''}
@@ -448,6 +448,12 @@ function AffiliateLinksPanel() {
             <li key={link.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
               <code className="font-mono text-xs text-slate-800 dark:text-slate-200">/go/{link.cloakedSlug}</code>
               <Badge tone={link.active ? 'green' : 'gray'}>{link.active ? 'active' : 'inactive'}</Badge>
+              {link.linkType && (
+                <Badge tone="gray">{String(link.linkType)}</Badge>
+              )}
+              {link.campaign && (
+                <span className="text-[11px] text-slate-400">{String(link.campaign)}</span>
+              )}
               {link.lastCheckStatus && (
                 <Badge
                   tone={
@@ -499,6 +505,7 @@ export function AffiliateLinkModal({
 }) {
   const [destinationUrl, setDestinationUrl] = useState(String(link?.destinationUrl ?? ''));
   const [cloakedSlug, setCloakedSlug] = useState(String(link?.cloakedSlug ?? ''));
+  const [linkType, setLinkType] = useState(String(link?.linkType ?? 'product'));
   const [campaign, setCampaign] = useState(String(link?.campaign ?? ''));
   const [relTags, setRelTags] = useState(String(link?.relTags ?? DEFAULT_AFFILIATE_REL));
   const [active, setActive] = useState(link ? Boolean(link.active) : true);
@@ -510,7 +517,7 @@ export function AffiliateLinkModal({
       destinationUrl: destinationUrl.trim(),
       cloakedSlug: cloakedSlug.trim(),
       active,
-      linkType: 'product',
+      linkType: linkType || 'product',
     };
     if (campaign.trim()) fields.campaign = campaign.trim();
     fields.relTags = relTags.trim() || DEFAULT_AFFILIATE_REL;
@@ -525,7 +532,7 @@ export function AffiliateLinkModal({
   return (
     <Modal title={link ? 'Edit affiliate link' : 'New affiliate link'} onClose={onClose}>
       <form onSubmit={save} className="space-y-3">
-        <Field label="Destination URL" required help="The tracking URL from the affiliate network.">
+        <Field label="Destination URL" required help="The tracking URL from the affiliate network. Use the full URL when the network needs a unique UID per page.">
           <TextInput
             value={destinationUrl}
             onChange={(e) => setDestinationUrl(e.target.value)}
@@ -543,9 +550,18 @@ export function AffiliateLinkModal({
             />
           </InputWithPrefix>
         </Field>
-        <Field label="Campaign (optional)">
-          <TextInput value={campaign} onChange={(e) => setCampaign(e.target.value)} placeholder="e.g. summer-2026" />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Type" help="Product = main Visit CTA. Character/campaign stay active without replacing the main CTA.">
+            <Select value={linkType} onChange={(e) => setLinkType(e.target.value)}>
+              <option value="product">product</option>
+              <option value="character">character</option>
+              <option value="campaign">campaign</option>
+            </Select>
+          </Field>
+          <Field label="Campaign (optional)">
+            <TextInput value={campaign} onChange={(e) => setCampaign(e.target.value)} placeholder="e.g. youtube, elara" />
+          </Field>
+        </div>
         <Field
           label="Link rel tags"
           hint="Applied to every public CTA using this cloaked link. Default: nofollow sponsored noopener (Google affiliate disclosure)."

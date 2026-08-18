@@ -19,7 +19,7 @@ function mapRow(row: Record<string, unknown>): GlossaryEntryRecord {
     category: String(row.category ?? 'General'),
     status: String(row.status ?? 'draft'),
     autoTooltip: row.autoTooltip !== false,
-    scope: row.scope ? String(row.scope) : 'reviews',
+    scope: row.scope ? String(row.scope) : 'site',
     publishedAt: row.publishedAt != null ? Number(row.publishedAt) : null,
     createdAt: row.createdAt != null ? Number(row.createdAt) : null,
     updatedAt: row.updatedAt != null ? Number(row.updatedAt) : null,
@@ -47,11 +47,10 @@ export async function loadPublishedGlossaryEntries(): Promise<GlossaryEntryRecor
   return all.filter((e) => e.status === 'published' && e.term && e.anchor && e.tooltipDefinition.trim());
 }
 
-/** Terms eligible for automatic review tooltips. */
+/** Terms eligible for automatic glossary tooltips (all published entries). */
 export async function getPublishedGlossaryTermsForTooltips(): Promise<PublishedGlossaryTerm[]> {
   const published = await loadPublishedGlossaryEntries();
   return published
-    .filter((e) => e.autoTooltip !== false && (e.scope ?? 'reviews') === 'reviews')
     .map((e) => ({
       id: e.id,
       term: e.term,

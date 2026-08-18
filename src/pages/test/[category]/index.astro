@@ -11,6 +11,7 @@ import TestCategoryMobileNavSheet from '../../../components/test/TestCategoryMob
 import TestPageBackLink from '../../../components/test/TestPageBackLink.astro';
 import ArticleUtilityRail from '../../../components/article/ArticleUtilityRail.astro';
 import RatingsTooltipInit from '../../../components/review/tooltips/RatingsTooltipInit.astro';
+import PublicGlossaryTooltips from '../../../components/glossary/PublicGlossaryTooltips.astro';
 import { getTestCategories, getTestCategory } from '../../../lib/test-framework';
 import { getTestCategoryMethodology } from '../../../data/test-category-methodology';
 import { testHubUrl } from '../../../lib/slugs';
@@ -125,6 +126,7 @@ const tocItems = methodology
   <div data-hub-root data-page-title={pageTitle} data-page-url={canonical} hidden aria-hidden="true"></div>
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
   <RatingsTooltipInit />
+  <PublicGlossaryTooltips autoDecorate />
 
   <script>
     function initTestHubNav() {

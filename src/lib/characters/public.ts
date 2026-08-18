@@ -1,6 +1,6 @@
 // Shared mapping for public-facing character highlights (reviews, homepage).
 
-import { appendReferralSuffix } from './destinationUrl';
+import { resolveCharacterDestination } from './destinationUrl';
 import { DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
 import { inferMediaTypeFromUrl, resolveMediaUrl, isUsablePublicMediaUrl } from '../media/url';
 import type { StoryHighlightCharacter } from '../../data/products';
@@ -112,14 +112,18 @@ export function mapCharacterForPublic(
   const safeAvatar = avatar && isUsablePublicMediaUrl(avatar) ? avatar : '';
 
   const affiliateLinks = product?.affiliateLinks ?? character.product?.affiliateLinks ?? [];
-  const activeProductLink = affiliateLinks.find((l: any) => l.active);
+  const activeProductLink =
+    affiliateLinks.find((l: any) => l.active && (l.linkType === 'product' || !l.linkType)) ??
+    affiliateLinks.find((l: any) => l.active);
   const referralSuffix = product?.referralSuffix ?? character.product?.referralSuffix;
+  const skipSuffix = Boolean(character.skipReferralSuffix);
   const destinationWithSuffix = character.destinationUrl
-    ? appendReferralSuffix(String(character.destinationUrl), referralSuffix)
+    ? resolveCharacterDestination(String(character.destinationUrl), referralSuffix, skipSuffix)
     : '';
+  // Prefer a dedicated cloaked affiliate link when linked; otherwise raw/override URL; else product CTA.
   const profileUrl =
-    destinationWithSuffix ||
     (character.affiliateLink?.active ? `/go/${character.affiliateLink.cloakedSlug}` : '') ||
+    destinationWithSuffix ||
     (activeProductLink ? `/go/${activeProductLink.cloakedSlug}` : undefined);
 
   return {

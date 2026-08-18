@@ -410,6 +410,7 @@ Most beginners do not need to worry much about this setting unless their images 
   {
     term: 'Steps',
     category: 'Images',
+    aliases: ['generation steps', 'sampling steps'],
     ctaLabel: 'How generation steps work →',
     tooltipDefinition:
       'A setting that controls how many processing rounds the AI uses to create an image. More steps can improve quality, but they also take longer.',
@@ -502,6 +503,179 @@ That is why we test both image quality and prompt adherence.
 
 Looking good is not enough. The AI also needs to listen to you.`,
   },
+  {
+    term: 'Text-to-Video',
+    category: 'Video',
+    aliases: ['text to video', 'text2video', 'T2V'],
+    ctaLabel: 'How text-to-video works →',
+    tooltipDefinition:
+      'Text-to-video lets you create an AI video by describing what you want to happen. You write a prompt, and the AI generates the video from scratch.',
+    fullExplanation: `Text-to-video means you create a video using only a written prompt.
+
+For example, you could type:
+
+A woman in a red dress walking along the beach at sunset.
+
+The AI then tries to turn those instructions into a video.
+
+This gives you much more freedom than image-to-video because you do not need an existing image first. You can describe the character, location, outfit, movement, camera angle, and what should happen.
+
+The downside is that text-to-video is also harder for the AI to get right. Characters can change appearance, movements can look weird, and the final video may not follow your prompt exactly.
+
+On AI girlfriend apps, text-to-video is still less common than image-to-video.`,
+  },
+  {
+    term: 'Image-to-Video',
+    category: 'Video',
+    aliases: ['image to video', 'img2video', 'I2V'],
+    ctaLabel: 'How image-to-video works →',
+    tooltipDefinition:
+      'Image-to-video turns an existing image into a short AI video. You choose a picture of your character, and the AI adds movement to it.',
+    fullExplanation: `Image-to-video takes an existing image and turns it into a moving video.
+
+You normally choose a picture of your AI girlfriend and let the video generator animate it.
+
+For example, the AI might make the character:
+
+- Smile
+- Turn around
+- Walk
+- Move toward the camera
+- Change her pose
+
+Some apps also give you a prompt box where you can tell the AI exactly what you want to happen. Others simply animate the image automatically and give you almost no control.
+
+Image-to-video is currently much more common on AI girlfriend apps than full text-to-video.
+
+The big advantage is character consistency. Because the AI starts with an existing picture, your character is usually more likely to keep the same face, outfit, and overall appearance.`,
+  },
+  {
+    term: 'Text-to-Image',
+    category: 'Images',
+    aliases: ['text to image', 'txt2img', 'T2I'],
+    ctaLabel: 'How text-to-image works →',
+    tooltipDefinition:
+      'Text-to-image creates an AI image from written instructions. You describe what you want to see, and the AI generates the image for you.',
+    fullExplanation: `Text-to-image means creating an image using a written prompt.
+
+For example:
+
+A brunette woman wearing a black dress in a hotel room.
+
+The AI reads your instructions and generates an image based on them.
+
+On AI girlfriend apps, you can normally describe things like:
+
+- Outfit
+- Pose
+- Location
+- Expression
+- Camera angle
+- Activity
+- NSFW content
+
+Good text-to-image generators should not just make nice-looking images. They should also actually follow what you asked for.
+
+That is why we test both image quality and prompt adherence in our reviews.`,
+  },
+  {
+    term: 'Image-to-Image',
+    category: 'Images',
+    aliases: ['image to image', 'img2img', 'I2I'],
+    ctaLabel: 'How image-to-image works →',
+    tooltipDefinition:
+      'Image-to-image uses an existing picture as the starting point for a new AI image. You can change things like the outfit, pose, setting, or style while keeping parts of the original image.',
+    fullExplanation: `Image-to-image means giving the AI an existing image and asking it to create a new version of it.
+
+Instead of starting completely from scratch, the original image acts as a reference.
+
+For example, you could take an existing picture of your AI girlfriend and ask the generator to:
+
+- Change her outfit
+- Put her at the beach
+- Change the pose
+- Make the image NSFW
+- Change the art style
+- Create a similar image from another angle
+
+How much of the original image stays the same depends on the generator.
+
+A good image-to-image tool should make the changes you ask for without completely changing the character's identity.`,
+  },
+  {
+    term: 'GFE',
+    category: 'Chat',
+    aliases: ['Girlfriend Experience'],
+    displayAliases: ['Girlfriend Experience'],
+    ctaLabel: 'What GFE means →',
+    tooltipDefinition:
+      'GFE stands for Girlfriend Experience. It describes AI girlfriend apps that try to make chatting feel more like having a real girlfriend instead of simply talking to a chatbot.',
+    fullExplanation: `GFE stands for Girlfriend Experience.
+
+Some AI girlfriend apps are built around the idea of making the experience feel as close as possible to actually having a girlfriend.
+
+Instead of only waiting for you to send a message, the character may:
+
+- Call you
+- Send random voice messages
+- Send pictures without being asked
+- Remember things about you
+- Get closer to you over time
+- React differently depending on your relationship
+
+Some apps even make you build a connection before NSFW content becomes available.
+
+It can feel more like meeting someone, talking for a while, going on dates, and slowly getting closer instead of opening the chat and immediately jumping into sex.
+
+Candy AI is a good example of an app that puts a lot of focus on this type of experience.
+
+Not every GFE app works the same way. Some focus heavily on romance and relationships, while others combine the girlfriend experience with NSFW chat and roleplay.`,
+  },
+  {
+    term: 'Realistic-Style',
+    category: 'Characters',
+    aliases: ['realistic style', 'realistic-style characters'],
+    ctaLabel: 'What realistic-style means →',
+    tooltipDefinition:
+      'Realistic-style characters are AI characters designed to look like real people rather than anime, cartoons, or fantasy artwork.',
+    fullExplanation: `Realistic-style means the AI character is designed to look like a real human.
+
+The character is still AI-generated, but the app tries to make things like the face, skin, hair, body, lighting, and clothing look realistic.
+
+Some realistic characters look almost like normal photos, while others still have a slightly AI-generated look.
+
+On AI girlfriend apps, realistic-style characters are usually aimed at people who want the experience to feel more like talking to a real person.
+
+This is different from anime-style characters, which intentionally look illustrated or fictional.`,
+  },
+  {
+    term: 'Anime-Style',
+    category: 'Characters',
+    aliases: ['anime style', 'anime-style characters'],
+    ctaLabel: 'What anime-style means →',
+    tooltipDefinition:
+      'Anime-style characters use an illustrated look inspired by anime, manga, games, and fantasy art instead of trying to look like real humans.',
+    fullExplanation: `Anime-style characters are AI characters designed around anime, manga, game, or illustrated art styles.
+
+They do not try to look like real photographs.
+
+You will find normal anime girls and guys, but anime-focused AI girlfriend apps often go much further than that.
+
+Their character libraries can include niches like:
+
+- Femboys
+- Futanari
+- Furry characters
+- Elves
+- Demons
+- Goblins
+- Monsters
+- Fantasy characters
+
+These are not all technically anime categories, but they are commonly found inside the same anime and fantasy-focused AI girlfriend libraries.
+
+If you prefer realistic AI girlfriends, these apps may not be for you. But if you like anime, fantasy, or more unusual characters, they usually give you much more variety.`,
+  },
 ];
 
 async function main() {
@@ -534,7 +708,7 @@ async function main() {
       category: term.category,
       status: 'published',
       autoTooltip: true,
-      scope: 'reviews',
+      scope: 'site',
       publishedAt: now,
       updatedAt: now,
     };

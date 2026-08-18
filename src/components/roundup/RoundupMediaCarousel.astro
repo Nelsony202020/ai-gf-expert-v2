@@ -1,6 +1,9 @@
 ---
 import type { GalleryImage } from '../../data/products';
+import type { ProductAwardBadge } from '../../lib/awards/compute';
+import { getContextualAward } from '../../lib/awards/compute';
 import RoundupOverallScoreBadge from './RoundupOverallScoreBadge.astro';
+import EditorialAwardBadge from '../ui/EditorialAwardBadge.astro';
 
 interface Props {
   pickId: string;
@@ -9,9 +12,11 @@ interface Props {
   images: GalleryImage[];
   overallScore: number;
   overallSummary: string;
+  awards?: ProductAwardBadge[];
 }
 
-const { pickId, pickSlug, pickName, images, overallScore, overallSummary } = Astro.props;
+const { pickId, pickSlug, pickName, images, overallScore, overallSummary, awards = [] } = Astro.props;
+const initialAward = getContextualAward(awards, 'overall');
 ---
 
 <div class="roundup-media-carousel" data-media-carousel={pickId}>
@@ -32,6 +37,9 @@ const { pickId, pickSlug, pickName, images, overallScore, overallSummary } = Ast
         />
       ))
     }
+    <div class="roundup-media-carousel__award">
+      <EditorialAwardBadge label={initialAward?.label ?? ''} contextual hidden={!initialAward} />
+    </div>
     <div class="roundup-media-carousel__score">
       <RoundupOverallScoreBadge
         pickSlug={pickSlug}

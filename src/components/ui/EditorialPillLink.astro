@@ -1,0 +1,37 @@
+---
+interface Props {
+  href: string;
+  icon: string;
+  /** neutral = gray outline pill; quiet = plain editorial link */
+  variant?: 'neutral' | 'accent' | 'accent-filled' | 'quiet';
+  showArrow?: boolean;
+  class?: string;
+  target?: string;
+  rel?: string;
+}
+
+const {
+  href,
+  icon,
+  variant = 'neutral',
+  showArrow = true,
+  class: className = '',
+  target,
+  rel,
+} = Astro.props;
+---
+
+<a
+  href={href}
+  class:list={['editorial-pill', `editorial-pill--${variant}`, className]}
+  target={target}
+  rel={rel}
+>
+  <span class="material-symbols-outlined editorial-pill__icon" aria-hidden="true">{icon}</span>
+  <span class="editorial-pill__label"><slot /></span>
+  {
+    showArrow && (
+      <span class="material-symbols-outlined editorial-pill__arrow" aria-hidden="true">arrow_forward</span>
+    )
+  }
+</a>

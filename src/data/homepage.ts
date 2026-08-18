@@ -399,8 +399,7 @@ function pricingVerifiedLabelFor(pick: RoundupPick): string {
 }
 
 export function getRoundupRibbonLabel(pick: RoundupPick): string {
-  if (pick.ribbonKey === 'overall') return 'Best AI girlfriend';
-  return pick.ribbon;
+  return pick.ribbon || pick.awards?.[0]?.label || '';
 }
 
 export function getRoundupRibbonHref(pick: RoundupPick): string {

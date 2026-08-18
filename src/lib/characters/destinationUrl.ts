@@ -10,11 +10,17 @@ export function appendReferralSuffix(url: string, suffix: string | undefined | n
   return `${base}${sep}${suf}`;
 }
 
-/** Full tracked destination shown in admin and used for outbound CTAs. */
+/**
+ * Full tracked destination shown in admin and used for outbound CTAs.
+ * When `skipReferralSuffix` is true, the destination URL is used as-is
+ * (needed when networks assign a unique UID / tracking URL per page).
+ */
 export function resolveCharacterDestination(
   destinationUrl: string | undefined | null,
   referralSuffix: string | undefined | null,
+  skipReferralSuffix?: boolean | null,
 ): string {
   if (!destinationUrl?.trim()) return '';
+  if (skipReferralSuffix) return destinationUrl.trim();
   return appendReferralSuffix(destinationUrl.trim(), referralSuffix);
 }

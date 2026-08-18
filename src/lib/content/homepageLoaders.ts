@@ -5,6 +5,7 @@ import { loadFeaturedCharactersFromDb } from '../homepage/featuredCharacters';
 import { MAX_HOMEPAGE_TOP_PICKS } from '../homepage/featuredProducts';
 import { reviewPageUrl } from '../slugs';
 import { loadPublishedProducts } from './store';
+import { attachAwardsToPicks } from '../awards/compute';
 import {
   hydrateRoundupPicks,
   minimalRoundupPickFromProduct,
@@ -34,9 +35,15 @@ export async function loadHomepageTopPicks(
   templatePicks: RoundupPick[],
 ): Promise<RoundupPick[]> {
   const templatesBySlug = new Map(templatePicks.map((p) => [p.slug, p]));
+  const published = await loadPublishedProducts([]);
 
   if (!isDbConfigured()) {
-    return templatePicks.slice(0, MAX_HOMEPAGE_TOP_PICKS);
+    const productsBySlug = new Map(published.map((p) => [p.slug, p]));
+    const picks = templatePicks.slice(0, MAX_HOMEPAGE_TOP_PICKS).map((template) => {
+      const product = productsBySlug.get(template.slug);
+      return product ? productToRoundupPick(template, product) : template;
+    });
+    return attachAwardsToPicks(picks, published);
   }
 
   try {
@@ -47,7 +54,6 @@ export async function loadHomepageTopPicks(
       },
     });
 
-    const published = await loadPublishedProducts([]);
     const productsBySlug = new Map(published.map((p) => [p.slug, p]));
 
     const slots = (homepageSlots as any[])
@@ -89,10 +95,12 @@ export async function loadHomepageTopPicks(
       }
     }
 
-    return out.length > 0 ? out.slice(0, MAX_HOMEPAGE_TOP_PICKS) : templatePicks.slice(0, MAX_HOMEPAGE_TOP_PICKS);
+    const fallback = templatePicks.slice(0, MAX_HOMEPAGE_TOP_PICKS);
+    return attachAwardsToPicks(out.length > 0 ? out.slice(0, MAX_HOMEPAGE_TOP_PICKS) : fallback, published);
   } catch (error) {
     console.error('[content] homepage top picks load failed', error);
-    return templatePicks.slice(0, MAX_HOMEPAGE_TOP_PICKS);
+    const fallback = templatePicks.slice(0, MAX_HOMEPAGE_TOP_PICKS);
+    return attachAwardsToPicks(fallback, published);
   }
 }
 
@@ -147,7 +155,7 @@ export async function loadDirectoryPicks(templatePicks: RoundupPick[]): Promise<
   const productsBySlug = new Map(published.map((p) => [p.slug, p]));
 
   if (!isDbConfigured()) {
-    return hydrateRoundupPicks(templatePicks, productsBySlug);
+    return attachAwardsToPicks(hydrateRoundupPicks(templatePicks, productsBySlug), published);
   }
 
   try {
@@ -176,10 +184,10 @@ export async function loadDirectoryPicks(templatePicks: RoundupPick[]): Promise<
       picks.push(pick);
     }
 
-    return picks.length > 0 ? picks : hydrateRoundupPicks(templatePicks, productsBySlug);
+    return picks.length > 0 ? attachAwardsToPicks(picks, published) : attachAwardsToPicks(hydrateRoundupPicks(templatePicks, productsBySlug), published);
   } catch (error) {
     console.error('[content] directory picks load failed', error);
-    return hydrateRoundupPicks(templatePicks, productsBySlug);
+    return attachAwardsToPicks(hydrateRoundupPicks(templatePicks, productsBySlug), published);
   }
 }
 
