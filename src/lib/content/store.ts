@@ -34,6 +34,7 @@ import {
 } from '../media/catalog';
 import { resolveMediaUrl, isUsablePublicMediaUrl } from '../media/url';
 import { awardRibbonKey, resolveAwardLabel } from '../awards';
+import { getPrimaryAward } from '../awards/compute';
 
 /** Fixed public category order — matches methodology template. */
 const CATEGORY_DISPLAY_ORDER = [
@@ -60,7 +61,7 @@ import { cdnAsset } from '../media/cdn';
 import { isPlaceholderImage, PUBLIC_HERO_FALLBACK } from '../media/optimize';
 import { buildGroupedContributors } from '../ratings/groupContributors';
 import type { Roundup, RoundupPick } from '../../data/roundups/ai-girlfriend';
-import { hydrateRoundupPicks, minimalRoundupPickFromProduct } from './roundupPick';
+import { resolveRoundupPicks, enrichRoundupWithPicks, enrichPicksWithAtGlance, type RoundupEntryMeta } from './roundupPick';
 import { launchCompareDefaultIds } from './launchProducts';
 import { isDevReviewSlug } from './reviewDevProducts';
 
@@ -310,7 +311,10 @@ function mapProduct(
 
   const gallery: GalleryImage[] = gallerySource;
 
-  const activeLink = (dbProduct.affiliateLinks ?? []).find((l: any) => l.active);
+  const activeLink =
+    (dbProduct.affiliateLinks ?? []).find(
+      (l: any) => l.active && (l.linkType === 'product' || !l.linkType),
+    ) ?? (dbProduct.affiliateLinks ?? []).find((l: any) => l.active);
   const plans = (dbProduct.subscriptionPlans ?? []).filter((p: any) => p.active);
   // Cheapest true 1-month billing option across tiers (never annual÷12).
   const plainMonthly = lowestPlainMonthlyPrice(plans);
@@ -425,6 +429,16 @@ function mapProduct(
       monthly: monthlyPriceLabel ?? fileFallback?.pricingDisplay.monthly ?? '—',
       typicalMonthly: typicalMonthly ?? fileFallback?.pricingDisplay.typicalMonthly ?? null,
       storeLabel: fileFallback?.pricingDisplay.storeLabel ?? 'Visit site',
+    },
+    capabilities: {
+      realisticCharacters: dbProduct.capRealisticCharacters,
+      animeCharacters: dbProduct.capAnimeCharacters,
+      voiceCalls: dbProduct.capVoiceCalls,
+      voiceMessages: dbProduct.capVoiceMessages,
+      tokenSystem: dbProduct.capTokenSystem,
+      freePlan: dbProduct.capFreePlan,
+      imageGeneration: dbProduct.capImageGeneration,
+      videoGeneration: dbProduct.capVideoGeneration,
     },
     videoReview: resolveVideoReview(dbProduct),
     reviewBlocks: Array.isArray(review?.blocks)
@@ -598,36 +612,18 @@ export async function getProductFeaturedIn(productSlug: string): Promise<Feature
   }
 }
 
-function orderRoundupPicksFromDbEntries(
-  filePicks: RoundupPick[],
-  entries: any[],
-  productsBySlug: Map<string, Product>,
-): RoundupPick[] {
-  const bySlug = new Map(filePicks.map((p) => [p.slug, p]));
-  const included = entries
-    .filter((e) => e.included && e.product?.slug)
-    .sort(
-      (a, b) =>
-        (a.publishedPosition ?? a.calculatedPosition ?? 999) -
-        (b.publishedPosition ?? b.calculatedPosition ?? 999),
-    );
-
-  if (included.length === 0) return filePicks;
-
-  const ordered: RoundupPick[] = [];
-  for (const e of included) {
-    const slug = String(e.product.slug);
-    const product = productsBySlug.get(slug);
-    const template =
-      bySlug.get(slug) ?? (product ? minimalRoundupPickFromProduct(product) : null);
-    if (!template) continue;
-    const pick = { ...template };
-    if (e.awardLabel) pick.ribbon = e.awardLabel;
-    if (e.reason) pick.overallSummary = e.reason;
-    ordered.push(pick);
-  }
-
-  return ordered.length > 0 ? ordered : filePicks;
+function mapRoundupEntries(entries: any[]): RoundupEntryMeta[] {
+  return (entries ?? [])
+    .map((e) => ({
+      slug: String(e.product?.slug ?? ''),
+      included: Boolean(e.included),
+      publishedPosition: e.publishedPosition ?? null,
+      calculatedPosition: e.calculatedPosition ?? null,
+      editorialOverride: Boolean(e.editorialOverride),
+      awardLabel: e.awardLabel ?? null,
+      reason: e.reason ?? null,
+    }))
+    .filter((e) => e.slug);
 }
 
 export interface RoundupPublicLoad {
@@ -670,29 +666,27 @@ export async function loadRoundupForPublic(
 
     const publishedProducts = await loadPublishedProducts([]);
     const productsBySlug = new Map(publishedProducts.map((p) => [p.slug, p]));
+    const entryMeta = mapRoundupEntries(dbRoundup?.entries ?? []);
+    const resolvedPicks = resolveRoundupPicks(fileTemplate.picks, publishedProducts, entryMeta);
+    const picks = await enrichPicksWithAtGlance(resolvedPicks, productsBySlug);
 
-    let picks = fileTemplate.picks;
-    if (dbRoundup?.entries?.length) {
-      picks = orderRoundupPicksFromDbEntries(fileTemplate.picks, dbRoundup.entries, productsBySlug);
-    }
-    picks = hydrateRoundupPicks(picks, productsBySlug);
-
-    const roundup: Roundup = {
-      ...fileTemplate,
-      ...(dbRoundup
-        ? {
-            title: dbRoundup.title ?? fileTemplate.title,
-            metaDescription: dbRoundup.seoDescription ?? fileTemplate.metaDescription,
-            featuredImage: cdnAsset(
-              isPlaceholderImage(dbRoundup.ogImageUrl ?? fileTemplate.featuredImage)
-                ? PUBLIC_HERO_FALLBACK
-                : (dbRoundup.ogImageUrl ?? fileTemplate.featuredImage),
-            ),
-          }
-        : {}),
+    const roundup = enrichRoundupWithPicks(
+      {
+        ...fileTemplate,
+        ...(dbRoundup
+          ? {
+              title: dbRoundup.title ?? fileTemplate.title,
+              metaDescription: dbRoundup.seoDescription ?? fileTemplate.metaDescription,
+              featuredImage: cdnAsset(
+                isPlaceholderImage(dbRoundup.ogImageUrl ?? fileTemplate.featuredImage)
+                  ? PUBLIC_HERO_FALLBACK
+                  : (dbRoundup.ogImageUrl ?? fileTemplate.featuredImage),
+              ),
+            }
+          : {}),
+      },
       picks,
-      compareDefaultIds: launchCompareDefaultIds(picks, fileTemplate.compareDefaultIds),
-    };
+    );
 
     return { roundup, isDraft };
   } catch (error) {
@@ -771,11 +765,10 @@ export async function overlayRoundupWithDb<T extends {
     if (!dbRoundup?.entries?.length) return fileRoundup;
 
     const publishedProducts = await loadPublishedProducts([]);
-    const productsBySlug = new Map(publishedProducts.map((p) => [p.slug, p]));
-    const ordered = orderRoundupPicksFromDbEntries(fileRoundup.picks, dbRoundup.entries, productsBySlug);
-    const picks = hydrateRoundupPicks(ordered, productsBySlug);
+    const entryMeta = mapRoundupEntries(dbRoundup.entries);
+    const picks = resolveRoundupPicks(fileRoundup.picks, publishedProducts, entryMeta);
 
-    return { ...fileRoundup, picks };
+    return enrichRoundupWithPicks(fileRoundup, picks);
   } catch (error) {
     console.error('[content] roundup overlay failed — using file data', error);
     return fileRoundup;
@@ -974,9 +967,10 @@ export async function overlayExplorerAppsWithDb<
         ? buildExplorerPaymentsFromProfile(dbProduct.paymentProfile)
         : app.payments;
 
-      // Directory ribbon comes from Setup → Visibility label (unique per platform).
-      const label = resolveAwardLabel(dbProduct);
-      const ribbonKey = awardRibbonKey(dbProduct.award) ?? app.ribbonKey;
+      // Prefer score-computed awards; fall back to manual DB award label.
+      const primary = getPrimaryAward((app as { awards?: import('../awards/compute').ProductAwardBadge[] }).awards ?? []);
+      const label = primary?.label ?? resolveAwardLabel(dbProduct);
+      const ribbonKey = primary?.sortKey ?? awardRibbonKey(dbProduct.award) ?? app.ribbonKey;
 
       return {
         ...app,

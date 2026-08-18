@@ -1,0 +1,27 @@
+/* Product brand logos — square frames without cropping transparent marks */
+
+.product-logo-img,
+.roundup-quick-card__logo,
+.roundup-pick__title-logo,
+.roundup-conclusion__pick-logo,
+.roundup-compare-picker__logo,
+.home-app-card__logo,
+.home-finder-card__logo,
+.dir-row__logo {
+  object-fit: contain;
+  object-position: center;
+  background: var(--color-surface-container-lowest, #fff);
+  padding: 2px;
+  box-sizing: border-box;
+}
+
+[data-theme='dark'] .product-logo-img,
+[data-theme='dark'] .roundup-quick-card__logo,
+[data-theme='dark'] .roundup-pick__title-logo,
+[data-theme='dark'] .roundup-conclusion__pick-logo,
+[data-theme='dark'] .roundup-compare-picker__logo,
+[data-theme='dark'] .home-app-card__logo,
+[data-theme='dark'] .home-finder-card__logo,
+[data-theme='dark'] .dir-row__logo {
+  background: var(--color-surface-container-low, #1f1f1f);
+}

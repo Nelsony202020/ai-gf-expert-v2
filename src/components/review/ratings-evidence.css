@@ -1829,40 +1829,6 @@
   padding: 0.75rem 1.25rem 1.5rem;
 }
 
-/* Bottom fade — more content below (mobile) */
-.ratings-drawer-panel__scroll-fade {
-  display: none;
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 3;
-  height: 3.25rem;
-  pointer-events: none;
-  background: linear-gradient(
-    to top,
-    var(--color-surface-container-lowest) 12%,
-    color-mix(in srgb, var(--color-surface-container-lowest) 55%, transparent) 55%,
-    transparent
-  );
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-@media (max-width: 767px) {
-  .ratings-drawer-panel__scroll-fade {
-    display: block;
-  }
-
-  .ratings-drawer-panel[data-scroll-more='true'] .ratings-drawer-panel__scroll-fade {
-    opacity: 1;
-  }
-
-  .ratings-drawer-panel__body {
-    padding-bottom: 2rem;
-  }
-}
-
 @media (max-width: 640px) {
   .ratings-drawer-panel {
     width: 100%;

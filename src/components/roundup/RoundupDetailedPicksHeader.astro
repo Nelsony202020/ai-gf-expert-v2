@@ -16,16 +16,6 @@ const { heading, picks } = Astro.props;
     <div class="roundup-detailed-picks__mobile-triggers roundup-mobile-only">
       <button
         type="button"
-        class="roundup-sort-trigger"
-        data-sort-sheet-open
-        aria-haspopup="dialog"
-        aria-label="Change ranking sort"
-      >
-        <span data-mobile-sort-value>Overall</span>
-        <span class="material-symbols-outlined roundup-sort-trigger__chevron" aria-hidden="true">expand_more</span>
-      </button>
-      <button
-        type="button"
         class="roundup-reading-trigger roundup-reading-trigger--inline"
         data-reading-sheet-open
         aria-haspopup="dialog"
@@ -33,6 +23,17 @@ const { heading, picks } = Astro.props;
         <span class="roundup-reading-trigger__label">Reading:</span>
         <span class="roundup-reading-trigger__value" data-mobile-reading-value>Skim</span>
         <span class="material-symbols-outlined roundup-reading-trigger__chevron" aria-hidden="true">expand_more</span>
+      </button>
+      <button
+        type="button"
+        class="roundup-sort-trigger"
+        data-sort-sheet-open
+        aria-haspopup="dialog"
+        aria-label="Change ranking sort"
+      >
+        <span class="roundup-sort-trigger__label">Best:</span>
+        <span class="roundup-sort-trigger__value" data-mobile-sort-value>Overall</span>
+        <span class="material-symbols-outlined roundup-sort-trigger__chevron" aria-hidden="true">expand_more</span>
       </button>
     </div>
   </div>

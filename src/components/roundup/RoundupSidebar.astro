@@ -51,23 +51,36 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
     const root = document.querySelector<HTMLElement>('[data-roundup-root]');
     const picksContainer = document.querySelector<HTMLElement>('[data-roundup-picks]');
     if (!root || !picksContainer) return;
+    if (root.dataset.sidebarBound === 'true') return;
+    root.dataset.sidebarBound = 'true';
 
     const categoryMap: Record<string, string> = {
-      voice: 'chat-features',
-      roleplay: 'chat-features',
-      video: 'video',
       images: 'images',
-      privacy: 'privacy',
-      value: 'pricing',
-      free: 'pricing',
+      videos: 'video',
+      roleplay: 'chat',
+      price: 'pricing',
     };
+
+    function syncAwardBadges(sortKey: string) {
+      document.querySelectorAll<HTMLElement>('[data-roundup-pick]').forEach((pick) => {
+        let awards: Array<{ sortKey: string; label: string }> = [];
+        try {
+          awards = JSON.parse(pick.dataset.productAwards ?? '[]');
+        } catch {
+          awards = [];
+        }
+        const match = awards.find((award) => award.sortKey === sortKey);
+        pick.querySelectorAll<HTMLElement>('[data-pick-award-badge]').forEach((badge) => {
+          badge.hidden = !match;
+          const labelEl = badge.querySelector<HTMLElement>('[data-pick-award-label]');
+          if (labelEl && match) labelEl.textContent = match.label;
+        });
+      });
+    }
 
     function getSortScore(pick: HTMLElement, sortKey: string): number {
       const overall = Number(pick.dataset.overallScore ?? 0);
-      const price = Number(pick.dataset.price ?? 0);
       if (sortKey === 'overall') return overall;
-      if (sortKey === 'price-asc') return -price;
-      if (sortKey === 'price-desc') return price;
 
       let scores: Record<string, number> = {};
       try {
@@ -129,6 +142,7 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
 
       updatePickRanks();
       updateSortLabel(sortKey);
+      syncAwardBadges(sortKey);
       reorderTocPicks(picks);
 
       const quickTrack = document.querySelector<HTMLElement>('[data-roundup-quick-track]');
@@ -138,6 +152,7 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
         cards
           .sort((a, b) => order.indexOf(a.dataset.quickCard!) - order.indexOf(b.dataset.quickCard!))
           .forEach((card) => quickTrack.appendChild(card));
+        quickTrack.scrollTo({ left: 0, behavior: 'smooth' });
       }
     }
 
@@ -151,38 +166,6 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
     function applyReadingLength(value: string) {
       root!.dataset.readingLength = value;
       updateReadingLabel(value);
-
-      document.querySelectorAll<HTMLElement>('[data-roundup-pick]').forEach((pick) => {
-        if (value === 'medium') {
-          pick.dataset.pickExpanded = 'medium';
-        } else if (value === 'all-in') {
-          pick.dataset.pickExpanded = 'deep';
-        } else {
-          delete pick.dataset.pickExpanded;
-        }
-      });
-
-      document.querySelectorAll<HTMLElement>('[data-pick-expand-wrap]').forEach((wrap) => {
-        wrap.hidden = value !== 'skim';
-      });
-
-      if (value === 'all-in') {
-        document.querySelectorAll<HTMLElement>('[data-our-take-body]').forEach((body) => {
-          body.hidden = false;
-        });
-        document.querySelectorAll<HTMLButtonElement>('[data-our-take-toggle]').forEach((btn) => {
-          btn.setAttribute('aria-expanded', 'true');
-          btn.querySelector('.roundup-pick__our-take-chevron')?.classList.add('is-open');
-        });
-      } else {
-        document.querySelectorAll<HTMLElement>('[data-our-take-body]').forEach((body) => {
-          body.hidden = true;
-        });
-        document.querySelectorAll<HTMLButtonElement>('[data-our-take-toggle]').forEach((btn) => {
-          btn.setAttribute('aria-expanded', 'false');
-          btn.querySelector('.roundup-pick__our-take-chevron')?.classList.remove('is-open');
-        });
-      }
     }
 
     function syncRadios(name: string, value: string) {
@@ -200,8 +183,15 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
       });
     });
 
+    document.addEventListener('roundup:sort-request', (event) => {
+      const value = (event as CustomEvent<{ value?: string }>).detail?.value;
+      if (!value) return;
+      syncRadios('roundup-sort', value);
+      sortPicks(value);
+    });
+
     const defaultSort = document.querySelector<HTMLInputElement>('input[name="roundup-sort"]:checked');
-    if (defaultSort) updateSortLabel(defaultSort.value);
+    sortPicks(defaultSort?.value ?? 'overall');
 
     document.querySelectorAll<HTMLInputElement>('input[name="roundup-reading"]').forEach((input) => {
       input.addEventListener('change', () => {
@@ -290,13 +280,14 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
       link.addEventListener('click', () => {
         const pickId = link.dataset.pickAnchor;
         const pick = document.querySelector<HTMLElement>(`[data-pick-id="${pickId}"]`);
-        if (pick && !pick.dataset.pickExpanded) {
-          pick.dataset.pickExpanded = 'medium';
-        }
         const reading = document.querySelector<HTMLInputElement>('input[name="roundup-reading"][value="medium"]');
         if (reading && !reading.checked) {
           reading.checked = true;
           applyReadingLength('medium');
+        } else if (pick && pick.dataset.decisionOpen !== 'true') {
+          pick.dataset.decisionOpen = 'true';
+          pick.dataset.expertOpen = 'false';
+          pick.dispatchEvent(new CustomEvent('roundup:sync-disclosure', { bubbles: false }));
         }
       });
     });

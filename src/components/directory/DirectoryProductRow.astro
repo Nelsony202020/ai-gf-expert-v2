@@ -6,8 +6,10 @@ import DirectoryCategoryScores from './DirectoryCategoryScores.astro';
 import AppBrandTooltip from './AppBrandTooltip.astro';
 import AppOverallScoreTooltip from './AppOverallScoreTooltip.astro';
 import DirectoryPaymentIcons from './DirectoryPaymentIcons.astro';
+import EditorialAwardBadge from '../ui/EditorialAwardBadge.astro';
+import { getPrimaryAward, getSecondaryAwards } from '../../lib/awards/compute';
 import CmsField from '../cms/CmsField.astro';
-import { optimizedImageUrl } from '../../lib/media/optimize';
+import { optimizedImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
 
 interface Props {
   app: HomeExplorerApp;
@@ -17,16 +19,26 @@ interface Props {
 const { app, formatReviewCount } = Astro.props;
 const reviewHref = app.reviewUrl ?? reviewPageUrl(app.slug);
 const overallVisual = getScoreVisual(app.overallScore);
+const primaryAward = getPrimaryAward(app.awards ?? []);
+const secondaryAwards = getSecondaryAwards(app.awards ?? []);
 ---
 
 <article class="dir-row">
   <div class="dir-row__media">
     {
-      app.roundupRibbonLabel && (
-        <a href={app.roundupHref} class={`dir-row__ribbon home-app-card__ribbon home-app-card__ribbon--${app.ribbonKey}`}>
-          <span class="material-symbols-outlined" aria-hidden="true">star</span>
-          {app.roundupRibbonLabel}
-        </a>
+      primaryAward && (
+        <div class="editorial-award-badge-group">
+          <EditorialAwardBadge label={primaryAward.label} href={app.roundupHref} />
+          {
+            secondaryAwards.length > 0 && (
+              <EditorialAwardBadge
+                label=""
+                extraCount={secondaryAwards.length}
+                extraTitle={secondaryAwards.map((award) => award.label).join(', ')}
+              />
+            )
+          }
+        </div>
       )
     }
     <a href={reviewHref} class="dir-row__image-link" tabindex="-1" aria-hidden="true">
@@ -45,7 +57,7 @@ const overallVisual = getScoreVisual(app.overallScore);
   <div class="dir-row__middle">
     <div class="dir-row__middle-header">
       <div class="dir-row__identity">
-        <img class="dir-row__logo" src={optimizedImageUrl(app.logo, { width: 40, quality: 70 })} alt="" width="40" height="40" loading="lazy" decoding="async" />
+        <img class="dir-row__logo" src={optimizedLogoUrl(app.logo, 40)} alt="" width="40" height="40" loading="lazy" decoding="async" />
         <div class="dir-row__identity-copy">
           <div class="dir-row__name-row">
             <h3 class="dir-row__name">

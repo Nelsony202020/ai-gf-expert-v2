@@ -14,6 +14,7 @@ import TestTooltipUsageRow from '../../../components/test/TestTooltipUsageRow.as
 import RoundupFaq from '../../../components/roundup/RoundupFaq.astro';
 import TestHubMobileNavSheet from '../../../components/test/TestHubMobileNavSheet.astro';
 import ArticleUtilityRail from '../../../components/article/ArticleUtilityRail.astro';
+import PublicGlossaryTooltips from '../../../components/glossary/PublicGlossaryTooltips.astro';
 import { getTestCategories } from '../../../lib/test-framework';
 import {
   testTooltipsCategoryUsage,
@@ -211,6 +212,7 @@ const canonical = canonicalPublicUrl(Astro.url.pathname, Astro.site);
     pageUrl={canonical}
   />
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
+  <PublicGlossaryTooltips autoDecorate />
 
   <script>
     function initTestHubNav() {

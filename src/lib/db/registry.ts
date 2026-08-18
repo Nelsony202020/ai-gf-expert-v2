@@ -289,7 +289,7 @@ export const ENTITIES: Record<string, EntityConfig> = {
     createDefaults: () => ({
       status: 'draft',
       autoTooltip: true,
-      scope: 'reviews',
+      scope: 'site',
       aliases: [],
       displayAliases: [],
       tooltipDefinition: '',

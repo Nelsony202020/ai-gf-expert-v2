@@ -13,6 +13,7 @@ import BuyingGuideNarrowDown from '../../components/guides/BuyingGuideNarrowDown
 import BuyingGuideTestingHelps from '../../components/guides/BuyingGuideTestingHelps.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import ArticleFeedbackLink from '../../components/article/ArticleFeedbackLink.astro';
+import PublicGlossaryTooltips from '../../components/glossary/PublicGlossaryTooltips.astro';
 import {
   buyingGuideFeaturedImage,
   buyingGuideFeaturedImageAlt,
@@ -51,7 +52,7 @@ const enrichedUserTypes = await enrichBuyingGuideUserTypes(buyingGuideUserTypes)
         <div class="roundup-main min-w-0">
           <BuyingGuideHeroIntro meta={buyingGuideMeta} shareUrl={canonical} />
 
-          <article class="test-hub__main">
+          <article class="test-hub__main" data-glossary-decorate>
             <section id="what-type-of-user" class="test-hub__section">
               <h2 class="test-hub__h2">What type of user are you?</h2>
               <p class="test-hub__lead">
@@ -119,6 +120,7 @@ const enrichedUserTypes = await enrichBuyingGuideUserTypes(buyingGuideUserTypes)
   <Footer />
   <BuyingGuideMobileNavSheet pageTitle={pageTitle} pageUrl={canonical} />
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
+  <PublicGlossaryTooltips autoDecorate />
 
   <script>
     function initAuthorPopovers() {

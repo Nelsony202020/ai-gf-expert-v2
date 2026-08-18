@@ -390,6 +390,9 @@ async function loadLivePricing(product: Product): Promise<PricingTabViewModel | 
     }
   }
 
+  const powerUserMonthly =
+    usageTiers.find((t) => t.id === 'power')?.monthlyCost ?? null;
+
   const isDraft =
     plans.length < 2
     || featureCosts.length === 0
@@ -415,6 +418,8 @@ async function loadLivePricing(product: Product): Promise<PricingTabViewModel | 
     scoreCaveat: draft?.scoreCaveat ?? 'Media-heavy usage can increase the real monthly cost.',
     advertisedMonthly: resolvedAdvertised,
     regularUseMonthly: regularUse,
+    pricingModel: snapshot?.pricingModel != null ? String(snapshot.pricingModel) : null,
+    powerUserMonthly,
     categoryAvgMonthly: resolvedAvg,
     reviewedAppCount: draft?.reviewedAppCount ?? (stats.sampleSize || null),
     heroCheaperPct: cheaperPct,
@@ -460,6 +465,8 @@ export async function loadPricingTabViewModel(product: Product): Promise<Pricing
     scoreCaveat: null,
     advertisedMonthly: null,
     regularUseMonthly: null,
+    pricingModel: null,
+    powerUserMonthly: null,
     categoryAvgMonthly: null,
     reviewedAppCount: null,
     heroCheaperPct: null,

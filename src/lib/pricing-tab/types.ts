@@ -52,6 +52,10 @@ export interface PricingTabViewModel {
 
   advertisedMonthly: number | null;
   regularUseMonthly: number | null;
+  /** Active pricing snapshot model slug, when set. */
+  pricingModel: string | null;
+  /** Estimated monthly cost for the heavy-use profile. */
+  powerUserMonthly: number | null;
   /** Category average used in the hero benchmark (monthly cost). */
   categoryAvgMonthly: number | null;
   reviewedAppCount: number | null;

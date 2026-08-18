@@ -1,5 +1,6 @@
 import type { Author, GalleryImage, RatingCategory, RatingChangelogEntry, Subscore } from '../products';
 import { getProduct } from '../products';
+import type { ProductAwardBadge } from '../../lib/awards/compute';
 
 const img = (seed: string, w: number, h: number) => `https://picsum.photos/seed/${seed}/${w}/${h}`;
 const avatar = (id: number) => `https://i.pravatar.cc/80?img=${id}`;
@@ -22,6 +23,29 @@ export interface RoundupSpec {
   value: string;
 }
 
+/** Rich tooltip for pricing estimates on roundup cards. */
+export interface AtGlanceTooltip {
+  title: string;
+  amount: string;
+  description: string;
+  breakdown?: string[];
+  pricingHref: string;
+}
+
+/** One scannable stat in the roundup at-a-glance grids. */
+export interface AtGlanceStat {
+  id: string;
+  icon: string;
+  label: string;
+  value: string;
+  tooltip?: AtGlanceTooltip;
+}
+
+export interface AtGlanceData {
+  features: AtGlanceStat[];
+  pricing: AtGlanceStat[];
+}
+
 export interface RoundupPick {
   id: string;
   slug: string;
@@ -29,6 +53,8 @@ export interface RoundupPick {
   logo: string;
   ribbon: string;
   ribbonKey: string;
+  /** Computed editorial awards from central score logic. */
+  awards?: ProductAwardBadge[];
   overallScore: number;
   overallSummary: string;
   priceMonthly: number;
@@ -36,6 +62,8 @@ export interface RoundupPick {
   gallery: GalleryImage[];
   categoryScores: RoundupCategoryScore[];
   specs: RoundupSpec[];
+  /** Structured feature + pricing stats — hydrated from product + pricing data. */
+  atGlance?: AtGlanceData;
   pros: string[];
   cons: string[];
   ourTake: string;
@@ -62,9 +90,13 @@ export interface RoundupConclusion {
   eyebrow: string;
   heading: string;
   topPickId: string;
-  lead: string;
-  alternate?: RoundupConclusionAlternate;
+  /** Rich paragraphs — wrap product names in **double asterisks** for pick links. */
+  paragraphs: string[];
   compareLabel: string;
+  /** @deprecated Use paragraphs instead */
+  lead?: string;
+  /** @deprecated Use paragraphs instead */
+  alternate?: RoundupConclusionAlternate;
 }
 
 export interface RoundupTestingStat {
@@ -75,6 +107,7 @@ export interface RoundupTestingStat {
 }
 
 export interface RoundupTesting {
+  eyebrow: string;
   title: string;
   description: string;
   processHref: string;
@@ -94,6 +127,7 @@ export interface RoundupSelection {
   eyebrow: string;
   title: string;
   description: string;
+  bridge: string;
   pillars: RoundupSelectionPillar[];
   processHref: string;
   processLabel: string;
@@ -297,8 +331,14 @@ const picks: RoundupPick[] = [
       { label: 'Memory', value: 'Long-term' },
       { label: 'Platforms', value: 'Web' },
     ],
-    pros: ['Strong video generation', 'Broad feature set', 'High overall test scores'],
-    cons: ['Higher monthly price than some rivals', 'Steeper learning curve'],
+    pros: [
+      'High quality AI porn',
+      'NSFW videos with audio',
+      'Fast image generator',
+      'Diverse AI girlfriends',
+      'Discreet Billing',
+    ],
+    cons: ['Some negative press'],
     ourTake:
       'OurDream AI scored very well across all categories in our tests — one of the most complete platforms in the category.',
     affiliateUrl: 'https://example.com/go/ourdream-ai',
@@ -356,49 +396,55 @@ const fileRoundup: Roundup = {
     },
   ],
   intro:
-    'The best AI girlfriend app in 2026 is Candy AI — it balances natural conversation, strong customization, and reliable image generation better than any rival we tested. If you want voice-first companionship, choose Kindroid; for roleplay depth, pick CrushOn AI; for video and media, go with Aura AI. Below we rank every finalist with the same scoring system we use in our full reviews, so you can compare apps on customization, chat features, images, video, privacy, and price before you commit.',
+    'OurDream AI is the best AI girlfriend app of 2026. It scored extremely well for its character library, with tons of unique AI girlfriends that have different backgrounds and personalities. It also scored really well in customization because you can build your own AI girlfriend from head to toe with very few restrictions. Both the image and video generators are surprisingly good: fast, realistic, and capable of fully uncensored content like nudes and even AI porn. The price is similar to direct competitors like Candy AI, but you get a lot more images and videos, making it a much better choice.',
   testing: {
+    eyebrow: 'Testing process',
     title: 'How We Test AI Girlfriend Apps',
     description:
-      'We purchase every plan, run real conversations for weeks, and score each app with the same eight-category framework we use in our full reviews — so rankings reflect hands-on testing, not marketing pages.',
+      'We purchase the cheapest monthly subscription for every AI girlfriend app and score each platform across the same 8 categories used in our full AI girlfriend reviews. Our rankings are based on real, hands-on, data-driven testing—not marketing pages.',
     processHref: '/test/',
-    processLabel: 'See our full testing process',
+    processLabel: 'Full testing process',
     videoPoster: '/brand/herman-youtube-review.png',
     stats: [
       { icon: 'grid_view', title: '24 apps', subtitle: 'Tested in this roundup cycle' },
       { icon: 'calendar_today', title: '30+ days', subtitle: 'Minimum hands-on per finalist' },
       { icon: 'payments', title: '100% paid', subtitle: 'Accounts we purchased ourselves' },
       {
-        icon: 'verified_user',
-        title: 'No shortcuts',
-        lines: ['No free trials · No sponsorships', 'Real bots · Real testers'],
+        icon: 'balance',
+        title: 'Same test for every app',
+        lines: ['No sponsored scores or paid rankings'],
       },
     ],
   },
   selection: {
     eyebrow: 'Ranking process',
-    title: 'How we selected the winners',
+    title: 'How We Select the Winners',
     description:
-      'This list opens with the highest overall scores from our testing — the fairest default when you are comparing eight apps at once. But “best AI girlfriend” is a broad search. You might care more about images, video, voice, roleplay, privacy, or price. Use the Sort control in the sidebar (or the icons above the full rankings on mobile) to re-order picks for your use case without changing our underlying scores.',
+      'We don\u2019t pick winners based on which app pays the most or has the best marketing. Every app goes through the same testing system first. We then use those results to rank the apps overall and find the best options for specific types of users.',
+    bridge:
+      'Testing gives us the scores. Then we use those results to decide which apps deserve the top spots and our Best For awards.',
     pillars: [
       {
-        icon: 'emoji_events',
-        title: 'Overall performance',
-        description: 'Weighted score across customization, chat, images, video, privacy, and price — the default ranking you see first.',
+        icon: 'checklist',
+        title: 'Overall score',
+        description:
+          'Every app gets the same 8-category test. Its weighted overall score decides the default ranking.',
       },
       {
-        icon: 'track_changes',
-        title: 'Best for a specific use',
-        description: 'Re-sort by voice, roleplay, video, images, privacy, value, or free tier when one strength matters more than the rest.',
+        icon: 'center_focus_strong',
+        title: 'Best for specific uses',
+        description:
+          'We look at individual test results to find standouts for things like roleplay, images, video, privacy, and price.',
       },
       {
-        icon: 'balance',
-        title: 'Hands-on judgement',
-        description: 'Ribbons and final order still reflect deal-breakers, long-term usability, and limits you will not see in a single number.',
+        icon: 'fact_check',
+        title: 'Final hands-on check',
+        description:
+          'Before we give an award, we check for deal-breakers we noticed during real use, like aggressive token costs, missing features, or poor long-term usability.',
       },
     ],
     processHref: '/test/customization/',
-    processLabel: 'See our full selection process',
+    processLabel: 'Full selection process',
   },
   quickHeading: 'Quick overview',
   picksHeading: 'Our 3 Best AI Girlfriend Apps',
@@ -425,48 +471,56 @@ const fileRoundup: Roundup = {
   ],
   faq: [
     {
-      question: 'What is the best AI girlfriend app in 2026?',
+      question: 'What is the best AI girlfriend app for NSFW content?',
       answer:
-        'Candy AI is our top overall pick — it balances chat quality, customization, and image generation better than any rival we tested. Your best choice depends on priorities: Kindroid for voice, CrushOn AI for roleplay, Aura AI for video.',
+        '**OurDream AI** is the best AI girlfriend app we tested for NSFW content. It is especially good at generating realistic AI nudes and AI porn. It also has the best NSFW video generator we tested, allowing you to create AI porn videos up to 60 seconds long with audio.',
     },
     {
-      question: 'Are AI girlfriend apps safe and private?',
+      question: 'Which AI girlfriend app has the best roleplay?',
       answer:
-        'Privacy varies widely. Replika and Candy AI offer the clearest data policies in our tests. Always read each app\'s privacy settings, avoid sharing real personal details, and use a dedicated email where possible.',
+        '**OurDream AI** is our top choice for roleplay with realistic-style characters. If you prefer anime-style characters, **GirlfriendGPT** is the better choice. It has a huge range of characters and is especially good at longer, more detailed roleplay scenarios.',
     },
     {
-      question: 'Do I need to pay for a good AI girlfriend experience?',
+      question: 'Which AI girlfriend app makes the best images and videos?',
       answer:
-        'Character.AI and Nectar AI offer usable free tiers. Premium apps ($8–$20/mo) unlock voice, NSFW content, better memory, and faster image generation. Free tiers are fine for trying the category; daily users will want a paid plan.',
+        '**OurDream AI** makes the best images and videos we tested. Its images scored highest for realism, overall quality, and prompt adherence, meaning the results actually look like what you asked for. It also has one of the strongest video generators, including support for longer NSFW videos with audio.',
     },
     {
-      question: 'How do you score and rank these apps?',
+      question: 'What is the cheapest AI girlfriend app to actually use?',
       answer:
-        'We use the same six-category framework as our full reviews: character customization, chat features, images, video, privacy, and price. Overall scores are weighted averages — never paid placements.',
+        'It depends on which features you use. **Nectar AI** has the cheapest monthly subscription at just $9.99, but several features, including AI video generation, are locked behind more expensive plans.',
+      answerAfter:
+        '**OurDream AI** costs slightly more to get started at $13.99, but the subscription includes tokens and gives you access to all of its main features. That can make it cheaper in real use if you generate a lot of images and videos.',
     },
     {
-      question: 'Can I switch apps after starting with one?',
+      question: 'Are there any good free AI girlfriend apps?',
       answer:
-        'Yes. Most apps let you export or recreate characters manually. Memory and conversation history usually do not transfer, so expect a fresh start when switching.',
+        'Not really. Running a good AI girlfriend platform costs money, especially when you start generating images, videos, and voice messages. There isn\'t anyone out there spending a ton of money on AI models and servers just so you can use everything for free.',
+      answerAfter:
+        'Most apps have some kind of free tier, but the best AI girlfriend apps are paid services if you actually want to use all their features.',
+    },
+    {
+      question: 'Are AI girlfriend chats private?',
+      answer:
+        'In general, yes, but it depends on the platform. Some AI girlfriend apps, such as **Candy AI**, may use chat data to help train and improve their AI. Candy AI lets you opt out of this in your profile settings.',
+      answerAfter:
+        'Also keep in mind that private does not mean you can do absolutely anything. Most AI girlfriend apps have community guidelines. If your account is flagged for breaking those rules, such as trying to generate illegal content, a real person may need to review the account or content before deciding whether to unblock it.',
     },
   ],
   conclusion: {
     eyebrow: 'Final recommendation',
     heading: 'Our verdict after testing every finalist',
-    topPickId: 'candy-ai',
-    lead:
-      'It balances chat realism, customization depth, and image quality better than any rival we tested — the safest default if you want one subscription that covers the basics well.',
-    alternate: {
-      pickId: 'ourdream-ai',
-      before: 'If you want the broadest feature set and strongest media pipeline,',
-      after: 'is our strongest alternative — it leads our lineup on video and overall depth, even when Candy AI remains the safest default.',
-    },
+    topPickId: 'ourdream-ai',
+    paragraphs: [
+      '**OurDream AI** is the best AI girlfriend app of 2026. It outperformed almost every other app we tested across the board, while still being cheaper than most of its competitors. It has a ton of features, but what really stands out is the NSFW content. You can generate high-quality images and videos, including videos with audio, which most AI girlfriend apps still don\'t offer.',
+      'If you\'re more interested in anime-style characters and roleplay, I\'d go with **JuicyChat AI** or **GirlfriendGPT** instead. Both are much more focused on chatting, characters, and roleplay.',
+    ],
     compareLabel: 'Compare top 3 apps',
   },
   picks,
   tocSections: [
-    { id: 'roundup-testing', label: 'How we test', level: 2 },
     { id: 'roundup-quick-picks', label: 'Quick overview', level: 2 },
+    { id: 'roundup-testing', label: 'How we test', level: 2 },
     { id: 'roundup-selection', label: 'How we rank', level: 2 },
     { id: 'roundup-detailed-picks', label: 'Full rankings', level: 2 },
     { id: 'roundup-compare', label: 'Compare apps', level: 2 },
@@ -484,16 +538,11 @@ export const aiGirlfriendRoundup: Roundup = fileRoundup;
 
 export function getRoundupSortScore(pick: RoundupPick, sortKey: string): number {
   if (sortKey === 'overall') return pick.overallScore;
-  if (sortKey === 'price-asc') return -pick.priceMonthly;
-  if (sortKey === 'price-desc') return pick.priceMonthly;
   const categoryMap: Record<string, string> = {
-    voice: 'chat-features',
-    roleplay: 'chat-features',
-    video: 'video',
     images: 'images',
-    privacy: 'privacy',
-    value: 'pricing',
-    free: 'pricing',
+    videos: 'video',
+    roleplay: 'chat',
+    price: 'pricing',
   };
   const catKey = categoryMap[sortKey] ?? sortKey;
   const cat = pick.categoryScores.find((c) => c.key === catKey);

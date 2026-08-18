@@ -1,0 +1,67 @@
+---
+import type { HomeFeaturedCharacter } from '../../data/homepage';
+import { pickCharacterDisplayImage } from '../../lib/characters/public';
+import { optimizedImageUrl } from '../../lib/media/optimize';
+
+interface Props {
+  characters: HomeFeaturedCharacter[];
+}
+
+const { characters } = Astro.props;
+const displayChars = characters.slice(0, 6);
+---
+
+<div class="char-stories char-stories--with-platform" data-home-char-row>
+  <div class="char-stories__carousel-outer">
+    <div class="char-stories__carousel">
+      <div class="char-stories__track">
+        {
+          displayChars.map((char) => {
+            const thumb = pickCharacterDisplayImage(
+              char.avatar,
+              char.storySlides,
+              'avatar-first',
+              char.storyImageSlides,
+            );
+            const href = char.profileUrl;
+            const ItemTag = href ? 'a' : 'div';
+            return (
+              <ItemTag
+                class="char-stories__item"
+                {...(href ? { href } : {})}
+              >
+                <div class="char-stories__ring-wrap">
+                  <div class="char-stories__avatar-wrap char-stories__avatar-wrap--plain">
+                    {
+                      thumb ? (
+                        <img
+                          src={optimizedImageUrl(thumb, { width: 64, quality: 70, dpr: 1, format: 'jpeg' })}
+                          alt={char.name}
+                          class="char-stories__avatar"
+                          loading="lazy"
+                          width="64"
+                          height="64"
+                          decoding="async"
+                        />
+                      ) : (
+                        <span class="char-stories__avatar char-stories__avatar--placeholder" aria-hidden="true">
+                          {char.name.charAt(0).toUpperCase()}
+                        </span>
+                      )
+                    }
+                  </div>
+                </div>
+                <span class="char-stories__label-stack">
+                  <span class="char-stories__name-row">
+                    <span class="char-stories__name">{char.name}</span>
+                  </span>
+                  {char.platform && <span class="char-stories__platform">{char.platform}</span>}
+                </span>
+              </ItemTag>
+            );
+          })
+        }
+      </div>
+    </div>
+  </div>
+</div>

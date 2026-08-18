@@ -1,6 +1,10 @@
 ---
 import globalStylesUrl from '../styles/global.css?url';
-import ImageLightbox from '../components/ui/ImageLightbox.astro';
+import homeStylesUrl from '../styles/page-home.css?url';
+import reviewStylesUrl from '../styles/page-review.css?url';
+import roundupStylesUrl from '../styles/page-roundup.css?url';
+import directoryStylesUrl from '../styles/page-directory.css?url';
+import fullStylesUrl from '../styles/page-full.css?url';
 import ThemeToggleInit from '../components/ui/ThemeToggleInit.astro';
 import ExternalLinksInit from '../components/ui/ExternalLinksInit.astro';
 import ComingSoonLayer from '../components/ui/ComingSoonLayer.astro';
@@ -9,6 +13,8 @@ import { getMobileNavMode } from '../lib/mobile-nav/modes';
 import { cdnAsset, getCdnBaseUrl } from '../lib/media/cdn';
 import { optimizedImageUrl } from '../lib/media/optimize';
 import { canonicalPublicUrl, resolveCanonicalUrl } from '../lib/siteOrigin';
+
+export type PageTheme = 'core' | 'home' | 'review' | 'roundup' | 'directory' | 'full';
 
 interface Props {
   title?: string;
@@ -20,6 +26,11 @@ interface Props {
   canonical?: string;
   ogTitle?: string;
   ogDescription?: string;
+  /**
+   * Extra page CSS. `core` is header/footer/tokens only.
+   * Default `full` keeps existing pages styled until they opt into a slimmer bundle.
+   */
+  theme?: PageTheme;
 }
 
 const {
@@ -31,7 +42,21 @@ const {
   canonical: canonicalOverride,
   ogTitle,
   ogDescription,
+  theme = 'full',
 } = Astro.props;
+
+const pageStylesUrl =
+  theme === 'home'
+    ? homeStylesUrl
+    : theme === 'review'
+      ? reviewStylesUrl
+      : theme === 'roundup'
+        ? roundupStylesUrl
+        : theme === 'directory'
+          ? directoryStylesUrl
+          : theme === 'full'
+            ? fullStylesUrl
+            : '';
 
 const canonical = canonicalOverride
   ? resolveCanonicalUrl(Astro.url.pathname, canonicalOverride, Astro.site)
@@ -40,11 +65,12 @@ const ogTitleResolved = ogTitle ?? title;
 const ogDescriptionResolved = ogDescription ?? description;
 const cdnBase = getCdnBaseUrl();
 const mobileNavMode = getMobileNavMode(Astro.url.pathname);
-const lcpPreload = lcpImage ? optimizedImageUrl(lcpImage, { width: 800, quality: 72, dpr: 1 }) : '';
+const lcpPreloadMobile = lcpImage ? optimizedImageUrl(lcpImage, { width: 640, quality: 72, dpr: 1 }) : '';
+const lcpPreloadDesktop = lcpImage ? optimizedImageUrl(lcpImage, { width: 800, quality: 72, dpr: 1 }) : '';
 const TEXT_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap';
+  'https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=optional';
 const ICON_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap';
+  'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=optional';
 ---
 
 <!doctype html>
@@ -79,13 +105,18 @@ const ICON_FONTS_HREF =
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href={TEXT_FONTS_HREF} media="print" onload="this.media='all'" />
-    <link rel="stylesheet" href={ICON_FONTS_HREF} media="print" onload="this.media='all'" />
     <noscript>
       <link rel="stylesheet" href={TEXT_FONTS_HREF} />
       <link rel="stylesheet" href={ICON_FONTS_HREF} />
     </noscript>
-    {lcpPreload && <link rel="preload" as="image" href={lcpPreload} fetchpriority="high" />}
+    {lcpPreloadMobile && (
+      <link rel="preload" as="image" href={lcpPreloadMobile} media="(max-width: 767px)" fetchpriority="high" />
+    )}
+    {lcpPreloadDesktop && (
+      <link rel="preload" as="image" href={lcpPreloadDesktop} media="(min-width: 768px)" fetchpriority="high" />
+    )}
     <link rel="stylesheet" href={globalStylesUrl} />
+    {pageStylesUrl && <link rel="stylesheet" href={pageStylesUrl} />}
     <slot name="head" />
   </head>
   <body class="bg-background text-on-surface" data-mobile-nav-mode={mobileNavMode}>
@@ -101,9 +132,25 @@ const ICON_FONTS_HREF =
         } catch (e) {}
       })();
     </script>
+    <script is:inline define:vars={{ iconFontsHref: ICON_FONTS_HREF }}>
+      (function () {
+        function loadIconFonts() {
+          if (document.querySelector('link[data-icon-fonts]')) return;
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = iconFontsHref;
+          link.setAttribute('data-icon-fonts', '');
+          document.head.appendChild(link);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(loadIconFonts, { timeout: 2000 });
+        } else {
+          window.addEventListener('load', loadIconFonts);
+        }
+      })();
+    </script>
     <slot />
     <MobileNavShell pathname={Astro.url.pathname} />
-    <ImageLightbox />
     <ThemeToggleInit />
     <ComingSoonLayer />
     <ExternalLinksInit />

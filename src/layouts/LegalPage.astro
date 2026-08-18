@@ -36,7 +36,7 @@ const jsonLdGraph = buildWebPageSchema({
 });
 ---
 
-<BaseLayout title={title} description={description || title}>
+<BaseLayout title={title} description={description || title} theme="core">
   <JsonLd slot="head" graph={jsonLdGraph} />
   <Header />
   <main class="legal-hub-page">
@@ -81,16 +81,6 @@ const jsonLdGraph = buildWebPageSchema({
 
   .legal-prose li + li {
     margin-top: 0.35rem;
-  }
-
-  .legal-prose a {
-    color: var(--color-accent);
-    font-weight: 700;
-    text-decoration: none;
-  }
-
-  .legal-prose a:hover {
-    text-decoration: underline;
   }
 
   .legal-prose .legal-updated {

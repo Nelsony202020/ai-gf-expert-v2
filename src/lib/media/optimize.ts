@@ -55,6 +55,11 @@ export function optimizedImageUrl(url: string | undefined | null, opts: ImageOpt
   return qs ? `${src}${src.includes('?') ? '&' : '?'}${qs}` : src;
 }
 
+/** Resize product logos without flattening transparency to JPEG. */
+export function optimizedLogoUrl(url: string | undefined | null, width = 128): string {
+  return optimizedImageUrl(url, { width, quality: 80, dpr: 1, format: 'webp' });
+}
+
 export function imageSrcSet(url: string, widths: number[], quality = 75): string {
   return widths
     .filter((w) => w > 0)

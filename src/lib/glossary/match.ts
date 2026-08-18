@@ -1,4 +1,5 @@
 import { aliasKey, glossaryMatchPhrases, type PublishedGlossaryTerm } from './types';
+import { casingAllowsMatch } from './matchPolicy';
 
 export interface GlossaryMatch {
   start: number;
@@ -49,7 +50,8 @@ export function buildPhraseIndex(terms: PublishedGlossaryTerm[]): PhraseIndex[] 
 
 /**
  * Find non-overlapping glossary matches in plain text.
- * Longest phrase wins; case-insensitive; whole-word/phrase boundaries.
+ * Longest phrase wins; whole-word/phrase boundaries.
+ * Everyday single-word terms (Steps, Temperature, …) require exact casing.
  */
 export function findGlossaryMatches(text: string, terms: PublishedGlossaryTerm[]): GlossaryMatch[] {
   if (!text || terms.length === 0) return [];
@@ -68,6 +70,7 @@ export function findGlossaryMatches(text: string, terms: PublishedGlossaryTerm[]
       const end = at + needle.length;
       from = at + 1;
       if (!isBoundary(text, at, end)) continue;
+      if (!casingAllowsMatch(text, at, end, row.phrase)) continue;
       let overlap = false;
       for (let i = at; i < end; i++) {
         if (taken[i]) {
@@ -110,7 +113,9 @@ export function countGlossaryOccurrences(text: string, term: PublishedGlossaryTe
       if (at < 0) break;
       const end = at + needle.length;
       from = at + 1;
-      if (isBoundary(text, at, end)) total += 1;
+      if (!isBoundary(text, at, end)) continue;
+      if (!casingAllowsMatch(text, at, end, phrase)) continue;
+      total += 1;
     }
   }
   return total;

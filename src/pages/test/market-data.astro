@@ -7,6 +7,7 @@ import StandardContentHero from '../../components/content/StandardContentHero.as
 import StandardContentToc from '../../components/content/StandardContentToc.astro';
 import TestPageBackLink from '../../components/test/TestPageBackLink.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
+import PublicGlossaryTooltips from '../../components/glossary/PublicGlossaryTooltips.astro';
 import { marketDataSections } from '../../data/methodology-support-content';
 import { testHubUrl, toSlug } from '../../lib/slugs';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
@@ -64,4 +65,5 @@ const canonical = canonicalPublicUrl(Astro.url.pathname, Astro.site);
   </StandardContentLayout>
   <Footer />
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal />
+  <PublicGlossaryTooltips autoDecorate />
 </BaseLayout>

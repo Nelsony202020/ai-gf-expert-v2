@@ -3,6 +3,7 @@ import type { Product } from '../../../data/products';
 import { loadComparisonProducts, overallScorePoints } from '../../../lib/content/comparisonProducts';
 import { fmtScore, categoryScoreChipClasses } from '../../../lib/scores';
 import { buildAllScoreBins } from '../../../lib/score-distribution';
+import { getOverallPerformanceIcon } from '../../../lib/tooltip-category-icons-cdn';
 import RatingHierarchyPipeline from './RatingHierarchyPipeline.astro';
 import TooltipActionLinks from './TooltipActionLinks.astro';
 import InlineTestLink from './InlineTestLink.astro';
@@ -29,11 +30,13 @@ const avgScore = scorePoints.length
   : currentScore ?? 0;
 
 const bins = buildAllScoreBins(scorePoints);
+const overallIcon = getOverallPerformanceIcon();
 
 const panelClass = [
   'ratings-tooltip-panel',
   'ratings-tooltip-panel--overall',
   'ratings-tooltip-panel--compact',
+  'ratings-tooltip-panel--has-badge',
   embed && 'ratings-tooltip-panel--embed',
   embed && 'test-tooltip-demo__panel',
 ]
@@ -42,9 +45,14 @@ const panelClass = [
 ---
 
 <div class={panelClass}>
+  <div class="ratings-tooltip-panel__badge" aria-hidden="true">
+    <div class="ratings-tooltip-panel__badge-clip">
+      <img src={overallIcon} alt="" width="40" height="40" loading="lazy" decoding="async" />
+    </div>
+  </div>
   <div class="ratings-tooltip-panel__header ratings-tooltip-panel__header--compact">
     <div class="ratings-tooltip-panel__header-grid">
-      <div class="min-w-0">
+      <div class="ratings-tooltip-panel__what-block min-w-0">
         <p class="ratings-tooltip-panel__section-title">What it is</p>
         <p
           class="ratings-tooltip-panel__desc"

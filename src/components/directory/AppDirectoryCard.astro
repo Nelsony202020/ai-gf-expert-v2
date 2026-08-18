@@ -4,9 +4,11 @@ import DirectoryPaymentIcons from './DirectoryPaymentIcons.astro';
 import AppBrandTooltip from './AppBrandTooltip.astro';
 import AppOverallScoreTooltip from './AppOverallScoreTooltip.astro';
 import DirectoryCategoryScoresCard from './DirectoryCategoryScoresCard.astro';
+import EditorialAwardBadge from '../ui/EditorialAwardBadge.astro';
+import { getPrimaryAward, getSecondaryAwards } from '../../lib/awards/compute';
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 import { reviewPageUrl } from '../../lib/slugs';
-import { optimizedImageUrl } from '../../lib/media/optimize';
+import { optimizedImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
 
 interface Props {
   app: HomeExplorerApp;
@@ -16,20 +18,29 @@ interface Props {
 const { app, formatReviewCount } = Astro.props;
 const reviewHref = app.reviewUrl ?? reviewPageUrl(app.slug);
 const overallVisual = getScoreVisual(app.overallScore);
+const primaryAward = getPrimaryAward(app.awards ?? []);
+const secondaryAwards = getSecondaryAwards(app.awards ?? []);
 ---
 
 {/* Filtering data attributes live on the directory item wrapper (AppDirectory.astro). */}
 <article class="home-app-card">
   <div class="home-app-card__media">
-    {app.roundupRibbonLabel && (
-      <a
-        href={app.roundupHref}
-        class={`home-app-card__ribbon home-app-card__ribbon--${app.ribbonKey}`}
-      >
-        <span class="material-symbols-outlined" aria-hidden="true">star</span>
-        {app.roundupRibbonLabel}
-      </a>
-    )}
+    {
+      primaryAward && (
+        <div class="editorial-award-badge-group">
+          <EditorialAwardBadge label={primaryAward.label} href={app.roundupHref} />
+          {
+            secondaryAwards.length > 0 && (
+              <EditorialAwardBadge
+                label=""
+                extraCount={secondaryAwards.length}
+                extraTitle={secondaryAwards.map((award) => award.label).join(', ')}
+              />
+            )
+          }
+        </div>
+      )
+    }
     <div class="home-app-card__media-actions">
       <button
         type="button"
@@ -66,7 +77,7 @@ const overallVisual = getScoreVisual(app.overallScore);
   <div class="home-app-card__body">
     <div class="home-app-card__top">
       <div class="home-app-card__brand">
-        <img class="home-app-card__logo" src={optimizedImageUrl(app.logo, { width: 48, quality: 70 })} alt="" width="48" height="48" loading="lazy" decoding="async" />
+        <img class="home-app-card__logo" src={optimizedLogoUrl(app.logo, 48)} alt="" width="48" height="48" loading="lazy" decoding="async" />
         <h3 class="home-app-card__name">
           <a href={reviewHref}>{app.name}</a>
           <AppBrandTooltip app={app} />

@@ -427,8 +427,11 @@ const _schema = i.schema({
       featuredStartAt: i.date().optional(),
       featuredEndAt: i.date().optional(),
       homepageOrder: i.number().optional(),
-      // Direct outbound URL for this character (referral suffix from product is appended at render time).
+      // Direct outbound URL for this character (referral suffix from product is appended at render time
+      // unless skipReferralSuffix is set — use that for networks that need a unique full URL per character).
       destinationUrl: i.string().optional(),
+      /** When true, use destinationUrl as-is and do not append the product referral suffix. */
+      skipReferralSuffix: i.boolean().optional(),
       createdAt: i.date(),
       updatedAt: i.date(),
       deletedAt: i.date().optional(),

@@ -110,17 +110,19 @@ export const productSchema = z.object({
       kind: z.enum([
         'none',
         'best_overall',
+        'best_images',
+        'best_videos',
+        'best_roleplay',
+        'best_price',
+        'custom',
         'best_ai_girlfriend',
         'best_chat',
-        'best_images',
         'best_video',
         'best_media',
-        'best_roleplay',
         'best_voice',
         'best_memory',
         'best_value',
         'best_free',
-        'custom',
       ]),
       customLabel: z.string().max(80).optional(),
       active: z.boolean().optional(),
@@ -566,7 +568,9 @@ export const characterSchema = z.object({
   featuredStartAt: dateMs.optional(),
   featuredEndAt: dateMs.optional(),
   homepageOrder: z.number().int().optional(),
-  destinationUrl: z.string().max(500).optional(),
+  destinationUrl: z.string().max(800).optional(),
+  /** Use destinationUrl as-is; do not append the product referral suffix. */
+  skipReferralSuffix: z.boolean().optional(),
 });
 
 export const characterStorySlideSchema = z.object({

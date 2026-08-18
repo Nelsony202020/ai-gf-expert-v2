@@ -14,15 +14,17 @@ const { heroImage = homeMeta.heroImage, heroImageAlt = homeMeta.heroImageAlt } =
 const publishedProducts = await loadComparisonProducts();
 const megaMenuColumns = buildMegaMenuColumns(publishedProducts);
 const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
-const heroSrc = optimizedImageUrl(heroImage, { width: 800, quality: 72, dpr: 1 });
-const heroSrcSet = imageSrcSet(heroImage, [400, 800], 72);
+const heroSrc = optimizedImageUrl(heroImage, { width: 640, quality: 72, dpr: 1 });
+const heroSrcSet = imageSrcSet(heroImage, [400, 640, 800], 72);
 ---
 
 <section class="home-hero" aria-labelledby="home-hero-title">
   <div class="section-container px-4 md:px-8 home-hero__inner">
     <div>
       <p class="home-hero__eyebrow">
-        <span class="material-symbols-outlined text-[14px]" aria-hidden="true">verified</span>
+        <svg class="home-hero__icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 2 4.5 5.5v6.1c0 4.7 3.2 9 7.5 10.4 4.3-1.4 7.5-5.7 7.5-10.4V5.5L12 2Zm-1.2 13.3-3.3-3.3 1.4-1.4 1.9 1.9 4.1-4.1 1.4 1.4-5.5 5.5Z" />
+        </svg>
         Independent · Unbiased · User-first
       </p>
       <h1 id="home-hero-title" class="home-hero__title">
@@ -49,7 +51,9 @@ const heroSrcSet = imageSrcSet(heroImage, [400, 800], 72);
               data-home-search-input
             />
             <button type="submit" class="home-hero__search-btn" aria-label="Search">
-              <span class="material-symbols-outlined text-[18px]" aria-hidden="true">search</span>
+              <svg class="home-hero__icon home-hero__icon--lg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M15.5 14h-.8l-.3-.3a6.5 6.5 0 1 0-.7.7l.3.3v.8l5 5 1.5-1.5-5-5Zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z" />
+              </svg>
               <span class="hidden sm:inline">Search</span>
             </button>
           </form>
@@ -81,7 +85,9 @@ const heroSrcSet = imageSrcSet(heroImage, [400, 800], 72);
         />
       </div>
       <div class="home-hero__trust-card">
-        <span class="home-hero__trust-icon material-symbols-outlined text-[18px]" aria-hidden="true">shield</span>
+        <svg class="home-hero__trust-icon home-hero__icon home-hero__icon--lg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 2 4 5v6.1c0 5 3.4 9.7 8 10.9 4.6-1.2 8-5.9 8-10.9V5l-8-3Z" />
+        </svg>
         <p class="home-hero__trust-text">100% paid accounts. No sponsors. Real hands-on testing.</p>
       </div>
     </div>

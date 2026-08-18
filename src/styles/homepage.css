@@ -29,6 +29,16 @@
   }
 }
 
+.home-hero__icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.home-hero__icon--lg {
+  width: 18px;
+  height: 18px;
+}
+
 .home-hero__eyebrow {
   display: inline-flex;
   align-items: center;
@@ -178,6 +188,8 @@
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-surface-variant);
   aspect-ratio: 5 / 4;
+  min-height: 12rem;
+  background: var(--color-surface-container);
   box-shadow:
     0 2px 4px rgb(26 36 24 / 5%),
     0 16px 48px rgb(26 36 24 / 8%);
@@ -442,12 +454,83 @@
 }
 
 .home-featured-chars__carousel-wrap .char-stories {
+  width: 100%;
   overflow: hidden;
 }
 
+.home-featured-chars__carousel-wrap .char-stories__track {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  width: max-content;
+}
+
+.home-featured-chars__carousel-wrap .char-stories__item {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  text-decoration: none;
+  color: inherit;
+}
+
+.home-featured-chars__carousel-wrap .char-stories__label-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.home-featured-chars__carousel-wrap .char-stories__name-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  max-width: 100%;
+}
+
+.home-featured-chars__carousel-wrap .char-stories__avatar-wrap {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  padding: 0;
+}
+
+.home-featured-chars__carousel-wrap .char-stories__avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  object-fit: cover;
+  display: block;
+}
+
+.home-featured-chars__carousel-wrap .char-stories__avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fce7f3, #fdf2f8);
+  color: #db2777;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
 .home-featured-chars__carousel-wrap .char-stories__carousel {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
   padding-top: 0.25rem;
   padding-bottom: 0.5rem;
+}
+
+.home-featured-chars__carousel-wrap .char-stories__carousel::-webkit-scrollbar {
+  display: none;
 }
 
 .home-featured-chars__carousel-wrap .char-stories--with-platform .char-stories__item {
@@ -465,6 +548,8 @@
 
 .home-featured-chars__carousel-wrap .char-stories__ring-wrap,
 .home-featured-chars__carousel-wrap .char-stories__ring {
+  position: relative;
+  flex-shrink: 0;
   width: 5.25rem;
   height: 5.25rem;
 }
@@ -474,14 +559,24 @@
 }
 
 .home-featured-chars__carousel-wrap .char-stories__name {
+  min-width: 0;
+  overflow: hidden;
   font-size: 0.8125rem;
+  font-weight: 800;
   text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .home-featured-chars__carousel-wrap .char-stories__platform {
   max-width: 6.25rem;
+  overflow: hidden;
   font-size: 0.6875rem;
+  font-weight: 600;
   text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-tertiary);
 }
 
 .home-featured-chars__carousel-wrap.char-stories--with-platform .char-stories__name-row,
@@ -2266,14 +2361,18 @@ body.home-filters-open {
   filter: brightness(1.05);
 }
 
-.home-app-card__ribbon--overall { background: #7c3aed; }
-.home-app-card__ribbon--voice { background: #2563eb; }
-.home-app-card__ribbon--roleplay { background: #db2777; }
-.home-app-card__ribbon--video { background: #0891b2; }
-.home-app-card__ribbon--images { background: #ea580c; }
-.home-app-card__ribbon--privacy { background: #4f46e5; }
-.home-app-card__ribbon--free { background: #059669; }
-.home-app-card__ribbon--value { background: #ca8a04; }
+.home-app-card__ribbon--overall,
+.home-app-card__ribbon--voice,
+.home-app-card__ribbon--roleplay,
+.home-app-card__ribbon--video,
+.home-app-card__ribbon--images,
+.home-app-card__ribbon--privacy,
+.home-app-card__ribbon--free,
+.home-app-card__ribbon--value,
+.home-app-card__ribbon--price,
+.home-app-card__ribbon--videos {
+  background: var(--color-accent);
+}
 
 .home-app-card__score-info {
   display: inline-flex;

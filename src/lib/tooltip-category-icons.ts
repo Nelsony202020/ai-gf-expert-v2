@@ -52,3 +52,10 @@ export function getTooltipCategoryIconLocal(category?: string | null): string {
   const key = normalizeTooltipCategoryKey(category);
   return TOOLTIP_CATEGORY_ICON_FILES[key];
 }
+
+/** Overall performance tooltip border icon (crown badge). */
+export const OVERALL_PERFORMANCE_ICON_FILE = '/brand/tooltip-categories/overall-performance.png';
+
+export function getOverallPerformanceIconLocal(): string {
+  return OVERALL_PERFORMANCE_ICON_FILE;
+}

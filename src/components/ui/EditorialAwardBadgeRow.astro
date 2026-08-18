@@ -1,0 +1,44 @@
+---
+import type { ProductAwardBadge } from '../../lib/awards/compute';
+import { AWARD_PRIORITY } from '../../lib/awards/compute';
+
+interface Props {
+  awards: ProductAwardBadge[];
+  maxVisible?: number;
+  class?: string;
+}
+
+const { awards, maxVisible = 3, class: className } = Astro.props;
+
+const sorted = [...awards].sort(
+  (a, b) => AWARD_PRIORITY.indexOf(a.kind) - AWARD_PRIORITY.indexOf(b.kind),
+);
+const visible = sorted.slice(0, maxVisible);
+const remaining = sorted.slice(maxVisible);
+---
+
+{
+  visible.length > 0 && (
+    <div class:list={['editorial-award-badge-row', className]} aria-label="Editorial awards">
+      {
+        visible.map((award) => (
+          <span class="editorial-award-badge editorial-award-badge--inline">
+            <span class="material-symbols-outlined editorial-award-badge__icon" aria-hidden="true">emoji_events</span>
+            <span class="editorial-award-badge__text">{award.label}</span>
+          </span>
+        ))
+      }
+      {
+        remaining.length > 0 && (
+          <span
+            class="editorial-award-badge editorial-award-badge--inline editorial-award-badge--more-inline"
+            title={remaining.map((award) => award.label).join(', ')}
+            aria-label={`${remaining.length} more awards: ${remaining.map((award) => award.label).join(', ')}`}
+          >
+            +{remaining.length} more
+          </span>
+        )
+      }
+    </div>
+  )
+}

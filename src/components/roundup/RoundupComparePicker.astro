@@ -1,0 +1,52 @@
+---
+import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
+import { optimizedLogoUrl } from '../../lib/media/optimize';
+
+interface Props {
+  slot: number;
+  pick: RoundupPick;
+  picksList: RoundupPick[];
+  compact?: boolean;
+}
+
+const { slot, pick, picksList, compact = false } = Astro.props;
+
+const btnClass = compact
+  ? 'roundup-compare-picker__btn roundup-compare-picker__btn--sticky'
+  : 'roundup-compare-picker__btn roundup-compare-picker__btn--header';
+---
+
+<div class="roundup-compare-picker" data-compare-picker={slot}>
+  <button type="button" class={btnClass} data-compare-picker-btn aria-expanded="false" aria-haspopup="listbox">
+    <span class="roundup-compare-picker__label" data-compare-picker-label>
+      <img
+        class="roundup-compare-picker__logo"
+        data-compare-picker-logo
+        src={optimizedLogoUrl(pick.logo, 20)}
+        alt=""
+        width="20"
+        height="20"
+        loading="lazy"
+      />
+      <span data-compare-picker-name>{pick.name}</span>
+    </span>
+    <span class="material-symbols-outlined roundup-compare-picker__chevron" aria-hidden="true">expand_more</span>
+  </button>
+  <ul class="roundup-compare-picker__menu" data-compare-picker-menu hidden role="listbox">
+    {
+      picksList.map((opt) => (
+        <li role="option">
+          <button
+            type="button"
+            class="roundup-compare-picker__option"
+            data-compare-option={opt.id}
+            data-compare-slot={slot}
+          >
+            <img class="roundup-compare-picker__logo" src={optimizedLogoUrl(opt.logo, 20)} alt="" width="20" height="20" loading="lazy" />
+            <span>{opt.name}</span>
+          </button>
+        </li>
+      ))
+    }
+  </ul>
+</div>

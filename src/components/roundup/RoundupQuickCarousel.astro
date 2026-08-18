@@ -1,6 +1,7 @@
 ---
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
 import ScorePill from '../review/ScorePill.astro';
+import { optimizedLogoUrl } from '../../lib/media/optimize';
 
 interface Props {
   heading: string;
@@ -20,7 +21,8 @@ const { heading, picks } = Astro.props;
       aria-haspopup="dialog"
       aria-label="Change ranking sort"
     >
-      <span data-mobile-sort-value>Overall</span>
+      <span class="roundup-sort-trigger__label">Best:</span>
+      <span class="roundup-sort-trigger__value" data-mobile-sort-value>Overall</span>
       <span class="material-symbols-outlined roundup-sort-trigger__chevron" aria-hidden="true">expand_more</span>
     </button>
   </div>
@@ -52,10 +54,10 @@ const { heading, picks } = Astro.props;
                 draggable="false"
                 aria-label={`Visit ${pick.name} (opens in new tab)`}
               >
-                <img class="roundup-quick-card__logo" src={pick.logo} alt="" width="56" height="56" loading="lazy" draggable="false" />
+                <img class="roundup-quick-card__logo" src={optimizedLogoUrl(pick.logo, 56)} alt="" width="56" height="56" loading="lazy" draggable="false" />
                 <h3 class="roundup-quick-card__name">{pick.name}</h3>
               </a>
-              <span class="roundup-quick-card__ribbon">{pick.ribbon}</span>
+              {pick.ribbon ? <span class="roundup-quick-card__ribbon">{pick.ribbon}</span> : null}
               <a class="roundup-quick-card__details" href={`#pick-${pick.id}`} draggable="false">
                 See details ↓
               </a>

@@ -1,0 +1,40 @@
+.ui-scroll-fade-host {
+  position: relative;
+}
+
+.ui-scroll-fade {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  height: 3.25rem;
+  pointer-events: none;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(
+    to top,
+    var(--color-surface-container-lowest) 12%,
+    color-mix(in srgb, var(--color-surface-container-lowest) 55%, transparent) 55%,
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ui-scroll-fade-host[data-scroll-more='true'] .ui-scroll-fade {
+  display: block;
+  opacity: 1;
+}
+
+.ui-scroll-fade-host[data-scroll-more='true'] .ratings-tooltip-panel__body,
+.ui-scroll-fade-host[data-scroll-more='true'] .ratings-drawer-panel__body {
+  scroll-padding-bottom: 1.5rem;
+}
+
+@media (max-width: 767px) {
+  .ui-scroll-fade-host[data-scroll-more='true'] .ratings-tooltip-panel__body,
+  .ui-scroll-fade-host[data-scroll-more='true'] .ratings-drawer-panel__body {
+    padding-bottom: 2rem;
+  }
+}

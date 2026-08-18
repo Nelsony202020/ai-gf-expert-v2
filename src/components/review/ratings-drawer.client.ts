@@ -1,4 +1,5 @@
 import { closeAnimatedDrawer } from '../../lib/drawer/animate';
+import { bindScrollFade } from '../../lib/ui/scrollFade';
 
 function trapFocus(panel: HTMLElement) {
   const focusable = panel.querySelectorAll<HTMLElement>(
@@ -55,31 +56,14 @@ function getOrCreatePanel(id: string): HTMLElement | null {
   return mount.querySelector<HTMLElement>(`[data-ratings-drawer-panel="${id}"]`);
 }
 
-function updateScrollFade(panel: HTMLElement) {
-  const body = panel.querySelector<HTMLElement>('.ratings-drawer-panel__body');
-  if (!body) {
-    panel.dataset.scrollMore = 'false';
-    return;
-  }
-  const remaining = body.scrollHeight - body.scrollTop - body.clientHeight;
-  panel.dataset.scrollMore = remaining > 8 ? 'true' : 'false';
-}
-
-function bindScrollFade(panel: HTMLElement) {
+function bindDrawerScrollFade(panel: HTMLElement) {
   releaseScrollFade?.();
   releaseScrollFade = null;
 
   const body = panel.querySelector<HTMLElement>('.ratings-drawer-panel__body');
   if (!body) return;
 
-  const onScroll = () => updateScrollFade(panel);
-  body.addEventListener('scroll', onScroll, { passive: true });
-  requestAnimationFrame(() => updateScrollFade(panel));
-
-  releaseScrollFade = () => {
-    body.removeEventListener('scroll', onScroll);
-    panel.dataset.scrollMore = 'false';
-  };
+  releaseScrollFade = bindScrollFade(body, panel);
 }
 
 function closeDrawer() {
@@ -145,7 +129,7 @@ function openDrawer(id: string, trigger?: HTMLElement) {
   document.body.style.overflow = 'hidden';
   releaseFocus?.();
   releaseFocus = trapFocus(panel);
-  bindScrollFade(panel);
+  bindDrawerScrollFade(panel);
   panel.querySelector<HTMLElement>('[data-ratings-close-drawer]')?.focus();
 }
 

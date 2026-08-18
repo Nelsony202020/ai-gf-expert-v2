@@ -6,12 +6,22 @@ import {
 import { DUPLICATE_EVIDENCE_SLUGS } from './evidenceIndex';
 import { computeWeightedGroupScore, resolveDbEvidenceSlug } from './evidenceGroupScoring';
 import { deferPayAsYouGoScores, iconForEvidenceDef } from './evidenceIcons';
+import { resolveEvidenceDisplayValue } from '../draft-ratings/resolveEvidenceDisplay';
 
 type StoredEvidenceResult = {
   publicResult?: string | null;
+  rawValue?: unknown;
   normalizedScore?: number | null;
   notApplicable?: boolean;
-  evidenceDefinition?: { slug?: string; name?: string };
+  isUnknown?: boolean;
+  unableToVerify?: boolean;
+  evidenceDefinition?: {
+    slug?: string;
+    name?: string;
+    unit?: string;
+    measurementType?: string;
+    publicResultTemplate?: string;
+  };
 };
 
 function isStoredNotApplicable(result: StoredEvidenceResult | undefined): boolean {
@@ -68,6 +78,19 @@ function storedResult(
   );
 }
 
+function displayValueForResult(result: StoredEvidenceResult | undefined): string {
+  if (!result) return '—';
+  const def = result.evidenceDefinition ?? {};
+  const value = resolveEvidenceDisplayValue(def, {
+    publicResult: result.publicResult,
+    rawValue: result.rawValue,
+    notApplicable: result.notApplicable,
+    isUnknown: result.isUnknown,
+    unableToVerify: result.unableToVerify,
+  }).trim();
+  return value || '—';
+}
+
 function formatGroupValue(
   groupSlug: string,
   memberSlugs: string[],
@@ -95,12 +118,12 @@ function formatGroupValue(
 
   if (memberSlugs.length === 1) {
     const result = storedResult(memberSlugs[0], categorySlug, subscoreSlug, resultBySlug);
-    return result?.publicResult?.trim() || '—';
+    return displayValueForResult(result);
   }
 
   const memberResults = memberSlugs
     .map((slug) => storedResult(slug, categorySlug, subscoreSlug, resultBySlug))
-    .filter((result): result is StoredEvidenceResult => Boolean(result?.publicResult?.trim()));
+    .filter((result): result is StoredEvidenceResult => Boolean(result));
 
   if (memberResults.length === 0) return '—';
 
@@ -115,7 +138,9 @@ function formatGroupValue(
     }
   }
 
-  return memberResults[0].publicResult!.trim();
+  return displayValueForResult(memberResults[0]) === '—'
+    ? '—'
+    : memberResults.map((result) => displayValueForResult(result)).find((value) => value !== '—') ?? '—';
 }
 
 function groupHasData(memberSlugs: string[], contributorSlugs: string[]): boolean {
@@ -154,7 +179,7 @@ export function buildGroupedContributors(
       return [
         {
           label,
-          value: result.publicResult ?? '—',
+          value: displayValueForResult(result as StoredEvidenceResult),
           internalScore:
             hideScores || isStoredNotApplicable(result)
               ? undefined

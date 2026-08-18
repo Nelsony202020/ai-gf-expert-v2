@@ -8,6 +8,7 @@ import TestHubSidebar from '../../components/test/TestHubSidebar.astro';
 import TestHubMobileNavSheet from '../../components/test/TestHubMobileNavSheet.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
+import PublicGlossaryTooltips from '../../components/glossary/PublicGlossaryTooltips.astro';
 import TestHubCategoryCards from '../../components/test/TestHubCategoryCards.astro';
 import TestHubFrameworkAccordion from '../../components/test/TestHubFrameworkAccordion.astro';
 import TestHubHierarchyPipeline from '../../components/test/TestHubHierarchyPipeline.astro';
@@ -267,6 +268,7 @@ const jsonLdGraph = buildWebPageSchema({
   <div data-hub-root data-page-title={pageTitle} data-page-url={canonical} hidden aria-hidden="true"></div>
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
   <RatingsTooltipInit />
+  <PublicGlossaryTooltips autoDecorate />
 
   <script>
     function initAuthorPopovers() {

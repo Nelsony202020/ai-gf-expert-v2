@@ -1,0 +1,46 @@
+---
+interface Props {
+  label: string;
+  href?: string;
+  class?: string;
+  hidden?: boolean;
+  /** Roundup cards — updated client-side when rank-by changes */
+  contextual?: boolean;
+  /** Directory — "+N" extra awards chip */
+  extraCount?: number;
+  extraTitle?: string;
+}
+
+const { label, href, class: className, hidden = false, contextual = false, extraCount = 0, extraTitle } = Astro.props;
+const showMain = Boolean(label) && !hidden;
+---
+
+{
+  showMain &&
+    (href ? (
+      <a
+        href={href}
+        class:list={['editorial-award-badge', className]}
+        {...contextual ? { 'data-pick-award-badge': true } : {}}
+      >
+        <span class="material-symbols-outlined editorial-award-badge__icon" aria-hidden="true">emoji_events</span>
+        <span class="editorial-award-badge__text">{label}</span>
+      </a>
+    ) : (
+      <span
+        class:list={['editorial-award-badge', className]}
+        {...contextual ? { 'data-pick-award-badge': true, hidden: !label } : {}}
+      >
+        <span class="material-symbols-outlined editorial-award-badge__icon" aria-hidden="true">emoji_events</span>
+        <span class="editorial-award-badge__text" {...contextual ? { 'data-pick-award-label': true } : {}}>{label}</span>
+      </span>
+    ))
+}
+
+{
+  extraCount > 0 && (
+    <span class="editorial-award-badge editorial-award-badge--more" title={extraTitle} aria-label={extraTitle}>
+      +{extraCount}
+    </span>
+  )
+}

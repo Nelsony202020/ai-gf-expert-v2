@@ -1,5 +1,6 @@
 ---
 import type { RoundupSelection } from '../../data/roundups/ai-girlfriend';
+import EditorialPillLink from '../ui/EditorialPillLink.astro';
 
 interface Props {
   selection: RoundupSelection;
@@ -12,6 +13,7 @@ const { selection } = Astro.props;
   <p class="roundup-selection__eyebrow">{selection.eyebrow}</p>
   <h2 class="roundup-selection__heading">{selection.title}</h2>
   <p class="roundup-selection__lead">{selection.description}</p>
+  <p class="roundup-selection__lead">{selection.bridge}</p>
 
   <ul class="roundup-selection__pillars">
     {
@@ -29,8 +31,12 @@ const { selection } = Astro.props;
     }
   </ul>
 
-  <a href={selection.processHref} class="roundup-selection__link">
+  <p class="roundup-selection__lead">
+    <strong>Want something specific?</strong> Use <strong>Rank by</strong> to reorder the list by chat, images,
+    video, privacy, price, and more.
+  </p>
+
+  <EditorialPillLink href={selection.processHref} icon="emoji_events" variant="quiet" class="roundup-selection__editorial-link">
     {selection.processLabel}
-    <span class="material-symbols-outlined roundup-selection__link-arrow" aria-hidden="true">arrow_forward</span>
-  </a>
+  </EditorialPillLink>
 </section>

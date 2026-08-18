@@ -1,10 +1,12 @@
 ---
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
-import { cdnAsset } from '../../lib/media/cdn';
+import { getAuthor } from '../../data/authors';
 import RoundupMediaCarousel from './RoundupMediaCarousel.astro';
 import RoundupCategoryScores from './RoundupCategoryScores.astro';
-import RoundupSpecsCarousel from './RoundupSpecsCarousel.astro';
-import CmsField from '../cms/CmsField.astro';
+import RoundupAtAGlance from './RoundupAtAGlance.astro';
+import EditorialPillLink from '../ui/EditorialPillLink.astro';
+import VerifiedCheck from '../ui/VerifiedCheck.astro';
+import { optimizedLogoUrl } from '../../lib/media/optimize';
 
 interface Props {
   pick: RoundupPick;
@@ -12,6 +14,15 @@ interface Props {
 }
 
 const { pick, rank } = Astro.props;
+
+const MAX_PRO_CON = 4;
+const topPros = pick.pros.slice(0, MAX_PRO_CON);
+const mainCons = pick.cons.slice(0, MAX_PRO_CON);
+const expertParagraphs = pick.ourTake
+  .split(/\n\s*\n/)
+  .map((paragraph) => paragraph.trim())
+  .filter(Boolean);
+const herman = getAuthor('herman-carter');
 ---
 
 <article
@@ -23,15 +34,11 @@ const { pick, rank } = Astro.props;
   data-overall-score={pick.overallScore}
   data-price={pick.priceMonthly}
   data-ribbon-key={pick.ribbonKey}
+  data-product-awards={JSON.stringify(pick.awards ?? [])}
   data-category-scores={JSON.stringify(Object.fromEntries(pick.categoryScores.map((c) => [c.key, c.score])))}
+  data-decision-open="false"
+  data-expert-open="false"
 >
-  <div class="roundup-pick__ribbon-wrap">
-    <span class="roundup-pick__ribbon">
-      <span class="material-symbols-outlined roundup-pick__ribbon-icon" aria-hidden="true">emoji_events</span>
-      <CmsField field="award">{pick.ribbon}</CmsField>
-    </span>
-  </div>
-
   <header class="roundup-pick__header">
     <div class="roundup-pick__title-row">
       <h3 class="roundup-pick__title">
@@ -42,7 +49,7 @@ const { pick, rank } = Astro.props;
           class="roundup-pick__title-link"
           aria-label={`Visit ${pick.name} (opens in new tab)`}
         >
-          <img class="roundup-pick__title-logo" src={pick.logo} alt="" width="28" height="28" loading="lazy" />
+          <img class="roundup-pick__title-logo" src={optimizedLogoUrl(pick.logo, 28)} alt="" width="28" height="28" loading="lazy" />
           <span class="roundup-pick__title-text">
             <span data-pick-rank>{rank}</span>. {pick.name}
           </span>
@@ -61,56 +68,116 @@ const { pick, rank } = Astro.props;
       images={pick.gallery}
       overallScore={pick.overallScore}
       overallSummary={pick.overallSummary}
+      awards={pick.awards}
     />
     <RoundupCategoryScores scores={pick.categoryScores} pickSlug={pick.slug} />
   </div>
 
-  <div class="roundup-pick__expand-wrap" data-pick-expand-wrap>
-    <button
-      type="button"
-      class="roundup-pick__expand"
-      data-pick-expand-btn
-      aria-expanded="false"
-      aria-label={`Show more about ${pick.name}`}
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-    </button>
+  <div class="roundup-at-glance-strip">
+    <RoundupAtAGlance atGlance={pick.atGlance} pickSlug={pick.slug} />
   </div>
 
-  <div class="roundup-specs-strip" data-reading-tier="medium">
-    <RoundupSpecsCarousel pickId={pick.id} specs={pick.specs} />
-  </div>
+  <div class="roundup-pick__disclosures">
+    <div class="roundup-pick__disclosure-bar" role="group" aria-label="Expandable summaries">
+      <button
+        type="button"
+        class="roundup-pick__disclosure-trigger"
+        data-decision-toggle
+        aria-expanded="false"
+      >
+        <span class="material-symbols-outlined roundup-pick__disclosure-icon roundup-pick__disclosure-icon--summary" aria-hidden="true">
+          check
+        </span>
+        <span class="roundup-pick__disclosure-label">Decision summary</span>
+        <span class="material-symbols-outlined roundup-pick__disclosure-chevron" data-decision-chevron aria-hidden="true">
+          expand_more
+        </span>
+      </button>
 
-  <div class="roundup-pros-cons" data-reading-tier="medium">
-    <div class="roundup-pros-cons__col">
-      <h4 class="roundup-pros-cons__title font-black text-lg mb-3 text-on-surface">Pros</h4>
-      <ul class="roundup-pros-cons__list">
-        {
-          pick.pros.map((pro) => (
-            <li class="roundup-pros-cons__item text-sm font-medium text-on-surface-variant leading-snug">
-              <span class="roundup-pros-cons__dot roundup-pros-cons__dot--pro" aria-hidden="true" />
-              <span>{pro}</span>
-            </li>
-          ))
-        }
-      </ul>
+      <button
+        type="button"
+        class="roundup-pick__disclosure-trigger roundup-pick__disclosure-trigger--expert"
+        data-expert-toggle
+        aria-expanded="false"
+      >
+        <span class="roundup-pick__disclosure-avatar" aria-hidden="true">
+          <img src={herman.avatar} alt="" width="18" height="18" loading="lazy" />
+        </span>
+        <span class="roundup-pick__disclosure-label">Expert opinion</span>
+        <span class="material-symbols-outlined roundup-pick__disclosure-chevron" data-expert-chevron aria-hidden="true">
+          expand_more
+        </span>
+      </button>
     </div>
-    <div class="roundup-pros-cons__col">
-      <h4 class="roundup-pros-cons__title font-black text-lg mb-3 text-on-surface">Cons</h4>
-      <ul class="roundup-pros-cons__list">
+
+    <div class="roundup-pick__disclosure-content">
+      <div class="roundup-pick__disclosure-panel" data-decision-panel hidden>
+        <div class="roundup-pros-cons" data-glossary-skip>
+          <div class="roundup-pros-cons__col">
+            <h4 class="roundup-pros-cons__title">What we like</h4>
+            <ul class="roundup-pros-cons__list">
+              {
+                topPros.map((pro) => (
+                  <li class="roundup-pros-cons__item">
+                    <span class="roundup-pros-cons__dot roundup-pros-cons__dot--pro" aria-hidden="true" />
+                    <span>{pro}</span>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+          <div class="roundup-pros-cons__col">
+            <h4 class="roundup-pros-cons__title">What we don't like</h4>
+            <ul class="roundup-pros-cons__list">
+              {
+                mainCons.map((con) => (
+                  <li class="roundup-pros-cons__item">
+                    <span class="roundup-pros-cons__dot roundup-pros-cons__dot--con" aria-hidden="true" />
+                    <span>{con}</span>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="roundup-pick__disclosure-divider" data-expert-divider hidden aria-hidden="true"></div>
+
+      <div class="roundup-pick__disclosure-panel" data-expert-panel hidden>
+        <div class="roundup-pick__our-take-author">
+          <div class="roundup-pick__our-take-avatar">
+            <img src={herman.avatar} alt="" width="36" height="36" loading="lazy" />
+          </div>
+          <div class="roundup-pick__our-take-author-meta">
+            <div class="roundup-pick__our-take-name-row">
+              <span class="roundup-pick__our-take-name">{herman.name}</span>
+              <VerifiedCheck class="w-[16px] h-[16px] shrink-0" />
+            </div>
+            <span class="roundup-pick__our-take-role">Lead Reviewer</span>
+          </div>
+        </div>
+        <div class="roundup-pick__our-take-copy">
+          {
+            expertParagraphs.map((paragraph) => (
+              <p class="roundup-pick__our-take-text text-sm md:text-base text-on-surface leading-relaxed">
+                {paragraph}
+              </p>
+            ))
+          }
+        </div>
         {
-          pick.cons.map((con) => (
-            <li class="roundup-pros-cons__item text-sm font-medium text-on-surface-variant leading-snug">
-              <span class="roundup-pros-cons__dot roundup-pros-cons__dot--con" aria-hidden="true" />
-              <span>{con}</span>
-            </li>
-          ))
+          pick.reviewUrl && (
+            <EditorialPillLink href={pick.reviewUrl} icon="article" variant="quiet" class="roundup-pick__review-link">
+              Read {pick.name} review
+            </EditorialPillLink>
+          )
         }
-      </ul>
+      </div>
     </div>
   </div>
 
-  <div class="roundup-pick__cta-wrap" data-reading-tier="medium">
+  <footer class="roundup-pick__footer">
     <a
       class="roundup-pick__cta bg-brand-cta"
       href={pick.affiliateUrl}
@@ -118,78 +185,62 @@ const { pick, rank } = Astro.props;
       rel="nofollow sponsored noopener"
     >
       Visit {pick.name}
-      <span class="material-symbols-outlined roundup-pick__cta-icon" aria-hidden="true">arrow_outward</span>
+      <span class="material-symbols-outlined roundup-pick__cta-icon" aria-hidden="true">open_in_new</span>
     </a>
-  </div>
-
-  <section class="roundup-pick__our-take" data-reading-tier="medium">
-    <button type="button" class="roundup-pick__our-take-toggle" data-our-take-toggle aria-expanded="false">
-      <img src={cdnAsset('/brand/herman-main-icon.svg')} alt="" class="roundup-pick__our-take-avatar" width="32" height="32" />
-      <span class="roundup-pick__our-take-heading">Our take</span>
-      <span class="material-symbols-outlined roundup-pick__our-take-chevron" aria-hidden="true">expand_more</span>
-    </button>
-    <div class="roundup-pick__our-take-body" data-our-take-body hidden>
-      <p class="roundup-pick__our-take-text text-sm md:text-base text-on-surface leading-relaxed">
-        <CmsField field="ourTake">{pick.ourTake}</CmsField>
-      </p>
-      {
-        pick.reviewUrl && (
-          <a class="roundup-pick__review-link rt-tooltip-actions__btn rt-tooltip-actions__btn--primary" href={pick.reviewUrl}>
-            Read our full {pick.name} review
-            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-          </a>
-        )
-      }
-    </div>
-  </section>
+  </footer>
 </article>
 
 <script>
-  function initPickExpand() {
+  function syncPickDisclosureUI(pick: HTMLElement) {
+    const decisionOpen = pick.dataset.decisionOpen === 'true';
+    const expertOpen = pick.dataset.expertOpen === 'true';
+
+    const decisionBtn = pick.querySelector<HTMLButtonElement>('[data-decision-toggle]');
+    const decisionPanel = pick.querySelector<HTMLElement>('[data-decision-panel]');
+    const decisionChevron = pick.querySelector<HTMLElement>('[data-decision-chevron]');
+    const expertBtn = pick.querySelector<HTMLButtonElement>('[data-expert-toggle]');
+    const expertPanel = pick.querySelector<HTMLElement>('[data-expert-panel]');
+    const expertChevron = pick.querySelector<HTMLElement>('[data-expert-chevron]');
+    const divider = pick.querySelector<HTMLElement>('[data-expert-divider]');
+
+    decisionBtn?.setAttribute('aria-expanded', decisionOpen ? 'true' : 'false');
+    if (decisionPanel) decisionPanel.hidden = !decisionOpen;
+    if (decisionChevron) decisionChevron.textContent = decisionOpen ? 'expand_less' : 'expand_more';
+
+    expertBtn?.setAttribute('aria-expanded', expertOpen ? 'true' : 'false');
+    if (expertPanel) expertPanel.hidden = !expertOpen;
+    if (expertChevron) expertChevron.textContent = expertOpen ? 'expand_less' : 'expand_more';
+
+    if (divider) divider.hidden = !(decisionOpen && expertOpen);
+
+    pick.classList.toggle('is-decision-open', decisionOpen);
+    pick.classList.toggle('is-expert-open', expertOpen);
+  }
+
+  function applyReadingLengthToPicks(globalLength: string) {
+    document.querySelectorAll<HTMLElement>('[data-roundup-pick]').forEach((pick) => {
+      if (globalLength === 'medium') {
+        pick.dataset.decisionOpen = 'true';
+        pick.dataset.expertOpen = 'false';
+      } else if (globalLength === 'all-in') {
+        pick.dataset.decisionOpen = 'true';
+        pick.dataset.expertOpen = 'true';
+      } else {
+        pick.dataset.decisionOpen = 'false';
+        pick.dataset.expertOpen = 'false';
+      }
+      syncPickDisclosureUI(pick);
+    });
+  }
+
+  function initPickDisclosures() {
     const root = document.querySelector<HTMLElement>('[data-roundup-root]');
 
-    function syncExpandButtons() {
-      const globalLength = root?.dataset.readingLength ?? 'skim';
-      document.querySelectorAll<HTMLElement>('[data-roundup-pick]').forEach((pick) => {
-        const wrap = pick.querySelector<HTMLElement>('[data-pick-expand-wrap]');
-        const btn = pick.querySelector<HTMLButtonElement>('[data-pick-expand-btn]');
-        const expanded = pick.dataset.pickExpanded;
-        if (!wrap || !btn) return;
+    document.querySelectorAll<HTMLElement>('[data-roundup-pick]').forEach((pick) => {
+      pick.addEventListener('roundup:sync-disclosure', () => syncPickDisclosureUI(pick));
+    });
 
-        wrap.hidden = globalLength !== 'skim';
-
-        const isExpanded = expanded === 'medium' || expanded === 'deep';
-        btn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
-        btn.setAttribute(
-          'aria-label',
-          isExpanded
-            ? `Show less about ${pick.dataset.pickName ?? 'this app'}`
-            : `Show more about ${pick.dataset.pickName ?? 'this app'}`,
-        );
-
-        const icon = btn.querySelector<HTMLElement>('.material-symbols-outlined');
-        if (icon) icon.textContent = isExpanded ? 'expand_less' : 'expand_more';
-      });
-    }
-
-    function collapsePick(pick: HTMLElement) {
-      delete pick.dataset.pickExpanded;
-
-      const btn = pick.querySelector<HTMLButtonElement>('[data-pick-expand-btn]');
-      btn?.setAttribute('aria-expanded', 'false');
-
-      const ourTakeBtn = pick.querySelector<HTMLButtonElement>('[data-our-take-toggle]');
-      const ourTakeBody = pick.querySelector<HTMLElement>('[data-our-take-body]');
-      if (ourTakeBtn && ourTakeBody) {
-        ourTakeBtn.setAttribute('aria-expanded', 'false');
-        ourTakeBody.hidden = true;
-        ourTakeBtn.querySelector<HTMLElement>('.roundup-pick__our-take-chevron')?.classList.remove('is-open');
-      }
-
-      syncExpandButtons();
-    }
-
-    document.querySelectorAll<HTMLButtonElement>('[data-pick-expand-btn]').forEach((btn) => {
+    document.querySelectorAll<HTMLButtonElement>('[data-decision-toggle]').forEach((btn) => {
       if (btn.dataset.bound === 'true') return;
       btn.dataset.bound = 'true';
 
@@ -197,51 +248,41 @@ const { pick, rank } = Astro.props;
         const pick = btn.closest<HTMLElement>('[data-roundup-pick]');
         if (!pick) return;
 
-        const expanded = pick.dataset.pickExpanded;
-        if (expanded === 'medium' || expanded === 'deep') {
-          collapsePick(pick);
-          return;
-        }
-
-        pick.dataset.pickExpanded = 'medium';
-        btn.setAttribute('aria-expanded', 'true');
-        syncExpandButtons();
-        pick.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        const open = pick.dataset.decisionOpen !== 'true';
+        pick.dataset.decisionOpen = open ? 'true' : 'false';
+        syncPickDisclosureUI(pick);
       });
     });
 
-    document.querySelectorAll<HTMLButtonElement>('[data-our-take-toggle]').forEach((btn) => {
+    document.querySelectorAll<HTMLButtonElement>('[data-expert-toggle]').forEach((btn) => {
       if (btn.dataset.bound === 'true') return;
       btn.dataset.bound = 'true';
 
-      const body = btn.parentElement?.querySelector<HTMLElement>('[data-our-take-body]');
-      const chevron = btn.querySelector<HTMLElement>('.roundup-pick__our-take-chevron');
-      if (!body) return;
-
       btn.addEventListener('click', () => {
-        const open = btn.getAttribute('aria-expanded') === 'true';
         const pick = btn.closest<HTMLElement>('[data-roundup-pick]');
-        btn.setAttribute('aria-expanded', open ? 'false' : 'true');
-        body.hidden = open;
-        chevron?.classList.toggle('is-open', !open);
-        if (!open && pick) pick.dataset.pickExpanded = 'deep';
-        if (open && pick && pick.dataset.pickExpanded === 'deep') {
-          pick.dataset.pickExpanded = 'medium';
+        if (!pick) return;
+
+        const open = pick.dataset.expertOpen !== 'true';
+        pick.dataset.expertOpen = open ? 'true' : 'false';
+        syncPickDisclosureUI(pick);
+
+        if (open) {
+          pick.querySelector<HTMLElement>('[data-expert-panel]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
-        syncExpandButtons();
       });
     });
 
     if (root) {
       const observer = new MutationObserver(() => {
-        syncExpandButtons();
+        applyReadingLengthToPicks(root.dataset.readingLength ?? 'skim');
       });
       observer.observe(root, { attributes: true, attributeFilter: ['data-reading-length'] });
+      applyReadingLengthToPicks(root.dataset.readingLength ?? 'skim');
+    } else {
+      document.querySelectorAll<HTMLElement>('[data-roundup-pick]').forEach(syncPickDisclosureUI);
     }
-
-    syncExpandButtons();
   }
 
-  initPickExpand();
-  document.addEventListener('astro:page-load', initPickExpand);
+  initPickDisclosures();
+  document.addEventListener('astro:page-load', initPickDisclosures);
 </script>

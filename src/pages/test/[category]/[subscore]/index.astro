@@ -9,6 +9,7 @@ import TestPageBackLink from '../../../../components/test/TestPageBackLink.astro
 import TestHubSidebar from '../../../../components/test/TestHubSidebar.astro';
 import TestCategoryMobileNavSheet from '../../../../components/test/TestCategoryMobileNavSheet.astro';
 import ArticleUtilityRail from '../../../../components/article/ArticleUtilityRail.astro';
+import PublicGlossaryTooltips from '../../../../components/glossary/PublicGlossaryTooltips.astro';
 import { findTestSubscore, getTestCategories } from '../../../../lib/test-framework';
 import { getMethodology } from '../../../../data/methodology';
 import { getTestSubscoreMethodology } from '../../../../data/test-subscore-methodology';
@@ -179,6 +180,7 @@ const tocItems = richContent
   <TestCategoryMobileNavSheet tocSections={tocItems} pageTitle={pageTitle} pageUrl={canonical} />
   <div data-hub-root data-page-title={pageTitle} data-page-url={canonical} hidden aria-hidden="true"></div>
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal />
+  <PublicGlossaryTooltips autoDecorate />
 
   <script>
     function initTestHubNav() {

@@ -1,8 +1,8 @@
 ---
 import type { HomeExplorerApp } from '../../data/homepage';
-import { buildExplorerApps } from '../../data/homepage';
 import { loadComparisonProducts, overallScorePoints } from '../../lib/content/comparisonProducts';
 import { fmtScore, categoryScoreChipClasses } from '../../lib/scores';
+import { getOverallPerformanceIcon } from '../../lib/tooltip-category-icons-cdn';
 import OverallScoreTooltip from '../review/tooltips/OverallScoreTooltip.astro';
 import InlineTestLink from '../review/tooltips/InlineTestLink.astro';
 import RatingHierarchyPipeline from '../review/tooltips/RatingHierarchyPipeline.astro';
@@ -21,6 +21,7 @@ const scorePoints = overallScorePoints(comparisonProducts).map((point) => point.
 const avgScore = scorePoints.length
   ? scorePoints.reduce((sum, score) => sum + score, 0) / scorePoints.length
   : app.overallScore;
+const overallIcon = getOverallPerformanceIcon();
 ---
 
 {
@@ -42,10 +43,15 @@ const avgScore = scorePoints.length
         <InfoIcon size="xs" class="text-tertiary/70 hover:text-accent" />
       </span>
       <template id={`tooltip-${tooltipId}`}>
-        <div class="ratings-tooltip-panel ratings-tooltip-panel--overall ratings-tooltip-panel--compact">
+        <div class="ratings-tooltip-panel ratings-tooltip-panel--overall ratings-tooltip-panel--compact ratings-tooltip-panel--has-badge">
+          <div class="ratings-tooltip-panel__badge" aria-hidden="true">
+            <div class="ratings-tooltip-panel__badge-clip">
+              <img src={overallIcon} alt="" width="40" height="40" loading="lazy" decoding="async" />
+            </div>
+          </div>
           <div class="ratings-tooltip-panel__header ratings-tooltip-panel__header--compact">
             <div class="ratings-tooltip-panel__header-grid">
-              <div class="min-w-0">
+              <div class="ratings-tooltip-panel__what-block min-w-0">
                 <p class="ratings-tooltip-panel__section-title">What it is</p>
                 <p class="ratings-tooltip-panel__desc">{getOverallTooltipDescription()}</p>
               </div>

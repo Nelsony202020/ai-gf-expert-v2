@@ -20,6 +20,7 @@ import RoundupScoreBarAnimate from '../../components/roundup/RoundupScoreBarAnim
 import RatingsTooltipInit from '../../components/review/tooltips/RatingsTooltipInit.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import ArticleFeedbackLink from '../../components/article/ArticleFeedbackLink.astro';
+import PublicGlossaryTooltips from '../../components/glossary/PublicGlossaryTooltips.astro';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
 import { loadRoundupForPublic } from '../../lib/content/store';
@@ -46,6 +47,7 @@ const jsonLdGraph = !isDraft
   lcpImage={roundup.featuredImage}
   robots={isDraft ? 'noindex, nofollow' : undefined}
   canonical={canonical}
+  theme="roundup"
 >
   {jsonLdGraph.length > 0 && <JsonLd slot="head" graph={jsonLdGraph} />}
   <Header />
@@ -69,10 +71,10 @@ const jsonLdGraph = !isDraft
       <div class="roundup-layout">
         <RoundupSidebar roundup={roundup} picks={roundup.picks} />
 
-        <div class="roundup-main min-w-0">
+        <div class="roundup-main min-w-0" data-glossary-decorate>
           <RoundupHeroIntro roundup={roundup} shareUrl={canonical} />
-          <RoundupTestingSection testing={roundup.testing} />
           <RoundupQuickCarousel heading={roundup.quickHeading} picks={roundup.picks} />
+          <RoundupTestingSection testing={roundup.testing} />
           <RoundupSelectionSection selection={roundup.selection} />
 
           <section id="roundup-detailed-picks" class="scroll-mt-24">
@@ -88,7 +90,7 @@ const jsonLdGraph = !isDraft
           </section>
 
           <RoundupCompare picks={roundup.picks} defaultIds={roundup.compareDefaultIds} />
-          <RoundupFaq items={roundup.faq} />
+          <RoundupFaq items={roundup.faq} picks={roundup.picks} />
           <RoundupConclusion conclusion={roundup.conclusion} picks={roundup.picks} />
           <ArticleFeedbackLink pageTitle={pageTitle} pageUrl={canonical} />
         </div>
@@ -101,6 +103,7 @@ const jsonLdGraph = !isDraft
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
   <RoundupScoreBarAnimate />
   <RatingsTooltipInit />
+  <PublicGlossaryTooltips autoDecorate />
 </BaseLayout>
 
 <script>

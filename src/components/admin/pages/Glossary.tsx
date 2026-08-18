@@ -1,4 +1,4 @@
-// SEO → Glossary: manage terms for /glossary/ and review auto-tooltips.
+// SEO → Glossary: manage terms for /glossary/ and sitewide auto-tooltips.
 
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { dataApi, type EntityRow } from '../api';
@@ -30,7 +30,6 @@ import {
   Select,
   Spinner,
   TextInput,
-  Toggle,
   fmtDate,
   statusTone,
 } from '../ui';
@@ -57,7 +56,7 @@ function mapEntry(row: EntityRow): GlossaryEntryRecord {
     category: String(row.category ?? 'General'),
     status: String(row.status ?? 'draft'),
     autoTooltip: row.autoTooltip !== false,
-    scope: String(row.scope ?? 'reviews'),
+    scope: String(row.scope ?? 'site'),
     publishedAt: row.publishedAt != null ? Number(row.publishedAt) : null,
     createdAt: row.createdAt != null ? Number(row.createdAt) : null,
     updatedAt: row.updatedAt != null ? Number(row.updatedAt) : null,
@@ -206,8 +205,8 @@ export function GlossaryPage() {
       displayAliases: editing.aliases,
       category: editing.category,
       status,
-      autoTooltip: editing.autoTooltip,
-      scope: 'reviews',
+      autoTooltip: true,
+      scope: 'site',
     };
     const issues = validateGlossaryEntry(draftEntry, {
       publishing,
@@ -242,8 +241,8 @@ export function GlossaryPage() {
         displayAliases: draftEntry.displayAliases,
         category: draftEntry.category,
         status,
-        autoTooltip: draftEntry.autoTooltip,
-        scope: 'reviews',
+        autoTooltip: true,
+        scope: 'site',
         ...(publishing ? { publishedAt: Date.now() } : {}),
       };
       const wasPublic = editing.wasPublished;
@@ -598,14 +597,6 @@ export function GlossaryPage() {
                   )}
                 </div>
               </div>
-              <Toggle
-                checked={editing.autoTooltip}
-                disabled={!canEdit || saving}
-                label="Reviews"
-                aria-label="Activate reviews"
-                onChange={(v) => setEditing((p) => (p ? { ...p, autoTooltip: v } : p))}
-                className="pb-0.5 text-xs font-medium text-slate-700 dark:text-slate-200"
-              />
             </div>
 
             <div>

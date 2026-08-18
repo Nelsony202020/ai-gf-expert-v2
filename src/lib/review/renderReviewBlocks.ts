@@ -83,7 +83,7 @@ function renderRichNodes(
         else if (mark.type === 'italic') html = `<em>${html}</em>`;
         else if (mark.type === 'link') {
           const href = escapeHtml(String(mark.attrs?.href ?? ''));
-          html = `<a href="${href}" rel="noopener noreferrer">${html}</a>`;
+          html = `<a href="${href}" class="content-link" rel="noopener noreferrer">${html}</a>`;
         }
       }
       out += html;
@@ -396,11 +396,10 @@ export function renderReviewBlocksHtml(
         const lis: string[] = [];
         for (let i = 0; i < count; i++) {
           const rich = richItems?.[i];
+          // Hard rule: never auto-tooltip glossary terms inside lists.
           const inner = isInlineArray(rich)
-            ? renderRichNodes(rich, glossary)
-            : glossary
-              ? decorateGlossaryPlainText(items[i] ?? '', glossary.terms, glossary.state)
-              : escapeHtml(items[i] ?? '');
+            ? renderRichNodes(rich, null)
+            : escapeHtml(items[i] ?? '');
           lis.push(`<li>${inner}</li>`);
         }
         parts.push(`<${tag} class="review-list">${lis.join('')}</${tag}>`);
