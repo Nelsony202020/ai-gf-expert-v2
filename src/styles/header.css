@@ -1,6 +1,7 @@
 /* Site header — mega menu, inline search, dark mode */
 
 :root {
+  --site-header-height: 3.5rem;
   --site-header-glass-bg: rgb(248 250 243 / 78%);
   --site-header-glass-border: rgb(26 36 24 / 8%);
   --site-header-glass-blur: 10px;
@@ -10,6 +11,12 @@
   /* Bottom nav pill only — matches site header frost */
   --mobile-nav-pill-glass-bg: rgb(248 250 243 / 82%);
   --mobile-nav-pill-glass-border: rgb(26 36 24 / 10%);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --site-header-height: 4.25rem;
+  }
 }
 
 [data-theme='dark'] {
@@ -99,6 +106,9 @@
 @media (max-width: 767px) {
   .site-header__inner {
     gap: 0.5rem;
+    min-height: var(--site-header-height);
+    height: auto;
+    padding-block: 0.1875rem;
   }
 
   .site-header__left {
@@ -125,8 +135,8 @@
   }
 
   .site-header__logo {
-    height: 2.25rem;
-    max-height: 2.25rem;
+    height: 2.125rem;
+    max-height: 2.125rem;
   }
 }
 

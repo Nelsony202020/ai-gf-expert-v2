@@ -1,0 +1,64 @@
+---
+import type { AtGlanceTooltip } from '../../data/roundups/ai-girlfriend';
+import InfoIcon from '../ui/InfoIcon.astro';
+
+interface Props {
+  pickSlug: string;
+  rowId: string;
+  label: string;
+  tooltip: AtGlanceTooltip;
+  /** Render only the hover trigger (template lives in the shared pool). */
+  triggerOnly?: boolean;
+  /** Render only the template (for the preloaded tooltip pool). */
+  templateOnly?: boolean;
+}
+
+const { pickSlug, rowId, label, tooltip, triggerOnly = false, templateOnly = false } = Astro.props;
+const tooltipId = `compare-pricing-${pickSlug}-${rowId}`;
+---
+
+{
+  !templateOnly && (
+    <span class="roundup-compare__pricing-info" data-compare-pricing-info>
+      <span
+        role="button"
+        tabindex="0"
+        class="rt-tooltip-trigger inline-flex cursor-help"
+        data-ratings-tooltip-trigger={tooltipId}
+        aria-label={`About ${label.toLowerCase()} for this app`}
+      >
+        <InfoIcon size="xs" class="text-tertiary/50 hover:text-tertiary/80" />
+      </span>
+    </span>
+  )
+}
+
+{
+  !triggerOnly && (
+    <template id={`tooltip-${tooltipId}`}>
+      <div class="ratings-tooltip-panel ratings-tooltip-panel--help">
+        <div class="ratings-tooltip-panel__header">
+          <p class="ratings-tooltip-panel__section-title">{tooltip.title}</p>
+        </div>
+        <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
+          <p class="roundup-at-glance-tooltip__amount">{tooltip.amount}</p>
+          <p class="ratings-tooltip-panel__desc">{tooltip.description}</p>
+          {
+            tooltip.breakdown && tooltip.breakdown.length > 0 && (
+              <ul class="roundup-at-glance-tooltip__breakdown">
+                {tooltip.breakdown.map((line) => <li>{line}</li>)}
+              </ul>
+            )
+          }
+          <a
+            href={tooltip.pricingHref}
+            class="roundup-at-glance-tooltip__cta rt-tooltip-actions__btn rt-tooltip-actions__btn--primary"
+          >
+            See full pricing breakdown
+            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </a>
+        </div>
+      </div>
+    </template>
+  )
+}

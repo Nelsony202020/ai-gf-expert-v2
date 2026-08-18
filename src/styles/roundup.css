@@ -7,7 +7,7 @@
   --roundup-header-bg: #f8faf3;
   --roundup-intro-offset: 1.5rem;
   --roundup-sidebar-sticky-gap: 0.5rem;
-  --site-header-height: 3.25rem;
+  --site-header-height: 3.5rem;
 }
 
 /* Native 1024×256 card — do not stretch past source or it goes soft. */
@@ -25,7 +25,12 @@
   }
 }
 
-/* Hub banner page: fixed header over sticky hero (glass styles are global) */
+/* Hub banner page: fixed header over fixed hero (glass styles are global) */
+body:has(.roundup-hero-stage) {
+  --site-header-height: 3.5rem;
+  --roundup-hero-height: clamp(8rem, 25vw, 16rem);
+}
+
 body:has(.roundup-hero-stage) .site-header {
   position: fixed;
   top: 0;
@@ -33,20 +38,30 @@ body:has(.roundup-hero-stage) .site-header {
   right: 0;
 }
 
-/* Sticky hero — content scrolls up over it (Foxy-style depth) */
+@media (min-width: 768px) {
+  body:has(.roundup-hero-stage) {
+    --site-header-height: 4.25rem;
+    --roundup-hero-height: 16rem;
+  }
+}
+
+/* Fixed hero — stays behind content; never re-enters view at page bottom */
 .roundup-hero-stage {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  top: var(--site-header-height, 3.5rem);
+  left: 0;
+  right: 0;
   z-index: 0;
   height: var(--roundup-hero-height);
   overflow: hidden;
   background: #141414;
+  pointer-events: none;
 }
 
 .roundup-page--covers-hero {
   position: relative;
   z-index: 2;
-  margin-top: -0.75rem;
+  margin-top: calc(var(--site-header-height, 3.5rem) + var(--roundup-hero-height) - 0.75rem);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   background: var(--color-surface);
   box-shadow: 0 -10px 40px rgb(0 0 0 / 8%);

@@ -60,7 +60,7 @@ export function comparePerfCellInnerHtml(score: number, isWinner: boolean, forma
     'roundup-compare-bar--segmented-thin"',
     `roundup-compare-bar--segmented-thin${isWinner ? ' roundup-compare-bar--winner' : ''}"`,
   );
-  return `<div class="roundup-compare__perf-cell${cellClass}">${badge}<span class="roundup-compare__perf-score">${formattedScore}/10</span>${bar}</div>`;
+  return `<div class="roundup-compare__perf-cell${cellClass}"><div class="roundup-compare__perf-badge-row">${badge}</div><span class="roundup-compare__perf-score">${formattedScore}/10</span>${bar}</div>`;
 }
 
 export function splitVerdict(text: string): { lead: string; rest: string } {

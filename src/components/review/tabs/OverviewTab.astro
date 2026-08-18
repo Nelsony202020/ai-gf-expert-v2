@@ -818,6 +818,8 @@ function verdictCmsField(
         if (!id) return;
         show(id);
         closeJumpSheet();
+        const isMobile = window.matchMedia('(max-width: 767px)').matches;
+        if (isMobile) return;
         requestAnimationFrame(() => {
           const panel = root.querySelector(`[data-verdict-panel="${id}"]`);
           panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });

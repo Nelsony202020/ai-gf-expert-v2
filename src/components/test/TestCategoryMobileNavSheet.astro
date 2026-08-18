@@ -28,7 +28,8 @@ const { tocSections, pageTitle, pageUrl } = Astro.props;
     <div class="roundup-sheet__handle" aria-hidden="true"></div>
     <h2 id="test-category-nav-sheet-title" class="roundup-nav-sheet__toc-title">On this page</h2>
 
-    <nav class="roundup-nav-sheet__toc" aria-label="Table of contents">
+    <div class="sheet-scroll-host">
+    <nav class="roundup-nav-sheet__toc sheet-scroll" data-sheet-scroll aria-label="Table of contents">
       <ul class="roundup-nav-sheet__toc-list">
         {
           tocSections.map((section) => (
@@ -63,6 +64,7 @@ const { tocSections, pageTitle, pageUrl } = Astro.props;
         }
       </ul>
     </nav>
+    </div>
 
     <button type="button" class="roundup-sheet__cancel" data-sheet-close>Close</button>
   </div>

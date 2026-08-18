@@ -14,6 +14,7 @@ import {
 import CategoryScoreTooltip from '../review/tooltips/CategoryScoreTooltip.astro';
 import SubscoreScoreTooltip from '../review/tooltips/SubscoreScoreTooltip.astro';
 import InfoIcon from '../ui/InfoIcon.astro';
+import ComparePricingTooltip from './ComparePricingTooltip.astro';
 import RoundupComparePicker from './RoundupComparePicker.astro';
 
 interface Props {
@@ -37,8 +38,11 @@ const featureRowLabels = COMPARE_FEATURE_IDS.map((id) => ({
 const pricingRowLabels = COMPARE_PRICING_IDS.map((id) => ({
   id,
   label: atGlanceLabel(referencePick.atGlance, 'pricing', id),
-  hasTooltip: id === 'regular-use' || id === 'power-user',
 }));
+
+function pricingTooltip(pick: RoundupPick, id: string) {
+  return pick.atGlance?.pricing?.find((row) => row.id === id)?.tooltip;
+}
 
 const comparePayload = picks.map((p) => ({
   id: p.id,
@@ -54,6 +58,9 @@ const comparePayload = picks.map((p) => ({
   ),
   atGlancePricing: Object.fromEntries(
     COMPARE_PRICING_IDS.map((id) => [id, atGlanceValue(p.atGlance, 'pricing', id)]),
+  ),
+  atGlancePricingHasTooltip: Object.fromEntries(
+    COMPARE_PRICING_IDS.map((id) => [id, Boolean(p.atGlance?.pricing?.find((row) => row.id === id)?.tooltip)]),
   ),
   categories: Object.fromEntries(
     p.categoryScores.map((c) => [
@@ -167,21 +174,30 @@ function subWinners(key: string, subName: string, ids: string[]) {
       </div>
       <div class="roundup-compare__matrix" data-compare-pricing-table>
         {
-          pricingRowLabels.map(({ id, label, hasTooltip }) => (
+          pricingRowLabels.map(({ id, label }) => (
             <div class="roundup-compare__matrix-row" data-pricing-row={id}>
               <div class="roundup-compare__matrix-label">
                 <span>{label}</span>
-                {
-                  hasTooltip && (
-                    <InfoIcon size="xs" class="text-tertiary/50" title="Estimated monthly cost from our hands-on testing. See each app's full review for a detailed breakdown." />
-                  )
-                }
               </div>
               {
                 defaultIds.map((pickId) => {
                   const pick = picks.find((p) => p.id === pickId)!;
                   const val = atGlanceValue(pick.atGlance, 'pricing', id);
-                  return <div class="roundup-compare__matrix-val" data-compare-pricing-val={pickId} data-pricing-id={id}>{val}</div>;
+                  const tooltip = pricingTooltip(pick, id);
+                  return (
+                    <div class="roundup-compare__matrix-val roundup-compare__matrix-val--pricing" data-compare-pricing-val={pickId} data-pricing-id={id}>
+                      <span class="roundup-compare__matrix-val-text">{val}</span>
+                      {tooltip && (
+                        <ComparePricingTooltip
+                          pickSlug={pick.slug}
+                          rowId={id}
+                          label={label}
+                          tooltip={tooltip}
+                          triggerOnly
+                        />
+                      )}
+                    </div>
+                  );
                 })
               }
             </div>
@@ -196,19 +212,6 @@ function subWinners(key: string, subName: string, ids: string[]) {
         <p class="roundup-compare__section-desc">See where each app performs best</p>
       </div>
       <div class="roundup-compare__score-matrix" data-compare-perf-table>
-        <div class="roundup-compare__matrix-row roundup-compare__matrix-row--col-head">
-          <div class="roundup-compare__matrix-label" aria-hidden="true"></div>
-          {
-            defaultIds.map((pickId) => {
-              const pick = picks.find((p) => p.id === pickId)!;
-              return (
-                <div class="roundup-compare__matrix-col-head" data-compare-col-head={pickId}>
-                  {pick.name}
-                </div>
-              );
-            })
-          }
-        </div>
         {
           categoryKeys.flatMap((key) => {
             const catItem = picks[0].categoryScores.find((c) => c.key === key)!;
@@ -353,6 +356,19 @@ function subWinners(key: string, subName: string, ids: string[]) {
       }
     </div>
   </div>
+
+  <div hidden aria-hidden="true" class="roundup-compare__tooltip-templates">
+    {
+      picks.flatMap((pick) =>
+        COMPARE_PRICING_IDS.map((id) => {
+          const tooltip = pricingTooltip(pick, id);
+          const label = atGlanceLabel(referencePick.atGlance, 'pricing', id);
+          if (!tooltip) return null;
+          return <ComparePricingTooltip pickSlug={pick.slug} rowId={id} label={label} tooltip={tooltip} templateOnly />;
+        }),
+      )
+    }
+  </div>
 </section>
 
 <script define:vars={{ comparePayload, defaultIds, categoryKeys, featureRowLabels, pricingRowLabels }}>
@@ -404,7 +420,7 @@ function subWinners(key: string, subName: string, ids: string[]) {
   function perfCellHtmlClient(score, isWinner) {
     const badge = isWinner ? bestBadgeHtmlClient() : '';
     const cellClass = isWinner ? ' roundup-compare__perf-cell--best' : '';
-    return `<div class="roundup-compare__perf-cell${cellClass}">${badge}<span class="roundup-compare__perf-score">${fmtScoreClient(score)}/10</span>${segmentedBarHtmlClient(score, isWinner)}</div>`;
+    return `<div class="roundup-compare__perf-cell${cellClass}"><div class="roundup-compare__perf-badge-row">${badge}</div><span class="roundup-compare__perf-score">${fmtScoreClient(score)}/10</span>${segmentedBarHtmlClient(score, isWinner)}</div>`;
   }
 
   function winnerIdsForScores(entries) {
@@ -542,13 +558,21 @@ function subWinners(key: string, subName: string, ids: string[]) {
       pricingIds.forEach((id) => {
         const row = root.querySelector(`[data-pricing-row="${id}"]`);
         const cell = row?.querySelectorAll('[data-compare-pricing-val]')[slot];
-        if (cell) cell.textContent = pick.atGlancePricing[id] ?? '—';
+        if (!cell) return;
+        const textEl = cell.querySelector('.roundup-compare__matrix-val-text');
+        if (textEl) textEl.textContent = pick.atGlancePricing[id] ?? '—';
+        const infoEl = cell.querySelector('[data-compare-pricing-info]');
+        const hasTooltip = Boolean(pick.atGlancePricingHasTooltip?.[id]);
+        if (infoEl) {
+          infoEl.hidden = !hasTooltip;
+          const trigger = infoEl.querySelector('[data-ratings-tooltip-trigger]');
+          if (trigger && hasTooltip) {
+            trigger.dataset.ratingsTooltipTrigger = `compare-pricing-${pick.slug}-${id}`;
+          }
+        }
       });
 
       categoryKeys.forEach((key) => refreshPerfCells(key));
-
-      const colHead = root.querySelectorAll('[data-compare-col-head]')[slot];
-      if (colHead) colHead.textContent = pick.name;
 
       const visitLink = root.querySelectorAll('[data-compare-visit]')[slot];
       if (visitLink) {
@@ -569,7 +593,7 @@ function subWinners(key: string, subName: string, ids: string[]) {
       });
     }
 
-    root.querySelectorAll('[data-compare-category-info], [data-compare-sub-info]').forEach((el) => {
+    root.querySelectorAll('[data-compare-category-info], [data-compare-sub-info], [data-compare-pricing-info]').forEach((el) => {
       el.addEventListener('click', (e) => e.stopPropagation());
     });
 
@@ -585,7 +609,7 @@ function subWinners(key: string, subName: string, ids: string[]) {
     }
 
     root.addEventListener('click', (e) => {
-      if (e.target.closest('[data-compare-category-info], [data-compare-sub-info], .rt-tooltip-trigger, [data-ratings-tooltip-trigger]')) {
+      if (e.target.closest('[data-compare-category-info], [data-compare-sub-info], [data-compare-pricing-info], .rt-tooltip-trigger, [data-ratings-tooltip-trigger]')) {
         return;
       }
 

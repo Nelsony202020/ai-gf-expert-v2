@@ -18,6 +18,13 @@ const activeItem = getActiveBottomNavItem(pathname);
 const bottomNav = showMobileBottomNav(mode);
 ---
 
+<script>
+  import { bindDrawerScrollFades } from '../../lib/ui/scrollFade';
+
+  bindDrawerScrollFades();
+  document.addEventListener('astro:page-load', () => bindDrawerScrollFades());
+</script>
+
 {
   bottomNav && (
     <>

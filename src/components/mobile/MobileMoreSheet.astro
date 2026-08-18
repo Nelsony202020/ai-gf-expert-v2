@@ -21,6 +21,7 @@ const logoSrc = cdnAsset('/brand/girlfriend-expert-logo.png');
         <span class="material-symbols-outlined">close</span>
       </button>
     </header>
+    <div class="sheet-scroll-host">
     <div class="mobile-sheet__body">
       <p class="mobile-sheet__section-label">This page</p>
       <button type="button" class="mobile-sheet__link" data-mobile-more-share>
@@ -75,11 +76,13 @@ const logoSrc = cdnAsset('/brand/girlfriend-expert-logo.png');
         <ThemeToggle variant="switch" />
       </div>
     </div>
+    </div>
   </div>
 </div>
 
 <script>
   import { closeSheet, openSheet } from '../../lib/ui/bottomSheet.ts';
+  import { bindDrawerScrollFades, updateScrollFade } from '../../lib/ui/scrollFade.ts';
 
   function getPageMeta() {
     const navSheet =
@@ -120,6 +123,12 @@ const logoSrc = cdnAsset('/brand/girlfriend-expert-logo.png');
       releaseFocus = openSheet(sheet, panel, {
         focusSelector: '[data-mobile-more-close]',
       });
+      const body = sheet.querySelector('.mobile-sheet__body');
+      const host = sheet.querySelector('.sheet-scroll-host');
+      if (body instanceof HTMLElement && host instanceof HTMLElement) {
+        bindDrawerScrollFades(sheet);
+        requestAnimationFrame(() => updateScrollFade(body, host));
+      }
     };
 
     document.querySelectorAll('[data-mobile-more-open]').forEach((btn) => {
