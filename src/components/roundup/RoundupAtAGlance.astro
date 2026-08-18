@@ -2,6 +2,7 @@
 import type { AtGlanceData, AtGlanceStat } from '../../data/roundups/ai-girlfriend';
 import { atGlanceValueTone } from '../../lib/roundup/atGlance';
 import InfoIcon from '../ui/InfoIcon.astro';
+import MultiValueDisplay from '../ui/MultiValueDisplay.astro';
 
 interface Props {
   atGlance?: AtGlanceData;
@@ -44,7 +45,19 @@ function valueClass(value: string): string {
                       <dt class="roundup-at-glance__label-row">
                         <span class="roundup-at-glance__label">{item.label}</span>
                       </dt>
-                      <dd class={valueClass(item.value)}>{item.value}</dd>
+                      {
+                        item.values && item.values.length > 0 ? (
+                          <dd class={valueClass(item.value)}>
+                            <MultiValueDisplay
+                              values={item.values}
+                              uid={`${pickSlug}-${item.id}`}
+                              muted={atGlanceValueTone(item.value) === 'muted'}
+                            />
+                          </dd>
+                        ) : (
+                          <dd class={valueClass(item.value)}>{item.value}</dd>
+                        )
+                      }
                     </div>
                   </div>
                 ))
@@ -91,7 +104,19 @@ function valueClass(value: string): string {
                             )
                           }
                         </dt>
-                        <dd class={valueClass(item.value)}>{item.value}</dd>
+                        {
+                        item.values && item.values.length > 0 ? (
+                          <dd class={valueClass(item.value)}>
+                            <MultiValueDisplay
+                              values={item.values}
+                              uid={`${pickSlug}-${item.id}`}
+                              muted={atGlanceValueTone(item.value) === 'muted'}
+                            />
+                          </dd>
+                        ) : (
+                          <dd class={valueClass(item.value)}>{item.value}</dd>
+                        )
+                      }
                       </div>
                       {
                         item.tooltip && (

@@ -3,7 +3,7 @@ import { homeMeta } from '../../data/homepage';
 import { buildMegaMenuColumns } from '../../data/nav-mega-menu';
 import { buildSearchIndex } from '../../data/site-search';
 import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
-import { imageSrcSet, optimizedImageUrl } from '../../lib/media/optimize';
+import { heroImageSrcSet, optimizedHeroImageUrl } from '../../lib/media/optimize';
 
 interface Props {
   heroImage?: string;
@@ -14,8 +14,8 @@ const { heroImage = homeMeta.heroImage, heroImageAlt = homeMeta.heroImageAlt } =
 const publishedProducts = await loadComparisonProducts();
 const megaMenuColumns = buildMegaMenuColumns(publishedProducts);
 const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
-const heroSrc = optimizedImageUrl(heroImage, { width: 640, quality: 72, dpr: 1 });
-const heroSrcSet = imageSrcSet(heroImage, [400, 640, 800], 72);
+const heroSrc = optimizedHeroImageUrl(heroImage, 640);
+const heroSrcSet = heroImageSrcSet(heroImage, [480, 640, 960, 1280]);
 ---
 
 <section class="home-hero" aria-labelledby="home-hero-title">

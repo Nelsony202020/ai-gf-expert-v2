@@ -1,7 +1,7 @@
 ---
 import type { HomeRecentUpdate } from '../../data/homepage';
 import ScorePill from '../review/ScorePill.astro';
-import { optimizedImageUrl } from '../../lib/media/optimize';
+import { optimizedCardImageUrl } from '../../lib/media/optimize';
 
 interface Props {
   updates: HomeRecentUpdate[];
@@ -23,7 +23,7 @@ const { updates } = Astro.props;
     {
       updates.map((item) => (
         <a href={item.href} class="home-update-card">
-          <img class="home-update-card__thumb" src={optimizedImageUrl(item.image, { width: 88, quality: 70, dpr: 1, format: 'jpeg' })} alt={item.imageAlt} width="88" height="88" loading="lazy" decoding="async" />
+          <img class="home-update-card__thumb" src={optimizedCardImageUrl(item.image, 88)} alt={item.imageAlt} width="88" height="88" loading="lazy" decoding="async" />
           <div>
             {item.badge && <span class="home-update-card__badge">{item.badge}</span>}
             <h3 class="home-update-card__title">{item.title}</h3>

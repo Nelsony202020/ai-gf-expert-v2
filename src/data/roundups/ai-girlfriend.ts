@@ -37,7 +37,10 @@ export interface AtGlanceStat {
   id: string;
   icon: string;
   label: string;
+  /** Plain-text fallback (single values, pricing rows, muted states). */
   value: string;
+  /** When set, rendered with dot-separated multi-value display + overflow popover. */
+  values?: string[];
   tooltip?: AtGlanceTooltip;
 }
 
@@ -380,7 +383,7 @@ const fileRoundup: Roundup = {
   title: 'Best AI Girlfriend Apps',
   titleYear: 2026,
   featuredImage: '/brand/herman-youtube-review.png',
-  featuredImageAlt: 'Collage of top AI girlfriend app interfaces tested in 2026',
+  featuredImageAlt: 'Best AI girlfriend 2026 by ai girlfriend expert',
   metaDescription:
     'We tested and ranked the best AI girlfriend apps of 2026. Compare conversation quality, customization, images, privacy, and pricing — updated by independent reviewers.',
   reviewedDate: 'Jan 15, 2026',

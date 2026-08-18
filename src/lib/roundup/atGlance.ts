@@ -3,6 +3,7 @@ import type { Product } from '../../data/products';
 import type { PricingTabViewModel } from '../pricing-tab/types';
 import { fmtMoney } from '../pricing/calc';
 import { reviewPageUrl } from '../slugs';
+import { splitJoinedValues } from '../ui/multiValueDisplay';
 
 const PRICING_MODEL_LABELS: Record<string, string> = {
   subscription_only: 'Subscription only',
@@ -47,13 +48,14 @@ const STYLE_LABELS: Record<string, string> = {
   anime: 'Anime',
   fantasy: 'Fantasy',
   'semi-realistic': 'Semi-realistic',
-  '2d': '2D',
-  '2d / cartoon': '2D',
+  '2d': '2D / cartoon',
+  '2d / cartoon': '2D / cartoon',
+  cartoon: '2D / cartoon',
   '3d': '3D',
   '3d render': '3D',
 };
 
-function normalizeStyleToken(token: string): string | null {
+function normalizeStyleLabel(token: string): string | null {
   const trimmed = token.trim();
   if (!trimmed || trimmed === '—') return null;
   if (/^\d+$/.test(trimmed)) return null;
@@ -63,13 +65,11 @@ function normalizeStyleToken(token: string): string | null {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
 
-function normalizeStylesList(raw: string): string | null {
-  const parts = raw
-    .split(/[,·+/]|(?:\s+and\s+)/i)
-    .map(normalizeStyleToken)
+function parseStyleValues(raw: string): string[] {
+  const parts = splitJoinedValues(raw)
+    .map(normalizeStyleLabel)
     .filter((part): part is string => Boolean(part));
-  if (parts.length === 0) return null;
-  return [...new Set(parts)].join(' + ');
+  return [...new Set(parts)];
 }
 
 function findContributorValue(product: Product, label: string): string | null {
@@ -94,31 +94,31 @@ function parseYesNo(value: string | null): boolean | null {
   return null;
 }
 
-function characterStylesFromTesting(product: Product): string | null {
-  const charactersCat = product.categories.find((c) => c.key === 'characters');
-  if (!charactersCat) return null;
-
-  for (const sub of charactersCat.subscores) {
-    const stylesRow = sub.contributors.find((c) => c.label.trim().toLowerCase() === 'styles');
-    const raw = stylesRow?.value?.trim();
-    if (!raw || raw === '—') continue;
-    const normalized = normalizeStylesList(raw);
-    if (normalized) return normalized;
-  }
-  return null;
+function characterStylesFromTesting(product: Product): string[] | null {
+  const raw = findContributorValue(product, 'Styles');
+  if (!raw) return null;
+  const parsed = parseStyleValues(raw);
+  return parsed.length > 0 ? parsed : null;
 }
 
-function formatCharacterStyles(product: Product): string {
+function formatCharacterStyles(product: Product): Pick<AtGlanceStat, 'value' | 'values'> {
   const fromTesting = characterStylesFromTesting(product);
-  if (fromTesting) return fromTesting;
+  if (fromTesting) {
+    return {
+      value: fromTesting.join(' · '),
+      values: fromTesting,
+    };
+  }
 
   const caps = product.capabilities;
   const styles: string[] = [];
   if (caps?.realisticCharacters) styles.push('Realistic');
   if (caps?.animeCharacters) styles.push('Anime');
-  if (styles.length > 0) return styles.join(' + ');
+  if (styles.length > 0) {
+    return { value: styles.join(' · '), values: styles };
+  }
 
-  return unavailable();
+  return { value: unavailable() };
 }
 
 function formatAiPhoneCalls(product: Product, vm: PricingTabViewModel): string {
@@ -156,34 +156,40 @@ function formatVoiceMessages(product: Product): string {
   return notTested();
 }
 
-function formatVideoFromTesting(product: Product): string | null {
+function videoValuesFromTesting(product: Product): string[] | null {
   const hasText = parseYesNo(findContributorValue(product, 'Text-to-Video'));
   const hasImage = parseYesNo(findContributorValue(product, 'Image-to-Video'));
 
-  if (hasText === true && hasImage === true) return 'Text + image-to-video';
-  if (hasImage === true) return 'Image-to-video';
-  if (hasText === true) return 'Text-to-video';
-  if (hasText === false && hasImage === false) return 'No';
+  if (hasText === true && hasImage === true) return ['Image → Video', 'Text → Video'];
+  if (hasImage === true) return ['Image → Video'];
+  if (hasText === true) return ['Text → Video'];
+  if (hasText === false && hasImage === false) return [];
   return null;
 }
 
-function formatVideoGenerator(product: Product, vm: PricingTabViewModel): string {
-  const fromTesting = formatVideoFromTesting(product);
-  if (fromTesting) return fromTesting;
+function formatVideoGenerator(product: Product, vm: PricingTabViewModel): Pick<AtGlanceStat, 'value' | 'values'> {
+  const fromTesting = videoValuesFromTesting(product);
+  if (fromTesting !== null) {
+    if (fromTesting.length === 0) return { value: unavailable() };
+    return { value: fromTesting.join(' · '), values: fromTesting };
+  }
 
   const caps = product.capabilities;
-  if (caps?.videoGeneration === false) return 'No';
+  if (caps?.videoGeneration === false) return { value: unavailable() };
 
   const hasText = hasFeatureCost(vm, ['text_to_video']);
   const hasImage = hasFeatureCost(vm, ['image_to_video']);
   const hasStandard = hasFeatureCost(vm, ['standard_video', 'premium_video']);
 
-  if (hasText && hasImage) return 'Text + image-to-video';
-  if (hasImage) return 'Image-to-video';
-  if (hasText) return 'Text-to-video';
-  if (hasStandard || caps?.videoGeneration === true) return 'Yes';
+  if (hasText && hasImage) {
+    const values = ['Image → Video', 'Text → Video'];
+    return { value: values.join(' · '), values };
+  }
+  if (hasImage) return { value: 'Image → Video', values: ['Image → Video'] };
+  if (hasText) return { value: 'Text → Video', values: ['Text → Video'] };
+  if (hasStandard || caps?.videoGeneration === true) return { value: 'Yes' };
 
-  return notTested();
+  return { value: notTested() };
 }
 
 function hasFeatureCost(vm: PricingTabViewModel, keys: string[]): boolean {
@@ -282,10 +288,11 @@ function stat(
   id: string,
   icon: string,
   label: string,
-  value: string,
+  display: string | Pick<AtGlanceStat, 'value' | 'values'>,
   tooltip?: AtGlanceTooltip,
 ): AtGlanceStat {
-  return { id, icon, label, value, ...(tooltip ? { tooltip } : {}) };
+  const resolved = typeof display === 'string' ? { value: display } : display;
+  return { id, icon, label, ...resolved, ...(tooltip ? { tooltip } : {}) };
 }
 
 /** Build feature + pricing rows for the roundup at-a-glance section. */
@@ -302,13 +309,15 @@ export function buildAtGlanceStats(product: Product, vm: PricingTabViewModel): A
       : product.pricingDisplay.typicalMonthly?.trim() || unavailable();
 
   const powerValue = formatMonthlyEstimate(vm.powerUserMonthly, vm.currency);
+  const characterStyles = formatCharacterStyles(product);
+  const videoGenerator = formatVideoGenerator(product, vm);
 
   return {
     features: [
-      stat('character-styles', 'face_retouching_natural', 'Character styles', formatCharacterStyles(product)),
+      stat('character-styles', 'face_retouching_natural', 'Character styles', characterStyles),
       stat('ai-phone-calls', 'call', 'AI phone calls', formatAiPhoneCalls(product, vm)),
       stat('voice-messages', 'mic', 'Voice messages', formatVoiceMessages(product)),
-      stat('video-generator', 'videocam', 'Video generator', formatVideoGenerator(product, vm)),
+      stat('video-generator', 'videocam', 'Video generator', videoGenerator),
     ],
     pricing: [
       stat('pricing-model', 'toll', 'Pricing model', formatPricingModel(product, vm)),

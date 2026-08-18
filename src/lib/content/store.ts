@@ -23,13 +23,9 @@ import { getDb, isDbConfigured } from '../db/server';
 import { env } from '../env';
 import { lowestPlainMonthlyPrice } from '../pricing/calc';
 import {
-  getMediaPlacement,
-  isHeroMedia,
   isPublicMedia,
   productMediaItems,
   collectProductMediaRows,
-  sortGalleryMedia,
-  sortHeroMedia,
   buildMediaLookup,
 } from '../media/catalog';
 import { resolveMediaUrl, isUsablePublicMediaUrl } from '../media/url';
@@ -263,19 +259,6 @@ function mapProduct(
   const mediaItems = productMediaItems(dbProduct);
   const reviewMediaById = buildMediaLookup(collectProductMediaRows(dbProduct));
 
-  const heroGalleryRaw: GalleryImage[] = sortHeroMedia(publicMedia.filter((m: any) => isHeroMedia(m)))
-    .map((m: any) => {
-      const url = resolveMediaUrl(m);
-      if (!url || !isUsablePublicMediaUrl(url)) return null;
-      return {
-        full: url,
-        thumb: url,
-        alt: m.altText ?? '',
-        mediaType: m.mediaType === 'video' ? 'video' : 'image',
-      } satisfies GalleryImage;
-    })
-    .filter((g): g is GalleryImage => g !== null);
-
   const featuredMedia = dbProduct.featuredImage;
   const featuredUrl = resolveMediaUrl(featuredMedia);
   const featuredImage: GalleryImage | undefined =
@@ -283,33 +266,31 @@ function mapProduct(
       ? { full: featuredUrl, thumb: featuredUrl, alt: featuredMedia?.altText ?? '', mediaType: 'image' }
       : fileFallback?.featuredImage ?? fileFallback?.gallery?.[0];
 
-  const prependFeatured = (images: GalleryImage[]): GalleryImage[] => {
-    if (!featuredImage?.full) return images;
-    const rest = images.filter((img) => img.full !== featuredImage.full);
-    return [featuredImage, ...rest];
-  };
+  const popArtMedia = dbProduct.secondaryLogo;
+  const popArtUrl = resolveMediaUrl(popArtMedia);
+  const popArtImage: GalleryImage | undefined =
+    popArtUrl && isUsablePublicMediaUrl(popArtUrl)
+      ? {
+          full: popArtUrl,
+          thumb: popArtUrl,
+          alt: popArtMedia?.altText ?? `${dbProduct.name} pop art logo`,
+          mediaType: 'image',
+        }
+      : undefined;
 
-  // Featured image first, then hero-tagged media (deduped). Fall back to featured-only when no heroes.
-  const heroGallery: GalleryImage[] =
-    heroGalleryRaw.length > 0
-      ? prependFeatured(heroGalleryRaw)
-      : featuredImage?.full
-        ? [featuredImage]
-        : [];
+  // Review page hero carousel: custom featured art only.
+  const heroGallery: GalleryImage[] = featuredImage?.full
+    ? [featuredImage]
+    : fileFallback?.featuredImage?.full
+      ? [fileFallback.featuredImage]
+      : fileFallback?.heroGallery?.slice(0, 1) ?? [];
 
-  const gallerySource = heroGallery.length
-    ? heroGallery
-    : prependFeatured(
-        sortGalleryMedia(publicMedia.filter((m: any) => getMediaPlacement(m) === 'gallery' && m.mediaType === 'image'))
-          .map((m: any) => {
-            const url = resolveMediaUrl(m);
-            if (!url || !isUsablePublicMediaUrl(url)) return null;
-            return { full: url, thumb: url, alt: m.altText ?? '' };
-          })
-          .filter((g): g is GalleryImage => g !== null),
-      );
-
-  const gallery: GalleryImage[] = gallerySource;
+  // Directory / roundup pick cards: pop-art brand image only (no testing screenshots).
+  const gallery: GalleryImage[] = popArtImage
+    ? [popArtImage]
+    : featuredImage?.full
+      ? [featuredImage]
+      : fileFallback?.gallery?.slice(0, 1) ?? [];
 
   const activeLink =
     (dbProduct.affiliateLinks ?? []).find(
@@ -659,6 +640,7 @@ export async function loadRoundupForPublic(
       roundups: {
         $: { where: { slug } },
         entries: { product: {} },
+        heroImage: { file: {} },
       },
     });
     const dbRoundup = (roundups as any[])?.find((r) => !r.deletedAt);
@@ -670,6 +652,9 @@ export async function loadRoundupForPublic(
     const resolvedPicks = resolveRoundupPicks(fileTemplate.picks, publishedProducts, entryMeta);
     const picks = await enrichPicksWithAtGlance(resolvedPicks, productsBySlug);
 
+    const heroFromMedia = resolveMediaUrl(dbRoundup?.heroImage);
+    const featuredSource = heroFromMedia || dbRoundup?.ogImageUrl || fileTemplate.featuredImage;
+
     const roundup = enrichRoundupWithPicks(
       {
         ...fileTemplate,
@@ -678,9 +663,7 @@ export async function loadRoundupForPublic(
               title: dbRoundup.title ?? fileTemplate.title,
               metaDescription: dbRoundup.seoDescription ?? fileTemplate.metaDescription,
               featuredImage: cdnAsset(
-                isPlaceholderImage(dbRoundup.ogImageUrl ?? fileTemplate.featuredImage)
-                  ? PUBLIC_HERO_FALLBACK
-                  : (dbRoundup.ogImageUrl ?? fileTemplate.featuredImage),
+                isPlaceholderImage(featuredSource) ? PUBLIC_HERO_FALLBACK : featuredSource,
               ),
             }
           : {}),
@@ -782,6 +765,7 @@ const PUBLISHED_PRODUCTS_QUERY = {
   media: { file: {} },
   logo: { file: {} },
   featuredImage: { file: {} },
+  secondaryLogo: { file: {} },
   subscriptionPlans: {},
   affiliateLinks: {},
   characters: { image: { file: {} }, affiliateLink: {}, storySlides: { media: { file: {} } } },
@@ -854,6 +838,7 @@ async function loadPublishedProductsUncached(fileProducts: Product[]): Promise<P
     return out;
   } catch (error) {
     console.error('[content] published products load failed — using file data', error);
+    if (publishedProductsCache) return publishedProductsCache.products;
     return fileProducts;
   }
 }
@@ -1002,6 +987,7 @@ const PREVIEW_PRODUCT_QUERY = {
   media: { file: {} },
   logo: { file: {} },
   featuredImage: { file: {} },
+  secondaryLogo: { file: {} },
   subscriptionPlans: {},
   affiliateLinks: {},
   characters: { image: { file: {} }, affiliateLink: {}, storySlides: { media: { file: {} } } },
@@ -1150,7 +1136,10 @@ export async function loadPublishedProductBySlug(slug: string): Promise<Product 
     console.error('[content] published product load failed', error);
   }
 
-  return fileProduct ?? null;
+  const cached = publishedProductsCache?.products.find((p) => p.slug === slug);
+  if (cached) return cached;
+
+  return fileProduct ?? (await roundupProductFallbackAsync(slug));
 }
 
 /** Slugs for prerendering live review pages at build time. */
@@ -1252,6 +1241,16 @@ export async function loadReviewPageProduct(slug: string): Promise<ReviewPageLoa
     if (product) {
       return { product, isDraft: false, useDraftRatings: false };
     }
+  }
+
+  // DB status unknown or transient fetch failure — last-chance preview/roundup load.
+  const preview = await loadProductPreviewBySlug(slug);
+  if (preview && preview.overallScore != null) {
+    return {
+      product: preview,
+      isDraft: dbStatus !== 'published',
+      useDraftRatings: dbStatus !== 'published',
+    };
   }
 
   return null;

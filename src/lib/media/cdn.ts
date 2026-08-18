@@ -33,6 +33,12 @@ function isSameOriginPublicAsset(path: string): boolean {
   return SAME_ORIGIN_PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
+/** True when a /public asset should stay on the app origin (not the pull zone). */
+export function isLocalPublicAsset(path: string): boolean {
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  return isDevRuntime() || isSameOriginPublicAsset(normalized);
+}
+
 function isDevRuntime(): boolean {
   const metaEnv = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env;
   if (metaEnv?.DEV) return true;
@@ -47,7 +53,7 @@ export function cdnAsset(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`;
 
   // Local dev + unreleased brand files: serve from Astro/public, not the pull zone.
-  if (isDevRuntime() || isSameOriginPublicAsset(normalized)) {
+  if (isLocalPublicAsset(normalized)) {
     return normalized;
   }
 

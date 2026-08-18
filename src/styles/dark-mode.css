@@ -13,14 +13,14 @@ html[data-theme='dark'] body.bg-white {
   color: #f1f5f9;
 }
 
-/* Header / footer chrome */
+/* Header / footer chrome — frosted glass (tokens in header.css) */
 html[data-theme='dark'] .site-header {
-  background-color: #0f172a !important;
-  border-bottom-color: #1e293b !important;
+  background-color: var(--site-header-glass-bg) !important;
+  border-bottom-color: var(--site-header-glass-border) !important;
 }
 
 html[data-theme='dark'] .site-header__mobile-menu {
-  background: #0f172a !important;
+  background: var(--color-header-surface) !important;
   border-top-color: #1e293b !important;
 }
 
@@ -93,8 +93,8 @@ html[data-theme='dark'] .review-tabbar {
 }
 
 html[data-theme='dark'] .review-tabbar.review-tabbar--pinned {
-  background-color: var(--color-header-surface) !important;
-  border-color: #1e293b !important;
+  background-color: var(--site-header-glass-bg) !important;
+  border-color: var(--site-header-glass-border) !important;
 }
 
 /* Homepage tags & misc surfaces */

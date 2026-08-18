@@ -1,8 +1,40 @@
 /* Site header — mega menu, inline search, dark mode */
 
+:root {
+  --site-header-glass-bg: rgb(248 250 243 / 78%);
+  --site-header-glass-border: rgb(26 36 24 / 8%);
+  --site-header-glass-blur: 10px;
+  --site-header-glass-saturate: 140%;
+  --mobile-nav-sheet-glass-bg: rgb(248 250 243 / 88%);
+  --mobile-nav-sheet-glass-border: rgb(26 36 24 / 10%);
+  /* Bottom nav pill only — matches site header frost */
+  --mobile-nav-pill-glass-bg: rgb(248 250 243 / 82%);
+  --mobile-nav-pill-glass-border: rgb(26 36 24 / 10%);
+}
+
+[data-theme='dark'] {
+  --site-header-glass-bg: rgb(15 23 42 / 82%);
+  --site-header-glass-border: rgb(255 255 255 / 8%);
+  --mobile-nav-sheet-glass-bg: rgb(15 23 42 / 88%);
+  --mobile-nav-sheet-glass-border: rgb(255 255 255 / 10%);
+  --mobile-nav-pill-glass-bg: rgb(15 23 42 / 86%);
+  --mobile-nav-pill-glass-border: rgb(255 255 255 / 10%);
+}
+
 .site-header {
-  background-color: var(--color-header-surface);
-  border-bottom: 1px solid #e5e9df;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--site-header-glass-bg);
+  border-bottom: 1px solid var(--site-header-glass-border);
+  backdrop-filter: blur(var(--site-header-glass-blur)) saturate(var(--site-header-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--site-header-glass-blur)) saturate(var(--site-header-glass-saturate));
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header {
+    background-color: var(--color-header-surface);
+  }
 }
 
 .site-header__inner {
@@ -100,7 +132,7 @@
 
 .site-header__mobile-menu {
   border-top: 1px solid #e5e9df;
-  background: #f8faf3;
+  background: var(--color-header-surface);
   padding: 0.75rem 1rem 1rem;
 }
 
@@ -152,7 +184,8 @@
     overscroll-behavior: contain;
     border-top: 1px solid #e5e9df;
     border-radius: 16px 16px 0 0;
-    background: #f8faf3;
+    background: var(--color-header-surface);
+    box-shadow: 0 -8px 40px rgb(0 0 0 / 10%);
     padding: 0.5rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
     transform: translateY(100%);
     transition: transform 0.34s cubic-bezier(0.32, 0.72, 0, 1);
@@ -541,10 +574,8 @@ body.site-header-menu-open {
   max-height: min(60vh, 420px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: rgb(255 255 255 / 94%);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid rgb(255 255 255 / 70%);
+  background: var(--color-surface-container-lowest);
+  border: 1px solid var(--color-surface-variant);
   border-radius: 16px;
   box-shadow: 0 16px 40px rgb(20 20 20 / 12%);
   z-index: 60;
@@ -938,14 +969,14 @@ body.site-header-menu-open {
   color: rgb(255 255 255 / 65%);
 }
 
-/* Dark mode */
+/* Dark mode — glass tokens (see also dark-mode.css) */
 [data-theme='dark'] .site-header {
-  background-color: var(--color-header-surface);
-  border-bottom-color: #1e293b;
+  background-color: var(--site-header-glass-bg);
+  border-bottom-color: var(--site-header-glass-border);
 }
 
 [data-theme='dark'] .site-header__mobile-menu {
-  background: #0f172a;
+  background: var(--color-header-surface);
   border-top-color: #1e293b;
 }
 

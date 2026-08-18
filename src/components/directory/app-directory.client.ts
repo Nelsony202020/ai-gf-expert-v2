@@ -315,7 +315,8 @@ export function initAppDirectory() {
   }
 
   function setView(view: DirectoryView, persist = true) {
-    if (view === currentView) return;
+    const domView = grid?.dataset.view;
+    if (view === currentView && domView === view) return;
     grid?.classList.add('is-switching');
     window.setTimeout(() => {
       currentView = view;

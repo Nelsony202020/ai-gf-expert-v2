@@ -83,7 +83,11 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
   title={head.title}
   description={head.metaDescription}
   image={head.ogImage ?? undefined}
-  lcpImage={product.gallery[0]?.mediaType === 'video' ? undefined : product.gallery[0]?.full}
+  lcpImage={
+    product.heroGallery?.[0]?.mediaType === 'video'
+      ? undefined
+      : product.heroGallery?.[0]?.full ?? product.featuredImage?.full
+  }
   canonical={head.canonical}
   ogTitle={head.ogTitle}
   ogDescription={head.ogDescription}
