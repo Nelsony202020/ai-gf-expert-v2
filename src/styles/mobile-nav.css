@@ -7,8 +7,8 @@
   --mobile-nav-float-inset-x: 0.875rem;
   --mobile-nav-float-bottom: 0.5rem;
   --mobile-nav-page-gap: 1.25rem;
-  --mobile-nav-glass-bg: var(--mobile-nav-pill-glass-bg, rgb(248 250 243 / 82%));
-  --mobile-nav-glass-border: var(--mobile-nav-pill-glass-border, rgb(26 36 24 / 10%));
+  --mobile-nav-glass-bg: var(--site-header-glass-bg);
+  --mobile-nav-glass-border: var(--site-header-glass-border);
   --mobile-nav-glass-shadow: 0 8px 30px rgb(20 20 20 / 10%);
 }
 
@@ -59,8 +59,7 @@
   height: auto;
   padding: 0 var(--mobile-nav-float-inset-x)
     calc(var(--mobile-nav-float-bottom) + env(safe-area-inset-bottom, 0px));
-  /* Opaque page bg under the pill + home-indicator — stops score colors bleeding into Safari chrome */
-  background: var(--color-background);
+  background: transparent;
   border: none;
   box-shadow: none;
   backdrop-filter: none;
@@ -69,7 +68,7 @@
 }
 
 .mobile-bottom-nav--glass {
-  background: var(--color-background);
+  background: transparent;
   border: none;
   box-shadow: none;
   backdrop-filter: none;
@@ -82,11 +81,13 @@
   padding: 0 0.125rem;
   overflow: hidden;
   border-radius: 1.5rem;
-  background: var(--mobile-nav-glass-bg);
-  backdrop-filter: blur(var(--site-header-glass-blur, 10px)) saturate(var(--site-header-glass-saturate, 140%));
-  -webkit-backdrop-filter: blur(var(--site-header-glass-blur, 10px)) saturate(var(--site-header-glass-saturate, 140%));
-  border: 1px solid var(--mobile-nav-glass-border);
+  background-color: var(--site-header-glass-bg);
+  backdrop-filter: blur(var(--site-header-glass-blur)) saturate(var(--site-header-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--site-header-glass-blur)) saturate(var(--site-header-glass-saturate));
+  border: 1px solid var(--site-header-glass-border);
   box-shadow: var(--mobile-nav-glass-shadow);
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -223,18 +224,6 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
-  }
-}
-
-[data-theme='dark'] .mobile-bottom-nav__pill-inner {
-  background: rgb(25 25 25 / 78%);
-  border-color: rgb(255 255 255 / 10%);
-  box-shadow: 0 8px 30px rgb(0 0 0 / 28%);
-}
-
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  [data-theme='dark'] .mobile-bottom-nav__pill-inner {
-    background: rgb(25 25 25 / 94%);
   }
 }
 
@@ -656,8 +645,9 @@
 }
 
 [data-theme='dark'] .mobile-bottom-nav__pill-inner {
-  background: var(--mobile-nav-glass-bg);
-  border-color: var(--mobile-nav-glass-border);
+  background-color: var(--site-header-glass-bg);
+  border-color: var(--site-header-glass-border);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 28%);
 }
 
 [data-theme='dark'] .mobile-roundup-contents__btn,

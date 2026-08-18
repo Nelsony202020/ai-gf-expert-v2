@@ -48,13 +48,14 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
 <script>
   function initReviewMobileNavSheet() {
     const sheet = document.querySelector<HTMLElement>('[data-review-section-toc]');
-    if (!sheet || sheet.dataset.bound === 'true') return;
-    sheet.dataset.bound = 'true';
+    if (!sheet) return;
 
     const listEl = sheet.querySelector<HTMLElement>('[data-review-toc-list]');
     const sectionEl = sheet.querySelector<HTMLElement>('[data-review-toc-section]');
     const emptyEl = sheet.querySelector<HTMLElement>('[data-review-toc-empty]');
-    if (!listEl || !sectionEl || !emptyEl) return;
+    if (!listEl || !emptyEl) return;
+    if (sheet.dataset.bound === 'true') return;
+    sheet.dataset.bound = 'true';
 
     let tabLabels: Record<string, string> = {};
     try {
@@ -86,13 +87,14 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
       categoryKey?: string;
       verdictId?: string;
       mediaJump?: string;
+      tabId: string;
     };
 
     function cleanLabel(raw: string): string {
       return raw.replace(/\s+/g, ' ').trim();
     }
 
-    function collectExplicit(panel: HTMLElement): TocItem[] {
+    function collectExplicit(panel: HTMLElement, tabId: string): TocItem[] {
       return Array.from(panel.querySelectorAll<HTMLElement>('[data-page-toc]'))
         .map((el) => {
           const label = cleanLabel(el.getAttribute('data-page-toc') || '');
@@ -102,12 +104,13 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
             label,
             id: el.id || undefined,
             level: levelAttr === 3 ? (3 as const) : (2 as const),
+            tabId,
           };
         })
         .filter((item): item is TocItem => Boolean(item));
     }
 
-    function collectReview(panel: HTMLElement): TocItem[] {
+    function collectReview(panel: HTMLElement, tabId: string): TocItem[] {
       const links = Array.from(panel.querySelectorAll<HTMLAnchorElement>('[data-review-toc-link]'));
       if (links.length) {
         return links
@@ -118,12 +121,11 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
             const levelAttr = Number(a.dataset.reviewTocLevel || 0);
             const fromLi = a.closest('.review-toc__item--h3') ? 3 : 2;
             const level: 2 | 3 = levelAttr === 3 || levelAttr === 2 ? (levelAttr as 2 | 3) : fromLi;
-            return { label, id, level };
+            return { label, id, level, tabId };
           })
           .filter((item): item is TocItem => Boolean(item));
       }
 
-      // Fallback: walk rendered headings (H3 section / H4 subheading)
       return Array.from(panel.querySelectorAll<HTMLElement>('h2.review-heading[id], h3.review-heading[id], h4.review-heading[id]'))
         .map((el) => {
           const label = cleanLabel(
@@ -131,12 +133,12 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
           );
           if (!label || !el.id) return null;
           const level: 2 | 3 = el.tagName === 'H4' ? 3 : 2;
-          return { label, id: el.id, level };
+          return { label, id: el.id, level, tabId };
         })
         .filter((item): item is TocItem => Boolean(item));
     }
 
-    function collectRatings(panel: HTMLElement): TocItem[] {
+    function collectRatings(panel: HTMLElement, tabId: string): TocItem[] {
       return Array.from(panel.querySelectorAll<HTMLElement>('[data-category]'))
         .map((el) => {
           const key = el.dataset.category;
@@ -144,12 +146,12 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
             el.querySelector('.ratings-accordion__title')?.textContent || key || '',
           );
           if (!key || !label) return null;
-          return { label, id: el.id || undefined, categoryKey: key, level: 2 as const };
+          return { label, id: el.id || undefined, categoryKey: key, level: 2 as const, tabId };
         })
         .filter((item): item is TocItem => Boolean(item));
     }
 
-    function collectOverview(panel: HTMLElement): TocItem[] {
+    function collectOverview(panel: HTMLElement, tabId: string): TocItem[] {
       const jumpOptions = Array.from(
         panel.querySelectorAll<HTMLElement>('[data-verdict-jump-option]'),
       );
@@ -171,7 +173,7 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
       const items: TocItem[] = source
         .map((entry) => {
           if (!entry.id || !entry.label) return null;
-          return { label: entry.label, verdictId: entry.id, level: 2 as const };
+          return { label: entry.label, verdictId: entry.id, level: 2 as const, tabId };
         })
         .filter((item): item is TocItem => Boolean(item));
 
@@ -181,13 +183,14 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
           label: 'Featured characters',
           id: characters.id || 'overview-characters',
           level: 2,
+          tabId,
         });
       }
 
       return items;
     }
 
-    function collectMedia(panel: HTMLElement): TocItem[] {
+    function collectMedia(panel: HTMLElement, tabId: string): TocItem[] {
       return Array.from(panel.querySelectorAll<HTMLElement>('[data-overview-panel]'))
         .map((el) => {
           const label = cleanLabel(el.querySelector('.media-overview__title')?.textContent || '');
@@ -197,12 +200,12 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
           if (!el.id) {
             el.id = `media-${el.dataset.overviewPanel || label.toLowerCase().replace(/\s+/g, '-')}`;
           }
-          return { label, id: el.id, mediaJump, level: 2 as const };
+          return { label, id: el.id, mediaJump, level: 2 as const, tabId };
         })
         .filter((item): item is TocItem => Boolean(item));
     }
 
-    function collectGenericHeadings(panel: HTMLElement): TocItem[] {
+    function collectGenericHeadings(panel: HTMLElement, tabId: string): TocItem[] {
       return Array.from(panel.querySelectorAll<HTMLElement>('h2[id], h3[id], h4[id], [data-page-toc]'))
         .map((el) => {
           const label = cleanLabel(el.getAttribute('data-page-toc') || el.textContent || '');
@@ -211,20 +214,37 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
           if (!id && !el.hasAttribute('data-page-toc')) return null;
           const tag = el.tagName;
           const level: 2 | 3 = tag === 'H4' ? 3 : 2;
-          return { label, id, level };
+          return { label, id, level, tabId };
         })
         .filter((item): item is TocItem => Boolean(item));
     }
 
     function collectToc(tabId: string, panel: HTMLElement): TocItem[] {
-      const explicit = collectExplicit(panel);
+      const explicit = collectExplicit(panel, tabId);
       if (explicit.length) return explicit;
 
-      if (tabId === 'review') return collectReview(panel);
-      if (tabId === 'ratings') return collectRatings(panel);
-      if (tabId === 'overview') return collectOverview(panel);
-      if (tabId === 'photos') return collectMedia(panel);
-      return collectGenericHeadings(panel);
+      if (tabId === 'review') return collectReview(panel, tabId);
+      if (tabId === 'ratings') return collectRatings(panel, tabId);
+      if (tabId === 'overview') return collectOverview(panel, tabId);
+      if (tabId === 'photos') return collectMedia(panel, tabId);
+      return collectGenericHeadings(panel, tabId);
+    }
+
+    function switchToTab(tabId: string): Promise<void> {
+      return new Promise((resolve) => {
+        const activeTab = getActiveTabId();
+        if (activeTab === tabId) {
+          resolve();
+          return;
+        }
+        const tabBtn = document.querySelector<HTMLButtonElement>(`[data-tabbar] [data-tab="${tabId}"]`);
+        if (!tabBtn) {
+          resolve();
+          return;
+        }
+        tabBtn.click();
+        window.setTimeout(resolve, 120);
+      });
     }
 
     function scrollToEl(el: HTMLElement) {
@@ -298,47 +318,65 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
     }
 
     function renderToc() {
-      const tabId = getActiveTabId();
-      const panel = getActivePanel(tabId);
-      const label = tabLabels[tabId] || tabId;
-      sectionEl.textContent = label;
+      if (sectionEl) sectionEl.hidden = true;
 
       listEl.innerHTML = '';
-      const items = panel ? collectToc(tabId, panel) : [];
+      const activeTab = getActiveTabId();
+      let anyItems = false;
+      const tabOrder = Object.keys(tabLabels);
 
-      if (!items.length) {
+      tabOrder.forEach((tabId) => {
+        const panel = getActivePanel(tabId);
+        const items = panel ? collectToc(tabId, panel) : [];
+        if (!items.length) return;
+
+        anyItems = true;
+        const group = document.createElement('li');
+        group.className = 'roundup-nav-sheet__toc-group';
+        const eyebrow = document.createElement('p');
+        eyebrow.className = 'roundup-nav-sheet__section-eyebrow roundup-nav-sheet__section-eyebrow--in-list';
+        eyebrow.textContent = tabLabels[tabId] || tabId;
+        group.appendChild(eyebrow);
+
+        const subList = document.createElement('ul');
+        subList.className = 'roundup-nav-sheet__toc-sublist roundup-nav-sheet__toc-sublist--flat';
+
+        items.forEach((item) => {
+          const li = document.createElement('li');
+          if (item.level === 3) li.className = 'roundup-nav-sheet__toc-item--child';
+
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className =
+            item.level === 3
+              ? 'roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h3'
+              : 'roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h2';
+          btn.textContent = item.label;
+          if (item.id) btn.dataset.tocTarget = item.id;
+          btn.dataset.tocTab = tabId;
+          if (tabId === activeTab && item.id && item.id === resolveActiveId(items)) {
+            btn.classList.add('is-active');
+            btn.setAttribute('aria-current', 'true');
+          }
+
+          btn.addEventListener('click', () => {
+            closeSheet();
+            void switchToTab(tabId).then(() => activateItem(item));
+          });
+          li.appendChild(btn);
+          subList.appendChild(li);
+        });
+
+        group.appendChild(subList);
+        listEl.appendChild(group);
+      });
+
+      if (!anyItems) {
         emptyEl.hidden = false;
         return;
       }
 
       emptyEl.hidden = true;
-      const activeId = resolveActiveId(items);
-
-      items.forEach((item) => {
-        const li = document.createElement('li');
-        if (item.level === 3) li.className = 'roundup-nav-sheet__toc-item--child';
-
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className =
-          item.level === 3
-            ? 'roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h3'
-            : 'roundup-nav-sheet__toc-link roundup-nav-sheet__toc-link--h2';
-        btn.textContent = item.label;
-        if (item.id) btn.dataset.tocTarget = item.id;
-        if (item.id && item.id === activeId) {
-          btn.classList.add('is-active');
-          btn.setAttribute('aria-current', 'true');
-        }
-
-        btn.addEventListener('click', () => {
-          closeSheet();
-          requestAnimationFrame(() => activateItem(item));
-        });
-        li.appendChild(btn);
-        listEl.appendChild(li);
-      });
-
       const activeBtn = listEl.querySelector<HTMLElement>('.roundup-nav-sheet__toc-link.is-active');
       activeBtn?.scrollIntoView({ block: 'nearest' });
     }
@@ -349,7 +387,9 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
       document.body.classList.remove('roundup-sheet-open');
     }
 
-    function openSheet() {
+    function openSheet(e?: Event) {
+      e?.preventDefault();
+      e?.stopPropagation();
       renderToc();
       sheet.hidden = false;
       sheet.setAttribute('aria-hidden', 'false');
@@ -357,8 +397,8 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
     }
 
     document.querySelectorAll('[data-nav-sheet-open]').forEach((btn) => {
-      if ((btn as HTMLElement).dataset.bound === 'true') return;
-      (btn as HTMLElement).dataset.bound = 'true';
+      if ((btn as HTMLElement).dataset.reviewNavBound === 'true') return;
+      (btn as HTMLElement).dataset.reviewNavBound = 'true';
       btn.addEventListener('click', openSheet);
     });
 

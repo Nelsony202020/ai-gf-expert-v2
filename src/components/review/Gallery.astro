@@ -28,7 +28,7 @@ const galleryLightboxItems = JSON.stringify(
 ---
 
 <div class="space-y-3" data-gallery data-gallery-images={galleryLightboxItems}>
-  <div class="relative rounded-xl overflow-hidden aspect-[5/2] max-h-[min(52vw,420px)] shadow-lg border border-surface-variant/40 bg-[#141414] w-full">
+  <div class="relative rounded-xl overflow-hidden aspect-video shadow-lg border border-surface-variant/40 bg-surface-container w-full">
     <button
       type="button"
       class="relative w-full h-full block group cursor-zoom-in"
@@ -41,7 +41,7 @@ const galleryLightboxItems = JSON.stringify(
         data-gallery-main-img
         alt={hero?.alt ?? ''}
         class:list={[
-          'w-full h-full object-contain transition group-hover:scale-[1.01]',
+          'w-full h-full object-cover transition group-hover:scale-[1.01]',
           heroIsVideo ? 'hidden' : '',
         ]}
         src={heroImgSrc}
@@ -56,7 +56,7 @@ const galleryLightboxItems = JSON.stringify(
       <video
         data-gallery-main-video
         src={heroIsVideo ? hero?.full : undefined}
-        class:list={['w-full h-full object-contain pointer-events-none', heroIsVideo ? '' : 'hidden']}
+        class:list={['w-full h-full object-cover pointer-events-none', heroIsVideo ? '' : 'hidden']}
         muted
         playsinline
         preload="metadata"

@@ -95,7 +95,7 @@ const shareUrl = head.canonical;
   <main id="review-top">
     <ReviewHero product={product} shareUrl={shareUrl} pageHead={head} />
     {featuredIn.length > 0 && (
-      <div class="mx-auto max-w-6xl px-4 pt-3 text-sm text-white/60">
+      <div class="mx-auto max-w-6xl px-4 pt-3 text-sm text-white/60 hidden md:block">
         Also featured in:{' '}
         {featuredIn.map((f, i) => (
           <>

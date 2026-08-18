@@ -344,8 +344,9 @@ function subWinners(key: string, subName: string, ids: string[]) {
               rel="nofollow sponsored noopener"
               data-compare-visit={pickId}
             >
-              Visit {pick.name}
-              <span class="material-symbols-outlined roundup-compare__visit-cta-icon" aria-hidden="true">arrow_outward</span>
+              <span class="roundup-compare__visit-cta-prefix">Visit </span>
+              <span class="roundup-compare__visit-cta-name">{pick.name}</span>
+              <span class="material-symbols-outlined roundup-compare__visit-cta-icon" aria-hidden="true">open_in_new</span>
             </a>
           );
         })

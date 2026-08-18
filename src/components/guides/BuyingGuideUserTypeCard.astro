@@ -75,7 +75,9 @@ const { userType } = Astro.props;
                 height="28"
                 loading="lazy"
               />
-              <span>{example.name}</span>
+              <a href={`/reviews/${example.slug}/`} class="buying-guide-user-type-card__example-link">
+                {example.name}
+              </a>
             </li>
           ))
         }
