@@ -61,7 +61,7 @@ export function SeoSitemapsPage() {
           </p>
         </div>
         <a
-          href="/sitemap"
+          href="/sitemap/"
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-pink-300 hover:text-pink-700 dark:border-slate-700 dark:text-slate-300"

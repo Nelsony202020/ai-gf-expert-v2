@@ -9,8 +9,8 @@ import { canonicalGuard } from './integrations/canonical-guard.mjs';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://aigirlfriend.expert',
-  // 'ignore' so /admin and /admin/ both work in dev (trailingSlash: 'always' 404s bare /admin).
-  trailingSlash: 'ignore',
+  // Production: trailing slash is the indexed canonical. Local: 'ignore' so /admin works without a slash.
+  trailingSlash: process.env.VERCEL ? 'always' : 'ignore',
   env: {
     schema: {
       PUBLIC_INSTANT_APP_ID: envField.string({ context: 'client', access: 'public', optional: true }),

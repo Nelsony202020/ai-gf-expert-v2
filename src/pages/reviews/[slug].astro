@@ -104,8 +104,8 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
       >
         Draft — not published. This page is only for localhost testing and is not indexed.
         Publish the product in admin for the live URL at
-        <a href={`/reviews/${product.slug}`} class="font-medium underline underline-offset-2">
-          /reviews/{product.slug}
+        <a href={`/reviews/${product.slug}/`} class="font-medium underline underline-offset-2">
+          /reviews/{product.slug}/
         </a>.
       </div>
     )
@@ -134,14 +134,14 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
       <div
         data-tab-panel="ratings"
         class="hidden"
-        data-ratings-src={`/reviews/ratings-panel/${product.slug}`}
+        data-ratings-src={`/reviews/ratings-panel/${product.slug}/`}
       >
         <div data-ratings-placeholder class="section-container px-4 py-12 md:px-8">
           <p class="text-on-surface-variant">Loading ratings…</p>
         </div>
         <noscript>
           <p class="section-container px-4 pb-8 md:px-8">
-            <a href={`/reviews/ratings-panel/${product.slug}`}>View full ratings and specs</a>
+            <a href={`/reviews/ratings-panel/${product.slug}/`}>View full ratings and specs</a>
           </p>
         </noscript>
       </div>

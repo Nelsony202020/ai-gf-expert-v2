@@ -1,3 +1,4 @@
+import { publicPagePath } from '../lib/urls';
 import type { Product } from './products';
 import { megaMenuColumns, type MegaMenuColumn } from './nav-mega-menu';
 import { legalPages } from './legal-pages';
@@ -12,17 +13,17 @@ export interface SearchResult {
 }
 
 const staticPages: SearchResult[] = [
-  { label: 'About Us', href: '/about', type: 'page', meta: 'Company' },
-  { label: 'Contact Us', href: '/contact', type: 'page', meta: 'Company' },
-  { label: 'HTML Sitemap', href: '/sitemap', type: 'page', meta: 'Company' },
+  { label: 'About Us', href: '/about/', type: 'page', meta: 'Company' },
+  { label: 'Contact Us', href: '/contact/', type: 'page', meta: 'Company' },
+  { label: 'HTML Sitemap', href: '/sitemap/', type: 'page', meta: 'Company' },
   { label: 'Reviews Hub', href: '/reviews/', type: 'page', meta: 'Reviews' },
   { label: 'Legal Hub', href: '/legal/', type: 'page', meta: 'Legal' },
-  { label: 'App Directory', href: '/ai-girlfriend-apps', type: 'page', meta: 'Tools' },
+  { label: 'App Directory', href: '/ai-girlfriend-apps/', type: 'page', meta: 'Tools' },
   { label: 'How We Test', href: '/test/', type: 'page', meta: 'Resources' },
   { label: 'How Score Tooltips Work', href: '/test/tooltips/', type: 'page', meta: 'Resources' },
   {
     label: 'How to Choose an AI Girlfriend App',
-    href: '/guides/how-to-choose-an-ai-girlfriend-app',
+    href: '/guides/how-to-choose-an-ai-girlfriend-app/',
     type: 'guide',
     meta: 'Guides',
   },
@@ -32,8 +33,8 @@ const staticPages: SearchResult[] = [
     type: 'page' as const,
     meta: 'Legal',
   })),
-  { label: 'Herman Carter', href: '/author/herman-carter', type: 'page', meta: 'Author' },
-  { label: 'Ajit', href: '/author/ajit', type: 'page', meta: 'Author' },
+  { label: 'Herman Carter', href: '/author/herman-carter/', type: 'page', meta: 'Author' },
+  { label: 'Ajit', href: '/author/ajit/', type: 'page', meta: 'Author' },
 ];
 
 function typeFromColumnId(id: string): SearchResultType {
@@ -70,7 +71,7 @@ export function buildSearchIndex(
 
   const fromProducts = publishedProducts.map((p) => ({
     label: `${p.name} Review`,
-    href: `/reviews/${p.slug}`,
+    href: publicPagePath(`/reviews/${p.slug}`),
     type: 'review' as const,
     meta: 'Reviews',
   }));

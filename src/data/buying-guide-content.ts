@@ -253,8 +253,8 @@ export const commonMistakes: CommonMistake[] = [
 ];
 
 export const buyingGuideRelatedLinks = [
-  { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend' },
-  { label: 'App Directory', href: '/ai-girlfriend-apps' },
+  { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend/' },
+  { label: 'App Directory', href: '/ai-girlfriend-apps/' },
   { label: 'How We Test', href: '/test/' },
   { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
 ];

@@ -13,11 +13,11 @@ export interface InternalLinkSuggestion {
 const STATIC_INTERNAL: InternalLinkSuggestion[] = [
   {
     label: 'How to Choose an AI Girlfriend App',
-    href: '/guides/how-to-choose-an-ai-girlfriend-app',
+    href: '/guides/how-to-choose-an-ai-girlfriend-app/',
     meta: 'Guide',
   },
   { label: 'How We Test', href: '/test/', meta: 'Methodology' },
-  { label: 'App Directory', href: '/ai-girlfriend-apps', meta: 'Directory' },
+  { label: 'App Directory', href: '/ai-girlfriend-apps/', meta: 'Directory' },
   { label: 'Reviews Hub', href: '/reviews/', meta: 'Reviews' },
   { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend/', meta: 'Roundup' },
 ];
@@ -67,7 +67,7 @@ export function LinkDialog({
           .filter((p) => p.active !== false && !p.deletedAt && p.slug)
           .map((p) => ({
             label: `${String(p.name ?? p.slug)} Review`,
-            href: `/reviews/${String(p.slug)}`,
+            href: `/reviews/${String(p.slug)}/`,
             meta: 'Review',
           }));
         const fromGlossary: InternalLinkSuggestion[] = glossaryRes.rows

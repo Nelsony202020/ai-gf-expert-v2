@@ -1,5 +1,6 @@
 /** Explore mega menu — review links are filled from published DB products at render time. */
 
+import { publicPagePath } from '../lib/urls';
 import { buyingGuideSlug } from './buying-guide-content';
 import type { Product } from './products';
 
@@ -32,9 +33,9 @@ export const megaMenuColumns: MegaMenuColumn[] = [
     icon: 'emoji_events',
     description: 'Curated lists to help you find the best AI girlfriend apps.',
     links: [
-      { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend' },
+      { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend/' },
     ],
-    viewAll: { label: 'View all best picks', href: '/best/ai-girlfriend' },
+    viewAll: { label: 'View all best picks', href: '/best/ai-girlfriend/' },
   },
   {
     id: 'guides',
@@ -44,10 +45,10 @@ export const megaMenuColumns: MegaMenuColumn[] = [
     links: [
       {
         label: 'How to Choose an AI Girlfriend App',
-        href: `/guides/${buyingGuideSlug}`,
+        href: publicPagePath(`/guides/${buyingGuideSlug}`),
       },
     ],
-    viewAll: { label: 'View all guides', href: '/guides' },
+    viewAll: { label: 'View all guides', href: '/guides/' },
   },
 ];
 
@@ -57,7 +58,7 @@ export function buildMegaMenuColumns(publishedProducts: Pick<Product, 'slug' | '
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((product) => ({
       label: `${product.name} Review`,
-      href: `/reviews/${product.slug}`,
+      href: publicPagePath(`/reviews/${product.slug}`),
     }));
 
   return megaMenuColumns.map((column) =>

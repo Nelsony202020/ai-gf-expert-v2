@@ -109,7 +109,7 @@ function renderProductReference(block: any, guideSlug: string): string {
     console.warn(`[guides] Dangling product reference "${slug}" in guide "${guideSlug}"`);
     return '';
   }
-  const reviewUrl = `/reviews/${product.slug}`;
+  const reviewUrl = `/reviews/${product.slug}/`;
   if (block.display === 'inline') {
     return `<a href="${reviewUrl}" class="guide-product-inline">${escapeHtml(product.name)}</a>`;
   }
