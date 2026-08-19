@@ -327,12 +327,16 @@ async function loadMarketData(
   let marketTrafficChart: MarketTrafficColumn[] = [];
 
   if (sourceDomain) {
-    const live = await fetchAhrefsMarketData(sourceDomain, sourceName);
-    if (live) {
-      marketCompetitors = live.competitors;
-      marketTrafficChart = live.trafficChart;
-      metricsTable = live.metricsTable;
-      marketDataSource = 'ahrefs';
+    const allowLive =
+      !import.meta.env.DEV || process.env.AHREFS_LIVE_IN_DEV === '1';
+    if (allowLive) {
+      const live = await fetchAhrefsMarketData(sourceDomain, sourceName);
+      if (live) {
+        marketCompetitors = live.competitors;
+        marketTrafficChart = live.trafficChart;
+        metricsTable = live.metricsTable;
+        marketDataSource = 'ahrefs';
+      }
     }
   }
 

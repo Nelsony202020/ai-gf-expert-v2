@@ -1,6 +1,7 @@
 ---
 import type { RoundupFaqItem, RoundupPick } from '../../data/roundups/ai-girlfriend';
-import { renderRoundupText } from '../../lib/roundup/renderRoundupText';
+import { getPublishedGlossaryTermsForTooltips } from '../../lib/glossary/load';
+import { faqGlossaryContext, renderRoundupFaqText } from '../../lib/roundup/renderRoundupText';
 import { cdnAsset } from '../../lib/media/cdn';
 
 interface Props {
@@ -22,6 +23,7 @@ const {
 } = Astro.props;
 
 const hermanAvatar = cdnAsset('/brand/herman-main-icon.svg');
+const glossaryTerms = await getPublishedGlossaryTermsForTooltips();
 
 const stickers: ({ emoji: string; position: 'tl' | 'tr' } | null)[] = [
   { emoji: '❤️', position: 'tr' },
@@ -46,6 +48,7 @@ const stickers: ({ emoji: string; position: 'tl' | 'tr' } | null)[] = [
       {
         items.map((item, i) => {
           const sticker = stickers[i] ?? null;
+          const glossary = faqGlossaryContext(glossaryTerms, `roundup-faq-${i}`);
           return (
             <details class="roundup-faq__thread">
               <summary class="roundup-faq__question-row">
@@ -62,17 +65,17 @@ const stickers: ({ emoji: string; position: 'tl' | 'tr' } | null)[] = [
               </summary>
               <div class="roundup-faq__answer-row">
                 <div class="roundup-faq__bubble roundup-faq__bubble--answer">
-                  <p set:html={renderRoundupText(item.answer, picks)} />
+                  <p set:html={renderRoundupFaqText(item.answer, picks, glossary)} />
                   {
                     item.answerList?.length ? (
                       <ul class="roundup-faq__answer-list">
                         {item.answerList.map((entry) => (
-                          <li set:html={renderRoundupText(entry, picks)} />
+                          <li set:html={renderRoundupFaqText(entry, picks, glossary)} />
                         ))}
                       </ul>
                     ) : null
                   }
-                  {item.answerAfter && <p set:html={renderRoundupText(item.answerAfter, picks)} />}
+                  {item.answerAfter && <p set:html={renderRoundupFaqText(item.answerAfter, picks, glossary)} />}
                 </div>
                 <img class="roundup-faq__avatar" src={hermanAvatar} alt="Herman Carter" width="36" height="36" loading="lazy" />
               </div>

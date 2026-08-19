@@ -10,7 +10,6 @@ import CategoryScoreTooltip from '../tooltips/CategoryScoreTooltip.astro';
 import VerdictCategoryIcon from '../VerdictCategoryIcon.astro';
 import CharacterStoryHighlights from '../CharacterStoryHighlights.astro';
 import CmsField from '../../cms/CmsField.astro';
-import { cdnAsset } from '../../../lib/media/cdn';
 
 interface Props {
   product: Product;
@@ -33,7 +32,6 @@ const verdictEntries = product.verdicts.map((v) => ({
 const categoryByKey = Object.fromEntries(product.categories.map((c) => [c.key, c]));
 const defaultVerdict = verdictEntries.find((v) => v.id === 'overall') ?? verdictEntries[0];
 const herman = getAuthor('herman-carter');
-const hermanAvatar = herman ? cdnAsset(herman.avatar) : '';
 const showExpertOpinion = Boolean(product.expertOpinion?.trim());
 const showBestFor = overview.bestForList.length > 0;
 const showNotIdeal = overview.notIdealList.length > 0;
@@ -58,7 +56,7 @@ function verdictCmsField(
 
 <section class="bg-background py-12 md:py-14 pb-16 md:pb-20" data-verdict-overview>
   <div class="section-container px-4 md:px-8">
-    <h2 class="text-3xl md:text-4xl font-black text-on-surface mb-6 md:mb-10">Our Verdict</h2>
+    <h2 class="review-tab-title mb-6 md:mb-10">Our Verdict</h2>
 
     {/* Mobile-only: compact pill + drawer (replaces icon grid) */}
     <div class="verdict-jump" data-verdict-jump>
@@ -158,9 +156,9 @@ function verdictCmsField(
               const isDefault = verdict.id === defaultVerdict.id;
               return (
                 <div data-verdict-panel={verdict.id} class={isDefault ? '' : 'hidden'}>
-                  <div class="flex items-start gap-4 mb-4">
+                  <div class="flex items-center gap-4 mb-4">
                     <ScoreRect score={verdict.score} size="md" />
-                    <div class="min-w-0 pt-0.5">
+                    <div class="min-w-0">
                       <div class="flex items-center gap-1.5 flex-wrap">
                         <p class="text-xl md:text-2xl font-bold text-on-surface m-0">{verdict.label}</p>
                         {
@@ -236,11 +234,6 @@ function verdictCmsField(
             showExpertOpinion && herman && (
               <div class="mt-10 pt-8 border-t border-surface-variant">
                 <div class="expert-opinion">
-                  <div class="expert-opinion__badge" aria-hidden="true">
-                    <div class="expert-opinion__badge-clip">
-                      <img src={hermanAvatar} alt="" width="40" height="40" loading="lazy" decoding="async" />
-                    </div>
-                  </div>
                   <p class="expert-opinion__eyebrow">Our Experts' Opinion</p>
                   <div class="expert-opinion__byline">
                     <p class="expert-opinion__name">{herman.name}</p>
@@ -324,45 +317,13 @@ function verdictCmsField(
   .expert-opinion {
     position: relative;
     overflow: visible;
-    border-radius: 12px;
-    border: 1px solid var(--color-surface-variant);
-    background: var(--color-surface-container-low);
-    padding: 1.35rem 1.25rem 1.25rem;
-  }
-
-  /* Same border-badge logic as ratings/glossary tooltips */
-  .expert-opinion__badge {
-    position: absolute;
-    top: -14px;
-    left: -10px;
-    z-index: 2;
-    box-sizing: border-box;
-    width: 40px;
-    height: 40px;
-    padding: 3px;
-    border-radius: 999px;
-    background: #fff;
-    box-shadow: 0 1px 4px color-mix(in srgb, #000 12%, transparent);
-    pointer-events: none;
-    overflow: hidden;
-  }
-
-  .expert-opinion__badge-clip {
-    width: 100%;
-    height: 100%;
-    border-radius: 999px;
-    overflow: hidden;
-  }
-
-  .expert-opinion__badge img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    padding: 0;
+    border: none;
+    background: transparent;
   }
 
   .expert-opinion__eyebrow {
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.35rem;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.1em;
@@ -392,35 +353,9 @@ function verdictCmsField(
   }
 
   @media (min-width: 768px) {
-    .expert-opinion {
-      padding: 1.5rem 1.5rem 1.35rem;
-    }
-
-    /* Clear the overlapping corner badge so the title isn’t mid-icon */
-    .expert-opinion__eyebrow {
-      padding-top: 0.35rem;
-    }
-
     .expert-opinion__body {
       font-size: 1rem;
     }
-  }
-
-  @media (max-width: 767px) {
-    /* Match mobile tooltip badges: sit fully inside the panel */
-    .expert-opinion__badge {
-      top: 10px;
-      left: 12px;
-      transform: none;
-    }
-
-    .expert-opinion {
-      padding: 3.15rem 1rem 1rem;
-    }
-  }
-
-  [data-theme='dark'] .expert-opinion__badge {
-    background: var(--color-surface-container-lowest, #0f172a);
   }
 
   /* Pros / cons icons stay green & red — never inherit score band colors */

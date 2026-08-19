@@ -9,6 +9,7 @@ import {
   atGlanceLabel,
   atGlanceValue,
   comparePerfCellInnerHtml,
+  compareFeatureCellInnerHtml,
   winnerPickIds,
 } from '../../lib/roundup/compareTable';
 import CategoryScoreTooltip from '../review/tooltips/CategoryScoreTooltip.astro';
@@ -44,6 +45,10 @@ function pricingTooltip(pick: RoundupPick, id: string) {
   return pick.atGlance?.pricing?.find((row) => row.id === id)?.tooltip;
 }
 
+function featureStat(pick: RoundupPick, id: string) {
+  return pick.atGlance?.features?.find((row) => row.id === id);
+}
+
 const comparePayload = picks.map((p) => ({
   id: p.id,
   slug: p.slug,
@@ -53,8 +58,12 @@ const comparePayload = picks.map((p) => ({
   imageAlt: p.gallery[0]?.alt ?? `${p.name} screenshot`,
   overallScore: p.overallScore,
   affiliateUrl: p.affiliateUrl,
+  reviewUrl: p.reviewUrl ?? '',
   atGlanceFeatures: Object.fromEntries(
-    COMPARE_FEATURE_IDS.map((id) => [id, atGlanceValue(p.atGlance, 'features', id)]),
+    COMPARE_FEATURE_IDS.map((id) => {
+      const row = featureStat(p, id);
+      return [id, { value: atGlanceValue(p.atGlance, 'features', id), values: row?.values ?? null }];
+    }),
   ),
   atGlancePricing: Object.fromEntries(
     COMPARE_PRICING_IDS.map((id) => [id, atGlanceValue(p.atGlance, 'pricing', id)]),
@@ -157,8 +166,13 @@ function subWinners(key: string, subName: string, ids: string[]) {
               {
                 defaultIds.map((pickId) => {
                   const pick = picks.find((p) => p.id === pickId)!;
+                  const stat = featureStat(pick, id);
                   const val = atGlanceValue(pick.atGlance, 'features', id);
-                  return <div class="roundup-compare__matrix-val" data-compare-feature-val={pickId} data-feature-id={id}>{val}</div>;
+                  return (
+                    <div class="roundup-compare__matrix-val" data-compare-feature-val={pickId} data-feature-id={id}>
+                      <div set:html={compareFeatureCellInnerHtml(id, val, stat?.values)} />
+                    </div>
+                  );
                 })
               }
             </div>
@@ -206,10 +220,24 @@ function subWinners(key: string, subName: string, ids: string[]) {
       </div>
     </div>
 
-    <div class="roundup-compare__section">
+    <div class="roundup-compare__section roundup-compare__section--scores" data-compare-scores-section>
       <div class="roundup-compare__section-head">
         <h3 class="roundup-compare__section-title">Category scores</h3>
         <p class="roundup-compare__section-desc">See where each app performs best</p>
+      </div>
+      <div class="roundup-compare__picker-row roundup-compare__picker-row--scores" data-compare-scores-picker-row>
+        <div class="roundup-compare__scores-picker-cols">
+          {
+            defaultIds.map((id, slot) => {
+              const pick = picks.find((p) => p.id === id)!;
+              return (
+                <div class="roundup-compare__col roundup-compare__col--picker" data-compare-col={pick.id}>
+                  <RoundupComparePicker slot={slot} pick={pick} picksList={picks} />
+                </div>
+              );
+            })
+          }
+        </div>
       </div>
       <div class="roundup-compare__score-matrix" data-compare-perf-table>
         {
@@ -340,17 +368,26 @@ function subWinners(key: string, subName: string, ids: string[]) {
         defaultIds.map((pickId) => {
           const pick = picks.find((p) => p.id === pickId)!;
           return (
-            <a
-              class="roundup-compare__visit-cta bg-brand-cta"
-              href={pick.affiliateUrl}
-              target="_blank"
-              rel="nofollow sponsored noopener"
-              data-compare-visit={pickId}
-            >
-              <span class="roundup-compare__visit-cta-prefix">Visit </span>
-              <span class="roundup-compare__visit-cta-name">{pick.name}</span>
-              <span class="material-symbols-outlined roundup-compare__visit-cta-icon" aria-hidden="true">open_in_new</span>
-            </a>
+            <div class="roundup-compare__visit-col" data-compare-visit-col={pickId}>
+              <a
+                class="roundup-compare__visit-cta bg-brand-cta"
+                href={pick.affiliateUrl}
+                target="_blank"
+                rel="nofollow sponsored noopener"
+                data-compare-visit={pickId}
+              >
+                <span class="roundup-compare__visit-cta-prefix">Visit </span>
+                <span class="roundup-compare__visit-cta-name">{pick.name}</span>
+                <span class="material-symbols-outlined roundup-compare__visit-cta-icon" aria-hidden="true">open_in_new</span>
+              </a>
+              {
+                pick.reviewUrl && (
+                  <a class="roundup-compare__review-link" href={pick.reviewUrl} data-compare-review={pickId}>
+                    Read the {pick.name} review
+                  </a>
+                )
+              }
+            </div>
           );
         })
       }
@@ -414,13 +451,24 @@ function subWinners(key: string, subName: string, ids: string[]) {
   }
 
   function bestBadgeHtmlClient() {
-    return `<span class="roundup-compare__best-badge" aria-label="Best in row"><span class="material-symbols-outlined roundup-compare__best-icon" aria-hidden="true">crown</span>Best</span>`;
+    return `<span class="roundup-compare__best-badge" aria-label="Best in row"><span class="material-symbols-outlined roundup-compare__best-icon" aria-hidden="true">crown</span><span class="roundup-compare__best-text">Best</span></span>`;
+  }
+
+  function featureCellHtmlClient(featureId, featureMeta) {
+    const value = featureMeta?.value ?? '—';
+    const values = featureMeta?.values ?? null;
+    if (featureId === 'video-generator' && values?.length > 1) {
+      return `<span class="roundup-compare__matrix-val-stack">${values
+        .map((line) => `<span class="roundup-compare__matrix-val-line">${line}</span>`)
+        .join('')}</span>`;
+    }
+    return value;
   }
 
   function perfCellHtmlClient(score, isWinner) {
     const badge = isWinner ? bestBadgeHtmlClient() : '';
     const cellClass = isWinner ? ' roundup-compare__perf-cell--best' : '';
-    return `<div class="roundup-compare__perf-cell${cellClass}"><div class="roundup-compare__perf-badge-row">${badge}</div><span class="roundup-compare__perf-score">${fmtScoreClient(score)}/10</span>${segmentedBarHtmlClient(score, isWinner)}</div>`;
+    return `<div class="roundup-compare__perf-cell${cellClass}"><div class="roundup-compare__perf-head"><div class="roundup-compare__perf-badge-row">${badge}</div><span class="roundup-compare__perf-score">${fmtScoreClient(score)}/10</span></div>${segmentedBarHtmlClient(score, isWinner)}</div>`;
   }
 
   function winnerIdsForScores(entries) {
@@ -440,10 +488,17 @@ function subWinners(key: string, subName: string, ids: string[]) {
     let selected = [...defaultIds];
     const byId = Object.fromEntries(comparePayload.map((p) => [p.id, p]));
     const pickerRow = root.querySelector('[data-compare-picker-row]');
+    const scoresPickerRow = root.querySelector('[data-compare-scores-picker-row]');
+    const scoresSection = root.querySelector('[data-compare-scores-section]');
     const pickerSentinel = document.createElement('div');
     pickerSentinel.className = 'roundup-compare__picker-sentinel';
     pickerSentinel.setAttribute('aria-hidden', 'true');
     pickerRow?.before(pickerSentinel);
+
+    const scoresPickerSentinel = document.createElement('div');
+    scoresPickerSentinel.className = 'roundup-compare__picker-sentinel';
+    scoresPickerSentinel.setAttribute('aria-hidden', 'true');
+    scoresPickerRow?.before(scoresPickerSentinel);
 
     function syncStickyTop() {
       const header = document.querySelector('[data-site-header]');
@@ -452,17 +507,24 @@ function subWinners(key: string, subName: string, ids: string[]) {
     }
 
     function initPickerPinObserver() {
-      if (!pickerRow || !pickerSentinel) return;
       syncStickyTop();
       const header = document.querySelector('[data-site-header]');
       const topPx = header ? header.getBoundingClientRect().height : 68;
-      const observer = new IntersectionObserver(
-        ([entry]) => {
+      const pinOptions = { root: null, threshold: 0, rootMargin: `-${topPx}px 0px 0px 0px` };
+
+      if (pickerRow && pickerSentinel) {
+        const observer = new IntersectionObserver(([entry]) => {
           pickerRow.classList.toggle('is-pinned', !entry.isIntersecting);
-        },
-        { root: null, threshold: 0, rootMargin: `-${topPx}px 0px 0px 0px` },
-      );
-      observer.observe(pickerSentinel);
+        }, pinOptions);
+        observer.observe(pickerSentinel);
+      }
+
+      if (scoresPickerRow && scoresPickerSentinel) {
+        const scoresObserver = new IntersectionObserver(([entry]) => {
+          scoresPickerRow.classList.toggle('is-pinned', !entry.isIntersecting);
+        }, pinOptions);
+        scoresObserver.observe(scoresPickerSentinel);
+      }
     }
 
     function visibleCompareSlots() {
@@ -533,10 +595,11 @@ function subWinners(key: string, subName: string, ids: string[]) {
 
       const band = getBand(pick.overallScore);
 
-      const pickerCol = root.querySelectorAll('[data-compare-col]')[slot];
-      if (pickerCol) {
-        pickerCol.dataset.compareCol = pickId;
-      }
+      const pickerColGroups = root.querySelectorAll('.roundup-compare__picker-cols, .roundup-compare__scores-picker-cols');
+      pickerColGroups.forEach((group) => {
+        const pickerCol = group.querySelectorAll('[data-compare-col]')[slot];
+        if (pickerCol) pickerCol.dataset.compareCol = pickId;
+      });
 
       const imageCol = root.querySelectorAll('[data-compare-image-col]')[slot];
       if (imageCol) {
@@ -552,7 +615,9 @@ function subWinners(key: string, subName: string, ids: string[]) {
       featureIds.forEach((id) => {
         const row = root.querySelector(`[data-feature-row="${id}"]`);
         const cell = row?.querySelectorAll('[data-compare-feature-val]')[slot];
-        if (cell) cell.textContent = pick.atGlanceFeatures[id] ?? '—';
+        if (!cell) return;
+        const featureMeta = pick.atGlanceFeatures[id];
+        cell.innerHTML = featureCellHtmlClient(id, featureMeta);
       });
 
       pricingIds.forEach((id) => {
@@ -574,11 +639,29 @@ function subWinners(key: string, subName: string, ids: string[]) {
 
       categoryKeys.forEach((key) => refreshPerfCells(key));
 
-      const visitLink = root.querySelectorAll('[data-compare-visit]')[slot];
+      const visitCol = root.querySelectorAll('[data-compare-visit-col]')[slot];
+      const visitLink = visitCol?.querySelector('[data-compare-visit]');
       if (visitLink) {
         visitLink.href = pick.affiliateUrl;
         visitLink.dataset.compareVisit = pickId;
-        visitLink.innerHTML = `Visit ${pick.name}<span class="material-symbols-outlined roundup-compare__visit-cta-icon" aria-hidden="true">arrow_outward</span>`;
+        const nameEl = visitLink.querySelector('.roundup-compare__visit-cta-name');
+        if (nameEl) nameEl.textContent = pick.name;
+      }
+
+      const reviewLink = visitCol?.querySelector('[data-compare-review]');
+      if (reviewLink instanceof HTMLAnchorElement) {
+        if (pick.reviewUrl) {
+          reviewLink.href = pick.reviewUrl;
+          reviewLink.textContent = `Read the ${pick.name} review`;
+          reviewLink.hidden = false;
+        } else {
+          reviewLink.hidden = true;
+        }
+      } else if (pick.reviewUrl && visitCol) {
+        visitCol.insertAdjacentHTML(
+          'beforeend',
+          `<a class="roundup-compare__review-link" href="${pick.reviewUrl}" data-compare-review="${pickId}">Read the ${pick.name} review</a>`,
+        );
       }
 
       document.dispatchEvent(new CustomEvent('ratings-tooltips:reinit'));

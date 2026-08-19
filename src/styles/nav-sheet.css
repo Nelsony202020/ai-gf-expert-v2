@@ -47,14 +47,12 @@ body.roundup-sheet-open {
 }
 
 @media (max-width: 767px) {
-  .roundup-sheet:not([data-review-section-toc]) .roundup-sheet__panel {
-    animation-duration: 0.48s;
-  }
-
+  /* Review TOC / jump sheets keep the snappy default animation.
+     Evidence drawers in Ratings & Specs own the slower mobile timing. */
   .roundup-sheet[data-review-section-toc] .roundup-sheet__panel {
     animation: none;
     transform: translateY(100%);
-    transition: transform 0.52s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .roundup-sheet[data-review-section-toc].is-open .roundup-sheet__panel {
@@ -63,7 +61,7 @@ body.roundup-sheet-open {
 
   .roundup-sheet[data-review-section-toc] .roundup-sheet__backdrop {
     opacity: 0;
-    transition: opacity 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .roundup-sheet[data-review-section-toc].is-open .roundup-sheet__backdrop {

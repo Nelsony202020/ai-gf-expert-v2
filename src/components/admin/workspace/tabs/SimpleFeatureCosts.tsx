@@ -236,7 +236,7 @@ export function SimpleFeatureCosts({
       <div>
         <div className="px-4 pt-3">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Feature costs in {creditLabel}
+            Price per feature ({creditLabel})
           </h4>
         </div>
         {body}

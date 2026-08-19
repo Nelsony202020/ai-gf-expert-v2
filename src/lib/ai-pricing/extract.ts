@@ -87,6 +87,8 @@ export const EXTRACT_FEATURE_TYPES = [
   'voice_call',
   'premium_message',
   'character_creation',
+  'custom_character',
+  'custom_ai',
   'custom',
 ] as const;
 
@@ -98,6 +100,7 @@ export const EXTRACT_UNITS = [
   'per_video',
   'per_generation',
   'per_request',
+  'per_character',
   'custom',
 ] as const;
 
@@ -202,7 +205,9 @@ Then extract, merging data across images and de-duplicating:
   * For single popups (e.g. "Video with audio costs 80 coins for 5 seconds"): one variant with label = short description, durationSeconds if shown, no model.
   * Apps may have 1 model or 6+ models — extract however many rows the screenshot shows.
   * Preserve exact model names from the UI; do not normalize to Lite/Pro unless that is what the screenshot says.
-- featureCosts: use ONLY for simple single-price features with no model/duration table (e.g. "5 coins per image", "2 coins per message"). Each entry MUST include tokenCost as a number. featureType must be one of: ${EXTRACT_FEATURE_TYPES.join(', ')}. unit must be one of: ${EXTRACT_UNITS.join(', ')}. Do NOT use featureCosts for video model×duration matrices — use featureCostVariants instead.
+- featureCosts: use ONLY for simple single-price features with no model/duration table (e.g. "5 coins per image", "2 coins per message", "10 tokens per custom character"). Each entry MUST include tokenCost as a number. featureType must be one of: ${EXTRACT_FEATURE_TYPES.join(', ')}. unit must be one of: ${EXTRACT_UNITS.join(', ')}. Do NOT use featureCosts for video model×duration matrices — use featureCostVariants instead.
+  * Always look for explicit costs for: image generation, voice messages, phone/voice calls, and custom character / custom AI creation (featureType "character_creation", unit "per_character" when shown as a flat token price to create a companion).
+  * Synonyms for character creation: "custom character", "custom AI", "create companion", "create character", "custom girlfriend" — map those to character_creation when a token/credit price is shown.
 - promotions: name, promotionType (plan_discount | package_discount | bonus_credits | free_trial | holiday | coupon | custom), discountPercent, couponCode, startAt/endAt as YYYY-MM-DD only if dates are visible, publicNote (short description)
 - usesTokens: true if the app clearly has a token/credit system
 - tokenName: what the app calls tokens (e.g. "Gems", "Tokens", "Coins") if visible
@@ -274,7 +279,11 @@ function coerceFeatureCategory(raw: unknown): (typeof EXTRACT_FEATURE_CATEGORIES
   if (s.includes('video')) return 'video_generation';
   if (s.includes('image')) return 'standard_image';
   if (s.includes('voice') && s.includes('call')) return 'voice_call';
+  if (s.includes('phone') && s.includes('call')) return 'voice_call';
   if (s.includes('voice')) return 'voice_message';
+  if (s.includes('character') || s.includes('custom_ai') || s.includes('companion')) {
+    return 'character_creation';
+  }
   return 'custom';
 }
 
@@ -286,7 +295,16 @@ function coerceFeatureType(raw: unknown): (typeof EXTRACT_FEATURE_TYPES)[number]
   if (s === 'video_generation' || s === 'video' || s.includes('video')) return 'standard_video';
   if (s.includes('image')) return 'standard_image';
   if (s.includes('voice') && s.includes('call')) return 'voice_call';
+  if (s.includes('phone') && s.includes('call')) return 'voice_call';
   if (s.includes('voice')) return 'voice_message';
+  if (
+    s.includes('character') ||
+    s.includes('custom_ai') ||
+    s.includes('companion') ||
+    (s.includes('custom') && (s.includes('girl') || s.includes('create')))
+  ) {
+    return 'character_creation';
+  }
   return 'custom';
 }
 
@@ -301,6 +319,9 @@ function coerceUnit(raw: unknown): (typeof EXTRACT_UNITS)[number] {
   if (s.includes('image')) return 'per_image';
   if (s.includes('message')) return 'per_message';
   if (s.includes('video')) return 'per_video';
+  if (s.includes('character') || s.includes('creation') || s.includes('companion')) {
+    return 'per_character';
+  }
   return 'per_generation';
 }
 
