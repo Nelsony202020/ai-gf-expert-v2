@@ -36,9 +36,7 @@ export function lockBodyScroll(lock: boolean, className = 'mobile-sheet-open'): 
 
 export function sheetDurationMs(): number {
   if (typeof window === 'undefined') return 320;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 0;
-  if (window.matchMedia('(max-width: 767px)').matches) return 480;
-  return 320;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 320;
 }
 
 export function openSheet(

@@ -15,6 +15,29 @@ export const COMPARE_PRICING_IDS = [
   'power-user',
 ] as const;
 
+function escapeCompareHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Multi-value feature rows (e.g. video generator) stack one mode per line in the compare table. */
+export function compareFeatureCellInnerHtml(
+  featureId: string,
+  value: string,
+  values?: string[] | null,
+): string {
+  const lines = values?.filter(Boolean);
+  if (featureId === 'video-generator' && lines && lines.length > 1) {
+    return `<span class="roundup-compare__matrix-val-stack">${lines
+      .map((line) => `<span class="roundup-compare__matrix-val-line">${escapeCompareHtml(line)}</span>`)
+      .join('')}</span>`;
+  }
+  return escapeCompareHtml(value || '—');
+}
+
 export function atGlanceValue(data: AtGlanceData | undefined, section: 'features' | 'pricing', id: string): string {
   const rows = section === 'features' ? data?.features : data?.pricing;
   return rows?.find((row) => row.id === id)?.value ?? '—';
@@ -50,7 +73,7 @@ export function segmentedCompareBarHtml(score: number, thin = true): string {
 }
 
 export function compareBestBadgeHtml(): string {
-  return `<span class="roundup-compare__best-badge" aria-label="Best in row"><span class="material-symbols-outlined roundup-compare__best-icon" aria-hidden="true">crown</span>Best</span>`;
+  return `<span class="roundup-compare__best-badge" aria-label="Best in row"><span class="material-symbols-outlined roundup-compare__best-icon" aria-hidden="true">crown</span><span class="roundup-compare__best-text">Best</span></span>`;
 }
 
 export function comparePerfCellInnerHtml(score: number, isWinner: boolean, formattedScore: string): string {
@@ -60,7 +83,7 @@ export function comparePerfCellInnerHtml(score: number, isWinner: boolean, forma
     'roundup-compare-bar--segmented-thin"',
     `roundup-compare-bar--segmented-thin${isWinner ? ' roundup-compare-bar--winner' : ''}"`,
   );
-  return `<div class="roundup-compare__perf-cell${cellClass}"><div class="roundup-compare__perf-badge-row">${badge}</div><span class="roundup-compare__perf-score">${formattedScore}/10</span>${bar}</div>`;
+  return `<div class="roundup-compare__perf-cell${cellClass}"><div class="roundup-compare__perf-head"><div class="roundup-compare__perf-badge-row">${badge}</div><span class="roundup-compare__perf-score">${formattedScore}/10</span></div>${bar}</div>`;
 }
 
 export function splitVerdict(text: string): { lead: string; rest: string } {

@@ -449,6 +449,8 @@ export const FEATURE_TYPES = [
   'message',
   'premium_message',
   'character_creation',
+  'custom_character',
+  'custom_ai',
   'character_edit',
   'content_unlock',
   'scenario_unlock',
@@ -466,6 +468,7 @@ export const FEATURE_UNITS = [
   'per_unlock',
   'per_request',
   'per_character',
+  'per_creation',
   'custom',
 ] as const;
 

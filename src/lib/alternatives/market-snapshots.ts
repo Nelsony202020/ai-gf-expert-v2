@@ -40,8 +40,18 @@ function readStore(productSlug: string): SnapshotStore {
 
 function writeStore(productSlug: string, store: SnapshotStore): void {
   const file = snapshotPath(productSlug);
+  const next = `${JSON.stringify(store, null, 2)}\n`;
+  // Skip no-op writes — rewriting the same JSON still bumps mtime and
+  // triggers Vite full reloads → infinite page refresh on /reviews/*.
+  if (fs.existsSync(file)) {
+    try {
+      if (fs.readFileSync(file, 'utf-8') === next) return;
+    } catch {
+      /* fall through and write */
+    }
+  }
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${JSON.stringify(store, null, 2)}\n`, 'utf-8');
+  fs.writeFileSync(file, next, 'utf-8');
 }
 
 export function normalizeMarketRow(row: MarketCompetitorRow | Record<string, unknown>): MarketCompetitorRow {

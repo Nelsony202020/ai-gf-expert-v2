@@ -10,13 +10,56 @@ interface Props {
 const { score, size = 'md', class: className = '' } = Astro.props;
 const visual = getScoreVisual(score);
 
-const sizes = {
-  sm: 'w-[2.75rem] h-7 text-sm rounded tabular-nums',
-  md: 'w-12 h-10 text-lg rounded-lg tabular-nums',
-  lg: 'w-[3.5rem] h-12 text-4xl rounded-lg tabular-nums',
-};
+/*
+  Match tooltip `.rt-score-chip` proportions (padding 3×7, font 12, lh 1.2, min-w 2rem)
+  scaled up for this larger display — no fixed square height.
+*/
 ---
 
-<span class={`inline-flex shrink-0 items-center justify-center font-black leading-none tabular-nums ${visual.bg} ${sizes[size]} ${className}`}>
+<span
+  class:list={[
+    'score-rect',
+    `score-rect--${size}`,
+    visual.bg,
+    className,
+  ]}
+>
   {fmtScore(score)}
 </span>
+
+<style>
+  .score-rect {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    /* Same V:H padding ratio as .rt-score-chip (3px / 7px) */
+  }
+
+  /* tooltip chip × ~1.17 → 14px type */
+  .score-rect--sm {
+    font-size: 14px;
+    padding: 3.5px 8px;
+    min-width: 2.35rem;
+    border-radius: 7px;
+  }
+
+  /* tooltip chip × 1.5 → 18px type (same as previous text-lg) */
+  .score-rect--md {
+    font-size: 18px;
+    padding: 4.5px 10.5px;
+    min-width: 3rem;
+    border-radius: 9px;
+  }
+
+  /* tooltip chip × 2 → 24px type */
+  .score-rect--lg {
+    font-size: 24px;
+    padding: 6px 14px;
+    min-width: 4rem;
+    border-radius: 12px;
+  }
+</style>

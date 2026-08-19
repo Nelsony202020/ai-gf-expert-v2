@@ -114,7 +114,7 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
 <section class="bg-background py-12 md:py-14" data-ratings-root data-detail-level="skim">
   <div class="section-container px-4 md:px-8">
     <header class="ratings-section-head">
-      <h2 class="ratings-section-head__title">Ratings &amp; Specs</h2>
+      <h2 class="ratings-section-head__title review-tab-title">Ratings &amp; Specs</h2>
       <div class="ratings-section-head__row">
         <p class="ratings-section-head__intro">
           See the full test results from our <strong>{product.name} review</strong>, with scores across all
@@ -162,16 +162,6 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
 
   .ratings-section-head__title {
     margin: 0;
-    font-size: 1.875rem;
-    font-weight: 900;
-    line-height: 1.15;
-    color: var(--color-on-surface);
-  }
-
-  @media (min-width: 768px) {
-    .ratings-section-head__title {
-      font-size: 2.25rem;
-    }
   }
 
   .ratings-section-head__row {

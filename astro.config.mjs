@@ -56,7 +56,8 @@ export default defineConfig({
       watch: {
         // Ignore build output — watching .vercel/ triggers thousands of HMR reloads
         // and breaks admin module loading in dev.
-        ignored: ['**/.vercel/**', '**/dist/**'],
+        // market-snapshots are written during SSR; watching them causes reload loops.
+        ignored: ['**/.vercel/**', '**/dist/**', '**/src/data/market-snapshots/**'],
       },
     },
     resolve: {

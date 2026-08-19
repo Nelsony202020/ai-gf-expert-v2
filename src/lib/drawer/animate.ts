@@ -1,5 +1,8 @@
 /** Match right-side drawer slide transition (see drawer panel CSS). */
-export const DRAWER_TRANSITION_MS = 520;
+export const DRAWER_TRANSITION_MS = 360;
+
+/** Slower mobile duration for Ratings & Specs evidence drawers. */
+export const DRAWER_TRANSITION_MOBILE_MS = 520;
 
 /** Wait slightly longer than the CSS transition before unmounting. */
 export const DRAWER_UNMOUNT_MS = DRAWER_TRANSITION_MS + 24;
@@ -7,6 +10,9 @@ export const DRAWER_UNMOUNT_MS = DRAWER_TRANSITION_MS + 24;
 function unmountDelayMs(): number {
   if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     return 0;
+  }
+  if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+    return DRAWER_TRANSITION_MOBILE_MS + 24;
   }
   return DRAWER_UNMOUNT_MS;
 }

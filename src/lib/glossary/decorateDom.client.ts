@@ -50,7 +50,6 @@ const REJECT_ROOT_SELECTOR = [
   '.roundup-pros-cons',
   '.roundup-faq__header',
   '.roundup-faq__question-row',
-  '.roundup-faq__answer-list',
   '.roundup-sidebar',
   '.site-header',
   '#site-header',
@@ -71,6 +70,7 @@ function isAllowedParagraphText(textNode: Text): boolean {
 
   const paragraph = parent.closest('p');
   if (!paragraph) return false;
+  if (paragraph.closest('ul, ol, .roundup-faq__answer-list')) return false;
   if (paragraph.closest(REJECT_ROOT_SELECTOR)) return false;
 
   return true;

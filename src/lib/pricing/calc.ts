@@ -172,6 +172,7 @@ export interface CreditPackageLike {
   name?: string;
   active?: boolean;
   price?: number | null;
+  currency?: string | null;
   baseCredits?: number | null;
   bonusCredits?: number | null;
   tokenAmount?: number | null; // legacy total
@@ -309,6 +310,180 @@ export function estimatedAllowance(
   const range = featureCostRange(cost);
   if (credits === null || credits <= 0 || !range) return null;
   return { min: round1(credits / range.max), max: round1(credits / range.min) };
+}
+
+/**
+ * Credits required for one “display unit” of a feature (e.g. one image, one 10s video).
+ * Returns null when the feature isn’t priced in credits.
+ */
+export function creditsPerDisplayUse(cost: FeatureCostLike): CostRange | null {
+  const range = featureCostRange(cost);
+  if (!range) return null;
+  const unit = String(cost.unit ?? '');
+  const type = String(cost.featureType ?? '');
+
+  if (unit === 'per_second' || type.includes('video')) {
+    const seconds =
+      numOrNull(cost.durationProduced) && Number(cost.durationProduced) > 0
+        ? Number(cost.durationProduced)
+        : 10;
+    return { min: round2(range.min * seconds), max: round2(range.max * seconds) };
+  }
+
+  if (unit === 'per_minute' && type.includes('voice_message')) {
+    // Review convention: a voice message ≈ 10 seconds.
+    const minutes = 10 / 60;
+    return { min: round2(range.min * minutes), max: round2(range.max * minutes) };
+  }
+
+  return range;
+}
+
+/** Whole-number-friendly count for plan matrix cells. */
+export function formatUseCount(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return '—';
+  if (n >= 100) return String(Math.round(n));
+  if (n >= 10) return String(Math.round(n));
+  return String(Math.round(n * 10) / 10);
+}
+
+/** Round generation counts for display — never show fractional videos/images. */
+function formatWholeUses(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return '—';
+  return String(Math.max(1, Math.round(n)));
+}
+
+function formatDurationFromMinutes(minutes: number): string {
+  if (!Number.isFinite(minutes) || minutes <= 0) return '—';
+  if (minutes >= 120) {
+    const hours = Math.round((minutes / 60) * 10) / 10;
+    return `${formatUseCount(hours)} hrs/mo`;
+  }
+  return `${formatUseCount(minutes)} min/mo`;
+}
+
+export interface CreditPoolUseCell {
+  value: string;
+  tip?: string;
+  sublabel?: string;
+}
+
+/**
+ * Human-readable allowance if the monthly credit pool were spent on one feature.
+ * Technical credit math stays in tip/sublabel — never in the primary value.
+ */
+export function formatCreditPoolUsesCell(
+  includedCredits: number | null | undefined,
+  cost: FeatureCostLike | null | undefined,
+  kind: 'image' | 'video' | 'voice_message' | 'voice_call' | 'character_creation',
+): CreditPoolUseCell {
+  const credits = numOrNull(includedCredits);
+  if (credits == null || credits <= 0 || !cost) return { value: '—' };
+
+  const availability = featureCostAvailability(cost);
+  if (availability === 'unlimited') return { value: 'Unlimited' };
+  if (availability === 'included') return { value: 'Included' };
+
+  if (kind === 'voice_call') {
+    const range = featureCostRange(cost);
+    if (!range) return { value: '—' };
+    const minMin = credits / range.max;
+    const maxMin = credits / range.min;
+    const value =
+      Math.abs(minMin - maxMin) < 0.05
+        ? formatDurationFromMinutes(minMin)
+        : `${formatUseCount(minMin)}–${formatUseCount(maxMin)} min/mo`;
+    return {
+      value,
+      tip: 'Estimated minutes of voice calls if the full monthly credit pool went to calls.',
+    };
+  }
+
+  if (kind === 'voice_message') {
+    const range = featureCostRange(cost);
+    if (!range) return { value: '—' };
+    const unit = String(cost.unit ?? '');
+    // Prefer real time from per-minute pricing over message-count math.
+    if (unit === 'per_minute' || unit === 'per_second') {
+      const minMinutes =
+        unit === 'per_second' ? credits / range.max / 60 : credits / range.max;
+      const maxMinutes =
+        unit === 'per_second' ? credits / range.min / 60 : credits / range.min;
+      const mid = (minMinutes + maxMinutes) / 2;
+      return {
+        value:
+          Math.abs(minMinutes - maxMinutes) < 0.05
+            ? formatDurationFromMinutes(minMinutes)
+            : formatDurationFromMinutes(mid),
+        tip: `Equivalent to about ${formatUseCount(mid >= 120 ? mid / 60 : mid)}${
+          mid >= 120 ? ' hours' : ' minutes'
+        } of generated voice based on the current credit cost. Actual usage depends on message length.`,
+      };
+    }
+  }
+
+  const perUse = creditsPerDisplayUse(cost);
+  if (!perUse || perUse.min <= 0) return { value: '—' };
+  const minUses = credits / perUse.max;
+  const maxUses = credits / perUse.min;
+  const midUses = (minUses + maxUses) / 2;
+
+  if (kind === 'character_creation') {
+    const count =
+      Math.abs(minUses - maxUses) < 0.05
+        ? formatWholeUses(minUses)
+        : `${formatWholeUses(minUses)}–${formatWholeUses(maxUses)}`;
+    return {
+      value: `${count}/mo`,
+      tip: 'Estimated custom characters if the full monthly credit pool went to character creation.',
+    };
+  }
+
+  if (kind === 'video') {
+    const seconds =
+      numOrNull(cost.durationProduced) && Number(cost.durationProduced) > 0
+        ? Number(cost.durationProduced)
+        : 10;
+    const count =
+      Math.abs(minUses - maxUses) < 0.05
+        ? formatWholeUses(minUses)
+        : `${formatWholeUses(minUses)}–${formatWholeUses(maxUses)}`;
+    return {
+      value: `${count} videos/mo`,
+      sublabel: `${seconds} sec each`,
+      tip: `Based on ${seconds}-second videos. Actual usage depends on video length and credit cost.`,
+    };
+  }
+
+  if (kind === 'image') {
+    const count =
+      Math.abs(minUses - maxUses) < 0.05
+        ? formatWholeUses(minUses)
+        : `${formatWholeUses(minUses)}–${formatWholeUses(maxUses)}`;
+    return {
+      value: `${count}/mo`,
+      tip: 'Estimated images if the full monthly credit pool went to standard image generation.',
+    };
+  }
+
+  // Fallback voice_message (non per-minute) → treat uses as 10s clips and convert to time
+  const totalSeconds = midUses * 10;
+  return {
+    value: formatDurationFromMinutes(totalSeconds / 60),
+    tip: 'Equivalent generated voice time based on the current credit cost. Actual usage depends on message length.',
+  };
+}
+
+/**
+ * Human label for how many uses the monthly credit pool buys of one feature.
+ * Examples: "50/mo", "8 videos/mo", "8.3 hrs/mo", "33 min/mo".
+ */
+export function formatCreditPoolUses(
+  includedCredits: number | null | undefined,
+  cost: FeatureCostLike | null | undefined,
+  kind: 'image' | 'video' | 'voice_message' | 'voice_call' | 'character_creation',
+): string {
+  return formatCreditPoolUsesCell(includedCredits, cost, kind).value;
 }
 
 /** Estimated money cost of one feature use at a package's credit rate. */

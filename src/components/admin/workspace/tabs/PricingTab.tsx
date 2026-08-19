@@ -56,6 +56,7 @@ import {
 } from './PlanAllowancesEditor';
 import { PricingImportCard } from '../../ai-pricing/PricingImportCard';
 import { PricingReviewModal, type PricingDraftClient } from '../../ai-pricing/PricingReviewModal';
+import { ConfirmDialog } from '../../ConfirmDialog';
 import { ProofThumb } from '../../testing/ProofThumb';
 import {
   legacyFieldsFromAllowances,
@@ -85,10 +86,12 @@ export const FEATURE_TYPE_LABELS: Record<string, string> = {
   text_to_video: 'Text-to-video',
   image_to_video: 'Image-to-video',
   live_cam_video: 'Live-cam video',
-  voice_message: 'Voice message',
-  voice_call: 'Voice call',
+  voice_message: 'Price per voice message',
+  voice_call: 'Price per phone call',
   premium_message: 'Premium message',
-  character_creation: 'Character creation',
+  character_creation: 'Custom character cost',
+  custom_character: 'Custom character cost',
+  custom_ai: 'Custom character cost',
   character_edit: 'Character edit',
   content_unlock: 'Content unlock',
   scenario_unlock: 'Scenario unlock',
@@ -1300,6 +1303,8 @@ function PricingEvidence({
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detachConfirmId, setDetachConfirmId] = useState<string | null>(null);
+  const [detaching, setDetaching] = useState(false);
   useToastError(error, () => setError(null));
   const fileInput = useRef<HTMLInputElement>(null);
   const ids: string[] = Array.isArray(row.evidenceMediaIds) ? row.evidenceMediaIds : [];
@@ -1316,20 +1321,27 @@ function PricingEvidence({
   }
 
   async function detachEvidence(id: string) {
-    const removed = mediaById.get(id);
-    await patch(ids.filter((x) => x !== id));
-    if (removed && !pricingProofVisibleInLibrary(removed, ws.related.pricingSnapshots)) {
-      try {
-        await dataApi.update('media', id, { deletedAt: Date.now() });
-        decrementPricingUnverifiedUploads(1);
-        await ws.refreshRelated();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+    setDetaching(true);
+    setError(null);
+    try {
+      const removed = mediaById.get(id);
+      await patch(ids.filter((x) => x !== id));
+      if (removed && !pricingProofVisibleInLibrary(removed, ws.related.pricingSnapshots)) {
+        try {
+          await dataApi.update('media', id, { deletedAt: Date.now() });
+          decrementPricingUnverifiedUploads(1);
+          await ws.refreshRelated();
+        } catch (e) {
+          setError(e instanceof Error ? e.message : String(e));
+        }
       }
+      setPricingUnverifiedUploadCount(
+        countUnverifiedPricingProof(ws.related.mediaAll, ws.related.pricingSnapshots),
+      );
+      setDetachConfirmId(null);
+    } finally {
+      setDetaching(false);
     }
-    setPricingUnverifiedUploadCount(
-      countUnverifiedPricingProof(ws.related.mediaAll, ws.related.pricingSnapshots),
-    );
   }
 
   async function handleFiles(files: FileList | File[]) {
@@ -1401,7 +1413,7 @@ function PricingEvidence({
               key={id}
               media={m}
               disabled={!canEdit}
-              onDetach={canEdit ? () => void detachEvidence(id) : undefined}
+              onDetach={canEdit ? () => setDetachConfirmId(id) : undefined}
             />
           );
         })}
@@ -1441,6 +1453,21 @@ function PricingEvidence({
           if (files?.length) void handleFiles(files);
         }}
       />
+      {detachConfirmId && (
+        <ConfirmDialog
+          title="Delete pricing screenshot?"
+          message="Are you sure you want to delete this pricing screenshot? It will be removed from this pricing evidence."
+          confirmLabel="Yes, delete"
+          cancelLabel="No"
+          danger
+          busy={detaching}
+          onCancel={() => {
+            if (detaching) return;
+            setDetachConfirmId(null);
+          }}
+          onConfirm={() => void detachEvidence(detachConfirmId)}
+        />
+      )}
       {showPicker && (
         <MediaPickerModal
           productId={ws.productId}

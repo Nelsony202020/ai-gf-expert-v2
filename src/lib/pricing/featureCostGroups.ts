@@ -14,6 +14,7 @@ export const UNIT_LABELS: Record<string, string> = {
   per_unlock: 'per unlock',
   per_request: 'per request',
   per_character: 'per character',
+  per_creation: 'per creation',
   custom: 'custom',
 };
 
@@ -32,6 +33,7 @@ export const EXTRACT_FEATURE_CATEGORIES = [
   'video_generation',
   'voice_message',
   'voice_call',
+  'character_creation',
   'custom',
 ] as const;
 
@@ -40,7 +42,7 @@ export type ExtractFeatureCategory = (typeof EXTRACT_FEATURE_CATEGORIES)[number]
 export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
   {
     key: 'chat_message',
-    label: 'Chat message',
+    label: 'Price per chat message',
     featureTypes: ['chat_message', 'text_message', 'message'],
     defaultFeatureType: 'chat_message',
     defaultUnit: 'per_message',
@@ -48,7 +50,7 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
   },
   {
     key: 'standard_image',
-    label: 'Standard image',
+    label: 'Price per image generation',
     featureTypes: [
       'standard_image',
       'premium_image',
@@ -63,7 +65,7 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
   },
   {
     key: 'voice_message',
-    label: 'Voice message',
+    label: 'Price per voice message',
     featureTypes: ['voice_message'],
     defaultFeatureType: 'voice_message',
     defaultUnit: 'per_message',
@@ -71,15 +73,23 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
   },
   {
     key: 'voice_call',
-    label: 'Phone / voice call',
+    label: 'Price per phone call',
     featureTypes: ['voice_call'],
     defaultFeatureType: 'voice_call',
     defaultUnit: 'per_minute',
     unitOptions: ['per_minute', 'per_second', 'per_message'],
   },
   {
+    key: 'character_creation',
+    label: 'Price per custom character',
+    featureTypes: ['character_creation', 'custom_character', 'custom_ai'],
+    defaultFeatureType: 'character_creation',
+    defaultUnit: 'per_character',
+    unitOptions: ['per_character', 'per_creation', 'per_message'],
+  },
+  {
     key: 'video_generation',
-    label: 'Video generation',
+    label: 'Price per video generation',
     featureTypes: [
       'standard_video',
       'premium_video',

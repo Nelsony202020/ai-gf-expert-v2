@@ -6,8 +6,14 @@ import type { MarketDataViewModel } from './types';
 
 export async function loadMarketDataViewModel(product: Product): Promise<MarketDataViewModel> {
   if (product.slug === 'aura-ai') {
-    const live = await buildAuraAiMarketDataFromAhrefs(product);
-    if (live) return live.vm;
+    // Live Ahrefs on every SSR request rate-limits (429) and slows the page so badly
+    // that Vite HMR looks like a reload loop. Opt in with AHREFS_LIVE_IN_DEV=1.
+    const allowLive =
+      !import.meta.env.DEV || process.env.AHREFS_LIVE_IN_DEV === '1';
+    if (allowLive) {
+      const live = await buildAuraAiMarketDataFromAhrefs(product);
+      if (live) return live.vm;
+    }
     return await getAuraAiDraftMarketData(product);
   }
 

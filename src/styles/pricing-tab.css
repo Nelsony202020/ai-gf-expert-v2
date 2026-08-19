@@ -1,137 +1,369 @@
 /* Pricing tab — dark-mode overrides (theme attribute on html) */
 
-[data-theme='dark'] .pt-panel {
-  background: var(--dark-elevated) !important;
-  border-color: var(--dark-border-subtle) !important;
-  color: var(--color-on-surface);
-}
-
-[data-theme='dark'] .pt-panel__title,
-[data-theme='dark'] .pt-stat__value,
-[data-theme='dark'] .pt-stat__sub--strong,
-[data-theme='dark'] .pt-plans__name,
-[data-theme='dark'] .pt-plans__price,
-[data-theme='dark'] .pt-usage-row__title,
-[data-theme='dark'] .pt-usage-row__cost,
-[data-theme='dark'] .pt-feature-row__label,
-[data-theme='dark'] .pt-feature-row__value,
-[data-theme='dark'] .pt-compare td,
-[data-theme='dark'] .pt-diff__row strong,
+[data-theme='dark'] .pt-page-title,
+[data-theme='dark'] .pt-major__title,
+[data-theme='dark'] .pt-title,
+[data-theme='dark'] .pt-h2,
+[data-theme='dark'] .pt-h3,
+[data-theme='dark'] .pt-section-title,
+[data-theme='dark'] .pt-plan-summary__price,
+[data-theme='dark'] .pt-plan-active__price,
+[data-theme='dark'] .pt-plan-active__name,
+[data-theme='dark'] .pt-plan-active__credits,
+[data-theme='dark'] .pt-plan-chip.is-active,
+[data-theme='dark'] .pt-usage-detail__price,
+[data-theme='dark'] .pt-topups__title,
+[data-theme='dark'] .pt-topups__table tbody th,
+[data-theme='dark'] .pt-topups__table td,
+[data-theme='dark'] .pt-credit-pool__skim-item,
+[data-theme='dark'] .pt-menu-select__value,
+[data-theme='dark'] .pt-credit-pool__title,
+[data-theme='dark'] .pt-credit-pool__credits,
+[data-theme='dark'] .pt-mixer__tool-title,
+[data-theme='dark'] .pt-mixer__panel-title,
+[data-theme='dark'] .pt-credit-pool__label,
+[data-theme='dark'] .pt-credit-pool__value,
+[data-theme='dark'] .pt-other-limits__title,
+[data-theme='dark'] .pt-other-limits__table tbody th,
+[data-theme='dark'] .pt-other-limits__table td,
+[data-theme='dark'] .pt-usage-math__heading,
+[data-theme='dark'] .pt-usage-math__chip-label,
+[data-theme='dark'] .pt-usage-math__detail-label,
+[data-theme='dark'] .pt-usage-math__table tbody th,
+[data-theme='dark'] .pt-usage-math__table td,
+[data-theme='dark'] .pt-usage-math__summary th,
+[data-theme='dark'] .pt-usage-math__summary td,
+[data-theme='dark'] .pt-usage-col__title,
+[data-theme='dark'] .pt-usage-col__price,
+[data-theme='dark'] .pt-usage-detail__name,
+[data-theme='dark'] .pt-usage-detail__estimate-price,
+[data-theme='dark'] .pt-usage-calc__row dd,
+[data-theme='dark'] .pt-usage-includes__item dd,
+[data-theme='dark'] .pt-usage-flat__price,
 [data-theme='dark'] .pt-bench__float-name,
 [data-theme='dark'] .pt-bench__float-price,
-[data-theme='dark'] .pt-verdict__text {
+[data-theme='dark'] .pt-sum__fact dd,
+[data-theme='dark'] .pt-feature-row__label,
+[data-theme='dark'] .pt-feature-row__value,
+[data-theme='dark'] .pt-compare td {
   color: var(--color-on-surface);
 }
 
-[data-theme='dark'] .pt-stat__label,
-[data-theme='dark'] .pt-stat__sub,
-[data-theme='dark'] .pt-plans__sub,
-[data-theme='dark'] .pt-plans__row-label,
-[data-theme='dark'] .pt-usage-row__desc,
-[data-theme='dark'] .pt-bench__ends,
+[data-theme='dark'] .pt-prose__body,
+[data-theme='dark'] .pt-major__lead,
+[data-theme='dark'] .pt-lead,
+[data-theme='dark'] .pt-mixer__tool-help,
+[data-theme='dark'] .pt-mixer__tool-eyebrow,
+[data-theme='dark'] .pt-label,
+[data-theme='dark'] .pt-menu-select__label,
+[data-theme='dark'] .pt-billing__label,
+[data-theme='dark'] .pt-plan-pick__label,
+[data-theme='dark'] .pt-plan-chip,
+[data-theme='dark'] .pt-plan-active__billing,
+[data-theme='dark'] .pt-plan-active__sub,
+[data-theme='dark'] .pt-plan-active__sale-note,
+[data-theme='dark'] .pt-plan-active__highlights li,
+[data-theme='dark'] .pt-menu-select__label,
+[data-theme='dark'] .pt-usage-detail__lead,
+[data-theme='dark'] .pt-usage-detail__price-sub,
+[data-theme='dark'] .pt-topups__intro,
+[data-theme='dark'] .pt-credit-pool__lead,
+[data-theme='dark'] .pt-credit-pool__or,
+[data-theme='dark'] .pt-plan-summary__name,
+[data-theme='dark'] .pt-plan-summary__line,
+[data-theme='dark'] .pt-plan-summary__sub,
+[data-theme='dark'] .pt-credit-pool__sub,
+[data-theme='dark'] .pt-unit,
+[data-theme='dark'] .pt-usage-select__label,
+[data-theme='dark'] .pt-credit-pool__note,
+[data-theme='dark'] .pt-other-limits__table thead th,
+[data-theme='dark'] .pt-usage-math__table thead th,
+[data-theme='dark'] .pt-usage-math__block-title,
+[data-theme='dark'] .pt-usage-math__intro,
+[data-theme='dark'] .pt-usage-math__block-lead,
+[data-theme='dark'] .pt-usage-math__chip-value,
+[data-theme='dark'] .pt-usage-math__detail-body,
+[data-theme='dark'] .pt-usage-math__disclaimer,
+[data-theme='dark'] .pt-usage-col__desc,
+[data-theme='dark'] .pt-usage-col__icon,
+[data-theme='dark'] .pt-usage-detail__lead,
+[data-theme='dark'] .pt-usage-detail__estimate-label,
+[data-theme='dark'] .pt-usage-detail__col-label,
+[data-theme='dark'] .pt-usage-calc__row,
+[data-theme='dark'] .pt-usage-includes__item dt,
+[data-theme='dark'] .pt-usage-includes__icon,
+[data-theme='dark'] .pt-usage-calc-details__body,
+[data-theme='dark'] .pt-usage-flat__copy,
 [data-theme='dark'] .pt-bench__tick-label,
-[data-theme='dark'] .pt-bench__percentile,
-[data-theme='dark'] .pt-verdict__caveat,
-[data-theme='dark'] .pt-compare th,
-[data-theme='dark'] .pt-diff__row,
-[data-theme='dark'] .pt-empty {
+[data-theme='dark'] .pt-empty,
+[data-theme='dark'] .pt-sum__eyebrow,
+[data-theme='dark'] .pt-sum__tagline,
+[data-theme='dark'] .pt-sum__fact dt,
+[data-theme='dark'] .pt-sum__model,
+[data-theme='dark'] .pt-sum__score-of,
+[data-theme='dark'] .pt-compare th {
   color: var(--dark-muted);
 }
 
-[data-theme='dark'] .pt-stat,
-[data-theme='dark'] .pt-verdict {
+[data-theme='dark'] .pt-usage-select {
+  background-color: transparent;
   border-color: var(--dark-border-subtle);
+  color: var(--color-on-surface);
 }
 
-[data-theme='dark'] .pt-plans__col-head {
-  background: rgb(51 65 85 / 45%);
-}
-
-[data-theme='dark'] .pt-plans__col-head--accent {
-  background: rgb(219 39 119 / 14%);
-}
-
-[data-theme='dark'] .pt-plans__col-head--green {
-  background: rgb(34 197 94 / 12%);
-}
-
-[data-theme='dark'] .pt-plans__row,
-[data-theme='dark'] .pt-feature-row,
-[data-theme='dark'] .pt-compare td,
-[data-theme='dark'] .pt-diff,
-[data-theme='dark'] .pt-usage-row {
-  border-color: var(--dark-border-subtle);
-}
-
-[data-theme='dark'] .pt-usage-row {
-  background: var(--dark-elevated);
-}
-
-[data-theme='dark'] .pt-usage-row:hover {
-  background: rgb(51 65 85 / 55%);
-}
-
-[data-theme='dark'] .pt-usage-row--active {
-  background: rgb(219 39 119 / 10%);
-  border-color: rgb(219 39 119 / 35%);
-}
-
-[data-theme='dark'] .pt-usage-row--active .pt-usage-row__cost,
-[data-theme='dark'] .pt-stat__value--accent,
+[data-theme='dark'] .pt-prose__byline,
+[data-theme='dark'] .pt-usage-calc__row--total dd,
+[data-theme='dark'] .pt-usage-math__row--total td,
+[data-theme='dark'] .pt-usage-math__row--extra th,
+[data-theme='dark'] .pt-usage-math__row--extra td,
+[data-theme='dark'] .pt-usage-math__show-math > summary,
+[data-theme='dark'] .pt-usage-links__btn,
+[data-theme='dark'] .pt-usage-calc-details > summary,
+[data-theme='dark'] .pt-sum__link,
 [data-theme='dark'] .pt-bench__float--product .pt-bench__float-name,
-[data-theme='dark'] .pt-bench__float--product .pt-bench__float-price {
-  color: #f472b6;
+[data-theme='dark'] .pt-bench__float--product .pt-bench__float-price,
+[data-theme='dark'] .pt-billing__badge,
+[data-theme='dark'] .pt-plan-summary__save,
+[data-theme='dark'] .pt-compare__highlight {
+  color: #f472b6 !important;
 }
 
-[data-theme='dark'] .pt-stat__value--good {
+[data-theme='dark'] .pt-market__pct {
   color: #4ade80;
 }
 
-[data-theme='dark'] .pt-stat__value--bad {
+[data-theme='dark'] .pt-market__pct--bad {
   color: #f87171;
 }
 
-[data-theme='dark'] .pt-bench__tick-line {
-  background: rgb(148 163 184 / 40%);
+[data-theme='dark'] .pt-usage-cols,
+[data-theme='dark'] .pt-usage-detail,
+[data-theme='dark'] .pt-usage-detail__includes,
+[data-theme='dark'] .pt-usage-calc__row--total,
+[data-theme='dark'] .pt-sum,
+[data-theme='dark'] .pt-plan-summary,
+[data-theme='dark'] .pt-plan-active,
+[data-theme='dark'] .pt-plan-pick__chips,
+[data-theme='dark'] .pt-credit-pool,
+[data-theme='dark'] .pt-other-limits__table th,
+[data-theme='dark'] .pt-other-limits__table td,
+[data-theme='dark'] .pt-usage-math__table th,
+[data-theme='dark'] .pt-usage-math__table td,
+[data-theme='dark'] .pt-usage-math__summary th,
+[data-theme='dark'] .pt-usage-math__summary td,
+[data-theme='dark'] .pt-usage-math__chips,
+[data-theme='dark'] .pt-usage-math__chip + .pt-usage-math__chip,
+[data-theme='dark'] .pt-usage-math__details {
+  border-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] .pt-mixer-host:has([data-pt-mixer]) {
+  background: var(--color-surface-container, #1e293b);
+}
+
+[data-theme='dark'] .pt-usage-math__details {
+  background: rgb(15 23 42 / 45%);
+}
+
+[data-theme='dark'] .pt-usage-math__chip .material-symbols-outlined,
+[data-theme='dark'] .pt-usage-math__feat .material-symbols-outlined {
+  color: var(--dark-muted);
+}
+
+[data-theme='dark'] .pt-usage-cols,
+[data-theme='dark'] .pt-usage-detail {
+  background: transparent;
+}
+
+[data-theme='dark'] .pt-usage-col {
+  border-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] .pt-usage-col.is-active {
+  background: rgb(244 114 182 / 10%);
+}
+
+[data-theme='dark'] .pt-usage-col.is-active .pt-usage-col__icon {
+  background: rgb(244 114 182 / 16%);
+  color: #f472b6;
+}
+
+[data-theme='dark'] .pt-usage-detail__icon {
+  background: rgb(244 114 182 / 16%);
+  color: #f472b6;
+}
+
+[data-theme='dark'] .pt-billing__switch {
+  background: rgb(51 65 85 / 55%);
+}
+
+[data-theme='dark'] .pt-billing__btn.is-active {
+  background: rgb(30 41 59);
+  color: var(--color-on-surface);
+}
+
+[data-theme='dark'] .pt-billing__badge {
+  background: rgb(244 114 182 / 14%);
+}
+
+[data-theme='dark'] .pt-plan-summary__icon--paid {
+  background: #db2777;
+  color: #fff;
+}
+
+[data-theme='dark'] .pt-plan-summary__icon--free {
+  background: rgb(71 85 105 / 70%);
+  color: #e2e8f0;
+}
+
+[data-theme='dark'] .pt-credit-pool__skim-item {
+  background: rgb(51 65 85 / 40%);
+  border-color: var(--dark-border-subtle);
+  color: var(--dark-muted);
+}
+
+[data-theme='dark'] .pt-mixer__preset {
+  background: transparent;
+  border-color: var(--dark-border-subtle);
+  color: var(--color-on-surface);
+}
+
+[data-theme='dark'] .pt-mixer__preset.is-active {
+  border-color: #f472b6;
+  color: #f472b6;
+  background: rgb(244 114 182 / 10%);
+}
+
+[data-theme='dark'] .pt-mixer__stepper,
+[data-theme='dark'] .pt-mixer__summary,
+[data-theme='dark'] .pt-mixer__footnote,
+[data-theme='dark'] .pt-mixer__control,
+[data-theme='dark'] .pt-mixer__totals {
+  border-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] .pt-mixer__step {
+  background: rgb(51 65 85 / 55%);
+  color: var(--color-on-surface);
+}
+
+[data-theme='dark'] .pt-mixer__summary {
+  background: transparent;
+}
+
+[data-theme='dark'] .pt-mixer__footnote {
+  background: transparent;
+}
+
+[data-theme='dark'] .pt-mixer__donut-ring {
+  background: rgb(71 85 105 / 70%);
+}
+
+[data-theme='dark'] .pt-topups {
+  border-top-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] .pt-topups__bonus,
+[data-theme='dark'] .pt-topups__estimate-tag,
+[data-theme='dark'] .pt-topups__value-detail,
+[data-theme='dark'] .pt-topups__more {
+  color: var(--dark-muted);
+}
+
+[data-theme='dark'] .pt-topups__best {
+  color: #f472b6;
+}
+
+[data-theme='dark'] .pt-mixer__donut-hole {
+  background: var(--color-surface-container-lowest, #0f172a);
+}
+
+[data-theme='dark'] .pt-mixer__legend-item--remaining .pt-mixer__legend-swatch {
+  background: rgb(71 85 105 / 70%);
+  border-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] .pt-mixer__control-rate,
+[data-theme='dark'] .pt-mixer__spent,
+[data-theme='dark'] .pt-mixer__donut-center span,
+[data-theme='dark'] .pt-mixer__total span,
+[data-theme='dark'] .pt-mixer__footnote,
+[data-theme='dark'] .pt-mixer__legend-item,
+[data-theme='dark'] .pt-mixer-mobile__mix,
+[data-theme='dark'] .pt-mixer-sheet__live,
+[data-theme='dark'] .pt-evidence {
+  color: var(--dark-muted);
+}
+
+[data-theme='dark'] .pt-mixer__total--remain strong,
+[data-theme='dark'] .pt-mixer__preset.is-active {
+  color: #f472b6;
+}
+
+[data-theme='dark'] .pt-block,
+[data-theme='dark'] .pt-topups,
+[data-theme='dark'] .pt-credit-pool,
+[data-theme='dark'] .pt-feature-row,
+[data-theme='dark'] .pt-compare td {
+  border-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] .pt-bench__track {
+  background: #475569;
 }
 
 [data-theme='dark'] .pt-bench__dot--avg {
   background: #e2e8f0;
-  border-color: var(--dark-elevated);
+  border-color: var(--color-background);
 }
 
 [data-theme='dark'] .pt-bench__dot--product {
-  border-color: var(--dark-elevated);
+  border-color: var(--color-background);
 }
 
-[data-theme='dark'] .pt-bench__arrow {
-  border-top-color: #e2e8f0;
+
+/* Expert opinion (shared with Overview — unboxed, no avatar) */
+.pricing-tab .expert-opinion {
+  position: relative;
+  overflow: visible;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
-[data-theme='dark'] .pt-bench__float--product .pt-bench__arrow {
-  border-top-color: #f472b6;
+.pricing-tab .expert-opinion .pt-section-head {
+  margin-bottom: 1.15rem;
 }
 
-[data-theme='dark'] .pt-verdict__icon {
-  color: #4ade80;
+.pricing-tab .expert-opinion__byline {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.55rem;
 }
 
-[data-theme='dark'] .pt-pill--better {
-  background: rgb(34 197 94 / 15%);
-  color: #86efac;
+.pricing-tab .expert-opinion__name {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-on-surface);
 }
 
-[data-theme='dark'] .pt-pill--worse {
-  background: rgb(239 68 68 / 15%);
-  color: #fca5a5;
+.pricing-tab .expert-opinion__body {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-on-surface);
 }
 
-[data-theme='dark'] .pt-pill--neutral {
-  background: rgb(148 163 184 / 18%);
-  color: #cbd5e1;
+@media (min-width: 768px) {
+  .pricing-tab .expert-opinion__body {
+    font-size: 1rem;
+  }
 }
 
-[data-theme='dark'] .pt-compare__highlight,
-[data-theme='dark'] .pt-diff__delta {
-  color: #f472b6 !important;
+@media (max-width: 1023px) {
+  .pricing-tab .overview-sidebar-stack {
+    display: none !important;
+  }
 }
