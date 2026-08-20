@@ -830,14 +830,21 @@ const reviewVideoId = product.videoReview?.embedUrl
     color: var(--color-tertiary);
   }
 
-  .review-blocks a:not(.glossary-tooltip__link) {
-    color: var(--color-accent);
-    text-decoration: none;
+  .review-blocks a:not(.glossary-tooltip__link):not(.glossary-trigger) {
+    font-weight: 800;
+    color: var(--color-on-surface);
+    text-decoration: underline;
+    text-decoration-color: var(--content-link-underline, rgb(219 39 119 / 35%));
+    text-decoration-thickness: from-font;
+    text-underline-offset: 3px;
+    text-decoration-skip-ink: none;
   }
 
-  .review-blocks a:not(.glossary-tooltip__link):hover {
-    color: color-mix(in srgb, var(--color-accent) 85%, #000);
-    text-decoration: none;
+  .review-blocks a:not(.glossary-tooltip__link):not(.glossary-trigger):hover,
+  .review-blocks a:not(.glossary-tooltip__link):not(.glossary-trigger):focus-visible {
+    color: var(--color-on-surface);
+    text-decoration-color: var(--color-accent);
+    outline: none;
   }
 
   [data-theme='dark'] .review-toc__toggle {

@@ -4,8 +4,8 @@
  * payloads are ignored instead of crashing. Never touches the URL.
  */
 
-export const DIRECTORY_PREFS_KEY = 'ai-girlfriend-directory-preferences:v2';
-export const DIRECTORY_PREFS_VERSION = 2;
+export const DIRECTORY_PREFS_KEY = 'ai-girlfriend-directory-preferences:v3';
+export const DIRECTORY_PREFS_VERSION = 3;
 
 export type DirectoryView = 'list' | 'cards';
 
@@ -42,8 +42,8 @@ export interface DirectoryPreferences {
 export function defaultDirectoryPreferences(): DirectoryPreferences {
   return {
     version: DIRECTORY_PREFS_VERSION,
-    // Cards are the established experience, so first-time visitors keep them.
-    view: 'cards',
+    // List is the default layout — first paint matches restored prefs (no cards→list flash).
+    view: 'list',
     filters: [],
     payments: [],
     minRating: 'rating-any',

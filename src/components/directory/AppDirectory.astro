@@ -92,11 +92,11 @@ function formatReviewCount(count: number): string {
         </label>
 
         <div class="dir-view-switch" role="group" aria-label="Result layout">
-          <button type="button" class="dir-view-switch__btn" data-home-view="list" aria-pressed="false">
+          <button type="button" class="dir-view-switch__btn" data-home-view="list" aria-pressed="true">
             <span class="material-symbols-outlined" aria-hidden="true">view_list</span>
             List
           </button>
-          <button type="button" class="dir-view-switch__btn" data-home-view="cards" aria-pressed="true">
+          <button type="button" class="dir-view-switch__btn" data-home-view="cards" aria-pressed="false">
             <span class="material-symbols-outlined" aria-hidden="true">grid_view</span>
             Cards
           </button>
@@ -163,7 +163,7 @@ function formatReviewCount(count: number): string {
           </div>
         </div>
 
-        <div class="home-explorer__grid" data-home-grid data-view="cards">
+        <div class="home-explorer__grid" data-home-grid data-view="list">
           {
             apps.map((app) => (
               <div

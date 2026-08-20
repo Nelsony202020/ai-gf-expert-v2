@@ -492,8 +492,8 @@ html.theme-transition *::after {
 .content-link:focus-visible,
 .roundup-conclusion__pick-link:hover,
 .roundup-conclusion__pick-link:focus-visible {
-  color: var(--color-accent);
-  text-decoration-color: currentColor;
+  color: var(--color-on-surface);
+  text-decoration-color: var(--color-accent);
   outline: none;
 }
 
@@ -550,8 +550,8 @@ html.theme-transition *::after {
   .test-methodology-prose
 )
   a[href]:not([class]):not([role='button']):focus-visible {
-  color: var(--color-accent);
-  text-decoration-color: currentColor;
+  color: var(--color-on-surface);
+  text-decoration-color: var(--color-accent);
   outline: none;
 }
 
