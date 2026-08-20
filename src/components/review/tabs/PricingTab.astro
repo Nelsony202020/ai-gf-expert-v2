@@ -421,7 +421,12 @@ function withUnit(value: string) {
           {
             productBarPct != null && (
               <div
-                class:list={['pt-bench', benchOverlapSSR && 'is-overlap', benchStackedSSR && 'is-stacked']}
+                class:list={[
+                  'pt-bench',
+                  typicalBarPct != null && 'has-typical-below',
+                  benchOverlapSSR && 'is-overlap',
+                  benchStackedSSR && 'is-stacked',
+                ]}
                 data-pt-bench
                 data-pt-product-pct={productBarPct}
                 data-pt-avg-pct={typicalBarPct ?? ''}
@@ -437,11 +442,7 @@ function withUnit(value: string) {
                         aria-label={`Typical monthly price ${marketTypicalLabel}`}
                       >
                         <span
-                          class:list={[
-                            'pt-bench__float',
-                            'pt-bench__float--avg',
-                            benchOverlapSSR && 'pt-bench__float--below',
-                          ]}
+                          class="pt-bench__float pt-bench__float--avg pt-bench__float--below"
                           data-pt-bench-float="avg"
                         >
                           <span class="pt-bench__float-name">Typical monthly price</span>
@@ -2211,6 +2212,7 @@ function withUnit(value: string) {
     padding-bottom: 1.65rem;
   }
 
+  .pt-bench.has-typical-below .pt-bench__chart,
   .pt-bench.is-overlap .pt-bench__chart {
     padding-top: 3.6rem;
     padding-bottom: 3.85rem;
@@ -2232,6 +2234,7 @@ function withUnit(value: string) {
     pointer-events: none;
   }
 
+  .pt-bench.has-typical-below .pt-bench__axis,
   .pt-bench.is-overlap .pt-bench__axis {
     bottom: 2.2rem;
   }
@@ -2310,19 +2313,21 @@ function withUnit(value: string) {
     pointer-events: none;
   }
 
-  /* Overlap: product above, typical price below — see also global rules in pricing-tab.css */
+  /* Product above, typical monthly price always below — see also global rules in pricing-tab.css */
   .pt-bench.is-overlap .pt-bench__marker--product .pt-bench__float {
     bottom: calc(100% + 16px);
     align-items: center;
   }
 
-  .pt-bench.is-overlap .pt-bench__marker--avg .pt-bench__float,
-  .pt-bench__float--below {
+  .pt-bench__float--below,
+  .pt-bench.has-typical-below .pt-bench__marker--avg .pt-bench__float,
+  .pt-bench.is-overlap .pt-bench__marker--avg .pt-bench__float {
     bottom: auto;
     top: calc(100% + 16px);
     align-items: center;
   }
 
+  .pt-bench.has-typical-below .pt-bench__leader--avg,
   .pt-bench.is-overlap .pt-bench__leader {
     display: block;
   }
@@ -2333,6 +2338,7 @@ function withUnit(value: string) {
     color: #db2777;
   }
 
+  .pt-bench.has-typical-below .pt-bench__leader--avg,
   .pt-bench.is-overlap .pt-bench__leader--avg {
     top: 100%;
     height: 16px;
@@ -6812,7 +6818,9 @@ function withUnit(value: string) {
       const stacked = pxApart < 12;
       bench.classList.toggle('is-overlap', overlap);
       bench.classList.toggle('is-stacked', stacked);
-      avgFloat?.classList.toggle('pt-bench__float--below', overlap);
+      // Typical monthly price always sits below so labels never stack on top of each other.
+      bench.classList.add('has-typical-below');
+      avgFloat?.classList.add('pt-bench__float--below');
     });
   }
 

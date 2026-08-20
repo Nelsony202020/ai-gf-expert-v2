@@ -369,12 +369,14 @@
   color: #cbd5e1;
 }
 
-/* Overlap layout — global so it survives Astro scoping + refresh */
+/* Typical monthly price always below — global so it survives Astro scoping + refresh */
+.pt-bench.has-typical-below .pt-bench__chart,
 .pt-bench.is-overlap .pt-bench__chart {
   padding-top: 3.6rem;
   padding-bottom: 3.85rem;
 }
 
+.pt-bench.has-typical-below .pt-bench__axis,
 .pt-bench.is-overlap .pt-bench__axis {
   bottom: 2.2rem;
 }
@@ -384,6 +386,7 @@
 }
 
 .pt-bench__float--below,
+.pt-bench.has-typical-below .pt-bench__marker--avg .pt-bench__float,
 .pt-bench.is-overlap .pt-bench__marker--avg .pt-bench__float {
   bottom: auto !important;
   top: calc(100% + 16px) !important;
@@ -395,6 +398,7 @@
   align-items: center;
 }
 
+.pt-bench.has-typical-below .pt-bench__leader--avg,
 .pt-bench.is-overlap .pt-bench__leader {
   display: block;
 }
@@ -405,6 +409,7 @@
   color: #db2777;
 }
 
+.pt-bench.has-typical-below .pt-bench__leader--avg,
 .pt-bench.is-overlap .pt-bench__leader--avg {
   top: 100%;
   height: 16px;

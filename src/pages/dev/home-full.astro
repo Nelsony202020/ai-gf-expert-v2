@@ -1,0 +1,98 @@
+---
+/**
+ * Preserved full homepage composition (pre quick-fix).
+ * Local preview: /dev/home-full/
+ * Not linked from nav — restore into index.astro when redesigning.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import HomeHero from '../../components/home/HomeHero.astro';
+import HomeTrustStrip from '../../components/home/HomeTrustStrip.astro';
+import HomePicksAndCharacters from '../../components/home/HomePicksAndCharacters.astro';
+import HomeQuickFinder from '../../components/home/HomeQuickFinder.astro';
+import HomeFindMatch from '../../components/home/HomeFindMatch.astro';
+import HomeRecentUpdates from '../../components/home/HomeRecentUpdates.astro';
+import HomeHowWeTest from '../../components/home/HomeHowWeTest.astro';
+import HomeGuides from '../../components/home/HomeGuides.astro';
+import HomeFinalCta from '../../components/home/HomeFinalCta.astro';
+import PageMobileNavSheet from '../../components/mobile/PageMobileNavSheet.astro';
+import {
+  loadExplorerApps,
+  loadFeaturedCharactersShowcase,
+  homeMeta,
+  fileAiGirlfriendRoundup,
+} from '../../data/homepage';
+import {
+  loadHomepageGuides,
+  loadHomepageRecentUpdates,
+  loadHomepageTopPicks,
+} from '../../lib/content/homepageLoaders';
+import JsonLd from '../../components/seo/JsonLd.astro';
+import { buildHomepageSchema } from '../../lib/seo/jsonld';
+import { cdnAsset } from '../../lib/media/cdn';
+import { isPlaceholderImage, PUBLIC_HERO_FALLBACK } from '../../lib/media/optimize';
+
+const [apps, featuredCharactersShowcase, topPicks, recentUpdates, featuredGuides] = await Promise.all([
+  loadExplorerApps(),
+  loadFeaturedCharactersShowcase(),
+  loadHomepageTopPicks(fileAiGirlfriendRoundup.picks),
+  loadHomepageRecentUpdates(),
+  loadHomepageGuides(),
+]);
+const jsonLdGraph = buildHomepageSchema();
+const heroImage = cdnAsset(
+  isPlaceholderImage(homeMeta.heroImage) ? PUBLIC_HERO_FALLBACK : homeMeta.heroImage,
+);
+
+const homeToc = [
+  { id: 'home-hero', label: 'Search & intro' },
+  { id: 'home-top-picks', label: 'Top picks' },
+  { id: 'explore-apps', label: 'Find an app' },
+  { id: 'home-testing', label: 'How we test' },
+  { id: 'home-guides', label: 'Guides' },
+];
+---
+
+<BaseLayout
+  title={`${homeMeta.title} (full)`}
+  description={homeMeta.description}
+  image={heroImage}
+  lcpImage={heroImage}
+  theme="home"
+  robots="noindex, nofollow"
+>
+  <JsonLd slot="head" graph={jsonLdGraph} />
+  <Header />
+  <main>
+    <div id="home-hero">
+      <HomeHero heroImage={heroImage} heroImageAlt={homeMeta.heroImageAlt} />
+    </div>
+    <HomeTrustStrip />
+    <div id="home-top-picks" class="scroll-mt-24">
+      <HomePicksAndCharacters picks={topPicks} characters={featuredCharactersShowcase} />
+    </div>
+    <HomeQuickFinder apps={apps} />
+
+    <section class="home-section section-container px-4 md:px-8">
+      <div class="home-split">
+        <HomeFindMatch />
+        <HomeRecentUpdates updates={recentUpdates} />
+      </div>
+    </section>
+
+    <div id="home-testing" class="scroll-mt-24">
+      <HomeHowWeTest />
+    </div>
+    <div id="home-guides" class="scroll-mt-24">
+      <HomeGuides guides={featuredGuides} />
+    </div>
+    <HomeFinalCta />
+  </main>
+  <Footer />
+  <PageMobileNavSheet
+    sections={homeToc}
+    pageTitle={homeMeta.title}
+    pageUrl="https://aigirlfriend.expert/"
+  />
+</BaseLayout>

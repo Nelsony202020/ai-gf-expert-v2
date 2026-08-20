@@ -3573,11 +3573,105 @@ body.home-filters-open {
   background: var(--color-brand-lime-dark);
 }
 
+/* Quick-fix lab notice */
+.home-lab {
+  position: relative;
+  padding-top: 3.5rem;
+  padding-bottom: 3.5rem;
+  text-align: center;
+  border-top: 1px solid var(--color-surface-variant);
+  border-bottom: 1px solid var(--color-surface-variant);
+  background:
+    radial-gradient(ellipse 70% 80% at 50% 0%, rgb(218 246 108 / 12%), transparent 55%),
+    radial-gradient(ellipse 50% 60% at 80% 100%, rgb(219 39 119 / 6%), transparent 50%),
+    var(--color-surface-container-lowest);
+}
+
+@media (min-width: 768px) {
+  .home-lab {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+}
+
+.home-lab__eyebrow {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.home-lab__title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.75rem, 8vw, 5.5rem);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--color-on-surface);
+}
+
+.home-lab__lead {
+  margin: 1.25rem auto 0;
+  max-width: 32rem;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--color-on-surface-variant);
+}
+
+.home-lab__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1.25rem;
+  margin-top: 1.75rem;
+}
+
+.home-lab__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.35rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  text-decoration: none;
+  background: var(--color-brand-lime);
+  color: var(--color-on-brand-lime);
+  transition: background 0.15s;
+}
+
+.home-lab__cta:hover {
+  background: var(--color-brand-lime-dark);
+}
+
+.home-lab__link {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.home-lab__link:hover {
+  text-decoration: underline;
+}
+
 [data-theme='dark'] .home-hero,
 [data-theme='dark'] .home-trust,
 [data-theme='dark'] .home-section--muted,
-[data-theme='dark'] .home-final-cta {
+[data-theme='dark'] .home-final-cta,
+[data-theme='dark'] .home-lab {
   background: var(--color-surface-container-low);
+}
+
+[data-theme='dark'] .home-lab {
+  background:
+    radial-gradient(ellipse 70% 80% at 50% 0%, rgb(218 246 108 / 8%), transparent 55%),
+    var(--color-surface-container-low);
 }
 
 [data-theme='dark'] .home-hero {

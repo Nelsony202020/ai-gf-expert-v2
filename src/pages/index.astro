@@ -4,49 +4,23 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import HomeHero from '../components/home/HomeHero.astro';
 import HomeTrustStrip from '../components/home/HomeTrustStrip.astro';
-import HomePicksAndCharacters from '../components/home/HomePicksAndCharacters.astro';
-import HomeQuickFinder from '../components/home/HomeQuickFinder.astro';
-import HomeFindMatch from '../components/home/HomeFindMatch.astro';
-import HomeRecentUpdates from '../components/home/HomeRecentUpdates.astro';
-import HomeHowWeTest from '../components/home/HomeHowWeTest.astro';
+import HomeLabNotice from '../components/home/HomeLabNotice.astro';
 import HomeGuides from '../components/home/HomeGuides.astro';
-import HomeFinalCta from '../components/home/HomeFinalCta.astro';
 import PageMobileNavSheet from '../components/mobile/PageMobileNavSheet.astro';
-import {
-  loadExplorerApps,
-  loadFeaturedCharactersShowcase,
-  homeMeta,
-  fileAiGirlfriendRoundup,
-} from '../data/homepage';
-import {
-  loadHomepageGuides,
-  loadHomepageRecentUpdates,
-  loadHomepageTopPicks,
-} from '../lib/content/homepageLoaders';
+import { featuredGuides, homeMeta } from '../data/homepage';
 import JsonLd from '../components/seo/JsonLd.astro';
 import { buildHomepageSchema } from '../lib/seo/jsonld';
 import { cdnAsset } from '../lib/media/cdn';
-import { isPlaceholderImage, PUBLIC_HERO_FALLBACK } from '../lib/media/optimize';
 
-// Static HTML at the edge. Google lands here — SSR + InstantDB was ~5.5s TTFB.
-// Homepage slots update on the next publish/rebuild (same as review pages).
-const [apps, featuredCharactersShowcase, topPicks, recentUpdates, featuredGuides] = await Promise.all([
-  loadExplorerApps(),
-  loadFeaturedCharactersShowcase(),
-  loadHomepageTopPicks(fileAiGirlfriendRoundup.picks),
-  loadHomepageRecentUpdates(),
-  loadHomepageGuides(),
-]);
+// Quick-fix homepage: hero + trust + lab notice + guides.
+// Full composition preserved at /dev/home-full/
 const jsonLdGraph = buildHomepageSchema();
-const heroImage = cdnAsset(
-  isPlaceholderImage(homeMeta.heroImage) ? PUBLIC_HERO_FALLBACK : homeMeta.heroImage,
-);
+const heroImage = cdnAsset('/brand/home-hero-mock.jpg');
+const heroImageAlt = 'Coming soon note pinned to a corkboard';
 
 const homeToc = [
-  { id: 'home-hero', label: 'Search & intro' },
-  { id: 'home-top-picks', label: 'Top picks' },
-  { id: 'explore-apps', label: 'Find an app' },
-  { id: 'home-testing', label: 'How we test' },
+  { id: 'home-hero', label: 'Intro' },
+  { id: 'home-lab', label: 'Coming soon' },
   { id: 'home-guides', label: 'Guides' },
 ];
 ---
@@ -62,28 +36,13 @@ const homeToc = [
   <Header />
   <main>
     <div id="home-hero">
-      <HomeHero heroImage={heroImage} heroImageAlt={homeMeta.heroImageAlt} />
+      <HomeHero heroImage={heroImage} heroImageAlt={heroImageAlt} />
     </div>
     <HomeTrustStrip />
-    <div id="home-top-picks" class="scroll-mt-24">
-      <HomePicksAndCharacters picks={topPicks} characters={featuredCharactersShowcase} />
-    </div>
-    <HomeQuickFinder apps={apps} />
-
-    <section class="home-section section-container px-4 md:px-8">
-      <div class="home-split">
-        <HomeFindMatch />
-        <HomeRecentUpdates updates={recentUpdates} />
-      </div>
-    </section>
-
-    <div id="home-testing" class="scroll-mt-24">
-      <HomeHowWeTest />
-    </div>
+    <HomeLabNotice />
     <div id="home-guides" class="scroll-mt-24">
       <HomeGuides guides={featuredGuides} />
     </div>
-    <HomeFinalCta />
   </main>
   <Footer />
   <PageMobileNavSheet

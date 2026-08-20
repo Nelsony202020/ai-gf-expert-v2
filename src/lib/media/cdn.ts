@@ -23,6 +23,7 @@ export function getCdnBaseUrl(): string {
 const SAME_ORIGIN_PUBLIC_PATHS = new Set([
   '/brand/girlfriend-expert-logo.png',
   '/brand/girlfriend-expert-logo-white.png',
+  '/brand/home-hero-mock.jpg',
 ]);
 
 /** Prefixes served from the app origin until (or unless) they exist on the pull zone. */

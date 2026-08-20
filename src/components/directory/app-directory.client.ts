@@ -317,18 +317,29 @@ export function initAppDirectory() {
   function setView(view: DirectoryView, persist = true) {
     const domView = grid?.dataset.view;
     if (view === currentView && domView === view) return;
-    grid?.classList.add('is-switching');
-    window.setTimeout(() => {
+
+    const apply = () => {
       currentView = view;
       if (grid) grid.dataset.view = view;
       viewButtons.forEach((btn) => {
         btn.setAttribute('aria-pressed', btn.dataset.homeView === view ? 'true' : 'false');
       });
-      requestAnimationFrame(() => grid?.classList.remove('is-switching'));
       if (persist) {
         persistState();
         track('view_switched', { view });
       }
+    };
+
+    // Initial restore: apply immediately so list/cards don't flash.
+    if (!persist) {
+      apply();
+      return;
+    }
+
+    grid?.classList.add('is-switching');
+    window.setTimeout(() => {
+      apply();
+      requestAnimationFrame(() => grid?.classList.remove('is-switching'));
     }, VIEW_SWITCH_MS);
   }
 
