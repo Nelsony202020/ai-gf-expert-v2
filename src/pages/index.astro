@@ -7,13 +7,15 @@ import HomeTrustStrip from '../components/home/HomeTrustStrip.astro';
 import HomeLabNotice from '../components/home/HomeLabNotice.astro';
 import HomeGuides from '../components/home/HomeGuides.astro';
 import PageMobileNavSheet from '../components/mobile/PageMobileNavSheet.astro';
-import { featuredGuides, homeMeta } from '../data/homepage';
+import { homeMeta } from '../data/homepage';
+import { loadHomepageGuides } from '../lib/content/homepageLoaders';
 import JsonLd from '../components/seo/JsonLd.astro';
 import { buildHomepageSchema } from '../lib/seo/jsonld';
 import { cdnAsset } from '../lib/media/cdn';
 
 // Quick-fix homepage: hero + trust + lab notice + guides.
 // Full composition preserved at /dev/home-full/
+const featuredGuides = await loadHomepageGuides();
 const jsonLdGraph = buildHomepageSchema();
 const heroImage = cdnAsset('/brand/home-hero-mock.jpg');
 const heroImageAlt = 'Coming soon note pinned to a corkboard';

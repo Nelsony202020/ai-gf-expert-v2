@@ -383,7 +383,8 @@ function subWinners(key: string, subName: string, ids: string[]) {
               {
                 pick.reviewUrl && (
                   <a class="roundup-compare__review-link" href={pick.reviewUrl} data-compare-review={pickId}>
-                    Read the {pick.name} review
+                    <span class="roundup-compare__review-brand">{pick.name}</span>
+                    <span class="roundup-compare__review-word">review</span>
                   </a>
                 )
               }
@@ -651,7 +652,7 @@ function subWinners(key: string, subName: string, ids: string[]) {
       if (reviewLink instanceof HTMLAnchorElement) {
         if (pick.reviewUrl) {
           reviewLink.href = pick.reviewUrl;
-          reviewLink.textContent = `Read the ${pick.name} review`;
+          reviewLink.innerHTML = `<span class="roundup-compare__review-brand">${pick.name}</span><span class="roundup-compare__review-word">review</span>`;
           reviewLink.hidden = false;
         } else {
           reviewLink.hidden = true;
@@ -659,7 +660,7 @@ function subWinners(key: string, subName: string, ids: string[]) {
       } else if (pick.reviewUrl && visitCol) {
         visitCol.insertAdjacentHTML(
           'beforeend',
-          `<a class="roundup-compare__review-link" href="${pick.reviewUrl}" data-compare-review="${pickId}">Read the ${pick.name} review</a>`,
+          `<a class="roundup-compare__review-link" href="${pick.reviewUrl}" data-compare-review="${pickId}"><span class="roundup-compare__review-brand">${pick.name}</span><span class="roundup-compare__review-word">review</span></a>`,
         );
       }
 

@@ -49,8 +49,8 @@
 
 .roundup-compare__picker-row.is-pinned {
   padding: 0.35rem 0 0.5rem;
-  background: color-mix(in srgb, var(--color-background) 94%, transparent);
-  backdrop-filter: blur(8px);
+  background: #fff;
+  backdrop-filter: none;
   border-bottom: 1px solid var(--color-surface-variant);
 }
 
@@ -329,13 +329,26 @@
 }
 
 .roundup-compare__review-link {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
   font-size: 0.75rem;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.25;
   text-align: center;
   text-decoration: none;
   color: var(--color-tertiary);
+}
+
+.roundup-compare__review-brand {
+  display: block;
+}
+
+.roundup-compare__review-word {
+  display: block;
+  font-weight: 600;
+  text-transform: lowercase;
 }
 
 .roundup-compare__review-link:hover {
@@ -431,21 +444,22 @@
     gap: 0.5rem;
   }
 
-  /* Category scores — stacked label row + 2-column score grid */
+  /* Category scores reuse the top sticky pickers — hide the duplicate mobile row */
   .roundup-compare__picker-row--scores {
-    display: block;
-    position: sticky;
-    top: var(--compare-sticky-top);
-    z-index: 29;
-    margin: 0 0 0.75rem;
-    padding: 0;
+    display: none !important;
   }
 
-  .roundup-compare__picker-row--scores.is-pinned {
-    padding: 0.35rem 0 0.5rem;
-    background: color-mix(in srgb, var(--color-background) 94%, transparent);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--color-surface-variant);
+  .roundup-compare__picker-row.is-pinned {
+    background: #fff;
+    backdrop-filter: none;
+  }
+
+  [data-theme='dark'] .roundup-compare__picker-row.is-pinned {
+    background: var(--color-surface-container-lowest);
+  }
+
+  .roundup-compare__picker-row {
+    z-index: 40;
   }
 
   .roundup-compare__scores-picker-cols .roundup-compare__col--picker:nth-child(3) {
@@ -612,11 +626,11 @@
 }
 
 [data-theme='dark'] .roundup-compare__picker-row.is-pinned {
-  background: color-mix(in srgb, var(--color-background) 88%, transparent);
+  background: var(--color-surface-container-lowest);
 }
 
 [data-theme='dark'] .roundup-compare__picker-row--scores.is-pinned {
-  background: color-mix(in srgb, var(--color-background) 88%, transparent);
+  background: var(--color-surface-container-lowest);
 }
 
 [data-theme='dark'] .roundup-compare__matrix-row--category {

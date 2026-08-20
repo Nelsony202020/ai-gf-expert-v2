@@ -80,16 +80,35 @@ function formatReviewCount(count: number): string {
           Customize ranking
         </button>
 
-        <label class="dir-sort">
+        <div class="dir-sort roundup-control-dropdown" data-dir-sort>
           <span class="dir-sort__label">Sort</span>
-          <select class="dir-sort__select" data-home-sort aria-label="Sort results">
-            {DIRECTORY_SORT_OPTIONS.map((opt) => (
-              <option value={opt.id} selected={opt.id === 'overall'}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          <button
+            type="button"
+            class="roundup-control-dropdown__trigger dir-sort__trigger"
+            data-home-sort-open
+            aria-haspopup="listbox"
+            aria-expanded="false"
+          >
+            <span data-home-sort-label>Overall rating</span>
+            <span class="material-symbols-outlined roundup-control-dropdown__chevron" aria-hidden="true">expand_more</span>
+          </button>
+          <div class="roundup-control-dropdown__menu dir-sort__menu" data-home-sort-menu role="listbox" hidden>
+            {
+              DIRECTORY_SORT_OPTIONS.map((opt) => (
+                <button
+                  type="button"
+                  role="option"
+                  class:list={['roundup-control-dropdown__option', opt.id === 'overall' && 'is-active']}
+                  data-home-sort-option={opt.id}
+                  aria-selected={opt.id === 'overall' ? 'true' : 'false'}
+                >
+                  {opt.label}
+                </button>
+              ))
+            }
+          </div>
+          <input type="hidden" data-home-sort value="overall" />
+        </div>
 
         <div class="dir-view-switch" role="group" aria-label="Result layout">
           <button type="button" class="dir-view-switch__btn" data-home-view="list" aria-pressed="true">

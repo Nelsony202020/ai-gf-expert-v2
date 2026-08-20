@@ -67,7 +67,11 @@ export function initAppDirectory() {
   const perPage = Number(section.dataset.perPage ?? APPS_PER_PAGE);
 
   const grid = root.querySelector<HTMLElement>('[data-home-grid]');
-  const sortSelect = section.querySelector<HTMLSelectElement>('[data-home-sort]');
+  const sortInput = section.querySelector<HTMLInputElement>('[data-home-sort]');
+  const sortOpen = section.querySelector<HTMLButtonElement>('[data-home-sort-open]');
+  const sortMenu = section.querySelector<HTMLElement>('[data-home-sort-menu]');
+  const sortLabel = section.querySelector<HTMLElement>('[data-home-sort-label]');
+  const sortOptions = [...section.querySelectorAll<HTMLButtonElement>('[data-home-sort-option]')];
   const resultCountEl = section.querySelector<HTMLElement>('[data-home-result-count]');
   const items = [...root.querySelectorAll('[data-home-app]')] as HTMLElement[];
   const prioritySlots = [...root.querySelectorAll('[data-home-priority-slot]')] as HTMLElement[];
@@ -110,7 +114,7 @@ export function initAppDirectory() {
       priceMax: null,
       priceBucket: null,
       bestAt: null,
-      sort: sortSelect?.value ?? 'overall',
+      sort: sortInput?.value ?? 'overall',
       priorities: personalized ? currentPriorities() : null,
       saved: prefs.saved,
       ...extra,
@@ -294,7 +298,7 @@ export function initAppDirectory() {
       if (personalized) {
         return getWeightedScore(b, currentPriorities()) - getWeightedScore(a, currentPriorities());
       }
-      const sortKey = sortSelect?.value ?? 'overall';
+      const sortKey = sortInput?.value ?? 'overall';
       const aScore = getSortScore(a, sortKey);
       const bScore = getSortScore(b, sortKey);
       if (sortKey === 'price-asc') return aScore - bScore;
@@ -343,11 +347,30 @@ export function initAppDirectory() {
     }, VIEW_SWITCH_MS);
   }
 
+  function setSortValue(value: string, persist = true) {
+    if (!sortInput) return;
+    if (!DIRECTORY_SORT_LABELS[value]) return;
+    sortInput.value = value;
+    if (sortLabel) sortLabel.textContent = DIRECTORY_SORT_LABELS[value] ?? value;
+    sortOptions.forEach((btn) => {
+      const active = btn.dataset.homeSortOption === value;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    if (persist) persistState();
+  }
+
+  function closeSortMenu() {
+    if (!sortMenu || !sortOpen) return;
+    sortMenu.hidden = true;
+    sortOpen.setAttribute('aria-expanded', 'false');
+  }
+
   function restorePreferences() {
     setView(prefs.view, false);
 
-    if (sortSelect && [...sortSelect.options].some((opt) => opt.value === prefs.sort)) {
-      sortSelect.value = prefs.sort;
+    if (prefs.sort && DIRECTORY_SORT_LABELS[prefs.sort]) {
+      setSortValue(prefs.sort, false);
     }
 
     if (prefs.priorities && prefs.priorities.length > 0) {
@@ -364,11 +387,29 @@ export function initAppDirectory() {
     }
   }
 
-  sortSelect?.addEventListener('change', () => {
-    setPersonalized(false);
-    setPriorities([...DEFAULT_RANKING_PRIORITIES]);
-    track('sort_changed', { sort: sortSelect.value, label: DIRECTORY_SORT_LABELS[sortSelect.value] });
-    applySortAndPagination();
+  sortOpen?.addEventListener('click', () => {
+    if (!sortMenu || !sortOpen) return;
+    const open = sortMenu.hidden;
+    sortMenu.hidden = !open;
+    sortOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
+  sortOptions.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const value = btn.dataset.homeSortOption ?? 'overall';
+      setSortValue(value);
+      setPersonalized(false);
+      setPriorities([...DEFAULT_RANKING_PRIORITIES]);
+      track('sort_changed', { sort: value, label: DIRECTORY_SORT_LABELS[value] });
+      closeSortMenu();
+      applySortAndPagination();
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!(e.target instanceof Element)) return;
+    if (e.target.closest('[data-dir-sort]')) return;
+    closeSortMenu();
   });
 
   initPriorityPickers();
@@ -465,8 +506,8 @@ export function initAppDirectory() {
   });
 
   const initialSort = parseAppsSort(window.location.search);
-  if (initialSort && sortSelect && [...sortSelect.options].some((opt) => opt.value === initialSort)) {
-    sortSelect.value = initialSort;
+  if (initialSort && DIRECTORY_SORT_LABELS[initialSort]) {
+    setSortValue(initialSort, false);
   }
 
   updatePrioritySlotIcons();

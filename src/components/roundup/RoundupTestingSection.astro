@@ -1,12 +1,16 @@
 ---
 import type { RoundupTesting } from '../../data/roundups/ai-girlfriend';
 import EditorialPillLink from '../ui/EditorialPillLink.astro';
+import { cdnAsset } from '../../lib/media/cdn';
 
 interface Props {
   testing: RoundupTesting;
 }
 
 const { testing } = Astro.props;
+const videoSrc = testing.videoSrc ? cdnAsset(testing.videoSrc) : '';
+const videoPoster = cdnAsset(testing.videoPoster);
+const hasVideo = Boolean(videoSrc);
 ---
 
 <section id="roundup-testing" class="roundup-testing scroll-mt-24" data-roundup-testing>
@@ -23,31 +27,49 @@ const { testing } = Astro.props;
 
     <div class="roundup-testing__video-wrap" data-testing-video-wrap>
       <div class="roundup-testing__video-frame">
-        <video
-          class="roundup-testing__video"
-          data-testing-video-el
-          poster={testing.videoPoster}
-          loop
-          muted
-          playsinline
-          autoplay
-          preload="metadata"
-          aria-label="Clip from our AI girlfriend app testing lab"
-          hidden={!testing.videoSrc}
-        >
-          {testing.videoSrc && <source src={testing.videoSrc} type="video/mp4" />}
-        </video>
-        <img
-          class="roundup-testing__video-fallback"
-          data-testing-video-fallback
-          src={testing.videoPoster}
-          alt=""
-          width="1280"
-          height="720"
-          loading="lazy"
-          decoding="async"
-          hidden={Boolean(testing.videoSrc)}
-        />
+        {
+          hasVideo ? (
+            <video
+              class="roundup-testing__video"
+              data-testing-video-el
+              data-src={videoSrc}
+              poster={videoPoster}
+              loop
+              muted
+              playsinline
+              disablepictureinpicture
+              disableremoteplayback
+              preload="none"
+              aria-label="How we test AI girlfriend apps — quick video"
+            />
+          ) : (
+            <img
+              class="roundup-testing__video-fallback"
+              data-testing-video-fallback
+              src={videoPoster}
+              alt="How we test AI girlfriend apps — quick video"
+              width="1280"
+              height="720"
+              loading="lazy"
+              decoding="async"
+            />
+          )
+        }
+        {
+          hasVideo && (
+            <img
+              class="roundup-testing__video-fallback"
+              data-testing-video-fallback
+              src={videoPoster}
+              alt="How we test AI girlfriend apps — quick video"
+              width="1280"
+              height="720"
+              loading="lazy"
+              decoding="async"
+              hidden
+            />
+          )
+        }
       </div>
     </div>
   </div>
@@ -80,46 +102,47 @@ const { testing } = Astro.props;
       const video = root.querySelector<HTMLVideoElement>('[data-testing-video-el]');
       const fallback = root.querySelector<HTMLImageElement>('[data-testing-video-fallback]');
 
-      if (!wrap) return;
+      if (!wrap || !video) return;
+
+      let sourceAttached = false;
 
       function enableFallback() {
-        if (video) video.hidden = true;
+        video.hidden = true;
         if (fallback) fallback.hidden = false;
       }
 
+      function ensureSource() {
+        const src = video.dataset.src;
+        if (!src || sourceAttached) return;
+        const source = document.createElement('source');
+        source.src = src;
+        source.type = 'video/mp4';
+        video.appendChild(source);
+        video.load();
+        sourceAttached = true;
+      }
+
       function startPlayback() {
-        if (!video) {
-          enableFallback();
-          return;
-        }
-
-        const hasSource = Boolean(video.querySelector('source')?.getAttribute('src'));
-        if (!hasSource) {
-          enableFallback();
-          return;
-        }
-
+        ensureSource();
         video.muted = true;
+        video.defaultMuted = true;
         video.playsInline = true;
         void video.play().catch(() => enableFallback());
       }
 
       function stopPlayback() {
-        if (video && !video.hidden) video.pause();
+        if (!video.hidden) video.pause();
       }
 
-      if (!video?.querySelector('source')?.getAttribute('src')) {
-        enableFallback();
-      } else {
-        video.addEventListener('error', enableFallback);
-      }
+      video.addEventListener('error', enableFallback);
 
       const observer = new IntersectionObserver(
         (entries) => {
-          if (entries.some((entry) => entry.isIntersecting)) startPlayback();
+          const visible = entries.some((entry) => entry.isIntersecting);
+          if (visible) startPlayback();
           else stopPlayback();
         },
-        { threshold: 0.35, rootMargin: '0px 0px -5% 0px' },
+        { threshold: 0.25, rootMargin: '80px 0px' },
       );
 
       observer.observe(wrap);

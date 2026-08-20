@@ -71,6 +71,20 @@
   body[data-mobile-nav-mode='review'] .verdict-icon-nav__tip {
     display: none !important;
   }
+
+  /* Mobile review: ratings first, hide featured gallery */
+  .review-hero-media {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .review-hero-gallery {
+    display: none !important;
+  }
+
+  .review-hero-ratings {
+    width: 100%;
+  }
 }
 
 @media (min-width: 1024px) {

@@ -29,6 +29,17 @@ import { brandIcons } from '../../lib/brand-icons';
         What's this about? <span class="article-feedback__required" aria-hidden="true">*</span>
       </p>
 
+      <label class="article-feedback__topic-select-wrap">
+        <span class="sr-only">What's this about?</span>
+        <select class="article-feedback__topic-select" data-feedback-category-select aria-label="What's this about?">
+          <option value="">Select a topic</option>
+          <option value="outdated">Outdated information</option>
+          <option value="missing-app">Missing app</option>
+          <option value="wrong">Something is wrong</option>
+          <option value="general">General feedback</option>
+        </select>
+      </label>
+
       <div class="article-feedback__categories" role="radiogroup" aria-label="Feedback type" data-feedback-category-group>
         <button
           type="button"
@@ -169,6 +180,7 @@ import { brandIcons } from '../../lib/brand-icons';
     const categoryBtns = root.querySelectorAll<HTMLButtonElement>('[data-feedback-category]');
     const categoryHint = root.querySelector<HTMLElement>('[data-feedback-category-hint]');
     const categoryGroup = root.querySelector<HTMLElement>('[data-feedback-category-group]');
+    const categorySelect = root.querySelector<HTMLSelectElement>('[data-feedback-category-select]');
     const submitBtn = form?.querySelector<HTMLButtonElement>('[data-feedback-submit]');
     const titleEl = root.querySelector<HTMLElement>('#article-feedback-title');
     const closeBtn = root.querySelector<HTMLElement>('.article-feedback__close');
@@ -176,6 +188,19 @@ import { brandIcons } from '../../lib/brand-icons';
     let pageTitle = document.title;
     let pageUrl = window.location.href;
     let lockedScrollY = 0;
+
+    function applyCategory(value: string) {
+      if (categoryInput) categoryInput.value = value;
+      categoryBtns.forEach((b) => {
+        const selected = b.dataset.feedbackCategory === value;
+        b.classList.toggle('is-selected', selected);
+        b.setAttribute('aria-checked', selected ? 'true' : 'false');
+      });
+      if (categorySelect && categorySelect.value !== value) {
+        categorySelect.value = value;
+      }
+      updateSubmitState();
+    }
 
     function lockBodyScroll(lock: boolean) {
       if (lock) {
@@ -217,6 +242,7 @@ import { brandIcons } from '../../lib/brand-icons';
         b.setAttribute('aria-checked', 'false');
       });
       if (categoryInput) categoryInput.value = '';
+      if (categorySelect) categorySelect.value = '';
       if (counter) counter.textContent = '0/500';
       formView?.classList.remove('hidden');
       successView?.classList.add('hidden');
@@ -267,15 +293,12 @@ import { brandIcons } from '../../lib/brand-icons';
 
     categoryBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        categoryBtns.forEach((b) => {
-          b.classList.remove('is-selected');
-          b.setAttribute('aria-checked', 'false');
-        });
-        btn.classList.add('is-selected');
-        btn.setAttribute('aria-checked', 'true');
-        if (categoryInput) categoryInput.value = btn.dataset.feedbackCategory ?? '';
-        updateSubmitState();
+        applyCategory(btn.dataset.feedbackCategory ?? '');
       });
+    });
+
+    categorySelect?.addEventListener('change', () => {
+      applyCategory(categorySelect.value);
     });
 
     message?.addEventListener('input', () => {
