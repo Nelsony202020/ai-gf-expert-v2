@@ -3893,13 +3893,17 @@ function withUnit(value: string) {
     min-height: 2.75rem;
     margin: 0;
     padding: 0.7rem 1rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid transparent;
     border-radius: 10px;
-    background: var(--color-on-surface);
+    background: var(--color-accent, #db2777);
     font-size: 0.9375rem;
     font-weight: 700;
     color: #fff;
     cursor: pointer;
+  }
+
+  .pt-mixer-sheet__apply:hover {
+    background: color-mix(in srgb, var(--color-accent, #db2777) 88%, #000);
   }
 
   @media (max-width: 767px) {

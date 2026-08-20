@@ -125,8 +125,8 @@ const hasVideoReview = Boolean(product.videoReview?.embedUrl);
   </div>
 
   <!-- Gallery + sticky ratings -->
-  <div class="flex flex-col lg:flex-row gap-8">
-    <div class="lg:w-[68%]">
+  <div class="review-hero-media flex flex-col lg:flex-row gap-8">
+    <div class="review-hero-gallery lg:w-[68%]">
       <Gallery
         images={
           product.featuredImage
@@ -138,7 +138,7 @@ const hasVideoReview = Boolean(product.videoReview?.embedUrl);
         product={product}
       />
     </div>
-    <div class="lg:w-[32%]">
+    <div class="review-hero-ratings lg:w-[32%]">
       <RatingSidebar product={product} />
     </div>
   </div>

@@ -133,19 +133,28 @@ export async function loadHomepageRecentUpdates(): Promise<HomeRecentUpdate[]> {
     }));
 }
 
-/** Guides / featured articles from published reviews only. */
+/** Guides / featured articles — static featuredGuides hydrated with live product art when available. */
 export async function loadHomepageGuides(): Promise<HomeGuide[]> {
+  const { featuredGuides } = await import('../../data/homepage');
   const products = await loadPublishedProducts([]);
-  return products.slice(0, 6).map((p) => ({
-    id: `guide-${p.slug}`,
-    title: `${p.name} Review`,
-    excerpt: p.overallSummary || p.tagline,
-    href: reviewPageUrl(p.slug),
-    image: p.featuredImage?.full ?? p.gallery[0]?.full ?? '',
-    imageAlt: `${p.name} review`,
-    date: p.modifiedDate || p.reviewedDate || '',
-    type: 'review' as const,
-  }));
+  const bySlug = new Map(products.map((p) => [p.slug, p]));
+
+  const productImage = (slug: string): string | undefined => {
+    const p = bySlug.get(slug);
+    return p?.featuredImage?.full || p?.gallery?.[0]?.full || undefined;
+  };
+
+  return featuredGuides.map((guide) => {
+    if (guide.id === 'ourdream-review') {
+      const image = productImage('ourdream-ai');
+      return image ? { ...guide, image } : guide;
+    }
+    if (guide.id === 'roundup-compare') {
+      const image = productImage('candy-ai') || productImage('girlfriendgpt');
+      return image ? { ...guide, image } : guide;
+    }
+    return guide;
+  });
 }
 
 /** Directory apps from published products flagged publishedInDirectory. */

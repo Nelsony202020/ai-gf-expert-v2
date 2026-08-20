@@ -415,7 +415,8 @@ const fileRoundup: Roundup = {
       'We purchase the cheapest monthly subscription for every AI girlfriend app and score each platform across the same 8 categories used in our full AI girlfriend reviews. Our rankings are based on real, hands-on, data-driven testing—not marketing pages.',
     processHref: '/test/',
     processLabel: 'Full testing process',
-    videoPoster: '/brand/herman-youtube-review.png',
+    videoPoster: '/roundups/how-we-test-lab-poster.jpg',
+    videoSrc: '/roundups/how-we-test-lab.mp4',
     stats: [
       { icon: 'grid_view', title: '24 apps', subtitle: 'Tested in this roundup cycle' },
       { icon: 'calendar_today', title: '30+ days', subtitle: 'Minimum hands-on per finalist' },

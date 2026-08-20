@@ -27,7 +27,7 @@ const SAME_ORIGIN_PUBLIC_PATHS = new Set([
 ]);
 
 /** Prefixes served from the app origin until (or unless) they exist on the pull zone. */
-const SAME_ORIGIN_PUBLIC_PREFIXES = ['/brand/tooltip-categories/'];
+const SAME_ORIGIN_PUBLIC_PREFIXES = ['/brand/tooltip-categories/', '/guides/', '/roundups/'];
 
 function isSameOriginPublicAsset(path: string): boolean {
   if (SAME_ORIGIN_PUBLIC_PATHS.has(path)) return true;

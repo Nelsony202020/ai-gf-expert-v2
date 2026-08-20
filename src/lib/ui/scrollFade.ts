@@ -80,6 +80,8 @@ export function bindDrawerScrollFades(root: ParentNode = document): void {
 
   for (const scroller of scrollers) {
     if (drawerBound.has(scroller)) continue;
+    // Sticky Apply footer sheets — fade fights the CTA; skip.
+    if (scroller.closest('.pt-mixer-sheet')) continue;
     drawerBound.add(scroller);
 
     const host =

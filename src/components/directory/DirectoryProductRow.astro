@@ -78,7 +78,6 @@ const secondaryAwards = getSecondaryAwards(app.awards ?? []);
           aria-label={`Like ${app.name} — coming soon`}
         >
           <span class="material-symbols-outlined dir-row__like-icon" aria-hidden="true">favorite</span>
-          <span class="dir-row__like-count">{formatReviewCount(app.reviewCount)}</span>
         </button>
         <button
           type="button"
@@ -97,7 +96,6 @@ const secondaryAwards = getSecondaryAwards(app.awards ?? []);
           aria-label={`Save ${app.name} — in development`}
         >
           <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
-          <span class="dir-row__action-label">Save</span>
         </button>
       </div>
     </div>
