@@ -18,14 +18,8 @@ import ReviewScrollRestore from '../../components/review/ReviewScrollRestore.ast
 import ImageLightbox from '../../components/ui/ImageLightbox.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import ReviewMobileNavSheet from '../../components/mobile/ReviewMobileNavSheet.astro';
+import { getProductFeaturedIn, loadReviewPageProduct } from '../../lib/content/store';
 import {
-  getProductFeaturedIn,
-  loadPublishedProducts,
-  loadPublishedReviewSlugs,
-  loadReviewPageProduct,
-} from '../../lib/content/store';
-import {
-  DEV_REVIEW_SLUGS,
   hasAlternativesTab,
   hasMarketDataTab,
   hasPhotosVideosTab,
@@ -34,19 +28,21 @@ import {
 import { resolveProductPageHead } from '../../lib/seo/productPageHead';
 import JsonLd from '../../components/seo/JsonLd.astro';
 import { buildReviewProductSchema } from '../../lib/seo/jsonld';
+import { isReviewSafeView } from '../../lib/safe-view/params';
+import { safeViewResponse } from '../../lib/safe-view/respond';
 
-/** Prerender published reviews at build so Vercel static output matches the admin publish state. */
-export async function getStaticPaths() {
-  const slugs = await loadPublishedReviewSlugs();
-  if (import.meta.env.DEV) {
-    for (const slug of DEV_REVIEW_SLUGS) {
-      if (!slugs.includes(slug)) slugs.push(slug);
-    }
-  }
-  return slugs.map((slug) => ({ params: { slug } }));
-}
+/**
+ * On-demand so `?safe=1` can return a standalone interstitial without the
+ * prerendered review HTML (and without requesting review media).
+ */
+export const prerender = false;
 
 const { slug } = Astro.params;
+
+if (isReviewSafeView(Astro.url)) {
+  return safeViewResponse(Astro.url);
+}
+
 const pageLoad = slug ? await loadReviewPageProduct(slug) : null;
 
 if (!pageLoad) {

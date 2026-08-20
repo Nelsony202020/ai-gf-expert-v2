@@ -1,3 +1,4 @@
+import { SAFE_REVIEW_SOCIAL_IMAGE_PATH } from '../safe-view/socialImage';
 import { resolveSeoTemplate, type SeoTemplateContext } from './templateTags';
 
 export interface ProductSeoFields {
@@ -61,14 +62,13 @@ export interface ResolvedProductSeoMeta {
 
 export function resolveProductOpenGraphImage(
   fields: Pick<ProductSeoFields, 'ogImageUrl' | 'socialImageUrl'>,
-  featuredImageUrl?: string | null,
+  _featuredImageUrl?: string | null,
 ): string | null {
   const og = String(fields.ogImageUrl ?? '').trim();
   if (og) return og;
   const social = String(fields.socialImageUrl ?? '').trim();
   if (social) return social;
-  const featured = String(featuredImageUrl ?? '').trim();
-  return featured || null;
+  return SAFE_REVIEW_SOCIAL_IMAGE_PATH;
 }
 
 export function resolveMetaDescription(fields: ProductSeoFields): string {

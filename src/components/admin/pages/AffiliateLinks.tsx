@@ -21,6 +21,7 @@ import {
   Icon,
 } from '../ui';
 import { DEFAULT_AFFILIATE_REL } from '../../../lib/affiliate/rel';
+import { needsYoutubeAgeGate } from '../../../lib/affiliate/youtubeAgeGate';
 
 export function AffiliateLinksPage() {
   const canDelete = useCan('records.delete');
@@ -135,7 +136,12 @@ export function AffiliateLinksPage() {
                 const expired = link.endAt && link.endAt < now;
                 return (
                   <tr key={link.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-2 py-2 font-mono text-xs">/go/{link.cloakedSlug}</td>
+                    <td className="px-2 py-2 font-mono text-xs">
+                      <span className="inline-flex flex-wrap items-center gap-2">
+                        <span>/go/{link.cloakedSlug}</span>
+                        {needsYoutubeAgeGate(link) ? <Badge tone="red">18+ gate</Badge> : null}
+                      </span>
+                    </td>
                     <td className="px-2 py-2">{link.product?.name ?? '—'}</td>
                     <td className="max-w-56 truncate px-2 py-2 text-xs text-slate-500">
                       {link.destinationUrl}
@@ -308,7 +314,10 @@ function LinkModal({
               <option value="campaign">campaign</option>
             </Select>
           </Field>
-          <Field label="Campaign tag">
+          <Field
+            label="Campaign tag"
+            hint="Use youtube to show the 18+ interstitial before the destination. No sends visitors back to YouTube."
+          >
             <TextInput value={fields.campaign} onChange={(e) => setFields({ ...fields, campaign: e.target.value })} />
           </Field>
           <Field label="Start date">
