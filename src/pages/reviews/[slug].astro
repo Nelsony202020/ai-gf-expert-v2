@@ -59,7 +59,7 @@ const head = resolveProductPageHead(product, { astroSite: Astro.site, draft: isD
 const showMarketDataTab = hasMarketDataTab(product.slug) && (import.meta.env.DEV || isDraft);
 const showAlternativesTab = hasAlternativesTab(product.slug) && (import.meta.env.DEV || isDraft);
 const showPhotosVideosTab = hasPhotosVideosTab(product.slug);
-const showPricingTab = hasPricingTab(product.slug) && (import.meta.env.DEV || isDraft);
+const showPricingTab = hasPricingTab(product.slug);
 
 const tabs: Tab[] = [
   { id: 'overview', label: 'Overview', tocLabel: 'Overview' },

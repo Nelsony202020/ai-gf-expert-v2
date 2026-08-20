@@ -102,7 +102,7 @@ export const WorkspaceProvider = WorkspaceContext.Provider;
 
 /** Product fields the workspace is allowed to write. */
 const EDITABLE_FIELDS = [
-  'name', 'slug', 'status', 'tagline', 'websiteUrl', 'youtubeReviewUrl',
+  'name', 'slug', 'status', 'productType', 'tagline', 'websiteUrl', 'youtubeReviewUrl',
   'oneLineVerdict', 'ourTake', 'directoryDescription', 'mainStrength', 'mainLimitation',
   'pros', 'cons', 'bestFor', 'notIdealFor', 'award', 'bestForLabel', 'verified', 'editorsPick', 'homepageFeatured',
   'displayOrder', 'revisionNotes', 'publishedInDirectory',

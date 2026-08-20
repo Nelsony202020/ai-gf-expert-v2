@@ -14,12 +14,27 @@ export type PlanAccessType = (typeof PLAN_ACCESS_TYPES)[number];
 
 export const PLAN_RESET_INTERVALS = [
   'day',
+  'week',
   'month',
   'billing_cycle',
   'one_time',
   'none',
 ] as const;
 export type PlanResetInterval = (typeof PLAN_RESET_INTERVALS)[number];
+
+export const AFTER_ALLOWANCE_TYPES = [
+  'shared_credits',
+  'per_use',
+  'unavailable',
+  'unknown',
+] as const;
+export type AfterAllowanceType = (typeof AFTER_ALLOWANCE_TYPES)[number];
+
+export interface PlanAllowanceAfterAllowance {
+  type: AfterAllowanceType;
+  creditCost?: number;
+  unit?: string;
+}
 
 export interface PlanAllowance {
   id: string;
@@ -33,6 +48,8 @@ export interface PlanAllowance {
   resetInterval?: PlanResetInterval;
   notes?: string;
   evidenceMediaIds?: string[];
+  /** What happens after an included allowance is exhausted. */
+  afterAllowance?: PlanAllowanceAfterAllowance;
 }
 
 /** Canonical keys used by calc + public matrix + AI normalization. */
@@ -186,6 +203,7 @@ export function refineAllowanceFields(input: {
   notes?: string | null;
   evidenceMediaIds?: string[] | null;
   id?: string | null;
+  afterAllowance?: PlanAllowanceAfterAllowance | null;
 }): PlanAllowance {
   const sourceLabel = String(input.sourceLabel ?? '').trim() || 'Feature';
   const lower = sourceLabel.toLowerCase();
@@ -279,6 +297,7 @@ export function refineAllowanceFields(input: {
     ...(Array.isArray(input.evidenceMediaIds)
       ? { evidenceMediaIds: input.evidenceMediaIds.map(String) }
       : {}),
+    ...(input.afterAllowance ? { afterAllowance: input.afterAllowance } : {}),
   };
 }
 
@@ -296,8 +315,8 @@ export function parsePlanAllowances(raw: unknown): PlanAllowance[] {
         : typeof r.quantity === 'string' && r.quantity.trim()
           ? Number(r.quantity)
           : undefined;
-    out.push(
-      refineAllowanceFields({
+    out.push({
+      ...refineAllowanceFields({
         id: r.id != null ? String(r.id) : undefined,
         sourceLabel: sourceLabel || String(r.featureKey ?? 'Feature'),
         featureKey: r.featureKey != null ? String(r.featureKey) : undefined,
@@ -309,10 +328,34 @@ export function parsePlanAllowances(raw: unknown): PlanAllowance[] {
         evidenceMediaIds: Array.isArray(r.evidenceMediaIds)
           ? r.evidenceMediaIds.map(String)
           : undefined,
+        afterAllowance: parseAfterAllowance(r.afterAllowance),
       }),
-    );
+    });
   }
   return out;
+}
+
+function parseAfterAllowance(raw: unknown): PlanAllowanceAfterAllowance | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  const type = String(r.type ?? '');
+  if (!(AFTER_ALLOWANCE_TYPES as readonly string[]).includes(type)) return undefined;
+  const creditCost =
+    typeof r.creditCost === 'number' && Number.isFinite(r.creditCost) ? r.creditCost : undefined;
+  const unit = typeof r.unit === 'string' && r.unit.trim() ? r.unit.trim().slice(0, 40) : undefined;
+  return {
+    type: type as AfterAllowanceType,
+    ...(creditCost != null ? { creditCost } : {}),
+    ...(unit ? { unit } : {}),
+  };
+}
+
+export function resolveAfterAllowance(allowance: PlanAllowance | undefined): AfterAllowanceType {
+  if (allowance?.afterAllowance?.type) return allowance.afterAllowance.type;
+  if (allowance?.accessType === 'included_quantity' || allowance?.accessType === 'included_credits') {
+    return 'shared_credits';
+  }
+  return 'unknown';
 }
 
 /** Group allowances for review/edit lists. Unknown keys fall into Features & quality. */
@@ -466,12 +509,23 @@ export function formatAllowanceCell(a: PlanAllowance | undefined): string {
       const period =
         a.resetInterval === 'day'
           ? '/ day'
+          : a.resetInterval === 'week'
+            ? '/ wk'
           : a.resetInterval === 'billing_cycle'
             ? '/ cycle'
             : a.resetInterval === 'one_time'
               ? ''
               : '/ mo';
-      return period ? `${q} ${period.trim()}` : String(q);
+      const base = period ? `${q} ${period.trim()}` : String(q);
+      const after = a.afterAllowance?.type ?? resolveAfterAllowance(a);
+      if (after === 'unavailable') return `${base} · cap`;
+      if (after === 'per_use' && a.afterAllowance?.creditCost != null) {
+        const unit = (a.afterAllowance.unit ?? 'use').replace(/^per_/, '');
+        return `${base} · then ${a.afterAllowance.creditCost}/${unit}`;
+      }
+      if (after === 'shared_credits') return `${base} · then credits`;
+      if (after === 'unknown') return `${base} · then unknown`;
+      return base;
     }
     default:
       return '—';
@@ -599,6 +653,7 @@ export function monthlyQuantityFromAllowance(a: PlanAllowance): number | null {
   if (a.accessType !== 'included_quantity' && a.accessType !== 'included_credits') return null;
   if (a.quantity == null || !Number.isFinite(a.quantity)) return null;
   if (a.resetInterval === 'day') return a.quantity * 30;
+  if (a.resetInterval === 'week') return Math.round((a.quantity * 30) / 7);
   return a.quantity;
 }
 
@@ -612,9 +667,10 @@ export const ACCESS_TYPE_LABELS: Record<PlanAccessType, string> = {
 };
 
 export const RESET_INTERVAL_LABELS: Record<PlanResetInterval, string> = {
-  day: 'per day',
-  month: 'per month',
-  billing_cycle: 'per billing cycle',
-  one_time: 'one-time',
-  none: 'none',
+  day: 'Daily',
+  week: 'Weekly',
+  month: 'Monthly',
+  billing_cycle: 'Per billing cycle',
+  one_time: 'Total',
+  none: 'None',
 };

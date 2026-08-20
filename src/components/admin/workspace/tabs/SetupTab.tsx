@@ -30,6 +30,11 @@ import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
 import { workspaceTabPath } from '../completion';
 import { AWARD_KIND_OPTIONS, type ProductAward } from '../../../../lib/awards';
+import {
+  PRODUCT_TYPE_OPTIONS,
+  resolveProductType,
+  type ProductType,
+} from '../../../../lib/pricing/productType';
 
 export function SetupTab() {
   const ws = useWorkspace();
@@ -140,6 +145,18 @@ export function SetupTab() {
                   value={links.factChecker ?? null}
                   onChange={(id) => setLinks((p) => ({ ...p, factChecker: id }))}
                 />
+              </Field>
+              <Field label="Type" hint="Drives real-world spend benchmarks on the Pricing tab.">
+                <Select
+                  value={resolveProductType(String(fields.slug ?? ''), fields.productType)}
+                  onChange={(e) => set('productType', e.target.value as ProductType)}
+                >
+                  {PRODUCT_TYPE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </Select>
               </Field>
             </div>
           </ProductFormSection>

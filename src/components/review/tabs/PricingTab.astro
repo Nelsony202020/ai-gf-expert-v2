@@ -1,7 +1,11 @@
 ---
 import type { Product } from '../../../data/products';
 import { getAuthor } from '../../../data/authors';
-import InfoIcon from '../../ui/InfoIcon.astro';
+import { getPublishedGlossaryTermsForTooltips } from '../../../lib/glossary/load';
+import {
+  renderReviewProseText,
+  reviewProseGlossaryContext,
+} from '../../../lib/review/renderReviewProse';
 import VerifiedCheck from '../../ui/VerifiedCheck.astro';
 import { affiliateRel } from '../../../lib/affiliate/rel';
 import { fmtMoney } from '../../../lib/pricing/calc';
@@ -14,22 +18,11 @@ interface Props {
   product: Product;
 }
 
-const PRICING_MODEL_LABELS: Record<string, string> = {
-  subscription_only: 'Subscription only',
-  subscription_credits: 'Subscription + tokens',
-  credits_only: 'Token based',
-  free_plus_credits: 'Freemium + tokens',
-  mixed: 'Mixed pricing',
-  custom: 'Custom pricing',
-};
-
 const { product } = Astro.props;
 const vm = await loadPricingTabViewModel(product);
 const herman = getAuthor('herman-carter');
-const pricingTagline =
-  product.verdicts?.find((v) => v.id === 'pricing')?.tagline
-  ?? vm.scoreLabel
-  ?? null;
+const glossaryTerms = await getPublishedGlossaryTermsForTooltips();
+const pricingGlossary = reviewProseGlossaryContext(glossaryTerms, 'review-pricing');
 const scoreVisual = getScoreVisual(vm.pricingScore);
 const ctaRel = affiliateRel(product.affiliateRel);
 
@@ -37,7 +30,7 @@ const barMin = vm.barMin ?? 0;
 const barMax = vm.barMax ?? 80;
 const axisTicks = [
   { pct: 0, label: '$0' },
-  { pct: 100, label: '$80+' },
+  { pct: 100, label: `$${barMax}+` },
 ];
 
 const advertisedLabel =
@@ -47,36 +40,131 @@ const advertisedShort =
 const regularUseLabel =
   vm.regularUseMonthly != null ? `~${fmtMoney(vm.regularUseMonthly, vm.currency)}/mo` : '—';
 
-/** Price-vs-market uses starting price vs category regular-use average (editorial benchmark). */
-const marketAvgAmount = vm.categoryAvgMonthly;
-const marketAvgLabel =
-  marketAvgAmount != null ? `~${fmtMoney(marketAvgAmount, vm.currency)}` : '—';
-const marketCompare = computeHeroComparison(vm.advertisedMonthly, marketAvgAmount);
+/** Starting-price market position — median typical price, not arithmetic mean. */
+const marketTypicalAmount = vm.typicalMonthlyPrice ?? null;
+const marketTypicalLabel =
+  marketTypicalAmount != null ? `~${fmtMoney(marketTypicalAmount, vm.currency)}` : '—';
+const marketCompare = computeHeroComparison(vm.advertisedMonthly, marketTypicalAmount);
 const productBarPct =
   vm.advertisedMonthly != null ? clampBarPct(vm.advertisedMonthly, barMin, barMax) : null;
-const avgBarPct =
-  marketAvgAmount != null ? clampBarPct(marketAvgAmount, barMin, barMax) : null;
+const typicalBarPct =
+  marketTypicalAmount != null ? clampBarPct(marketTypicalAmount, barMin, barMax) : null;
 const cheaperPctAbs =
   marketCompare.cheaperPct != null ? Math.abs(marketCompare.cheaperPct) : null;
-const cheaperIsGood = marketCompare.cheaperPct != null && marketCompare.cheaperPct >= 0;
+const cheaperIsGood = marketCompare.cheaperPct != null && marketCompare.cheaperPct > 3;
+const marketTakeaway = (() => {
+  const pct = marketCompare.cheaperPct;
+  if (pct == null) return null;
+  if (Math.abs(pct) <= 3) return 'About average';
+  if (pct > 3) return 'Cheaper than typical';
+  return 'More expensive than typical';
+})();
+const marketTakeawayTone =
+  marketCompare.cheaperPct == null
+    ? null
+    : Math.abs(marketCompare.cheaperPct) <= 3
+      ? 'neutral'
+      : marketCompare.cheaperPct > 3
+        ? 'good'
+        : 'bad';
 
-const regularUseTip =
-  'Estimated from our standard regular-use scenario (daily chat with images and some video). Includes subscription fees and typical credit spend.';
+/** SSR overlap guess: assume ~320px chart so 72px ≈ 22.5% of the rail. */
+const benchPctApart =
+  productBarPct != null && typicalBarPct != null ? Math.abs(productBarPct - typicalBarPct) : null;
+const benchOverlapSSR = benchPctApart != null && benchPctApart < 22.5;
+const benchStackedSSR = benchPctApart != null && benchPctApart < 3.75;
 
-const pricingModelLabel =
-  (vm.pricingModel && PRICING_MODEL_LABELS[vm.pricingModel]) ||
-  (product.capabilities?.tokenSystem ? 'Subscription + tokens' : null) ||
-  (vm.advertisedMonthly != null ? 'Subscription only' : null);
+const PRICING_MODEL_META: Record<string, string> = {
+  subscription_only: 'Subscription only',
+  subscription_credits: 'Subscription + credits',
+  credits_only: 'Credits only',
+  free_plus_credits: 'Freemium + credits',
+  mixed: 'Mixed pricing',
+  custom: 'Custom pricing',
+};
+const primaryPaidPlan =
+  vm.plans.find((p) => !p.isFree && p.isRecommended)
+  ?? vm.plans.find((p) => !p.isFree)
+  ?? null;
+const hasUnlimitedChat = Boolean(
+  primaryPaidPlan?.rows.some((r) => /^chat$/i.test(r.label) && /unlimited/i.test(r.value)),
+);
+const introMetaParts: string[] = [];
+if (vm.pricingModel && PRICING_MODEL_META[vm.pricingModel]) {
+  introMetaParts.push(PRICING_MODEL_META[vm.pricingModel]!);
+} else if (vm.pricingModel) {
+  introMetaParts.push('Subscription + credits');
+}
+if (primaryPaidPlan?.includedCredits != null && primaryPaidPlan.includedCredits > 0) {
+  introMetaParts.push(`${primaryPaidPlan.includedCredits.toLocaleString('en-US')} credits/mo`);
+}
+if (hasUnlimitedChat) introMetaParts.push('Chat unlimited');
+const introMeta = introMetaParts.length > 0 ? introMetaParts.join(' · ') : null;
 
 const pageIntro = vm.pageIntro;
 const marketIntro = vm.marketIntro;
 const plansIntro = vm.plansIntro;
 const usageIntro =
   vm.usageIntro
-  ?? `The advertised subscription price only tells part of the story. We estimate what light, regular, and heavy ${vm.productName} users would actually spend after accounting for credit usage.`;
+  ?? "The subscription price isn't always what you'll really spend. We estimate the monthly cost for light, regular, and heavy users based on how many paid features they use.";
 const featureCostsIntro = vm.featureCostsIntro;
-const compareIntro = vm.compareIntro;
-const limitsHeading = vm.limitsHeading || 'Free vs. paid';
+const comparisonNote = vm.comparisonNote;
+const freeVsPaidIntro =
+  vm.freeVsPaidIntro
+  ?? 'See what you get with each plan.';
+const comparePlansHeading = vm.limitsHeading || 'What’s included in each plan';
+const billingIntervals = vm.billingToggle.intervals?.length
+  ? vm.billingToggle.intervals
+  : [
+      { key: 'monthly' as const, label: vm.billingToggle.monthlyLabel || 'Monthly' },
+      ...(vm.billingToggle.show
+        ? [{ key: 'yearly' as const, label: vm.billingToggle.yearlyLabel || 'Annual' }]
+        : []),
+    ];
+const showPlansBilling = vm.billingToggle.show && billingIntervals.length > 1;
+
+const mixerPlanOptions = vm.plans.filter((p) => {
+  const budget = vm.creditPool?.byPlan?.[p.key];
+  return Boolean(budget?.mixer);
+});
+/** Only plans with a shared credit pool — never free / non-credit tiers. */
+const creditToolPlans = mixerPlanOptions;
+
+function planBillingKeys(
+  plan: (typeof vm.plans)[number] | null,
+): Array<'monthly' | 'quarterly' | 'yearly'> {
+  if (!plan?.billing || plan.isFree) return [];
+  const out: Array<'monthly' | 'quarterly' | 'yearly'> = [];
+  if (plan.billing.monthly) out.push('monthly');
+  if (plan.billing.quarterly) out.push('quarterly');
+  if (plan.billing.yearly) out.push('yearly');
+  return out;
+}
+
+/** Multi-plan products wait for an explicit pick; single-plan auto-selects. */
+const poolNeedsPlanPick = creditToolPlans.length > 1;
+const poolPlanKey = poolNeedsPlanPick ? '' : (creditToolPlans[0]?.key ?? '');
+const poolPlan = creditToolPlans.find((p) => p.key === poolPlanKey) ?? null;
+const poolBillingKeys = planBillingKeys(poolPlan);
+const poolBilling: 'monthly' | 'quarterly' | 'yearly' | '' =
+  poolBillingKeys.length === 0
+    ? ''
+    : poolBillingKeys.length === 1
+      ? poolBillingKeys[0]
+      : poolBillingKeys.includes('monthly')
+        ? 'monthly'
+        : poolBillingKeys[0];
+const poolReady = Boolean(poolPlanKey && poolBilling);
+const poolShowBilling = Boolean(poolPlan && poolBillingKeys.length > 1);
+const poolPlanNames = creditToolPlans.map((p) => p.displayName);
+const poolPlanPickHint =
+  poolPlanNames.length === 0
+    ? ''
+    : poolPlanNames.length === 1
+      ? `Pick ${poolPlanNames[0]}.`
+      : poolPlanNames.length === 2
+        ? `Pick ${poolPlanNames[0]} or ${poolPlanNames[1]}.`
+        : `Pick ${poolPlanNames.slice(0, -1).join(', ')}, or ${poolPlanNames[poolPlanNames.length - 1]}.`;
 
 const usageCosts = vm.usageTiers
   .map((t) => t.monthlyCost)
@@ -140,23 +228,25 @@ const defaultPlanKey =
   ?? vm.plans[0]?.key
   ?? '';
 const defaultPlan = vm.plans.find((p) => p.key === defaultPlanKey) ?? null;
-const defaultBudget = vm.creditPool?.byPlan?.[defaultPlanKey] ?? null;
+const defaultBudget = poolReady
+  ? (vm.creditPool?.byPlan?.[poolPlanKey] ?? null)
+  : null;
 const defaultBilling: 'monthly' | 'quarterly' | 'yearly' =
-  vm.creditPool?.defaultInterval
+  (poolReady && poolBilling
+    ? poolBilling
+    : null)
+  ?? vm.billingToggle.defaultInterval
   ?? (defaultPlan?.billing?.monthly
     ? 'monthly'
     : defaultPlan?.billing?.quarterly
       ? 'quarterly'
       : 'yearly');
-const defaultPlanHasBilling = Boolean(
-  defaultPlan
-  && !defaultPlan.isFree
-  && [
-      defaultPlan.billing?.monthly,
-      defaultPlan.billing?.quarterly,
-      defaultPlan.billing?.yearly,
-    ].filter(Boolean).length > 1,
-);
+const poolBillingOpt =
+  poolBilling === 'yearly'
+    ? poolPlan?.billing?.yearly
+    : poolBilling === 'quarterly'
+      ? poolPlan?.billing?.quarterly
+      : poolPlan?.billing?.monthly;
 const defaultBillingOpt =
   defaultBilling === 'yearly'
     ? defaultPlan?.billing?.yearly
@@ -171,10 +261,27 @@ const defaultPlanSub =
   defaultPlan?.isFree
     ? defaultPlan.priceSub ?? 'Try before paying'
     : defaultBillingOpt?.priceSub ?? defaultPlan?.priceSub ?? '';
-const defaultYearlySave = defaultPlan?.billing?.yearly?.savingsLabel ?? null;
-const defaultQuarterlySave = defaultPlan?.billing?.quarterly?.savingsLabel ?? null;
-const defaultSale = defaultBillingOpt?.sale ?? null;
+const defaultSale = (poolReady ? poolBillingOpt?.sale : null) ?? defaultBillingOpt?.sale ?? null;
 const defaultCreditsLine = defaultBudget?.creditsLine ?? null;
+const defaultBillingLabel =
+  (poolReady && poolBilling ? poolBilling : defaultBilling) === 'yearly'
+    ? 'Annual'
+    : (poolReady && poolBilling ? poolBilling : defaultBilling) === 'quarterly'
+      ? 'Quarterly'
+      : 'Monthly';
+const defaultContextPlanLine =
+  poolReady && poolPlan
+    ? `${poolPlan.displayName} · ${defaultBillingLabel}`
+    : '';
+const defaultContextPriceLine =
+  poolReady && poolPlan && !poolPlan.isFree && poolBillingOpt?.monthlyPriceLabel
+    ? `${poolBillingOpt.monthlyPriceLabel}/mo`
+    : null;
+const defaultContextMetaLine = [defaultCreditsLine, defaultContextPriceLine].filter(Boolean).join(' · ') || null;
+const poolIntroAwaiting = 'Choose your plan to see how far your included credits can go.';
+const poolIntroReady =
+  vm.creditPool?.note
+  || 'Your credits are shared across paid features. Spend them all on one feature, or mix them however you want.';
 
 const freePlan = vm.plans.find((p) => p.isFree) ?? null;
 const defaultComparePaid =
@@ -183,11 +290,9 @@ const defaultComparePaid =
     : vm.plans.find((p) => !p.isFree && p.isRecommended)
       ?? vm.plans.find((p) => !p.isFree)
       ?? null;
-const defaultLimitPlans = [freePlan, defaultComparePaid].filter(Boolean) as typeof vm.plans;
-const defaultLimitsHeading =
-  freePlan && defaultComparePaid
-    ? `Free vs. ${defaultComparePaid.displayName}`
-    : limitsHeading;
+/** All plans as comparison columns — Free + every paid tier. */
+const defaultLimitPlans = vm.plans;
+const defaultLimitsHeading = comparePlansHeading;
 
 const plansPayload = JSON.stringify({
   plans: vm.plans.map((plan) => ({
@@ -202,6 +307,7 @@ const plansPayload = JSON.stringify({
           monthly: plan.billing.monthly
             ? {
                 monthlyPriceLabel: plan.billing.monthly.monthlyPriceLabel,
+                periodPriceLabel: plan.billing.monthly.periodPriceLabel,
                 priceSub: plan.billing.monthly.priceSub,
                 savingsLabel: plan.billing.monthly.savingsLabel,
                 sale: plan.billing.monthly.sale,
@@ -210,6 +316,7 @@ const plansPayload = JSON.stringify({
           quarterly: plan.billing.quarterly
             ? {
                 monthlyPriceLabel: plan.billing.quarterly.monthlyPriceLabel,
+                periodPriceLabel: plan.billing.quarterly.periodPriceLabel,
                 priceSub: plan.billing.quarterly.priceSub,
                 savingsLabel: plan.billing.quarterly.savingsLabel,
                 sale: plan.billing.quarterly.sale,
@@ -218,6 +325,7 @@ const plansPayload = JSON.stringify({
           yearly: plan.billing.yearly
             ? {
                 monthlyPriceLabel: plan.billing.yearly.monthlyPriceLabel,
+                periodPriceLabel: plan.billing.yearly.periodPriceLabel,
                 priceSub: plan.billing.yearly.priceSub,
                 savingsLabel: plan.billing.yearly.savingsLabel,
                 sale: plan.billing.yearly.sale,
@@ -227,6 +335,7 @@ const plansPayload = JSON.stringify({
       : null,
   })),
   freePlanKey: freePlan?.key ?? null,
+  billingIntervals: billingIntervals.map((i) => i.key),
   limitRows: vm.limitRows.map((row) => ({
     key: row.key,
     cells: Object.fromEntries(
@@ -244,12 +353,22 @@ function withUnit(value: string) {
 
 <section class="py-12 md:py-14 bg-background dark-section pricing-tab">
   <div class="section-container px-4 md:px-8">
-    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-8 lg:gap-10">
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-8 lg:gap-10 min-w-0">
       <div class="min-w-0">
-        <header class="pt-page-head pt-section-head mb-10">
-          <p class="pt-eyebrow">Pricing &amp; value</p>
+        <header class="pt-intro mb-10" id="pricing-intro">
+          <p class="pt-eyebrow">Page intro</p>
           <h2 class="pt-title">{vm.productName} pricing</h2>
-          {pageIntro && <p class="pt-lead">{pageIntro}</p>}
+          {pageIntro && (
+            <p
+              class="pt-lead"
+              set:html={renderReviewProseText(pageIntro, pricingGlossary)}
+            />
+          )}
+          {
+            introMeta && (
+              <p class="pt-page-meta">{introMeta}</p>
+            )
+          }
           {
             vm.pricingEvidence?.main && (
               <p class="pt-evidence">
@@ -263,24 +382,8 @@ function withUnit(value: string) {
                   data-lightbox-alt={vm.pricingEvidence.main.alt}
                   data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
                 >
-                  <span class="material-symbols-outlined" aria-hidden="true">image</span>
-                  View screenshot
+                  View pricing screenshot ↗
                 </button>
-                {
-                  vm.pricingEvidence.sourceUrl && (
-                    <>
-                      <span class="pt-evidence__sep" aria-hidden="true">·</span>
-                      <a
-                        href={vm.pricingEvidence.sourceUrl}
-                        class="pt-evidence__source"
-                        target="_blank"
-                        rel={ctaRel}
-                      >
-                        Open original pricing page
-                      </a>
-                    </>
-                  )
-                }
               </p>
             )
           }
@@ -296,7 +399,7 @@ function withUnit(value: string) {
           {
             marketIntro ? (
               <p class="pt-prose__body">{marketIntro}</p>
-            ) : cheaperPctAbs != null ? (
+            ) : marketTakeawayTone && marketTakeawayTone !== 'neutral' && marketTakeaway ? (
               <p class="pt-prose__body">
                 {
                   cheaperIsGood ? (
@@ -317,19 +420,34 @@ function withUnit(value: string) {
 
           {
             productBarPct != null && (
-              <div class="pt-bench" aria-label="Starting price market position">
-                <div class="pt-bench__chart">
+              <div
+                class:list={['pt-bench', benchOverlapSSR && 'is-overlap', benchStackedSSR && 'is-stacked']}
+                data-pt-bench
+                data-pt-product-pct={productBarPct}
+                data-pt-avg-pct={typicalBarPct ?? ''}
+                aria-label="Starting price market position"
+              >
+                <div class="pt-bench__chart" data-pt-bench-chart>
                   {
-                    avgBarPct != null && (
+                    typicalBarPct != null && (
                       <div
                         class="pt-bench__marker pt-bench__marker--avg"
-                        style={`left: ${avgBarPct}%`}
-                        aria-label={`Market average ${marketAvgLabel}`}
+                        style={`left: ${typicalBarPct}%`}
+                        data-pt-bench-marker="avg"
+                        aria-label={`Typical monthly price ${marketTypicalLabel}`}
                       >
-                        <span class="pt-bench__float">
-                          <span class="pt-bench__float-name">Market average</span>
-                          <span class="pt-bench__float-price">{marketAvgLabel}</span>
+                        <span
+                          class:list={[
+                            'pt-bench__float',
+                            'pt-bench__float--avg',
+                            benchOverlapSSR && 'pt-bench__float--below',
+                          ]}
+                          data-pt-bench-float="avg"
+                        >
+                          <span class="pt-bench__float-name">Typical monthly price</span>
+                          <span class="pt-bench__float-price">{marketTypicalLabel}</span>
                         </span>
+                        <span class="pt-bench__leader pt-bench__leader--avg" aria-hidden="true" />
                         <span class="pt-bench__dot pt-bench__dot--avg" />
                       </div>
                     )
@@ -337,12 +455,14 @@ function withUnit(value: string) {
                   <div
                     class="pt-bench__marker pt-bench__marker--product"
                     style={`left: ${productBarPct}%`}
+                    data-pt-bench-marker="product"
                     aria-label={`${vm.productName} ${advertisedShort}`}
                   >
                     <span class="pt-bench__float pt-bench__float--product">
                       <span class="pt-bench__float-name">{vm.productName}</span>
                       <span class="pt-bench__float-price">{advertisedShort}</span>
                     </span>
+                    <span class="pt-bench__leader pt-bench__leader--product" aria-hidden="true" />
                     <span class="pt-bench__dot pt-bench__dot--product" />
                   </div>
 
@@ -365,6 +485,20 @@ function withUnit(value: string) {
                     }
                   </div>
                 </div>
+                {
+                  marketTakeaway && (
+                    <p
+                      class:list={[
+                        'pt-bench__takeaway',
+                        marketTakeawayTone === 'neutral' && 'pt-bench__takeaway--neutral',
+                        marketTakeawayTone === 'good' && 'pt-bench__takeaway--good',
+                        marketTakeawayTone === 'bad' && 'pt-bench__takeaway--bad',
+                      ]}
+                    >
+                      {marketTakeaway}
+                    </p>
+                  )
+                }
               </div>
             )
           }
@@ -390,221 +524,381 @@ function withUnit(value: string) {
                   {plansIntro && <p class="pt-lead pt-lead--tight">{plansIntro}</p>}
                 </header>
 
+                {
+                  showPlansBilling && (
+                    <div class="pt-billing" data-pt-plans-billing>
+                      <span class="pt-billing__label" id="pt-plans-billing-label">Billing</span>
+                      <div
+                        class="pt-billing__switch"
+                        role="group"
+                        aria-labelledby="pt-plans-billing-label"
+                      >
+                        {
+                          billingIntervals.map((interval) => (
+                            <button
+                              type="button"
+                              class:list={[
+                                'pt-billing__btn',
+                                defaultBilling === interval.key && 'is-active',
+                              ]}
+                              data-pt-plans-billing-select={interval.key}
+                              aria-pressed={defaultBilling === interval.key ? 'true' : 'false'}
+                            >
+                              {interval.label}
+                            </button>
+                          ))
+                        }
+                      </div>
+                    </div>
+                  )
+                }
+
                 <div
                   class="pt-plan-overview"
                   style={`--pt-plan-cols: ${Math.max(vm.plans.length, 1)}`}
                   aria-label="Plan comparison"
+                  data-pt-plan-overview
                 >
                   {
                     vm.plans.map((plan) => {
                       const monthly = plan.billing?.monthly;
-                      const yearly = plan.billing?.yearly;
-                      const sale = monthly?.sale ?? yearly?.sale ?? null;
+                      const opt = monthly ?? plan.billing?.yearly ?? plan.billing?.quarterly;
+                      const sale = opt?.sale ?? null;
                       const price = plan.isFree
                         ? plan.priceLabel
                         : monthly?.monthlyPriceLabel ?? plan.priceLabel;
                       return (
                         <div class="pt-plan-overview__col" data-pt-overview-plan={plan.key}>
                           <p class="pt-plan-overview__name">{plan.displayName}</p>
-                          <p class="pt-plan-overview__price">
-                            {
-                              sale?.listPriceLabel ? (
-                                <span class="pt-plan-overview__list">
-                                  {sale.listPriceLabel}
-                                  {!plan.isFree && <span class="pt-unit">/mo</span>}
-                                </span>
-                              ) : null
-                            }
-                            <span>
-                              {price}
-                              {!plan.isFree && <span class="pt-unit">/mo</span>}
-                            </span>
-                            {
-                              sale?.badge ? (
-                                <span class="pt-plan-overview__badge">{sale.badge}</span>
-                              ) : null
-                            }
+                          <div class="pt-plan-overview__pricing" data-pt-overview-pricing>
+                            <p class="pt-plan-overview__price" data-pt-overview-price>
+                              {
+                                sale?.listPriceLabel ? (
+                                  <span class="pt-plan-overview__list" data-pt-overview-list>
+                                    {sale.listPriceLabel}
+                                    {!plan.isFree && <span class="pt-unit">/mo</span>}
+                                  </span>
+                                ) : (
+                                  <span class="pt-plan-overview__list" data-pt-overview-list hidden />
+                                )
+                              }
+                              <span data-pt-overview-price-main>
+                                {price}
+                                {!plan.isFree && <span class="pt-unit">/mo</span>}
+                              </span>
+                              {
+                                sale?.badge ? (
+                                  <span class="pt-plan-overview__badge" data-pt-overview-badge>
+                                    {sale.badge}
+                                  </span>
+                                ) : (
+                                  <span class="pt-plan-overview__badge" data-pt-overview-badge hidden />
+                                )
+                              }
+                            </p>
+                            <p class="pt-plan-overview__billed" data-pt-overview-billed hidden />
+                            <p class="pt-plan-overview__save" data-pt-overview-save hidden />
+                            <p
+                              class="pt-plan-overview__unavailable"
+                              data-pt-overview-unavailable
+                              hidden
+                            />
+                          </div>
+                          <p class="pt-plan-overview__credits" data-pt-overview-credits>
+                            {plan.summaryLine}
                           </p>
-                          <p class="pt-plan-overview__credits">{plan.summaryLine}</p>
                         </div>
                       );
                     })
                   }
                 </div>
 
-                                {
+
+                {
+                  vm.limitRows.length > 0 && (
+                    <div class="pt-other-limits" data-pt-limits>
+                      <header class="pt-other-limits__head">
+                        <h4 class="pt-subhead" data-pt-limits-title>
+                          {defaultLimitsHeading}
+                        </h4>
+                        {freeVsPaidIntro && (
+                          <p class="pt-sublead">{freeVsPaidIntro}</p>
+                        )}
+                      </header>
+                      <div class="pt-other-limits__scroll">
+                        <table class="pt-other-limits__table">
+                          <thead>
+                            <tr>
+                              <th scope="col">
+                                <span class="sr-only">Feature</span>
+                              </th>
+                              {
+                                defaultLimitPlans.map((plan) => (
+                                  <th scope="col" data-pt-limits-plan={plan.key}>
+                                    {plan.displayName}
+                                  </th>
+                                ))
+                              }
+                            </tr>
+                          </thead>
+                          <tbody data-pt-limits-body>
+                            {
+                              vm.limitRows.map((row) => (
+                                <tr data-pt-limits-row={row.key}>
+                                  <th scope="row">
+                                    <span class="pt-other-limits__feature">
+                                      <span class="material-symbols-outlined" aria-hidden="true">
+                                        {row.icon}
+                                      </span>
+                                      {row.label}
+                                    </span>
+                                  </th>
+                                  {
+                                    defaultLimitPlans.map((plan) => {
+                                      const idx = vm.plans.findIndex((p) => p.key === plan.key);
+                                      const cell = idx >= 0 ? row.cells[idx] ?? '—' : '—';
+                                      const parts = withUnit(cell);
+                                      return (
+                                        <td data-pt-limits-cell={plan.key}>
+                                          {parts.main}
+                                          {parts.unit && <span class="pt-unit">{parts.unit}</span>}
+                                        </td>
+                                      );
+                                    })
+                                  }
+                                </tr>
+                              ))
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )
+                }
+
+                {
                   vm.creditPool && (
                     <div
                       class="pt-credit-pool"
                       data-pt-credit-pool
-                      data-pt-credit-mixer={defaultBudget?.mixer ? 'true' : 'false'}
+                      data-pt-credit-mixer={poolReady && defaultBudget?.mixer ? 'true' : 'false'}
                       data-pt-mixer-payload={
-                        defaultBudget?.mixer ? JSON.stringify(defaultBudget.mixer) : undefined
+                        poolReady && defaultBudget?.mixer
+                          ? JSON.stringify(defaultBudget.mixer)
+                          : undefined
                       }
                       data-pt-pool-by-plan={JSON.stringify(vm.creditPool.byPlan)}
+                      data-pt-pool-plan={poolPlanKey}
+                      data-pt-pool-ready={poolReady ? 'true' : 'false'}
                     >
                       <header class="pt-section-head">
                         <p class="pt-eyebrow">Credit value</p>
-                        <h4 class="pt-title">What your credits can buy</h4>
+                        <h3 class="pt-title">What your credits can buy</h3>
                       </header>
 
-                      <div class="pt-tool-selects">
+                      <p class="pt-credit-pool__intro" data-pt-pool-intro>
+                        {poolReady ? poolIntroReady : poolIntroAwaiting}
+                      </p>
+
+                      <div class="pt-credit-pool__config">
                         <div
-                          class="pt-menu-select pt-menu-select--inline"
+                          class="pt-credit-pool__field"
                           data-pt-tool-plan-select
-                          hidden={vm.plans.length <= 1}
+                          hidden={creditToolPlans.length <= 1}
                         >
                           <span class="pt-label" id="pt-tool-plan-label">Plan</span>
-                          <div class="pt-menu-select__wrap">
-                            <button
-                              type="button"
-                              class="pt-menu-select__trigger"
-                              data-pt-plan-open
-                              aria-haspopup="listbox"
-                              aria-expanded="false"
-                              aria-labelledby="pt-tool-plan-label"
-                            >
-                              <span class="pt-menu-select__value" data-pt-plan-label>
-                                {defaultPlan?.displayName ?? 'Plan'}
-                              </span>
-                              <span class="material-symbols-outlined pt-menu-select__chevron" aria-hidden="true">expand_more</span>
-                            </button>
-                            <div class="pt-menu-select__menu" data-pt-plan-menu role="listbox" hidden>
-                              {
-                                vm.plans.map((plan) => (
-                                  <button
-                                    type="button"
-                                    role="option"
-                                    class:list={[
-                                      'pt-menu-select__option',
-                                      plan.key === defaultPlanKey && 'is-active',
-                                    ]}
-                                    data-pt-plan-select={plan.key}
-                                    aria-selected={plan.key === defaultPlanKey ? 'true' : 'false'}
-                                  >
-                                    {plan.displayName}
-                                  </button>
-                                ))
-                              }
-                            </div>
+                          <div
+                            class="pt-billing__switch"
+                            role="radiogroup"
+                            aria-labelledby="pt-tool-plan-label"
+                            data-pt-plan-menu
+                          >
+                            {
+                              creditToolPlans.map((plan) => (
+                                <button
+                                  type="button"
+                                  role="radio"
+                                  class:list={[
+                                    'pt-billing__btn',
+                                    plan.key === poolPlanKey && 'is-active',
+                                  ]}
+                                  data-pt-plan-select={plan.key}
+                                  aria-checked={plan.key === poolPlanKey ? 'true' : 'false'}
+                                >
+                                  {plan.displayName}
+                                </button>
+                              ))
+                            }
                           </div>
                         </div>
 
                         <div
-                          class="pt-menu-select pt-menu-select--inline"
+                          class="pt-credit-pool__field"
                           data-pt-billing-group
-                          hidden={!defaultPlanHasBilling}
+                          hidden={!poolShowBilling}
                         >
                           <span class="pt-label" id="pt-tool-billing-label">Billing</span>
-                          <div class="pt-menu-select__wrap">
+                          <div
+                            class="pt-billing__switch"
+                            role="radiogroup"
+                            aria-labelledby="pt-tool-billing-label"
+                            data-pt-billing-menu
+                          >
                             <button
                               type="button"
-                              class="pt-menu-select__trigger"
-                              data-pt-billing-open
-                              aria-haspopup="listbox"
-                              aria-expanded="false"
-                              aria-labelledby="pt-tool-billing-label"
+                              role="radio"
+                              class:list={['pt-billing__btn', poolBilling === 'monthly' && 'is-active']}
+                              data-pt-billing-select="monthly"
+                              data-pt-billing-opt="monthly"
+                              aria-checked={poolBilling === 'monthly' ? 'true' : 'false'}
+                              hidden={!poolPlan?.billing?.monthly}
                             >
-                              <span class="pt-menu-select__value" data-pt-billing-label>
-                                {
-                                  defaultBilling === 'yearly'
-                                    ? 'Annual'
-                                    : defaultBilling === 'quarterly'
-                                      ? 'Quarterly'
-                                      : 'Monthly'
-                                }
-                              </span>
-                              <span class="material-symbols-outlined pt-menu-select__chevron" aria-hidden="true">expand_more</span>
+                              Monthly
                             </button>
-                            <div class="pt-menu-select__menu" data-pt-billing-menu role="listbox" hidden>
-                              <button
-                                type="button"
-                                role="option"
-                                class:list={['pt-menu-select__option', defaultBilling === 'monthly' && 'is-active']}
-                                data-pt-billing-select="monthly"
-                                data-pt-billing-opt="monthly"
-                                aria-selected={defaultBilling === 'monthly' ? 'true' : 'false'}
-                                hidden={!defaultPlan?.billing?.monthly}
-                              >
-                                Monthly
-                              </button>
-                              <button
-                                type="button"
-                                role="option"
-                                class:list={['pt-menu-select__option', defaultBilling === 'quarterly' && 'is-active']}
-                                data-pt-billing-select="quarterly"
-                                data-pt-billing-opt="quarterly"
-                                aria-selected={defaultBilling === 'quarterly' ? 'true' : 'false'}
-                                hidden={!defaultPlan?.billing?.quarterly}
-                              >
-                                Quarterly
-                              </button>
-                              <button
-                                type="button"
-                                role="option"
-                                class:list={['pt-menu-select__option', defaultBilling === 'yearly' && 'is-active']}
-                                data-pt-billing-select="yearly"
-                                data-pt-billing-opt="yearly"
-                                aria-selected={defaultBilling === 'yearly' ? 'true' : 'false'}
-                                hidden={!defaultPlan?.billing?.yearly}
-                              >
-                                Annual
-                                {
-                                  defaultYearlySave ? (
-                                    <span class="pt-billing__save" data-pt-billing-save>
-                                      {defaultYearlySave}
-                                    </span>
-                                  ) : null
-                                }
-                              </button>
-                            </div>
+                            <button
+                              type="button"
+                              role="radio"
+                              class:list={['pt-billing__btn', poolBilling === 'quarterly' && 'is-active']}
+                              data-pt-billing-select="quarterly"
+                              data-pt-billing-opt="quarterly"
+                              aria-checked={poolBilling === 'quarterly' ? 'true' : 'false'}
+                              hidden={!poolPlan?.billing?.quarterly}
+                            >
+                              Quarterly
+                            </button>
+                            <button
+                              type="button"
+                              role="radio"
+                              class:list={['pt-billing__btn', poolBilling === 'yearly' && 'is-active']}
+                              data-pt-billing-select="yearly"
+                              data-pt-billing-opt="yearly"
+                              aria-checked={poolBilling === 'yearly' ? 'true' : 'false'}
+                              hidden={!poolPlan?.billing?.yearly}
+                            >
+                              Annual
+                            </button>
                           </div>
                         </div>
                       </div>
 
-                      <p
-                        class="pt-credit-pool__credits"
-                        data-pt-active-credits
-                        data-pt-pool-credits
-                        hidden={!defaultCreditsLine}
+                      <div
+                        class="pt-credit-pool__await"
+                        data-pt-pool-await
+                        hidden={poolReady || !poolNeedsPlanPick}
                       >
-                        {defaultCreditsLine}
-                      </p>
-                      <p
-                        class="pt-plan-active__sale-note"
-                        data-pt-active-sale-note
-                        hidden={!defaultSale?.note}
-                      >
-                        {defaultSale?.note}
-                      </p>
-
-                      <p class="pt-credit-pool__lead" data-pt-pool-lead hidden={!defaultBudget?.mixer}>
-                        If you spent all <span data-pt-pool-credit-n>{(defaultBudget?.credits ?? 0).toLocaleString('en-US')}</span> credits on one feature:
-                      </p>
-                      <p class="pt-credit-pool__note" data-pt-pool-note hidden={Boolean(defaultBudget?.mixer)}>
-                        {defaultBudget?.isFree
-                          ? 'This plan uses hard daily limits instead of a shared credit pool.'
-                          : vm.creditPool.note}
-                      </p>
-
-                      <div class="pt-credit-pool__skim" aria-label="Maximum equivalents" data-pt-pool-skim>
-                        {
-                          (defaultBudget?.items ?? []).map((item) => (
-                            <span class="pt-credit-pool__skim-item">{item.value.replace(/\/mo$/, '')}</span>
-                          ))
-                        }
+                        <div class="pt-credit-pool__await-callout">
+                          <span
+                            class="material-symbols-outlined pt-credit-pool__await-arrow"
+                            aria-hidden="true"
+                          >arrow_upward</span>
+                          <p class="pt-credit-pool__await-eyebrow">STEP 1</p>
+                          <p class="pt-credit-pool__await-title">
+                            Choose a plan to unlock the calculator
+                          </p>
+                          {
+                            poolPlanPickHint && (
+                              <p class="pt-credit-pool__await-hint">{poolPlanPickHint}</p>
+                            )
+                          }
+                        </div>
                       </div>
-                      <div class="pt-mixer-host" data-pt-mixer-host>
-                        {
-                          defaultBudget?.mixer ? (
-                            <>
-                            <div class="pt-mixer" data-pt-mixer>
+
+                      <div
+                        class:list={[
+                          'pt-credit-pool__results',
+                          !poolReady && poolNeedsPlanPick && 'is-locked',
+                        ]}
+                        data-pt-pool-results
+                        aria-disabled={!poolReady && poolNeedsPlanPick ? 'true' : undefined}
+                      >
+                        <div
+                          class="pt-credit-pool__ghost"
+                          data-pt-pool-ghost
+                          hidden={poolReady || !poolNeedsPlanPick}
+                          aria-hidden="true"
+                        >
+                          <div class="pt-credit-pool__ghost-panel">
+                            <div class="pt-credit-pool__ghost-bar pt-credit-pool__ghost-bar--lg" />
+                            <div class="pt-credit-pool__ghost-grid">
+                              <div class="pt-credit-pool__ghost-bar" />
+                              <div class="pt-credit-pool__ghost-bar" />
+                              <div class="pt-credit-pool__ghost-bar" />
+                              <div class="pt-credit-pool__ghost-bar" />
+                              <div class="pt-credit-pool__ghost-bar" />
+                              <div class="pt-credit-pool__ghost-bar" />
+                            </div>
+                            <div class="pt-credit-pool__ghost-bar pt-credit-pool__ghost-bar--tool" />
+                          </div>
+                        </div>
+
+                        <div
+                          class="pt-credit-pool__live"
+                          data-pt-pool-live
+                          hidden={!poolReady}
+                        >
+                        <div class="pt-credit-pool__summary" data-pt-pool-context>
+                          <p
+                            class="pt-credit-pool__summary-plan"
+                            data-pt-pool-context-plan
+                            hidden={!defaultContextPlanLine}
+                          >
+                            {defaultContextPlanLine}
+                          </p>
+                          <p
+                            class="pt-credit-pool__summary-meta"
+                            data-pt-pool-context-meta
+                            data-pt-active-credits
+                            hidden={!defaultContextMetaLine}
+                          >
+                            {defaultContextMetaLine}
+                          </p>
+                          <p
+                            class="pt-plan-active__sale-note"
+                            data-pt-active-sale-note
+                            hidden={!defaultSale?.note}
+                          >
+                            {defaultSale?.note}
+                          </p>
+                        </div>
+
+                        <div class="pt-credit-pool__equiv" data-pt-pool-equiv hidden={!defaultBudget?.mixer && !(defaultBudget?.items?.length)}>
+                          <p class="pt-credit-pool__lead" data-pt-pool-lead hidden={!defaultBudget?.mixer}>
+                            If you spent all <span data-pt-pool-credit-n>{(defaultBudget?.credits ?? 0).toLocaleString('en-US')}</span> credits on one feature:
+                          </p>
+                          <p class="pt-credit-pool__note" data-pt-pool-note hidden={Boolean(defaultBudget?.mixer)}>
+                            {defaultBudget?.isFree
+                              ? 'This plan uses hard daily limits instead of a shared credit pool.'
+                              : 'This plan does not use a shared credit pool.'}
+                          </p>
+
+                          <div class="pt-credit-pool__skim" aria-label="Maximum equivalents" data-pt-pool-skim>
+                            {
+                              (defaultBudget?.items ?? []).map((item) => (
+                                <div class="pt-credit-pool__skim-stat">
+                                  <span class="pt-credit-pool__skim-amount">
+                                    {item.amount ?? item.value.replace(/\/mo$/, '')}
+                                  </span>
+                                  <span class="pt-credit-pool__skim-label">{item.label}</span>
+                                </div>
+                              ))
+                            }
+                          </div>
+                          <p class="pt-credit-pool__or" data-pt-pool-or hidden={!defaultBudget?.mixer}>
+                            These are one-feature examples. You can split your credits below.
+                          </p>
+                        </div>
+                        <hr class="pt-credit-pool__tool-rule" data-pt-pool-tool-rule hidden={!defaultBudget?.mixer} />
+                        <div class="pt-mixer-host" data-pt-mixer-host>
+                          {
+                            defaultBudget?.mixer ? (
+                              <>
+                              <div class="pt-mixer" data-pt-mixer>
                               <div class="pt-mixer__tool-head">
                                 <p class="pt-mixer__tool-eyebrow">Interactive tool</p>
-                                <p class="pt-mixer__tool-title">
+                                <h4 class="pt-mixer__tool-title">
                                   <span class="material-symbols-outlined" aria-hidden="true">tune</span>
                                   Build your mix
-                                </p>
+                                </h4>
                                 <p class="pt-mixer__tool-help">
                                   Adjust each feature to see how your{' '}
                                   <span data-pt-mixer-help-n>
@@ -744,9 +1038,15 @@ function withUnit(value: string) {
                                             >
                                               −
                                             </button>
-                                            <span class="pt-mixer__qty" data-pt-mixer-qty>
+                                            <button
+                                              type="button"
+                                              class="pt-mixer__qty"
+                                              data-pt-mixer-qty
+                                              title="Double-click to type an amount"
+                                              aria-label={`${ch.label} amount — double-click to type`}
+                                            >
                                               0
-                                            </span>
+                                            </button>
                                             <button
                                               type="button"
                                               class="pt-mixer__step"
@@ -844,7 +1144,7 @@ function withUnit(value: string) {
                               >
                                 <div class="mobile-sheet__handle" aria-hidden="true"></div>
                                 <header class="mobile-sheet__head">
-                                  <h2 id="pt-mixer-sheet-title" class="mobile-sheet__title">Customize mix</h2>
+                                  <p id="pt-mixer-sheet-title" class="mobile-sheet__title">Customize mix</p>
                                   <button
                                     type="button"
                                     class="mobile-sheet__close"
@@ -921,7 +1221,15 @@ function withUnit(value: string) {
                                             >
                                               −
                                             </button>
-                                            <span class="pt-mixer__qty" data-pt-mixer-sheet-qty>0</span>
+                                            <button
+                                              type="button"
+                                              class="pt-mixer__qty"
+                                              data-pt-mixer-sheet-qty
+                                              title="Double-click to type an amount"
+                                              aria-label={`${ch.label} amount — double-click to type`}
+                                            >
+                                              0
+                                            </button>
                                             <button
                                               type="button"
                                               class="pt-mixer__step"
@@ -955,76 +1263,19 @@ function withUnit(value: string) {
                           )
                         }
                       </div>
-                    </div>
-                  )
-                }
-
-                {
-                  vm.limitRows.length > 0 && (
-                    <div class="pt-other-limits" data-pt-limits>
-                      <header class="pt-section-head">
-                        <p class="pt-eyebrow">Plan comparison</p>
-                        <h4 class="pt-title" data-pt-limits-title>
-                          {defaultLimitsHeading}
-                        </h4>
-                      </header>
-                      <div class="pt-other-limits__scroll">
-                        <table class="pt-other-limits__table">
-                          <thead>
-                            <tr>
-                              <th scope="col">
-                                <span class="sr-only">Feature</span>
-                              </th>
-                              {
-                                defaultLimitPlans.map((plan) => (
-                                  <th scope="col" data-pt-limits-plan={plan.key}>
-                                    {plan.displayName}
-                                  </th>
-                                ))
-                              }
-                            </tr>
-                          </thead>
-                          <tbody data-pt-limits-body>
-                            {
-                              vm.limitRows.map((row) => (
-                                <tr data-pt-limits-row={row.key}>
-                                  <th scope="row">
-                                    <span class="pt-other-limits__feature">
-                                      <span class="material-symbols-outlined" aria-hidden="true">
-                                        {row.icon}
-                                      </span>
-                                      {row.label}
-                                    </span>
-                                  </th>
-                                  {
-                                    defaultLimitPlans.map((plan) => {
-                                      const idx = vm.plans.findIndex((p) => p.key === plan.key);
-                                      const cell = idx >= 0 ? row.cells[idx] ?? '—' : '—';
-                                      const parts = withUnit(cell);
-                                      return (
-                                        <td data-pt-limits-cell={plan.key}>
-                                          {parts.main}
-                                          {parts.unit && <span class="pt-unit">{parts.unit}</span>}
-                                        </td>
-                                      );
-                                    })
-                                  }
-                                </tr>
-                              ))
-                            }
-                          </tbody>
-                        </table>
+                        </div>
                       </div>
                     </div>
                   )
                 }
+
 
                 {
                   vm.topUps && (
                     <div class="pt-topups" data-pt-topups>
                       <header class="pt-section-head">
                         <p class="pt-eyebrow">Top-ups</p>
-                        <h4 class="pt-title">{vm.topUps.heading}</h4>
+                        <h3 class="pt-title">{vm.topUps.heading}</h3>
                         <p class="pt-lead pt-lead--tight">{vm.topUps.intro}</p>
                       </header>
                       <div class="pt-topups__scroll">
@@ -1033,7 +1284,7 @@ function withUnit(value: string) {
                             <tr>
                               <th scope="col">Credits you get</th>
                               <th scope="col">Price</th>
-                              <th scope="col">Value</th>
+                              <th scope="col">{vm.topUps.valueColumnLabel || 'Value'}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1128,7 +1379,16 @@ function withUnit(value: string) {
           data-pt-usage-flat={usageCostsIdentical ? 'true' : 'false'}
         >
           {
-            usageCostsIdentical && flatUsageCost != null ? (
+            !vm.usageEstimatesAvailable ? (
+              <>
+                <header class="pt-section-head">
+                  <p class="pt-eyebrow">Real-world cost</p>
+                  <h3 id="pt-usage-title" class="pt-title">What you'll actually pay</h3>
+                  {usageIntro && <p class="pt-lead">{usageIntro}</p>}
+                </header>
+                <p class="pt-empty">Not enough data to estimate</p>
+              </>
+            ) : usageCostsIdentical && flatUsageCost != null ? (
               <>
                 <header class="pt-section-head">
                   <p class="pt-eyebrow">Real-world cost</p>
@@ -1420,29 +1680,58 @@ function withUnit(value: string) {
                                   <table class="pt-usage-math__summary">
                                     <tbody>
                                       <tr>
-                                        <th scope="row">Total feature usage</th>
-                                        <td data-pt-usage-calc-media-2>{defaultCalculation.mediaValueLabel}</td>
+                                        <th scope="row">Usage requires</th>
+                                        <td data-pt-usage-calc-media-2>{defaultCalculation.requiredCreditsLabel}</td>
                                       </tr>
                                       <tr>
-                                        <th scope="row">Included monthly credits</th>
-                                        <td data-pt-usage-calc-included>{defaultCalculation.includedValueLabel}</td>
+                                        <th scope="row">Included with plan</th>
+                                        <td data-pt-usage-calc-included>{defaultCalculation.includedCreditsLabel}</td>
                                       </tr>
                                       <tr class="pt-usage-math__row--extra">
                                         <th scope="row">Extra credits needed</th>
-                                        <td data-pt-usage-calc-extra>{defaultCalculation.extraValueLabel}</td>
+                                        <td data-pt-usage-calc-extra>{defaultCalculation.extraCreditsLabel}</td>
+                                      </tr>
+                                      {
+                                        defaultCalculation.packageLines.length > 0 && (
+                                          <>
+                                            <tr>
+                                              <th scope="row" colspan="2">Cheapest top-up combination</th>
+                                            </tr>
+                                            {
+                                              defaultCalculation.packageLines.map((line) => (
+                                                <tr>
+                                                  <th scope="row">{line.creditsLabel}</th>
+                                                  <td>{line.priceLabel}</td>
+                                                </tr>
+                                              ))
+                                            }
+                                            <tr>
+                                              <th scope="row">Credits purchased</th>
+                                              <td>{defaultCalculation.purchasedCreditsLabel}</td>
+                                            </tr>
+                                            <tr>
+                                              <th scope="row">Credits left over</th>
+                                              <td>{defaultCalculation.leftoverCreditsLabel}</td>
+                                            </tr>
+                                          </>
+                                        )
+                                      }
+                                      <tr>
+                                        <th scope="row">Top-up spend</th>
+                                        <td>{defaultCalculation.topUpCostLabel}</td>
                                       </tr>
                                       <tr>
                                         <th scope="row">Monthly subscription</th>
                                         <td data-pt-usage-calc-plan>{defaultCalculation.planCostLabel}</td>
                                       </tr>
                                       <tr class="pt-usage-math__row--total">
-                                        <th scope="row">Estimated monthly cost</th>
+                                        <th scope="row">Estimated monthly spend</th>
                                         <td data-pt-usage-calc-total>{defaultCalculation.totalLabel}</td>
                                       </tr>
                                     </tbody>
                                   </table>
                                   <p class="pt-usage-math__disclaimer">
-                                    Costs are estimates based on our testing and may change.
+                                    Top-up costs use the cheapest credit packs you can actually buy.
                                   </p>
                                 </section>
                               </div>
@@ -1464,6 +1753,22 @@ function withUnit(value: string) {
             <p class="pt-eyebrow">Feature costs</p>
             <h3 id="pt-feature-title" class="pt-title">What each feature costs</h3>
             {featureCostsIntro && <p class="pt-lead">{featureCostsIntro}</p>}
+            {
+              vm.pricingEvidence?.featureCosts && (
+                <p class="pt-evidence pt-evidence--inline">
+                  <button
+                    type="button"
+                    class="pt-evidence__view"
+                    data-lightbox-open={vm.pricingEvidence.featureCosts.src}
+                    data-lightbox-alt={vm.pricingEvidence.featureCosts.alt}
+                    data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">image</span>
+                    View feature costs screenshot
+                  </button>
+                </p>
+              )
+            }
           </header>
           <ul class="pt-feature-list">
             {
@@ -1471,13 +1776,18 @@ function withUnit(value: string) {
                 const parts = withUnit(row.value);
                 return (
                   <li class="pt-feature-row">
-                    <div class={`pt-feature-row__icon pt-feature-row__icon--${row.tone}`}>
+                    <span class="pt-feature-row__icon" aria-hidden="true">
                       <span class="material-symbols-outlined">{row.icon}</span>
-                    </div>
+                    </span>
                     <span class="pt-feature-row__label">{row.label}</span>
                     <span class="pt-feature-row__value">
-                      <span class="pt-feature-row__amount">{parts.main}</span>
-                      {parts.unit && <span class="pt-unit">{parts.unit}</span>}
+                      <span class="pt-feature-row__amount">
+                        {parts.main}
+                        {parts.unit && <span class="pt-unit">{parts.unit}</span>}
+                      </span>
+                      {row.secondaryValue && (
+                        <span class="pt-feature-row__secondary">{row.secondaryValue}</span>
+                      )}
                     </span>
                   </li>
                 );
@@ -1493,7 +1803,6 @@ function withUnit(value: string) {
             <h3 id="pt-compare-title" class="pt-title">
               How {vm.productName} pricing compares
             </h3>
-            {compareIntro && <p class="pt-lead">{compareIntro}</p>}
           </header>
           {
             vm.compareRows.length > 0 ? (
@@ -1503,7 +1812,7 @@ function withUnit(value: string) {
                     <tr>
                       <th>Metric</th>
                       <th>{vm.productName}</th>
-                      <th>Category avg</th>
+                      <th>Typical price</th>
                       <th>Difference</th>
                     </tr>
                   </thead>
@@ -1511,7 +1820,7 @@ function withUnit(value: string) {
                     {
                       vm.compareRows.map((row) => {
                         const productParts = withUnit(row.productValue);
-                        const avgParts = withUnit(row.averageValue);
+                        const typicalParts = withUnit(row.typicalValue);
                         return (
                           <tr>
                             <td>{row.metric}</td>
@@ -1520,8 +1829,8 @@ function withUnit(value: string) {
                               {productParts.unit && <span class="pt-unit">{productParts.unit}</span>}
                             </td>
                             <td>
-                              {avgParts.main}
-                              {avgParts.unit && <span class="pt-unit">{avgParts.unit}</span>}
+                              {typicalParts.main}
+                              {typicalParts.unit && <span class="pt-unit">{typicalParts.unit}</span>}
                             </td>
                             <td>
                               <span class={`pt-pill pt-pill--${row.diffTone}`}>{row.diffLabel}</span>
@@ -1537,38 +1846,55 @@ function withUnit(value: string) {
               <p class="pt-empty">Comparison data is still being verified.</p>
             )
           }
+          {
+            comparisonNote && (
+              <p class="pt-compare-note">{comparisonNote}</p>
+            )
+          }
         </section>
 
         {
           vm.hermanTake && (
             <section class="pt-block" id="pricing-verdict" aria-labelledby="pt-verdict-title">
-              {
-                herman ? (
-                  <div class="expert-opinion">
-                    <header class="pt-section-head">
-                      <p class="pt-eyebrow">Expert opinion</p>
-                      <h3 class="pt-title" id="pt-verdict-title">
-                        Our take on {vm.productName}'s pricing
-                      </h3>
-                    </header>
-                    <div class="expert-opinion__byline">
-                      <p class="expert-opinion__name">{herman.name}</p>
-                      <VerifiedCheck class="w-[18px] h-[18px]" />
+              <header class="pt-section-head">
+                <p class="pt-eyebrow">Expert opinion</p>
+                <h3 class="pt-title" id="pt-verdict-title">
+                  Our take on {vm.productName}'s pricing
+                </h3>
+              </header>
+              <div class="pt-opinion">
+                {
+                  herman && (
+                    <div class="pt-opinion__byline">
+                      <img
+                        class="pt-opinion__avatar"
+                        src={herman.avatar}
+                        alt=""
+                        width="40"
+                        height="40"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <div class="pt-opinion__who">
+                        <p class="pt-opinion__name">{herman.name}</p>
+                        <p class="pt-opinion__role">Lead reviewer</p>
+                      </div>
                     </div>
-                    <p class="expert-opinion__body">{vm.hermanTake}</p>
-                  </div>
-                ) : (
-                  <>
-                    <header class="pt-section-head">
-                      <p class="pt-eyebrow">Expert opinion</p>
-                      <h3 id="pt-verdict-title" class="pt-title">
-                        Our take on {vm.productName}'s pricing
-                      </h3>
-                    </header>
-                    <p class="pt-lead pt-verdict__body">{vm.hermanTake}</p>
-                  </>
-                )
-              }
+                  )
+                }
+                <p
+                  class="pt-opinion__body"
+                  set:html={renderReviewProseText(vm.hermanTake, pricingGlossary)}
+                />
+                <a
+                  href={product.affiliateUrl}
+                  target="_blank"
+                  rel={ctaRel}
+                  class="pt-opinion__cta"
+                >
+                  Visit {vm.productName} ↗
+                </a>
+              </div>
             </section>
           )
         }
@@ -1585,24 +1911,6 @@ function withUnit(value: string) {
               </p>
             )
           }
-          {pricingTagline && <p class="pt-sum__tagline">{pricingTagline}</p>}
-
-          <dl class="pt-sum__facts">
-            <div class="pt-sum__fact">
-              <dt>Starting price</dt>
-              <dd>{advertisedLabel}</dd>
-            </div>
-            <div class="pt-sum__fact">
-              <dt>
-                Regular use
-                <InfoIcon size="xs" title={regularUseTip} class="pt-sum__info" />
-              </dt>
-              <dd>{regularUseLabel}</dd>
-            </div>
-          </dl>
-
-          {pricingModelLabel && <p class="pt-sum__model">{pricingModelLabel}</p>}
-
           <a
             href={product.affiliateUrl}
             target="_blank"
@@ -1618,9 +1926,44 @@ function withUnit(value: string) {
 </section>
 
 <style>
-  /* —— Editorial headings (match Roundup H2 weight/size; pink eyebrow = category) —— */
-  .pt-page-head {
-    margin: 0 0 0.5rem;
+  /* Prevent mixer full-bleed background from creating horizontal page scroll */
+  .pricing-tab {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
+  /* —— Page intro panel (distinct from section hierarchy below) —— */
+  .pt-intro {
+    margin: 0 0 2.25rem;
+    padding: 1.75rem 1.85rem;
+    border: 1px solid #e8e4df;
+    border-radius: 14px;
+    background: #faf8f4;
+    box-shadow: none;
+  }
+
+  .pt-intro .pt-title {
+    margin: 0 0 0.75rem;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+  }
+
+  .pt-intro .pt-lead {
+    margin: 0;
+    max-width: 40rem;
+  }
+
+  .pt-page-meta {
+    margin: 1rem 0 0;
+    padding-top: 0.85rem;
+    border-top: 1px solid #ebe6e0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+
+  .pt-intro .pt-evidence {
+    margin-top: 0.65rem;
   }
 
   .pt-section-head {
@@ -1645,11 +1988,6 @@ function withUnit(value: string) {
     letter-spacing: -0.025em;
     line-height: 1.15;
     color: var(--color-on-surface);
-  }
-
-  /* Top Pricing page title — Roundup FAQ / Compare size */
-  .pt-page-head .pt-title {
-    font-size: clamp(2rem, 4vw, 2.75rem);
   }
 
   .pt-lead {
@@ -1723,11 +2061,10 @@ function withUnit(value: string) {
     border-top: none;
   }
 
-  /* Nested editorial blocks inside Plans (credits / free vs paid / top-ups) */
+  /* Nested major blocks inside Plans (credit tool / top-ups) — not Compare plans */
   .pt-credit-pool,
-  .pt-other-limits,
   .pt-topups {
-    padding-top: 2.5rem;
+    padding-top: 4.5rem;
   }
 
   /* Legacy aliases — same Roundup H2 visual as .pt-title */
@@ -1849,6 +2186,10 @@ function withUnit(value: string) {
     color: #dc2626;
   }
 
+  .pt-market__pct--neutral {
+    color: #6b7280;
+  }
+
   #pricing-benchmark,
   #pricing-plans,
   #pricing-real-world-cost,
@@ -1870,6 +2211,11 @@ function withUnit(value: string) {
     padding-bottom: 1.65rem;
   }
 
+  .pt-bench.is-overlap .pt-bench__chart {
+    padding-top: 3.6rem;
+    padding-bottom: 3.85rem;
+  }
+
   .pt-bench__track {
     position: relative;
     height: 10px;
@@ -1884,6 +2230,10 @@ function withUnit(value: string) {
     bottom: 0;
     height: 1.15rem;
     pointer-events: none;
+  }
+
+  .pt-bench.is-overlap .pt-bench__axis {
+    bottom: 2.2rem;
   }
 
   .pt-bench__tick {
@@ -1918,12 +2268,26 @@ function withUnit(value: string) {
     pointer-events: none;
   }
 
+  .pt-bench.is-overlap .pt-bench__marker {
+    top: 3.6rem;
+  }
+
   .pt-bench__marker--avg {
     z-index: 2;
   }
 
   .pt-bench__marker--product {
     z-index: 4;
+  }
+
+  /* Extremely close: keep both markers visible as ring + inner fill */
+  .pt-bench.is-overlap.is-stacked .pt-bench__marker--avg {
+    z-index: 3;
+  }
+
+  .pt-bench.is-overlap.is-stacked .pt-bench__marker--product {
+    z-index: 5;
+    transform: translate(-50%, calc(1.5px - 50%));
   }
 
   .pt-bench__float {
@@ -1933,6 +2297,46 @@ function withUnit(value: string) {
     flex-direction: column;
     align-items: center;
     white-space: nowrap;
+  }
+
+  .pt-bench__leader {
+    display: none;
+    position: absolute;
+    left: 50%;
+    width: 1px;
+    background: currentColor;
+    opacity: 0.35;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  /* Overlap: product above, typical price below — see also global rules in pricing-tab.css */
+  .pt-bench.is-overlap .pt-bench__marker--product .pt-bench__float {
+    bottom: calc(100% + 16px);
+    align-items: center;
+  }
+
+  .pt-bench.is-overlap .pt-bench__marker--avg .pt-bench__float,
+  .pt-bench__float--below {
+    bottom: auto;
+    top: calc(100% + 16px);
+    align-items: center;
+  }
+
+  .pt-bench.is-overlap .pt-bench__leader {
+    display: block;
+  }
+
+  .pt-bench.is-overlap .pt-bench__leader--product {
+    bottom: 100%;
+    height: 16px;
+    color: #db2777;
+  }
+
+  .pt-bench.is-overlap .pt-bench__leader--avg {
+    top: 100%;
+    height: 16px;
+    color: #374151;
   }
 
   .pt-bench__float-name {
@@ -1953,25 +2357,67 @@ function withUnit(value: string) {
     color: #db2777;
   }
 
+  .pt-bench__float--avg .pt-bench__float-name,
+  .pt-bench__float--avg .pt-bench__float-price {
+    color: #374151;
+  }
+
   .pt-bench__dot {
     display: block;
     width: 12px;
     height: 12px;
     border-radius: 999px;
-    border: 2px solid #fff;
-    box-shadow: 0 0 0 1px rgb(0 0 0 / 14%);
+    box-sizing: border-box;
   }
 
   .pt-bench__dot--product {
     width: 14px;
     height: 14px;
     background: #db2777;
+    border: 2px solid #fff;
     box-shadow: 0 0 0 1px rgb(219 39 119 / 35%);
     animation: pt-bench-pulse 1.8s ease-out infinite;
   }
 
   .pt-bench__dot--avg {
-    background: #111827;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border: 2.5px solid #111827;
+    box-shadow: none;
+  }
+
+  .pt-bench.is-overlap.is-stacked .pt-bench__dot--avg {
+    width: 18px;
+    height: 18px;
+    border-width: 2.5px;
+  }
+
+  .pt-bench.is-overlap.is-stacked .pt-bench__dot--product {
+    width: 10px;
+    height: 10px;
+    border-width: 0;
+    box-shadow: none;
+  }
+
+  .pt-bench__takeaway {
+    margin: 0.85rem 0 0;
+    font-size: 0.875rem;
+    font-weight: 800;
+    text-align: center;
+    color: var(--color-on-surface);
+  }
+
+  .pt-bench__takeaway--neutral {
+    color: #6b7280;
+  }
+
+  .pt-bench__takeaway--good {
+    color: #16a34a;
+  }
+
+  .pt-bench__takeaway--bad {
+    color: #dc2626;
   }
 
   @keyframes pt-bench-pulse {
@@ -2085,8 +2531,8 @@ function withUnit(value: string) {
     display: grid;
     grid-template-columns: repeat(var(--pt-plan-cols), minmax(0, 1fr));
     gap: 0;
-    margin: 0 0 1.5rem;
-    padding: 0 0 1.25rem;
+    margin: 0;
+    padding: 0 0 2rem;
     border-bottom: 1px solid #e5e7eb;
   }
 
@@ -2144,12 +2590,48 @@ function withUnit(value: string) {
     color: #6b7280;
   }
 
+  .pt-plan-overview__billed {
+    margin: 0.2rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    line-height: 1.35;
+  }
+
+  .pt-plan-overview__save {
+    margin: 0.15rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #db2777;
+    line-height: 1.3;
+  }
+
+  .pt-plan-overview__unavailable {
+    margin: 0.2rem 0 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #9ca3af;
+    line-height: 1.35;
+  }
+
+  .pt-plan-overview__col.is-unavailable .pt-plan-overview__price {
+    display: none;
+  }
+
+  .pt-compare-note {
+    margin: 1.15rem 0 0;
+    max-width: 42rem;
+    font-size: 1rem;
+    line-height: 1.65;
+    color: var(--color-on-surface-variant);
+  }
+
   .pt-tool-selects {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 0.65rem 1.1rem;
-    margin: 0.85rem 0 0.75rem;
+    align-items: flex-end;
+    gap: 0.85rem 1.35rem;
+    margin: 0 0 1rem;
   }
 
   .pt-tool-selects .pt-menu-select {
@@ -2464,105 +2946,294 @@ function withUnit(value: string) {
   }
 
   .pt-credit-pool {
-    margin: 1.35rem 0 1.75rem;
-    padding: 2.5rem 0 1.5rem;
+    margin: 0 0 1.75rem;
+    padding: 4.5rem 0 1.5rem;
   }
 
   .pt-credit-pool > .pt-section-head {
+    margin-bottom: 0.65rem;
+  }
+
+  .pt-credit-pool__intro {
+    margin: 0 0 1.15rem;
+    max-width: 36rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: #4b5563;
+  }
+
+  .pt-credit-pool__config {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin: 0 0 0.85rem;
+  }
+
+  .pt-credit-pool__field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  .pt-credit-pool [data-pt-plan-menu].pt-billing__switch {
+    padding: 4px;
+    gap: 0.25rem;
+  }
+
+  .pt-credit-pool [data-pt-plan-menu] .pt-billing__btn {
+    padding: 0.55rem 1.15rem;
+    font-size: 0.875rem;
+    font-weight: 800;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+  }
+
+  .pt-credit-pool [data-pt-plan-menu] .pt-billing__btn:hover:not(.is-active) {
+    color: var(--color-on-surface);
+    background: rgb(255 255 255 / 70%);
+  }
+
+  .pt-credit-pool [data-pt-plan-menu] .pt-billing__btn.is-active {
+    background: #fff;
+    color: var(--color-on-surface);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 12%), 0 0 0 1px rgb(219 39 119 / 18%);
+  }
+
+  .pt-credit-pool [data-pt-plan-menu] .pt-billing__btn:active {
+    transform: scale(0.98);
+  }
+
+  .pt-credit-pool__await {
+    margin: 0 0 0.85rem;
+  }
+
+  .pt-credit-pool__await-callout {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    max-width: 22rem;
+    padding: 0.85rem 1rem 0.95rem;
+    border: 1px solid rgb(219 39 119 / 18%);
+    border-radius: 0.85rem;
+    background: rgb(253 242 248 / 75%);
+  }
+
+  .pt-credit-pool__await-arrow {
+    display: block;
+    margin: 0 0 0.15rem;
+    font-size: 1.15rem;
+    color: #db2777;
+    line-height: 1;
+  }
+
+  .pt-credit-pool__await-eyebrow {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #db2777;
+  }
+
+  .pt-credit-pool__await-title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 800;
+    line-height: 1.35;
+    color: var(--color-on-surface);
+  }
+
+  .pt-credit-pool__await-hint {
+    margin: 0.15rem 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: #6b7280;
+  }
+
+  .pt-credit-pool__results {
+    margin: 0;
+  }
+
+  .pt-credit-pool__results.is-locked {
+    position: relative;
+  }
+
+  .pt-credit-pool__ghost {
+    margin: 0;
+  }
+
+  .pt-credit-pool__ghost-panel {
+    padding: 1rem 1.05rem 1.1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    background: #f9fafb;
+    opacity: 0.72;
+    filter: grayscale(0.35);
+  }
+
+  .pt-credit-pool__ghost-bar {
+    height: 0.7rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #e5e7eb, #f3f4f6 55%, #e5e7eb);
+  }
+
+  .pt-credit-pool__ghost-bar--lg {
+    width: 42%;
+    height: 0.85rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .pt-credit-pool__ghost-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem 0.85rem;
     margin-bottom: 1rem;
   }
 
-  .pt-credit-pool__credits {
-    margin: 0.15rem 0 0.85rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    line-height: 1.4;
+  .pt-credit-pool__ghost-bar--tool {
+    height: 4.5rem;
+    border-radius: 0.85rem;
+  }
+
+  .pt-credit-pool__live {
+    margin: 0;
+  }
+
+  .pt-credit-pool__summary {
+    margin: 0.15rem 0 1.25rem;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .pt-credit-pool__summary-plan {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--color-on-surface);
+  }
+
+  .pt-credit-pool__summary-meta {
+    margin: 0.25rem 0 0;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.45;
     color: #6b7280;
     font-variant-numeric: tabular-nums;
   }
 
+  .pt-credit-pool__summary .pt-plan-active__sale-note {
+    margin-top: 0.35rem;
+  }
+
+  .pt-credit-pool__equiv {
+    margin: 0 0 0.15rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
   .pt-credit-pool__lead {
-    margin: 0.45rem 0 0;
-    font-size: 0.8125rem;
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
     color: #6b7280;
   }
 
   .pt-credit-pool__skim {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.35rem;
-    margin: 0.65rem 0 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 0;
+    row-gap: 1.5rem;
+    margin: 0;
   }
 
-  .pt-credit-pool__skim-item {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.18rem 0.55rem;
-    border-radius: 999px;
-    border: 1px solid rgb(226 226 226 / 70%);
-    background: rgb(249 250 251 / 90%);
-    font-size: 0.6875rem;
-    font-weight: 600;
-    line-height: 1.3;
-    color: #6b7280;
+  .pt-credit-pool__skim-stat {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    min-width: 0;
+    padding: 0 1.15rem;
+    background: transparent;
+    border: none;
+  }
+
+  .pt-credit-pool__skim-stat:nth-child(3n + 1) {
+    padding-left: 0;
+  }
+
+  .pt-credit-pool__skim-stat:nth-child(3n) {
+    padding-right: 0;
+  }
+
+  .pt-credit-pool__skim-stat:not(:nth-child(3n))::after {
+    content: '';
+    position: absolute;
+    top: 0.2em;
+    right: 0;
+    bottom: 0.2em;
+    width: 1px;
+    background: #e8eae4;
+  }
+
+  .pt-credit-pool__skim-amount {
+    font-size: 1.875rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--color-on-surface);
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+  }
+
+  .pt-credit-pool__skim-label {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #6b7280;
   }
 
   .pt-credit-pool__or {
-    margin: 0.55rem 0 0;
-    font-size: 0.8125rem;
-    font-weight: 600;
+    margin: 1.15rem 0 0;
+    font-size: 0.875rem;
+    font-weight: 500;
     color: #6b7280;
   }
 
   .pt-credit-pool__note {
-    margin: 0.35rem 0 0;
-    font-size: 0.8125rem;
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
     color: #6b7280;
+  }
+
+  .pt-credit-pool__tool-rule {
+    margin: 1.5rem 0 0;
+    border: none;
+    border-top: 1px solid #e5e7eb;
   }
 
   .pt-mixer-host {
     margin-top: 1.35rem;
   }
 
-  /* Full-bleed broken-white band (header surface) across content + sidebar */
+  /* Soft boxed panel — same header surface as site chrome, inset so it reads clearly */
   .pt-mixer-host:has([data-pt-mixer]) {
-    position: relative;
-    z-index: 0;
-    margin-top: 1.75rem;
-    padding: 1.5rem 0 1.65rem;
-    border-top: none;
+    margin-top: 1.25rem;
+    padding: 1.35rem 1.35rem 1.5rem;
+    border: 1px solid #e4e8dc;
+    border-radius: 14px;
     background: var(--color-header-surface, #f8faf3);
-    --pt-bleed-left: -1rem;
-    --pt-bleed-right: -1rem;
-  }
-
-  .pt-mixer-host:has([data-pt-mixer])::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: var(--pt-bleed-left);
-    right: var(--pt-bleed-right);
-    background: inherit;
-    z-index: -1;
-    pointer-events: none;
+    box-shadow: none;
   }
 
   @media (min-width: 768px) {
     .pt-mixer-host:has([data-pt-mixer]) {
-      --pt-bleed-left: -2rem;
-      --pt-bleed-right: -2rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .pt-mixer-host:has([data-pt-mixer]) {
-      /* Fallback before JS measures exact viewport edges */
-      --pt-bleed-left: -2rem;
-      --pt-bleed-right: calc(-1 * (280px + 2.5rem + 2rem));
+      padding: 1.5rem 1.6rem 1.65rem;
     }
   }
 
@@ -2727,6 +3398,9 @@ function withUnit(value: string) {
     font-weight: 700;
     line-height: 1;
     cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .pt-mixer__step:disabled {
@@ -2734,13 +3408,50 @@ function withUnit(value: string) {
     cursor: not-allowed;
   }
 
-  .pt-mixer__qty {
-    min-width: 3rem;
+  .pt-mixer__qty,
+  .pt-mixer__qty-input {
+    box-sizing: border-box;
+    width: 3.25rem;
+    min-width: 3.25rem;
+    max-width: 3.25rem;
+    min-height: 1.75rem;
+    height: 1.75rem;
+    margin: 0;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    background: transparent;
+    padding: 0;
     text-align: center;
     font-size: 0.875rem;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
+    font-family: inherit;
     color: var(--color-on-surface);
+    line-height: 1.2;
+    overflow: hidden;
+  }
+
+  .pt-mixer__qty {
+    cursor: text;
+  }
+
+  .pt-mixer__qty:focus-visible {
+    outline: 2px solid rgb(219 39 119 / 35%);
+    outline-offset: 1px;
+  }
+
+  .pt-mixer__qty-input {
+    border-color: rgb(219 39 119 / 35%);
+    background: #fff;
+    outline: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  .pt-mixer__qty-input::-webkit-outer-spin-button,
+  .pt-mixer__qty-input::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
   }
 
   .pt-mixer__spent {
@@ -2899,12 +3610,33 @@ function withUnit(value: string) {
     color: #6b7280;
   }
 
+  /* Compare plans — nested subsection (not a major pink-eyebrow section) */
   .pt-other-limits {
-    margin: 0.25rem 0 0;
+    margin: 0;
+    padding-top: 1.75rem;
   }
 
-  .pt-other-limits > .pt-section-head {
-    margin-bottom: 1rem;
+  .pt-other-limits__head {
+    margin: 0 0 1.25rem;
+  }
+
+  .pt-other-limits .pt-subhead {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    font-size: clamp(1.4375rem, 2.5vw, 1.5625rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: var(--color-on-surface);
+  }
+
+  .pt-other-limits .pt-sublead {
+    margin: 0;
+    max-width: 40rem;
+    font-size: 0.96875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #6b7280;
   }
 
   .pt-other-limits__scroll {
@@ -3118,8 +3850,13 @@ function withUnit(value: string) {
     font-size: 1.25rem;
   }
 
-  .pt-mixer-sheet__stepper .pt-mixer__qty {
+  .pt-mixer-sheet__stepper .pt-mixer__qty,
+  .pt-mixer-sheet__stepper .pt-mixer__qty-input {
+    width: 3.5rem;
     min-width: 3.5rem;
+    max-width: 3.5rem;
+    min-height: 2rem;
+    height: 2rem;
     font-size: 1rem;
   }
 
@@ -3161,15 +3898,39 @@ function withUnit(value: string) {
 
   @media (max-width: 767px) {
     .pt-credit-pool__skim {
-      display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.4rem;
+      row-gap: 1.25rem;
     }
 
-    .pt-credit-pool__skim-item {
-      justify-content: center;
-      white-space: normal;
-      text-align: center;
+    .pt-credit-pool__skim-stat {
+      padding: 0 0.85rem;
+    }
+
+    .pt-credit-pool__skim-stat:nth-child(2n + 1) {
+      padding-left: 0;
+    }
+
+    .pt-credit-pool__skim-stat:nth-child(2n) {
+      padding-right: 0;
+    }
+
+    .pt-credit-pool__skim-stat:not(:nth-child(3n))::after {
+      display: none;
+    }
+
+    .pt-credit-pool__skim-stat:not(:nth-child(2n))::after {
+      content: '';
+      display: block;
+      position: absolute;
+      top: 0.2em;
+      right: 0;
+      bottom: 0.2em;
+      width: 1px;
+      background: #e8eae4;
+    }
+
+    .pt-credit-pool__skim-amount {
+      font-size: 1.5rem;
     }
 
     .pt-mixer__layout {
@@ -3529,8 +4290,8 @@ function withUnit(value: string) {
   }
 
   .pt-topups {
-    margin: 1.75rem 0 0.25rem;
-    padding: 1.5rem 0 1.35rem;
+    margin: 0 0 0.25rem;
+    padding: 4.5rem 0 1.35rem;
   }
 
   .pt-topups > .pt-section-head {
@@ -3740,6 +4501,16 @@ function withUnit(value: string) {
 
   .pt-usage-calc-details > summary::-webkit-details-marker {
     display: none;
+  }
+
+  .pt-usage-calc-details > summary::after {
+    content: '↓';
+    margin-left: 0.15rem;
+    font-weight: 700;
+  }
+
+  .pt-usage-calc-details[open] > summary::after {
+    content: '↑';
   }
 
   .pt-usage-math {
@@ -4060,16 +4831,16 @@ function withUnit(value: string) {
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0;
   }
 
   .pt-feature-row {
     display: grid;
     grid-template-columns: auto 1fr auto;
-    gap: 0.75rem;
-    align-items: center;
-    padding: 0.65rem 0.15rem;
-    border-bottom: 1px solid rgb(226 226 226 / 60%);
+    gap: 0.65rem 0.75rem;
+    align-items: start;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid rgb(226 226 226 / 70%);
   }
 
   .pt-feature-row:last-child {
@@ -4077,47 +4848,51 @@ function withUnit(value: string) {
   }
 
   .pt-feature-row__icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-top: 0.1rem;
+    color: #9ca3af;
   }
 
-  .pt-feature-row__icon .material-symbols-outlined { font-size: 18px; }
-  .pt-feature-row__icon--pink { background: rgb(219 39 119 / 10%); color: #db2777; }
-  .pt-feature-row__icon--green { background: rgb(34 197 94 / 10%); color: #16a34a; }
-  .pt-feature-row__icon--amber { background: rgb(245 158 11 / 12%); color: #d97706; }
-  .pt-feature-row__icon--purple { background: rgb(168 85 247 / 10%); color: #9333ea; }
-  .pt-feature-row__icon--blue { background: rgb(59 130 246 / 10%); color: #2563eb; }
-  .pt-feature-row__icon--neutral { background: rgb(243 244 246 / 90%); color: #4b5563; }
+  .pt-feature-row__icon .material-symbols-outlined {
+    font-size: 18px;
+    font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  }
 
   .pt-feature-row__label {
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     color: var(--color-on-surface);
+    line-height: 1.35;
   }
 
   .pt-feature-row__value {
-    display: inline-grid;
-    grid-template-columns: minmax(4.25rem, max-content) auto;
-    align-items: baseline;
-    justify-items: end;
-    column-gap: 0.15rem;
-    font-size: 0.875rem;
-    font-weight: 800;
-    color: var(--color-on-surface);
-    font-variant-numeric: tabular-nums;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
     text-align: right;
+    font-variant-numeric: tabular-nums;
   }
 
   .pt-feature-row__amount {
-    font-weight: inherit;
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+    line-height: 1.3;
+  }
+
+  .pt-feature-row__secondary {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    line-height: 1.3;
   }
 
   .pt-feature-row__value .pt-unit {
-    justify-self: start;
+    font-weight: 700;
+    color: inherit;
   }
 
   .pt-compare-wrap {
@@ -4222,52 +4997,6 @@ function withUnit(value: string) {
     color: #9ca3af;
   }
 
-  .pt-sum__tagline {
-    margin: 0.35rem 0 1rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    font-style: italic;
-    color: #6b7280;
-    line-height: 1.35;
-  }
-
-  .pt-sum__facts {
-    margin: 0;
-    display: grid;
-    gap: 0.85rem;
-  }
-
-  .pt-sum__fact dt {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    margin: 0;
-    font-size: 0.6875rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #6b7280;
-  }
-
-  .pt-sum__fact dd {
-    margin: 0.15rem 0 0;
-    font-size: 1rem;
-    font-weight: 800;
-    color: var(--color-on-surface);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .pt-sum__info {
-    opacity: 0.7;
-  }
-
-  .pt-sum__model {
-    margin: 1rem 0 0;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: #6b7280;
-  }
-
   .pt-sum__link {
     display: inline-block;
     margin-top: 0.85rem;
@@ -4280,6 +5009,73 @@ function withUnit(value: string) {
   .pt-sum__link:hover {
     text-decoration: underline;
   }
+
+  /* —— Expert opinion pull-quote —— */
+  .pt-opinion {
+    max-width: 42rem;
+    margin: 0;
+    padding: 1.15rem 1.15rem 1.15rem 1.05rem;
+    border-left: 3px solid #db2777;
+    border-radius: 0 10px 10px 0;
+    background: #fffaf7;
+  }
+
+  .pt-opinion__byline {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0 0 0.85rem;
+  }
+
+  .pt-opinion__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #f3f4f6;
+  }
+
+  .pt-opinion__who {
+    min-width: 0;
+  }
+
+  .pt-opinion__name {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+    line-height: 1.25;
+  }
+
+  .pt-opinion__role {
+    margin: 0.1rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    line-height: 1.3;
+  }
+
+  .pt-opinion__body {
+    margin: 0;
+    max-width: 40rem;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    color: var(--color-on-surface);
+  }
+
+  .pt-opinion__cta {
+    display: inline-block;
+    margin-top: 1.1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #db2777;
+    text-decoration: none;
+  }
+
+  .pt-opinion__cta:hover {
+    text-decoration: underline;
+  }
 </style>
 
 <script>
@@ -4287,6 +5083,7 @@ function withUnit(value: string) {
 
   type PlanBillingOpt = {
     monthlyPriceLabel: string;
+    periodPriceLabel?: string | null;
     priceSub: string;
     savingsLabel: string | null;
     sale: { listPriceLabel: string; badge: string; note: string } | null;
@@ -4331,7 +5128,7 @@ function withUnit(value: string) {
     isFree: boolean;
     credits: number | null;
     creditsLine: string | null;
-    items: Array<{ key: string; value: string; label?: string }>;
+    items: Array<{ key: string; value: string; label?: string; icon?: string; amount?: string }>;
     mixer: MixerPayload | null;
     highlights: string[];
   };
@@ -4339,6 +5136,7 @@ function withUnit(value: string) {
   type PlansPayload = {
     plans: PlanPayload[];
     freePlanKey: string | null;
+    billingIntervals?: Array<'monthly' | 'quarterly' | 'yearly'>;
     limitRows: Array<{ key: string; cells: Record<string, string> }>;
     byPlan: Record<string, PlanBudget>;
     defaultPlanKey: string;
@@ -4403,7 +5201,7 @@ function withUnit(value: string) {
   </div>
   <div class="pt-mixer__stepper">
     <button type="button" class="pt-mixer__step" data-pt-mixer-dec aria-label="Decrease ${escapeHtml(ch.label)}">−</button>
-    <span class="pt-mixer__qty" data-pt-mixer-qty>0</span>
+    <button type="button" class="pt-mixer__qty" data-pt-mixer-qty title="Double-click to type an amount" aria-label="${escapeHtml(ch.label)} amount — double-click to type">0</button>
     <button type="button" class="pt-mixer__step" data-pt-mixer-inc aria-label="Increase ${escapeHtml(ch.label)}">+</button>
   </div>
   <p class="pt-mixer__spent" data-pt-mixer-spent>0 credits</p>
@@ -4424,7 +5222,7 @@ function withUnit(value: string) {
   </div>
   <div class="pt-mixer__stepper pt-mixer-sheet__stepper">
     <button type="button" class="pt-mixer__step" data-pt-mixer-sheet-dec aria-label="Decrease ${escapeHtml(ch.label)}">−</button>
-    <span class="pt-mixer__qty" data-pt-mixer-sheet-qty>0</span>
+    <button type="button" class="pt-mixer__qty" data-pt-mixer-sheet-qty title="Double-click to type an amount" aria-label="${escapeHtml(ch.label)} amount — double-click to type">0</button>
     <button type="button" class="pt-mixer__step" data-pt-mixer-sheet-inc aria-label="Increase ${escapeHtml(ch.label)}">+</button>
   </div>
   <p class="pt-mixer__spent" data-pt-mixer-sheet-spent>0 credits</p>
@@ -4461,10 +5259,10 @@ function withUnit(value: string) {
     return `<div class="pt-mixer" data-pt-mixer>
   <div class="pt-mixer__tool-head">
     <p class="pt-mixer__tool-eyebrow">Interactive tool</p>
-    <p class="pt-mixer__tool-title">
+    <h4 class="pt-mixer__tool-title">
       <span class="material-symbols-outlined" aria-hidden="true">tune</span>
       Build your mix
-    </p>
+    </h4>
     <p class="pt-mixer__tool-help">
       Adjust each feature to see how your <span data-pt-mixer-help-n>${mixer.credits.toLocaleString('en-US')}</span> credits could be split.
     </p>
@@ -4558,7 +5356,7 @@ function withUnit(value: string) {
   <div class="mobile-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="pt-mixer-sheet-title">
     <div class="mobile-sheet__handle" aria-hidden="true"></div>
     <header class="mobile-sheet__head">
-      <h2 id="pt-mixer-sheet-title" class="mobile-sheet__title">Customize mix</h2>
+      <p id="pt-mixer-sheet-title" class="mobile-sheet__title">Customize mix</p>
       <button type="button" class="mobile-sheet__close" data-pt-mixer-sheet-close aria-label="Close">
         <span class="material-symbols-outlined" aria-hidden="true">close</span>
       </button>
@@ -4742,6 +5540,23 @@ function withUnit(value: string) {
           : remainingColor();
     }
 
+    function maxAffordable(ch: MixerChannel) {
+      const other = totalSpent() - spentFor(ch, qty[ch.key] ?? 0);
+      const budgetLeft = Math.max(0, mixer.credits - other);
+      const byCredits =
+        ch.creditsPerUnit > 0 ? Math.floor((budgetLeft + 1e-9) / ch.creditsPerUnit) : ch.maxUnits;
+      return Math.max(0, Math.min(ch.maxUnits, byCredits));
+    }
+
+    function clampQty(ch: MixerChannel, raw: number) {
+      if (!Number.isFinite(raw) || raw < 0) return 0;
+      const capped = Math.min(raw, maxAffordable(ch));
+      if (ch.format === 'hours') return round2(Math.round(capped * 10) / 10);
+      return Math.round(capped);
+    }
+
+    let editingKey: string | null = null;
+
     function updateControl(
       control: HTMLElement,
       ch: MixerChannel,
@@ -4756,10 +5571,135 @@ function withUnit(value: string) {
       const spentEl = control.querySelector<HTMLElement>(spentSel);
       const dec = control.querySelector<HTMLButtonElement>(decSel);
       const inc = control.querySelector<HTMLButtonElement>(incSel);
-      if (qtyEl) qtyEl.textContent = formatQty(ch, value);
+      if (qtyEl && editingKey !== ch.key) qtyEl.textContent = formatQty(ch, value);
       if (spentEl) spentEl.textContent = `${cr} credit${cr === 1 ? '' : 's'}`;
       if (dec) dec.disabled = value <= 0;
       if (inc) inc.disabled = !canIncrement(ch);
+    }
+
+    function bindHoldStep(btn: HTMLElement | null | undefined, onStep: () => boolean) {
+      if (!btn) return;
+      let timer: number | null = null;
+      let delay = 380;
+      let active = false;
+
+      const clear = () => {
+        active = false;
+        if (timer != null) {
+          window.clearTimeout(timer);
+          timer = null;
+        }
+        delay = 380;
+      };
+
+      const schedule = () => {
+        timer = window.setTimeout(() => {
+          if (!active) return;
+          if (!onStep()) {
+            clear();
+            return;
+          }
+          delay = Math.max(36, Math.floor(delay * 0.82));
+          schedule();
+        }, delay);
+      };
+
+      btn.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        if ((btn as HTMLButtonElement).disabled) return;
+        event.preventDefault();
+        clear();
+        active = true;
+        if (!onStep()) {
+          clear();
+          return;
+        }
+        try {
+          btn.setPointerCapture(event.pointerId);
+        } catch {
+          /* ignore */
+        }
+        timer = window.setTimeout(() => {
+          if (!active) return;
+          schedule();
+        }, 340);
+      });
+
+      btn.addEventListener('pointerup', clear);
+      btn.addEventListener('pointercancel', clear);
+      btn.addEventListener('lostpointercapture', clear);
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+      });
+    }
+
+    function bindQtyEdit(
+      control: HTMLElement,
+      ch: MixerChannel,
+      key: string,
+      qtySel: string,
+      onCommit: () => void,
+    ) {
+      const qtyBtn = control.querySelector<HTMLElement>(qtySel);
+      if (!qtyBtn) return;
+
+      const startEdit = () => {
+        if (editingKey) return;
+        editingKey = key;
+        const w = Math.round(qtyBtn.getBoundingClientRect().width);
+        const h = Math.round(qtyBtn.getBoundingClientRect().height);
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.inputMode = ch.format === 'hours' ? 'decimal' : 'numeric';
+        input.className = 'pt-mixer__qty-input';
+        input.value = String(qty[key] ?? 0);
+        input.setAttribute('aria-label', `Type ${ch.label} amount`);
+        input.style.width = `${w}px`;
+        input.style.minWidth = `${w}px`;
+        input.style.maxWidth = `${w}px`;
+        input.style.height = `${h}px`;
+        input.style.minHeight = `${h}px`;
+        qtyBtn.replaceWith(input);
+        input.focus();
+        input.select();
+
+        const finish = (commit: boolean) => {
+          if (editingKey !== key) return;
+          editingKey = null;
+          if (commit) {
+            const parsed = Number(String(input.value).replace(/,/g, '').trim());
+            qty[key] = clampQty(ch, parsed);
+            onCommit();
+          }
+          const nextBtn = document.createElement('button');
+          nextBtn.type = 'button';
+          nextBtn.className = 'pt-mixer__qty';
+          if (qtySel.includes('sheet')) nextBtn.setAttribute('data-pt-mixer-sheet-qty', '');
+          else nextBtn.setAttribute('data-pt-mixer-qty', '');
+          nextBtn.title = 'Double-click to type an amount';
+          nextBtn.setAttribute('aria-label', `${ch.label} amount — double-click to type`);
+          nextBtn.textContent = formatQty(ch, qty[key] ?? 0);
+          input.replaceWith(nextBtn);
+          bindQtyEdit(control, ch, key, qtySel, onCommit);
+          render();
+        };
+
+        input.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            finish(true);
+          } else if (event.key === 'Escape') {
+            event.preventDefault();
+            finish(false);
+          }
+        });
+        input.addEventListener('blur', () => finish(true));
+      };
+
+      qtyBtn.addEventListener('dblclick', (event) => {
+        event.preventDefault();
+        startEdit();
+      });
     }
 
     function render() {
@@ -4841,15 +5781,22 @@ function withUnit(value: string) {
         const key = control.dataset.ptMixerControl;
         const ch = mixer.channels.find((c) => c.key === key);
         if (!ch || !key) return;
-        control.querySelector('[data-pt-mixer-dec]')?.addEventListener('click', () => {
-          qty[key] = Math.max(0, round2((qty[key] ?? 0) - ch.step));
+        bindHoldStep(control.querySelector('[data-pt-mixer-dec]'), () => {
+          const next = Math.max(0, round2((qty[key] ?? 0) - ch.step));
+          if (next === (qty[key] ?? 0)) return false;
+          qty[key] = next;
+          markCustom();
           render();
+          return true;
         });
-        control.querySelector('[data-pt-mixer-inc]')?.addEventListener('click', () => {
-          if (!canIncrement(ch)) return;
+        bindHoldStep(control.querySelector('[data-pt-mixer-inc]'), () => {
+          if (!canIncrement(ch)) return false;
           qty[key] = round2((qty[key] ?? 0) + ch.step);
+          markCustom();
           render();
+          return canIncrement(ch);
         });
+        bindQtyEdit(control, ch, key, '[data-pt-mixer-qty]', () => markCustom());
       });
     }
 
@@ -4858,17 +5805,22 @@ function withUnit(value: string) {
         const key = control.dataset.ptMixerSheetControl;
         const ch = mixer.channels.find((c) => c.key === key);
         if (!ch || !key) return;
-        control.querySelector('[data-pt-mixer-sheet-dec]')?.addEventListener('click', () => {
-          qty[key] = Math.max(0, round2((qty[key] ?? 0) - ch.step));
+        bindHoldStep(control.querySelector('[data-pt-mixer-sheet-dec]'), () => {
+          const next = Math.max(0, round2((qty[key] ?? 0) - ch.step));
+          if (next === (qty[key] ?? 0)) return false;
+          qty[key] = next;
           markCustom();
           render();
+          return true;
         });
-        control.querySelector('[data-pt-mixer-sheet-inc]')?.addEventListener('click', () => {
-          if (!canIncrement(ch)) return;
+        bindHoldStep(control.querySelector('[data-pt-mixer-sheet-inc]'), () => {
+          if (!canIncrement(ch)) return false;
           qty[key] = round2((qty[key] ?? 0) + ch.step);
           markCustom();
           render();
+          return canIncrement(ch);
         });
+        bindQtyEdit(control, ch, key, '[data-pt-mixer-sheet-qty]', () => markCustom());
       });
     }
 
@@ -4994,11 +5946,6 @@ function withUnit(value: string) {
       }
     });
 
-    root.querySelectorAll<HTMLElement>('[data-pt-mixer-control]').forEach((control) => {
-      control.querySelector('[data-pt-mixer-dec]')?.addEventListener('click', () => markCustom());
-      control.querySelector('[data-pt-mixer-inc]')?.addEventListener('click', () => markCustom());
-    });
-
     function closeMixerSheet() {
       if (!sheet) return;
       closeSheet(sheet, () => {
@@ -5048,32 +5995,38 @@ function withUnit(value: string) {
 
     const scopeAttr = astroScopeAttr(root);
     const planButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-pt-plan-select]'));
-    const planOpen = root.querySelector<HTMLButtonElement>('[data-pt-plan-open]');
-    const planMenu = root.querySelector<HTMLElement>('[data-pt-plan-menu]');
-    const planLabelEl = root.querySelector<HTMLElement>('[data-pt-plan-label]');
     const billingGroup = root.querySelector<HTMLElement>('[data-pt-billing-group]');
-    const billingOpen = root.querySelector<HTMLButtonElement>('[data-pt-billing-open]');
-    const billingMenu = root.querySelector<HTMLElement>('[data-pt-billing-menu]');
-    const billingLabelEl = root.querySelector<HTMLElement>('[data-pt-billing-label]');
     const billingButtons = Array.from(
       root.querySelectorAll<HTMLButtonElement>('[data-pt-billing-select]'),
     );
-    const saveEl = root.querySelector<HTMLElement>('[data-pt-billing-save]');
-    const activeCredits = root.querySelector<HTMLElement>('[data-pt-active-credits]');
     const poolRoot = root.querySelector<HTMLElement>('[data-pt-credit-pool]');
     const poolSkim = root.querySelector<HTMLElement>('[data-pt-pool-skim]');
     const mixerHost = root.querySelector<HTMLElement>('[data-pt-mixer-host]');
+    const poolAwait = root.querySelector<HTMLElement>('[data-pt-pool-await]');
+    const poolResults = root.querySelector<HTMLElement>('[data-pt-pool-results]');
+    const poolGhost = root.querySelector<HTMLElement>('[data-pt-pool-ghost]');
+    const poolLive = root.querySelector<HTMLElement>('[data-pt-pool-live]');
+    const poolIntro = root.querySelector<HTMLElement>('[data-pt-pool-intro]');
     const limitsTitle = root.querySelector<HTMLElement>('[data-pt-limits-title]');
-    const limitsHeadRow = root.querySelector('thead tr');
-    const limitsBody = root.querySelector<HTMLElement>('[data-pt-limits-body]');
+    const plansBillingBtns = Array.from(
+      root.querySelectorAll<HTMLButtonElement>('[data-pt-plans-billing-select]'),
+    );
 
+    const creditToolKeys = new Set(
+      Object.keys(payload.byPlan).filter((k) => Boolean(payload.byPlan[k]?.mixer)),
+    );
+    const creditToolCount = creditToolKeys.size;
+    const poolNeedsPlanPick = creditToolCount > 1;
+
+    /** Overview selection can stay on a default plan; pool waits when multi-plan. */
     let selectedPlanKey = root.dataset.ptSelectedPlan || payload.defaultPlanKey;
     let selectedInterval: 'monthly' | 'quarterly' | 'yearly' =
       (root.dataset.ptBilling as 'monthly' | 'quarterly' | 'yearly') || payload.defaultInterval;
-    let comparePaidKey =
-      payload.plans.find((p) => p.key === selectedPlanKey && !p.isFree)?.key
-      ?? payload.plans.find((p) => !p.isFree)?.key
-      ?? null;
+    let poolPlanKey = poolRoot?.dataset.ptPoolPlan ?? (creditToolCount === 1 ? [...creditToolKeys][0] : '');
+
+    const poolIntroAwaiting = 'Choose your plan to see how far your included credits can go.';
+    const poolIntroReady =
+      'Your credits are shared across paid features. Spend them all on one feature, or mix them however you want.';
 
     function planByKey(key: string) {
       return payload.plans.find((p) => p.key === key) ?? null;
@@ -5096,6 +6049,37 @@ function withUnit(value: string) {
       return interval === 'yearly' ? 'Annual' : interval === 'quarterly' ? 'Quarterly' : 'Monthly';
     }
 
+    function notOfferedLabel(interval: 'monthly' | 'quarterly' | 'yearly') {
+      if (interval === 'yearly') return 'Not offered annually';
+      if (interval === 'quarterly') return 'Not offered quarterly';
+      return 'Not offered monthly';
+    }
+
+    function optFor(
+      plan: PlanPayload | null,
+      interval: 'monthly' | 'quarterly' | 'yearly',
+    ): PlanBillingOpt | null {
+      if (!plan?.billing) return null;
+      return plan.billing[interval] ?? null;
+    }
+
+    function pickIntervalForPlan(plan: PlanPayload | null): 'monthly' | 'quarterly' | 'yearly' | '' {
+      const opts = billingOptions(plan);
+      if (opts.length === 0) return '';
+      if (opts.length === 1) return opts[0];
+      if (opts.includes(selectedInterval)) return selectedInterval;
+      if (opts.includes('monthly')) return 'monthly';
+      return opts[0];
+    }
+
+    function poolIsReady() {
+      if (!poolPlanKey || !creditToolKeys.has(poolPlanKey)) return false;
+      const plan = planByKey(poolPlanKey);
+      const opts = billingOptions(plan);
+      if (opts.length === 0) return false;
+      return opts.includes(selectedInterval);
+    }
+
     function flashNum(el: HTMLElement | null) {
       if (!el) return;
       el.classList.remove('pt-num-flash');
@@ -5103,52 +6087,226 @@ function withUnit(value: string) {
       el.classList.add('pt-num-flash');
     }
 
+    function syncOverview() {
+      root.querySelectorAll<HTMLElement>('[data-pt-overview-plan]').forEach((col) => {
+        const key = col.dataset.ptOverviewPlan;
+        if (!key) return;
+        const plan = planByKey(key);
+        if (!plan) return;
+
+        const priceEl = col.querySelector<HTMLElement>('[data-pt-overview-price]');
+        const priceMain = col.querySelector<HTMLElement>('[data-pt-overview-price-main]');
+        const listEl = col.querySelector<HTMLElement>('[data-pt-overview-list]');
+        const badgeEl = col.querySelector<HTMLElement>('[data-pt-overview-badge]');
+        const billedEl = col.querySelector<HTMLElement>('[data-pt-overview-billed]');
+        const saveEl = col.querySelector<HTMLElement>('[data-pt-overview-save]');
+        const unavailableEl = col.querySelector<HTMLElement>('[data-pt-overview-unavailable]');
+        const creditsEl = col.querySelector<HTMLElement>('[data-pt-overview-credits]');
+
+        if (creditsEl) creditsEl.textContent = plan.summaryLine;
+
+        if (plan.isFree) {
+          col.classList.remove('is-unavailable');
+          if (priceEl) priceEl.hidden = false;
+          if (priceMain) {
+            priceMain.textContent = '';
+            priceMain.append(document.createTextNode(plan.priceLabel || '$0'));
+          }
+          if (listEl) {
+            listEl.hidden = true;
+            listEl.textContent = '';
+          }
+          if (badgeEl) {
+            badgeEl.hidden = true;
+            badgeEl.textContent = '';
+          }
+          if (billedEl) {
+            billedEl.hidden = true;
+            billedEl.textContent = '';
+          }
+          if (saveEl) {
+            saveEl.hidden = true;
+            saveEl.textContent = '';
+          }
+          if (unavailableEl) {
+            unavailableEl.hidden = true;
+            unavailableEl.textContent = '';
+          }
+          return;
+        }
+
+        const opt = optFor(plan, selectedInterval);
+        if (!opt) {
+          col.classList.add('is-unavailable');
+          if (priceEl) priceEl.hidden = true;
+          if (billedEl) {
+            billedEl.hidden = true;
+            billedEl.textContent = '';
+          }
+          if (saveEl) {
+            saveEl.hidden = true;
+            saveEl.textContent = '';
+          }
+          if (unavailableEl) {
+            unavailableEl.hidden = false;
+            unavailableEl.textContent = notOfferedLabel(selectedInterval);
+          }
+          return;
+        }
+
+        col.classList.remove('is-unavailable');
+        if (priceEl) priceEl.hidden = false;
+        if (unavailableEl) {
+          unavailableEl.hidden = true;
+          unavailableEl.textContent = '';
+        }
+
+        if (priceMain) {
+          priceMain.textContent = '';
+          priceMain.append(document.createTextNode(opt.monthlyPriceLabel));
+          const unit = document.createElement('span');
+          unit.className = 'pt-unit';
+          unit.textContent = '/mo';
+          priceMain.append(unit);
+          stampAstroScope(unit, scopeAttr);
+          flashNum(priceMain);
+        }
+
+        const sale = opt.sale;
+        if (listEl) {
+          if (sale?.listPriceLabel) {
+            listEl.hidden = false;
+            listEl.textContent = '';
+            listEl.append(document.createTextNode(sale.listPriceLabel));
+            const unit = document.createElement('span');
+            unit.className = 'pt-unit';
+            unit.textContent = '/mo';
+            listEl.append(unit);
+            stampAstroScope(unit, scopeAttr);
+          } else {
+            listEl.hidden = true;
+            listEl.textContent = '';
+          }
+        }
+        if (badgeEl) {
+          if (sale?.badge) {
+            badgeEl.hidden = false;
+            badgeEl.textContent = sale.badge;
+          } else {
+            badgeEl.hidden = true;
+            badgeEl.textContent = '';
+          }
+        }
+
+        const showBilled =
+          selectedInterval !== 'monthly'
+          && opt.priceSub
+          && !/^billed monthly$/i.test(opt.priceSub.trim());
+        if (billedEl) {
+          if (showBilled) {
+            billedEl.hidden = false;
+            billedEl.textContent = opt.priceSub;
+          } else {
+            billedEl.hidden = true;
+            billedEl.textContent = '';
+          }
+        }
+        if (saveEl) {
+          if (opt.savingsLabel) {
+            saveEl.hidden = false;
+            saveEl.textContent = opt.savingsLabel;
+          } else {
+            saveEl.hidden = true;
+            saveEl.textContent = '';
+          }
+        }
+      });
+    }
+
     function syncPlanMenu() {
-      const plan = planByKey(selectedPlanKey);
-      if (planLabelEl && plan) planLabelEl.textContent = plan.displayName;
       planButtons.forEach((btn) => {
-        const active = btn.dataset.ptPlanSelect === selectedPlanKey;
+        const active = Boolean(poolPlanKey) && btn.dataset.ptPlanSelect === poolPlanKey;
         btn.classList.toggle('is-active', active);
-        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        btn.setAttribute('aria-checked', active ? 'true' : 'false');
       });
     }
 
     function syncBillingAvailability(plan: PlanPayload | null) {
       if (!billingGroup) return;
       const available = billingOptions(plan);
-      billingGroup.hidden = available.length <= 1;
-      if (available.length === 0) return;
-
+      billingGroup.hidden = !plan || available.length <= 1;
       billingButtons.forEach((btn) => {
         const key = btn.dataset.ptBillingSelect as 'monthly' | 'quarterly' | 'yearly' | undefined;
         if (!key) return;
         btn.hidden = !available.includes(key);
       });
-
-      if (!available.includes(selectedInterval)) {
-        selectedInterval = available[0]!;
-      }
-
-      const yearlySave = plan?.billing?.yearly?.savingsLabel ?? '';
-      if (saveEl) {
-        saveEl.textContent = yearlySave;
-        saveEl.hidden = !yearlySave;
-      }
     }
 
     function syncBillingMenu() {
       root.dataset.ptBilling = selectedInterval;
-      if (billingLabelEl) billingLabelEl.textContent = billingLabel(selectedInterval);
       billingButtons.forEach((btn) => {
         const active = btn.dataset.ptBillingSelect === selectedInterval;
         btn.classList.toggle('is-active', active);
-        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        btn.setAttribute('aria-checked', active ? 'true' : 'false');
       });
+      plansBillingBtns.forEach((btn) => {
+        const active = btn.dataset.ptPlansBillingSelect === selectedInterval;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    }
+
+    function setBillingInterval(next: 'monthly' | 'quarterly' | 'yearly') {
+      selectedInterval = next;
+      applySelection();
+    }
+
+    function poolMetaLine(plan: PlanPayload | null, budget: PlanBudget | null): string | null {
+      const parts: string[] = [];
+      if (budget?.creditsLine) parts.push(budget.creditsLine);
+      else if (budget?.isFree) parts.push('Hard limits (no shared credit pool)');
+      const opt = plan && !plan.isFree ? optFor(plan, selectedInterval) : null;
+      if (opt?.monthlyPriceLabel) parts.push(`${opt.monthlyPriceLabel}/mo`);
+      return parts.length > 0 ? parts.join(' · ') : null;
+    }
+
+    function syncPoolContext(plan: PlanPayload | null, budget?: PlanBudget | null) {
+      const planLine = root.querySelector<HTMLElement>('[data-pt-pool-context-plan]');
+      const metaEl = root.querySelector<HTMLElement>('[data-pt-pool-context-meta]');
+      const resolvedBudget = budget ?? (plan ? budgetFor(plan.key) : null);
+      if (planLine) {
+        if (plan) {
+          const next = `${plan.displayName} · ${billingLabel(selectedInterval)}`;
+          planLine.hidden = false;
+          if (planLine.textContent !== next) planLine.textContent = next;
+        } else {
+          planLine.hidden = true;
+          planLine.textContent = '';
+        }
+      }
+      if (metaEl) {
+        const next = poolMetaLine(plan, resolvedBudget);
+        if (next) {
+          metaEl.hidden = false;
+          if (metaEl.textContent !== next) {
+            metaEl.textContent = next;
+            flashNum(metaEl);
+          }
+        } else {
+          metaEl.hidden = true;
+          metaEl.textContent = '';
+        }
+      }
     }
 
     function syncSaleNote(plan: PlanPayload | null) {
       const saleNoteEl = root.querySelector<HTMLElement>('[data-pt-active-sale-note]');
-      if (!saleNoteEl || !plan) return;
+      if (!saleNoteEl) return;
+      if (!plan) {
+        saleNoteEl.hidden = true;
+        saleNoteEl.textContent = '';
+        return;
+      }
       const opt =
         selectedInterval === 'yearly'
           ? plan.billing?.yearly
@@ -5165,29 +6323,50 @@ function withUnit(value: string) {
       }
     }
 
+    function syncPoolReadyUi(ready: boolean) {
+      if (poolRoot) {
+        poolRoot.dataset.ptPoolReady = ready ? 'true' : 'false';
+        poolRoot.dataset.ptPoolPlan = poolPlanKey;
+      }
+      const awaiting = !ready && poolNeedsPlanPick;
+      if (poolAwait) poolAwait.hidden = !awaiting;
+      if (poolGhost) poolGhost.hidden = !awaiting;
+      if (poolLive) poolLive.hidden = !ready;
+      if (poolResults) {
+        poolResults.classList.toggle('is-locked', awaiting);
+        if (awaiting) poolResults.setAttribute('aria-disabled', 'true');
+        else poolResults.removeAttribute('aria-disabled');
+      }
+      if (poolIntro) {
+        poolIntro.textContent = ready ? poolIntroReady : poolIntroAwaiting;
+      }
+    }
+
     function syncCreditPool(budget: PlanBudget | null) {
       if (!poolRoot || !mixerHost) return;
 
-      if (activeCredits) {
-        if (budget?.creditsLine) {
-          activeCredits.hidden = false;
-          if (activeCredits.textContent !== budget.creditsLine) {
-            activeCredits.textContent = budget.creditsLine;
-            flashNum(activeCredits);
-          }
-        } else if (budget?.isFree) {
-          activeCredits.hidden = false;
-          activeCredits.textContent = 'Hard limits (no shared credit pool)';
-        } else {
-          activeCredits.hidden = true;
-          activeCredits.textContent = '';
-        }
+      const ready = poolIsReady();
+      syncPoolReadyUi(ready);
+
+      if (!ready) {
+        poolRoot.setAttribute('data-pt-credit-mixer', 'false');
+        poolRoot.removeAttribute('data-pt-mixer-payload');
+        document.querySelectorAll('[data-pt-mixer-sheet]').forEach((el) => {
+          if (!mixerHost.contains(el)) el.remove();
+        });
+        document.body.classList.remove('mobile-sheet-open');
+        mixerHost.innerHTML = '';
+        return;
       }
+
+      const plan = planByKey(poolPlanKey);
+      syncPoolContext(plan, budget);
 
       const poolLead = root.querySelector<HTMLElement>('[data-pt-pool-lead]');
       const poolNote = root.querySelector<HTMLElement>('[data-pt-pool-note]');
       const poolCreditN = root.querySelector<HTMLElement>('[data-pt-pool-credit-n]');
       const mixerHelpN = root.querySelector<HTMLElement>('[data-pt-mixer-help-n]');
+      const toolRule = root.querySelector<HTMLElement>('[data-pt-pool-tool-rule]');
       if (poolLead) {
         if (budget?.mixer && budget.credits) {
           poolLead.hidden = false;
@@ -5217,31 +6396,42 @@ function withUnit(value: string) {
         if (!budget?.mixer) {
           poolNote.textContent = budget?.isFree
             ? 'This plan uses hard daily limits instead of a shared credit pool.'
-            : 'Credits are shared across features when a plan includes them.';
+            : 'This plan does not use a shared credit pool.';
         }
       }
 
       if (poolSkim) {
         const items = budget?.items ?? [];
+        const equivWrap = root.querySelector<HTMLElement>('[data-pt-pool-equiv]');
         if (items.length > 0) {
+          if (equivWrap) equivWrap.hidden = false;
           poolSkim.hidden = false;
           poolSkim.innerHTML = items
-            .map((item, idx) => {
-              return `<span class="pt-credit-pool__skim-item">${escapeHtml(item.value.replace(/\/mo$/, ''))}</span>`;
+            .map((item) => {
+              const amount = escapeHtml(item.amount ?? item.value.replace(/\/mo$/, ''));
+              const label = escapeHtml(item.label ?? item.value);
+              return `<div class="pt-credit-pool__skim-stat">
+                <span class="pt-credit-pool__skim-amount">${amount}</span>
+                <span class="pt-credit-pool__skim-label">${label}</span>
+              </div>`;
             })
             .join('');
           stampAstroScope(poolSkim, scopeAttr);
           flashNum(poolSkim);
         } else {
+          if (equivWrap && !budget?.mixer) equivWrap.hidden = true;
           poolSkim.hidden = true;
           poolSkim.innerHTML = '';
         }
       }
 
+      const poolOr = root.querySelector<HTMLElement>('[data-pt-pool-or]');
+      if (poolOr) poolOr.hidden = !budget?.mixer;
+      if (toolRule) toolRule.hidden = !budget?.mixer;
+
       if (budget?.mixer) {
         poolRoot.setAttribute('data-pt-credit-mixer', 'true');
         poolRoot.setAttribute('data-pt-mixer-payload', JSON.stringify(budget.mixer));
-        // Close/remove any sheet previously moved to document.body
         document.querySelectorAll('[data-pt-mixer-sheet]').forEach((el) => {
           if (!mixerHost.contains(el)) el.remove();
         });
@@ -5256,115 +6446,48 @@ function withUnit(value: string) {
       } else {
         poolRoot.setAttribute('data-pt-credit-mixer', 'false');
         poolRoot.removeAttribute('data-pt-mixer-payload');
-        const lines = (
-          budget?.highlights?.length
-            ? budget.highlights
-            : (budget?.items ?? []).map((i) => (i.label ? `${i.label}: ${i.value}` : i.value))
-        ).filter(Boolean);
-        if (lines.length > 0) {
-          mixerHost.innerHTML = `<ul class="pt-free-limits">${lines.map((l) => `<li>${escapeHtml(String(l))}</li>`).join('')}</ul>`;
-        } else {
-          mixerHost.innerHTML =
-            '<p class="pt-credit-pool__empty" data-pt-pool-empty>This plan doesn’t include a shared credit pool to mix.</p>';
-        }
+        mixerHost.innerHTML =
+          '<p class="pt-credit-pool__empty" data-pt-pool-empty>This plan does not use a shared credit pool.</p>';
         stampAstroScope(mixerHost, scopeAttr);
       }
     }
 
-    function syncLimits(plan: PlanPayload | null) {
-      if (!limitsTitle || !limitsHeadRow || !limitsBody) return;
-      const freeKey = payload.freePlanKey;
-      if (plan && !plan.isFree) comparePaidKey = plan.key;
-      const paidKey = comparePaidKey;
-      if (!freeKey || !paidKey) return;
-
-      const paidPlan = planByKey(paidKey);
-      limitsTitle.textContent = `Free vs. ${paidPlan?.displayName ?? 'paid'}`;
-
-      const paidTh = limitsHeadRow.querySelector<HTMLElement>(
-        'th[data-pt-limits-plan]:not([data-pt-limits-plan="' + freeKey + '"])',
-      ) ?? limitsHeadRow.querySelectorAll<HTMLElement>('th[data-pt-limits-plan]')[1];
-
-      if (paidTh) {
-        paidTh.setAttribute('data-pt-limits-plan', paidKey);
-        paidTh.textContent = paidPlan?.displayName ?? paidKey;
-      }
-
-      limitsBody.querySelectorAll<HTMLElement>('tr[data-pt-limits-row]').forEach((tr) => {
-        const rowKey = tr.dataset.ptLimitsRow;
-        const row = payload.limitRows.find((r) => r.key === rowKey);
-        if (!row) return;
-        const paidTd = tr.querySelector<HTMLElement>(
-          `td[data-pt-limits-cell]:not([data-pt-limits-cell="${freeKey}"])`,
-        );
-        if (!paidTd) return;
-        paidTd.setAttribute('data-pt-limits-cell', paidKey);
-        const cell = row.cells[paidKey] ?? '—';
-        const parts = splitUnitClient(cell);
-        paidTd.textContent = '';
-        paidTd.append(document.createTextNode(parts.main));
-        if (parts.unit) {
-          const unit = document.createElement('span');
-          unit.className = 'pt-unit';
-          unit.textContent = parts.unit;
-          paidTd.append(unit);
-          stampAstroScope(unit, scopeAttr);
-        }
-      });
+    function syncLimits(_plan: PlanPayload | null) {
+      if (limitsTitle) limitsTitle.textContent = 'What’s included in each plan';
     }
 
     function applySelection() {
       root.dataset.ptSelectedPlan = selectedPlanKey;
-      const plan = planByKey(selectedPlanKey);
-      const budget = budgetFor(selectedPlanKey);
+      const overviewPlan = planByKey(selectedPlanKey);
+      const poolPlan = poolPlanKey ? planByKey(poolPlanKey) : null;
+      const poolBudget = poolPlanKey ? budgetFor(poolPlanKey) : null;
+
+      if (poolPlan) {
+        const nextInterval = pickIntervalForPlan(poolPlan);
+        if (nextInterval && nextInterval !== selectedInterval) {
+          selectedInterval = nextInterval;
+        }
+      }
+
       syncPlanMenu();
-      syncBillingAvailability(plan);
+      syncBillingAvailability(poolPlan);
       syncBillingMenu();
-      syncSaleNote(plan);
-      syncCreditPool(budget);
-      syncLimits(plan);
+      syncOverview();
+      syncSaleNote(poolPlan);
+      syncCreditPool(poolBudget);
+      syncLimits(overviewPlan);
     }
-
-    function closePlanMenu() {
-      if (!planMenu || !planOpen) return;
-      planMenu.hidden = true;
-      planOpen.setAttribute('aria-expanded', 'false');
-    }
-
-    function closeBillingMenu() {
-      if (!billingMenu || !billingOpen) return;
-      billingMenu.hidden = true;
-      billingOpen.setAttribute('aria-expanded', 'false');
-    }
-
-    planOpen?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (!planMenu || !planOpen) return;
-      closeBillingMenu();
-      const open = planMenu.hidden;
-      planMenu.hidden = !open;
-      planOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-
-    billingOpen?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (!billingMenu || !billingOpen) return;
-      closePlanMenu();
-      const open = billingMenu.hidden;
-      billingMenu.hidden = !open;
-      billingOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
 
     planButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.ptPlanSelect;
-        if (!key || key === selectedPlanKey) {
-          closePlanMenu();
-          return;
-        }
+        if (!key) return;
+        poolPlanKey = key;
         selectedPlanKey = key;
+        const plan = planByKey(key);
+        const nextInterval = pickIntervalForPlan(plan);
+        if (nextInterval) selectedInterval = nextInterval;
         applySelection();
-        closePlanMenu();
       });
     });
 
@@ -5375,14 +6498,15 @@ function withUnit(value: string) {
         if (btn.hidden) return;
         selectedInterval = interval;
         applySelection();
-        closeBillingMenu();
       });
     });
 
-    document.addEventListener('click', (e) => {
-      const t = e.target as HTMLElement;
-      if (!t.closest('[data-pt-tool-plan-select]')) closePlanMenu();
-      if (!t.closest('[data-pt-billing-group]')) closeBillingMenu();
+    plansBillingBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const interval = btn.dataset.ptPlansBillingSelect;
+        if (interval !== 'monthly' && interval !== 'quarterly' && interval !== 'yearly') return;
+        setBillingInterval(interval);
+      });
     });
 
     applySelection();
@@ -5412,6 +6536,12 @@ function withUnit(value: string) {
       mediaValueLabel: string;
       includedValueLabel: string;
       extraValueLabel: string;
+      requiredCreditsLabel?: string;
+      includedCreditsLabel?: string;
+      extraCreditsLabel?: string;
+      packageLines?: Array<{ creditsLabel: string; priceLabel: string }>;
+      purchasedCreditsLabel?: string;
+      leftoverCreditsLabel?: string;
       planCostLabel: string;
       topUpCostLabel: string;
       totalLabel: string;
@@ -5508,11 +6638,49 @@ function withUnit(value: string) {
       if (calcSummary) calcSummary.textContent = calc.summaryLabel;
       if (calcHeading) calcHeading.textContent = calc.heading;
       if (calcIntro) calcIntro.textContent = calc.intro;
-      if (calcMedia2) calcMedia2.textContent = calc.mediaValueLabel;
-      if (calcIncluded) calcIncluded.textContent = calc.includedValueLabel;
-      if (calcExtra) calcExtra.textContent = calc.extraValueLabel;
+      const reqLabel = calc.requiredCreditsLabel ?? calc.mediaValueLabel;
+      const incLabel = calc.includedCreditsLabel ?? calc.includedValueLabel;
+      const extraLabel = calc.extraCreditsLabel ?? calc.extraValueLabel;
+      if (calcMedia2) calcMedia2.textContent = reqLabel;
+      if (calcIncluded) calcIncluded.textContent = incLabel;
+      if (calcExtra) calcExtra.textContent = extraLabel;
       if (calcPlan) calcPlan.textContent = calc.planCostLabel;
       if (calcTotal) calcTotal.textContent = calc.totalLabel;
+
+      const summaryTable = root.querySelector<HTMLTableElement>('.pt-usage-math__summary');
+      if (summaryTable) {
+        const packageRows =
+          (calc.packageLines ?? [])
+            .map(
+              (line) => `<tr>
+                <th scope="row">${escapeHtml(line.creditsLabel)}</th>
+                <td>${escapeHtml(line.priceLabel)}</td>
+              </tr>`,
+            )
+            .join('') || '';
+        const comboHeader =
+          (calc.packageLines?.length ?? 0) > 0
+            ? `<tr><th scope="row" colspan="2">Cheapest top-up combination</th></tr>`
+            : '';
+        const purchased =
+          calc.purchasedCreditsLabel != null
+            ? `<tr><th scope="row">Credits purchased</th><td>${escapeHtml(calc.purchasedCreditsLabel)}</td></tr>`
+            : '';
+        const leftover =
+          calc.leftoverCreditsLabel != null
+            ? `<tr><th scope="row">Credits left over</th><td>${escapeHtml(calc.leftoverCreditsLabel)}</td></tr>`
+            : '';
+        summaryTable.innerHTML = `<tbody>
+          <tr><th scope="row">Usage requires</th><td data-pt-usage-calc-media-2>${escapeHtml(reqLabel)}</td></tr>
+          <tr><th scope="row">Included with plan</th><td data-pt-usage-calc-included>${escapeHtml(incLabel)}</td></tr>
+          <tr class="pt-usage-math__row--extra"><th scope="row">Extra credits needed</th><td data-pt-usage-calc-extra>${escapeHtml(extraLabel)}</td></tr>
+          ${comboHeader}${packageRows}${purchased}${leftover}
+          <tr><th scope="row">Top-up spend</th><td>${escapeHtml(calc.topUpCostLabel)}</td></tr>
+          <tr><th scope="row">Monthly subscription</th><td data-pt-usage-calc-plan>${escapeHtml(calc.planCostLabel)}</td></tr>
+          <tr class="pt-usage-math__row--total"><th scope="row">Estimated monthly spend</th><td data-pt-usage-calc-total>${escapeHtml(calc.totalLabel)}</td></tr>
+        </tbody>`;
+        stampAstroScope(summaryTable, scopeAttr);
+      }
 
       if (calcChips) {
         const byKey = new Map(calc.features.map((row) => [row.key, row]));
@@ -5547,8 +6715,8 @@ function withUnit(value: string) {
 
         calcFeatures.innerHTML = `${featureRows}
           <tr class="pt-usage-math__row--subtotal">
-            <th scope="row">Total feature usage</th>
-            <td data-pt-usage-calc-media>${escapeHtml(calc.mediaValueLabel)}</td>
+            <th scope="row">Total feature credits</th>
+            <td data-pt-usage-calc-media>${escapeHtml(reqLabel)}</td>
           </tr>`;
         stampAstroScope(calcFeatures, scopeAttr);
       }
@@ -5622,23 +6790,54 @@ function withUnit(value: string) {
     });
   });
 
-  function syncMixerBleed() {
-    document.querySelectorAll<HTMLElement>('.pt-mixer-host').forEach((host) => {
-      if (!host.querySelector('[data-pt-mixer]')) return;
-      const rect = host.getBoundingClientRect();
-      host.style.setProperty('--pt-bleed-left', `${-Math.round(rect.left)}px`);
-      host.style.setProperty('--pt-bleed-right', `${-Math.round(window.innerWidth - rect.right)}px`);
+  function syncBenchCollision() {
+    document.querySelectorAll<HTMLElement>('[data-pt-bench]').forEach((bench) => {
+      const chart = bench.querySelector<HTMLElement>('[data-pt-bench-chart]');
+      const product = bench.querySelector<HTMLElement>('[data-pt-bench-marker="product"]');
+      const avg = bench.querySelector<HTMLElement>('[data-pt-bench-marker="avg"]');
+      const avgFloat = bench.querySelector<HTMLElement>('[data-pt-bench-float="avg"]');
+      if (!chart || !product || !avg) return;
+
+      const productPct = Number(bench.dataset.ptProductPct);
+      const avgPct = Number(bench.dataset.ptAvgPct);
+      if (!Number.isFinite(productPct) || !Number.isFinite(avgPct)) return;
+
+      // Pricing tab is often hidden on first paint — don't wipe SSR overlap until measurable.
+      const width = chart.clientWidth;
+      if (width <= 0) return;
+
+      const pxApart = (Math.abs(productPct - avgPct) / 100) * width;
+      // Labels are wide; use a generous threshold so near prices never share a row.
+      const overlap = pxApart < 72;
+      const stacked = pxApart < 12;
+      bench.classList.toggle('is-overlap', overlap);
+      bench.classList.toggle('is-stacked', stacked);
+      avgFloat?.classList.toggle('pt-bench__float--below', overlap);
     });
   }
 
-  syncMixerBleed();
-  window.addEventListener('resize', syncMixerBleed);
-  // Re-measure after fonts/layout settle and when plan switches remount the mixer
-  requestAnimationFrame(syncMixerBleed);
-  document.querySelectorAll<HTMLElement>('[data-pt-plans]').forEach((root) => {
-    const host = root.querySelector('.pt-mixer-host');
-    if (!host) return;
-    const mo = new MutationObserver(() => syncMixerBleed());
-    mo.observe(host, { childList: true, subtree: false });
+  syncBenchCollision();
+  window.addEventListener('resize', () => syncBenchCollision());
+  requestAnimationFrame(() => syncBenchCollision());
+
+  // Re-measure when the Pricing tab becomes visible (hidden panels report width 0).
+  document.querySelectorAll('[data-tab="pricing"], [data-tabbar] [data-tab]').forEach((el) => {
+    el.addEventListener('click', () => {
+      requestAnimationFrame(() => syncBenchCollision());
+      setTimeout(syncBenchCollision, 50);
+      setTimeout(syncBenchCollision, 200);
+    });
   });
+  const pricingPanel = document.querySelector('[data-tab-panel="pricing"]');
+  if (pricingPanel && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting && e.intersectionRatio > 0)) {
+          syncBenchCollision();
+        }
+      },
+      { threshold: 0.01 },
+    );
+    io.observe(pricingPanel);
+  }
 </script>

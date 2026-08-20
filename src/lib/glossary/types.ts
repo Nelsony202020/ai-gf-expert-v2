@@ -28,9 +28,9 @@ export interface GlossaryEntryRecord {
   /** Optional tooltip CTA text. Empty → "Read full definition →". */
   ctaLabel: string;
   fullDefinition: GlossaryTipTapDoc | null;
-  /** Matching aliases for auto-tooltip detection (singular/plural variants, etc.). */
+  /** Trigger phrases for auto-tooltip matching (singular/plural, hyphen variants, etc.). */
   aliases: string[];
-  /** Public “Also called” labels only — never used for matching. */
+  /** True alternate names shown as “Other names” in the tooltip (e.g. coins, gems, credits). Never used for matching alone. */
   displayAliases: string[];
   category: GlossaryCategory | string;
   status: GlossaryStatus | string;
@@ -48,7 +48,9 @@ export interface PublishedGlossaryTerm {
   anchor: string;
   tooltipDefinition: string;
   ctaLabel: string;
+  /** Match triggers (term + aliases). */
   aliases: string[];
+  /** Tooltip “Other names” only. */
   displayAliases: string[];
   category: string;
 }
@@ -128,27 +130,24 @@ function titleCaseAlias(value: string): string {
 
 /**
  * Compact tooltip metadata line: "Coins · Gems · Credits"
- * Prefers displayAliases; falls back to matching aliases (excluding the primary term).
+ * Uses displayAliases only — never falls back to match triggers.
  */
 export function glossaryOtherNamesText(
-  term: string,
-  aliases?: string[] | null,
+  _term: string,
+  _aliases?: string[] | null,
   displayAliases?: string[] | null,
 ): string {
-  const display = parseAliases(displayAliases ?? []);
-  const source =
-    display.length > 0
-      ? display
-      : (aliases ?? []).filter((a) => aliasKey(a) !== aliasKey(term));
-  const list = parseAliases(source).map(titleCaseAlias);
+  const list = parseAliases(displayAliases ?? []).map(titleCaseAlias);
   if (list.length === 0) return '';
   return list.join(' · ');
 }
 
-/** @deprecated Prefer glossaryOtherNamesText for tooltips. */
-export function glossaryAlsoCalledText(term: string, aliases?: string[] | null): string {
-  const termKey = aliasKey(term);
-  return formatAlsoCalledList((aliases ?? []).filter((a) => aliasKey(a) !== termKey));
+/** Public glossary page “Also called” line — displayAliases only. */
+export function glossaryAlsoCalledText(
+  _term: string,
+  displayAliases?: string[] | null,
+): string {
+  return formatAlsoCalledList(displayAliases ?? []);
 }
 
 export function isTipTapDocNonEmpty(doc: unknown): boolean {
@@ -172,7 +171,7 @@ export function extractPlainTextFromTipTap(doc: unknown): string {
   return parts.join(' ').replace(/\s+/g, ' ').trim();
 }
 
-/** Match phrases for a glossary entry (term + aliases), longest-first ready. */
+/** Match phrases for a glossary entry (term + triggers), longest-first ready. */
 export function glossaryMatchPhrases(entry: {
   term: string;
   aliases?: string[];

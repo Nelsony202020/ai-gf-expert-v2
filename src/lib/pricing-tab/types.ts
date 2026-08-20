@@ -1,4 +1,5 @@
 import type { UsageCalculation } from '../pricing/usageScenarios';
+import type { PricingFreeAccess } from './freeAccessShared';
 
 export interface PricingPlanBillingOption {
   interval: 'monthly' | 'quarterly' | 'yearly';
@@ -47,6 +48,8 @@ export interface PricingTopUpPackage {
 export interface PricingTopUps {
   heading: string;
   intro: string;
+  /** Column heading for relative value, e.g. "Value vs. 100-credit pack" */
+  valueColumnLabel: string;
   packages: PricingTopUpPackage[];
   estimateNote: string | null;
   truncated: boolean;
@@ -58,6 +61,11 @@ export interface PricingPlanColumn {
   /** UI label — real plan name from data (Premium, Deluxe, Free, …) */
   displayName: string;
   isFree: boolean;
+  /**
+   * When this free column comes from testing Free-access answers rather than
+   * a formal Free subscriptionPlan.
+   */
+  freeAccessSource?: 'subscription_plan' | 'testing';
   /** Which paid tier drives the credit-pool example when multiple exist */
   isRecommended: boolean;
   /** Default (monthly) price label for SSR / no-JS */
@@ -89,6 +97,11 @@ export interface PricingPlanColumn {
 export interface PricingBillingToggle {
   show: boolean;
   defaultInterval: 'monthly' | 'quarterly' | 'yearly';
+  /** Union of billing intervals available across paid plans */
+  intervals: Array<{
+    key: 'monthly' | 'quarterly' | 'yearly';
+    label: string;
+  }>;
   monthlyLabel: string;
   yearlyLabel: string;
   maxYearlySavingsPercent: number | null;
@@ -100,7 +113,10 @@ export interface PricingCreditPoolItem {
   key: string;
   label: string;
   icon: string;
+  /** Full skim string, e.g. "50 standard images" (legacy / a11y). */
   value: string;
+  /** Large display figure, e.g. "75", "~12", "750 min". */
+  amount?: string;
   tip?: string;
   sublabel?: string;
 }
@@ -119,7 +135,7 @@ export interface PricingPlanCreditBudget {
 }
 
 export interface PricingCreditMixerChannel {
-  key: 'images' | 'videos' | 'voice_messages' | 'voice_calls' | 'custom_character';
+  key: 'images' | 'premium_images' | 'videos' | 'voice_messages' | 'voice_calls' | 'custom_character';
   label: string;
   icon: string;
   /** Credits consumed by one display unit */
@@ -201,7 +217,10 @@ export interface PricingUsageTier {
 export interface PricingFeatureCostRow {
   key: string;
   label: string;
+  /** Primary: money estimate, e.g. "≈$0.14 each" */
   value: string;
+  /** Secondary: credit cost, e.g. "2 credits" */
+  secondaryValue?: string | null;
   icon: string;
   tone: 'neutral' | 'pink' | 'green' | 'amber' | 'purple' | 'blue';
 }
@@ -211,7 +230,8 @@ export type PricingDiffTone = 'better' | 'worse' | 'neutral';
 export interface PricingCompareRow {
   metric: string;
   productValue: string;
-  averageValue: string;
+  /** Typical / median market benchmark for this metric. */
+  typicalValue: string;
   diffLabel: string;
   diffTone: PricingDiffTone;
 }
@@ -236,14 +256,17 @@ export interface PricingTabViewModel {
   pricingModel: string | null;
   /** Estimated monthly cost for the heavy-use profile. */
   powerUserMonthly: number | null;
-  /** Category average used in the hero benchmark (regular-use / real monthly cost). */
+  /** Scaled proxy for typical regular-use spend (from typical starting price). */
   categoryAvgMonthly: number | null;
-  /** Category average starting subscription price (like-for-like with advertisedMonthly). */
-  categoryAvgSubscription: number | null;
+  /**
+   * Public market benchmark: median starting monthly subscription across tested apps
+   * (“typical monthly price”). Like-for-like with advertisedMonthly.
+   */
+  typicalMonthlyPrice: number | null;
   reviewedAppCount: number | null;
 
   /**
-   * Relative value headline — regular-use cost vs category average regular-use cost
+   * Relative value headline — regular-use cost vs typical regular-use proxy
    * (like-for-like). Positive = cheaper.
    */
   heroCheaperPct: number | null;
@@ -254,8 +277,8 @@ export interface PricingTabViewModel {
   barMax: number;
   /** Position of advertised/starting price on the hero bar. */
   productBarPct: number | null;
-  /** Position of average starting subscription on the hero bar. */
-  avgBarPct: number | null;
+  /** Position of typical starting subscription on the hero bar. */
+  typicalBarPct: number | null;
 
   /** Monthly ↔ Annual switch; hidden when annual isn't available */
   billingToggle: PricingBillingToggle;
@@ -268,6 +291,8 @@ export interface PricingTabViewModel {
   /** One-time credit top-up packs; null when product has none */
   topUps: PricingTopUps | null;
   usageTiers: PricingUsageTier[];
+  /** False when light/regular/heavy spend cannot be calculated from verified data. */
+  usageEstimatesAvailable: boolean;
   advertisedVsRegularDiff: number | null;
 
   featureCosts: PricingFeatureCostRow[];
@@ -284,8 +309,22 @@ export interface PricingTabViewModel {
   usageIntro: string | null;
   featureCostsIntro: string | null;
   compareIntro: string | null;
+  /** Editor commentary shown under the market comparison table */
+  comparisonNote: string | null;
   /** H4 under plans for free/paid limits table */
   limitsHeading: string;
+  /** Short intro under Free vs. paid heading */
+  freeVsPaidIntro: string | null;
+  /** Free-access limits from a Free plan or testing answers */
+  freeAccess: PricingFreeAccess | null;
+  /**
+   * When pricing entities were borrowed from another product (e.g. Aura ← Candy).
+   * Public pages must not treat borrowed evidence as this product's verified pricing.
+   */
+  pricingDataSource: {
+    productSlug: string;
+    borrowed: boolean;
+  };
   /** Editorial evidence — verified pricing screenshots for lightbox */
   pricingEvidence: {
     verifiedLabel: string;
@@ -293,19 +332,20 @@ export interface PricingTabViewModel {
     sourceUrl: string | null;
     main: { src: string; alt: string; caption: string } | null;
     topUps: { src: string; alt: string; caption: string } | null;
+    featureCosts: { src: string; alt: string; caption: string } | null;
   } | null;
 }
 
-/** Shared helper for hero comparison math. */
+/** Shared helper for hero comparison vs the typical (median) market price. */
 export function computeHeroComparison(
   advertised: number | null,
-  categoryAvg: number | null,
+  typicalPrice: number | null,
 ): { cheaperPct: number | null; savings: number | null } {
-  if (advertised == null || categoryAvg == null || categoryAvg <= 0) {
+  if (advertised == null || typicalPrice == null || typicalPrice <= 0) {
     return { cheaperPct: null, savings: null };
   }
-  const cheaperPct = Math.round(((categoryAvg - advertised) / categoryAvg) * 100);
-  const savings = Math.round((categoryAvg - advertised) * 100) / 100;
+  const cheaperPct = Math.round(((typicalPrice - advertised) / typicalPrice) * 100);
+  const savings = Math.round((typicalPrice - advertised) * 100) / 100;
   return { cheaperPct, savings };
 }
 

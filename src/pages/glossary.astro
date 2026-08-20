@@ -158,9 +158,9 @@ const jsonLdGraph = buildWebPageSchema({
                       </div>
                       <p class="glossary-term__meta">
                         <span class="glossary-term__category">{entry.category}</span>
-                        {glossaryAlsoCalledText(entry.term, entry.aliases) ? (
+                        {glossaryAlsoCalledText(entry.term, entry.displayAliases) ? (
                           <span class="glossary-term__aliases">
-                            Also called: {glossaryAlsoCalledText(entry.term, entry.aliases)}
+                            Also called: {glossaryAlsoCalledText(entry.term, entry.displayAliases)}
                           </span>
                         ) : null}
                       </p>

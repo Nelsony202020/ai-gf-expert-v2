@@ -170,7 +170,7 @@ function subWinners(key: string, subName: string, ids: string[]) {
                   const val = atGlanceValue(pick.atGlance, 'features', id);
                   return (
                     <div class="roundup-compare__matrix-val" data-compare-feature-val={pickId} data-feature-id={id}>
-                      <div set:html={compareFeatureCellInnerHtml(id, val, stat?.values)} />
+                      <div set:html={compareFeatureCellInnerHtml(id, val, stat?.values, `${pickId}-${id}`)} />
                     </div>
                   );
                 })
@@ -409,6 +409,9 @@ function subWinners(key: string, subName: string, ids: string[]) {
 </section>
 
 <script define:vars={{ comparePayload, defaultIds, categoryKeys, featureRowLabels, pricingRowLabels }}>
+  import { compareFeatureCellInnerHtml } from '../../lib/roundup/compareTable';
+  import { initMultiValuePopovers } from '../../lib/ui/multiValueDisplay.client.ts';
+
   function fmtScoreClient(n) {
     return Number(n).toFixed(1);
   }
@@ -454,15 +457,10 @@ function subWinners(key: string, subName: string, ids: string[]) {
     return `<span class="roundup-compare__best-badge" aria-label="Best in row"><span class="material-symbols-outlined roundup-compare__best-icon" aria-hidden="true">crown</span><span class="roundup-compare__best-text">Best</span></span>`;
   }
 
-  function featureCellHtmlClient(featureId, featureMeta) {
+  function featureCellHtmlClient(featureId, featureMeta, pickId) {
     const value = featureMeta?.value ?? '—';
     const values = featureMeta?.values ?? null;
-    if (featureId === 'video-generator' && values?.length > 1) {
-      return `<span class="roundup-compare__matrix-val-stack">${values
-        .map((line) => `<span class="roundup-compare__matrix-val-line">${line}</span>`)
-        .join('')}</span>`;
-    }
-    return value;
+    return compareFeatureCellInnerHtml(featureId, value, values, `${pickId}-${featureId}`);
   }
 
   function perfCellHtmlClient(score, isWinner) {
@@ -617,7 +615,8 @@ function subWinners(key: string, subName: string, ids: string[]) {
         const cell = row?.querySelectorAll('[data-compare-feature-val]')[slot];
         if (!cell) return;
         const featureMeta = pick.atGlanceFeatures[id];
-        cell.innerHTML = featureCellHtmlClient(id, featureMeta);
+        cell.innerHTML = featureCellHtmlClient(id, featureMeta, pickId);
+        initMultiValuePopovers(cell);
       });
 
       pricingIds.forEach((id) => {
@@ -747,6 +746,7 @@ function subWinners(key: string, subName: string, ids: string[]) {
     window.addEventListener('resize', syncStickyTop, { passive: true });
     window.addEventListener('scroll', syncStickyTop, { passive: true });
     initPickerPinObserver();
+    initMultiValuePopovers(root);
 
     root.dataset.bound = 'true';
     syncPickerDisabled();

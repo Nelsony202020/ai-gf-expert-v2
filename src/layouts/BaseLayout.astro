@@ -11,7 +11,7 @@ import ComingSoonLayer from '../components/ui/ComingSoonLayer.astro';
 import MobileNavShell from '../components/mobile/MobileNavShell.astro';
 import { getMobileNavMode } from '../lib/mobile-nav/modes';
 import { cdnAsset, getCdnBaseUrl } from '../lib/media/cdn';
-import { optimizedHeroImageUrl } from '../lib/media/optimize';
+import { heroImageSrcSet, optimizedImageUrl } from '../lib/media/optimize';
 import { canonicalPublicUrl, resolveCanonicalUrl } from '../lib/siteOrigin';
 
 export type PageTheme = 'core' | 'home' | 'review' | 'roundup' | 'directory' | 'full';
@@ -65,8 +65,10 @@ const ogTitleResolved = ogTitle ?? title;
 const ogDescriptionResolved = ogDescription ?? description;
 const cdnBase = getCdnBaseUrl();
 const mobileNavMode = getMobileNavMode(Astro.url.pathname);
-const lcpPreloadMobile = lcpImage ? optimizedHeroImageUrl(lcpImage, 720) : '';
-const lcpPreloadDesktop = lcpImage ? optimizedHeroImageUrl(lcpImage, 960) : '';
+const lcpPreloadHref = lcpImage
+  ? optimizedImageUrl(lcpImage, { width: 720, quality: 80, dpr: 1, format: 'webp' })
+  : '';
+const lcpPreloadSrcSet = lcpImage ? heroImageSrcSet(lcpImage, [480, 640, 960, 1280], 80) : '';
 const TEXT_FONTS_HREF =
   'https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=optional';
 const ICON_FONTS_HREF =
@@ -110,11 +112,16 @@ const ICON_FONTS_HREF =
       <link rel="stylesheet" href={TEXT_FONTS_HREF} />
       <link rel="stylesheet" href={ICON_FONTS_HREF} />
     </noscript>
-    {lcpPreloadMobile && (
-      <link rel="preload" as="image" href={lcpPreloadMobile} media="(max-width: 767px)" fetchpriority="high" />
-    )}
-    {lcpPreloadDesktop && (
-      <link rel="preload" as="image" href={lcpPreloadDesktop} media="(min-width: 768px)" fetchpriority="high" />
+    {lcpPreloadHref && (
+      <link
+        rel="preload"
+        as="image"
+        type="image/webp"
+        href={lcpPreloadHref}
+        imagesrcset={lcpPreloadSrcSet || undefined}
+        imagesizes="(max-width: 767px) 100vw, 42vw"
+        fetchpriority="high"
+      />
     )}
     <link rel="stylesheet" href={globalStylesUrl} />
     {pageStylesUrl && <link rel="stylesheet" href={pageStylesUrl} />}

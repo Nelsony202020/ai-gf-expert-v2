@@ -1,15 +1,16 @@
 // Plain-language usage personas for “what will I actually spend?” estimates.
 
+import type { ProductType } from './productType';
 import type { FeatureCostLike, CreditPackageLike, PlanTierLike, BillingPlanEstimate } from './calc';
 import {
   billableCreditsForTier,
-  bestValuePackage,
+  cheapestPricedFeatureCost,
   creditsPerDisplayUse,
   estimateBillingPlans,
   featureCostRange,
   fmtMoney,
-  pricePerCredit,
   resolveReferenceTier,
+  resolveTierByName,
   scenarioMonthlyCost,
   scenarioMonthlyCostByTier,
 } from './calc';
@@ -34,31 +35,67 @@ export const DEFAULT_USAGE_PROFILES: UsageProfile[] = [
   {
     id: 'casual',
     title: 'Casual',
-    description: 'Light daily use — a few messages and images.',
-    messagesPerDay: 5,
-    imagesPerDay: 5,
+    description: 'Light daily use — chat with occasional images and rare video.',
+    messagesPerDay: 25,
+    imagesPerDay: 1,
     videosPerDay: 0.2,
-    voiceMinutesPerDay: 1,
+    voiceMinutesPerDay: 0.5,
   },
   {
     id: 'regular',
     title: 'Regular',
-    description: 'Typical daily user — chat, images, and some video.',
-    messagesPerDay: 20,
-    imagesPerDay: 5,
-    videosPerDay: 1,
-    voiceMinutesPerDay: 1,
+    description: 'Typical daily user — steady chat, a few images, some video and voice.',
+    messagesPerDay: 50,
+    imagesPerDay: 3,
+    videosPerDay: 0.5,
+    voiceMinutesPerDay: 1.5,
+  },
+  {
+    id: 'power',
+    title: 'Power user',
+    description: 'Heavy daily use — long sessions across chat, images, video, and voice.',
+    messagesPerDay: 100,
+    imagesPerDay: 15,
+    videosPerDay: 2,
+    voiceMinutesPerDay: 5,
+  },
+];
+
+export const NSFW_CHATBOT_USAGE_PROFILES: UsageProfile[] = [
+  {
+    id: 'casual',
+    title: 'Casual',
+    description: 'Light daily use — chat with occasional images.',
+    messagesPerDay: 27,
+    imagesPerDay: 1,
+    videosPerDay: 0,
+    voiceMinutesPerDay: 0.5,
+  },
+  {
+    id: 'regular',
+    title: 'Regular',
+    description: 'Typical daily user — steady chat, images, and occasional video.',
+    messagesPerDay: 75,
+    imagesPerDay: 1,
+    videosPerDay: 0.2,
+    voiceMinutesPerDay: 1.5,
   },
   {
     id: 'power',
     title: 'Power user',
     description: 'Heavy daily use — long sessions across chat, images, and video.',
-    messagesPerDay: 100,
-    imagesPerDay: 20,
-    videosPerDay: 2,
+    messagesPerDay: 150,
+    imagesPerDay: 3,
+    videosPerDay: 1,
     voiceMinutesPerDay: 5,
   },
 ];
+
+export function defaultUsageProfilesForType(productType?: ProductType | null): UsageProfile[] {
+  const base =
+    productType === 'nsfw_chatbot' ? NSFW_CHATBOT_USAGE_PROFILES : DEFAULT_USAGE_PROFILES;
+  return base.map((p) => ({ ...p }));
+}
 
 export function profileToMonthlyUsage(profile: UsageProfile) {
   return {
@@ -74,14 +111,16 @@ export function buildUsageMap(
   costs: FeatureCostLike[],
 ): Record<string, number> {
   const monthly = profileToMonthlyUsage(profile);
-  const find = (...types: string[]) =>
-    costs.find((c) => types.includes(String(c.featureType ?? '')) && c.active !== false);
-
-  const imageCost = find('standard_image', 'premium_image');
-  const videoCost = find('standard_video', 'text_to_video', 'image_to_video');
-  const voiceCallCost = find('voice_call');
-  const voiceMessageCost = find('voice_message');
-  const messageCost = find('premium_message');
+  const imageCost = cheapestPricedFeatureCost(costs, 'standard_image', 'premium_image');
+  const videoCost = cheapestPricedFeatureCost(
+    costs,
+    'standard_video',
+    'text_to_video',
+    'image_to_video',
+  );
+  const voiceCallCost = cheapestPricedFeatureCost(costs, 'voice_call');
+  const voiceMessageCost = cheapestPricedFeatureCost(costs, 'voice_message');
+  const messageCost = cheapestPricedFeatureCost(costs, 'premium_message');
 
   const usage: Record<string, number> = {};
   if (imageCost?.featureType && monthly.images > 0) {
@@ -152,12 +191,15 @@ export function estimateProfile(
   };
 }
 
-export function profilesFromSnapshot(stored: unknown): UsageProfile[] {
-  const defaults = DEFAULT_USAGE_PROFILES.map((p) => ({ ...p }));
+export function profilesFromSnapshot(
+  stored: unknown,
+  productType?: ProductType | null,
+): UsageProfile[] {
+  const defaults = defaultUsageProfilesForType(productType);
   if (!Array.isArray(stored) || stored.length === 0) return defaults;
 
   return PRESET_ORDER.map((id) => {
-    const base = DEFAULT_USAGE_PROFILES.find((p) => p.id === id)!;
+    const base = defaults.find((p) => p.id === id)!;
     const row = stored.find((s) => String((s as UsageProfile).id) === id) as
       | Record<string, unknown>
       | undefined;
@@ -186,7 +228,7 @@ function round2(n: number): number {
 }
 
 function findActiveCost(costs: FeatureCostLike[], ...types: string[]) {
-  return costs.find((c) => types.includes(String(c.featureType ?? '')) && c.active !== false);
+  return cheapestPricedFeatureCost(costs, ...types);
 }
 
 function formatPerDay(n: number, unit: string): string {
@@ -210,6 +252,13 @@ export interface UsageCalcFeatureRow {
   mathDetail: string | null;
 }
 
+export interface UsageCalcPackageLine {
+  name: string;
+  creditsLabel: string;
+  priceLabel: string;
+  quantity: number;
+}
+
 export interface UsageCalculation {
   /** e.g. "How we calculated regular use" */
   heading: string;
@@ -217,9 +266,22 @@ export interface UsageCalculation {
   /** e.g. "See how we estimated ~$36.63/mo ↓" */
   summaryLabel: string;
   features: UsageCalcFeatureRow[];
+  /** Total feature credits required this month */
+  requiredCredits: number;
+  requiredCreditsLabel: string;
+  includedCredits: number;
+  includedCreditsLabel: string;
+  /** Shortfall after included pool */
+  extraCredits: number;
+  extraCreditsLabel: string;
+  /** Actual package checkout lines */
+  packageLines: UsageCalcPackageLine[];
+  purchasedCredits: number;
+  purchasedCreditsLabel: string;
+  leftoverCredits: number;
+  leftoverCreditsLabel: string;
   mediaValue: number;
   mediaValueLabel: string;
-  includedCredits: number;
   includedValue: number;
   includedValueLabel: string;
   extraValue: number;
@@ -233,8 +295,8 @@ export interface UsageCalculation {
 }
 
 /**
- * Transparent usage → unit cost → monthly math for the “See how we estimated” panel.
- * Line items use display units; included-credit offset + shortfall match the estimate.
+ * Transparent usage → credit shortfall → real package checkout math
+ * for the “See how we estimated” panel.
  */
 export function buildUsageCalculation(
   profile: UsageProfile,
@@ -245,16 +307,14 @@ export function buildUsageCalculation(
   referencePlanName?: string | null,
   tierTitle?: string,
 ): UsageCalculation | null {
-  const tier = resolveReferenceTier(tiers, referencePlanName);
-  if (!tier) return null;
-
   const scenario = { usage: buildUsageMap(profile, costs) };
   const result = scenarioMonthlyCost(scenario, tiers, costs, packages, referencePlanName);
   if (!result || result.totalMonthly == null || result.planCost == null) return null;
 
-  const pkg = bestValuePackage(packages);
-  const rate = pkg ? pricePerCredit(pkg) : null;
-  if (rate == null) return null;
+  const tier =
+    resolveTierByName(tiers, result.planName)
+    ?? resolveReferenceTier(tiers, referencePlanName);
+  if (!tier) return null;
 
   const billed = billableCreditsForTier(scenario.usage, tier, costs);
   const money = (n: number) => fmtMoney(n, currency);
@@ -264,21 +324,20 @@ export function buildUsageCalculation(
   {
     const perDay = profile.imagesPerDay;
     const qty = round2(perDay * DAYS_PER_MONTH);
-    const creditsEach = imageCost ? featureCostRange(imageCost)?.max ?? 0 : 0;
-    const unitMoney = imageCost ? round2(creditsEach * rate) : 0;
-    const cost = perDay > 0 && imageCost ? round2(qty * unitMoney) : 0;
+    const creditsEach = imageCost ? featureCostRange(imageCost)?.min ?? 0 : 0;
+    const costCredits = perDay > 0 && imageCost ? round2(qty * creditsEach) : 0;
     const assumption = perDay > 0 ? formatPerDay(perDay, 'day') : 'None';
     features.push({
       key: 'images',
       label: 'Images',
       icon: 'image',
       assumptionLabel: assumption,
-      unitCostLabel: imageCost ? `${money(unitMoney)}/image` : '—',
-      cost,
-      costLabel: money(cost),
+      unitCostLabel: imageCost ? `${creditsEach} credits/image` : '—',
+      cost: costCredits,
+      costLabel: `${costCredits} credits`,
       mathDetail:
         perDay > 0 && imageCost
-          ? `${formatPerDay(perDay, 'day')} × ${DAYS_PER_MONTH} days = ${qty} images × ${money(unitMoney)} = ${money(cost)}`
+          ? `${formatPerDay(perDay, 'day')} × ${DAYS_PER_MONTH} days = ${qty} images × ${creditsEach} credits = ${costCredits} credits`
           : null,
     });
   }
@@ -291,21 +350,20 @@ export function buildUsageCalculation(
       videoCost?.durationProduced != null && Number(videoCost.durationProduced) > 0
         ? Number(videoCost.durationProduced)
         : 10;
-    const displayCredits = videoCost ? creditsPerDisplayUse(videoCost)?.max ?? 0 : 0;
-    const unitMoney = videoCost ? round2(displayCredits * rate) : 0;
-    const cost = perDay > 0 && videoCost ? round2(qty * unitMoney) : 0;
+    const displayCredits = videoCost ? creditsPerDisplayUse(videoCost)?.min ?? 0 : 0;
+    const costCredits = perDay > 0 && videoCost ? round2(qty * displayCredits) : 0;
     const assumption = perDay > 0 ? formatPerDay(perDay, 'day') : 'None';
     features.push({
       key: 'videos',
       label: 'Video',
       icon: 'videocam',
       assumptionLabel: assumption === 'None' ? 'None' : `${assumption} (${seconds} sec each)`,
-      unitCostLabel: videoCost ? `${money(unitMoney)}/${seconds}s` : '—',
-      cost,
-      costLabel: money(cost),
+      unitCostLabel: videoCost ? `${displayCredits} credits/${seconds}s` : '—',
+      cost: costCredits,
+      costLabel: `${costCredits} credits`,
       mathDetail:
         perDay > 0 && videoCost
-          ? `${formatPerDay(perDay, 'day')} × ${DAYS_PER_MONTH} days = ${qty} videos × ${money(unitMoney)} = ${money(cost)}`
+          ? `${formatPerDay(perDay, 'day')} × ${DAYS_PER_MONTH} days = ${qty} videos × ${displayCredits} credits = ${costCredits} credits`
           : null,
     });
   }
@@ -316,9 +374,8 @@ export function buildUsageCalculation(
   {
     const perDay = profile.voiceMinutesPerDay;
     const minutes = round2(perDay * DAYS_PER_MONTH);
-    const creditsPerMin = voiceCost ? featureCostRange(voiceCost)?.max ?? 0 : 0;
-    const unitMoney = voiceCost ? round2(creditsPerMin * rate) : 0;
-    const cost = perDay > 0 && voiceCost ? round2(minutes * unitMoney) : 0;
+    const creditsPerMin = voiceCost ? featureCostRange(voiceCost)?.min ?? 0 : 0;
+    const costCredits = perDay > 0 && voiceCost ? round2(minutes * creditsPerMin) : 0;
     const isCall = voiceCost ? String(voiceCost.featureType) === 'voice_call' : true;
     const assumption =
       perDay <= 0
@@ -331,12 +388,12 @@ export function buildUsageCalculation(
       label: isCall ? 'Voice calls' : 'Voice',
       icon: 'call',
       assumptionLabel: assumption,
-      unitCostLabel: voiceCost ? `${money(unitMoney)}/min` : '—',
-      cost,
-      costLabel: money(cost),
+      unitCostLabel: voiceCost ? `${creditsPerMin} credits/min` : '—',
+      cost: costCredits,
+      costLabel: `${costCredits} credits`,
       mathDetail:
         perDay > 0 && voiceCost
-          ? `${assumption} × ${DAYS_PER_MONTH} = ${minutes} min × ${money(unitMoney)} = ${money(cost)}`
+          ? `${assumption} × ${DAYS_PER_MONTH} = ${minutes} min × ${creditsPerMin} credits = ${costCredits} credits`
           : null,
     });
   }
@@ -349,33 +406,49 @@ export function buildUsageCalculation(
     unitCostLabel: 'Included',
     cost: 0,
     costLabel: 'Included',
-    mathDetail: 'Included in subscription = $0.00',
+    mathDetail: 'Included in subscription = 0 credits',
   });
 
-  const mediaValue = round2(features.reduce((sum, row) => sum + row.cost, 0));
-  const topUpCost = result.topUpCost ?? 0;
+  const requiredCredits = billed.creditsNeeded;
   const includedCredits = billed.includedCredits;
-  const includedPoolValue = round2(includedCredits * rate);
-  const includedValue =
-    topUpCost > 0
-      ? round2(Math.max(0, mediaValue - topUpCost))
-      : round2(Math.min(mediaValue, includedPoolValue));
+  const extraCredits = result.creditShortfall;
+  const topUpCost = result.topUpCost ?? 0;
   const planCost = round2(result.planCostPerMonth ?? result.planCost);
   const total = round2(result.totalMonthly);
   const levelName =
     profile.id === 'casual' ? 'light use' : profile.id === 'power' ? 'heavy use' : 'regular use';
   const approx = (n: number) => (n > 0 ? `~${money(n)}` : money(0));
 
+  const packageLines: UsageCalcPackageLine[] = (result.packageCombination ?? []).map((line) => ({
+    name: line.name,
+    creditsLabel:
+      line.quantity > 1
+        ? `${line.quantity} × ${line.credits.toLocaleString('en-US')} credits`
+        : `${line.credits.toLocaleString('en-US')} credits`,
+    priceLabel: money(line.lineTotal),
+    quantity: line.quantity,
+  }));
+
   return {
     heading: `How we calculated ${levelName}`,
-    intro: `We estimate ${levelName} cost by combining the subscription price with the extra credits needed for a typical daily usage pattern.`,
-    summaryLabel: `See how we estimated ${approx(total)}/mo ↓`,
+    intro: 'Uses the cheapest subscription tier plus the cheapest token packs you can actually buy.',
+    summaryLabel: `See how we estimated ${approx(total)}/mo`,
     features,
-    mediaValue,
-    mediaValueLabel: money(mediaValue),
+    requiredCredits,
+    requiredCreditsLabel: `${requiredCredits.toLocaleString('en-US')} credits`,
     includedCredits,
-    includedValue,
-    includedValueLabel: includedValue > 0 ? `−${money(includedValue)}` : money(0),
+    includedCreditsLabel: `−${includedCredits.toLocaleString('en-US')} credits`,
+    extraCredits,
+    extraCreditsLabel: `${extraCredits.toLocaleString('en-US')} credits`,
+    packageLines,
+    purchasedCredits: result.purchasedCredits,
+    purchasedCreditsLabel: `${result.purchasedCredits.toLocaleString('en-US')} credits`,
+    leftoverCredits: result.leftoverCredits,
+    leftoverCreditsLabel: `${result.leftoverCredits.toLocaleString('en-US')} credits`,
+    mediaValue: requiredCredits,
+    mediaValueLabel: `${requiredCredits.toLocaleString('en-US')} credits`,
+    includedValue: includedCredits,
+    includedValueLabel: includedCredits > 0 ? `−${includedCredits.toLocaleString('en-US')} credits` : '0 credits',
     extraValue: round2(topUpCost),
     extraValueLabel: approx(topUpCost),
     planCost,

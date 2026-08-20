@@ -1,0 +1,95 @@
+---
+import type { AtGlanceTooltip } from '../../data/roundups/ai-girlfriend';
+
+interface Props {
+  tooltip: AtGlanceTooltip;
+}
+
+const { tooltip } = Astro.props;
+
+const iconMap = {
+  image: 'image',
+  videocam: 'videocam',
+  call: 'call',
+} as const;
+---
+
+<div class="ratings-tooltip-panel ratings-tooltip-panel--help roundup-usage-tooltip">
+  <div class="ratings-tooltip-panel__header roundup-usage-tooltip__header">
+    <p class="ratings-tooltip-panel__section-title roundup-usage-tooltip__title">{tooltip.title}</p>
+    <p class="roundup-usage-tooltip__amount">
+      <span class="roundup-usage-tooltip__amount-main">{tooltip.amount.main}</span>
+      <span class="roundup-usage-tooltip__amount-period">{tooltip.amount.period}</span>
+    </p>
+    <p class="roundup-usage-tooltip__subtitle">{tooltip.subtitle}</p>
+  </div>
+
+  <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact roundup-usage-tooltip__body">
+    {
+      tooltip.assumptions.length > 0 && (
+        <>
+          <hr class="roundup-usage-tooltip__rule" />
+          <div class="roundup-usage-tooltip__assumes">
+            <p class="roundup-usage-tooltip__assumes-label">Assumes</p>
+            <ul class="roundup-usage-tooltip__assumes-list">
+              {
+                tooltip.assumptions.map((row) => (
+                  <li class="roundup-usage-tooltip__assumes-item">
+                    <span class="material-symbols-outlined roundup-usage-tooltip__assumes-icon" aria-hidden="true">
+                      {iconMap[row.icon]}
+                    </span>
+                    <span class="roundup-usage-tooltip__assumes-copy">
+                      <span class="roundup-usage-tooltip__assumes-value">{row.value}</span>
+                      {' '}
+                      {row.label}
+                      <span class="roundup-usage-tooltip__assumes-period">/day</span>
+                    </span>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+        </>
+      )
+    }
+
+    <dl class="roundup-usage-tooltip__costs">
+      <div class="roundup-usage-tooltip__cost-row">
+        <dt>Subscription</dt>
+        <dd>
+          <span class="roundup-usage-tooltip__money-main">{tooltip.subscription.main}</span>
+          <span class="roundup-usage-tooltip__money-period">{tooltip.subscription.period}</span>
+        </dd>
+      </div>
+      <div class="roundup-usage-tooltip__cost-row roundup-usage-tooltip__cost-row--extra">
+        <dt>Extra credits</dt>
+        <dd>
+          <span class="roundup-usage-tooltip__money-main">{tooltip.extraCredits.main}</span>
+          <span class="roundup-usage-tooltip__money-period">{tooltip.extraCredits.period}</span>
+        </dd>
+      </div>
+      <div class="roundup-usage-tooltip__cost-row roundup-usage-tooltip__cost-row--total">
+        <dt>Estimated total</dt>
+        <dd>
+          <span class="roundup-usage-tooltip__money-main">{tooltip.total.main}</span>
+          <span class="roundup-usage-tooltip__money-period">{tooltip.total.period}</span>
+        </dd>
+      </div>
+    </dl>
+
+    {
+      tooltip.costDriverNote && (
+        <div class="roundup-usage-tooltip__insight">
+          <span class="material-symbols-outlined roundup-usage-tooltip__insight-icon" aria-hidden="true">
+            trending_up
+          </span>
+          <p class="roundup-usage-tooltip__insight-text">{tooltip.costDriverNote}</p>
+        </div>
+      )
+    }
+
+    <a href={tooltip.pricingHref} class="roundup-usage-tooltip__cta">
+      See full pricing breakdown →
+    </a>
+  </div>
+</div>

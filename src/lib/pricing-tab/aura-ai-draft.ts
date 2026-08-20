@@ -21,10 +21,10 @@ import {
   buildTopUps,
   finalizePlanColumns,
 } from './planPresentation';
-import { draftPricingEvidence } from './pricingEvidence';
 import {
   buildCompareIntro,
   buildFeatureCostsIntro,
+  buildFreeVsPaidIntro,
   buildHermanTake,
   buildMarketIntro,
   buildPageIntro,
@@ -126,13 +126,13 @@ export function getAuraAiDraftPricing(product: Product): PricingTabViewModel {
   const advertisedMonthly = 13.99;
   const includedCredits = 100;
   const categoryAvgMonthly = 34;
-  const categoryAvgSubscription = 16.33;
+  const typicalMonthlyPrice = 13.99;
   const currency = 'USD';
   const reviewedAppCount = 18;
 
   const barMin = 0;
-  const barMax = 80;
-  const marketCompare = computeHeroComparison(advertisedMonthly, categoryAvgMonthly);
+  const barMax = 40;
+  const marketCompare = computeHeroComparison(advertisedMonthly, typicalMonthlyPrice);
   const paidRows = paidCreditRows(includedCredits);
   const annualTotal = 47.88;
   const annualMonthly = 3.99;
@@ -224,21 +224,21 @@ export function getAuraAiDraftPricing(product: Product): PricingTabViewModel {
     {
       metric: 'Subscription price',
       productValue: '$13.99/mo',
-      averageValue: `$${categoryAvgSubscription.toFixed(2)}/mo`,
-      diffLabel: '14% cheaper',
-      diffTone: 'better',
+      typicalValue: `$${typicalMonthlyPrice.toFixed(2)}/mo`,
+      diffLabel: 'About average',
+      diffTone: 'neutral',
     },
     {
       metric: 'Light-use cost',
       productValue: `~$${Math.round(lightUseMonthly)}/mo`,
-      averageValue: `~$${Math.round(categoryAvgLight)}/mo`,
+      typicalValue: `~$${Math.round(categoryAvgLight)}/mo`,
       diffLabel: lightUseMonthly < categoryAvgLight ? 'Cheaper' : 'Higher',
       diffTone: lightUseMonthly < categoryAvgLight ? 'better' : 'worse',
     },
     {
       metric: 'Regular-use cost',
       productValue: `~$${Math.round(regularUseMonthly)}/mo`,
-      averageValue: `~$${categoryAvgMonthly.toFixed(0)}/mo`,
+      typicalValue: `~$${categoryAvgMonthly.toFixed(0)}/mo`,
       diffLabel:
         regularUseMonthly < categoryAvgMonthly ? 'Cheaper' : 'Higher',
       diffTone: regularUseMonthly < categoryAvgMonthly ? 'better' : 'worse',
@@ -247,7 +247,7 @@ export function getAuraAiDraftPricing(product: Product): PricingTabViewModel {
       metric: 'Power-user cost',
       productValue:
         heavyUseMonthly != null ? `~$${Math.round(heavyUseMonthly)}/mo` : '—',
-      averageValue: `~$${Math.round(categoryAvgPower)}/mo`,
+      typicalValue: `~$${Math.round(categoryAvgPower)}/mo`,
       diffLabel:
         heavyUseMonthly != null && heavyUseMonthly < categoryAvgPower ? 'Cheaper' : 'Higher',
       diffTone:
@@ -279,7 +279,17 @@ export function getAuraAiDraftPricing(product: Product): PricingTabViewModel {
           savingsLabel: null,
           sale: null,
         },
-        quarterly: null,
+        quarterly: {
+          interval: 'quarterly',
+          monthlyPrice: 8.99,
+          monthlyPriceLabel: '$8.99',
+          periodPrice: 26.97,
+          periodPriceLabel: '$26.97',
+          priceSub: '$26.97 billed every 3 months',
+          savingsPercent: 36,
+          savingsLabel: 'Save 36%',
+          sale: null,
+        },
         yearly: {
           interval: 'yearly',
           monthlyPrice: annualMonthly,
@@ -293,27 +303,6 @@ export function getAuraAiDraftPricing(product: Product): PricingTabViewModel {
         },
       },
       rows: paidRows,
-    },
-    {
-      key: 'free',
-      name: 'Free',
-      displayName: 'Free',
-      isFree: true,
-      isRecommended: false,
-      priceLabel: '$0',
-      priceSub: 'Try before paying',
-      summaryLine: 'Limited daily usage',
-      includedCredits: null,
-      tone: 'neutral',
-      billing: null,
-      rows: [
-        { label: 'Included credits', value: '—' },
-        { label: 'Chat', value: '20 msgs/day' },
-        { label: 'Images', value: '3/day' },
-        { label: 'Video', value: '1/day' },
-        { label: 'Voice messages', value: '30 sec/day' },
-        { label: 'Voice calls', value: '—' },
-      ],
     },
   ]);
 
@@ -348,17 +337,14 @@ export function getAuraAiDraftPricing(product: Product): PricingTabViewModel {
   const marketIntro = buildMarketIntro({
     productName: product.name,
     advertisedMonthly,
-    categoryAvgSubscription,
+    typicalMonthlyPrice,
     currency,
     cheaperPct: marketCompare.cheaperPct,
   });
   const plansIntro = buildPlansIntro(product.name, plans, billingToggle.maxYearlySavingsPercent);
-  const usageIntro = buildUsageIntro(product.name);
+  const usageIntro = buildUsageIntro();
   const featureCostsIntro = buildFeatureCostsIntro();
-  const compareIntro = buildCompareIntro({
-    productName: product.name,
-    cheaperPct: marketCompare.cheaperPct,
-  });
+  const compareIntro = buildCompareIntro();
   const hermanTake = buildHermanTake({
     productName: product.name,
     advertisedMonthly,
@@ -374,8 +360,8 @@ export function getAuraAiDraftPricing(product: Product): PricingTabViewModel {
     currency,
     pricingScore,
     scoreLabel,
-    scoreInsight: `${scoreLabel} — ${product.name}’s $13.99 monthly price is well below the ~$34 category average.`,
-    scoreCaveat: 'Media-heavy usage can increase the real monthly cost.',
+    scoreInsight: `${scoreLabel} — ${product.name}’s $13.99 monthly price matches the ~$13.99 typical price.`,
+    scoreCaveat: 'Pricing data is currently borrowed from Candy AI and is not publish-ready.',
     hermanTake,
     pageIntro,
     marketIntro,
@@ -383,13 +369,17 @@ export function getAuraAiDraftPricing(product: Product): PricingTabViewModel {
     usageIntro,
     featureCostsIntro,
     compareIntro,
+    comparisonNote: null,
     limitsHeading: freeVsPaidHeading(plans),
+    freeVsPaidIntro: buildFreeVsPaidIntro(),
+    freeAccess: null,
+    pricingDataSource: { productSlug: 'candy-ai', borrowed: true },
     advertisedMonthly,
     regularUseMonthly,
     pricingModel,
     powerUserMonthly: heavyUseMonthly,
     categoryAvgMonthly,
-    categoryAvgSubscription,
+    typicalMonthlyPrice,
     reviewedAppCount,
     heroCheaperPct: marketCompare.cheaperPct,
     heroSavings: marketCompare.savings,
@@ -397,16 +387,17 @@ export function getAuraAiDraftPricing(product: Product): PricingTabViewModel {
     barMin,
     barMax,
     productBarPct: clampBarPct(advertisedMonthly, barMin, barMax),
-    avgBarPct: clampBarPct(categoryAvgMonthly, barMin, barMax),
+    typicalBarPct: clampBarPct(typicalMonthlyPrice, barMin, barMax),
     billingToggle,
     plans,
     creditPool,
     limitRows,
     topUps,
     usageTiers,
+    usageEstimatesAvailable: usageTiers.some((t) => t.monthlyCost != null),
     advertisedVsRegularDiff: regularUseMonthly - advertisedMonthly,
     featureCosts,
     compareRows,
-    pricingEvidence: draftPricingEvidence(product),
+    pricingEvidence: null,
   };
 }

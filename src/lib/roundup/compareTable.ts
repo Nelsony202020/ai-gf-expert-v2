@@ -1,6 +1,11 @@
 import type { AtGlanceData } from '../../data/roundups/ai-girlfriend';
 import { getSegmentFill, getSegmentFillClass } from '../roundup-scores';
 
+import {
+  compareFeatureMaxVisible,
+  multiValueDisplayHtml,
+} from '../ui/multiValueDisplay';
+
 export const COMPARE_FEATURE_IDS = [
   'character-styles',
   'ai-phone-calls',
@@ -23,17 +28,20 @@ function escapeCompareHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-/** Multi-value feature rows (e.g. video generator) stack one mode per line in the compare table. */
+/** Multi-value feature rows use inline +N popovers (video: one mode + +N). */
 export function compareFeatureCellInnerHtml(
   featureId: string,
   value: string,
   values?: string[] | null,
+  uid?: string,
 ): string {
   const lines = values?.filter(Boolean);
-  if (featureId === 'video-generator' && lines && lines.length > 1) {
-    return `<span class="roundup-compare__matrix-val-stack">${lines
-      .map((line) => `<span class="roundup-compare__matrix-val-line">${escapeCompareHtml(line)}</span>`)
-      .join('')}</span>`;
+  if (lines && lines.length > 1) {
+    return multiValueDisplayHtml(
+      lines,
+      uid ?? featureId,
+      compareFeatureMaxVisible(featureId),
+    );
   }
   return escapeCompareHtml(value || '—');
 }

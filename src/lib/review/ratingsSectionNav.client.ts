@@ -98,5 +98,23 @@ export function applyReviewRatingsHashFromLocation(
     return true;
   }
 
+  // In-tab section anchors (e.g. pricing-benchmark → Pricing tab)
+  const sectionEl = document.getElementById(hash);
+  if (sectionEl) {
+    const panel = sectionEl.closest<HTMLElement>('[data-tab-panel]');
+    const tabId = panel?.dataset.tabPanel;
+    if (tabId) {
+      void (async () => {
+        await deps.setActiveTab(tabId, false, `#${hash}`);
+        requestAnimationFrame(() => {
+          const y =
+            sectionEl.getBoundingClientRect().top + window.scrollY - deps.getScrollOffset() - 12;
+          window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
+        });
+      })();
+      return true;
+    }
+  }
+
   return false;
 }

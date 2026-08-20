@@ -5,10 +5,12 @@
 
 import { getDb, isDbConfigured } from '../db/server';
 import {
+  averageNumber,
   cheapestTopUpRate,
   intervalDiscount,
   lowestMonthlyPrice,
   lowestPlainMonthlyPrice,
+  medianNumber,
   monthlyEquivalent,
   tierBillingOptions,
   type BillingOption,
@@ -31,7 +33,9 @@ export interface ProductPricingStat {
 
 export interface IndustryPricingStats {
   sampleSize: number;
+  /** Arithmetic mean — analytics only; not the public market benchmark. */
   averageMonthlyPrice: number | null;
+  /** Median starting monthly price — public “typical price” benchmark. */
   medianMonthlyPrice: number | null;
   cheapestMonthlyPrice: number | null;
   mostExpensiveMonthlyPrice: number | null;
@@ -40,18 +44,6 @@ export interface IndustryPricingStats {
   freePlanShare: number | null;
   creditSystemShare: number | null;
   products: ProductPricingStat[];
-}
-
-function median(values: number[]): number | null {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-}
-
-function average(values: number[]): number | null {
-  if (values.length === 0) return null;
-  return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100;
 }
 
 function productMaxAnnualDiscount(plans: any[]): number | null {
@@ -151,12 +143,12 @@ export async function collectPricingStats(): Promise<IndustryPricingStats> {
 
   return {
     sampleSize: stats.length,
-    averageMonthlyPrice: average(monthlyPrices),
-    medianMonthlyPrice: median(monthlyPrices),
+    averageMonthlyPrice: averageNumber(monthlyPrices),
+    medianMonthlyPrice: medianNumber(monthlyPrices),
     cheapestMonthlyPrice: monthlyPrices.length > 0 ? Math.min(...monthlyPrices) : null,
     mostExpensiveMonthlyPrice: monthlyPrices.length > 0 ? Math.max(...monthlyPrices) : null,
-    averageAnnualDiscount: average(discounts),
-    averagePer100Credits: average(creditRates),
+    averageAnnualDiscount: averageNumber(discounts),
+    averagePer100Credits: averageNumber(creditRates),
     freePlanShare:
       stats.length > 0 ? Math.round((stats.filter((s) => s.hasFreePlan).length / stats.length) * 100) : null,
     creditSystemShare:

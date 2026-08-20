@@ -1,4 +1,5 @@
 import {
+  cheapestPricedFeatureCost,
   creditsPerDisplayUse,
   featureCostRange,
   fmtMoney,
@@ -12,7 +13,7 @@ function round2(n: number): number {
 }
 
 function findCost(costs: FeatureCostLike[], ...types: string[]) {
-  return costs.find((c) => types.includes(String(c.featureType ?? '')) && c.active !== false) ?? null;
+  return cheapestPricedFeatureCost(costs, ...types) ?? null;
 }
 
 function maxUnits(credits: number, creditsPerUnit: number): number {
@@ -24,7 +25,7 @@ function formatMaxCount(n: number, noun: string, plural?: string): string {
   const whole = Math.max(0, Math.floor(n));
   if (whole <= 0) return '—';
   const label = whole === 1 ? noun : (plural ?? `${noun}s`);
-  return `≈${whole} ${label}`;
+  return `${whole} ${label}`;
 }
 
 function moneyLabel(rate: number | null | undefined, creditsPerUnit: number, suffix: string, currency: string): string | null {
@@ -120,13 +121,13 @@ export function buildCreditMixer(
   const currency = opts.currency ?? 'USD';
   const channels: PricingCreditMixerChannel[] = [];
 
-  const image = findCost(costs, 'standard_image', 'premium_image');
+  const image = findCost(costs, 'standard_image');
   if (image) {
     const per = creditsPerDisplayUse(image)?.max ?? 0;
     const max = maxUnits(includedCredits, per);
     const ch = buildChannel({
       key: 'images',
-      label: 'Images',
+      label: 'Standard images',
       icon: 'image',
       credits: includedCredits,
       creditsPerUnit: per,
@@ -134,7 +135,26 @@ export function buildCreditMixer(
       unitLabel: 'images',
       format: 'count',
       unitMoneyLabel: moneyLabel(rate, per, '/ea', currency),
-      maxLabel: formatMaxCount(max, 'image'),
+      maxLabel: formatMaxCount(max, 'standard image'),
+    });
+    if (ch) channels.push(ch);
+  }
+
+  const premiumImage = findCost(costs, 'premium_image');
+  if (premiumImage) {
+    const per = creditsPerDisplayUse(premiumImage)?.max ?? 0;
+    const max = maxUnits(includedCredits, per);
+    const ch = buildChannel({
+      key: 'premium_images',
+      label: 'Premium images',
+      icon: 'photo',
+      credits: includedCredits,
+      creditsPerUnit: per,
+      step: 1,
+      unitLabel: 'images',
+      format: 'count',
+      unitMoneyLabel: moneyLabel(rate, per, '/ea', currency),
+      maxLabel: formatMaxCount(max, 'premium image'),
     });
     if (ch) channels.push(ch);
   }
@@ -147,9 +167,10 @@ export function buildCreditMixer(
         ? Number(video.durationProduced)
         : 10;
     const max = maxUnits(includedCredits, per);
+    const videoLabel = `${seconds}-sec videos`;
     const ch = buildChannel({
       key: 'videos',
-      label: 'Videos',
+      label: videoLabel,
       icon: 'videocam',
       credits: includedCredits,
       creditsPerUnit: per,
@@ -158,7 +179,7 @@ export function buildCreditMixer(
       format: 'count',
       sublabel: `${seconds} sec each`,
       unitMoneyLabel: moneyLabel(rate, per, `/${seconds} sec`, currency),
-      maxLabel: formatMaxCount(max, 'video'),
+      maxLabel: formatMaxCount(max, `${seconds}-sec video`),
     });
     if (ch) channels.push(ch);
   }
@@ -173,14 +194,14 @@ export function buildCreditMixer(
       const ch = buildChannel({
         key: 'voice_messages',
         label: 'Voice messages',
-        icon: 'graphic_eq',
+        icon: 'mic',
         credits: includedCredits,
         creditsPerUnit: creditsPerMinute,
         step: 5,
         unitLabel: 'min',
         format: 'minutes',
         unitMoneyLabel: moneyLabel(rate, creditsPerMinute, '/min', currency),
-        maxLabel: `≈${formatUseCount(maxMin)} min voice`,
+        maxLabel: `${formatUseCount(maxMin)} min voice`,
       });
       if (ch) channels.push(ch);
     }
@@ -202,7 +223,7 @@ export function buildCreditMixer(
         unitLabel: 'min',
         format: 'minutes',
         unitMoneyLabel: moneyLabel(rate, perMin, '/min', currency),
-        maxLabel: `≈${formatUseCount(maxMin)} min calls`,
+        maxLabel: `${formatUseCount(maxMin)} min calls`,
       });
       if (ch) channels.push(ch);
     }
@@ -214,8 +235,8 @@ export function buildCreditMixer(
     const max = maxUnits(includedCredits, per);
     const ch = buildChannel({
       key: 'custom_character',
-      label: 'Custom character',
-      icon: 'person_edit',
+      label: 'Characters',
+      icon: 'person',
       credits: includedCredits,
       creditsPerUnit: per,
       step: 1,
@@ -296,7 +317,7 @@ export function buildCreditMixer(
   return {
     credits: includedCredits,
     heading: 'Build your credit mix',
-    lead: 'Credits are shared across features. Use them all on one feature, or split them across images, video, voice messages, and calls.',
+    lead: 'Your credits are shared across paid features. Spend them all on one feature, or mix them however you want.',
     channels: filtered,
     presets,
     footnote: `Prices reflect credit costs only. ${includedCredits} credits are included in the monthly plan.`,

@@ -12,6 +12,7 @@ import {
   bestValuePackage,
   intervalDiscount,
   lowestPlainMonthlyPrice,
+  maxAnnualDiscount,
   monthlyEquivalent,
   packageTotalCredits,
   pricePer100Credits,
@@ -48,7 +49,7 @@ import {
 } from '../../ui';
 import { useWorkspace } from '../context';
 import { CompletionSidebar } from '../CompletionSidebar';
-import { SimpleFeatureCosts } from './SimpleFeatureCosts';
+import { FeatureBillingPanel } from './FeatureBillingPanel';
 import { UsageScenariosPanel } from './UsageScenariosPanel';
 import {
   allowancesFromPlanRow,
@@ -63,6 +64,17 @@ import {
   normalizeAllowanceLabel,
   type PlanAllowance,
 } from '../../../../lib/pricing/planAllowances';
+import { FreeAccessFromTestingPanel } from './pricing/FreeAccessFromTestingPanel';
+import { CalculatedPricingPanel } from './pricing/CalculatedPricingPanel';
+import { PricingPageCopyPanel } from './pricing/PricingPageCopyPanel';
+import { PricingSection } from './pricing/PricingSection';
+import {
+  estimateProfile,
+  profilesFromSnapshot,
+} from '../../../../lib/pricing/usageScenarios';
+import { resolveProductType } from '../../../../lib/pricing/productType';
+import type { PricingPageCopy } from '../../../../lib/pricing/pageCopy';
+import type { PricingPlanColumn } from '../../../../lib/pricing-tab/types';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -168,6 +180,7 @@ export function PricingTab() {
     null;
   const currency = withDefaultTokenExpiration((snapshot?.creditCurrency ?? {}) as CreditCurrencyConfig);
   const model = String(snapshot?.pricingModel ?? '');
+  const productType = resolveProductType(String(fields.slug ?? ''), fields.productType);
 
   const tiers = useMemo(
     () => [...related.plans].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999)),
@@ -192,6 +205,95 @@ export function PricingTab() {
   const usesCredits = model === 'subscription_credits' || model === 'free_plus_credits';
   const showIncludedCredits = model === 'subscription_credits';
 
+  const regularUseMonthly = useMemo(() => {
+    const profiles = profilesFromSnapshot(snapshot?.usageScenarios, productType);
+    const regular = profiles.find((p) => p.id === 'regular') ?? profiles[0];
+    if (!regular) return null;
+    const referencePlanName = String(snapshot?.referencePlanName ?? '') || null;
+    const est = estimateProfile(
+      regular,
+      activeTiers as any,
+      featureCosts as any,
+      packages as any,
+      referencePlanName,
+    );
+    if (est.missingData || est.totalMonthly == null) return null;
+    return est.totalMonthly;
+  }, [snapshot?.usageScenarios, snapshot?.referencePlanName, activeTiers, featureCosts, packages, productType]);
+
+  const usageEstimatesAvailable = useMemo(() => {
+    const profiles = profilesFromSnapshot(snapshot?.usageScenarios, productType);
+    const referencePlanName = String(snapshot?.referencePlanName ?? '') || null;
+    return profiles.some((profile) => {
+      const est = estimateProfile(
+        profile,
+        activeTiers as any,
+        featureCosts as any,
+        packages as any,
+        referencePlanName,
+      );
+      return !est.missingData && est.totalMonthly != null;
+    });
+  }, [snapshot?.usageScenarios, snapshot?.referencePlanName, activeTiers, featureCosts, packages, productType]);
+
+  const yearlySavings = useMemo(
+    () => maxAnnualDiscount(activeTiers as any),
+    [activeTiers],
+  );
+
+  const plansForCopy = useMemo((): PricingPlanColumn[] => {
+    const currency = String(fields.priceCurrency ?? 'USD');
+    const columns: PricingPlanColumn[] = activeTiers.map((t, i) => {
+      const opts = tierBillingOptions(t as any);
+      const monthly = opts.find((o) => o.interval === 'monthly' && o.active !== false);
+      const price = monthly?.price ?? null;
+      const tokens =
+        t.includedTokens != null && Number(t.includedTokens) > 0
+          ? Number(t.includedTokens)
+          : (t as { includedCredits?: unknown }).includedCredits != null
+            && Number((t as { includedCredits?: unknown }).includedCredits) > 0
+            ? Number((t as { includedCredits?: unknown }).includedCredits)
+            : null;
+      const billingOpt =
+        monthly && price != null
+          ? {
+              interval: 'monthly' as const,
+              monthlyPrice: price,
+              monthlyPriceLabel: fmtMoney(price, currency),
+              periodPrice: null,
+              periodPriceLabel: null,
+              priceSub: 'Billed monthly',
+              savingsPercent: null,
+              savingsLabel: null,
+              sale: null,
+            }
+          : null;
+      return {
+        key: String(t.id),
+        name: String(t.name ?? 'Plan'),
+        displayName: String(t.name ?? 'Plan'),
+        isFree: Number(t.price ?? price ?? 0) === 0,
+        isRecommended: false,
+        priceLabel: price != null ? fmtMoney(price, currency) : '—',
+        summaryLine: '',
+        includedCredits: tokens,
+        tone: i === 0 ? ('accent' as const) : ('neutral' as const),
+        billing: billingOpt ? { monthly: billingOpt, quarterly: null, yearly: null } : null,
+        rows: [],
+      };
+    });
+    const paid = columns.filter((c) => !c.isFree);
+    if (paid.length) {
+      const ranked = [...paid].sort((a, b) => {
+        const am = a.billing?.monthly?.monthlyPrice ?? Number.POSITIVE_INFINITY;
+        const bm = b.billing?.monthly?.monthlyPrice ?? Number.POSITIVE_INFINITY;
+        return am - bm;
+      });
+      ranked[0]!.isRecommended = true;
+    }
+    return columns;
+  }, [activeTiers, fields.priceCurrency]);
+
   async function patchSnapshot(patch: Record<string, unknown>) {
     if (!snapshot) return;
     try {
@@ -211,200 +313,242 @@ export function PricingTab() {
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
       <div className="space-y-4">
-        {/* 1. Pricing status / snapshot header */}
-        {snapshot ? (
-          <PricingHeader
-            snapshot={snapshot}
-            canEdit={canEdit}
-            productId={ws.productId}
-            onPatch={patchSnapshot}
-            onAiDraft={setAiDraft}
-          />
-        ) : (
-          <SnapshotSetupCard canEdit={canEdit} />
-        )}
+        {!snapshot && <SnapshotSetupCard canEdit={canEdit} />}
 
         {snapshot && (
           <>
-            {canEdit && (
-              <PricingImportCard productId={ws.productId} onDraft={setAiDraft} />
-            )}
+            {/* 1. Pricing data */}
+            <PricingSection
+              title="1. Pricing data"
+              badge="MANUAL"
+              description="Plans, tokens, feature costs, payments, and promos — enter facts only."
+            >
+              <div className="space-y-4">
+                {canEdit && (
+                  <PricingImportCard productId={ws.productId} onDraft={setAiDraft} />
+                )}
 
-            {/* Compact pricing-model selector */}
-            <section className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  How does this app charge users?
-                </span>
-                <div
-                  role="radiogroup"
-                  aria-label="Pricing model"
-                  className="flex flex-wrap gap-1.5"
-                >
-                  {PRICING_MODEL_OPTIONS.map((opt) => (
-                    <label
-                      key={opt.value}
-                      className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                        model === opt.value
-                          ? 'border-pink-400 bg-pink-50 text-pink-700 dark:border-pink-600 dark:bg-pink-950/40 dark:text-pink-300'
-                          : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-400'
-                      } ${!canEdit ? 'pointer-events-none opacity-70' : ''}`}
+                <div className="rounded-lg border border-slate-100 px-3 py-3 dark:border-slate-800">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      How does this app charge users?
+                    </span>
+                    <div
+                      role="radiogroup"
+                      aria-label="Pricing model"
+                      className="flex flex-wrap gap-1.5"
                     >
-                      <input
-                        type="radio"
-                        name="pricingModel"
-                        className="sr-only"
-                        checked={model === opt.value}
-                        onChange={() => void patchSnapshot({ pricingModel: opt.value })}
-                        disabled={!canEdit}
-                      />
-                      {opt.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {showPlans && (
-              <TierTable
-                tiers={tiers}
-                defaultCurrency={String(fields.priceCurrency ?? 'USD')}
-                showIncludedCredits={showIncludedCredits}
-                canEdit={canEdit}
-                onEdit={setEditingTier}
-              />
-            )}
-
-            {usesCredits && (
-              <section className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Tokens</h3>
-                    <TokenNameInline
-                      currency={currency}
-                      canEdit={canEdit}
-                      onSave={(c) => void patchSnapshot({ creditCurrency: withDefaultTokenExpiration(c) })}
-                    />
+                      {PRICING_MODEL_OPTIONS.map((opt) => (
+                        <label
+                          key={opt.value}
+                          className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                            model === opt.value
+                              ? 'border-pink-400 bg-pink-50 text-pink-700 dark:border-pink-600 dark:bg-pink-950/40 dark:text-pink-300'
+                              : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-400'
+                          } ${!canEdit ? 'pointer-events-none opacity-70' : ''}`}
+                        >
+                          <input
+                            type="radio"
+                            name="pricingModel"
+                            className="sr-only"
+                            checked={model === opt.value}
+                            onChange={() => void patchSnapshot({ pricingModel: opt.value })}
+                            disabled={!canEdit}
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                  {canEdit && (
-                    <Button variant="secondary" className="text-xs" onClick={() => setEditingPackage('new')}>
-                      <Icon name="add" className="!text-[14px]" /> Add package
-                    </Button>
+                </div>
+
+                {showPlans && (
+                  <TierTable
+                    tiers={tiers}
+                    defaultCurrency={String(fields.priceCurrency ?? 'USD')}
+                    showIncludedCredits={showIncludedCredits}
+                    canEdit={canEdit}
+                    onEdit={setEditingTier}
+                  />
+                )}
+
+                {usesCredits && (
+                  <div className="overflow-hidden rounded-lg border border-slate-100 dark:border-slate-800">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Tokens</h4>
+                        <TokenNameInline
+                          currency={currency}
+                          canEdit={canEdit}
+                          onSave={(c) => void patchSnapshot({ creditCurrency: withDefaultTokenExpiration(c) })}
+                        />
+                      </div>
+                      {canEdit && (
+                        <Button variant="secondary" className="text-xs" onClick={() => setEditingPackage('new')}>
+                          <Icon name="add" className="!text-[14px]" /> Add package
+                        </Button>
+                      )}
+                    </div>
+                    {packages.length === 0 ? (
+                      <p className="px-4 py-3 text-sm text-slate-400">
+                        No {creditPlural(currency)} packages recorded yet.
+                      </p>
+                    ) : (
+                      <PackageTable
+                        packages={packages}
+                        creditLabel={creditPlural(currency)}
+                        canEdit={canEdit}
+                        onEdit={setEditingPackage}
+                      />
+                    )}
+                    <div className="border-t border-slate-100 dark:border-slate-800">
+                      <FeatureBillingPanel
+                        tiers={tiers}
+                        costs={featureCosts}
+                        snapshotId={snapshot.id}
+                        creditLabel={creditPlural(currency)}
+                        canEdit={canEdit}
+                        productId={ws.productId}
+                        onSaved={() => void ws.refreshRelated()}
+                        embedded
+                      />
+                    </div>
+                    <p className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400 dark:border-slate-800">
+                      Feature costs apply when a plan does not already include the usage. All tokens
+                      expire after {DEFAULT_TOKEN_EXPIRATION_PERIOD}.
+                    </p>
+                  </div>
+                )}
+
+                {related.pricingPromotions.length > 0 && (
+                  <PromotionsList promotions={related.pricingPromotions} canEdit={canEdit} />
+                )}
+
+                <UsageScenariosPanel
+                  snapshot={snapshot}
+                  tiers={tiers}
+                  featureCosts={featureCosts}
+                  packages={packages}
+                  currency={String(fields.priceCurrency ?? 'USD')}
+                  canEdit={canEdit}
+                  onPatchSnapshot={patchSnapshot}
+                />
+
+                <div className="rounded-lg border border-slate-100 p-4 dark:border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Payment and billing</h4>
+                    {canEdit && (
+                      <Button variant="secondary" className="text-xs" onClick={() => setEditingPayments(true)}>
+                        <Icon name="credit_card" className="!text-[14px]" /> {profile ? 'Edit' : 'Add payment methods'}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {profile ? (
+                      <>
+                        {[
+                          { label: 'Card', on: Boolean(profile.creditCard || profile.debitCard) },
+                          { label: 'PayPal', on: Boolean(profile.paypal) },
+                          { label: 'Crypto', on: Boolean(profile.crypto) },
+                          { label: 'Apple Pay', on: Boolean(profile.applePay) },
+                          { label: 'Google Pay', on: Boolean(profile.googlePay) },
+                          { label: 'Bank transfer', on: Boolean(profile.bankTransfer) },
+                          { label: 'WeChat Pay', on: Boolean(profile.wechatPay) },
+                          { label: 'Alipay', on: Boolean(profile.alipay) },
+                          { label: 'Discover Pay', on: Boolean(profile.discoverPay) },
+                        ].map((b) => (
+                          <Badge key={b.label} tone={b.on ? 'green' : 'gray'}>
+                            {b.label}
+                          </Badge>
+                        ))}
+                        {profile.cryptoOnly && <Badge tone="amber">crypto ONLY</Badge>}
+                        {profile.discreetBilling && <Badge tone="blue">discreet billing</Badge>}
+                        {profile.lastVerifiedAt ? (
+                          <span className="text-xs text-slate-400">verified {fmtDate(profile.lastVerifiedAt)}</span>
+                        ) : (
+                          <span className="text-xs text-amber-600">never verified</span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-xs text-slate-400">No payment profile recorded yet.</span>
+                    )}
+                  </div>
+                  {profile?.cryptoOnly && (
+                    <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+                      This product only accepts cryptocurrency — shown as a warning on public pages.
+                    </p>
+                  )}
+                  {profile && (
+                    <PricingEvidence entity="paymentProfiles" row={profile} canEdit={canEdit} />
                   )}
                 </div>
-                {packages.length === 0 ? (
-                  <p className="px-4 py-3 text-sm text-slate-400">
-                    No {creditPlural(currency)} packages recorded yet.
-                  </p>
-                ) : (
-                  <PackageTable
-                    packages={packages}
-                    creditLabel={creditPlural(currency)}
-                    canEdit={canEdit}
-                    onEdit={setEditingPackage}
-                  />
-                )}
-                <div className="border-t border-slate-100 dark:border-slate-800">
-                  <SimpleFeatureCosts
-                    costs={featureCosts}
-                    snapshotId={snapshot.id}
-                    creditLabel={creditPlural(currency)}
-                    canEdit={canEdit}
-                    embedded
-                  />
-                </div>
-                <p className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400 dark:border-slate-800">
-                  Feature costs apply when a plan does not already include the usage. All tokens
-                  expire after {DEFAULT_TOKEN_EXPIRATION_PERIOD}.
-                </p>
-              </section>
-            )}
+              </div>
+            </PricingSection>
 
-            {related.pricingPromotions.length > 0 && (
-              <PromotionsList promotions={related.pricingPromotions} canEdit={canEdit} />
-            )}
-
-            <UsageScenariosPanel
+            {/* 2. Evidence */}
+            <PricingHeader
               snapshot={snapshot}
-              tiers={tiers}
-              featureCosts={featureCosts}
-              packages={packages}
-              currency={String(fields.priceCurrency ?? 'USD')}
               canEdit={canEdit}
-              onPatchSnapshot={patchSnapshot}
+              productId={ws.productId}
+              onPatch={patchSnapshot}
+              onAiDraft={setAiDraft}
             />
 
-            <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Quick summary</h3>
-              <div className="mt-3 flex flex-wrap items-end gap-4">
-                <Stat
-                  label="Lowest 1-month price"
-                  value={fmtMoney(derivedMinMonthly, fields.priceCurrency ?? 'USD')}
-                />
-                {cacheOutOfSync && canEdit && (
-                  <Button variant="secondary" className="text-xs" onClick={() => set('minMonthlyPrice', derivedMinMonthly ?? undefined)}>
-                    Sync list price ({derivedMinMonthly?.toFixed(2)})
-                  </Button>
-                )}
-              </div>
-              {cacheOutOfSync && (
-                <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-                  Public listings use {cachedMin !== null ? cachedMin.toFixed(2) : 'no price yet'} — derived minimum is{' '}
-                  {derivedMinMonthly?.toFixed(2)}.
-                </p>
-              )}
-            </section>
+            {/* 3. Free access */}
+            <FreeAccessFromTestingPanel />
+
+            {/* 4. Calculated results */}
+            <CalculatedPricingPanel
+              tiers={tiers}
+              packages={packages}
+              featureCosts={featureCosts}
+              usageScenarios={snapshot.usageScenarios}
+              productType={productType}
+              currency={String(fields.priceCurrency ?? 'USD')}
+              derivedMinMonthly={derivedMinMonthly}
+              cachedMin={cachedMin}
+              cacheOutOfSync={cacheOutOfSync}
+              canEdit={canEdit}
+              onSyncListPrice={() => set('minMonthlyPrice', derivedMinMonthly ?? undefined)}
+            />
+
+            {/* 5. Pricing page copy */}
+            <PricingPageCopyPanel
+              snapshot={snapshot}
+              productId={ws.productId}
+              productName={String(fields.name ?? 'This app')}
+              productSlug={String(fields.slug ?? '')}
+              currency={String(fields.priceCurrency ?? 'USD')}
+              pricingModel={model || null}
+              advertisedMonthly={derivedMinMonthly}
+              regularUseMonthly={regularUseMonthly}
+              usageEstimatesAvailable={usageEstimatesAvailable}
+              includedCreditsMonthly={
+                [...activeTiers]
+                  .map((t) => {
+                    const opts = tierBillingOptions(t as any);
+                    const monthly = opts.find((o) => o.interval === 'monthly' && o.active !== false);
+                    const tokens =
+                      t.includedTokens != null && Number(t.includedTokens) > 0
+                        ? Number(t.includedTokens)
+                        : null;
+                    return {
+                      tokens,
+                      monthly: monthly?.price ?? Number.POSITIVE_INFINITY,
+                    };
+                  })
+                  .filter((x) => x.tokens != null)
+                  .sort((a, b) => a.monthly - b.monthly)[0]?.tokens ?? null
+              }
+              yearlySavings={yearlySavings}
+              plansForCopy={plansForCopy}
+              canEdit={canEdit}
+              onSave={async (pageCopy: PricingPageCopy) => {
+                await patchSnapshot({ pageCopy });
+              }}
+            />
           </>
         )}
-
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Payment and billing</h3>
-            {canEdit && (
-              <Button variant="secondary" className="text-xs" onClick={() => setEditingPayments(true)}>
-                <Icon name="credit_card" className="!text-[14px]" /> {profile ? 'Edit' : 'Add payment methods'}
-              </Button>
-            )}
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {profile ? (
-              <>
-                {[
-                  { label: 'Card', on: Boolean(profile.creditCard || profile.debitCard) },
-                  { label: 'PayPal', on: Boolean(profile.paypal) },
-                  { label: 'Crypto', on: Boolean(profile.crypto) },
-                  { label: 'Apple Pay', on: Boolean(profile.applePay) },
-                  { label: 'Google Pay', on: Boolean(profile.googlePay) },
-                  { label: 'Bank transfer', on: Boolean(profile.bankTransfer) },
-                  { label: 'WeChat Pay', on: Boolean(profile.wechatPay) },
-                  { label: 'Alipay', on: Boolean(profile.alipay) },
-                  { label: 'Discover Pay', on: Boolean(profile.discoverPay) },
-                ].map((b) => (
-                  <Badge key={b.label} tone={b.on ? 'green' : 'gray'}>
-                    {b.label}
-                  </Badge>
-                ))}
-                {profile.cryptoOnly && <Badge tone="amber">crypto ONLY</Badge>}
-                {profile.discreetBilling && <Badge tone="blue">discreet billing</Badge>}
-                {profile.lastVerifiedAt ? (
-                  <span className="text-xs text-slate-400">verified {fmtDate(profile.lastVerifiedAt)}</span>
-                ) : (
-                  <span className="text-xs text-amber-600">never verified</span>
-                )}
-              </>
-            ) : (
-              <span className="text-xs text-slate-400">No payment profile recorded yet.</span>
-            )}
-          </div>
-          {profile?.cryptoOnly && (
-            <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
-              This product only accepts cryptocurrency — shown as a warning on public pages.
-            </p>
-          )}
-          {profile && (
-            <PricingEvidence entity="paymentProfiles" row={profile} canEdit={canEdit} />
-          )}
-        </section>
       </div>
 
       <CompletionSidebar />
@@ -529,17 +673,6 @@ function PromotionsList({ promotions, canEdit }: { promotions: EntityRow[]; canE
   );
 }
 
-function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {  return (
-    <div>
-      <p className="text-xs text-slate-400" title={hint}>
-        {label}
-        {hint && <Icon name="info" className="ml-0.5 align-text-bottom !text-[12px] text-slate-300" />}
-      </p>
-      <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{value}</p>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Snapshot header & setup
 // ---------------------------------------------------------------------------
@@ -629,20 +762,12 @@ function PricingHeader({
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Pricing</h3>
-        {daysSinceVerified === null ? (
-          <Badge tone="amber">never verified</Badge>
-        ) : daysSinceVerified > 45 ? (
-          <Badge tone="red">verification overdue ({daysSinceVerified}d)</Badge>
-        ) : daysSinceVerified > 30 ? (
-          <Badge tone="amber">verification due ({daysSinceVerified}d)</Badge>
-        ) : (
-          <Badge tone="green">verified {fmtDate(snapshot.verifiedAt)}</Badge>
-        )}
-        <span className="flex-1" />
-        {canEdit && (
+    <PricingSection
+      title="2. Evidence"
+      badge="MANUAL"
+      description="Screenshots and verification date for this pricing snapshot."
+      actions={
+        canEdit ? (
           <div className="flex flex-col items-end gap-0.5">
             <Button
               variant="secondary"
@@ -663,18 +788,28 @@ function PricingHeader({
                 : 'AI adjust from screenshots'}
             </Button>
           </div>
+        ) : undefined
+      }
+    >
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {daysSinceVerified === null ? (
+          <Badge tone="amber">never verified</Badge>
+        ) : daysSinceVerified > 45 ? (
+          <Badge tone="red">verification overdue ({daysSinceVerified}d)</Badge>
+        ) : daysSinceVerified > 30 ? (
+          <Badge tone="amber">verification due ({daysSinceVerified}d)</Badge>
+        ) : (
+          <Badge tone="green">verified {fmtDate(snapshot.verifiedAt)}</Badge>
         )}
       </div>
-      <div className="mt-3">
-        <PricingEvidence entity="pricingSnapshots" row={snapshot} canEdit={canEdit} compact />
-      </div>
+      <PricingEvidence entity="pricingSnapshots" row={snapshot} canEdit={canEdit} compact />
       {snapshot.verifiedBy && (
         <p className="mt-2 text-xs text-slate-400">
           Last verified by {snapshot.verifiedBy}
           {snapshot.verifiedAt ? ` on ${fmtDate(snapshot.verifiedAt)}` : ''}.
         </p>
       )}
-    </section>
+    </PricingSection>
   );
 }
 

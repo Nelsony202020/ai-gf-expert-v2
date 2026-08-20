@@ -2430,23 +2430,204 @@ body.roundup-sheet-open {
   color: var(--color-tertiary);
 }
 
-.roundup-at-glance-tooltip__amount {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
+.roundup-usage-tooltip {
+  width: min(320px, calc(100vw - 24px));
+}
+
+.roundup-usage-tooltip .ratings-tooltip-panel__header {
+  border-bottom: none;
+}
+
+.roundup-usage-tooltip__amount {
+  margin: 0;
+  font-size: 1.375rem;
   font-weight: 800;
-  line-height: 1.3;
+  line-height: 1.2;
   color: var(--color-on-surface);
 }
 
-.roundup-at-glance-tooltip__breakdown {
-  margin: 0.625rem 0 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 0.25rem;
+.roundup-usage-tooltip__amount-main {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.roundup-usage-tooltip__amount-period {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-tertiary);
+}
+
+.roundup-usage-tooltip__header {
+  padding-bottom: 0;
+}
+
+.roundup-usage-tooltip__title {
+  margin: 0 0 0.35rem;
+  letter-spacing: 0.06em;
+  font-size: 0.625rem;
+  font-weight: 800;
+}
+
+.roundup-usage-tooltip__subtitle {
+  margin: 0.35rem 0 0;
   font-size: 0.8125rem;
   line-height: 1.45;
   color: var(--color-on-surface-variant);
+}
+
+.roundup-usage-tooltip__body {
+  padding-top: 0.25rem;
+}
+
+.roundup-usage-tooltip__rule {
+  margin: 0.75rem 0;
+  border: 0;
+  border-top: 1px solid var(--color-surface-variant);
+}
+
+.roundup-usage-tooltip__assumes-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--color-on-surface);
+}
+
+.roundup-usage-tooltip__assumes-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.roundup-usage-tooltip__assumes-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--color-on-surface);
+}
+
+.roundup-usage-tooltip__assumes-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  color: var(--color-tertiary);
+}
+
+.roundup-usage-tooltip__assumes-value {
+  font-weight: 700;
+}
+
+.roundup-usage-tooltip__assumes-period {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-tertiary);
+}
+
+.roundup-usage-tooltip__costs {
+  margin: 0;
+  margin-top: 0.875rem;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.roundup-usage-tooltip__cost-row--extra dt {
+  font-weight: 500;
+  color: var(--color-tertiary);
+}
+
+.roundup-usage-tooltip__cost-row--extra .roundup-usage-tooltip__money-main {
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
+}
+
+.roundup-usage-tooltip__cost-row--extra .roundup-usage-tooltip__money-period {
+  font-weight: 400;
+  color: var(--color-tertiary);
+}
+
+.roundup-usage-tooltip__cost-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.roundup-usage-tooltip__cost-row dt {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+}
+
+.roundup-usage-tooltip__cost-row dd {
+  margin: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.roundup-usage-tooltip__money-main {
+  font-weight: 700;
+  color: var(--color-on-surface);
+}
+
+.roundup-usage-tooltip__money-period {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-tertiary);
+}
+
+.roundup-usage-tooltip__cost-row--total {
+  margin-top: 0.35rem;
+  padding-top: 0.5rem;
+}
+
+.roundup-usage-tooltip__cost-row--total dt,
+.roundup-usage-tooltip__cost-row--total .roundup-usage-tooltip__money-main {
+  font-weight: 800;
+}
+
+.roundup-usage-tooltip__insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0.75rem 0 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.5rem;
+  background: var(--color-surface-container-low);
+}
+
+.roundup-usage-tooltip__insight-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  color: var(--color-accent);
+  margin-top: 0.05rem;
+}
+
+.roundup-usage-tooltip__insight-text {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-on-surface-variant);
+}
+
+.roundup-usage-tooltip__cta {
+  display: block;
+  margin-top: 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-align: center;
+  text-decoration: none;
+}
+
+.roundup-usage-tooltip__cta:hover,
+.roundup-usage-tooltip__cta:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .roundup-at-glance-tooltip__cta {

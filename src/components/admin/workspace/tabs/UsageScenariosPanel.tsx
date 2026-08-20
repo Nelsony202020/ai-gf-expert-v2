@@ -7,12 +7,13 @@ import { Badge, Button, Icon, TextInput } from '../../ui';
 import { fmtMoney } from '../../../../lib/pricing/calc';
 import {
   DAYS_PER_MONTH,
-  DEFAULT_USAGE_PROFILES,
+  defaultUsageProfilesForType,
   estimateProfile,
   profilesFromSnapshot,
   type PresetId,
   type UsageProfile,
 } from '../../../../lib/pricing/usageScenarios';
+import { productTypeLabel, resolveProductType } from '../../../../lib/pricing/productType';
 import { useWorkspace } from '../context';
 
 function pickCurrentRun(runs: EntityRow[]): EntityRow | null {
@@ -43,19 +44,20 @@ export function UsageScenariosPanel({
 }) {
   const ws = useWorkspace();
   const { set, fields } = ws;
+  const productType = resolveProductType(String(fields.slug ?? ''), fields.productType);
   const { error, setError, run, busy } = useAsyncToast();
   const [profiles, setProfiles] = useState<UsageProfile[]>(() =>
-    profilesFromSnapshot(snapshot.usageScenarios),
+    profilesFromSnapshot(snapshot.usageScenarios, productType),
   );
   const [activeId, setActiveId] = useState<PresetId>('regular');
   const [editingUsage, setEditingUsage] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
-    setProfiles(profilesFromSnapshot(snapshot.usageScenarios));
+    setProfiles(profilesFromSnapshot(snapshot.usageScenarios, productType));
     setDirty(false);
     setEditingUsage(false);
-  }, [snapshot.id, snapshot.usageScenarios]);
+  }, [snapshot.id, snapshot.usageScenarios, productType]);
 
   const activeTiers = tiers.filter((t) => t.active !== false);
   const activeCosts = featureCosts.filter((c) => c.active !== false);
@@ -93,7 +95,7 @@ export function UsageScenariosPanel({
   }
 
   async function resetDefaults() {
-    setProfiles(DEFAULT_USAGE_PROFILES.map((p) => ({ ...p })));
+    setProfiles(defaultUsageProfilesForType(productType).map((p) => ({ ...p })));
     setDirty(true);
   }
 
@@ -165,7 +167,10 @@ export function UsageScenariosPanel({
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Real-world spend</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Real-world spend</h3>
+          <Badge tone="gray">{productTypeLabel(productType)}</Badge>
+        </div>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           Pick a user type and see what they&apos;d pay on monthly, 3-month, or 12-month billing.
         </p>
@@ -364,6 +369,7 @@ function PlanCard({
     planPerMonth: number | null;
     topUpPerMonth: number | null;
     totalPerMonth: number | null;
+    planName?: string | null;
   };
   currency: string;
   highlight?: boolean;
@@ -419,6 +425,7 @@ function PlanCard({
       </p>
       <p className="mt-1 text-[11px] text-slate-500">
         Subscription {fmtMoney(planPart, currency)}/mo
+        {plan.planName ? <> ({plan.planName})</> : null}
         {topUp > 0 && <> + {fmtMoney(topUp, currency)} extra tokens</>}
         <span className="block text-[10px] text-slate-400">Charged {billedLabel}</span>
       </p>
