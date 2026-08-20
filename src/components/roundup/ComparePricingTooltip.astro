@@ -1,6 +1,7 @@
 ---
 import type { AtGlanceTooltip } from '../../data/roundups/ai-girlfriend';
 import InfoIcon from '../ui/InfoIcon.astro';
+import RoundupUsageEstimateTooltipPanel from './RoundupUsageEstimateTooltipPanel.astro';
 
 interface Props {
   pickSlug: string;
@@ -36,29 +37,7 @@ const tooltipId = `compare-pricing-${pickSlug}-${rowId}`;
 {
   !triggerOnly && (
     <template id={`tooltip-${tooltipId}`}>
-      <div class="ratings-tooltip-panel ratings-tooltip-panel--help">
-        <div class="ratings-tooltip-panel__header">
-          <p class="ratings-tooltip-panel__section-title">{tooltip.title}</p>
-        </div>
-        <div class="ratings-tooltip-panel__body ratings-tooltip-panel__body--compact">
-          <p class="roundup-at-glance-tooltip__amount">{tooltip.amount}</p>
-          <p class="ratings-tooltip-panel__desc">{tooltip.description}</p>
-          {
-            tooltip.breakdown && tooltip.breakdown.length > 0 && (
-              <ul class="roundup-at-glance-tooltip__breakdown">
-                {tooltip.breakdown.map((line) => <li>{line}</li>)}
-              </ul>
-            )
-          }
-          <a
-            href={tooltip.pricingHref}
-            class="roundup-at-glance-tooltip__cta rt-tooltip-actions__btn rt-tooltip-actions__btn--primary"
-          >
-            See full pricing breakdown
-            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-          </a>
-        </div>
-      </div>
+      <RoundupUsageEstimateTooltipPanel tooltip={tooltip} />
     </template>
   )
 }

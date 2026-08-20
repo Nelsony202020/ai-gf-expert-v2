@@ -2,7 +2,7 @@ import type { AtGlanceData, AtGlanceStat, AtGlanceTooltip } from '../../data/rou
 import type { Product } from '../../data/products';
 import type { PricingTabViewModel } from '../pricing-tab/types';
 import { fmtMoney } from '../pricing/calc';
-import { reviewPageUrl } from '../slugs';
+import { buildUsageEstimateTooltip, usageEstimateUnavailableLabel } from './usageEstimateTooltip';
 import { splitJoinedValues } from '../ui/multiValueDisplay';
 
 const PRICING_MODEL_LABELS: Record<string, string> = {
@@ -13,12 +13,6 @@ const PRICING_MODEL_LABELS: Record<string, string> = {
   mixed: 'Mixed pricing',
   custom: 'Custom pricing',
 };
-
-const REGULAR_USE_DESCRIPTION =
-  'Based on our regular-use profile, including chat, images, videos, and voice features.';
-
-const POWER_USER_DESCRIPTION =
-  'Based on heavier daily use of images, videos, voice, and other token-based features.';
 
 function unavailable(): string {
   return 'Not available';
@@ -33,6 +27,7 @@ export function atGlanceValueTone(value: string): 'muted' | 'default' {
   const normalized = value.trim().toLowerCase();
   if (
     normalized === 'no' ||
+    normalized === 'not enough data' ||
     normalized === 'not available' ||
     normalized === 'not tested' ||
     normalized === '—' ||
@@ -220,68 +215,24 @@ function formatStartingPrice(product: Product, vm: PricingTabViewModel): string 
   return unavailable();
 }
 
-function formatMonthlyEstimate(amount: number | null | undefined, currency: string): string {
-  if (amount == null || !Number.isFinite(amount)) return unavailable();
-  return `~${fmtMoney(amount, currency)}/mo`;
-}
-
-function findFeatureCost(vm: PricingTabViewModel, keys: string[]): string | null {
-  for (const key of keys) {
-    const row = vm.featureCosts.find((r) => r.key === key);
-    if (row?.value && row.value !== '—') return row.value;
+function formatUsageEstimateValue(
+  vm: PricingTabViewModel,
+  kind: 'regular' | 'power',
+): string {
+  const tier = vm.usageTiers.find((t) => t.id === kind);
+  if (tier?.monthlyCost != null && Number.isFinite(tier.monthlyCost)) {
+    return `~${fmtMoney(tier.monthlyCost, vm.currency)}/mo`;
   }
-  return null;
-}
-
-function formatBreakdownLine(label: string, raw: string | null, fallbackUnit: string): string | null {
-  if (!raw) return null;
-  if (raw.includes('/')) {
-    return `${label}: ${raw.startsWith('~') ? raw : `~${raw}`}`;
-  }
-  return `${label}: ${raw.startsWith('~') ? raw : `~${raw}`} ${fallbackUnit}`;
-}
-
-function buildPricingBreakdown(vm: PricingTabViewModel): string[] {
-  const lines: string[] = [];
-  const image = formatBreakdownLine(
-    'Images',
-    findFeatureCost(vm, ['standard_image', 'premium_image', 'in_chat_image']),
-    'each',
-  );
-  const video = formatBreakdownLine(
-    'Videos',
-    findFeatureCost(vm, ['standard_video', 'text_to_video', 'image_to_video']),
-    'each',
-  );
-  const calls = formatBreakdownLine('Calls', findFeatureCost(vm, ['voice_call']), '');
-
-  if (image) lines.push(image);
-  if (video) lines.push(video);
-  if (calls) lines.push(calls);
-  return lines;
+  return usageEstimateUnavailableLabel();
 }
 
 function buildUsageTooltip(
   product: Product,
   vm: PricingTabViewModel,
   kind: 'regular' | 'power',
-  amount: number | null,
 ): AtGlanceTooltip | undefined {
-  if (amount == null || !Number.isFinite(amount)) return undefined;
-
   const tier = vm.usageTiers.find((t) => t.id === kind);
-  const title = kind === 'regular' ? 'Estimated regular use' : 'Estimated power use';
-  const description =
-    tier?.description?.trim() ||
-    (kind === 'regular' ? REGULAR_USE_DESCRIPTION : POWER_USER_DESCRIPTION);
-
-  return {
-    title,
-    amount: formatMonthlyEstimate(amount, vm.currency),
-    description,
-    breakdown: kind === 'regular' ? buildPricingBreakdown(vm) : undefined,
-    pricingHref: `${reviewPageUrl(product.slug)}#pricing`,
-  };
+  return buildUsageEstimateTooltip(product.slug, vm.currency, kind, tier);
 }
 
 function stat(
@@ -297,18 +248,8 @@ function stat(
 
 /** Build feature + pricing rows for the roundup at-a-glance section. */
 export function buildAtGlanceStats(product: Product, vm: PricingTabViewModel): AtGlanceData {
-  const parsedTypical = product.pricingDisplay.typicalMonthly
-    ? parseFloat(product.pricingDisplay.typicalMonthly.replace(/[^\d.]/g, ''))
-    : NaN;
-  const regularAmount =
-    vm.regularUseMonthly ?? (Number.isFinite(parsedTypical) ? parsedTypical : null);
-
-  const regularValue =
-    vm.regularUseMonthly != null
-      ? formatMonthlyEstimate(vm.regularUseMonthly, vm.currency)
-      : product.pricingDisplay.typicalMonthly?.trim() || unavailable();
-
-  const powerValue = formatMonthlyEstimate(vm.powerUserMonthly, vm.currency);
+  const regularValue = formatUsageEstimateValue(vm, 'regular');
+  const powerValue = formatUsageEstimateValue(vm, 'power');
   const characterStyles = formatCharacterStyles(product);
   const videoGenerator = formatVideoGenerator(product, vm);
 
@@ -327,14 +268,14 @@ export function buildAtGlanceStats(product: Product, vm: PricingTabViewModel): A
         'account_balance_wallet',
         'Regular use',
         regularValue,
-        buildUsageTooltip(product, vm, 'regular', regularAmount),
+        buildUsageTooltip(product, vm, 'regular'),
       ),
       stat(
         'power-user',
         'bolt',
         'Power user',
         powerValue,
-        buildUsageTooltip(product, vm, 'power', vm.powerUserMonthly),
+        buildUsageTooltip(product, vm, 'power'),
       ),
     ],
   };

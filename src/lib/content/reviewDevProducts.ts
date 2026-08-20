@@ -11,9 +11,6 @@ export const ALTERNATIVES_TAB_SLUGS = new Set(['aura-ai']);
 /** Slugs that show the full Photos & Videos gallery (draft test page only). */
 export const PHOTOS_VIDEOS_TAB_SLUGS = new Set(['aura-ai']);
 
-/** Review pages that include the full Pricing tab (test pages only). */
-export const PRICING_TAB_SLUGS = new Set(['aura-ai']);
-
 export function isDevReviewSlug(slug: string): boolean {
   return DEV_REVIEW_SLUG_SET.has(slug);
 }
@@ -30,6 +27,7 @@ export function hasPhotosVideosTab(slug: string): boolean {
   return PHOTOS_VIDEOS_TAB_SLUGS.has(slug);
 }
 
-export function hasPricingTab(slug: string): boolean {
-  return PRICING_TAB_SLUGS.has(slug);
+/** Pricing tab is live on all review pages (empty shell until data exists). */
+export function hasPricingTab(_slug: string): boolean {
+  return true;
 }

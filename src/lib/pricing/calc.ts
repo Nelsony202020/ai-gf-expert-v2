@@ -7,9 +7,29 @@ import {
   findAllowance,
   hasExplicitAllowances,
   monthlyQuantityFromAllowance,
+  resolveAfterAllowance,
   resolvePlanAllowances,
   USAGE_TO_ALLOWANCE_KEYS,
 } from './planAllowances';
+import { solveMinCostPackageCombo } from './packageCombo';
+
+/** Rounded arithmetic mean (analytics / internal). */
+export function averageNumber(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100;
+}
+
+/** Rounded median — public “typical price” market benchmark. */
+export function medianNumber(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const raw =
+    sorted.length % 2 === 0
+      ? (sorted[mid - 1]! + sorted[mid]!) / 2
+      : sorted[mid]!;
+  return Math.round(raw * 100) / 100;
+}
 
 export const BILLING_INTERVALS = [
   'weekly',
@@ -322,7 +342,11 @@ export function creditsPerDisplayUse(cost: FeatureCostLike): CostRange | null {
   const unit = String(cost.unit ?? '');
   const type = String(cost.featureType ?? '');
 
-  if (unit === 'per_second' || type.includes('video')) {
+  if (unit === 'per_generation' || unit === 'per_video') {
+    return range;
+  }
+
+  if (unit === 'per_second' || (type.includes('video') && unit !== 'per_generation' && unit !== 'per_video')) {
     const seconds =
       numOrNull(cost.durationProduced) && Number(cost.durationProduced) > 0
         ? Number(cost.durationProduced)
@@ -337,6 +361,43 @@ export function creditsPerDisplayUse(cost: FeatureCostLike): CostRange | null {
   }
 
   return range;
+}
+
+/** Lowest credits for one display unit among priced rows (e.g. cheapest video variant). */
+function cheapestPerUseCredits(cost: FeatureCostLike): number | null {
+  if (featureCostAvailability(cost) !== 'priced') return null;
+  const perUse = creditsPerDisplayUse(cost);
+  if (!perUse) return null;
+  return perUse.min;
+}
+
+/**
+ * Pick the priced feature-cost row with the lowest credits per display unit.
+ * When a product has multiple video (or image) variants, estimates use the cheapest.
+ * Returns undefined when no priced (creditCost) row exists for the types.
+ */
+export function cheapestPricedFeatureCost(
+  costs: FeatureCostLike[],
+  ...types: string[]
+): FeatureCostLike | undefined {
+  const candidates = costs.filter(
+    (c) => c.active !== false && types.includes(String(c.featureType ?? '')),
+  );
+  if (candidates.length === 0) return undefined;
+
+  let best: FeatureCostLike | undefined;
+  let bestCredits = Infinity;
+
+  for (const c of candidates) {
+    const credits = cheapestPerUseCredits(c);
+    if (credits == null) continue;
+    if (credits < bestCredits) {
+      bestCredits = credits;
+      best = c;
+    }
+  }
+
+  return best ?? candidates.find((c) => featureCostAvailability(c) === 'priced');
 }
 
 /** Whole-number-friendly count for plan matrix cells. */
@@ -460,9 +521,16 @@ export function formatCreditPoolUsesCell(
       Math.abs(minUses - maxUses) < 0.05
         ? formatWholeUses(minUses)
         : `${formatWholeUses(minUses)}–${formatWholeUses(maxUses)}`;
+    const type = String(cost.featureType ?? '');
+    const noun =
+      type === 'premium_image'
+        ? 'premium images'
+        : type === 'standard_image'
+          ? 'standard images'
+          : 'images';
     return {
-      value: `${count}/mo`,
-      tip: 'Estimated images if the full monthly credit pool went to standard image generation.',
+      value: `${count} ${noun}`,
+      tip: `Estimated ${noun} if the full monthly credit pool went to this image type.`,
     };
   }
 
@@ -486,15 +554,15 @@ export function formatCreditPoolUses(
   return formatCreditPoolUsesCell(includedCredits, cost, kind).value;
 }
 
-/** Estimated money cost of one feature use at a package's credit rate. */
+/** Estimated money cost of one display use (e.g. one image, one 10s video) at a package rate. */
 export function estimatedFeatureMoneyCost(
   pkg: CreditPackageLike,
   cost: FeatureCostLike,
 ): CostRange | null {
   const rate = pricePerCredit(pkg);
-  const range = featureCostRange(cost);
-  if (rate === null || !range) return null;
-  return { min: round2(rate * range.min), max: round2(rate * range.max) };
+  const perUse = creditsPerDisplayUse(cost);
+  if (rate === null || !perUse) return null;
+  return { min: round2(rate * perUse.min), max: round2(rate * perUse.max) };
 }
 
 // ---------------------------------------------------------------------------
@@ -506,6 +574,14 @@ export interface UsageScenario {
   usage: Record<string, number>;
 }
 
+export interface ScenarioPackageLine {
+  name: string;
+  credits: number;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+}
+
 export interface ScenarioResult {
   /** Subscription price for the billing period (e.g. $13.99 for monthly). */
   planCost: number;
@@ -513,10 +589,23 @@ export interface ScenarioResult {
   planCostPerMonth: number;
   billingInterval: BillingInterval;
   billingPeriodMonths: number;
+  /** Total feature credits required before applying the included pool. */
+  requiredCredits: number;
+  /** Credits included with the plan. */
+  includedCredits: number;
   /** Credits needed beyond the plan's included credits. */
   creditShortfall: number;
-  /** Money for the shortfall at the best top-up rate (null if not purchasable). */
+  /**
+   * Actual purchasable top-up spend (minimum package combination covering the shortfall).
+   * Null when packages cannot cover the shortfall / data incomplete.
+   */
   topUpCost: number | null;
+  /** Credits purchased via the chosen package combination. */
+  purchasedCredits: number;
+  /** purchasedCredits − creditShortfall */
+  leftoverCredits: number;
+  /** Checkout lines that achieve topUpCost. */
+  packageCombination: ScenarioPackageLine[];
   totalMonthly: number | null;
   /** Tier name used for this estimate. */
   planName?: string;
@@ -537,6 +626,8 @@ export interface BillingPlanEstimate {
   planPerMonth: number | null;
   topUpPerMonth: number | null;
   totalPerMonth: number | null;
+  /** Cheapest subscription tier used for this estimate. */
+  planName?: string | null;
 }
 
 /** Tier with the lowest active plain-monthly option. */
@@ -554,6 +645,20 @@ export function cheapestMonthlyTier(tiers: PlanTierLike[]): PlanTierLike | null 
     }
   }
   return best;
+}
+
+/** Resolve a tier by name (case-insensitive). */
+export function resolveTierByName(
+  tiers: PlanTierLike[],
+  planName?: string | null,
+): PlanTierLike | null {
+  const needle = planName?.trim().toLowerCase();
+  if (!needle) return null;
+  return (
+    tiers.find(
+      (t) => t.active !== false && String(t.name ?? '').trim().toLowerCase() === needle,
+    ) ?? null
+  );
 }
 
 /** Resolve a tier by name (case-insensitive), else cheapest monthly. */
@@ -616,7 +721,8 @@ function featureCostForPlan(
   const onlyScoped = scoped.filter(
     (c) => Array.isArray(c.availablePlanNames) && c.availablePlanNames.length > 0,
   );
-  return onlyScoped[0] ?? scoped[0] ?? candidates[0];
+  const pool = onlyScoped.length > 0 ? onlyScoped : scoped.length > 0 ? scoped : candidates;
+  return cheapestPricedFeatureCost(pool, featureType);
 }
 
 function creditsNeededForUsage(
@@ -628,7 +734,7 @@ function creditsNeededForUsage(
   for (const [featureType, count] of Object.entries(usage)) {
     const cost = featureCostForPlan(featureCosts, featureType, planName);
     const range = cost ? featureCostRange(cost) : null;
-    if (range) creditsNeeded += range.max * count;
+    if (range) creditsNeeded += range.min * count;
   }
   return creditsNeeded;
 }
@@ -690,37 +796,69 @@ export function billableCreditsForTier(
 
     if (billable <= 0) continue;
 
+    const afterPolicy =
+      allowance?.accessType === 'included_quantity' ? resolveAfterAllowance(allowance) : null;
+    if (billable > 0 && afterPolicy === 'unavailable') {
+      unavailableFeatures.push(featureType);
+      continue;
+    }
+    if (billable > 0 && afterPolicy === 'unknown') {
+      // Included qty exhausted, but post-allowance pricing was never verified — skip this
+      // feature instead of voiding the whole monthly estimate.
+      continue;
+    }
+
+    if (billable > 0 && afterPolicy === 'per_use' && allowance?.afterAllowance?.creditCost != null) {
+      creditsNeeded += allowance.afterAllowance.creditCost * billable;
+      continue;
+    }
+
     if (allowance?.accessType === 'included_unspecified') {
       const cost = featureCostForPlan(featureCosts, featureType, planName);
       const range = cost ? featureCostRange(cost) : null;
       if (!range) {
-        incomplete = true;
+        // Unspecified inclusion with no unit cost — ignore for spend estimates.
         continue;
       }
-      creditsNeeded += range.max * billable;
+      creditsNeeded += range.min * billable;
       continue;
     }
 
     const cost = featureCostForPlan(featureCosts, featureType, planName);
     const range = cost ? featureCostRange(cost) : null;
     if (range) {
-      creditsNeeded += range.max * billable;
-    } else if (hasExplicitAllowances(tier) && !allowance) {
-      // Explicit allowance economy but no cost and no matching allowance → incomplete.
-      incomplete = true;
-    } else if (range == null && billable > 0 && hasExplicitAllowances(tier)) {
-      incomplete = true;
+      creditsNeeded += range.min * billable;
+    } else if (billable > 0) {
+      // Missing unit cost for a billable feature — omit it from spend (do not void estimate).
+      continue;
     }
   }
 
   return { creditsNeeded, unavailableFeatures, incomplete, includedCredits };
 }
 
-function topUpCostForShortfall(shortfall: number, packages: CreditPackageLike[]): number | null {
-  if (shortfall <= 0) return 0;
-  const rate = bestValuePackage(packages);
-  const perCredit = rate ? pricePerCredit(rate) : null;
-  return perCredit !== null ? round2(shortfall * perCredit) : null;
+function topUpPurchaseForShortfall(
+  shortfall: number,
+  packages: CreditPackageLike[],
+): {
+  topUpCost: number | null;
+  purchasedCredits: number;
+  leftoverCredits: number;
+  packageCombination: ScenarioPackageLine[];
+} {
+  if (shortfall <= 0) {
+    return { topUpCost: 0, purchasedCredits: 0, leftoverCredits: 0, packageCombination: [] };
+  }
+  const combo = solveMinCostPackageCombo(shortfall, packages);
+  if (combo.impossible) {
+    return { topUpCost: null, purchasedCredits: 0, leftoverCredits: 0, packageCombination: [] };
+  }
+  return {
+    topUpCost: combo.topUpCost,
+    purchasedCredits: combo.purchasedCredits,
+    leftoverCredits: combo.leftoverCredits,
+    packageCombination: combo.packages,
+  };
 }
 
 /** Monthly top-up + three billing cadence estimates (best price per interval across tiers). */
@@ -740,15 +878,21 @@ export function estimateBillingPlans(
   ];
 
   return specs.map(({ key, label, interval }) => {
-    let best: { tier: PlanTierLike; opt: BillingOption; planPerMonth: number } | null = null;
+    let best: ScenarioResult | null = null;
+
     for (const tier of activeTiers) {
       for (const opt of tierBillingOptions(tier)) {
         if (opt.active === false || opt.interval !== interval) continue;
-        const months = MONTHS_PER_INTERVAL[interval];
-        if (months == null || months <= 0) continue;
-        const planPerMonth = round2(opt.price / months);
-        if (!best || planPerMonth < best.planPerMonth) {
-          best = { tier, opt, planPerMonth };
+        const result = scenarioMonthlyCostForOption(
+          scenario,
+          tier,
+          opt,
+          featureCosts,
+          packages,
+        );
+        if (!result || result.totalMonthly == null) continue;
+        if (!best || result.totalMonthly < best.totalMonthly!) {
+          best = result;
         }
       }
     }
@@ -766,28 +910,93 @@ export function estimateBillingPlans(
       };
     }
 
-    const billed = billableCreditsForTier(scenario.usage, best.tier, featureCosts);
-    const shortfall = Math.max(0, billed.creditsNeeded - billed.includedCredits);
-    const topUpPerMonth =
-      billed.unavailableFeatures.length > 0 || billed.incomplete
-        ? null
-        : topUpCostForShortfall(shortfall, packages);
-    const months = MONTHS_PER_INTERVAL[interval] ?? 1;
-    const planPerMonth = round2(best.opt.price / months);
-    const totalPerMonth =
-      topUpPerMonth === null ? null : round2(planPerMonth + topUpPerMonth);
-
     return {
       key,
       label,
       available: true,
-      planPrice: best.opt.price,
-      periodMonths: months,
-      planPerMonth,
-      topUpPerMonth,
-      totalPerMonth,
+      planPrice: best.planCost,
+      periodMonths: best.billingPeriodMonths,
+      planPerMonth: best.planCostPerMonth,
+      topUpPerMonth: best.topUpCost,
+      totalPerMonth: best.totalMonthly,
+      planName: best.planName ?? null,
     };
   });
+}
+
+/**
+ * Estimated monthly cost for a usage scenario on a specific tier and billing option.
+ * Applies plan allowances before feature costs / shared credits / top-ups.
+ */
+function scenarioMonthlyCostForOption(
+  scenario: UsageScenario,
+  tier: PlanTierLike,
+  opt: BillingOption,
+  featureCosts: FeatureCostLike[],
+  packages: CreditPackageLike[],
+): ScenarioResult | null {
+  if (tier.active === false || opt.active === false) return null;
+  const months = MONTHS_PER_INTERVAL[opt.interval];
+  if (months == null || months <= 0) return null;
+
+  const billed = billableCreditsForTier(scenario.usage, tier, featureCosts);
+  const shortfall = Math.max(0, billed.creditsNeeded - billed.includedCredits);
+  const blocked = billed.unavailableFeatures.length > 0 || billed.incomplete;
+  const purchase = blocked ? null : topUpPurchaseForShortfall(shortfall, packages);
+  const topUpCost = purchase?.topUpCost ?? null;
+  const planPerMonth = round2(opt.price / months);
+
+  return {
+    planCost: opt.price,
+    planCostPerMonth: planPerMonth,
+    billingInterval: opt.interval,
+    billingPeriodMonths: months,
+    requiredCredits: billed.creditsNeeded,
+    includedCredits: billed.includedCredits,
+    creditShortfall: shortfall,
+    topUpCost,
+    purchasedCredits: purchase?.purchasedCredits ?? 0,
+    leftoverCredits: purchase?.leftoverCredits ?? 0,
+    packageCombination: purchase?.packageCombination ?? [],
+    totalMonthly: topUpCost === null ? null : round2(planPerMonth + topUpCost),
+    planName: tier.name != null ? String(tier.name) : undefined,
+    unavailableFeatures: billed.unavailableFeatures,
+    incomplete: billed.incomplete,
+  };
+}
+
+/**
+ * Cheapest total monthly cost across every active plan tier and billing option
+ * for the given interval — compares subscription + token top-ups, not plan price alone.
+ */
+export function cheapestScenarioMonthlyCost(
+  scenario: UsageScenario,
+  tiers: PlanTierLike[],
+  featureCosts: FeatureCostLike[],
+  packages: CreditPackageLike[],
+  interval: BillingInterval = 'monthly',
+): ScenarioResult | null {
+  const active = tiers.filter((t) => t.active !== false);
+  let best: ScenarioResult | null = null;
+
+  for (const tier of active) {
+    for (const opt of tierBillingOptions(tier)) {
+      if (opt.active === false || opt.interval !== interval) continue;
+      const result = scenarioMonthlyCostForOption(
+        scenario,
+        tier,
+        opt,
+        featureCosts,
+        packages,
+      );
+      if (!result || result.totalMonthly == null) continue;
+      if (!best || result.totalMonthly < best.totalMonthly!) {
+        best = result;
+      }
+    }
+  }
+
+  return best;
 }
 
 /**
@@ -803,42 +1012,23 @@ export function scenarioMonthlyCostForTier(
   if (tier.active === false) return null;
   const opt = tierBillingOptions(tier).find((o) => o.active !== false && o.interval === 'monthly');
   if (!opt) return null;
-
-  const billed = billableCreditsForTier(scenario.usage, tier, featureCosts);
-  const shortfall = Math.max(0, billed.creditsNeeded - billed.includedCredits);
-  const blocked = billed.unavailableFeatures.length > 0 || billed.incomplete;
-  const topUpCost = blocked ? null : topUpCostForShortfall(shortfall, packages);
-  const months = MONTHS_PER_INTERVAL.monthly ?? 1;
-
-  return {
-    planCost: opt.price,
-    planCostPerMonth: round2(opt.price / months),
-    billingInterval: 'monthly',
-    billingPeriodMonths: months,
-    creditShortfall: shortfall,
-    topUpCost,
-    totalMonthly: topUpCost === null ? null : round2(opt.price / months + topUpCost),
-    planName: tier.name ? String(tier.name) : undefined,
-    unavailableFeatures: billed.unavailableFeatures,
-    incomplete: billed.incomplete,
-  };
+  return scenarioMonthlyCostForOption(scenario, tier, opt, featureCosts, packages);
 }
 
 /**
- * Estimated total monthly cost for a usage scenario: reference/cheapest plan +
- * top-ups needed to cover the credit shortfall at the best package rate.
- * Uses max cost for range-priced features (conservative estimate).
+ * Estimated total monthly cost for a usage scenario: cheapest combination of
+ * subscription tier + token top-ups across all active plans (monthly billing).
+ * Uses the cheapest priced variant and min cost for range-priced features.
  */
 export function scenarioMonthlyCost(
   scenario: UsageScenario,
   tiers: PlanTierLike[],
   featureCosts: FeatureCostLike[],
   packages: CreditPackageLike[],
-  referencePlanName?: string | null,
+  _referencePlanName?: string | null,
 ): ScenarioResult | null {
-  const tier = resolveReferenceTier(tiers, referencePlanName);
-  if (!tier) return null;
-  return scenarioMonthlyCostForTier(scenario, tier, featureCosts, packages);
+  void _referencePlanName;
+  return cheapestScenarioMonthlyCost(scenario, tiers, featureCosts, packages, 'monthly');
 }
 
 /** Per-tier monthly totals for usage scenario cards. */

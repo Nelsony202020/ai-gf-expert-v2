@@ -9,12 +9,28 @@ function paidPlans(plans: PricingPlanColumn[]) {
   return plans.filter((p) => !p.isFree);
 }
 
+/** Cheapest paid plan by monthly price — used for “starting plan” copy. */
+function startingPaid(plans: PricingPlanColumn[]) {
+  const paid = paidPlans(plans);
+  if (paid.length === 0) return null;
+  const priced = paid
+    .map((p) => ({
+      plan: p,
+      monthly:
+        p.billing?.monthly?.monthlyPrice
+        ?? p.billing?.quarterly?.monthlyPrice
+        ?? p.billing?.yearly?.monthlyPrice
+        ?? null,
+    }))
+    .filter((x) => x.monthly != null && Number.isFinite(x.monthly));
+  if (priced.length === 0) return paid[0] ?? null;
+  priced.sort((a, b) => Number(a.monthly) - Number(b.monthly));
+  return priced[0]!.plan;
+}
+
+/** @deprecated Prefer startingPaid for intro copy about the entry plan. */
 function primaryPaid(plans: PricingPlanColumn[]) {
-  return (
-    plans.find((p) => !p.isFree && p.isRecommended)
-    ?? plans.find((p) => !p.isFree)
-    ?? null
-  );
+  return startingPaid(plans);
 }
 
 function hasUnlimitedChat(plans: PricingPlanColumn[]): boolean {
@@ -61,7 +77,7 @@ export function buildPageIntro(input: {
     const chatBit = unlimitedChat
       ? 'Chat is unlimited on the paid plan, but your real monthly cost depends on how heavily you use credit-based features.'
       : 'Your real monthly cost depends on how heavily you use credit-based features.';
-    return `${productName} uses ${model}. The paid plan starts at ${price} per month and includes ${credits} credits that can be spent on images, videos, voice messages, and calls. ${chatBit}`;
+    return `${productName} uses ${model}. The paid plan starts at ${price} per month and includes ${credits.toLocaleString('en-US')} credits that can be spent on images, videos, voice messages, and calls. ${chatBit}`;
   }
 
   if (price && pricingModel === 'subscription_only') {
@@ -79,32 +95,71 @@ export function buildPageIntro(input: {
   return null;
 }
 
-/** Short “Is X expensive?” interpretation for the benchmark section. */
-export function buildMarketIntro(input: {
+/** Factual “Is X expensive?” lead — numbers only, no editorial spin. */
+export function buildMarketAutoLead(input: {
   productName: string;
   advertisedMonthly: number | null;
-  categoryAvgSubscription: number | null;
+  typicalMonthlyPrice: number | null;
   currency: string;
   cheaperPct: number | null;
 }): string | null {
-  const { productName, advertisedMonthly, categoryAvgSubscription, currency, cheaperPct } = input;
+  const { productName, advertisedMonthly, typicalMonthlyPrice, currency, cheaperPct } = input;
   if (advertisedMonthly == null) return null;
 
   const price = money(advertisedMonthly, currency);
-  const avg =
-    categoryAvgSubscription != null ? `~${money(categoryAvgSubscription, currency)}` : null;
+  const typical =
+    typicalMonthlyPrice != null ? `~${money(typicalMonthlyPrice, currency)}` : null;
 
-  if (cheaperPct != null && avg) {
-    if (cheaperPct >= 8) {
-      return `${productName}’s ${price} starting price is below the ${avg} category average, but subscription price alone doesn’t tell the full story. Heavy image and video use can increase the real monthly cost considerably.`;
+  if (cheaperPct != null && typical) {
+    // “About average” is shown under the chart — don’t repeat it in the body.
+    // Editor commentary (marketPositionCommentary) still joins/shows on its own.
+    if (Math.abs(cheaperPct) <= 3) {
+      return null;
     }
-    if (cheaperPct <= -8) {
-      return `${productName}’s ${price} starting price sits above the ${avg} category average. Subscription price alone doesn’t tell the full story — credit-based media use can push the real monthly cost higher still.`;
+    if (cheaperPct > 3) {
+      return `${productName}’s ${price} starting price is ${cheaperPct}% cheaper than the ${typical} typical price.`;
     }
-    return `${productName}’s ${price} starting price is close to the ${avg} category average, but subscription price alone doesn’t tell the full story. Heavy image and video use can increase the real monthly cost considerably.`;
+    return `${productName}’s ${price} starting price is ${Math.abs(cheaperPct)}% more expensive than the ${typical} typical price.`;
   }
 
-  return `${productName}’s ${price} starting price is only the entry point. Your real monthly cost depends on how much you use credit-based features like images, video, and voice.`;
+  return `${productName}’s ${price} starting price is the advertised entry point.`;
+}
+
+/** Short “Is X expensive?” block — auto lead + default interpretive closer. */
+export function buildMarketIntro(input: {
+  productName: string;
+  advertisedMonthly: number | null;
+  typicalMonthlyPrice: number | null;
+  currency: string;
+  cheaperPct: number | null;
+}): string | null {
+  const lead = buildMarketAutoLead(input);
+  if (!lead) return null;
+
+  const { cheaperPct, typicalMonthlyPrice } = input;
+  if (cheaperPct != null && typicalMonthlyPrice != null) {
+    if (cheaperPct > 3) {
+      return `${lead} Subscription price alone doesn’t tell the full story. Heavy image and video use can increase the real monthly cost considerably.`;
+    }
+    return `${lead} Subscription price alone doesn’t tell the full story — credit-based media use can push the real monthly cost higher still.`;
+  }
+
+  return `${lead} Your real monthly cost depends on how much you use credit-based features like images, video, and voice.`;
+}
+
+/** Join auto factual lead with optional manual commentary. */
+export function joinAutoAndCommentary(
+  autoLead: string | null | undefined,
+  commentary: string | null | undefined,
+  fallback?: string | null,
+): string | null {
+  const lead = String(autoLead ?? '').trim();
+  const note = String(commentary ?? '').trim();
+  if (lead && note) return `${lead} ${note}`;
+  if (note) return note;
+  if (lead) return lead;
+  const fb = String(fallback ?? '').trim();
+  return fb || null;
 }
 
 export function buildPlansIntro(
@@ -116,11 +171,14 @@ export function buildPlansIntro(
   const hasFree = plans.some((p) => p.isFree);
   if (paid.length === 0 && !hasFree) return null;
 
-  const primary = primaryPaid(plans);
+  const primary = startingPaid(plans);
   const monthly = primary?.billing?.monthly?.monthlyPrice ?? null;
   const yearlyMonthly = primary?.billing?.yearly?.monthlyPrice ?? null;
   const credits = primary?.includedCredits ?? null;
   const currency = 'USD';
+  const freeCol = plans.find((p) => p.isFree);
+  const freeAccessLabel =
+    freeCol?.freeAccessSource === 'testing' ? 'free access' : 'a free plan';
 
   if (paid.length === 1 && hasFree && primary && monthly != null) {
     const annualBit =
@@ -131,30 +189,30 @@ export function buildPlansIntro(
           : '';
     const creditBit =
       credits != null && credits > 0
-        ? `, and includes ${credits} shared credits each month`
+        ? `, and includes ${credits.toLocaleString('en-US')} shared credits each month`
         : '';
-    return `${productName} has a free plan and one paid ${primary.name} plan. ${primary.name} costs ${money(monthly, currency)} monthly${annualBit}${creditBit}.`;
+    return `${productName} has ${freeAccessLabel} and one paid ${primary.name} plan. ${primary.name} costs ${money(monthly, currency)} monthly${annualBit}${creditBit}.`;
   }
 
   const planPhrase =
     paid.length === 0
-      ? 'a free plan'
+      ? freeAccessLabel
       : paid.length === 1 && hasFree
-        ? `a free plan and one paid ${paid[0].name} plan`
+        ? `${freeAccessLabel} and one paid ${paid[0]!.name} plan`
         : paid.length === 1
-          ? `a paid ${paid[0].name} plan`
+          ? `a paid ${paid[0]!.name} plan`
           : hasFree
-            ? `a free plan plus ${paid.map((p) => p.name).join(', ')}`
+            ? `${freeAccessLabel} plus ${paid.map((p) => p.name).join(', ')}`
             : paid.length === 2
-              ? `${paid[0].name} and ${paid[1].name}`
+              ? `${paid[0]!.name} and ${paid[1]!.name}`
               : `${paid
                   .slice(0, -1)
                   .map((p) => p.name)
-                  .join(', ')}, and ${paid[paid.length - 1].name}`;
+                  .join(', ')}, and ${paid[paid.length - 1]!.name}`;
 
   const creditBit =
     credits != null && credits > 0
-      ? ` Paid plans include ${credits} shared credits each month for images, videos, voice, and other features.`
+      ? ` The starting ${primary?.name ?? 'paid'} plan includes ${credits.toLocaleString('en-US')} shared credits each month for images, videos, voice, and other features.`
       : ' Paid plans include a shared monthly credit pool for media features.';
   const annualBit = yearlySavings
     ? ' Annual billing is cheaper, but features and credit allowance stay the same.'
@@ -163,26 +221,33 @@ export function buildPlansIntro(
   return `${productName} has ${planPhrase}.${creditBit}${annualBit}`.trim();
 }
 
-export function buildUsageIntro(productName: string): string {
-  return `The advertised subscription price only tells part of the story. We estimate what light, regular, and heavy ${productName} users would actually spend after accounting for credit usage.`;
+export function buildUsageIntro(_productName?: string): string {
+  return "The subscription price isn't always what you'll really spend. We estimate the monthly cost for light, regular, and heavy users based on how many paid features they use.";
 }
 
 export function buildFeatureCostsIntro(): string {
-  return 'Credit costs vary a lot by feature. Here’s what we measured for images, videos, voice messages, phone calls, and custom characters.';
+  return 'Dollar prices are estimates based on the best-value credit pack. The credit cost is shown below each feature.';
 }
 
-export function buildCompareIntro(input: {
-  productName: string;
-  cheaperPct: number | null;
+export function buildFreeVsPaidIntro(): string {
+  return 'See what you get with each plan.';
+}
+
+export function buildCompareIntro(_input?: {
+  productName?: string;
+  cheaperPct?: number | null;
 }): string {
-  const { productName, cheaperPct } = input;
-  if (cheaperPct != null && cheaperPct >= 8) {
-    return `${productName} looks strong on subscription price, but the full picture depends on usage. Here’s how it compares with category averages across plans, real-world cost, and individual features.`;
-  }
-  if (cheaperPct != null && cheaperPct <= -8) {
-    return `${productName} starts higher than average on subscription price. Here’s the full comparison across plans, real-world cost, and individual features.`;
-  }
-  return `Here’s how ${productName} compares with category averages across subscription price, real-world usage cost, and individual features.`;
+  return 'Here’s how it compares with typical prices across plans, real-world cost, and individual features.';
+}
+
+/** Drop legacy CMS boilerplate we no longer want on the public page. */
+export function isLegacyPricingBoilerplate(text: string | null | undefined): boolean {
+  const t = String(text ?? '').trim();
+  if (!t) return false;
+  return (
+    /looks strong on subscription price/i.test(t)
+    || /about average for the category \(around/i.test(t)
+  );
 }
 
 export function buildHermanTake(input: {
@@ -197,7 +262,7 @@ export function buildHermanTake(input: {
     && regularUseMonthly != null
     && regularUseMonthly > advertisedMonthly * 1.4
   ) {
-    return `${productName} looks cheap at first, but the value depends heavily on how much media you generate. It’s good value for chat-focused users; heavy image and video users should pay much more attention to credit costs.`;
+    return `${productName} looks cheap at first, but the value depends heavily on how much media you generate. It’s good value for chat-focused users, while heavy image and video users can spend much more once they start buying extra credits.`;
   }
   if (advertisedMonthly != null) {
     return `${productName}’s ${money(advertisedMonthly, currency)} starting price is only part of the story. Check the usage estimates above before deciding whether it’s good value for how you actually use the app.`;
@@ -205,10 +270,6 @@ export function buildHermanTake(input: {
   return `Pricing value on ${productName} depends on how you use credit-based features. Use the estimates above to match the plan to your habits.`;
 }
 
-export function freeVsPaidHeading(plans: PricingPlanColumn[]): string {
-  const hasFree = plans.some((p) => p.isFree);
-  const paid = paidPlans(plans);
-  if (hasFree && paid.length >= 1) return 'Free vs. paid';
-  if (paid.length > 1) return 'Plan comparison';
-  return 'What’s included';
+export function freeVsPaidHeading(_plans?: PricingPlanColumn[]): string {
+  return 'What’s included in each plan';
 }

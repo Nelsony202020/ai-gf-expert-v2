@@ -215,7 +215,7 @@ export function SimpleFeatureCosts({
     <>
       {table}
       {editingFamily && (
-        <FeatureVariantsModal
+        <SimpleFeatureCostsEditor
           family={editingFamily}
           costs={costs}
           snapshotId={snapshotId}
@@ -259,7 +259,7 @@ export function SimpleFeatureCosts({
   );
 }
 
-function FeatureVariantsModal({
+export function SimpleFeatureCostsEditor({
   family,
   costs,
   snapshotId,
@@ -378,8 +378,9 @@ function FeatureVariantsModal({
           {family.key === 'video_generation' ? (
             <>
               One row per price point. For model×duration tables use <strong>Model</strong> +{' '}
-              <strong>Seconds</strong> (e.g. Lite + 5). For separate modalities like &quot;Video with audio&quot;, leave
-              Model empty and use <strong>Label</strong> instead.
+              <strong>Seconds</strong> (e.g. Spicy 1.0 + 10) and enter the <strong>coin cost for that whole clip</strong>{' '}
+              (unit stays per generation). Only use per second when the app prices by the second (e.g. 1.2 credits/sec).
+              Estimates always pick the cheapest variant.
             </>
           ) : family.key === 'standard_image' ? (
             <>One row per price point. Use <strong>Model</strong> for tiered image pricing (e.g. Standard vs Premium).</>

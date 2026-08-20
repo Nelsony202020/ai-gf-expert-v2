@@ -54,7 +54,7 @@ const jsonLdGraph = buildWebPageSchema({
 });
 ---
 
-<BaseLayout title="About Us" description={aboutDescription}>
+<BaseLayout title="About Us" description={aboutDescription} theme="core">
   <JsonLd slot="head" graph={jsonLdGraph} />
   <Header />
   <main class="about-page">

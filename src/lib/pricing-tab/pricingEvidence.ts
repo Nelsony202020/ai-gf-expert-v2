@@ -159,6 +159,7 @@ export function draftPricingEvidence(product: {
       alt: `${product.name} top-up pricing screenshot`,
       caption: `${product.name} credit top-ups — verified August 2026`,
     },
+    featureCosts: null,
   };
 }
 
@@ -239,11 +240,33 @@ export async function resolvePricingEvidence(input: {
       }
     : null;
 
+  const featureImg = images.find(
+    (img) =>
+      classifyPricingShot(img) === 'feature_costs'
+      && img.id !== mainImg.id
+      && img.id !== topUpImg?.id,
+  ) ?? images.find((img) => classifyPricingShot(img) === 'feature_costs') ?? null;
+
+  const featureCosts: EvidenceShot | null = featureImg
+    ? {
+        src: featureImg.src,
+        alt:
+          featureImg.alt === 'Pricing screenshot'
+            ? `${input.productName} feature costs screenshot`
+            : featureImg.alt,
+        caption:
+          featureImg.caption && featureImg.caption.toLowerCase() !== 'pricing proof'
+            ? featureImg.caption
+            : `${input.productName} feature costs — ${verifiedLabel.replace(/^Pricing /, '')}`,
+      }
+    : null;
+
   return {
     verifiedLabel,
     capturedLabel,
     sourceUrl,
     main,
     topUps,
+    featureCosts,
   };
 }

@@ -86,6 +86,7 @@ export const productSchema = z.object({
   name: z.string().min(1).max(120),
   slug: slugSchema,
   status: productStatus,
+  productType: z.enum(['ai_girlfriend_app', 'nsfw_chatbot']).optional(),
   tagline: z.string().max(200).optional(),
   websiteUrl: httpUrl.optional(),
   youtubeReviewUrl: httpUrl.optional(),
@@ -300,9 +301,16 @@ export const planAllowanceSchema = z.object({
   ]),
   quantity: z.number().nonnegative().optional(),
   unit: z.string().max(40).optional(),
-  resetInterval: z.enum(['day', 'month', 'billing_cycle', 'one_time', 'none']).optional(),
+  resetInterval: z.enum(['day', 'week', 'month', 'billing_cycle', 'one_time', 'none']).optional(),
   notes: z.string().max(300).optional(),
   evidenceMediaIds: z.array(z.string()).optional(),
+  afterAllowance: z
+    .object({
+      type: z.enum(['shared_credits', 'per_use', 'unavailable', 'unknown']),
+      creditCost: z.number().nonnegative().optional(),
+      unit: z.string().max(40).optional(),
+    })
+    .optional(),
 });
 export type PlanAllowanceInput = z.infer<typeof planAllowanceSchema>;
 
@@ -398,6 +406,47 @@ export const PRICING_SNAPSHOT_STATUSES = [
   'rejected',
 ] as const;
 
+/** Editorial copy stored on pricingSnapshots.pageCopy — interpretation only. */
+export const pricingPageCopyPrivateNotesSchema = z.object({
+  introduction: z.string().max(2000).optional(),
+  marketPositionCommentary: z.string().max(2000).optional(),
+  plansNote: z.string().max(1000).optional(),
+  realWorldCostCommentary: z.string().max(2000).optional(),
+  comparisonCommentary: z.string().max(2000).optional(),
+  expertOpinion: z.string().max(4000).optional(),
+});
+
+export const pricingPageCopySchema = z.object({
+  introduction: z.string().max(2000).optional(),
+  marketPositionCommentary: z.string().max(2000).optional(),
+  plansNote: z.string().max(1000).optional(),
+  realWorldCostCommentary: z.string().max(2000).optional(),
+  comparisonCommentary: z.string().max(2000).optional(),
+  expertOpinion: z.string().max(4000).optional(),
+  /** @deprecated Kept optional so old snapshot JSON still parses; unused in UI. */
+  bestFor: z.string().max(200).optional(),
+  /** @deprecated Kept optional so old snapshot JSON still parses; unused in UI. */
+  watchOut: z.string().max(200).optional(),
+  /** Editor-only scratch notes — never shown on the public Pricing tab. */
+  privateNotes: pricingPageCopyPrivateNotesSchema.optional(),
+});
+
+export type PricingPageCopy = z.infer<typeof pricingPageCopySchema>;
+export type PricingPageCopyPrivateNotes = z.infer<typeof pricingPageCopyPrivateNotesSchema>;
+
+/** Cached AI research notes for Pricing page copy (on the snapshot). */
+export const pricingAiNotesSchema = z.object({
+  importantFindings: z.array(z.string().max(300)).max(6),
+  pros: z.array(z.string().max(300)).max(3),
+  watchOuts: z.array(z.string().max(300)).max(3),
+  inputHash: z.string().max(128),
+  promptVersion: z.string().max(40),
+  model: z.string().max(80),
+  generatedAt: z.number(),
+});
+
+export type PricingAiNotes = z.infer<typeof pricingAiNotesSchema>;
+
 export const pricingSnapshotSchema = z.object({
   status: z.enum(PRICING_SNAPSHOT_STATUSES),
   pricingModel: z.enum(PRICING_MODELS).optional(),
@@ -428,6 +477,10 @@ export const pricingSnapshotSchema = z.object({
       }),
     )
     .optional(),
+  /** Editorial interpretation for the public Pricing tab (not calculated facts). */
+  pageCopy: pricingPageCopySchema.optional(),
+  /** Cached AI pricing research notes for page-copy editing. */
+  aiPricingNotes: pricingAiNotesSchema.optional(),
 });
 
 export const FEATURE_TYPES = [

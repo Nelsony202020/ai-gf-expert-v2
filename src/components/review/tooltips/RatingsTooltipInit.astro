@@ -363,6 +363,12 @@
 
     const panel = template.content.firstElementChild.cloneNode(true) as HTMLElement;
     panel.classList.add('ratings-tooltip-panel--open');
+    // <template> + loading="lazy" leaves cloned images unfetched in Chrome.
+    panel.querySelectorAll('img').forEach((img) => {
+      img.loading = 'eager';
+      const src = img.getAttribute('src');
+      if (src) img.setAttribute('src', src);
+    });
 
     const portal = document.getElementById('ratings-tooltip-portal');
     if (!portal) return;

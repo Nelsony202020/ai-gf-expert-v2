@@ -23,6 +23,8 @@ export async function validateProductForPublish(productId: string): Promise<Publ
       $: { where: { id: productId } },
       review: { author: {}, factChecker: {} },
       subscriptionPlans: {},
+      creditPackages: {},
+      featureCosts: {},
       paymentProfile: {},
       affiliateLinks: {},
       media: {},
@@ -74,6 +76,19 @@ export async function validateProductForPublish(productId: string): Promise<Publ
     }
   }
   if (!product.paymentProfile) warnings.push('No payment-methods profile recorded.');
+
+  // Incomplete own pricing that would force borrowing another product's data
+  const pricedPlans = plans.filter((p: any) => {
+    const opts = Array.isArray(p.billingOptions) ? p.billingOptions : [];
+    const hasNested = opts.some((o: any) => o && Number(o.price) > 0);
+    const hasLegacy = Number(p.price) > 0;
+    return hasNested || hasLegacy;
+  });
+  if (pricedPlans.length === 0) {
+    errors.push(
+      'Pricing data is incomplete — no priced subscription plans. Do not publish with borrowed pricing from another product.',
+    );
+  }
 
   // Affiliate link validity
   const activeLinks = (product.affiliateLinks ?? []).filter((l: any) => l.active);

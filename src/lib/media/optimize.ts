@@ -68,7 +68,7 @@ export function optimizedLogoUrl(url: string | undefined | null, width = 128): s
 
 /** Large hero / featured art (review gallery, directory cards). */
 export function optimizedHeroImageUrl(url: string | undefined | null, displayWidth = 960): string {
-  return optimizedImageUrl(url, { width: displayWidth, quality: 85 });
+  return optimizedImageUrl(url, { width: displayWidth, quality: 80, format: 'webp' });
 }
 
 /** Drop Bunny Optimizer params so a pasted/admin URL is the real file. */
@@ -120,6 +120,6 @@ export function optimizedCardImageUrl(url: string | undefined | null, displayWid
 export function imageSrcSet(url: string, widths: number[], quality = 80): string {
   return widths
     .filter((w) => w > 0)
-    .map((w) => `${optimizedImageUrl(url, { width: w, quality, dpr: 1 })} ${w}w`)
+    .map((w) => `${optimizedImageUrl(url, { width: w, quality, dpr: 1, format: 'webp' })} ${w}w`)
     .join(', ');
 }

@@ -82,7 +82,7 @@
 
 /* Roundup-matched tab page titles (FAQ / Compare size) */
 .review-tab-title {
-  margin: 0;
+  margin: 0 0 1.5rem;
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(2rem, 4vw, 2.75rem);
   font-weight: 900;
@@ -91,9 +91,15 @@
   color: var(--color-on-surface);
 }
 
+@media (min-width: 768px) {
+  .review-tab-title {
+    margin-bottom: 2.5rem;
+  }
+}
+
 /* Roundup-matched section titles (Final recommendation / How we test size) */
 .review-section-title {
-  margin: 0;
+  margin: 0 0 0.75rem;
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(1.625rem, 3vw, 2.125rem);
   font-weight: 900;

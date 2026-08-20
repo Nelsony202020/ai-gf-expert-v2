@@ -71,6 +71,8 @@ const _schema = i.schema({
       // draft | in_review | scheduled | published | archived
       status: i.string().indexed(),
       tagline: i.string().optional(),
+      /** ai_girlfriend_app | nsfw_chatbot — drives real-world spend benchmarks */
+      productType: i.string().optional(),
       websiteUrl: i.string().optional(),
       youtubeReviewUrl: i.string().optional(),
       dateAdded: i.date(),
@@ -323,6 +325,13 @@ const _schema = i.schema({
       evidenceMediaIds: i.json().optional(), // pricing-page / checkout screenshots
       // Editor-defined usage personas for real-world spend estimates
       usageScenarios: i.json().optional(),
+      // Editorial copy for the public Pricing tab (interpretation only — not facts)
+      // { introduction?, marketPositionCommentary?, plansNote?, realWorldCostCommentary?,
+      //   comparisonCommentary?, expertOpinion?, bestFor?, watchOut?, privateNotes? }
+      pageCopy: i.json().optional(),
+      // Cached AI research notes for Pricing page copy editing
+      // { importantFindings[], pros[], watchOuts[], inputHash, promptVersion, model, generatedAt }
+      aiPricingNotes: i.json().optional(),
       createdAt: i.date(),
       updatedAt: i.date(),
       deletedAt: i.date().optional(),
@@ -791,8 +800,8 @@ const _schema = i.schema({
       tooltipDefinition: i.string(),
       ctaLabel: i.string().optional(), // Tooltip link text; fallback "Read full definition →"
       fullDefinition: i.json(), // TipTap JSONDoc
-      aliases: i.json(), // string[] — matching phrases for auto-tooltips
-      displayAliases: i.json().optional(), // string[] — public "Also called" labels only
+      aliases: i.json(), // string[] — tooltip match TRIGGERS (not shown as other names)
+      displayAliases: i.json().optional(), // string[] — true other names for tooltip (tokens/gems/credits)
       category: i.string().indexed(),
       status: i.string().indexed(), // draft | published
       autoTooltip: i.boolean(),

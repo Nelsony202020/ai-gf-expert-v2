@@ -10,8 +10,13 @@ import type {
 } from './types';
 import { buildCreditMixer } from './creditMixer';
 import {
+  freeAccessCellLabel,
+  type PricingFreeAccess,
+} from './freeAccessShared';
+import {
   bestValuePackage,
   fmtMoney,
+  formatUseCount,
   packageTotalCredits,
   pricePerCredit,
   type CreditPackageLike,
@@ -21,20 +26,51 @@ import {
 import { buildPlansIntro as buildPlansIntroCopy } from './sectionCopy';
 
 const CREDIT_POOL_NOTE =
-  'Credits are shared across features. Use them all on one feature, or split them across images, video, voice messages, and calls.';
+  'Your credits are shared across paid features. Spend them all on one feature, or mix them however you want.';
 
 const CREDIT_FEATURE_DEFS: Array<{ key: string; labels: string[]; label: string; icon: string }> = [
-  { key: 'images', labels: ['Images'], label: 'Images', icon: 'image' },
-  { key: 'videos', labels: ['Video', 'Videos'], label: 'Videos', icon: 'videocam' },
-  { key: 'voice_messages', labels: ['Voice messages'], label: 'Voice messages', icon: 'graphic_eq' },
+  { key: 'images', labels: ['Images', 'Standard images'], label: 'Standard images', icon: 'image' },
+  {
+    key: 'premium_images',
+    labels: ['Premium images'],
+    label: 'Premium images',
+    icon: 'photo',
+  },
+  { key: 'videos', labels: ['Video', 'Videos', '10-sec videos'], label: '10-sec videos', icon: 'videocam' },
+  { key: 'voice_messages', labels: ['Voice messages'], label: 'Voice messages', icon: 'mic' },
   { key: 'voice_calls', labels: ['Voice calls'], label: 'Voice calls', icon: 'call' },
   {
     key: 'custom_character',
-    labels: ['Custom character', 'Custom characters', 'Character creation'],
-    label: 'Custom character',
-    icon: 'person_edit',
+    labels: ['Custom character', 'Custom characters', 'Character creation', 'Characters'],
+    label: 'Characters',
+    icon: 'person',
   },
 ];
+
+/** Large figure for the credit-value grid (number primary, label secondary). */
+function skimAmountFromChannel(ch: {
+  key: string;
+  format: string;
+  unitLabel: string;
+  maxUnits: number;
+}): string {
+  if (ch.format === 'minutes' || ch.unitLabel === 'min') {
+    const mins = `${formatUseCount(ch.maxUnits)} min`;
+    return ch.key === 'voice_calls' ? `~${mins}` : mins;
+  }
+  const base = formatUseCount(Math.floor(ch.maxUnits));
+  if (ch.key === 'videos' || ch.key === 'voice_calls') return `~${base}`;
+  return base;
+}
+
+function skimAmountFromValue(value: string): string {
+  const cleaned = value.replace(/[≈]/g, '~').replace(/\/mo$/i, '').trim();
+  const minMatch = cleaned.match(/^([~]?\s*[\d,.]+)\s*min\b/i);
+  if (minMatch) return `${minMatch[1].replace(/\s/g, '')} min`;
+  const numMatch = cleaned.match(/^([~]?\s*[\d,.]+)/);
+  if (numMatch) return numMatch[1].replace(/\s/g, '');
+  return cleaned;
+}
 
 export function buildPlansIntro(
   productName: string,
@@ -60,7 +96,7 @@ export function looksLikeCreditEstimate(value: string): boolean {
   if (!v || v === '—' || /^unlimited$/i.test(v) || /^included$/i.test(v)) return false;
   if (/uses\s+credits/i.test(v)) return true;
   if (/≈|~/.test(v)) return true;
-  if (/\b(videos?|hrs?|min|images?|characters?)\b/i.test(v) && /\/\s*mo/i.test(v)) return true;
+  if (/\b(videos?|hrs?|min|images?|characters?|standard images|premium images)\b/i.test(v)) return true;
   if (/^\d+(\.\d+)?\s*\/\s*mo$/i.test(v)) return true;
   return false;
 }
@@ -96,8 +132,8 @@ function isSharedCreditFeatureValue(value: string): boolean {
 
 function sharedCreditChannelKeys(
   plan: PricingPlanColumn,
-): Array<'images' | 'videos' | 'voice_messages' | 'voice_calls' | 'custom_character'> | null {
-  const keys: Array<'images' | 'videos' | 'voice_messages' | 'voice_calls' | 'custom_character'> = [];
+): Array<'images' | 'premium_images' | 'videos' | 'voice_messages' | 'voice_calls' | 'custom_character'> | null {
+  const keys: Array<'images' | 'premium_images' | 'videos' | 'voice_messages' | 'voice_calls' | 'custom_character'> = [];
   let sawRow = false;
   for (const def of CREDIT_FEATURE_DEFS) {
     const row = findPlanRow(plan, def.labels);
@@ -140,9 +176,8 @@ function buildPlanBudget(
         key: def.key,
         label: def.label,
         icon: def.icon,
-        value: /≈|~/.test(row.value) || looksLikeCreditEstimate(row.value)
-          ? (row.value.startsWith('≈') || row.value.startsWith('~') ? row.value : `≈${value}`)
-          : value,
+        value,
+        amount: skimAmountFromValue(value),
         sublabel: row.sublabel,
       });
     }
@@ -155,6 +190,7 @@ function buildPlanBudget(
           label: ch.label,
           icon: ch.icon,
           value: ch.maxLabel,
+          amount: skimAmountFromChannel(ch),
           sublabel: ch.sublabel ?? undefined,
         }))
       : items;
@@ -165,7 +201,9 @@ function buildPlanBudget(
     isFree: plan.isFree,
     credits,
     creditsLine:
-      credits != null && credits > 0 ? `Included each month: ${credits} credits` : null,
+      credits != null && credits > 0
+        ? `${credits.toLocaleString('en-US')} credits/month`
+        : null,
     items: skimItems,
     mixer,
     highlights: buildPlanHighlights(plan),
@@ -174,20 +212,66 @@ function buildPlanBudget(
 
 export function finalizePlanColumns(columns: PricingPlanColumn[]): PricingPlanColumn[] {
   return columns.map((plan) => {
-    const includedCredits = parseIncludedCreditsFromRows(plan.rows);
+    const includedCredits = plan.isFree
+      ? null
+      : plan.includedCredits ?? parseIncludedCreditsFromRows(plan.rows);
+    const isTestingFree = plan.freeAccessSource === 'testing';
     const summaryLine = plan.isFree
-      ? 'Limited daily usage'
+      ? isTestingFree
+        ? 'Verified free access limits'
+        : 'Limited free usage'
       : includedCredits != null
-        ? `${includedCredits} credits/month`
+        ? `${includedCredits.toLocaleString('en-US')} credits/month`
         : plan.summaryLine || 'Paid plan';
     return {
       ...plan,
-      displayName: plan.isFree ? 'Free' : plan.name,
-      includedCredits,
+      displayName: plan.isFree
+        ? isTestingFree
+          ? 'Free access'
+          : 'Free'
+        : plan.name,
+      name: plan.isFree
+        ? isTestingFree
+          ? 'Free access'
+          : 'Free'
+        : plan.name,
+      includedCredits: plan.isFree ? null : includedCredits,
       summaryLine,
       tone: 'neutral' as const,
     };
   });
+}
+
+/** Build a Free access column from testing evidence (not a subscriptionPlan). */
+export function buildFreeAccessPlanColumn(freeAccess: PricingFreeAccess): PricingPlanColumn {
+  const rows: PricingPlanColumn['rows'] = [
+    { label: 'Chat', value: freeAccessCellLabel(freeAccess.chat) },
+    { label: 'Images', value: freeAccessCellLabel(freeAccess.images) },
+    { label: 'Video', value: freeAccessCellLabel(freeAccess.video) },
+    { label: 'Voice', value: freeAccessCellLabel(freeAccess.voice) },
+    { label: 'Custom character', value: freeAccessCellLabel(freeAccess.characters) },
+  ];
+  if (freeAccess.trialWithoutCreditCard != null) {
+    rows.push({
+      label: 'Trial without card',
+      value: freeAccess.trialWithoutCreditCard ? 'Yes' : 'No',
+    });
+  }
+  return {
+    key: 'free-access-testing',
+    name: 'Free access',
+    displayName: 'Free access',
+    isFree: true,
+    freeAccessSource: 'testing',
+    isRecommended: false,
+    priceLabel: '$0',
+    priceSub: 'No subscription required',
+    summaryLine: 'Verified free access limits',
+    includedCredits: null,
+    tone: 'neutral',
+    billing: null,
+    rows,
+  };
 }
 
 export function buildCreditPool(
@@ -224,7 +308,7 @@ export function buildCreditPool(
 
   return {
     heading: 'What your plan can buy',
-    note: active.mixer?.lead ?? CREDIT_POOL_NOTE,
+    note: CREDIT_POOL_NOTE,
     defaultPlanKey: defaultPlan.key,
     defaultInterval,
     byPlan,
@@ -245,20 +329,13 @@ export function buildLimitRows(plans: PricingPlanColumn[]): PricingLimitRow[] {
     creditGated: boolean;
   }> = [
     { key: 'chat', labels: ['Chat'], label: 'Chat', icon: 'chat', creditGated: false },
-    { key: 'images', labels: ['Images'], label: 'Images', icon: 'image', creditGated: true },
+    { key: 'images', labels: ['Images', 'Standard images'], label: 'Images', icon: 'image', creditGated: true },
     { key: 'videos', labels: ['Video', 'Videos'], label: 'Video', icon: 'videocam', creditGated: true },
     {
-      key: 'voice_messages',
-      labels: ['Voice messages'],
-      label: 'Voice messages',
-      icon: 'graphic_eq',
-      creditGated: true,
-    },
-    {
-      key: 'voice_calls',
-      labels: ['Voice calls'],
-      label: 'Voice calls',
-      icon: 'call',
+      key: 'voice',
+      labels: ['Voice', 'Voice messages', 'Voice calls'],
+      label: 'Voice',
+      icon: 'mic',
       creditGated: true,
     },
     {
@@ -289,34 +366,43 @@ export function buildLimitRows(plans: PricingPlanColumn[]): PricingLimitRow[] {
 }
 
 export function buildBillingToggle(plans: PricingPlanColumn[]): PricingBillingToggle {
-  const paidWithYearly = plans.filter((p) => !p.isFree && p.billing?.yearly);
-  const paidWithMonthly = plans.filter((p) => !p.isFree && p.billing?.monthly);
-  const show = paidWithMonthly.length > 0 && paidWithYearly.length > 0;
-  const savings = paidWithYearly
+  const paid = plans.filter((p) => !p.isFree);
+  const hasMonthly = paid.some((p) => p.billing?.monthly);
+  const hasQuarterly = paid.some((p) => p.billing?.quarterly);
+  const hasYearly = paid.some((p) => p.billing?.yearly);
+
+  const intervals: PricingBillingToggle['intervals'] = [];
+  if (hasMonthly) intervals.push({ key: 'monthly', label: 'Monthly' });
+  if (hasQuarterly) intervals.push({ key: 'quarterly', label: 'Quarterly' });
+  if (hasYearly) intervals.push({ key: 'yearly', label: 'Annual' });
+
+  const savings = paid
     .map((p) => p.billing?.yearly?.savingsPercent)
     .filter((n): n is number => n != null && n > 0);
   const maxYearlySavingsPercent = savings.length > 0 ? Math.round(Math.max(...savings)) : null;
 
   return {
-    show,
-    defaultInterval: 'monthly',
+    show: intervals.length > 1,
+    defaultInterval: hasMonthly ? 'monthly' : intervals[0]?.key ?? 'monthly',
+    intervals,
     monthlyLabel: 'Monthly',
-    // Savings appear under the plan price when Annual is selected — keep the toggle plain.
     yearlyLabel: 'Annual',
     maxYearlySavingsPercent,
     annualBadge: null,
   };
 }
 
-function packageCurrency(pkg: CreditPackageLike, fallback: string): string {
-  const c = String(pkg.currency ?? '').trim().toUpperCase();
-  return c.length === 3 ? c : fallback;
+function packageCurrency(_pkg: CreditPackageLike, fallback: string): string {
+  // Temporary: treat package price numbers as the product display currency (USD)
+  // even when InstantDB still stores EUR on the pack row.
+  return fallback || 'USD';
 }
 
 export function buildTopUps(
   packages: CreditPackageLike[],
   currency: string,
 ): PricingTopUps | null {
+  const displayCurrency = currency || 'USD';
   const active = packages
     .filter((p) => p.active !== false)
     .map((pkg) => {
@@ -337,7 +423,7 @@ export function buildTopUps(
         rate,
         base,
         bonus,
-        currency: packageCurrency(pkg, currency),
+        currency: packageCurrency(pkg, displayCurrency),
       };
     })
     .filter((row): row is NonNullable<typeof row> => row != null)
@@ -356,6 +442,8 @@ export function buildTopUps(
           active.find((r) => best && r.pkg === best) ?? active[Math.floor(active.length / 2)]!,
           active[active.length - 1]!,
         ].filter((row, idx, arr) => arr.findIndex((r) => r.credits === row.credits && r.price === row.price) === idx);
+
+  const baselineCreditsLabel = `${baseline.credits.toLocaleString('en-US')}-credit pack`;
 
   const rows: PricingTopUpPackage[] = pick.map((row) => {
     const isBest = Boolean(best && row.pkg === best);
@@ -382,21 +470,17 @@ export function buildTopUps(
       priceLabel: fmtMoney(row.price, row.currency),
       valueLabel,
       isBestValue: isBest,
-      isEstimatePackage: Boolean(best && row.pkg === best),
+      isEstimatePackage: false,
     };
   });
-
-  const estimatePkg = rows.find((r) => r.isEstimatePackage) ?? null;
-  const estimateNote = estimatePkg
-    ? 'Regular-use estimate: We use this pack when calculating the estimated monthly cost.'
-    : null;
 
   return {
     heading: 'Need more credits?',
     intro:
-      'If you use all of your included credits, you can buy extra credit packs. Larger packs usually give you more credits for your money.',
+      'If you run out of credits, you can buy more. Bigger credit packs usually cost less per credit.',
+    valueColumnLabel: `Value vs. ${baselineCreditsLabel}`,
     packages: rows,
-    estimateNote,
+    estimateNote: null,
     truncated: active.length > pick.length,
   };
 }

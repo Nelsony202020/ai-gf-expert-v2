@@ -1,7 +1,7 @@
 // Group feature-cost rows into editor families (Standard image, Video, etc.)
 // and format variant summaries for compact admin display.
 
-import { featureCostRange, type CostRange, type FeatureCostLike } from './calc';
+import { creditsPerDisplayUse, featureCostRange, type CostRange, type FeatureCostLike } from './calc';
 
 export const UNIT_LABELS: Record<string, string> = {
   per_image: 'per image',
@@ -42,7 +42,7 @@ export type ExtractFeatureCategory = (typeof EXTRACT_FEATURE_CATEGORIES)[number]
 export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
   {
     key: 'chat_message',
-    label: 'Price per chat message',
+    label: 'Chat',
     featureTypes: ['chat_message', 'text_message', 'message'],
     defaultFeatureType: 'chat_message',
     defaultUnit: 'per_message',
@@ -50,7 +50,7 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
   },
   {
     key: 'standard_image',
-    label: 'Price per image generation',
+    label: 'Image generation',
     featureTypes: [
       'standard_image',
       'premium_image',
@@ -65,7 +65,7 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
   },
   {
     key: 'voice_message',
-    label: 'Price per voice message',
+    label: 'Voice message',
     featureTypes: ['voice_message'],
     defaultFeatureType: 'voice_message',
     defaultUnit: 'per_message',
@@ -73,7 +73,7 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
   },
   {
     key: 'voice_call',
-    label: 'Price per phone call',
+    label: 'Phone call',
     featureTypes: ['voice_call'],
     defaultFeatureType: 'voice_call',
     defaultUnit: 'per_minute',
@@ -81,7 +81,7 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
   },
   {
     key: 'character_creation',
-    label: 'Price per custom character',
+    label: 'Custom character',
     featureTypes: ['character_creation', 'custom_character', 'custom_ai'],
     defaultFeatureType: 'character_creation',
     defaultUnit: 'per_character',
@@ -89,7 +89,7 @@ export const FEATURE_COST_FAMILIES: readonly FeatureCostFamilyDef[] = [
   },
   {
     key: 'video_generation',
-    label: 'Price per video generation',
+    label: 'Video generation',
     featureTypes: [
       'standard_video',
       'premium_video',
@@ -301,7 +301,7 @@ export function dominantUnit(variants: FeatureCostRow[], fallback: string): stri
   return units.every((u) => u === best) ? best : 'mixed';
 }
 
-/** Cheapest active cost in a type list (for testing autofill / comparisons). */
+/** Cheapest active cost in a type list (lowest credits per display use). */
 export function findCheapestCost<T extends FeatureCostRow>(costs: T[], types: readonly string[]): T | null {
   let best: T | null = null;
   let bestMin = Infinity;
@@ -309,10 +309,10 @@ export function findCheapestCost<T extends FeatureCostRow>(costs: T[], types: re
     if (!isActive(c)) continue;
     if (!types.includes(String(c.featureType ?? ''))) continue;
     if (String(c.featureType ?? '') === 'custom' && !customBelongsToVideo(c)) continue;
-    const range = featureCostRange(c);
-    if (!range || range.min <= 0) continue;
-    if (range.min < bestMin) {
-      bestMin = range.min;
+    const perUse = creditsPerDisplayUse(c);
+    if (!perUse || perUse.min <= 0) continue;
+    if (perUse.min < bestMin) {
+      bestMin = perUse.min;
       best = c;
     }
   }
@@ -323,18 +323,7 @@ export function findCheapestInFamily<T extends FeatureCostRow>(
   costs: T[],
   family: FeatureCostFamilyDef,
 ): T | null {
-  const variants = costsInFamily(costs, family);
-  let best: T | null = null;
-  let bestMin = Infinity;
-  for (const v of variants) {
-    const range = featureCostRange(v);
-    if (!range || range.min <= 0) continue;
-    if (range.min < bestMin) {
-      bestMin = range.min;
-      best = v;
-    }
-  }
-  return best;
+  return findCheapestCost(costs, family.featureTypes);
 }
 
 /** Map an AI-extracted variant or editor row to stored featureCost fields. */

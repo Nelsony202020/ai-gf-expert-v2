@@ -71,7 +71,10 @@ interface EditorState {
   tooltipDefinition: string;
   ctaLabel: string;
   fullDefinition: GlossaryTipTapDoc;
+  /** Match triggers — activate tooltips in prose. */
   aliases: string[];
+  /** True other names — shown in tooltip (tokens / gems / credits). */
+  displayAliases: string[];
   category: string;
   status: 'draft' | 'published';
   autoTooltip: boolean;
@@ -87,6 +90,7 @@ function blankEditor(): EditorState {
     ctaLabel: '',
     fullDefinition: EMPTY_DOC,
     aliases: [],
+    displayAliases: [],
     category: 'General',
     status: 'draft',
     autoTooltip: true,
@@ -104,11 +108,86 @@ function fromEntry(entry: GlossaryEntryRecord): EditorState {
     ctaLabel: entry.ctaLabel ?? '',
     fullDefinition: entry.fullDefinition ?? EMPTY_DOC,
     aliases: [...entry.aliases],
+    displayAliases: [...entry.displayAliases],
     category: entry.category,
     status: entry.status === 'published' ? 'published' : 'draft',
     autoTooltip: entry.autoTooltip !== false,
     wasPublished: entry.status === 'published',
   };
+}
+
+function PhraseChips({
+  label,
+  help,
+  values,
+  draft,
+  onDraftChange,
+  canEdit,
+  onAdd,
+  onRemove,
+  placeholder,
+}: {
+  label: string;
+  help: string;
+  values: string[];
+  draft: string;
+  onDraftChange: (v: string) => void;
+  canEdit: boolean;
+  onAdd: (value: string) => void;
+  onRemove: (value: string) => void;
+  placeholder: string;
+}) {
+  function commit() {
+    const next = draft.trim();
+    if (!next) return;
+    onAdd(next);
+    onDraftChange('');
+  }
+  return (
+    <div className="min-w-0 flex-1">
+      <span className="mb-0.5 block text-xs font-medium text-slate-600 dark:text-slate-400">
+        {label}
+      </span>
+      <p className="mb-1.5 text-[11px] leading-snug text-slate-400">{help}</p>
+      <div className="flex flex-wrap items-center gap-1">
+        {values.map((value) => (
+          <span
+            key={value}
+            className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800"
+          >
+            {value}
+            {canEdit && (
+              <button
+                type="button"
+                className="text-slate-400 hover:text-slate-700"
+                onClick={() => onRemove(value)}
+              >
+                ×
+              </button>
+            )}
+          </span>
+        ))}
+        {canEdit && (
+          <div className="inline-flex items-center gap-1">
+            <TextInput
+              value={draft}
+              placeholder={placeholder}
+              className="!w-36 !py-1 text-xs"
+              onChange={(e) => onDraftChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                commit();
+              }}
+            />
+            <Button variant="secondary" className="!px-2 !py-1 text-[11px]" onClick={commit}>
+              Add
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function GlossaryPage() {
@@ -125,6 +204,7 @@ export function GlossaryPage() {
   const [usageById, setUsageById] = useState<Map<string, GlossaryUsageSummary>>(new Map());
   const [usageLoading, setUsageLoading] = useState(false);
   const [aliasDraft, setAliasDraft] = useState('');
+  const [otherNamesDraft, setOtherNamesDraft] = useState('');
   const [anchorEditing, setAnchorEditing] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [previewTooltip, setPreviewTooltip] = useState(false);
@@ -184,6 +264,7 @@ export function GlossaryPage() {
         r.term.toLowerCase().includes(q) ||
         r.anchor.toLowerCase().includes(q) ||
         r.aliases.some((a) => a.toLowerCase().includes(q)) ||
+        r.displayAliases.some((a) => a.toLowerCase().includes(q)) ||
         r.tooltipDefinition.toLowerCase().includes(q)
       );
     });
@@ -201,8 +282,7 @@ export function GlossaryPage() {
       ctaLabel: editing.ctaLabel.trim(),
       fullDefinition: editing.fullDefinition,
       aliases: editing.aliases,
-      // Until a separate “Other names” UI exists, mirror matching aliases for the public line.
-      displayAliases: editing.aliases,
+      displayAliases: editing.displayAliases,
       category: editing.category,
       status,
       autoTooltip: true,
@@ -307,6 +387,7 @@ export function GlossaryPage() {
           <Button
             onClick={() => {
               setAliasDraft('');
+              setOtherNamesDraft('');
               setAnchorEditing(false);
               setUsageOpen(false);
               setPreviewTooltip(false);
@@ -369,6 +450,7 @@ export function GlossaryPage() {
                     className="cursor-pointer border-b border-slate-50 hover:bg-slate-50/80 dark:border-slate-800 dark:hover:bg-slate-800/40"
                     onClick={() => {
                       setAliasDraft('');
+                      setOtherNamesDraft('');
                       setAnchorEditing(false);
                       setUsageOpen(false);
                       setPreviewTooltip(false);
@@ -530,73 +612,51 @@ export function GlossaryPage() {
               </Field>
             </div>
 
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <span className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
-                  Aliases
-                </span>
-                <div className="flex flex-wrap items-center gap-1">
-                  {editing.aliases.map((alias) => (
-                    <span
-                      key={alias}
-                      className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800"
-                    >
-                      {alias}
-                      {canEdit && (
-                        <button
-                          type="button"
-                          className="text-slate-400 hover:text-slate-700"
-                          onClick={() =>
-                            setEditing((p) =>
-                              p ? { ...p, aliases: p.aliases.filter((a) => a !== alias) } : p,
-                            )
-                          }
-                        >
-                          ×
-                        </button>
-                      )}
-                    </span>
-                  ))}
-                  {canEdit && (
-                    <div className="inline-flex items-center gap-1">
-                      <TextInput
-                        value={aliasDraft}
-                        placeholder="+ Add"
-                        className="!w-28 !py-1 text-xs"
-                        onChange={(e) => setAliasDraft(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key !== 'Enter') return;
-                          e.preventDefault();
-                          const next = aliasDraft.trim();
-                          if (!next) return;
-                          setEditing((p) => {
-                            if (!p) return p;
-                            if (p.aliases.some((a) => a.toLowerCase() === next.toLowerCase())) return p;
-                            return { ...p, aliases: [...p.aliases, next] };
-                          });
-                          setAliasDraft('');
-                        }}
-                      />
-                      <Button
-                        variant="secondary"
-                        className="!px-2 !py-1 text-[11px]"
-                        onClick={() => {
-                          const next = aliasDraft.trim();
-                          if (!next) return;
-                          setEditing((p) => {
-                            if (!p) return p;
-                            if (p.aliases.some((a) => a.toLowerCase() === next.toLowerCase())) return p;
-                            return { ...p, aliases: [...p.aliases, next] };
-                          });
-                          setAliasDraft('');
-                        }}
-                      >
-                        Add
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div className="space-y-4">
+              <PhraseChips
+                label="Triggers"
+                help="Phrases that activate this tooltip in reviews (hyphen variants, plurals, etc.). Not shown as other names."
+                values={editing.aliases}
+                draft={aliasDraft}
+                onDraftChange={setAliasDraft}
+                canEdit={canEdit && !saving}
+                placeholder="+ Add trigger"
+                onAdd={(next) =>
+                  setEditing((p) => {
+                    if (!p) return p;
+                    if (p.aliases.some((a) => a.toLowerCase() === next.toLowerCase())) return p;
+                    return { ...p, aliases: [...p.aliases, next] };
+                  })
+                }
+                onRemove={(value) =>
+                  setEditing((p) =>
+                    p ? { ...p, aliases: p.aliases.filter((a) => a !== value) } : p,
+                  )
+                }
+              />
+              <PhraseChips
+                label="Other names"
+                help="True alternate names shown in the tooltip (e.g. coins, gems, credits). Leave empty when there aren’t any."
+                values={editing.displayAliases}
+                draft={otherNamesDraft}
+                onDraftChange={setOtherNamesDraft}
+                canEdit={canEdit && !saving}
+                placeholder="+ Add other name"
+                onAdd={(next) =>
+                  setEditing((p) => {
+                    if (!p) return p;
+                    if (p.displayAliases.some((a) => a.toLowerCase() === next.toLowerCase())) return p;
+                    return { ...p, displayAliases: [...p.displayAliases, next] };
+                  })
+                }
+                onRemove={(value) =>
+                  setEditing((p) =>
+                    p
+                      ? { ...p, displayAliases: p.displayAliases.filter((a) => a !== value) }
+                      : p,
+                  )
+                }
+              />
             </div>
 
             <div>

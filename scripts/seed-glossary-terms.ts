@@ -10,8 +10,9 @@ import { slugifyGlossaryAnchor, type GlossaryTipTapDoc } from '../src/lib/glossa
 type SeedTerm = {
   term: string;
   category: string;
+  /** Match triggers (hyphen/plural variants). Not shown as other names unless also listed below. */
   aliases?: string[];
-  /** Public “Other names” line; defaults to aliases when omitted. */
+  /** True alternate names for the tooltip “Other names” line. Defaults to [] when omitted. */
   displayAliases?: string[];
   ctaLabel: string;
   tooltipDefinition: string;
@@ -78,6 +79,7 @@ const TERMS: SeedTerm[] = [
     term: 'Unfiltered Roleplay',
     category: 'Chat',
     aliases: ['NSFW Roleplay', 'Adult Roleplay'],
+    displayAliases: ['NSFW Roleplay', 'Adult Roleplay'],
     ctaLabel: 'How unfiltered roleplay works →',
     tooltipDefinition:
       'Roleplay that allows sexual and other adult topics with fewer restrictions. You may also see it called NSFW roleplay or adult roleplay.',
@@ -109,6 +111,7 @@ Some apps have large dedicated femboy sections, while others mix them in with th
     term: 'Futanari',
     category: 'Characters',
     aliases: ['Futa'],
+    displayAliases: ['Futa'],
     ctaLabel: 'What futanari means →',
     tooltipDefinition:
       'An adult anime term for feminine fictional characters with both male and female sexual anatomy. It is often shortened to “futa.”',
@@ -170,6 +173,7 @@ These videos usually cost tokens, so it is worth checking how much each generati
     term: 'In-chat Image Generator',
     category: 'Images',
     aliases: ['in-chat image', 'in-chat images'],
+    displayAliases: [],
     ctaLabel: 'How in-chat images work →',
     tooltipDefinition:
       'An image generator built into the chat, so you can create or receive images of your AI character without leaving the conversation.',
@@ -411,6 +415,7 @@ Most beginners do not need to worry much about this setting unless their images 
     term: 'Steps',
     category: 'Images',
     aliases: ['generation steps', 'sampling steps'],
+    displayAliases: ['generation steps', 'sampling steps'],
     ctaLabel: 'How generation steps work →',
     tooltipDefinition:
       'A setting that controls how many processing rounds the AI uses to create an image. More steps can improve quality, but they also take longer.',
@@ -452,6 +457,7 @@ Also keep in mind that every app handles this setting differently. There is no s
     term: 'RPG',
     category: 'Chat',
     aliases: ['Open-world RPG'],
+    displayAliases: ['Open-world RPG'],
     ctaLabel: 'How RPG roleplay works →',
     tooltipDefinition:
       'RPG stands for role-playing game. In AI chat, it means you are part of a bigger story where you can explore, make choices, and interact with different characters.',
@@ -507,6 +513,7 @@ Looking good is not enough. The AI also needs to listen to you.`,
     term: 'Text-to-Video',
     category: 'Video',
     aliases: ['text to video', 'text2video', 'T2V'],
+    displayAliases: ['text2video', 'T2V'],
     ctaLabel: 'How text-to-video works →',
     tooltipDefinition:
       'Text-to-video lets you create an AI video by describing what you want to happen. You write a prompt, and the AI generates the video from scratch.',
@@ -528,6 +535,7 @@ On AI girlfriend apps, text-to-video is still less common than image-to-video.`,
     term: 'Image-to-Video',
     category: 'Video',
     aliases: ['image to video', 'img2video', 'I2V'],
+    displayAliases: ['img2video', 'I2V'],
     ctaLabel: 'How image-to-video works →',
     tooltipDefinition:
       'Image-to-video turns an existing image into a short AI video. You choose a picture of your character, and the AI adds movement to it.',
@@ -553,6 +561,7 @@ The big advantage is character consistency. Because the AI starts with an existi
     term: 'Text-to-Image',
     category: 'Images',
     aliases: ['text to image', 'txt2img', 'T2I'],
+    displayAliases: ['txt2img', 'T2I'],
     ctaLabel: 'How text-to-image works →',
     tooltipDefinition:
       'Text-to-image creates an AI image from written instructions. You describe what you want to see, and the AI generates the image for you.',
@@ -582,6 +591,7 @@ That is why we test both image quality and prompt adherence in our reviews.`,
     term: 'Image-to-Image',
     category: 'Images',
     aliases: ['image to image', 'img2img', 'I2I'],
+    displayAliases: ['img2img', 'I2I'],
     ctaLabel: 'How image-to-image works →',
     tooltipDefinition:
       'Image-to-image uses an existing picture as the starting point for a new AI image. You can change things like the outfit, pose, setting, or style while keeping parts of the original image.',
@@ -635,6 +645,7 @@ Not every GFE app works the same way. Some focus heavily on romance and relation
     term: 'Realistic-Style',
     category: 'Characters',
     aliases: ['realistic style', 'realistic-style characters'],
+    displayAliases: [],
     ctaLabel: 'What realistic-style means →',
     tooltipDefinition:
       'Realistic-style characters are AI characters designed to look like real people rather than anime, cartoons, or fantasy artwork.',
@@ -652,6 +663,7 @@ This is different from anime-style characters, which intentionally look illustra
     term: 'Anime-Style',
     category: 'Characters',
     aliases: ['anime style', 'anime-style characters'],
+    displayAliases: [],
     ctaLabel: 'What anime-style means →',
     tooltipDefinition:
       'Anime-style characters use an illustrated look inspired by anime, manga, games, and fantasy art instead of trying to look like real humans.',
@@ -696,7 +708,7 @@ async function main() {
   for (const term of TERMS) {
     const anchor = slugifyGlossaryAnchor(term.term);
     const aliases = term.aliases ?? [];
-    const displayAliases = term.displayAliases ?? aliases;
+    const displayAliases = term.displayAliases ?? [];
     const fields = {
       term: term.term,
       anchor,

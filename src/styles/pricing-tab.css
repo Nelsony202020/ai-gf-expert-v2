@@ -15,7 +15,8 @@
 [data-theme='dark'] .pt-topups__title,
 [data-theme='dark'] .pt-topups__table tbody th,
 [data-theme='dark'] .pt-topups__table td,
-[data-theme='dark'] .pt-credit-pool__skim-item,
+[data-theme='dark'] .pt-credit-pool__skim-amount,
+[data-theme='dark'] .pt-credit-pool__summary-plan,
 [data-theme='dark'] .pt-menu-select__value,
 [data-theme='dark'] .pt-credit-pool__title,
 [data-theme='dark'] .pt-credit-pool__credits,
@@ -69,6 +70,9 @@
 [data-theme='dark'] .pt-topups__intro,
 [data-theme='dark'] .pt-credit-pool__lead,
 [data-theme='dark'] .pt-credit-pool__or,
+[data-theme='dark'] .pt-credit-pool__intro,
+[data-theme='dark'] .pt-credit-pool__summary-meta,
+[data-theme='dark'] .pt-credit-pool__skim-label,
 [data-theme='dark'] .pt-plan-summary__name,
 [data-theme='dark'] .pt-plan-summary__line,
 [data-theme='dark'] .pt-plan-summary__sub,
@@ -76,7 +80,9 @@
 [data-theme='dark'] .pt-unit,
 [data-theme='dark'] .pt-usage-select__label,
 [data-theme='dark'] .pt-credit-pool__note,
+[data-theme='dark'] .pt-other-limits .pt-sublead,
 [data-theme='dark'] .pt-other-limits__table thead th,
+[data-theme='dark'] .pt-compare-note,
 [data-theme='dark'] .pt-usage-math__table thead th,
 [data-theme='dark'] .pt-usage-math__block-title,
 [data-theme='dark'] .pt-usage-math__intro,
@@ -142,6 +148,7 @@
 [data-theme='dark'] .pt-usage-calc__row--total,
 [data-theme='dark'] .pt-sum,
 [data-theme='dark'] .pt-plan-summary,
+[data-theme='dark'] .pt-plan-overview,
 [data-theme='dark'] .pt-plan-active,
 [data-theme='dark'] .pt-plan-pick__chips,
 [data-theme='dark'] .pt-credit-pool,
@@ -159,6 +166,7 @@
 
 [data-theme='dark'] .pt-mixer-host:has([data-pt-mixer]) {
   background: var(--color-surface-container, #1e293b);
+  border-color: var(--dark-border-subtle);
 }
 
 [data-theme='dark'] .pt-usage-math__details {
@@ -216,10 +224,44 @@
   color: #e2e8f0;
 }
 
-[data-theme='dark'] .pt-credit-pool__skim-item {
-  background: rgb(51 65 85 / 40%);
-  border-color: var(--dark-border-subtle);
+[data-theme='dark'] .pt-credit-pool__await-callout {
+  border-color: rgb(244 114 182 / 22%);
+  background: rgb(244 114 182 / 8%);
+}
+
+[data-theme='dark'] .pt-credit-pool__await-arrow,
+[data-theme='dark'] .pt-credit-pool__await-eyebrow {
+  color: #f472b6;
+}
+
+[data-theme='dark'] .pt-credit-pool__await-title {
+  color: var(--color-on-surface);
+}
+
+[data-theme='dark'] .pt-credit-pool__await-hint {
   color: var(--dark-muted);
+}
+
+[data-theme='dark'] .pt-credit-pool__ghost-panel {
+  border-color: var(--dark-border-subtle);
+  background: rgb(30 41 59 / 55%);
+}
+
+[data-theme='dark'] .pt-credit-pool__ghost-bar {
+  background: linear-gradient(90deg, rgb(71 85 105 / 70%), rgb(51 65 85 / 55%) 55%, rgb(71 85 105 / 70%));
+}
+
+[data-theme='dark'] .pt-credit-pool [data-pt-plan-menu] .pt-billing__btn.is-active {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 35%), 0 0 0 1px rgb(244 114 182 / 28%);
+}
+
+[data-theme='dark'] .pt-credit-pool__tool-rule {
+  border-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] .pt-credit-pool__skim-stat:not(:nth-child(3n))::after,
+[data-theme='dark'] .pt-credit-pool__skim-stat:not(:nth-child(2n))::after {
+  background: var(--dark-border-subtle);
 }
 
 [data-theme='dark'] .pt-mixer__preset {
@@ -313,53 +355,94 @@
 }
 
 [data-theme='dark'] .pt-bench__dot--avg {
-  background: #e2e8f0;
-  border-color: var(--color-background);
+  background: var(--color-background);
+  border-color: #e2e8f0;
+  box-shadow: none;
 }
 
 [data-theme='dark'] .pt-bench__dot--product {
   border-color: var(--color-background);
 }
 
-
-/* Expert opinion (shared with Overview — unboxed, no avatar) */
-.pricing-tab .expert-opinion {
-  position: relative;
-  overflow: visible;
-  padding: 0;
-  border: none;
-  background: transparent;
+[data-theme='dark'] .pt-bench__float--avg .pt-bench__float-name,
+[data-theme='dark'] .pt-bench__float--avg .pt-bench__float-price {
+  color: #cbd5e1;
 }
 
-.pricing-tab .expert-opinion .pt-section-head {
-  margin-bottom: 1.15rem;
+/* Overlap layout — global so it survives Astro scoping + refresh */
+.pt-bench.is-overlap .pt-bench__chart {
+  padding-top: 3.6rem;
+  padding-bottom: 3.85rem;
 }
 
-.pricing-tab .expert-opinion__byline {
-  display: flex;
+.pt-bench.is-overlap .pt-bench__axis {
+  bottom: 2.2rem;
+}
+
+.pt-bench.is-overlap .pt-bench__marker {
+  top: 3.6rem;
+}
+
+.pt-bench__float--below,
+.pt-bench.is-overlap .pt-bench__marker--avg .pt-bench__float {
+  bottom: auto !important;
+  top: calc(100% + 16px) !important;
   align-items: center;
-  gap: 0.25rem;
-  margin-bottom: 0.55rem;
 }
 
-.pricing-tab .expert-opinion__name {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--color-on-surface);
+.pt-bench.is-overlap .pt-bench__marker--product .pt-bench__float {
+  bottom: calc(100% + 16px);
+  align-items: center;
 }
 
-.pricing-tab .expert-opinion__body {
-  margin: 0;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  color: var(--color-on-surface);
+.pt-bench.is-overlap .pt-bench__leader {
+  display: block;
 }
 
-@media (min-width: 768px) {
-  .pricing-tab .expert-opinion__body {
-    font-size: 1rem;
-  }
+.pt-bench.is-overlap .pt-bench__leader--product {
+  bottom: 100%;
+  height: 16px;
+  color: #db2777;
+}
+
+.pt-bench.is-overlap .pt-bench__leader--avg {
+  top: 100%;
+  height: 16px;
+  color: #374151;
+}
+
+.pt-bench.is-overlap.is-stacked .pt-bench__dot--avg {
+  width: 18px;
+  height: 18px;
+  border-width: 2.5px;
+}
+
+.pt-bench.is-overlap.is-stacked .pt-bench__dot--product {
+  width: 10px;
+  height: 10px;
+  border-width: 0;
+  box-shadow: none;
+}
+
+
+/* Expert opinion pull-quote — dark overrides (layout in PricingTab.astro) */
+[data-theme='dark'] .pricing-tab .pt-opinion {
+  background: rgb(219 39 119 / 8%);
+  border-left-color: #f472b6;
+}
+
+[data-theme='dark'] .pricing-tab .pt-opinion__role,
+[data-theme='dark'] .pricing-tab .pt-page-meta {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .pricing-tab .pt-intro {
+  background: rgb(30 41 59 / 55%);
+  border-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] .pricing-tab .pt-page-meta {
+  border-top-color: var(--dark-border-subtle);
 }
 
 @media (max-width: 1023px) {

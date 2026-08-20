@@ -26,9 +26,17 @@ export interface RoundupSpec {
 /** Rich tooltip for pricing estimates on roundup cards. */
 export interface AtGlanceTooltip {
   title: string;
-  amount: string;
-  description: string;
-  breakdown?: string[];
+  subtitle: string;
+  amount: { main: string; period: string; accent?: boolean };
+  assumptions: Array<{
+    icon: 'image' | 'videocam' | 'call';
+    value: string;
+    label: string;
+  }>;
+  subscription: { main: string; period: string; accent?: boolean };
+  extraCredits: { main: string; period: string; accent?: boolean };
+  total: { main: string; period: string; accent?: boolean };
+  costDriverNote?: string | null;
   pricingHref: string;
 }
 

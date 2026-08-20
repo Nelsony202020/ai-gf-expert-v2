@@ -1,10 +1,14 @@
 ---
 import type { Product, VerdictItem } from '../../../data/products';
 import { getAuthor } from '../../../data/authors';
+import { getPublishedGlossaryTermsForTooltips } from '../../../lib/glossary/load';
+import {
+  renderReviewProseText,
+  reviewProseGlossaryContext,
+} from '../../../lib/review/renderReviewProse';
 import { getScoreVisual } from '../../../lib/scores';
 import ScoreRect from '../ScoreRect.astro';
 import InfoIcon from '../../ui/InfoIcon.astro';
-import VerifiedCheck from '../../ui/VerifiedCheck.astro';
 import OverallScoreTooltip from '../tooltips/OverallScoreTooltip.astro';
 import CategoryScoreTooltip from '../tooltips/CategoryScoreTooltip.astro';
 import VerdictCategoryIcon from '../VerdictCategoryIcon.astro';
@@ -17,6 +21,9 @@ interface Props {
 
 const { product } = Astro.props;
 const { overview } = product;
+
+const glossaryTerms = await getPublishedGlossaryTermsForTooltips();
+const overviewGlossary = reviewProseGlossaryContext(glossaryTerms, 'review-overview');
 
 function resolveScore(verdict: VerdictItem): number | null {
   if (verdict.score != null) return verdict.score;
@@ -90,7 +97,7 @@ function verdictCmsField(
       >
         <div class="mobile-sheet__handle" aria-hidden="true"></div>
         <header class="mobile-sheet__head">
-          <h2 id="verdict-jump-sheet-title" class="mobile-sheet__title">Jump to score</h2>
+          <p id="verdict-jump-sheet-title" class="mobile-sheet__title">Jump to score</p>
           <button type="button" class="mobile-sheet__close" data-verdict-jump-close aria-label="Close">
             <span class="material-symbols-outlined" aria-hidden="true">close</span>
           </button>
@@ -184,11 +191,20 @@ function verdictCmsField(
                   </div>
 
                   {verdict.summary && (
-                    <CmsField field={verdictCmsField(verdict.id, 'verdict')} as="p" class="text-base text-on-surface-variant leading-relaxed mb-8 max-w-2xl">{verdict.summary}</CmsField>
+                    verdict.id === 'overall' ? (
+                      <p
+                        class="cms-field text-base text-on-surface-variant leading-relaxed mb-8 max-w-2xl"
+                        data-cms-field={verdictCmsField(verdict.id, 'verdict')}
+                        title={`CMS · ${verdictCmsField(verdict.id, 'verdict')}`}
+                        set:html={renderReviewProseText(verdict.summary, overviewGlossary)}
+                      />
+                    ) : (
+                      <CmsField field={verdictCmsField(verdict.id, 'verdict')} as="p" class="text-base text-on-surface-variant leading-relaxed mb-8 max-w-2xl">{verdict.summary}</CmsField>
+                    )
                   )}
 
                   {(verdict.pros.length > 0 || verdict.cons.length > 0) && (
-                  <div class="grid grid-cols-2 gap-x-6 gap-y-6 sm:gap-x-10">
+                  <div class="grid grid-cols-2 gap-x-6 gap-y-6 sm:gap-x-10" data-glossary-skip>
                     {verdict.pros.length > 0 && (
                     <div>
                       <p class="font-black text-lg mb-4 text-on-surface m-0">Pros</p>
@@ -232,20 +248,29 @@ function verdictCmsField(
 
           {
             showExpertOpinion && herman && (
-              <div class="mt-10 pt-8 border-t border-surface-variant">
+              <div class="expert-opinion-wrap">
                 <div class="expert-opinion">
-                  <p class="expert-opinion__eyebrow">Our Experts' Opinion</p>
                   <div class="expert-opinion__byline">
-                    <p class="expert-opinion__name">{herman.name}</p>
-                    <VerifiedCheck class="w-[18px] h-[18px]" />
+                    <img
+                      class="expert-opinion__avatar"
+                      src={herman.avatar}
+                      alt=""
+                      width="40"
+                      height="40"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <div class="expert-opinion__who">
+                      <p class="expert-opinion__name">{herman.name}</p>
+                      <p class="expert-opinion__role">Lead reviewer</p>
+                    </div>
                   </div>
-                  <CmsField
-                    field="expertOpinion"
-                    as="p"
-                    class="expert-opinion__body"
-                  >
-                    {product.expertOpinion}
-                  </CmsField>
+                  <p
+                    class="cms-field expert-opinion__body"
+                    data-cms-field="expertOpinion"
+                    title="CMS · expertOpinion"
+                    set:html={renderReviewProseText(product.expertOpinion ?? '', overviewGlossary)}
+                  />
                 </div>
               </div>
             )
@@ -260,7 +285,7 @@ function verdictCmsField(
             <>
             <div class="flex items-center gap-2 mb-3">
               <span class="material-symbols-outlined overview-icon overview-icon--pro text-[18px]" aria-hidden="true">thumb_up</span>
-              <h3 class="text-sm font-extrabold text-on-surface m-0">Best for</h3>
+              <p class="text-sm font-extrabold text-on-surface m-0">Best for</p>
             </div>
             <ul class="space-y-2 mb-5">
               {
@@ -278,7 +303,7 @@ function verdictCmsField(
             <>
             <div class="flex items-center gap-2 mb-3">
               <span class="material-symbols-outlined overview-icon overview-icon--con text-[18px]" aria-hidden="true">remove_circle</span>
-              <h3 class="text-sm font-extrabold text-on-surface m-0">Not ideal for</h3>
+              <p class="text-sm font-extrabold text-on-surface m-0">Not ideal for</p>
             </div>
             <ul class="space-y-2">
               {
@@ -314,48 +339,77 @@ function verdictCmsField(
 </section>
 
 <style is:global>
-  .expert-opinion {
-    position: relative;
-    overflow: visible;
-    padding: 0;
-    border: none;
-    background: transparent;
+  /* Match pricing pull-quote (avatar + role), without Best for / Watch out */
+  .expert-opinion-wrap {
+    margin-top: 2.75rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-surface-variant, #e5e7eb);
   }
 
-  .expert-opinion__eyebrow {
-    margin: 0 0 0.35rem;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--color-accent);
+  .expert-opinion {
+    max-width: 42rem;
+    margin: 0;
+    padding: 1.15rem 1.15rem 1.15rem 1.05rem;
+    border-left: 3px solid #db2777;
+    border-radius: 0 10px 10px 0;
+    background: #fffaf7;
   }
 
   .expert-opinion__byline {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    margin-bottom: 0.5rem;
+    gap: 0.7rem;
+    margin: 0 0 0.85rem;
+  }
+
+  .expert-opinion__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #f3f4f6;
+  }
+
+  .expert-opinion__who {
+    min-width: 0;
   }
 
   .expert-opinion__name {
     margin: 0;
-    font-size: 0.875rem;
-    font-weight: 700;
+    font-size: 0.9375rem;
+    font-weight: 800;
     color: var(--color-on-surface);
+    line-height: 1.25;
+  }
+
+  .expert-opinion__role {
+    margin: 0.1rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    line-height: 1.3;
   }
 
   .expert-opinion__body {
     margin: 0;
-    font-size: 0.875rem;
-    line-height: 1.6;
+    max-width: 40rem;
+    font-size: 1.0625rem;
+    line-height: 1.65;
     color: var(--color-on-surface);
   }
 
-  @media (min-width: 768px) {
-    .expert-opinion__body {
-      font-size: 1rem;
-    }
+  [data-theme='dark'] .expert-opinion {
+    background: rgb(219 39 119 / 8%);
+    border-left-color: #f472b6;
+  }
+
+  [data-theme='dark'] .expert-opinion-wrap {
+    border-top-color: var(--dark-border-subtle, #334155);
+  }
+
+  [data-theme='dark'] .expert-opinion__role {
+    color: var(--dark-muted, #94a3b8);
   }
 
   /* Pros / cons icons stay green & red — never inherit score band colors */
