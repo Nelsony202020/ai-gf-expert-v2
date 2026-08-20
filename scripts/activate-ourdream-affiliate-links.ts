@@ -3,7 +3,7 @@
  * Activate OurDream AI affiliate destinations (unique UID per page).
  *
  *   /go/ourdream-ai          → Normal (uid=10) — product CTA
- *   /go/ourdream-ai-youtube  → YouTube (uid=540)
+ *   /go/ourdream-ai-youtube  → YouTube (uid=540), 18+ interstitial first
  *   /go/ourdream-elara       → Elara character (uid=544&sub1=…)
  *   /go/ourdream-emily       → Emily character (uid=544&sub1=…)
  *

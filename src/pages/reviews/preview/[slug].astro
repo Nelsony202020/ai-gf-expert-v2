@@ -30,6 +30,8 @@ import {
   hasPricingTab,
 } from '../../../lib/content/reviewDevProducts';
 import { PREVIEW_COOKIE_NAME, verifyPreviewToken } from '../../../lib/previewSession';
+import { isReviewSafeView } from '../../../lib/safe-view/params';
+import { safeViewResponse } from '../../../lib/safe-view/respond';
 
 // Previews expose unpublished products, so production requires the editor
 // cookie issued by /api/admin/preview-session (set automatically on admin
@@ -42,6 +44,11 @@ if (import.meta.env.PROD && !verifyPreviewToken(Astro.cookies.get(PREVIEW_COOKIE
 }
 
 const { slug } = Astro.params;
+
+if (isReviewSafeView(Astro.url)) {
+  return safeViewResponse(Astro.url);
+}
+
 const product = slug ? await loadProductPreviewBySlug(slug) : null;
 
 if (!product) {

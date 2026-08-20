@@ -82,6 +82,6 @@ export function resolveProductPageHead(
     robots,
     ogTitle: resolved.ogTitle || baseTitle,
     ogDescription: resolved.ogDescription || resolved.metaDescription || product.tagline || '',
-    ogImage: absolutizeUrl(resolved.ogImageUrl || featuredImageUrl, origin),
+    ogImage: absolutizeUrl(resolved.ogImageUrl, origin),
   };
 }
