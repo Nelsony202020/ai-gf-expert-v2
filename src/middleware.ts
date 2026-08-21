@@ -27,6 +27,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     path.startsWith('/api') ||
     path.startsWith('/_') ||
     path.startsWith('/go/') ||
+    path.startsWith('/recommends/') ||
     /\.[a-z0-9]+$/i.test(path)
   ) {
     return next();

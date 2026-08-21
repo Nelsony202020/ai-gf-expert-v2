@@ -19,7 +19,7 @@ import { pathMatchKey } from '../src/lib/urls';
 const PAGES_DIR = resolve(process.cwd(), 'src/pages');
 
 /** Route prefixes that are intentionally not in the sitemap. */
-const IGNORED_PREFIXES = ['/api/', '/admin', '/go/', '/dev/'];
+const IGNORED_PREFIXES = ['/api/', '/admin', '/go/', '/recommends/', '/dev/'];
 
 /** Exact routes that are intentionally not in the sitemap. */
 const IGNORED_ROUTES = new Set([
