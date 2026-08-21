@@ -688,6 +688,16 @@ These are not all technically anime categories, but they are commonly found insi
 
 If you prefer realistic AI girlfriends, these apps may not be for you. But if you like anime, fantasy, or more unusual characters, they usually give you much more variety.`,
   },
+  {
+    term: 'Discreet Billing',
+    category: 'Pricing',
+    aliases: ['discreet billing', 'discreet payment'],
+    displayAliases: [],
+    ctaLabel: 'What discreet billing means →',
+    tooltipDefinition:
+      'Discreet billing means the charge on your bank or card statement does not clearly show the name or type of the app you used.',
+    fullExplanation: `Discreet billing helps keep your purchase private. Instead of showing the app name clearly on your bank or card statement, the charge may appear under a different company or neutral payment name. This can be useful if you share a bank account or do not want other people to know what you paid for.`,
+  },
 ];
 
 async function main() {

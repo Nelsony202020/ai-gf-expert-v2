@@ -17,6 +17,7 @@ const ROUTE_GROUP_RULES = [
   { group: '/reviews/preview/*', rule: 'Noindex', detail: 'Editor previews force noindex, nofollow' },
   { group: '/guides/preview', rule: 'Noindex', detail: 'Sanity draft preview — requires secret query param' },
   { group: '/go/*', rule: 'Noindex', detail: 'Affiliate cloaks — 302 with X-Robots-Tag: noindex' },
+  { group: '/recommends/*', rule: 'Noindex', detail: 'Legacy YouTube Pretty Links — 302 → /go/*-youtube' },
 ];
 
 export function SeoIndexingPage() {
