@@ -61,6 +61,7 @@ const herman = getAuthor('herman-carter');
 
   <div class="roundup-pick__media-row" id={`pick-${pick.id}-details`}>
     <RoundupMediaCarousel
+      priority={rank === 1}
       pickId={pick.id}
       pickSlug={pick.slug}
       pickName={pick.name}
