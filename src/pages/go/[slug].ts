@@ -33,7 +33,9 @@ function redirectTo(location: string, extra?: HeadersInit) {
  * TEMPORARY (Aug 2026): /go/candy-ai-youtube was flagged by YouTube's nudity
  * policy while a re-review is pending, so it detours to the Candy AI review
  * (which is hiding its imagery for the same reason) instead of the affiliate
- * destination. Delete this once YouTube reinstates the link.
+ * destination. Still goes through the same 18+ interstitial as every other
+ * -youtube slug — that's a hard rule, not something this detour skips.
+ * Delete this once YouTube reinstates the link.
  */
 const TEMP_REDIRECTS: Record<string, string> = {
   'candy-ai-youtube': '/reviews/candy-ai/',
@@ -47,7 +49,18 @@ const SLUG_ALIASES: Record<string, string> = {
 export const GET: APIRoute = async ({ params, redirect }) => {
   const rawSlug = params.slug!;
   const temp = TEMP_REDIRECTS[rawSlug];
-  if (temp) return redirectTo(temp);
+  if (temp) {
+    return new Response(
+      renderYoutubeAgeGateHtml({
+        destinationUrl: temp,
+        backUrl: youtubeAgeGateBackUrl(),
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8', ...NOINDEX },
+      },
+    );
+  }
   const slug = SLUG_ALIASES[rawSlug] ?? rawSlug;
   if (!isDbConfigured()) return redirect('/', 302);
 
