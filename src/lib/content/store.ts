@@ -262,14 +262,14 @@ function mapProduct(
   const featuredMedia = dbProduct.featuredImage;
   const featuredUrl = resolveMediaUrl(featuredMedia);
   const featuredImage: GalleryImage | undefined =
-    featuredUrl && isUsablePublicMediaUrl(featuredUrl)
+    featuredUrl && isUsablePublicMediaUrl(featuredUrl) && featuredMedia?.status !== 'draft'
       ? { full: featuredUrl, thumb: featuredUrl, alt: featuredMedia?.altText ?? '', mediaType: 'image' }
       : fileFallback?.featuredImage ?? fileFallback?.gallery?.[0];
 
   const popArtMedia = dbProduct.secondaryLogo;
   const popArtUrl = resolveMediaUrl(popArtMedia);
   const popArtImage: GalleryImage | undefined =
-    popArtUrl && isUsablePublicMediaUrl(popArtUrl)
+    popArtUrl && isUsablePublicMediaUrl(popArtUrl) && popArtMedia?.status !== 'draft'
       ? {
           full: popArtUrl,
           thumb: popArtUrl,

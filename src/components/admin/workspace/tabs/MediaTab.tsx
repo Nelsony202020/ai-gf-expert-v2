@@ -221,10 +221,11 @@ export function MediaTab() {
     }
   }
 
-  async function applyBulkEdit(patch: { altText?: string; caption?: string }) {
+  async function applyBulkEdit(patch: { altText?: string; caption?: string; status?: '' | 'draft' | 'live' }) {
     const fields: Record<string, unknown> = {};
     if (patch.altText?.trim()) fields.altText = patch.altText.trim();
     if (patch.caption?.trim()) fields.caption = patch.caption.trim();
+    if (patch.status === 'draft' || patch.status === 'live') fields.status = patch.status;
     if (Object.keys(fields).length === 0) return;
     try {
       await Promise.all([...selected].map((id) => dataApi.update('media', id, fields)));
@@ -511,6 +512,13 @@ export function MediaTab() {
             <span className="font-medium text-pink-700 dark:text-pink-300">
               {selected.size} selected
             </span>
+            <Button
+              variant="ghost"
+              className="text-xs"
+              onClick={() => setSelected(new Set(filteredMedia.map((m) => m.id)))}
+            >
+              Select all
+            </Button>
             <Button variant="ghost" className="text-xs" onClick={selectMissingAlt}>
               Select missing alt text
             </Button>
@@ -654,6 +662,7 @@ export function MediaTab() {
                       <td className="px-3 py-2 text-xs text-slate-500">{placementLabel(m)}</td>
                       <td className="px-3 py-2">
                         <div className="flex flex-wrap gap-1">
+                          {m.status === 'draft' && <Badge tone="amber">Draft</Badge>}
                           <Badge tone={m.adult ? 'red' : 'green'}>{m.adult ? '18+' : 'Safe'}</Badge>
                           {m.mediaType === 'video' && <Badge tone="blue">video</Badge>}
                         </div>
@@ -1162,6 +1171,7 @@ function MediaCard({
           </span>
         )}
         <div className="absolute right-1.5 top-1.5 flex gap-1">
+          {row.status === 'draft' && <Badge tone="amber">Draft</Badge>}
           {row.adult && <Badge tone="red">18+</Badge>}
           {row.mediaType === 'video' && <Badge tone="blue">video</Badge>}
         </div>
@@ -1301,10 +1311,11 @@ function BulkEditModal({
 }: {
   count: number;
   onClose: () => void;
-  onApply: (patch: { altText?: string; caption?: string }) => Promise<void>;
+  onApply: (patch: { altText?: string; caption?: string; status?: '' | 'draft' | 'live' }) => Promise<void>;
 }) {
   const [altText, setAltText] = useState('');
   const [caption, setCaption] = useState('');
+  const [status, setStatus] = useState<'' | 'draft' | 'live'>('');
   const [busy, setBusy] = useState(false);
 
   return (
@@ -1328,6 +1339,13 @@ function BulkEditModal({
             onChange={(e) => setCaption(e.target.value)}
           />
         </Field>
+        <Field label="Status" help="Draft media never renders on the public site.">
+          <Select value={status} onChange={(e) => setStatus(e.target.value as '' | 'draft' | 'live')}>
+            <option value="">Leave unchanged</option>
+            <option value="draft">Draft (hidden from public site)</option>
+            <option value="live">Live</option>
+          </Select>
+        </Field>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose} disabled={busy}>
             Cancel
@@ -1339,6 +1357,7 @@ function BulkEditModal({
               void onApply({
                 altText,
                 caption,
+                status,
               }).finally(() => setBusy(false));
             }}
           >

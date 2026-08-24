@@ -26,6 +26,7 @@ export interface MediaRowLike {
   testCategory?: string | null;
   adult?: boolean | null;
   approved?: boolean | null;
+  status?: string | null;
   deletedAt?: unknown;
   sortOrder?: number | null;
   heroSortOrder?: number | null;
@@ -101,6 +102,7 @@ export function isHeroMedia(row: MediaRowLike): boolean {
 
 export function isPublicMedia(row: MediaRowLike): boolean {
   if (row.deletedAt) return false;
+  if (row.status === 'draft') return false;
   if (isAssetMedia(row)) return false;
   const url = resolveMediaUrl(row);
   return Boolean(url) && isUsablePublicMediaUrl(url);
