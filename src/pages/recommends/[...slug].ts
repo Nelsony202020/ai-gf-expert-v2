@@ -15,11 +15,13 @@ const NOINDEX = {
  */
 const GO_SLUG_OVERRIDES: Record<string, string> = {
   'candy-ai': 'candy-ai-youtube',
-  'girlfriendgpt-quiz': 'girlfriendgpt-quiz-youtube',
   'spicychat-ai-youtube': 'spicychat-ai-youtube',
   'nectar-ai-youtube': 'nectar-ai-youtube',
   'nectar-ai-2': 'nectar-ai-youtube',
+  // The old Kupid pretty links appeared with and without the "-2" and with a C.
+  'kupid-ai': 'kupid-ai-2-youtube',
   'kupid-ai-2': 'kupid-ai-2-youtube',
+  'cupid-ai': 'kupid-ai-2-youtube',
 };
 
 function toGoSlug(recommendsSlug: string): string {
@@ -28,7 +30,12 @@ function toGoSlug(recommendsSlug: string): string {
   if (recommendsSlug.endsWith('-youtube') || recommendsSlug.includes('-youtube-')) {
     return recommendsSlug;
   }
-  return `${recommendsSlug}-youtube`;
+  // Quiz/short variants of a brand link never got their own /go/ slug — the DB
+  // only holds `<brand>-youtube` — so strip the variant suffix before mapping.
+  // (The old override sent girlfriendgpt-quiz to girlfriendgpt-quiz-youtube,
+  // which doesn't exist, and /go/ bounced those visitors to the homepage.)
+  const base = recommendsSlug.replace(/-(quiz|yt)$/, '');
+  return `${base}-youtube`;
 }
 
 export const GET: APIRoute = async ({ params }) => {
