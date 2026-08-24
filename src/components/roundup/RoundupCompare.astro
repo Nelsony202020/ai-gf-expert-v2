@@ -409,9 +409,27 @@ function subWinners(key: string, subName: string, ids: string[]) {
   </div>
 </section>
 
-<script define:vars={{ comparePayload, defaultIds, categoryKeys, featureRowLabels, pricingRowLabels }}>
+{/*
+  Data island for the compare script. The script below used to be
+  `define:vars`, but define:vars implies is:inline — Astro never bundles it, so
+  its `import` statements threw a SyntaxError in the browser and none of the
+  compare table's interactivity (category expanders, brand pickers) ever bound.
+  A JSON payload plus a normal bundled module script keeps the imports legal.
+*/}
+<script
+  type="application/json"
+  id="roundup-compare-data"
+  set:html={JSON.stringify({ comparePayload, defaultIds, categoryKeys, featureRowLabels, pricingRowLabels }).replace(/</g, '\u003c')}
+/>
+
+<script>
   import { compareFeatureCellInnerHtml } from '../../lib/roundup/compareTable';
   import { initMultiValuePopovers } from '../../lib/ui/multiValueDisplay.client.ts';
+
+  const compareDataEl = document.getElementById('roundup-compare-data');
+  const { comparePayload, defaultIds, categoryKeys, featureRowLabels, pricingRowLabels } = JSON.parse(
+    compareDataEl?.textContent ?? '{}',
+  );
 
   function fmtScoreClient(n) {
     return Number(n).toFixed(1);
