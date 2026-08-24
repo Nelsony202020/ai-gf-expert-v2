@@ -257,7 +257,7 @@ const auraAi: Product = {
     {
       name: 'Herman Carter',
       role: 'Lead Reviewer',
-      avatar: '/brand/herman-main-icon.svg',
+      avatar: '/brand/herman-main-icon.webp',
       verified: true,
       slug: 'herman-carter',
     },

@@ -10,7 +10,7 @@ function escapeAttr(value: string): string {
     .replace(/>/g, '&gt;');
 }
 
-const HERMAN_AVATAR = cdnAsset(getAuthor('herman-carter')?.avatar ?? '/brand/herman-main-icon.svg');
+const HERMAN_AVATAR = cdnAsset(getAuthor('herman-carter')?.avatar ?? '/brand/herman-main-icon.webp');
 
 export function renderSafeViewHtml(opts: {
   canonical: string;
