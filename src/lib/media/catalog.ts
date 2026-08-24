@@ -259,6 +259,8 @@ export interface MediaLookupEntry {
 export function buildMediaLookup(rows: MediaRowLike[]): Record<string, MediaLookupEntry> {
   const out: Record<string, MediaLookupEntry> = {};
   for (const row of rows) {
+    // Drafted or deleted rows must not resolve for article-body blocks either.
+    if (row.deletedAt || row.status === 'draft') continue;
     const id = row.id ? String(row.id) : '';
     const url = resolveMediaUrl(row);
     if (!id || !url || !isUsablePublicMediaUrl(url)) continue;

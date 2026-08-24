@@ -145,6 +145,13 @@ function resolveMediaItem(
     return { src: fromCatalog.url, mediaType: fromCatalog.mediaType };
   }
 
+  // A block bound to a library item follows that item's visibility: when the
+  // lookup was provided and the id isn't in it (drafted/deleted media), the
+  // block renders nothing rather than falling back to its cached URL.
+  if (mediaId && mediaById) {
+    return { src: '', mediaType: 'image' };
+  }
+
   const stored = String(data.src ?? '').trim();
   if (isUsablePublicMediaUrl(stored)) {
     const hinted = data.mediaType === 'video' ? 'video' : data.mediaType === 'image' ? 'image' : null;
