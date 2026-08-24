@@ -207,6 +207,8 @@ const _schema = i.schema({
       testCategory: i.string().optional(),
       uploadedBy: i.string().optional(),
       approved: i.boolean().optional(),
+      // live (default when unset) | draft — draft media never renders publicly
+      status: i.string().optional().indexed(),
       createdAt: i.date(),
       deletedAt: i.date().optional(),
     }),
