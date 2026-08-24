@@ -13,6 +13,7 @@ import { getMobileNavMode } from '../lib/mobile-nav/modes';
 import { cdnAsset, getCdnBaseUrl } from '../lib/media/cdn';
 import { heroImageSrcSet, optimizedImageUrl } from '../lib/media/optimize';
 import { canonicalPublicUrl, resolveCanonicalUrl } from '../lib/siteOrigin';
+import { MATERIAL_SYMBOLS_HREF } from '../lib/ui/materialSymbols';
 
 export type PageTheme = 'core' | 'home' | 'review' | 'roundup' | 'directory' | 'full';
 
@@ -71,8 +72,8 @@ const lcpPreloadHref = lcpImage
 const lcpPreloadSrcSet = lcpImage ? heroImageSrcSet(lcpImage, [480, 640, 960, 1280], 80) : '';
 const TEXT_FONTS_HREF =
   'https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=optional';
-const ICON_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=block';
+// Subsetted to the icons the site actually renders — see src/lib/ui/materialSymbols.ts.
+const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
 ---
 
 <!doctype html>
