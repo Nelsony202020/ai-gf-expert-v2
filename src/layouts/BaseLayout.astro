@@ -15,6 +15,18 @@ import { heroImageSrcSet, optimizedImageUrl } from '../lib/media/optimize';
 import { canonicalPublicUrl, resolveCanonicalUrl } from '../lib/siteOrigin';
 import { MATERIAL_SYMBOLS_HREF } from '../lib/ui/materialSymbols';
 
+// Self-hosted text fonts (replaces the fonts.googleapis.com text request).
+// Axis/style coverage matches what the Google request served: Hanken Grotesk,
+// Inter and JetBrains Mono as wght-variable normals, Instrument Serif 400 + italic.
+// @fontsource ships font-display: swap.
+import '@fontsource-variable/hanken-grotesk/wght.css';
+import '@fontsource-variable/inter/standard.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '@fontsource/instrument-serif/400.css';
+import '@fontsource/instrument-serif/400-italic.css';
+// The LCP element on review pages is the <h1>, which renders in --font-display.
+import headingFontUrl from '@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2?url';
+
 export type PageTheme = 'core' | 'home' | 'review' | 'roundup' | 'directory' | 'full';
 
 interface Props {
@@ -70,8 +82,6 @@ const lcpPreloadHref = lcpImage
   ? optimizedImageUrl(lcpImage, { width: 720, quality: 80, dpr: 1, format: 'webp' })
   : '';
 const lcpPreloadSrcSet = lcpImage ? heroImageSrcSet(lcpImage, [480, 640, 960, 1280], 80) : '';
-const TEXT_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=optional';
 // Subsetted to the icons the site actually renders — see src/lib/ui/materialSymbols.ts.
 const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
 ---
@@ -104,13 +114,12 @@ const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
     <meta name="twitter:description" content={ogDescriptionResolved} />
     {image && <meta name="twitter:image" content={image} />}
 
-    <!-- Fonts after first paint so Google/text is not blocked on fonts.googleapis.com. -->
+    <!-- Text fonts are self-hosted; only the icon font still comes from Google. -->
+    <link rel="preload" as="font" type="font/woff2" href={headingFontUrl} crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href={TEXT_FONTS_HREF} media="print" onload="this.media='all'" />
     <link rel="stylesheet" href={ICON_FONTS_HREF} media="print" onload="this.media='all'" />
     <noscript>
-      <link rel="stylesheet" href={TEXT_FONTS_HREF} />
       <link rel="stylesheet" href={ICON_FONTS_HREF} />
     </noscript>
     {lcpPreloadHref && (
