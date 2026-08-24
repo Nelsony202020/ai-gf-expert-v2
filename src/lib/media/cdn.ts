@@ -25,6 +25,9 @@ const SAME_ORIGIN_PUBLIC_PATHS = new Set([
   '/brand/girlfriend-expert-logo-white.png',
   '/brand/girlfriend-expert-logo.webp',
   '/brand/girlfriend-expert-logo-white.webp',
+  '/brand/herman-main-icon.webp',
+  '/brand/herman-main-icon-96.png',
+  '/brand/herman-in-love-icon.webp',
   '/brand/home-hero-mock.jpg',
 ]);
 
