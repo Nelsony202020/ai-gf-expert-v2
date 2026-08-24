@@ -51,6 +51,7 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
 
 <script>
   import { sheetDurationMs } from '../../lib/ui/bottomSheet';
+  import { deferUntilIdle } from '../../lib/ui/deferUntilIdle';
 
   function initReviewMobileNavSheet() {
     const sheet = document.querySelector<HTMLElement>('[data-review-section-toc]');
@@ -428,6 +429,7 @@ const tabLabels = Object.fromEntries(tabs.map((t) => [t.id, t.label]));
     });
   }
 
-  initReviewMobileNavSheet();
+  // Closed sheet: nothing shows until it is opened from the review's mobile nav.
+  deferUntilIdle(initReviewMobileNavSheet);
   document.addEventListener('astro:page-load', initReviewMobileNavSheet);
 </script>

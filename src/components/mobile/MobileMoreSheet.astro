@@ -83,6 +83,7 @@ import ThemeToggle from '../ui/ThemeToggle.astro';
 <script>
   import { closeSheet, openSheet } from '../../lib/ui/bottomSheet.ts';
   import { bindDrawerScrollFades, updateScrollFade } from '../../lib/ui/scrollFade.ts';
+  import { deferUntilIdle } from '../../lib/ui/deferUntilIdle';
 
   function getPageMeta() {
     const navSheet =
@@ -179,6 +180,7 @@ import ThemeToggle from '../ui/ThemeToggle.astro';
     });
   }
 
-  initMobileMoreSheet();
+  // Closed sheet: nothing shows until "More" is tapped in the bottom nav.
+  deferUntilIdle(initMobileMoreSheet);
   document.addEventListener('astro:page-load', initMobileMoreSheet);
 </script>

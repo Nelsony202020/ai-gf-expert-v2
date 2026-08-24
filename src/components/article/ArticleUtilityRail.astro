@@ -81,6 +81,17 @@ const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Ast
 <ArticleFeedbackPanel />
 
 <script define:vars={{ pageTitle, pageUrl }}>
+  // define:vars scripts are inlined as plain (non-module) scripts, so they
+  // cannot `import` — see the same note in OverviewTab.astro. Inlining the
+  // same requestIdleCallback pattern as src/lib/ui/deferUntilIdle.ts.
+  function deferUntilIdle(fn) {
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => fn(), { timeout: 2000 });
+    } else {
+      setTimeout(fn, 1);
+    }
+  }
+
   function initArticleUtilityRail() {
     const rail = document.querySelector('[data-article-util-rail]');
     if (!rail || rail.dataset.bound === 'true') return;
@@ -184,6 +195,7 @@ const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Ast
     updateScrollState();
   }
 
-  initArticleUtilityRail();
+  // Floating rail only becomes relevant once the reader scrolls past the hero.
+  deferUntilIdle(initArticleUtilityRail);
   document.addEventListener('astro:page-load', initArticleUtilityRail);
 </script>

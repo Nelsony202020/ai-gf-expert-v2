@@ -23,6 +23,7 @@ const decorateTermsJson = autoDecorate && terms.length > 0 ? JSON.stringify(term
 
 <script>
   import { decorateGlossaryDom } from '../../../lib/glossary/decorateDom.client.ts';
+  import { deferUntilIdle } from '../../../lib/ui/deferUntilIdle';
 
   let activePanel: HTMLElement | null = null;
   let activeTrigger: HTMLElement | null = null;
@@ -319,6 +320,7 @@ const decorateTermsJson = autoDecorate && terms.length > 0 ? JSON.stringify(term
     }
   }
 
-  initGlossaryTooltips();
+  // On-demand: nothing shows until the reader clicks a glossary term.
+  deferUntilIdle(initGlossaryTooltips);
   document.addEventListener('astro:page-load', initGlossaryTooltips);
 </script>

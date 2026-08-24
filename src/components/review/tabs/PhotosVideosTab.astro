@@ -664,6 +664,8 @@ const overviewGroups = overviewSections.map((section) => {
 </style>
 
 <script>
+  import { deferUntilIdle } from '../../../lib/ui/deferUntilIdle';
+
   const NSFW_STORAGE_KEY = 'lr-nsfw-preference';
   const NSFW_COOKIE_KEY = 'lr_nsfw_preference';
 
@@ -1124,6 +1126,7 @@ const overviewGroups = overviewSections.map((section) => {
     updateSectionHeader();
   }
 
-  initMediaGallery();
+  // Hidden until the Photos/Videos tab is clicked.
+  deferUntilIdle(initMediaGallery);
   document.addEventListener('astro:page-load', initMediaGallery);
 </script>

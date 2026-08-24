@@ -868,6 +868,8 @@ const reviewVideoId = product.videoReview?.embedUrl
 </style>
 
 <script>
+  import { deferUntilIdle } from '../../../lib/ui/deferUntilIdle';
+
   function showNsfwComingSoonToast() {
     let toast = document.querySelector<HTMLElement>('[data-nsfw-toast]');
     if (!toast) {
@@ -961,8 +963,11 @@ const reviewVideoId = product.videoReview?.embedUrl
     headings.forEach((h) => observer.observe(h));
   }
 
-  initReviewToc();
-  initNsfwGates();
+  // Article body TOC + NSFW gates are inside the hidden "Full review" tab panel.
+  deferUntilIdle(() => {
+    initReviewToc();
+    initNsfwGates();
+  });
   document.addEventListener('astro:page-load', () => {
     initReviewToc();
     initNsfwGates();

@@ -5090,6 +5090,12 @@ function withUnit(value: string) {
 
 <script>
   import { closeSheet, openSheet } from '../../../lib/ui/bottomSheet.ts';
+  import { deferUntilIdle } from '../../../lib/ui/deferUntilIdle';
+
+  // Hidden tab panel (not shown until the Pricing tab is clicked) — this is by
+  // far the largest script on the review page, so its setup is deferred to idle
+  // rather than run during the initial load. See deferUntilIdle.ts.
+  function initPricingTab() {
 
   type PlanBillingOpt = {
     monthlyPriceLabel: string;
@@ -6852,4 +6858,7 @@ function withUnit(value: string) {
     );
     io.observe(pricingPanel);
   }
+  }
+
+  deferUntilIdle(initPricingTab);
 </script>
