@@ -39,6 +39,12 @@ export default defineConfig({
   },  // Public pages stay prerendered (static HTML for SEO). Server routes
   // (/admin, /api, /go) opt out with `export const prerender = false`.
   output: 'static',
+  build: {
+    // Inline every page stylesheet into the HTML. The public pages are render-blocked
+    // on 2-3 CSS round trips before first paint; inlining trades a larger HTML payload
+    // for zero blocking requests.
+    inlineStylesheets: 'always',
+  },
   // Privacy scrape+analyze and other AI admin routes need longer than the
   // default ~10s hobby timeout (10 Candy policy pages + OpenAI easily exceed it).
   adapter: vercel({ maxDuration: 120 }),

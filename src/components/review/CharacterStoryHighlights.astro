@@ -61,10 +61,10 @@ const modalChars: ModalCharacter[] = displayChars.map((char) => ({
       'avatar-first',
       char.storyImageSlides,
     ),
-    { width: 64, quality: 70, format: 'jpeg' },
+    { width: 64, quality: 70 },
   ),
   modalSlides: modalSlidesFor(char).map((url) =>
-    optimizedImageUrl(url, { width: 400, quality: 72, dpr: 1, format: 'jpeg' }),
+    optimizedImageUrl(url, { width: 400, quality: 72, dpr: 1 }),
   ),
 }));
 
@@ -95,7 +95,7 @@ const headingText = heading ?? 'Featured characters';
   {
     !hideHeading && (
       <div class="char-stories__heading">
-        <img src={cdnAsset('/brand/herman-in-love-icon.svg')} alt="" class="char-stories__heading-icon" width="44" height="44" aria-hidden="true" />
+        <img src={cdnAsset('/brand/herman-in-love-icon.webp')} alt="" class="char-stories__heading-icon" width="44" height="44" aria-hidden="true" />
         <p class="char-stories__heading-text">
           {headingText}
           {badge && <span class="char-stories__badge">{badge}</span>}
@@ -147,7 +147,7 @@ const headingText = heading ?? 'Featured characters';
                     {
                       hasImage ? (
                         <img
-                          src={optimizedImageUrl(thumb, { width: 64, quality: 70, format: 'jpeg' })}
+                          src={optimizedImageUrl(thumb, { width: 64, quality: 70 })}
                           alt={char.name}
                           class="char-stories__avatar"
                           loading="lazy"

@@ -859,6 +859,11 @@ const takeaways = vm.takeaways;
 </style>
 
 <script>
+  import { deferUntilIdle } from '../../../lib/ui/deferUntilIdle';
+
+  // Hidden tab panel (not shown until the Market Data tab is clicked), so its
+  // chart setup is deferred to idle rather than run during the initial load.
+  function initMarketDataTab() {
   const CHART_W = 360;
   const CHART_H = 140;
 
@@ -1007,4 +1012,7 @@ const takeaways = vm.takeaways;
     const value = col.getAttribute('data-md-price-value') ?? '';
     if (tip) tip.textContent = `${label} · ${value}`;
   });
+  }
+
+  deferUntilIdle(initMarketDataTab);
 </script>

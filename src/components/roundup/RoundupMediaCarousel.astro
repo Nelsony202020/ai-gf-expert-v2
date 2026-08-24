@@ -14,9 +14,11 @@ interface Props {
   overallScore: number;
   overallSummary: string;
   awards?: ProductAwardBadge[];
+  /** Set on the first pick only: its slide 0 is the one worth racing for LCP. */
+  priority?: boolean;
 }
 
-const { pickId, pickSlug, pickName, images, overallScore, overallSummary, awards = [] } = Astro.props;
+const { pickId, pickSlug, pickName, images, overallScore, overallSummary, awards = [], priority = false } = Astro.props;
 const initialAward = getContextualAward(awards, 'overall');
 const displayImages = images.slice(0, 1);
 const heroSrc = displayImages[0] ? optimizedHeroImageUrl(displayImages[0].full, 960) : '';
@@ -37,7 +39,9 @@ const heroSrcSet = displayImages[0] ? heroImageSrcSet(displayImages[0].full, [48
           alt={image.alt}
           width="960"
           height="600"
-          loading={index === 0 ? 'eager' : 'lazy'}
+          loading={priority && index === 0 ? 'eager' : 'lazy'}
+          fetchpriority={priority && index === 0 ? 'high' : undefined}
+          decoding={priority && index === 0 ? undefined : 'async'}
           draggable="false"
           hidden={index !== 0}
         />

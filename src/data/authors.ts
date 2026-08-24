@@ -63,7 +63,7 @@ export const authors: Record<string, AuthorProfile> = {
     slug: 'herman-carter',
     name: 'Herman Carter',
     title: 'M.A. in AI Ethics & Society · CEO · Lead Tester',
-    avatar: '/brand/herman-main-icon.svg',
+    avatar: '/brand/herman-main-icon.webp',
     email: 'herman@aigirlfriend.expert',
     profileUrl: '/author/herman-carter/',
     bio: 'Herman Carter is one of the leading experts on AI girlfriends, having tested over 100 AI girlfriend apps and reviewed more than 50 on his blog and YouTube channel. With a Master’s in AI Ethics from Cambridge, Herman provides straightforward insights to help users find the right AI tools.',

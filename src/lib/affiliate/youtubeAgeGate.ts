@@ -60,7 +60,7 @@ export function isSafeHttpUrl(url: string): boolean {
   }
 }
 
-const HERMAN_AVATAR = cdnAsset(getAuthor('herman-carter')?.avatar ?? '/brand/herman-main-icon.svg');
+const HERMAN_AVATAR = cdnAsset(getAuthor('herman-carter')?.avatar ?? '/brand/herman-main-icon.webp');
 
 export function renderYoutubeAgeGateHtml(opts: {
   destinationUrl: string;

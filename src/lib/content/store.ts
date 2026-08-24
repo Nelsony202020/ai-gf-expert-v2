@@ -135,7 +135,7 @@ function mapAuthor(a: any): Author {
   return {
     name: a?.name ?? 'Editorial Team',
     role: a?.role ?? 'Reviewer',
-    avatar: a?.avatarUrl ? String(a.avatarUrl) : cdnAsset('/brand/herman-main-icon.svg'),
+    avatar: a?.avatarUrl ? String(a.avatarUrl) : cdnAsset('/brand/herman-main-icon.webp'),
     verified: a?.verified ?? undefined,
     slug: a?.slug ?? undefined,
   };
@@ -1042,7 +1042,7 @@ function productFromRoundupPick(pick: {
       {
         name: 'Herman Carter',
         role: 'Lead Reviewer',
-        avatar: cdnAsset('/brand/herman-main-icon.svg'),
+        avatar: cdnAsset('/brand/herman-main-icon.webp'),
         verified: true,
         slug: 'herman-carter',
       },

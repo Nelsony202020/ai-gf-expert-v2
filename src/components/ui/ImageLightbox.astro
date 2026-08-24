@@ -252,6 +252,7 @@
 
 <script>
   import { playOverlayClose, playOverlayOpen } from '../../lib/ui/overlayTransition.ts';
+  import { deferUntilIdle } from '../../lib/ui/deferUntilIdle';
 
   interface LightboxItem {
     src: string;
@@ -489,6 +490,7 @@
     ) => open(itemsList, startIndex);
   }
 
-  initImageLightbox();
+  // Closed overlay: nothing shows until an image thumbnail is clicked.
+  deferUntilIdle(initImageLightbox);
   document.addEventListener('astro:page-load', initImageLightbox);
 </script>

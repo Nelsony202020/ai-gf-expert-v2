@@ -38,6 +38,8 @@
 </div>
 
 <script>
+  import { deferUntilIdle } from '../../lib/ui/deferUntilIdle';
+
   function initDefaultMobileNavSheet() {
     if (document.querySelector('[data-nav-sheet="page"]')) return;
 
@@ -75,6 +77,7 @@
     });
   }
 
-  initDefaultMobileNavSheet();
+  // Closed sheet: nothing shows until it is opened from the bottom nav.
+  deferUntilIdle(initDefaultMobileNavSheet);
   document.addEventListener('astro:page-load', initDefaultMobileNavSheet);
 </script>

@@ -14,26 +14,13 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
   <div class="section-container px-4 md:px-8 site-header__inner">
     <div class="site-header__left">
       <a href="/" class="site-logo-link site-header__logo-link shrink-0">
-        <img
-          src={cdnAsset('/brand/girlfriend-expert-logo.png')}
-          alt="Girlfriend Expert AI"
-          class="site-header__logo site-header__logo--light"
-          width="148"
-          height="82"
-          loading="eager"
-          fetchpriority="low"
-          decoding="async"
-        />
-        <img
-          src={cdnAsset('/brand/girlfriend-expert-logo-white.png')}
-          alt=""
-          class="site-header__logo site-header__logo--dark"
-          width="148"
-          height="82"
-          loading="lazy"
-          decoding="async"
-          aria-hidden="true"
-        />
+        {/*
+          Painted as a CSS background so only the variant matching [data-theme]
+          is fetched. Two <img> tags both download regardless of opacity, and the
+          theme here is a data attribute (not prefers-color-scheme), so <picture>
+          media queries would ignore a manual theme choice.
+        */}
+        <span class="site-header__logo" role="img" aria-label="Girlfriend Expert AI"></span>
       </a>
 
       <nav class="site-header__nav" aria-label="Main">

@@ -13,6 +13,19 @@ import { getMobileNavMode } from '../lib/mobile-nav/modes';
 import { cdnAsset, getCdnBaseUrl } from '../lib/media/cdn';
 import { heroImageSrcSet, optimizedImageUrl } from '../lib/media/optimize';
 import { canonicalPublicUrl, resolveCanonicalUrl } from '../lib/siteOrigin';
+import { MATERIAL_SYMBOLS_HREF } from '../lib/ui/materialSymbols';
+
+// Self-hosted text fonts (replaces the fonts.googleapis.com text request).
+// Axis/style coverage matches what the Google request served: Hanken Grotesk,
+// Inter and JetBrains Mono as wght-variable normals, Instrument Serif 400 + italic.
+// @fontsource ships font-display: swap.
+import '@fontsource-variable/hanken-grotesk/wght.css';
+import '@fontsource-variable/inter/standard.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '@fontsource/instrument-serif/400.css';
+import '@fontsource/instrument-serif/400-italic.css';
+// The LCP element on review pages is the <h1>, which renders in --font-display.
+import headingFontUrl from '@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2?url';
 
 export type PageTheme = 'core' | 'home' | 'review' | 'roundup' | 'directory' | 'full';
 
@@ -65,14 +78,25 @@ const ogTitleResolved = ogTitle ?? title;
 const ogDescriptionResolved = ogDescription ?? description;
 const cdnBase = getCdnBaseUrl();
 const mobileNavMode = getMobileNavMode(Astro.url.pathname);
-const lcpPreloadHref = lcpImage
-  ? optimizedImageUrl(lcpImage, { width: 720, quality: 80, dpr: 1, format: 'webp' })
-  : '';
-const lcpPreloadSrcSet = lcpImage ? heroImageSrcSet(lcpImage, [480, 640, 960, 1280], 80) : '';
-const TEXT_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=optional';
-const ICON_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=block';
+// home-hero-mock.jpg is same-origin (not on the Bunny pull zone — see
+// SAME_ORIGIN_PUBLIC_PATHS in src/lib/media/cdn.ts), so optimizedImageUrl's
+// transform params are silently dropped for it. Preload the pre-generated
+// local WebP (scripts/generate-brand-webp.ts) so this matches the <img> that
+// HomeHero.astro actually renders, instead of preloading the raw JPEG under
+// a false `type="image/webp"`.
+const isLocalMockHero = lcpImage?.endsWith('/brand/home-hero-mock.jpg') ?? false;
+const lcpPreloadHref = isLocalMockHero
+  ? '/brand/home-hero-mock-800.webp'
+  : lcpImage
+    ? optimizedImageUrl(lcpImage, { width: 720, quality: 80, dpr: 1, format: 'webp' })
+    : '';
+const lcpPreloadSrcSet = isLocalMockHero
+  ? [480, 640, 800, 1024].map((w) => `/brand/home-hero-mock-${w}.webp ${w}w`).join(', ')
+  : lcpImage
+    ? heroImageSrcSet(lcpImage, [480, 640, 960, 1280], 80)
+    : '';
+// Subsetted to the icons the site actually renders — see src/lib/ui/materialSymbols.ts.
+const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
 ---
 
 <!doctype html>
@@ -83,7 +107,7 @@ const ICON_FONTS_HREF =
     <!-- Lock Safari/Chrome mobile chrome to page bg — otherwise score greens/oranges bleed into the bottom bar -->
     <meta name="theme-color" content="#f9f9f9" data-theme-color />
     <meta name="color-scheme" content="light dark" />
-    <link rel="icon" type="image/svg+xml" href={cdnAsset('/brand/herman-main-icon.svg')} />
+    <link rel="icon" type="image/png" href={cdnAsset('/brand/herman-main-icon-96.png')} />
     {cdnBase && <link rel="preconnect" href={cdnBase} crossorigin />}
     <meta name="generator" content={Astro.generator} />
 
@@ -103,13 +127,12 @@ const ICON_FONTS_HREF =
     <meta name="twitter:description" content={ogDescriptionResolved} />
     {image && <meta name="twitter:image" content={image} />}
 
-    <!-- Fonts after first paint so Google/text is not blocked on fonts.googleapis.com. -->
+    <!-- Text fonts are self-hosted; only the icon font still comes from Google. -->
+    <link rel="preload" as="font" type="font/woff2" href={headingFontUrl} crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href={TEXT_FONTS_HREF} media="print" onload="this.media='all'" />
     <link rel="stylesheet" href={ICON_FONTS_HREF} media="print" onload="this.media='all'" />
     <noscript>
-      <link rel="stylesheet" href={TEXT_FONTS_HREF} />
       <link rel="stylesheet" href={ICON_FONTS_HREF} />
     </noscript>
     {lcpPreloadHref && (

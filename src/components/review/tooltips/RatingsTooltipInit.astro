@@ -2,6 +2,7 @@
 
 <script>
   import { bindScrollFade, tooltipScrollTarget } from '../../../lib/ui/scrollFade';
+  import { deferUntilIdle } from '../../../lib/ui/deferUntilIdle';
 
   interface DistApp {
     slug: string;
@@ -452,7 +453,8 @@
     }
   }
 
-  initRatingsTooltips();
+  // On-demand: nothing shows until the reader clicks a ratings tooltip trigger.
+  deferUntilIdle(initRatingsTooltips);
   document.addEventListener('astro:page-load', initRatingsTooltips);
   document.addEventListener('ratings-tooltips:reinit', initRatingsTooltips);
 </script>

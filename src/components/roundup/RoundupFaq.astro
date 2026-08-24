@@ -22,7 +22,7 @@ const {
   sectionClass = '',
 } = Astro.props;
 
-const hermanAvatar = cdnAsset('/brand/herman-main-icon.svg');
+const hermanAvatar = cdnAsset('/brand/herman-main-icon.webp');
 const glossaryTerms = await getPublishedGlossaryTermsForTooltips();
 
 const stickers: ({ emoji: string; position: 'tl' | 'tr' } | null)[] = [
