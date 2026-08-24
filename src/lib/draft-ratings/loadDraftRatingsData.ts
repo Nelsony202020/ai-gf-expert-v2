@@ -10,7 +10,7 @@ import type { DraftRatingsDbContext, DraftRatingsViewModel, DraftProofItem } fro
 
 function mapProof(media: any[]): DraftProofItem[] {
   return (media ?? [])
-    .filter((m) => !m.deletedAt)
+    .filter((m) => !m.deletedAt && m.status !== 'draft')
     .map((m) => {
       const url = resolveMediaUrl(m);
       if (!url) return null;
