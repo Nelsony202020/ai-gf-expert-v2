@@ -363,26 +363,25 @@ body.site-header-menu-open {
   grid-area: 1 / 1;
   display: block;
   width: auto;
+  /* Matches the 840x465 source so the slot reserves its width without an <img> */
+  aspect-ratio: 840 / 465;
   max-width: 100%;
   height: 2.5rem;
   max-height: 2.5rem;
-  background: transparent;
   box-shadow: none;
   filter: none;
   mix-blend-mode: normal;
-  object-fit: contain;
   pointer-events: none;
+  background-color: transparent;
+  background-image: url('/brand/girlfriend-expert-logo.webp');
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
 }
 
-/* Both logos always occupy the same grid cell; theme only toggles visibility */
-.site-header__logo.site-header__logo--light {
-  opacity: 1;
-  visibility: visible;
-}
-
-.site-header__logo.site-header__logo--dark {
-  opacity: 0;
-  visibility: hidden;
+/* Only the rule that matches the active theme fetches its image */
+[data-theme='dark'] .site-header__logo {
+  background-image: url('/brand/girlfriend-expert-logo-white.webp');
 }
 
 @media (min-width: 768px) {

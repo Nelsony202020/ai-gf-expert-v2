@@ -1,8 +1,6 @@
 ---
 import ThemeToggle from '../ui/ThemeToggle.astro';
-import { cdnAsset } from '../../lib/media/cdn';
 
-const logoSrc = cdnAsset('/brand/girlfriend-expert-logo.png');
 ---
 
 <div class="mobile-sheet mobile-more-sheet" data-mobile-more-sheet hidden aria-hidden="true">
@@ -11,7 +9,9 @@ const logoSrc = cdnAsset('/brand/girlfriend-expert-logo.png');
     <div class="mobile-sheet__handle" aria-hidden="true"></div>
     <header class="mobile-sheet__head mobile-sheet__head--brand">
       <a href="/" class="mobile-sheet__home" data-mobile-more-home>
-        <img class="mobile-sheet__home-logo" src={logoSrc} alt="" width="36" height="36" />
+        {/* Background image: the sheet starts display:none, and backgrounds on a
+           non-rendered element are not fetched (loading="lazy" would not defer it). */}
+        <span class="mobile-sheet__home-logo" aria-hidden="true"></span>
         <span class="mobile-sheet__home-copy">
           <span class="mobile-sheet__home-brand">AI Girlfriend Expert</span>
           <span id="mobile-more-home-label" class="mobile-sheet__home-label">Home</span>
