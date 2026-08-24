@@ -29,8 +29,26 @@ function redirectTo(location: string, extra?: HeadersInit) {
  * YouTube campaign links show a fast 18+ interstitial first.
  * Destinations are managed in admin; changing one updates every CTA instantly.
  */
+/**
+ * TEMPORARY (Aug 2026): /go/candy-ai-youtube was flagged by YouTube's nudity
+ * policy while a re-review is pending, so it detours to the Candy AI review
+ * (which is hiding its imagery for the same reason) instead of the affiliate
+ * destination. Delete this once YouTube reinstates the link.
+ */
+const TEMP_REDIRECTS: Record<string, string> = {
+  'candy-ai-youtube': '/reviews/candy-ai/',
+};
+
+/** Slugs shared publicly that differ from the cloakedSlug stored in the DB. */
+const SLUG_ALIASES: Record<string, string> = {
+  'kupid-ai-youtube': 'kupid-ai-2-youtube',
+};
+
 export const GET: APIRoute = async ({ params, redirect }) => {
-  const slug = params.slug!;
+  const rawSlug = params.slug!;
+  const temp = TEMP_REDIRECTS[rawSlug];
+  if (temp) return redirectTo(temp);
+  const slug = SLUG_ALIASES[rawSlug] ?? rawSlug;
   if (!isDbConfigured()) return redirect('/', 302);
 
   const db = getDb();
