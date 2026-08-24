@@ -3,6 +3,7 @@ import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
 import { ROUNDUP_CATEGORY_KEYS, toRatingCategory } from '../../data/roundups/ai-girlfriend';
 import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 import { fmtScore } from '../../lib/scores';
+import { hasHiddenProductImage } from '../../lib/content/hiddenProductImages';
 import {
   COMPARE_FEATURE_IDS,
   COMPARE_PRICING_IDS,
@@ -54,8 +55,9 @@ const comparePayload = picks.map((p) => ({
   slug: p.slug,
   name: p.name,
   logo: p.logo,
-  image: p.gallery[0]?.full ?? p.logo,
-  imageAlt: p.gallery[0]?.alt ?? `${p.name} screenshot`,
+  // TEMPORARY: swaps to the logo for slugs in hiddenProductImages.ts
+  image: hasHiddenProductImage(p.slug) ? p.logo : (p.gallery[0]?.full ?? p.logo),
+  imageAlt: hasHiddenProductImage(p.slug) ? `${p.name} logo` : (p.gallery[0]?.alt ?? `${p.name} screenshot`),
   overallScore: p.overallScore,
   affiliateUrl: p.affiliateUrl,
   reviewUrl: p.reviewUrl ?? '',
@@ -141,7 +143,7 @@ function subWinners(key: string, subName: string, ids: string[]) {
             return (
               <div class="roundup-compare__col roundup-compare__col--image" data-compare-image-col={pick.id}>
                 <div class="roundup-compare__thumb">
-                  <img src={pick.gallery[0]?.full ?? pick.logo} alt={pick.gallery[0]?.alt ?? pick.name} width="240" height="150" loading="lazy" />
+                  <img src={hasHiddenProductImage(pick.slug) ? pick.logo : (pick.gallery[0]?.full ?? pick.logo)} alt={hasHiddenProductImage(pick.slug) ? `${pick.name} logo` : (pick.gallery[0]?.alt ?? pick.name)} width="240" height="150" loading="lazy" />
                   <span class={`roundup-compare__score-on-image roundup-compare__score-on-image--${band}`}>{fmtScore(pick.overallScore)}</span>
                 </div>
               </div>

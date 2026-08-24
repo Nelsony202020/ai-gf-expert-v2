@@ -8,6 +8,7 @@ import EditorialAwardBadge from '../ui/EditorialAwardBadge.astro';
 import { getPrimaryAward, getSecondaryAwards } from '../../lib/awards/compute';
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 import { reviewPageUrl } from '../../lib/slugs';
+import { hasHiddenProductImage } from '../../lib/content/hiddenProductImages';
 import { optimizedCardImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
 
 interface Props {
@@ -62,10 +63,14 @@ const secondaryAwards = getSecondaryAwards(app.awards ?? []);
       </button>
     </div>
     <a href={reviewHref} class="home-app-card__media-link" tabindex="-1" aria-hidden="true">
+      {/* TEMPORARY: swaps to the logo for slugs in hiddenProductImages.ts */}
       <img
         class="home-app-card__image"
-        src={optimizedCardImageUrl(app.gallery[0]?.full ?? app.logo, 560)}
-        alt={app.gallery[0]?.alt ?? `${app.name} screenshot`}
+        src={optimizedCardImageUrl(
+          hasHiddenProductImage(app.slug) ? app.logo : (app.gallery[0]?.full ?? app.logo),
+          560,
+        )}
+        alt={hasHiddenProductImage(app.slug) ? `${app.name} logo` : (app.gallery[0]?.alt ?? `${app.name} screenshot`)}
         width="640"
         height="400"
         loading="lazy"

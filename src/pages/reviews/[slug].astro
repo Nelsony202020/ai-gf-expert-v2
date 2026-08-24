@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { hasHiddenProductImage } from '../../lib/content/hiddenProductImages';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import ReviewHero from '../../components/review/ReviewHero.astro';
@@ -71,10 +72,7 @@ if (showAlternativesTab) {
   tabs.push({ id: 'alternatives', label: 'Alternatives', tocLabel: 'Alternatives' });
 }
 
-// TEMPORARY (Aug 2026): brands whose imagery is hidden while a YouTube
-// nudity-policy re-review is pending. Remove the slug to restore images.
-const HIDE_REVIEW_IMAGES_SLUGS = new Set(['candy-ai']);
-const hideReviewImages = HIDE_REVIEW_IMAGES_SLUGS.has(product.slug);
+const hideReviewImages = hasHiddenProductImage(product.slug);
 
 const shareUrl = head.canonical;
 const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
