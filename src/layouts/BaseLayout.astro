@@ -78,10 +78,23 @@ const ogTitleResolved = ogTitle ?? title;
 const ogDescriptionResolved = ogDescription ?? description;
 const cdnBase = getCdnBaseUrl();
 const mobileNavMode = getMobileNavMode(Astro.url.pathname);
-const lcpPreloadHref = lcpImage
-  ? optimizedImageUrl(lcpImage, { width: 720, quality: 80, dpr: 1, format: 'webp' })
-  : '';
-const lcpPreloadSrcSet = lcpImage ? heroImageSrcSet(lcpImage, [480, 640, 960, 1280], 80) : '';
+// home-hero-mock.jpg is same-origin (not on the Bunny pull zone — see
+// SAME_ORIGIN_PUBLIC_PATHS in src/lib/media/cdn.ts), so optimizedImageUrl's
+// transform params are silently dropped for it. Preload the pre-generated
+// local WebP (scripts/generate-brand-webp.ts) so this matches the <img> that
+// HomeHero.astro actually renders, instead of preloading the raw JPEG under
+// a false `type="image/webp"`.
+const isLocalMockHero = lcpImage?.endsWith('/brand/home-hero-mock.jpg') ?? false;
+const lcpPreloadHref = isLocalMockHero
+  ? '/brand/home-hero-mock-800.webp'
+  : lcpImage
+    ? optimizedImageUrl(lcpImage, { width: 720, quality: 80, dpr: 1, format: 'webp' })
+    : '';
+const lcpPreloadSrcSet = isLocalMockHero
+  ? [480, 640, 800, 1024].map((w) => `/brand/home-hero-mock-${w}.webp ${w}w`).join(', ')
+  : lcpImage
+    ? heroImageSrcSet(lcpImage, [480, 640, 960, 1280], 80)
+    : '';
 // Subsetted to the icons the site actually renders — see src/lib/ui/materialSymbols.ts.
 const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
 ---

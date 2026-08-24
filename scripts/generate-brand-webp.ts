@@ -53,3 +53,20 @@ await sharp(readFileSync(`${BRAND}/herman-main-icon.svg`), { density: 300 })
   .png({ compressionLevel: 9 })
   .toFile(favicon);
 console.log(`${kb(`${BRAND}/herman-main-icon.svg`)} KB -> ${kb(favicon)} KB  herman-main-icon.svg -> -96.png`);
+
+/*
+ * Homepage hero. optimizedImageUrl() normally hands this off to the Bunny
+ * Optimizer via query params, but home-hero-mock.jpg is same-origin (see
+ * SAME_ORIGIN_PUBLIC_PATHS in src/lib/media/cdn.ts — it has never been pushed
+ * to the pull zone, confirmed 404 there), so those params are silently
+ * dropped and the page ships the raw 175 KB source JPEG at every breakpoint.
+ * Pre-generate the WebP variants locally instead so the srcset is real.
+ * Source is 1024x537, so 1024 is the largest non-upscaled width.
+ */
+const HERO_WIDTHS = [480, 640, 800, 1024];
+const heroSrc = `${BRAND}/home-hero-mock.jpg`;
+for (const w of HERO_WIDTHS) {
+  const out = `${BRAND}/home-hero-mock-${w}.webp`;
+  await sharp(heroSrc).resize(w, null).webp({ quality: 80 }).toFile(out);
+  console.log(`${kb(heroSrc)} KB -> ${kb(out)} KB  home-hero-mock.jpg -> -${w}.webp`);
+}
