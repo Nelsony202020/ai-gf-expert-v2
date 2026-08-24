@@ -41,6 +41,7 @@ function formatFullDate(ts: number): string {
 
 function isGoodProofImage(row: MediaRowLike & { mediaType?: string | null }): boolean {
   if (row.deletedAt) return false;
+  if (row.status === 'draft') return false;
   if (row.mediaType && String(row.mediaType) !== 'image') return false;
   const url = resolveMediaUrl(row);
   if (!url || !isUsablePublicMediaUrl(url)) return false;

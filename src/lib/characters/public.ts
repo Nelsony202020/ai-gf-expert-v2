@@ -9,8 +9,14 @@ type MediaLike = {
   id?: string;
   url?: unknown;
   mediaType?: string | null;
+  status?: string | null;
   file?: { url?: unknown };
 } | null | undefined;
+
+/** Drafted media never renders publicly, wherever the row came from. */
+function isDraftMedia(media: MediaLike): boolean {
+  return media?.status === 'draft';
+}
 
 type StorySlideEntry = { url: string; mediaType: 'image' | 'video' };
 
@@ -40,10 +46,10 @@ function storySlideEntries(
     .filter((s) => s.active !== false && !s.deletedAt)
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     .map((s) => {
+      const linked = s.media?.id ? byId.get(String(s.media.id)) : undefined;
+      if (isDraftMedia(s.media) || isDraftMedia(linked)) return null;
       const fromSlide = resolveMediaUrl(s.media);
-      const url =
-        fromSlide ||
-        (s.media?.id ? resolveMediaUrl(byId.get(String(s.media.id))) : '');
+      const url = fromSlide || (linked ? resolveMediaUrl(linked) : '');
       if (!url || !isUsablePublicMediaUrl(url)) return null;
       const mediaType = resolveSlideMediaType(s.media, byId);
       return { url, mediaType };
@@ -80,11 +86,14 @@ export function resolveCharacterImageUrl(
   image: MediaLike,
   productMedia?: MediaLike[] | undefined,
 ): string {
+  if (isDraftMedia(image)) return '';
   const direct = resolveMediaUrl(image);
   if (direct) return direct;
   const id = image?.id ? String(image.id) : '';
   if (!id || !productMedia?.length) return '';
-  return resolveMediaUrl(mediaByIdFromList(productMedia).get(id));
+  const linked = mediaByIdFromList(productMedia).get(id);
+  if (isDraftMedia(linked)) return '';
+  return resolveMediaUrl(linked);
 }
 
 export function mapCharacterForPublic(
