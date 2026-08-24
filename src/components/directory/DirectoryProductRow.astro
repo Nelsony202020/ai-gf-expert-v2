@@ -2,6 +2,7 @@
 import type { HomeExplorerApp } from '../../data/homepage';
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 import { reviewPageUrl } from '../../lib/slugs';
+import { hasHiddenProductImage } from '../../lib/content/hiddenProductImages';
 import DirectoryCategoryScores from './DirectoryCategoryScores.astro';
 import AppBrandTooltip from './AppBrandTooltip.astro';
 import AppOverallScoreTooltip from './AppOverallScoreTooltip.astro';
@@ -42,10 +43,14 @@ const secondaryAwards = getSecondaryAwards(app.awards ?? []);
       )
     }
     <a href={reviewHref} class="dir-row__image-link" tabindex="-1" aria-hidden="true">
+      {/* TEMPORARY: swaps to the logo for slugs in hiddenProductImages.ts */}
       <img
         class="dir-row__image"
-        src={optimizedCardImageUrl(app.gallery[0]?.full ?? app.logo, 480)}
-        alt={app.gallery[0]?.alt ?? `${app.name} screenshot`}
+        src={optimizedCardImageUrl(
+          hasHiddenProductImage(app.slug) ? app.logo : (app.gallery[0]?.full ?? app.logo),
+          480,
+        )}
+        alt={hasHiddenProductImage(app.slug) ? `${app.name} logo` : (app.gallery[0]?.alt ?? `${app.name} screenshot`)}
         width="640"
         height="400"
         loading="lazy"

@@ -1,11 +1,12 @@
 ---
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
+import { hasHiddenProductImage } from '../../lib/content/hiddenProductImages';
 import type { HomeFeaturedCharacter } from '../../data/homepage';
 import { getRoundupRibbonHref, getRoundupRibbonLabel } from '../../data/homepage';
 import { fmtScore, getScoreVisual } from '../../lib/scores';
 import HomeFeaturedCharacterShowcase from './HomeFeaturedCharacterShowcase.astro';
 import CmsField from '../cms/CmsField.astro';
-import { optimizedHeroImageUrl } from '../../lib/media/optimize';
+import { optimizedHeroImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
 
 interface Props {
   picks: RoundupPick[];
@@ -51,8 +52,9 @@ const { picks, characters } = Astro.props;
         {
           picks.map((pick, index) => {
             const reviewHref = pick.reviewUrl ?? `/reviews/${pick.slug}/`;
-            const thumb = pick.gallery[0]?.full ?? pick.logo;
-            const thumbIsLogo = !pick.gallery[0]?.full;
+            // TEMPORARY: swaps to the logo for slugs in hiddenProductImages.ts
+            const thumb = hasHiddenProductImage(pick.slug) ? pick.logo : (pick.gallery[0]?.full ?? pick.logo);
+            const thumbIsLogo = hasHiddenProductImage(pick.slug) || !pick.gallery[0]?.full;
             const scoreVisual = getScoreVisual(pick.overallScore);
             const ribbonLabel = getRoundupRibbonLabel(pick);
             return (

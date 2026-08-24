@@ -2,6 +2,7 @@
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
 import { getAuthor } from '../../data/authors';
 import RoundupMediaCarousel from './RoundupMediaCarousel.astro';
+import { hasHiddenProductImage } from '../../lib/content/hiddenProductImages';
 import RoundupCategoryScores from './RoundupCategoryScores.astro';
 import RoundupAtAGlance from './RoundupAtAGlance.astro';
 import EditorialPillLink from '../ui/EditorialPillLink.astro';
@@ -23,6 +24,12 @@ const expertParagraphs = pick.ourTake
   .map((paragraph) => paragraph.trim())
   .filter(Boolean);
 const herman = getAuthor('herman-carter');
+
+// TEMPORARY: swaps the carousel to a single logo "slide" for slugs in
+// hiddenProductImages.ts, instead of the real screenshot gallery.
+const displayGallery = hasHiddenProductImage(pick.slug)
+  ? [{ full: pick.logo, thumb: pick.logo, alt: `${pick.name} logo` }]
+  : pick.gallery;
 ---
 
 <article
@@ -65,7 +72,7 @@ const herman = getAuthor('herman-carter');
       pickId={pick.id}
       pickSlug={pick.slug}
       pickName={pick.name}
-      images={pick.gallery}
+      images={displayGallery}
       overallScore={pick.overallScore}
       overallSummary={pick.overallSummary}
       awards={pick.awards}
