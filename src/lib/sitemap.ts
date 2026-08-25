@@ -132,6 +132,14 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
     parentCategory: 'guides',
   });
 
+  push({
+    title: 'OurDream AI Comics: How to Use the Comic Generator',
+    url: '/guides/ourdream-ai-comics',
+    contentType: 'guide',
+    sitemapSection: 'guides',
+    parentCategory: 'guides',
+  });
+
   // Guides from Sanity (empty until the CMS has published guides)
   for (const guide of guides) {
     if (guide.slug === buyingGuideSlug) continue;
