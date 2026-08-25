@@ -16,6 +16,16 @@ const description =
 
 const staticGuides = [
   {
+    slug: 'ourdream-ai-comics',
+    title: 'OurDream AI Comics: How to Use the Comic Generator',
+    excerpt:
+      'How to build multi-page AI comics in OurDream Comic Studio — characters, model sheets, layouts, prompting, editing, video, and what it all costs.',
+    heroImageUrl: '/guides/ourdream-ai-comics/anime-art-styles.webp',
+    heroImageAlt: 'The anime art style picker in OurDream AI Comic Studio',
+    author: { name: 'Herman Carter' },
+    noindex: false,
+  },
+  {
     slug: buyingGuideSlug,
     title: 'How to Choose an AI Girlfriend App',
     excerpt:
@@ -27,7 +37,8 @@ const staticGuides = [
   },
 ];
 
-const allGuides = [...staticGuides, ...guides.filter((g) => g.slug !== buyingGuideSlug && !g.noindex)];
+const staticSlugs = new Set(staticGuides.map((g) => g.slug));
+const allGuides = [...staticGuides, ...guides.filter((g) => !staticSlugs.has(g.slug) && !g.noindex)];
 ---
 
 <BaseLayout title={title} description={description}>
