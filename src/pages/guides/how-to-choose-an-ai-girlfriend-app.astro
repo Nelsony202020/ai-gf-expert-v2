@@ -13,7 +13,6 @@ import BuyingGuideNarrowDown from '../../components/guides/BuyingGuideNarrowDown
 import BuyingGuideTestingHelps from '../../components/guides/BuyingGuideTestingHelps.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import ArticleFeedbackLink from '../../components/article/ArticleFeedbackLink.astro';
-import PublicGlossaryTooltips from '../../components/glossary/PublicGlossaryTooltips.astro';
 import {
   buyingGuideFeaturedImage,
   buyingGuideFeaturedImageAlt,
@@ -120,7 +119,6 @@ const enrichedUserTypes = await enrichBuyingGuideUserTypes(buyingGuideUserTypes)
   <Footer />
   <BuyingGuideMobileNavSheet pageTitle={pageTitle} pageUrl={canonical} />
   <ArticleUtilityRail pageTitle={pageTitle} pageUrl={canonical} mobileMinimal showMobileNav />
-  <PublicGlossaryTooltips autoDecorate />
 
   <script>
     function initAuthorPopovers() {
