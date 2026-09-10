@@ -19,15 +19,38 @@ type SeedTerm = {
   fullExplanation: string;
 };
 
-function textNode(text: string) {
-  return { type: 'text' as const, text };
+function textNode(text: string, marks?: Array<{ type: string }>) {
+  return marks?.length
+    ? { type: 'text' as const, text, marks }
+    : { type: 'text' as const, text };
+}
+
+function unwrapLine(line: string) {
+  const trimmed = line.trim();
+  const fenced = trimmed.match(/^`([^`]+)`$/);
+  return fenced ? fenced[1] : trimmed;
+}
+
+function inlineNodes(text: string) {
+  const content: Array<{ type: string; text?: string; marks?: Array<{ type: string }> }> = [];
+  const re = /\*\*(.+?)\*\*/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > last) content.push(textNode(text.slice(last, match.index)));
+    content.push(textNode(match[1], [{ type: 'bold' }]));
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) content.push(textNode(text.slice(last)));
+  return content.length ? content : [textNode('')];
 }
 
 function paragraph(...lines: string[]) {
-  const content: Array<{ type: string; text?: string }> = [];
+  const content: Array<{ type: string; text?: string; marks?: Array<{ type: string }> }> = [];
   lines.forEach((line, i) => {
     if (i > 0) content.push({ type: 'hardBreak' });
-    if (line) content.push(textNode(line));
+    const unwrapped = unwrapLine(line);
+    if (unwrapped) content.push(...inlineNodes(unwrapped));
   });
   return { type: 'paragraph' as const, content: content.length ? content : [textNode('')] };
 }
@@ -57,15 +80,17 @@ function explanationToDoc(raw: string): GlossaryTipTapDoc {
       .split('\n')
       .map((l) => l.trim())
       .filter(Boolean);
-    const bulletLines = lines.filter((l) => l.startsWith('- '));
+    const isBullet = (l: string) => l.startsWith('- ') || l.startsWith('* ');
+    const bulletText = (l: string) => l.replace(/^[-*] /, '').trim();
+    const bulletLines = lines.filter(isBullet);
     if (bulletLines.length > 0 && bulletLines.length === lines.length) {
-      content.push(bulletList(bulletLines.map((l) => l.replace(/^- /, '').trim())));
+      content.push(bulletList(bulletLines.map(bulletText)));
       continue;
     }
     if (bulletLines.length > 0 && lines.length > bulletLines.length) {
-      const intro = lines.filter((l) => !l.startsWith('- '));
+      const intro = lines.filter((l) => !isBullet(l));
       if (intro.length) content.push(paragraph(...intro));
-      content.push(bulletList(bulletLines.map((l) => l.replace(/^- /, '').trim())));
+      content.push(bulletList(bulletLines.map(bulletText)));
       continue;
     }
     content.push(paragraph(...lines));
@@ -516,20 +541,25 @@ Looking good is not enough. The AI also needs to listen to you.`,
     displayAliases: ['text2video', 'T2V'],
     ctaLabel: 'How text-to-video works →',
     tooltipDefinition:
-      'Text-to-video lets you create an AI video by describing what you want to happen. You write a prompt, and the AI generates the video from scratch.',
-    fullExplanation: `Text-to-video means you create a video using only a written prompt.
+      'A video generation method where the AI creates the entire video from your written prompt.',
+    fullExplanation: `Text-to-video creates a video without using a starting image.
 
-For example, you could type:
+You describe what you want to happen, and the AI creates both the scene and the movement.
 
-A woman in a red dress walking along the beach at sunset.
+Your prompt can include things like:
 
-The AI then tries to turn those instructions into a video.
+- who is in the video
+- what they are doing
+- where they are
+- how they move
+- how the camera moves
+- how the scene ends
 
-This gives you much more freedom than image-to-video because you do not need an existing image first. You can describe the character, location, outfit, movement, camera angle, and what should happen.
+Because the AI has to create everything from scratch, it can be harder to get a very specific result compared with image-to-video.
 
-The downside is that text-to-video is also harder for the AI to get right. Characters can change appearance, movements can look weird, and the final video may not follow your prompt exactly.
+Example:
 
-On AI girlfriend apps, text-to-video is still less common than image-to-video.`,
+A woman walks along a tropical beach at sunset. Her dress moves in the wind while the camera slowly follows her from behind.`,
   },
   {
     term: 'Image-to-Video',
@@ -538,24 +568,20 @@ On AI girlfriend apps, text-to-video is still less common than image-to-video.`,
     displayAliases: ['img2video', 'I2V'],
     ctaLabel: 'How image-to-video works →',
     tooltipDefinition:
-      'Image-to-video turns an existing image into a short AI video. You choose a picture of your character, and the AI adds movement to it.',
-    fullExplanation: `Image-to-video takes an existing image and turns it into a moving video.
+      'A video generation method where you start with an image and use a prompt to tell the AI how it should move.',
+    fullExplanation: `Image-to-video turns an existing image into a video.
 
-You normally choose a picture of your AI girlfriend and let the video generator animate it.
+You first give the AI the starting image. Then you describe what should happen in the video.
 
-For example, the AI might make the character:
+For example, you can tell the character to smile, turn around, walk forward, move their hair, or look toward the camera.
 
-- Smile
-- Turn around
-- Walk
-- Move toward the camera
-- Change her pose
+Because the starting image already shows the character, clothing, pose, and location, the AI has fewer things to create from scratch.
 
-Some apps also give you a prompt box where you can tell the AI exactly what you want to happen. Others simply animate the image automatically and give you almost no control.
+This usually gives you more control than text-to-video.
 
-Image-to-video is currently much more common on AI girlfriend apps than full text-to-video.
+Example:
 
-The big advantage is character consistency. Because the AI starts with an existing picture, your character is usually more likely to keep the same face, outfit, and overall appearance.`,
+She slowly turns toward the camera, smiles and brushes her hair behind her ear. The camera slowly moves closer.`,
   },
   {
     term: 'Text-to-Image',
@@ -687,6 +713,123 @@ Their character libraries can include niches like:
 These are not all technically anime categories, but they are commonly found inside the same anime and fantasy-focused AI girlfriend libraries.
 
 If you prefer realistic AI girlfriends, these apps may not be for you. But if you like anime, fantasy, or more unusual characters, they usually give you much more variety.`,
+  },
+  {
+    term: 'Character Prompts',
+    category: 'Customization',
+    aliases: ['character prompt', 'character prompting'],
+    displayAliases: [],
+    ctaLabel: 'What character prompts are →',
+    tooltipDefinition:
+      'Instructions used to build an AI character, including things like appearance, personality, background, and behavior.',
+    fullExplanation: `Character prompts are the instructions that tell the AI who your character is.
+
+They can describe things like:
+
+- physical appearance
+- personality
+- background
+- behavior
+- relationship with the user
+- how the character should talk
+
+Character prompts are usually more detailed than normal image prompts because you are building the character itself, not just one image.
+
+It is also important to separate **permanent details** from temporary ones. For example, “has blue eyes” makes sense as part of the character. “Wearing a nurse uniform” normally does not, because you may want the character to wear something different later.
+
+Example:
+
+Confident, playful and slightly sarcastic. She loves traveling, going to restaurants and teasing the user. She has long blonde hair and blue eyes.`,
+  },
+  {
+    term: 'Character Reference Sheet',
+    category: 'Images',
+    aliases: ['character ref sheet', 'character reference image'],
+    displayAliases: [],
+    ctaLabel: 'What a character reference sheet is →',
+    tooltipDefinition:
+      'An image that shows what your AI character looks like so the AI can keep the same identity in future generations.',
+    fullExplanation: `A character reference sheet is a visual guide for your AI character.
+
+Instead of explaining the character's appearance every time, you give the AI an image that shows what the character should look like.
+
+This can help keep things like the face, hair, and other important features more consistent between generations.
+
+A reference sheet is mainly about **identity**. It does not mean you want to copy the same pose, clothing, or background every time.
+
+Example:
+
+You could use a clear reference image of your character, then generate a completely new image of that same character sitting at a beach club.`,
+  },
+  {
+    term: 'OOC (Out of Character)',
+    category: 'Chat',
+    aliases: ['OOC', 'Out of Character', 'out of character'],
+    displayAliases: ['Out of Character'],
+    ctaLabel: 'What OOC means →',
+    tooltipDefinition:
+      'An OOC command lets you give the AI instructions without making them part of the roleplay. Example: (OOC: Keep your replies short and playful.)',
+    fullExplanation: `OOC stands for **Out of Character**.
+
+It lets you speak directly to the AI instead of speaking to the character inside the roleplay.
+
+You can use OOC commands when you want to change how the AI responds without making that instruction part of the story.
+
+For example, you can use it to:
+
+- make replies shorter
+- change the writing style
+- make the character more playful
+- move the story forward
+- correct something the AI misunderstood
+
+Example command:
+
+(OOC: Keep your replies short and playful.)
+
+The AI should understand this as an instruction about how to respond, instead of treating it as something you actually said to the character.`,
+  },
+  {
+    term: 'JSON Prompts',
+    category: 'Customization',
+    aliases: ['JSON prompt', 'json prompt', 'json prompts'],
+    displayAliases: [],
+    ctaLabel: 'How JSON prompts work →',
+    tooltipDefinition:
+      'A structured way to organize an AI prompt into separate sections like subject, pose, clothing, lighting, and camera.',
+    fullExplanation: `JSON prompts are structured prompts that break your instructions into separate parts.
+
+Instead of writing everything in one long paragraph, you can organize details like:
+
+- subject
+- pose
+- expression
+- clothing
+- location
+- lighting
+- camera angle
+- composition
+- visual style
+
+For example, instead of writing:
+
+A blonde woman sitting at a cafe in Paris holding coffee in her left hand during golden hour.
+
+You could write:
+
+{
+  "subject": "blonde woman",
+  "location": "outdoor cafe in Paris",
+  "pose": "sitting at a table",
+  "action": "holding coffee in her left hand",
+  "lighting": "golden hour"
+}
+
+The idea is simple: **each detail gets its own place.**
+
+This can be useful when you want more control over small details, especially when trying to recreate a specific pose, image, camera angle, or style.
+
+JSON prompts are not automatically better, though. Some AI generators respond better to normal paragraph prompts, so it is worth testing both.`,
   },
   {
     term: 'Discreet Billing',
