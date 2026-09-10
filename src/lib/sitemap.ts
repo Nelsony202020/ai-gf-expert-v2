@@ -140,9 +140,23 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
     parentCategory: 'guides',
   });
 
+  push({
+    title: 'OurDream AI Prompt Guide',
+    url: '/guides/ourdream-ai-prompt-guide',
+    contentType: 'guide',
+    sitemapSection: 'guides',
+    parentCategory: 'guides',
+  });
+
+  const hardcodedGuideSlugs = new Set([
+    buyingGuideSlug,
+    'ourdream-ai-comics',
+    'ourdream-ai-prompt-guide',
+  ]);
+
   // Guides from Sanity (empty until the CMS has published guides)
   for (const guide of guides) {
-    if (guide.slug === buyingGuideSlug) continue;
+    if (hardcodedGuideSlugs.has(guide.slug)) continue;
     push({
       title: guide.title,
       url: `/guides/${guide.slug}`,
