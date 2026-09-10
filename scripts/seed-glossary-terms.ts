@@ -4,77 +4,14 @@
  *
  * Upserts by `anchor` — safe to re-run.
  */
+import { PROMPTING_GLOSSARY_TERMS, type GlossarySeedTerm } from '../src/data/glossary-prompting-terms';
 import { getDb, id, isDbConfigured, tx } from '../src/lib/db/server';
-import { slugifyGlossaryAnchor, type GlossaryTipTapDoc } from '../src/lib/glossary/types';
+import { explanationToDoc } from '../src/lib/glossary/markdownDoc';
+import { slugifyGlossaryAnchor } from '../src/lib/glossary/types';
 
-type SeedTerm = {
-  term: string;
-  category: string;
-  /** Match triggers (hyphen/plural variants). Not shown as other names unless also listed below. */
-  aliases?: string[];
-  /** True alternate names for the tooltip “Other names” line. Defaults to [] when omitted. */
-  displayAliases?: string[];
-  ctaLabel: string;
-  tooltipDefinition: string;
-  fullExplanation: string;
-};
+type SeedTerm = GlossarySeedTerm;
 
-function textNode(text: string) {
-  return { type: 'text' as const, text };
-}
-
-function paragraph(...lines: string[]) {
-  const content: Array<{ type: string; text?: string }> = [];
-  lines.forEach((line, i) => {
-    if (i > 0) content.push({ type: 'hardBreak' });
-    if (line) content.push(textNode(line));
-  });
-  return { type: 'paragraph' as const, content: content.length ? content : [textNode('')] };
-}
-
-function bulletList(items: string[]) {
-  return {
-    type: 'bulletList' as const,
-    content: items.map((item) => ({
-      type: 'listItem' as const,
-      content: [paragraph(item)],
-    })),
-  };
-}
-
-/** Convert markdown-ish explanation text into a TipTap doc. */
-function explanationToDoc(raw: string): GlossaryTipTapDoc {
-  const blocks = raw
-    .trim()
-    .split(/\n\s*\n+/)
-    .map((b) => b.trim())
-    .filter(Boolean);
-
-  const content: unknown[] = [];
-
-  for (const block of blocks) {
-    const lines = block
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean);
-    const bulletLines = lines.filter((l) => l.startsWith('- '));
-    if (bulletLines.length > 0 && bulletLines.length === lines.length) {
-      content.push(bulletList(bulletLines.map((l) => l.replace(/^- /, '').trim())));
-      continue;
-    }
-    if (bulletLines.length > 0 && lines.length > bulletLines.length) {
-      const intro = lines.filter((l) => !l.startsWith('- '));
-      if (intro.length) content.push(paragraph(...intro));
-      content.push(bulletList(bulletLines.map((l) => l.replace(/^- /, '').trim())));
-      continue;
-    }
-    content.push(paragraph(...lines));
-  }
-
-  return { type: 'doc', content: content as GlossaryTipTapDoc['content'] };
-}
-
-const TERMS: SeedTerm[] = [
+const BASE_TERMS: SeedTerm[] = [
   {
     term: 'Unfiltered Roleplay',
     category: 'Chat',
@@ -516,20 +453,23 @@ Looking good is not enough. The AI also needs to listen to you.`,
     displayAliases: ['text2video', 'T2V'],
     ctaLabel: 'How text-to-video works →',
     tooltipDefinition:
-      'Text-to-video lets you create an AI video by describing what you want to happen. You write a prompt, and the AI generates the video from scratch.',
-    fullExplanation: `Text-to-video means you create a video using only a written prompt.
+      'A video generation method where the AI creates the entire video from your written prompt.',
+    fullExplanation: `Text-to-video creates a video without using a starting image.
 
-For example, you could type:
+You describe what you want to happen, and the AI creates both the scene and the movement.
 
-A woman in a red dress walking along the beach at sunset.
+Your prompt can include things like:
 
-The AI then tries to turn those instructions into a video.
+- who is in the video
+- what they are doing
+- where they are
+- how they move
+- how the camera moves
+- how the scene ends
 
-This gives you much more freedom than image-to-video because you do not need an existing image first. You can describe the character, location, outfit, movement, camera angle, and what should happen.
+Because the AI has to create everything from scratch, it can be harder to get a very specific result compared with image-to-video.
 
-The downside is that text-to-video is also harder for the AI to get right. Characters can change appearance, movements can look weird, and the final video may not follow your prompt exactly.
-
-On AI girlfriend apps, text-to-video is still less common than image-to-video.`,
+Example: A woman walks along a tropical beach at sunset. Her dress moves in the wind while the camera slowly follows her from behind.`,
   },
   {
     term: 'Image-to-Video',
@@ -538,24 +478,18 @@ On AI girlfriend apps, text-to-video is still less common than image-to-video.`,
     displayAliases: ['img2video', 'I2V'],
     ctaLabel: 'How image-to-video works →',
     tooltipDefinition:
-      'Image-to-video turns an existing image into a short AI video. You choose a picture of your character, and the AI adds movement to it.',
-    fullExplanation: `Image-to-video takes an existing image and turns it into a moving video.
+      'A video generation method where you start with an image and use a prompt to tell the AI how it should move.',
+    fullExplanation: `Image-to-video turns an existing image into a video.
 
-You normally choose a picture of your AI girlfriend and let the video generator animate it.
+You first give the AI the starting image. Then you describe what should happen in the video.
 
-For example, the AI might make the character:
+For example, you can tell the character to smile, turn around, walk forward, move their hair, or look toward the camera.
 
-- Smile
-- Turn around
-- Walk
-- Move toward the camera
-- Change her pose
+Because the starting image already shows the character, clothing, pose, and location, the AI has fewer things to create from scratch.
 
-Some apps also give you a prompt box where you can tell the AI exactly what you want to happen. Others simply animate the image automatically and give you almost no control.
+This usually gives you more control than text-to-video.
 
-Image-to-video is currently much more common on AI girlfriend apps than full text-to-video.
-
-The big advantage is character consistency. Because the AI starts with an existing picture, your character is usually more likely to keep the same face, outfit, and overall appearance.`,
+Example: She slowly turns toward the camera, smiles and brushes her hair behind her ear. The camera slowly moves closer.`,
   },
   {
     term: 'Text-to-Image',
@@ -698,6 +632,12 @@ If you prefer realistic AI girlfriends, these apps may not be for you. But if yo
       'Discreet billing means the charge on your bank or card statement does not clearly show the name or type of the app you used.',
     fullExplanation: `Discreet billing helps keep your purchase private. Instead of showing the app name clearly on your bank or card statement, the charge may appear under a different company or neutral payment name. This can be useful if you share a bank account or do not want other people to know what you paid for.`,
   },
+];
+
+const overlayNames = new Set(PROMPTING_GLOSSARY_TERMS.map((term) => term.term));
+const TERMS: SeedTerm[] = [
+  ...BASE_TERMS.filter((term) => !overlayNames.has(term.term)),
+  ...PROMPTING_GLOSSARY_TERMS,
 ];
 
 async function main() {

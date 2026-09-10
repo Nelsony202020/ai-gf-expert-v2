@@ -58,6 +58,14 @@ function renderBlock(node: TipTapNode): string {
       return `<li>${(node.content ?? []).map(renderBlock).join('')}</li>`;
     case 'blockquote':
       return `<blockquote>${(node.content ?? []).map(renderBlock).join('')}</blockquote>`;
+    case 'codeBlock': {
+      const code = escapeHtml(
+        (node.content ?? [])
+          .map((child) => String(child.text ?? ''))
+          .join(''),
+      );
+      return `<pre><code>${code}</code></pre>`;
+    }
     case 'horizontalRule':
       return '<hr />';
     default:
