@@ -1,0 +1,292 @@
+<p><a href="/reviews/ourdream-ai/">OurDream AI</a> has one of the best AI image generators I’ve tested so far, but the first time I opened it, I had no idea what I was looking at.</p>
+<p>There are different image models, presets, settings, Free Play, Remix, editing tools, and a bunch of other options. It looks complicated, but once you understand what each part does, it’s actually pretty easy to use.</p>
+<p>This is the ultimate OurDream AI image generator guide for beginners. I’ll show you how the OurDream AI image generator works, which model to use, how to generate your first images, how presets work, and what to do when the result isn’t right.</p>
+<p>If you already know the basics, you can skip this guide and go straight to my more advanced <a href="/guides/ourdream-ai-image-prompt-guide/">OurDream AI image prompt guide</a>. I’ll also cover NSFW generation, character consistency, and editing in separate guides as those go live.</p>
+
+<h2 id="how-to-open-the-ourdream-ai-image-generator">How to Open the OurDream AI Image Generator</h2>
+<p>To open the OurDream AI Image Generator, navigate to the Generate button in the sidebar.</p>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/generate-sidebar.webp" alt="OurDream AI sidebar with the Generate button used to open the image generator" width="1400" height="896" loading="lazy" decoding="async" />
+  <figcaption>Open the image generator from Generate in the sidebar</figcaption>
+</figure>
+
+<h2 id="character-mode-vs-free-play">Character Mode vs Free Play</h2>
+<p>Before you generate an image, you need to pick a character. You can pick from:</p>
+<ol>
+<li>A character you created</li>
+<li>A character from the public library</li>
+<li>A Free Play character</li>
+</ol>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/pick-character.webp" alt="OurDream AI character picker showing saved characters and Free Play options" width="572" height="848" loading="lazy" decoding="async" />
+  <figcaption>Pick a saved character, a public character, or Free Play</figcaption>
+</figure>
+
+<h3 id="generate-images-with-an-existing-character">Generate Images With an Existing Character</h3>
+<p>Generating images with an existing character is great if you want consistent images. Keep in mind that OurDream AI only looks at the first image; they don’t use character LoRAs.</p>
+<p>So the first image of the character matters a lot. If that image involves multiple people or is far away, OurDream may have a very hard time generating consistent images later.</p>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/first-image-bad.webp" alt="Poor first character image with multiple people that is hard for OurDream AI to reuse consistently" width="724" height="1030" loading="lazy" decoding="async" />
+  <figcaption>Bad first image — too far away / too many people</figcaption>
+</figure>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/first-image-good.webp" alt="Clear close-up first character image that OurDream AI can reuse for consistent generations" width="734" height="1038" loading="lazy" decoding="async" />
+  <figcaption>Good first image — a clear, close character shot</figcaption>
+</figure>
+
+<h3 id="generate-images-with-free-play">Generate Images With Free Play</h3>
+<p>Free Play lets you generate all sorts of images without being tied to a specific character. It’s important that you select the right Free Play option. If you want to generate a single female, select female; for a single male, select male.</p>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/freeplay.webp" alt="OurDream AI Free Play character options for generating images without a saved character" width="1400" height="896" loading="lazy" decoding="async" />
+  <figcaption>Free Play is for one-off images that are not tied to a saved character</figcaption>
+</figure>
+
+<h2 id="choose-your-image-generator">Choose Your Image Generator</h2>
+<p>OurDream AI currently has three image generators: Dreamy, Vivid, and Vivid 2. They can all generate images, but they work a bit differently. There is no single model that is always the best.</p>
+
+<h3 id="dreamy">Dreamy</h3>
+<p>Dreamy is OurDream AI’s own image generator.</p>
+<p>The main reason to use Dreamy is porn. It is good at generating nude images and sexual poses.</p>
+<p>The trade-off is that the rest of the image can sometimes be less impressive. Things like the background, clothing, furniture, and lighting may look more basic.</p>
+<p>Dreamy also works better with keyword-based prompting instead of writing a long natural sentence.</p>
+<p>For example, instead of:</p>
+<blockquote><p>She is sitting at a beach wearing a black dress while the sun is setting behind her.</p></blockquote>
+<p>You could write something more like:</p>
+<blockquote><p>sitting, beach, black dress, sunset, warm lighting, front view</p></blockquote>
+<p>So if your main goal is generating porn, Dreamy is usually the first model I would try.</p>
+
+<h3 id="vivid">Vivid</h3>
+<p>Vivid is better suited to more normal scenes where the whole image matters.</p>
+<p>For example, if you care about the clothing, environment, pose, lighting, and what is happening in the scene, Vivid can be easier to work with.</p>
+<p>Another big difference is prompting. Vivid can understand more natural descriptions, so you don’t always have to write everything as a list of short tags.</p>
+<p>For example:</p>
+<blockquote><p>She is sitting at a beach during sunset wearing a black dress and looking toward the camera.</p></blockquote>
+<p>That type of prompt makes more sense with Vivid than with Dreamy.</p>
+<p>The original Vivid is not as good as Dreamy for generating explicit porn, especially when you need visible sexual details.</p>
+
+<h3 id="vivid-2">Vivid 2</h3>
+<p>Vivid 2 is the newer Vivid model.</p>
+<p>I have used it with long and detailed prompts, and it can understand much more detailed descriptions.</p>
+<p>However, I have not tested Vivid 2 enough against Dreamy and the original Vivid to confidently tell you exactly what it is best at yet. I don’t want to make up a recommendation just because it is the newer model. I will update this section once I have tested all three properly side by side.</p>
+
+<h3 id="which-image-generator-should-you-use">Which Image Generator Should You Use?</h3>
+<p>The easiest way to look at it for now is:</p>
+<ul>
+<li><strong>Dreamy</strong> — use it when your main goal is generating porn or explicit sexual images.</li>
+<li><strong>Vivid</strong> — use it when you care more about the full scene, such as clothing, poses, backgrounds, and lighting. It also works better with normal written descriptions.</li>
+<li><strong>Vivid 2</strong> — the newer option. It can handle detailed prompts well and is also good at NSFW. That said, I still need to test it more before I can say exactly when you should choose it over Dreamy or Vivid.</li>
+</ul>
+<p>If you are not sure, just try the same idea with two different models. Changing the image generator can sometimes make a bigger difference than rewriting your prompt over and over.</p>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/model-dreamy.webp" alt="Example image generated with OurDream AI Dreamy" width="768" height="1360" loading="lazy" decoding="async" />
+  <figcaption>Dreamy</figcaption>
+</figure>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/model-vivid.webp" alt="Example image generated with OurDream AI Vivid" width="768" height="1360" loading="lazy" decoding="async" />
+  <figcaption>Vivid</figcaption>
+</figure>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/model-vivid-2.webp" alt="Example image generated with OurDream AI Vivid 2" width="768" height="1360" loading="lazy" decoding="async" />
+  <figcaption>Vivid 2</figcaption>
+</figure>
+
+<h2 id="how-to-generate-an-image">How to Generate an Image</h2>
+<p>Once you open the image generator, there are a few different ways to build your image. You can keep it very simple and write everything yourself, or use OurDream’s presets to help with the pose, outfit, and scene.</p>
+
+<h3 id="choose-a-character-or-use-free-play">Choose a Character or Use Free Play</h3>
+<p>The first choice is whether you want to generate an image of one of your existing characters or use Free Play.</p>
+<p>If you select a character, OurDream already knows what that character should look like. You mainly need to tell it what you want the character to be doing.</p>
+<p>Free Play works differently. You are not using one of your saved characters, so you have more freedom to create the image from scratch.</p>
+<p>I mostly use Free Play when I want to test prompts or create something without worrying about keeping an existing character consistent.</p>
+
+<h3 id="add-a-pose-outfit-and-scene">Add a Pose, Outfit, and Scene</h3>
+<p>You don’t have to describe everything yourself. OurDream has presets for:</p>
+<ul>
+<li>Pose</li>
+<li>Outfit</li>
+<li>Scene</li>
+</ul>
+<p>Each one is optional. For example, you could select Pose: Standing, Outfit: College Uniform, Scene: Beach. You can also leave any of them empty and describe what you want in the custom prompt instead.</p>
+<p>There are a lot of presets available. The Pose library includes everything from normal standing poses to NSFW poses and even porn. The Outfit library includes things like uniforms, lingerie, and other clothing, while the Scene library includes places like bedrooms, hotels, beaches, pools, and offices.</p>
+<p>There are also community presets and your own saved presets.</p>
+<p>I am still testing how useful the preset system is compared with writing everything yourself, so I am not going to go too deep into creating custom presets in this guide.</p>
+
+<h3 id="write-a-custom-prompt">Write a Custom Prompt</h3>
+<p>Below the presets is the Custom Prompt field. This is where you can give OurDream extra instructions about what you want to see.</p>
+<p>For example:</p>
+<blockquote><p>sitting on the beach, black dress, sunset, looking at camera, warm lighting</p></blockquote>
+<p>You can use the custom prompt together with presets. So you could select a Beach scene and then use the prompt to add more details about the lighting, pose, or camera angle.</p>
+<p>You can also skip the presets completely and describe the whole image yourself.</p>
+<p>For this guide, I am only covering the basics. If you want to learn about prompt structure, clothing, poses, camera angles, weights, and other prompting tricks, I cover those separately in my <a href="/guides/ourdream-ai-image-prompt-guide/">OurDream AI Image Prompt Guide</a>.</p>
+
+<h3 id="choose-your-image-settings">Choose Your Image Settings</h3>
+<p>Click Settings to change how the image is generated. There are a few important options.</p>
+<p><strong>Image generator.</strong> You can choose between Dreamy, Vivid 1.0, and Vivid 2.0. Dreamy is currently the default. As I explained above, the best model depends on what you are trying to generate.</p>
+<p><strong>Aspect ratio.</strong> You can choose 4:5 Portrait, 5:4 Landscape, 9:16, 16:9, or 1:1. I normally use a vertical ratio like 4:5 or 9:16 for images focused on one character. Landscape makes more sense when the environment is an important part of the image.</p>
+<p>Keep in mind that most image generators are trained on 1:1, 4:5, and 9:16. So if you try to generate a character image that’s landscape, results are often lower quality.</p>
+<p><strong>Number of images.</strong> The current options go from 2 all the way up to 256 images. I don’t think you need to generate a crazy amount when you are just starting. Generating a few versions first makes it much easier to see if your idea and prompt actually work. If they don’t, fix the problem before generating another huge batch.</p>
+
+<h3 id="add-a-negative-prompt">Add a Negative Prompt</h3>
+<p>There is also a Negative Prompt field inside Settings.</p>
+<p>This works the opposite way from your normal prompt. Your normal prompt tells OurDream what you want. The negative prompt tells it what you don’t want.</p>
+<p>For example, if the generator keeps adding something you don’t want in the image, you can try adding it to the negative prompt.</p>
+<p>You don’t always need to use this. I would only start adding negative prompts when you actually have a problem you are trying to fix.</p>
+
+<h3 id="generate-a-few-images-first">Generate a Few Images First</h3>
+<p>Once everything is ready, hit Generate. I recommend starting with a small batch instead of generating dozens of images immediately. Then look at the results.</p>
+<p>Don’t only ask: is this image good or bad? Look at what is actually wrong. Maybe:</p>
+<ul>
+<li>the pose is wrong</li>
+<li>the outfit is wrong</li>
+<li>the background is wrong</li>
+<li>the camera angle is wrong</li>
+<li>the character looks different</li>
+<li>the model misunderstood part of your prompt</li>
+</ul>
+<p>This makes it much easier to know what to change next.</p>
+
+<h3 id="change-one-thing-at-a-time">Change One Thing at a Time</h3>
+<p>This is probably the most useful habit I have learned while testing AI image generators.</p>
+<p>If the result is already 80% correct, don’t completely rewrite your prompt. Change the part that is wrong and generate again.</p>
+<p>If the pose is wrong, fix the pose. If the clothing is wrong, fix the clothing. If the image looks good but the background sucks, don’t start from zero.</p>
+<p>Changing five things at once makes it very hard to know which change actually helped.</p>
+<p>The goal isn’t to write the perfect prompt before you generate anything. Start simple, look at what OurDream gives you, and improve it from there.</p>
+
+<h2 id="image-editing">Image Editing</h2>
+<p>One of the most useful features in OurDream AI is the Image Editor.</p>
+<p>It is great when you generate an image you already like, but there is one small thing you want to change. Instead of generating the whole image again, you can edit the image you already have.</p>
+<p>Simply click on one of your generated images and choose Edit Image. Then type what you want to change and hit Generate.</p>
+<p>For example, if I like the image but want to change the dress from black to red, I can simply ask OurDream to make the dress red.</p>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/edit-image.webp" alt="OurDream AI Edit Image screen for changing details on a generated photo" width="1400" height="896" loading="lazy" decoding="async" />
+  <figcaption>Edit Image is for small changes to a generation you already like</figcaption>
+</figure>
+<p>There is also a second way to edit an image called Inpainting. With Inpainting, you brush over the exact part of the image you want to change. Your prompt will then mainly apply to that selected area instead of the whole image.</p>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/inpainting.webp" alt="OurDream AI inpainting brush selecting a dress to change its color" width="1400" height="896" loading="lazy" decoding="async" />
+  <figcaption>Inpainting lets you brush the exact area you want to change</figcaption>
+</figure>
+<p>So if I wanted to change the dress to red, I would brush over the dress and use the same prompt.</p>
+<p>From my experience, Inpainting is usually more accurate when you only want to change one specific part of an image. If the image is already close to what you want, I would normally try editing or inpainting before generating everything again from scratch.</p>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/without-inpaint.webp" alt="Generated image before inpainting" width="1153" height="2048" loading="lazy" decoding="async" />
+  <figcaption>Without in-paint</figcaption>
+</figure>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/with-inpaint.webp" alt="Same image after inpainting a targeted change" width="1148" height="2039" loading="lazy" decoding="async" />
+  <figcaption>With in-paint</figcaption>
+</figure>
+
+<h2 id="how-to-write-a-basic-image-prompt">How to Write a Basic Image Prompt</h2>
+<p>You do not need to make your first prompt complicated. A good beginner prompt should simply describe what you want to see in the image.</p>
+<p>I usually think about it like this:</p>
+<blockquote><p>subject → pose/action → clothing → location → lighting → camera angle</p></blockquote>
+<p>For example:</p>
+<blockquote><p>woman sitting on the beach, black dress, sunset, looking at camera, warm lighting, medium shot</p></blockquote>
+<p>That is already enough to give the image generator a clear direction. You can always add more detail later if something is missing.</p>
+<p>I would not start by adding a ton of weights, brackets, or advanced prompt tricks. First generate a few images and see what OurDream gets right and what it gets wrong.</p>
+<p>If you want to go deeper into clothing prompts, poses, lighting, camera angles, prompt weights, and negative prompts, I cover all of that in my <a href="/guides/ourdream-ai-image-prompt-guide/">OurDream AI Image Prompt Guide</a>.</p>
+
+<h2 id="what-are-ourdream-ai-presets">What Are OurDream AI Presets?</h2>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/presets.webp" alt="OurDream AI pose, outfit, and scene preset libraries" width="1400" height="896" loading="lazy" decoding="async" />
+  <figcaption>Pose, outfit, and scene presets can fill in parts of the image for you</figcaption>
+</figure>
+<p>OurDream AI also has a preset system that lets you build part of the image without writing everything yourself. You can choose presets for pose, outfit, and scene. You can use one preset, combine multiple presets, or skip them completely and write everything in the custom prompt field.</p>
+
+<h3 id="using-a-preset">Using a Preset</h3>
+<p>Using a preset is the easiest option if you already see something close to what you want. For example, you could choose a standing pose, a specific outfit, and a beach scene. Then use the custom prompt field to add extra details such as the lighting, camera angle, or expression.</p>
+<p>OurDream also has a large preset library with presets made by the platform and the community. This is especially useful if you do not know how to describe a certain pose or scene yourself.</p>
+
+<h3 id="creating-without-a-preset">Creating Without a Preset</h3>
+<p>You do not have to use presets. You can leave the pose and scene empty and describe everything yourself in the Custom Prompt field. This gives you more control, but it also means you need to be more specific about what you want.</p>
+<p>I personally like testing both methods. Sometimes a preset gets you close very quickly, while other times writing the scene yourself gives you better control.</p>
+
+<h3 id="custom-presets">Custom Presets</h3>
+<p>OurDream also lets users create their own presets and save them for later. There are custom presets for things like poses, outfits, and scenes, and users can also browse community-made presets.</p>
+<p>I have not tested the custom preset system enough yet to tell you the best way to create or use them, so I am not going to pretend I have a full strategy for it.</p>
+<p>For now, I would treat custom presets as an optional tool. You do not need them to create good images, and you can always generate everything using the normal prompt field.</p>
+
+<h2 id="how-remix-works">How Remix Works</h2>
+<p>Remix is useful when you already generated an image you like, but you want to try a different version of it without starting completely from scratch.</p>
+<p>The main thing to understand is that Remix uses the same image generator again. So if the original image was made with Dreamy, Vivid, or Vivid 2, Remix takes that image and lets you prompt it again using that same type of generation.</p>
+<p>This is different from Edit Image, which uses one of OurDream’s editing engines, such as Spark or Fusion, to change the existing image.</p>
+
+<h3 id="where-to-find-remix">Where to Find Remix</h3>
+<p>Open one of your generated images and look for the Remix option. From there, you can see the prompt used for the image, make changes, and generate a new version.</p>
+<p>This can be useful if you like the general result but want to try things like a different pose, a different expression, a slightly different scene, or changes to the prompt.</p>
+
+<h3 id="when-i-would-use-remix">When I Would Use Remix</h3>
+<p>I would mainly use Remix when I like the general direction of an image and want another version of it. For example, maybe the character looks good, and the scene is close, but you want to change the pose or adjust part of the prompt. Instead of going back and building the image again from zero, Remix gives you a quicker starting point.</p>
+
+<h3 id="remix-vs-generating-again">Remix vs Generating Again</h3>
+<p>Generating again from the main image generator means you are basically starting a new generation using your current setup. Remix is supposed to make it easier to build from an image you already made.</p>
+<p>However, I have had mixed results with it recently. A few weeks ago, Remix worked better for me. More recently, I noticed that some custom information does not always carry over properly.</p>
+<p>For example, when I tested one of my own presets, Remix kept the character and the general setting, but it did not properly keep the custom outfit. Some of the information that appeared in the prompt also did not match the outfit I originally used.</p>
+<p>Because of that, I currently do not rely on Remix when I need very specific clothing, backgrounds, or custom preset details to stay the same.</p>
+
+<h3 id="remix-vs-edit-image">Remix vs Edit Image</h3>
+<p>This is the important difference:</p>
+<ul>
+<li><strong>Remix</strong> uses the image generator again to create a new version of the image.</li>
+<li><strong>Edit Image</strong> uses an editing model like Spark or Fusion to directly change the existing image.</li>
+</ul>
+<p>If I already like the image and only want to change one specific thing, I normally prefer Edit Image or Inpainting. If I want a new version of the same general idea, Remix can still be useful.</p>
+
+<h2 id="how-in-chat-image-generation-works">How In-Chat Image Generation Works</h2>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/chat-image.webp" alt="OurDream AI chat bar switched to Image mode for in-chat image generation" width="1400" height="896" loading="lazy" decoding="async" />
+  <figcaption>You can generate images from the chat bar without opening the main generator</figcaption>
+</figure>
+<p>Another way to generate images in OurDream AI is directly inside the chat. This is much more basic than the main image generator, but it is also very easy to use.</p>
+<p>Inside the chat bar, click the icon in the bottom left and switch to Image. Then just describe what you want and generate it.</p>
+<p>The nice part is that you do not need to write a super-structured prompt here. You can just talk normally and say what you want to see.</p>
+<p>From my experience, this works surprisingly well. It is fast, easy to use, and much better than a lot of competitors. For example, Candy AI often gives more random results, while OurDream AI usually understands the request better.</p>
+<p>The downside is that you do not get much control. You cannot use presets here like you can in the main generator, so this is more for convenience than deep customization.</p>
+
+<h3 id="giving-the-chat-more-direction">Giving the Chat More Direction</h3>
+<p>The chat image tool works best when you are clear and direct. You can say simple things like:</p>
+<ul>
+<li>send me a picture of you at the beach</li>
+<li>show me what you look like in a red dress</li>
+<li>send a selfie in your bedroom</li>
+<li>show me at university</li>
+</ul>
+<p>You can also talk in a normal way and build on the roleplay. That is actually one of the best things about it. If you are chatting and roleplaying, image generation feels very natural here. You do not need to leave the conversation and start setting up a full prompt somewhere else.</p>
+<p>Another great feature is contextual images.</p>
+<figure>
+  <img src="/guides/ourdream-ai-image-generator/contextual-chat-image.webp" alt="Contextual in-chat image generated during an OurDream AI roleplay" width="1400" height="896" loading="lazy" decoding="async" />
+  <figcaption>Contextual images can follow the scene you are already roleplaying</figcaption>
+</figure>
+<p>For example, if you are roleplaying that the character is at a university, you can often just use the image option and have her send a picture in that setting. That makes the conversation feel a lot more immersive. You can also make follow-up requests if the first image is not exactly what you want. Just tell the chat what to change.</p>
+
+<h3 id="when-to-use-the-main-generator-instead">When to Use the Main Generator Instead</h3>
+<p>The chat image generator is great when you want something fast, simple, and natural. I would use it when you want a quick image during a chat, you want the conversation to feel more immersive, you want to describe things in normal language, or you do not need a lot of control.</p>
+<p>I would switch to the main generator when you want more control over the result. For example, use the main generator if you want presets, more image settings, more control over the prompt, more repeatable results, or more serious testing.</p>
+<p>So basically: use chat image generation for convenience. Use the main generator for control.</p>
+<p>Also, after generating an image in chat, you can do more with it. You can click the pencil icon to edit the image, and you can also turn images into videos.</p>
+
+<h2 id="my-recommended-ourdream-image-workflow">My Recommended OurDream Image Workflow</h2>
+<p>After testing OurDream for a while, I think the easiest way to get good results is to keep things simple at the start and only add more detail when you actually need it.</p>
+<ol>
+<li><strong>Start with a character or Free Play.</strong> If I want an image of an existing character, I select that character. If I just want to test an idea or create something completely new, I use Free Play.</li>
+<li><strong>Choose the right image generator.</strong> If my main goal is porn, I usually start with Dreamy. For more normal scenes where the clothing, background, and overall image matter more, Vivid can be easier to work with. I am still testing Vivid 2, so I usually just try it when I want to compare the result with the other models.</li>
+<li><strong>Start with a simple prompt.</strong> I wouldn’t start with a giant prompt. Give OurDream the main idea first — for example, <em>woman sitting at a beach, black dress, sunset, looking at camera</em>. Generate a few images and see what happens. You can always make the prompt more detailed later.</li>
+<li><strong>Generate a few results.</strong> AI image generation has a lot of randomness. One bad image doesn’t automatically mean your prompt is bad. I normally generate a few results first so I can see if OurDream understands the general idea.</li>
+<li><strong>Pick the image closest to what you want.</strong> Don’t look for perfection immediately. I usually pick the image that is closest to what I had in mind. Maybe the character, pose, and background are already good, but the dress is the wrong color. That is much easier to fix than starting over completely.</li>
+<li><strong>Fix one thing at a time.</strong> If an image is 80% right, don’t rewrite the entire prompt. Change the part that is wrong.</li>
+<li><strong>Edit instead of starting over.</strong> Once I have an image I really like, I usually stop generating completely new images. If I only need to change something small, I use Edit Image or Inpainting. I use Remix more when I want another version of the same general image, but I don’t rely on it when I need custom clothing or background details to stay exactly the same because those don’t always carry over properly.</li>
+</ol>
+<p>The main thing is: don’t keep starting from zero if you already have something good. Get close with the generator, then use the other tools to finish the image.</p>
+
+<h2 id="how-much-does-ourdream-ai-image-generation-cost">How Much Does OurDream AI Image Generation Cost?</h2>
+<p>OurDream charges DreamCoins for image generations, and the exact cost depends on the model, batch size, and whether you edit, inpaint, or remix afterward. Rates change, so I would check the current cost in the generator before you fire off a huge batch.</p>
+<p>For a fuller pricing picture, see my <a href="/reviews/ourdream-ai/">OurDream AI review</a>.</p>
+
+<h2 id="more-ourdream-ai-image-guides">More OurDream AI Image Guides</h2>
+<ul>
+<li><a href="/guides/ourdream-ai-image-prompt-guide/">OurDream AI Image Prompt Guide</a></li>
+<li><a href="/guides/ourdream-ai-prompt-guide/">OurDream AI Prompt Guide</a> (characters, images, video, and roleplay)</li>
+<li><a href="/guides/ourdream-ai-comics/">OurDream AI Comics</a></li>
+</ul>
+<p>Still coming: OurDream AI Image Editor Guide, How to Make Consistent Images in OurDream AI, and OurDream AI Character Prompt Guide.</p>

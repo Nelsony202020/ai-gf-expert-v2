@@ -69,6 +69,8 @@ const STATIC_PAGES: StaticPageDef[] = [
   { path: '/guides/', title: 'All Guides', contentType: 'hub', sourceFile: 'src/pages/guides/index.astro' },
   { path: `/guides/${buyingGuideSlug}/`, title: 'How to Choose an AI Girlfriend App', contentType: 'guide', sourceFile: 'src/pages/guides/how-to-choose-an-ai-girlfriend-app.astro' },
   { path: '/guides/ourdream-ai-comics/', title: 'OurDream AI Comics: How to Use the Comic Generator', contentType: 'guide', sourceFile: 'src/pages/guides/ourdream-ai-comics.astro' },
+  { path: '/guides/ourdream-ai-image-generator/', title: 'How to Use OurDream AI Image Generator', contentType: 'guide', sourceFile: 'src/pages/guides/ourdream-ai-image-generator.astro' },
+  { path: '/guides/ourdream-ai-image-prompt-guide/', title: 'OurDream AI Image Prompt Guide', contentType: 'guide', sourceFile: 'src/pages/guides/ourdream-ai-image-prompt-guide.astro' },
   { path: '/guides/ourdream-ai-prompt-guide/', title: 'OurDream AI Prompt Guide', contentType: 'guide', sourceFile: 'src/pages/guides/ourdream-ai-prompt-guide.astro' },
   { path: '/legal/', title: 'Legal Pages', contentType: 'hub', sourceFile: 'src/pages/legal/index.astro' },
   { path: '/legal/privacy/', title: 'Privacy Policy', contentType: 'legal', sourceFile: 'src/pages/legal/privacy.astro' },

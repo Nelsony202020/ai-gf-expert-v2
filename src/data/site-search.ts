@@ -27,6 +27,18 @@ const staticPages: SearchResult[] = [
     type: 'guide',
     meta: 'Guides',
   },
+  {
+    label: 'How to Use OurDream AI Image Generator',
+    href: '/guides/ourdream-ai-image-generator/',
+    type: 'guide',
+    meta: 'Guides',
+  },
+  {
+    label: 'OurDream AI Image Prompt Guide',
+    href: '/guides/ourdream-ai-image-prompt-guide/',
+    type: 'guide',
+    meta: 'Guides',
+  },
   ...legalPages.map((page) => ({
     label: page.title,
     href: page.href,
