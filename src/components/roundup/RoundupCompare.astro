@@ -18,6 +18,7 @@ import SubscoreScoreTooltip from '../review/tooltips/SubscoreScoreTooltip.astro'
 import InfoIcon from '../ui/InfoIcon.astro';
 import ComparePricingTooltip from './ComparePricingTooltip.astro';
 import RoundupComparePicker from './RoundupComparePicker.astro';
+import AffiliateLink from '../ui/AffiliateLink.astro';
 
 interface Props {
   picks: RoundupPick[];
@@ -371,17 +372,16 @@ function subWinners(key: string, subName: string, ids: string[]) {
           const pick = picks.find((p) => p.id === pickId)!;
           return (
             <div class="roundup-compare__visit-col" data-compare-visit-col={pickId}>
-              <a
+              <AffiliateLink
                 class="roundup-compare__visit-cta bg-brand-cta"
                 href={pick.affiliateUrl}
                 target="_blank"
-                rel="nofollow sponsored noopener"
                 data-compare-visit={pickId}
               >
                 <span class="roundup-compare__visit-cta-prefix">Visit </span>
                 <span class="roundup-compare__visit-cta-name">{pick.name}</span>
                 <span class="material-symbols-outlined roundup-compare__visit-cta-icon" aria-hidden="true">open_in_new</span>
-              </a>
+              </AffiliateLink>
               {
                 pick.reviewUrl && (
                   <a class="roundup-compare__review-link" href={pick.reviewUrl} data-compare-review={pickId}>
@@ -427,6 +427,7 @@ function subWinners(key: string, subName: string, ids: string[]) {
 <script>
   import { compareFeatureCellInnerHtml } from '../../lib/roundup/compareTable';
   import { initMultiValuePopovers } from '../../lib/ui/multiValueDisplay.client.ts';
+  import { goAffiliateRel, isGoAffiliateHref } from '../../lib/affiliate/rel';
 
   const compareDataEl = document.getElementById('roundup-compare-data');
   const { comparePayload, defaultIds, categoryKeys, featureRowLabels, pricingRowLabels } = JSON.parse(
@@ -661,9 +662,12 @@ function subWinners(key: string, subName: string, ids: string[]) {
 
       const visitCol = root.querySelectorAll('[data-compare-visit-col]')[slot];
       const visitLink = visitCol?.querySelector('[data-compare-visit]');
-      if (visitLink) {
+      if (visitLink instanceof HTMLAnchorElement) {
         visitLink.href = pick.affiliateUrl;
         visitLink.dataset.compareVisit = pickId;
+        if (isGoAffiliateHref(pick.affiliateUrl)) {
+          visitLink.rel = goAffiliateRel({ newTab: visitLink.target === '_blank' });
+        }
         const nameEl = visitLink.querySelector('.roundup-compare__visit-cta-name');
         if (nameEl) nameEl.textContent = pick.name;
       }

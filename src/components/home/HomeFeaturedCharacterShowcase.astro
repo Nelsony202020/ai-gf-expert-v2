@@ -3,6 +3,7 @@ import type { HomeFeaturedCharacter } from '../../data/homepage';
 import { pickCharacterDisplayImage } from '../../lib/characters/public';
 import HomeCharacterCarousel from './HomeCharacterCarousel.astro';
 import { optimizedImageUrl } from '../../lib/media/optimize';
+import { affiliateHrefRel, isGoAffiliateHref } from '../../lib/affiliate/rel';
 
 interface Props {
   characters: HomeFeaturedCharacter[];
@@ -74,7 +75,11 @@ const portrait = spotlight
       )}
 
       {spotlight.profileUrl && (
-      <a class="home-featured-spotlight__cta" href={spotlight.profileUrl}>
+      <a
+        class="home-featured-spotlight__cta"
+        href={spotlight.profileUrl}
+        rel={isGoAffiliateHref(spotlight.profileUrl) ? affiliateHrefRel(spotlight.profileUrl) : undefined}
+      >
         <span class="material-symbols-outlined text-[18px]" aria-hidden="true">person</span>
         View profile
       </a>

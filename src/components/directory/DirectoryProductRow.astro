@@ -11,6 +11,7 @@ import EditorialAwardBadge from '../ui/EditorialAwardBadge.astro';
 import { getPrimaryAward, getSecondaryAwards } from '../../lib/awards/compute';
 import CmsField from '../cms/CmsField.astro';
 import { optimizedCardImageUrl, optimizedLogoUrl } from '../../lib/media/optimize';
+import AffiliateLink from '../ui/AffiliateLink.astro';
 
 interface Props {
   app: HomeExplorerApp;
@@ -161,16 +162,15 @@ const secondaryAwards = getSecondaryAwards(app.awards ?? []);
       <a class="dir-row__cta" href={reviewHref}>
         Read {app.name} review
       </a>
-      <a
+      <AffiliateLink
         class="dir-row__cta-external"
         href={app.affiliateUrl}
         target="_blank"
-        rel="sponsored nofollow noopener"
         data-directory-visit={app.id}
         aria-label={`Visit ${app.name}`}
       >
         <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
-      </a>
+      </AffiliateLink>
     </div>
   </div>
 </article>

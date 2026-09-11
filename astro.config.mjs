@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 import vercel from '@astrojs/vercel';
 import { astroScriptTsPlugin } from './vite/astro-script-ts-plugin.mjs';
 import { canonicalGuard } from './integrations/canonical-guard.mjs';
+import { rehypeAffiliateLinks } from './src/lib/affiliate/rel.ts';
 
 // https://astro.build/config
 export default defineConfig({
@@ -69,5 +70,8 @@ export default defineConfig({
     resolve: {
       dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
     },
+  },
+  markdown: {
+    rehypePlugins: [rehypeAffiliateLinks],
   },
 });

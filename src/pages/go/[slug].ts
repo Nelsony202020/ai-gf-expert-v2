@@ -46,7 +46,7 @@ const SLUG_ALIASES: Record<string, string> = {
   'kupid-ai-youtube': 'kupid-ai-2-youtube',
 };
 
-export const GET: APIRoute = async ({ params, redirect }) => {
+export const GET: APIRoute = async ({ params }) => {
   const rawSlug = params.slug!;
   const temp = TEMP_REDIRECTS[rawSlug];
   if (temp) {
@@ -62,7 +62,7 @@ export const GET: APIRoute = async ({ params, redirect }) => {
     );
   }
   const slug = SLUG_ALIASES[rawSlug] ?? rawSlug;
-  if (!isDbConfigured()) return redirect('/', 302);
+  if (!isDbConfigured()) return redirectTo('/');
 
   const db = getDb();
   const { affiliateLinks } = await db.query({

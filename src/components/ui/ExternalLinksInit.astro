@@ -1,8 +1,30 @@
 <script>
+  function isGoAffiliateHref(href) {
+    if (!href) return false;
+    const raw = String(href).trim();
+    if (!raw || raw.startsWith('#') || raw.startsWith('mailto:') || raw.startsWith('tel:')) return false;
+    try {
+      const url = raw.startsWith('//') ? new URL('https:' + raw) : new URL(raw, location.origin);
+      return url.pathname === '/go' || url.pathname.startsWith('/go/');
+    } catch {
+      return raw.startsWith('/go/');
+    }
+  }
+
+  function goAffiliateRel(newTab) {
+    return newTab ? 'sponsored nofollow noopener' : 'sponsored nofollow';
+  }
+
   function externalizeLinks(root = document) {
     root.querySelectorAll('a[href]').forEach((anchor) => {
       const href = anchor.getAttribute('href');
       if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+
+      if (isGoAffiliateHref(href)) {
+        anchor.rel = goAffiliateRel(anchor.target === '_blank');
+        return;
+      }
+
       let external = false;
       if (href.startsWith('//')) {
         external = true;
