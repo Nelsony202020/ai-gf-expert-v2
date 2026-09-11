@@ -142,7 +142,7 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
 
   push({
     title: 'How to Use OurDream AI Image Generator',
-    url: '/guides/ourdream-ai-image-generator',
+    url: '/guides/how-to-use-ourdream-ai-image-generator',
     contentType: 'guide',
     sitemapSection: 'guides',
     parentCategory: 'guides',
@@ -150,7 +150,7 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
 
   push({
     title: 'OurDream AI Image Prompt Guide',
-    url: '/guides/ourdream-ai-image-prompt-guide',
+    url: '/guides/ourdream-ai-image-prompt',
     contentType: 'guide',
     sitemapSection: 'guides',
     parentCategory: 'guides',
@@ -158,7 +158,7 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
 
   push({
     title: 'OurDream AI Prompt Guide',
-    url: '/guides/ourdream-ai-prompt-guide',
+    url: '/guides/ourdream-ai-prompt',
     contentType: 'guide',
     sitemapSection: 'guides',
     parentCategory: 'guides',
@@ -167,9 +167,9 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
   const hardcodedGuideSlugs = new Set([
     buyingGuideSlug,
     'ourdream-ai-comics',
-    'ourdream-ai-image-generator',
-    'ourdream-ai-image-prompt-guide',
-    'ourdream-ai-prompt-guide',
+    'how-to-use-ourdream-ai-image-generator',
+    'ourdream-ai-image-prompt',
+    'ourdream-ai-prompt',
   ]);
 
   // Guides from Sanity (empty until the CMS has published guides)

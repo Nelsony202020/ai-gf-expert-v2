@@ -49,11 +49,11 @@ export const megaMenuColumns: MegaMenuColumn[] = [
       },
       {
         label: 'How to Use OurDream AI Image Generator',
-        href: publicPagePath('/guides/ourdream-ai-image-generator'),
+        href: publicPagePath('/guides/how-to-use-ourdream-ai-image-generator'),
       },
       {
         label: 'OurDream AI Image Prompt Guide',
-        href: publicPagePath('/guides/ourdream-ai-image-prompt-guide'),
+        href: publicPagePath('/guides/ourdream-ai-image-prompt'),
       },
     ],
     viewAll: { label: 'View all guides', href: '/guides/' },

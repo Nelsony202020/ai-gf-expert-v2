@@ -1,5 +1,5 @@
 ---
-// Hardcoded guide page — content lives in src/content/guides/ourdream-ai-image-generator.html
+// Hardcoded guide page — content lives in src/content/guides/ourdream-ai-prompt-guide.html
 // until guides get their own admin section.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
@@ -8,16 +8,17 @@ import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
 import { getAuthor } from '../../data/authors';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import { cdnAsset } from '../../lib/media/cdn';
-import bodyHtml from '../../content/guides/ourdream-ai-image-generator.html?raw';
+import bodyHtml from '../../content/guides/ourdream-ai-prompt-guide.html?raw';
+import faqs from '../../content/guides/ourdream-ai-prompt-guide.faq.json';
 
-const h1 = 'How to Use OurDream AI Image Generator';
-const title = 'How to Use OurDream AI Image Generator: Beginner Guide';
+const h1 = 'OurDream AI Prompt Guide';
+const title = 'OurDream AI Prompt Guide: How to Write GOOD Prompts';
 const description =
-  'Learn how to use the OurDream AI image generator, including Dreamy, Vivid, Vivid 2, Free Play, presets, Remix, image editing, and chat image generation.';
-const canonical = canonicalPublicUrl('/guides/ourdream-ai-image-generator', Astro.site);
-const heroImage = cdnAsset('/guides/ourdream-ai-image-generator/generate-sidebar.webp');
+  'Learn how to write better OurDream AI prompts for characters, images, videos, and roleplay, with examples, JSON prompts, common mistakes, and tested tips.';
+const canonical = canonicalPublicUrl('/guides/ourdream-ai-prompt', Astro.site);
+const heroImage = cdnAsset('/guides/ourdream-ai-prompt-guide/writing-style.webp');
 const author = getAuthor('herman-carter');
-const published = 'September 11, 2026';
+const published = 'September 10, 2026';
 
 const jsonLd: Record<string, unknown>[] = [
   {
@@ -25,9 +26,18 @@ const jsonLd: Record<string, unknown>[] = [
     '@type': 'Article',
     headline: h1,
     description,
-    datePublished: '2026-09-11',
+    datePublished: '2026-09-10',
     author: author ? { '@type': 'Person', name: author.name } : undefined,
     image: heroImage,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
+    })),
   },
 ];
 ---
@@ -40,7 +50,7 @@ const jsonLd: Record<string, unknown>[] = [
         items={[
           { label: 'Home', href: '/' },
           { label: 'Guides', href: '/guides/' },
-          { label: 'OurDream AI Image Generator' },
+          { label: 'OurDream AI Prompt Guide' },
         ]}
       />
       <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-3">{h1}</h1>
@@ -127,7 +137,16 @@ const jsonLd: Record<string, unknown>[] = [
     font-weight: 700;
   }
 
-  .guide-prose code {
-    font-size: 0.9em;
+  .guide-prose pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 28rem;
+    overflow: auto;
+    border: 1px solid var(--color-outline-variant);
+    border-radius: 0.75rem;
+    padding: 1rem 1.1rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    background: color-mix(in srgb, var(--color-on-surface) 4%, transparent);
   }
 </style>
