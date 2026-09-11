@@ -1,0 +1,21 @@
+---
+import { affiliateHrefRel } from '../../lib/affiliate/rel';
+
+interface Props {
+  href: string;
+  class?: string;
+  target?: string;
+  id?: string;
+  rel?: string;
+  'aria-label'?: string;
+  draggable?: string | boolean | 'true' | 'false';
+}
+
+const { href, class: className, target, rel: storedRel, ...rest } = Astro.props;
+const rel = affiliateHrefRel(href, {
+  newTab: target === '_blank',
+  stored: storedRel,
+});
+---
+
+<a href={href} class={className} target={target} rel={rel} {...rest}><slot /></a>

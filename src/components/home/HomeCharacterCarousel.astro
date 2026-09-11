@@ -2,6 +2,7 @@
 import type { HomeFeaturedCharacter } from '../../data/homepage';
 import { pickCharacterDisplayImage } from '../../lib/characters/public';
 import { optimizedImageUrl } from '../../lib/media/optimize';
+import { affiliateHrefRel, isGoAffiliateHref } from '../../lib/affiliate/rel';
 
 interface Props {
   characters: HomeFeaturedCharacter[];
@@ -25,10 +26,18 @@ const displayChars = characters.slice(0, 6);
             );
             const href = char.profileUrl;
             const ItemTag = href ? 'a' : 'div';
+            const linkProps = href
+              ? {
+                  href,
+                  ...(isGoAffiliateHref(href)
+                    ? { rel: affiliateHrefRel(href, { newTab: false }) }
+                    : {}),
+                }
+              : {};
             return (
               <ItemTag
                 class="char-stories__item"
-                {...(href ? { href } : {})}
+                {...linkProps}
               >
                 <div class="char-stories__ring-wrap">
                   <div class="char-stories__avatar-wrap char-stories__avatar-wrap--plain">

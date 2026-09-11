@@ -18,6 +18,7 @@ import SubscoreScoreTooltip from '../review/tooltips/SubscoreScoreTooltip.astro'
 import InfoIcon from '../ui/InfoIcon.astro';
 import ComparePricingTooltip from './ComparePricingTooltip.astro';
 import RoundupComparePicker from './RoundupComparePicker.astro';
+import { affiliateHrefRel } from '../../lib/affiliate/rel';
 
 interface Props {
   picks: RoundupPick[];
@@ -25,6 +26,7 @@ interface Props {
 }
 
 const { picks, defaultIds } = Astro.props;
+const visitRel = (url: string) => affiliateHrefRel(url, { newTab: true });
 
 const comparisonProducts = await loadComparisonProducts();
 const hasPublishedReview = (slug: string) => comparisonProducts.some((product) => product.slug === slug);
@@ -375,7 +377,7 @@ function subWinners(key: string, subName: string, ids: string[]) {
                 class="roundup-compare__visit-cta bg-brand-cta"
                 href={pick.affiliateUrl}
                 target="_blank"
-                rel="nofollow sponsored noopener"
+                rel={visitRel(pick.affiliateUrl)}
                 data-compare-visit={pickId}
               >
                 <span class="roundup-compare__visit-cta-prefix">Visit </span>
@@ -427,6 +429,7 @@ function subWinners(key: string, subName: string, ids: string[]) {
 <script>
   import { compareFeatureCellInnerHtml } from '../../lib/roundup/compareTable';
   import { initMultiValuePopovers } from '../../lib/ui/multiValueDisplay.client.ts';
+  import { goAffiliateRel, isGoAffiliateHref } from '../../lib/affiliate/rel';
 
   const compareDataEl = document.getElementById('roundup-compare-data');
   const { comparePayload, defaultIds, categoryKeys, featureRowLabels, pricingRowLabels } = JSON.parse(
@@ -661,9 +664,12 @@ function subWinners(key: string, subName: string, ids: string[]) {
 
       const visitCol = root.querySelectorAll('[data-compare-visit-col]')[slot];
       const visitLink = visitCol?.querySelector('[data-compare-visit]');
-      if (visitLink) {
+      if (visitLink instanceof HTMLAnchorElement) {
         visitLink.href = pick.affiliateUrl;
         visitLink.dataset.compareVisit = pickId;
+        if (isGoAffiliateHref(pick.affiliateUrl)) {
+          visitLink.rel = goAffiliateRel({ newTab: visitLink.target === '_blank' });
+        }
         const nameEl = visitLink.querySelector('.roundup-compare__visit-cta-name');
         if (nameEl) nameEl.textContent = pick.name;
       }

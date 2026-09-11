@@ -7,7 +7,7 @@ import {
   reviewProseGlossaryContext,
 } from '../../../lib/review/renderReviewProse';
 import VerifiedCheck from '../../ui/VerifiedCheck.astro';
-import { affiliateRel } from '../../../lib/affiliate/rel';
+import { affiliateHrefRel } from '../../../lib/affiliate/rel';
 import { fmtMoney } from '../../../lib/pricing/calc';
 import { fmtScore, getScoreVisual } from '../../../lib/scores';
 import { clampBarPct, computeHeroComparison } from '../../../lib/pricing-tab/types';
@@ -24,7 +24,7 @@ const herman = getAuthor('herman-carter');
 const glossaryTerms = await getPublishedGlossaryTermsForTooltips();
 const pricingGlossary = reviewProseGlossaryContext(glossaryTerms, 'review-pricing');
 const scoreVisual = getScoreVisual(vm.pricingScore);
-const ctaRel = affiliateRel(product.affiliateRel);
+const ctaRel = affiliateHrefRel(product.affiliateUrl, { newTab: true, stored: product.affiliateRel });
 
 const barMin = vm.barMin ?? 0;
 const barMax = vm.barMax ?? 80;

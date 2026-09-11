@@ -3,6 +3,7 @@
 
 import { sanityQuery, isSanityConfigured } from './client';
 import { getProduct } from '../../data/products';
+import { goAffiliateRel, isGoAffiliateHref } from '../affiliate/rel';
 
 export interface GuideAuthor {
   name: string;
@@ -92,8 +93,12 @@ function renderSpans(block: any): string {
           const def = markDefs.find((d) => d._key === mark);
           if (def?._type === 'link' && def.href) {
             const href = escapeHtml(String(def.href));
-            const external = /^https?:\/\//.test(def.href) && !def.href.includes('aigirlfriend.expert');
-            html = `<a href="${href}"${external ? ' rel="noopener" target="_blank"' : ''}>${html}</a>`;
+            if (isGoAffiliateHref(def.href)) {
+              html = `<a href="${href}" rel="${goAffiliateRel({ newTab: false })}">${html}</a>`;
+            } else {
+              const external = /^https?:\/\//.test(def.href) && !def.href.includes('aigirlfriend.expert');
+              html = `<a href="${href}"${external ? ' rel="noopener" target="_blank"' : ''}>${html}</a>`;
+            }
           }
         }
       }

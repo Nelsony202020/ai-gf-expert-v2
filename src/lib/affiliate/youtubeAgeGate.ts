@@ -1,6 +1,7 @@
 import { getAuthor } from '../../data/authors';
 import { cdnAsset } from '../media/cdn';
 import { BRAND_SOCIAL } from '../../data/social-links';
+import { goAffiliateRel } from './rel';
 
 const YOUTUBE_HOST = /^(?:[\w-]+\.)*(?:youtube\.com|youtu\.be)$/i;
 
@@ -69,11 +70,7 @@ export function renderYoutubeAgeGateHtml(opts: {
 }): string {
   const dest = escapeAttr(opts.destinationUrl);
   const back = escapeAttr(opts.backUrl);
-  const relTokens = String(opts.relTags || 'nofollow sponsored noopener')
-    .split(/\s+/)
-    .filter(Boolean);
-  if (!relTokens.includes('noreferrer')) relTokens.push('noreferrer');
-  const rel = escapeAttr(relTokens.join(' '));
+  const rel = escapeAttr(goAffiliateRel({ newTab: false }));
   const backJs = JSON.stringify(opts.backUrl);
 
   return `<!doctype html>
@@ -82,7 +79,6 @@ export function renderYoutubeAgeGateHtml(opts: {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow, noarchive">
-  <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#0f0f0f">
   <title>18+ only</title>
   <link rel="preload" as="image" href="${HERMAN_AVATAR}">
@@ -222,7 +218,7 @@ export function renderYoutubeAgeGateHtml(opts: {
     <p class="hint">Click continue to proceed.</p>
     <div class="actions">
       <a class="btn btn-no" id="no" href="${back}">No</a>
-      <a class="btn btn-yes" id="yes" href="${dest}" rel="${rel}" referrerpolicy="no-referrer">Continue</a>
+      <a class="btn btn-yes" id="yes" href="${dest}" rel="${rel}">Continue</a>
     </div>
     <p class="foot">18+ confirmation required</p>
   </main>

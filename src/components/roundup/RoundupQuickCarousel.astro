@@ -2,6 +2,7 @@
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
 import ScorePill from '../review/ScorePill.astro';
 import { optimizedLogoUrl } from '../../lib/media/optimize';
+import { affiliateHrefRel } from '../../lib/affiliate/rel';
 
 interface Props {
   heading: string;
@@ -50,7 +51,7 @@ const { heading, picks } = Astro.props;
                 class="roundup-quick-card__brand"
                 href={pick.affiliateUrl}
                 target="_blank"
-                rel="nofollow sponsored noopener"
+                rel={affiliateHrefRel(pick.affiliateUrl, { newTab: true })}
                 draggable="false"
                 aria-label={`Visit ${pick.name} (opens in new tab)`}
               >
@@ -65,7 +66,7 @@ const { heading, picks } = Astro.props;
                 class="roundup-quick-card__cta"
                 href={pick.affiliateUrl}
                 target="_blank"
-                rel="nofollow sponsored noopener"
+                rel={affiliateHrefRel(pick.affiliateUrl, { newTab: true })}
                 draggable="false"
               >
                 Visit site

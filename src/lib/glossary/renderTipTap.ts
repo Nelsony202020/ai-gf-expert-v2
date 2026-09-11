@@ -1,3 +1,5 @@
+import { goAffiliateRel, isGoAffiliateHref } from '../affiliate/rel';
+
 /** TipTap JSON → safe HTML for glossary full explanations. */
 
 function escapeHtml(value: string): string {
@@ -26,8 +28,14 @@ function renderInline(nodes: TipTapNode[] | undefined): string {
         if (mark.type === 'bold') html = `<strong>${html}</strong>`;
         else if (mark.type === 'italic') html = `<em>${html}</em>`;
         else if (mark.type === 'link') {
-          const href = escapeHtml(String(mark.attrs?.href ?? ''));
-          if (href) html = `<a href="${href}" rel="noopener noreferrer">${html}</a>`;
+          const rawHref = String(mark.attrs?.href ?? '');
+          const href = escapeHtml(rawHref);
+          if (href) {
+            const rel = isGoAffiliateHref(rawHref)
+              ? goAffiliateRel({ newTab: false })
+              : 'noopener noreferrer';
+            html = `<a href="${href}" rel="${rel}">${html}</a>`;
+          }
         }
       }
       out += html;

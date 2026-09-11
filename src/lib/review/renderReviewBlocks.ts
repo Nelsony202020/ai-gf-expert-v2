@@ -11,6 +11,7 @@ import {
   type GlossaryDecorateState,
 } from '../glossary/decorate';
 import type { PublishedGlossaryTerm } from '../glossary/types';
+import { goAffiliateRel, isGoAffiliateHref } from '../affiliate/rel';
 
 export interface ReviewBlockPublic {
   id: string;
@@ -82,8 +83,12 @@ function renderRichNodes(
         if (mark.type === 'bold') html = `<strong>${html}</strong>`;
         else if (mark.type === 'italic') html = `<em>${html}</em>`;
         else if (mark.type === 'link') {
-          const href = escapeHtml(String(mark.attrs?.href ?? ''));
-          html = `<a href="${href}" class="content-link" rel="noopener noreferrer">${html}</a>`;
+          const rawHref = String(mark.attrs?.href ?? '');
+          const href = escapeHtml(rawHref);
+          const rel = isGoAffiliateHref(rawHref)
+            ? goAffiliateRel({ newTab: false })
+            : 'noopener noreferrer';
+          html = `<a href="${href}" class="content-link" rel="${rel}">${html}</a>`;
         }
       }
       out += html;

@@ -3,6 +3,7 @@ import type { RoundupConclusion, RoundupPick } from '../../data/roundups/ai-girl
 import { renderRoundupText } from '../../lib/roundup/renderRoundupText';
 import { fmtScore } from '../../lib/scores';
 import { optimizedLogoUrl } from '../../lib/media/optimize';
+import { affiliateHrefRel } from '../../lib/affiliate/rel';
 
 interface Props {
   conclusion: RoundupConclusion;
@@ -12,6 +13,7 @@ interface Props {
 const { conclusion, picks } = Astro.props;
 
 const topPick = picks.find((p) => p.id === conclusion.topPickId) ?? picks[0];
+const topPickRel = affiliateHrefRel(topPick.affiliateUrl, { newTab: true });
 
 const paragraphs =
   conclusion.paragraphs?.length
@@ -58,7 +60,7 @@ const paragraphs =
         class="roundup-conclusion__cta roundup-conclusion__cta--primary bg-brand-cta"
         href={topPick.affiliateUrl}
         target="_blank"
-        rel="nofollow sponsored noopener"
+        rel={topPickRel}
       >
         Try {topPick.name}
         <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>

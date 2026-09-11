@@ -1,7 +1,7 @@
 // Shared mapping for public-facing character highlights (reviews, homepage).
 
 import { resolveCharacterDestination } from './destinationUrl';
-import { DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
+import { goAffiliateRel } from '../affiliate/rel';
 import { inferMediaTypeFromUrl, resolveMediaUrl, isUsablePublicMediaUrl } from '../media/url';
 import type { StoryHighlightCharacter } from '../../data/products';
 
@@ -143,7 +143,7 @@ export function mapCharacterForPublic(
     storySlides,
     storyImageSlides,
     profileUrl,
-    profileRel: DEFAULT_AFFILIATE_REL,
+    profileRel: goAffiliateRel({ newTab: true }),
   };
 }
 

@@ -1,6 +1,6 @@
 ---
 import type { Product } from '../../data/products';
-import { affiliateRel } from '../../lib/affiliate/rel';
+import { affiliateHrefRel } from '../../lib/affiliate/rel';
 import { getScoreVisual, fmtScore } from '../../lib/scores';
 import { buildReviewRatingsHash } from '../../lib/review/ratingsDeepLink';
 import ScorePill from './ScorePill.astro';
@@ -15,7 +15,7 @@ interface Props {
 
 const { product } = Astro.props;
 const overall = getScoreVisual(product.overallScore);
-const ctaRel = affiliateRel(product.affiliateRel);
+const ctaRel = affiliateHrefRel(product.affiliateUrl, { newTab: true, stored: product.affiliateRel });
 ---
 
 <div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm sticky top-4">

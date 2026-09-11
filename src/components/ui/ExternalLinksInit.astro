@@ -1,8 +1,24 @@
 <script>
-  function externalizeLinks(root = document) {
-    root.querySelectorAll('a[href]').forEach((anchor) => {
+  import { goAffiliateRel, isGoAffiliateHref } from '../../lib/affiliate/rel';
+
+  function applyGoAffiliateRel(anchor: HTMLAnchorElement) {
+    const href = anchor.getAttribute('href');
+    if (!isGoAffiliateHref(href)) return;
+    const newTab = anchor.target === '_blank';
+    anchor.rel = goAffiliateRel({ newTab });
+  }
+
+  function externalizeLinks(root: ParentNode = document) {
+    root.querySelectorAll('a[href]').forEach((node) => {
+      const anchor = node as HTMLAnchorElement;
       const href = anchor.getAttribute('href');
       if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+
+      if (isGoAffiliateHref(href)) {
+        applyGoAffiliateRel(anchor);
+        return;
+      }
+
       let external = false;
       if (href.startsWith('//')) {
         external = true;
@@ -19,6 +35,7 @@
       const parts = new Set(rel.split(/\s+/).filter(Boolean));
       parts.add('noopener');
       parts.add('noreferrer');
+      parts.delete('');
       anchor.rel = [...parts].join(' ');
     });
   }
