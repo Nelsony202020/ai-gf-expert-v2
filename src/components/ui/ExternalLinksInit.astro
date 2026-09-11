@@ -1,21 +1,27 @@
 <script>
-  import { goAffiliateRel, isGoAffiliateHref } from '../../lib/affiliate/rel';
-
-  function applyGoAffiliateRel(anchor: HTMLAnchorElement) {
-    const href = anchor.getAttribute('href');
-    if (!isGoAffiliateHref(href)) return;
-    const newTab = anchor.target === '_blank';
-    anchor.rel = goAffiliateRel({ newTab });
+  function isGoAffiliateHref(href) {
+    if (!href) return false;
+    const raw = String(href).trim();
+    if (!raw || raw.startsWith('#') || raw.startsWith('mailto:') || raw.startsWith('tel:')) return false;
+    try {
+      const url = raw.startsWith('//') ? new URL('https:' + raw) : new URL(raw, location.origin);
+      return url.pathname === '/go' || url.pathname.startsWith('/go/');
+    } catch {
+      return raw.startsWith('/go/');
+    }
   }
 
-  function externalizeLinks(root: ParentNode = document) {
-    root.querySelectorAll('a[href]').forEach((node) => {
-      const anchor = node as HTMLAnchorElement;
+  function goAffiliateRel(newTab) {
+    return newTab ? 'sponsored nofollow noopener' : 'sponsored nofollow';
+  }
+
+  function externalizeLinks(root = document) {
+    root.querySelectorAll('a[href]').forEach((anchor) => {
       const href = anchor.getAttribute('href');
       if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
 
       if (isGoAffiliateHref(href)) {
-        applyGoAffiliateRel(anchor);
+        anchor.rel = goAffiliateRel(anchor.target === '_blank');
         return;
       }
 
@@ -35,7 +41,6 @@
       const parts = new Set(rel.split(/\s+/).filter(Boolean));
       parts.add('noopener');
       parts.add('noreferrer');
-      parts.delete('');
       anchor.rel = [...parts].join(' ');
     });
   }

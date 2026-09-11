@@ -18,7 +18,7 @@ import SubscoreScoreTooltip from '../review/tooltips/SubscoreScoreTooltip.astro'
 import InfoIcon from '../ui/InfoIcon.astro';
 import ComparePricingTooltip from './ComparePricingTooltip.astro';
 import RoundupComparePicker from './RoundupComparePicker.astro';
-import { affiliateHrefRel } from '../../lib/affiliate/rel';
+import AffiliateLink from '../ui/AffiliateLink.astro';
 
 interface Props {
   picks: RoundupPick[];
@@ -26,7 +26,6 @@ interface Props {
 }
 
 const { picks, defaultIds } = Astro.props;
-const visitRel = (url: string) => affiliateHrefRel(url, { newTab: true });
 
 const comparisonProducts = await loadComparisonProducts();
 const hasPublishedReview = (slug: string) => comparisonProducts.some((product) => product.slug === slug);
@@ -373,17 +372,16 @@ function subWinners(key: string, subName: string, ids: string[]) {
           const pick = picks.find((p) => p.id === pickId)!;
           return (
             <div class="roundup-compare__visit-col" data-compare-visit-col={pickId}>
-              <a
+              <AffiliateLink
                 class="roundup-compare__visit-cta bg-brand-cta"
                 href={pick.affiliateUrl}
                 target="_blank"
-                rel={visitRel(pick.affiliateUrl)}
                 data-compare-visit={pickId}
               >
                 <span class="roundup-compare__visit-cta-prefix">Visit </span>
                 <span class="roundup-compare__visit-cta-name">{pick.name}</span>
                 <span class="material-symbols-outlined roundup-compare__visit-cta-icon" aria-hidden="true">open_in_new</span>
-              </a>
+              </AffiliateLink>
               {
                 pick.reviewUrl && (
                   <a class="roundup-compare__review-link" href={pick.reviewUrl} data-compare-review={pickId}>

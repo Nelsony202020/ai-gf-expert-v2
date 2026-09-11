@@ -7,7 +7,7 @@ import {
   reviewProseGlossaryContext,
 } from '../../../lib/review/renderReviewProse';
 import VerifiedCheck from '../../ui/VerifiedCheck.astro';
-import { affiliateHrefRel } from '../../../lib/affiliate/rel';
+import AffiliateLink from '../../ui/AffiliateLink.astro';
 import { fmtMoney } from '../../../lib/pricing/calc';
 import { fmtScore, getScoreVisual } from '../../../lib/scores';
 import { clampBarPct, computeHeroComparison } from '../../../lib/pricing-tab/types';
@@ -24,7 +24,6 @@ const herman = getAuthor('herman-carter');
 const glossaryTerms = await getPublishedGlossaryTermsForTooltips();
 const pricingGlossary = reviewProseGlossaryContext(glossaryTerms, 'review-pricing');
 const scoreVisual = getScoreVisual(vm.pricingScore);
-const ctaRel = affiliateHrefRel(product.affiliateUrl, { newTab: true, stored: product.affiliateRel });
 
 const barMin = vm.barMin ?? 0;
 const barMax = vm.barMax ?? 80;
@@ -1887,14 +1886,13 @@ function withUnit(value: string) {
                   class="pt-opinion__body"
                   set:html={renderReviewProseText(vm.hermanTake, pricingGlossary)}
                 />
-                <a
+                <AffiliateLink
                   href={product.affiliateUrl}
                   target="_blank"
-                  rel={ctaRel}
                   class="pt-opinion__cta"
                 >
                   Visit {vm.productName} ↗
-                </a>
+                </AffiliateLink>
               </div>
             </section>
           )
@@ -1912,14 +1910,13 @@ function withUnit(value: string) {
               </p>
             )
           }
-          <a
+          <AffiliateLink
             href={product.affiliateUrl}
             target="_blank"
-            rel={ctaRel}
             class="pt-sum__link"
           >
             Visit {vm.productName} ↗
-          </a>
+          </AffiliateLink>
         </div>
       </aside>
     </div>

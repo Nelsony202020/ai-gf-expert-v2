@@ -1,6 +1,5 @@
 ---
 import type { Product } from '../../data/products';
-import { affiliateHrefRel } from '../../lib/affiliate/rel';
 import { getScoreVisual, fmtScore } from '../../lib/scores';
 import { buildReviewRatingsHash } from '../../lib/review/ratingsDeepLink';
 import ScorePill from './ScorePill.astro';
@@ -8,6 +7,7 @@ import OverallScoreTooltip from './tooltips/OverallScoreTooltip.astro';
 import CategoryScoreTooltip from './tooltips/CategoryScoreTooltip.astro';
 import InfoIcon from '../ui/InfoIcon.astro';
 import CmsField from '../cms/CmsField.astro';
+import AffiliateLink from '../ui/AffiliateLink.astro';
 
 interface Props {
   product: Product;
@@ -15,7 +15,6 @@ interface Props {
 
 const { product } = Astro.props;
 const overall = getScoreVisual(product.overallScore);
-const ctaRel = affiliateHrefRel(product.affiliateUrl, { newTab: true, stored: product.affiliateRel });
 ---
 
 <div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm sticky top-4">
@@ -60,14 +59,13 @@ const ctaRel = affiliateHrefRel(product.affiliateUrl, { newTab: true, stored: pr
     <div class="pt-4 border-t border-surface-variant"></div>
 
     <div class="pt-2">
-      <a
+      <AffiliateLink
         href={product.affiliateUrl}
         target="_blank"
-        rel={ctaRel}
         class="block w-full bg-brand-cta text-center py-4 rounded-xl font-black text-xl hover:opacity-90 transition shadow-lg mb-2"
       >
         Visit {product.name}
-      </a>
+      </AffiliateLink>
       <p class="rating-sidebar__cta-note">
         <span class="rating-sidebar__cta-note-inner">
           <span class="material-symbols-outlined rating-sidebar__cta-note-icon" aria-hidden="true">verified_user</span>

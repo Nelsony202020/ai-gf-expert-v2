@@ -1,21 +1,13 @@
 ---
 import { affiliateHrefRel } from '../../lib/affiliate/rel';
 
-interface Props {
-  href: string;
-  class?: string;
-  target?: string;
-  id?: string;
-  rel?: string;
-  'aria-label'?: string;
-  draggable?: string | boolean | 'true' | 'false';
-}
+type Props = astroHTML.JSX.AnchorHTMLAttributes & { href: string };
 
-const { href, class: className, target, rel: storedRel, ...rest } = Astro.props;
+const { href, target, rel: storedRel, ...rest } = Astro.props;
 const rel = affiliateHrefRel(href, {
   newTab: target === '_blank',
-  stored: storedRel,
+  stored: typeof storedRel === 'string' ? storedRel : undefined,
 });
 ---
 
-<a href={href} class={className} target={target} rel={rel} {...rest}><slot /></a>
+<a href={href} target={target} rel={rel} {...rest}><slot /></a>

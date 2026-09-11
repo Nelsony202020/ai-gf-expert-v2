@@ -8,7 +8,7 @@ import RoundupAtAGlance from './RoundupAtAGlance.astro';
 import EditorialPillLink from '../ui/EditorialPillLink.astro';
 import VerifiedCheck from '../ui/VerifiedCheck.astro';
 import { optimizedLogoUrl } from '../../lib/media/optimize';
-import { affiliateHrefRel } from '../../lib/affiliate/rel';
+import AffiliateLink from '../ui/AffiliateLink.astro';
 
 interface Props {
   pick: RoundupPick;
@@ -28,7 +28,6 @@ const herman = getAuthor('herman-carter');
 
 // TEMPORARY: swaps the carousel to a single logo "slide" for slugs in
 // hiddenProductImages.ts, instead of the real screenshot gallery.
-const visitRel = affiliateHrefRel(pick.affiliateUrl, { newTab: true });
 const displayGallery = hasHiddenProductImage(pick.slug)
   ? [{ full: pick.logo, thumb: pick.logo, alt: `${pick.name} logo` }]
   : pick.gallery;
@@ -51,10 +50,9 @@ const displayGallery = hasHiddenProductImage(pick.slug)
   <header class="roundup-pick__header">
     <div class="roundup-pick__title-row">
       <h3 class="roundup-pick__title">
-        <a
+        <AffiliateLink
           href={pick.affiliateUrl}
           target="_blank"
-          rel={visitRel}
           class="roundup-pick__title-link"
           aria-label={`Visit ${pick.name} (opens in new tab)`}
         >
@@ -63,7 +61,7 @@ const displayGallery = hasHiddenProductImage(pick.slug)
             <span data-pick-rank>{rank}</span>. {pick.name}
           </span>
           <span class="material-symbols-outlined roundup-pick__title-external" aria-hidden="true">open_in_new</span>
-        </a>
+        </AffiliateLink>
       </h3>
     </div>
   </header>
@@ -187,15 +185,14 @@ const displayGallery = hasHiddenProductImage(pick.slug)
   </div>
 
   <footer class="roundup-pick__footer">
-    <a
+    <AffiliateLink
       class="roundup-pick__cta bg-brand-cta"
       href={pick.affiliateUrl}
       target="_blank"
-      rel={visitRel}
     >
       Visit {pick.name}
       <span class="material-symbols-outlined roundup-pick__cta-icon" aria-hidden="true">open_in_new</span>
-    </a>
+    </AffiliateLink>
   </footer>
 </article>
 
