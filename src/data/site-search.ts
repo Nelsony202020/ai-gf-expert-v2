@@ -29,13 +29,13 @@ const staticPages: SearchResult[] = [
   },
   {
     label: 'How to Use OurDream AI Image Generator',
-    href: '/guides/ourdream-ai-image-generator/',
+    href: '/guides/how-to-use-ourdream-ai-image-generator/',
     type: 'guide',
     meta: 'Guides',
   },
   {
     label: 'OurDream AI Image Prompt Guide',
-    href: '/guides/ourdream-ai-image-prompt-guide/',
+    href: '/guides/ourdream-ai-image-prompt/',
     type: 'guide',
     meta: 'Guides',
   },

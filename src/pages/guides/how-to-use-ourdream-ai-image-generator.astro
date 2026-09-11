@@ -1,5 +1,5 @@
 ---
-// Hardcoded guide page — content lives in src/content/guides/ourdream-ai-image-prompt-guide.html
+// Hardcoded guide page — content lives in src/content/guides/ourdream-ai-image-generator.html
 // until guides get their own admin section.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
@@ -8,14 +8,14 @@ import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
 import { getAuthor } from '../../data/authors';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import { cdnAsset } from '../../lib/media/cdn';
-import bodyHtml from '../../content/guides/ourdream-ai-image-prompt-guide.html?raw';
+import bodyHtml from '../../content/guides/ourdream-ai-image-generator.html?raw';
 
-const h1 = 'OurDream AI Image Prompt Guide';
-const title = 'OurDream AI Image Prompt Guide: Tags, Weights, and Examples';
+const h1 = 'How to Use OurDream AI Image Generator';
+const title = 'How to Use OurDream AI Image Generator: Beginner Guide';
 const description =
-  'Learn how to write OurDream AI image prompts with tags, parentheses, weights, camera terms, negative prompts, and tested examples for Dreamy and Vivid.';
-const canonical = canonicalPublicUrl('/guides/ourdream-ai-image-prompt-guide', Astro.site);
-const heroImage = cdnAsset('/guides/ourdream-ai-image-prompt-guide/visual-prompt.webp');
+  'Learn how to use the OurDream AI image generator, including Dreamy, Vivid, Vivid 2, Free Play, presets, Remix, image editing, and chat image generation.';
+const canonical = canonicalPublicUrl('/guides/how-to-use-ourdream-ai-image-generator', Astro.site);
+const heroImage = cdnAsset('/guides/ourdream-ai-image-generator/generate-sidebar.webp');
 const author = getAuthor('herman-carter');
 const published = 'September 11, 2026';
 
@@ -40,7 +40,7 @@ const jsonLd: Record<string, unknown>[] = [
         items={[
           { label: 'Home', href: '/' },
           { label: 'Guides', href: '/guides/' },
-          { label: 'OurDream AI Image Prompt Guide' },
+          { label: 'OurDream AI Image Generator' },
         ]}
       />
       <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-3">{h1}</h1>
