@@ -27,8 +27,7 @@ const labelHide = `Hide ${winner.name} ranking and show Herman`;
         />
       </div>
       <div class="home-v2__badge-face home-v2__badge-face--back" id="home-herman-back">
-        <p class="home-v2__badge-kicker">Current #1</p>
-        <p class="home-v2__badge-award">{award}</p>
+        <p class="home-v2__badge-kicker">Current #1 · {award}</p>
         <div class="home-v2__badge-app">
           <img src={winner.logo} alt="" width="40" height="40" class="home-v2__app-icon" />
           <p class="home-v2__badge-name">{winner.name}</p>
@@ -40,13 +39,13 @@ const labelHide = `Hide ${winner.name} ranking and show Herman`;
         <ul class="home-v2__badge-cats">
           {bars.map((bar) => (
             <li>
-              <span>{bar.name}</span>
               <b class={`is-${bar.tone}`}>{bar.display}</b>
+              <span>{bar.name}</span>
             </li>
           ))}
         </ul>
         <a class="home-v2__badge-link" href={rankingHref} data-home-badge-link>
-          View ranking
+          Best AI Girlfriend Apps
           <HomeIcon name="arrow-right" size={14} />
         </a>
       </div>

@@ -199,9 +199,11 @@
     const back = root.querySelector<HTMLElement>('.home-v2__badge-face--back');
     if (!toggle) return;
 
+    const fineHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     const showLabel = root.dataset.labelShow || 'Show current number one ranked app';
     const hideLabel = root.dataset.labelHide || 'Show Herman';
     let nudged = false;
+    let lastTouchAt = 0;
 
     const setOpen = (open: boolean) => {
       root.classList.toggle('is-flipped', open);
@@ -209,7 +211,9 @@
       toggle.setAttribute('aria-label', open ? hideLabel : showLabel);
     };
 
-    const close = () => setOpen(false);
+    toggle.addEventListener('pointerup', (event) => {
+      if (event.pointerType === 'touch') lastTouchAt = Date.now();
+    });
 
     toggle.addEventListener('click', (event) => {
       event.preventDefault();
@@ -219,30 +223,54 @@
     link?.addEventListener('click', (event) => {
       event.stopPropagation();
     });
+    link?.addEventListener('pointerdown', (event) => {
+      event.stopPropagation();
+    });
+
+    root.addEventListener('pointerleave', (event) => {
+      if (event.pointerType === 'touch') return;
+      if (Date.now() - lastTouchAt < 600) return;
+      const next = event.relatedTarget as Node | null;
+      if (next && root.contains(next)) return;
+      if (root.classList.contains('is-flipped')) setOpen(false);
+    });
+    root.addEventListener('mouseleave', () => {
+      if (Date.now() - lastTouchAt < 600) return;
+      if (root.classList.contains('is-flipped')) setOpen(false);
+    });
 
     back?.addEventListener('click', (event) => {
+      if (fineHover) return;
       if ((event.target as HTMLElement).closest('[data-home-badge-link]')) return;
-      close();
+      setOpen(false);
     });
 
     document.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse') return;
       if (!root.classList.contains('is-flipped')) return;
       if (root.contains(event.target as Node)) return;
-      close();
+      setOpen(false);
     });
 
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && root.classList.contains('is-flipped')) close();
+      if (event.key === 'Escape' && root.classList.contains('is-flipped')) setOpen(false);
     });
 
-    if (prefersReducedMotion()) return;
+    if (prefersReducedMotion() || fineHover) return;
 
-    window.setTimeout(() => {
-      if (nudged || root.classList.contains('is-flipped')) return;
-      nudged = true;
-      root.classList.add('is-nudging');
-      window.setTimeout(() => root.classList.remove('is-nudging'), 700);
-    }, 1250);
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (nudged || root.classList.contains('is-flipped')) return;
+        const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.45);
+        if (!visible) return;
+        nudged = true;
+        root.classList.add('is-nudging');
+        window.setTimeout(() => root.classList.remove('is-nudging'), 680);
+        io.disconnect();
+      },
+      { threshold: [0.45, 0.7] },
+    );
+    io.observe(root);
   }
 
   function init() {
