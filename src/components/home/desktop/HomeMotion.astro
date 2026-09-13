@@ -219,11 +219,12 @@
     };
 
     const closeIfPointerLeft = (event: PointerEvent | MouseEvent) => {
-      if (!fineHover) return;
       if (!root.classList.contains('is-flipped')) return;
-      const next = 'relatedTarget' in event ? (event.relatedTarget as Node | null) : null;
-      if (next && root.contains(next) && pointerInsideCircle(event)) return;
+      if ('pointerType' in event && event.pointerType === 'touch') return;
+      if (!fineHover && !('pointerType' in event && event.pointerType === 'mouse')) return;
       if (pointerInsideCircle(event)) return;
+      const next = 'relatedTarget' in event ? (event.relatedTarget as Node | null) : null;
+      if (next && root.contains(next)) return;
       setOpen(false);
     };
 
@@ -242,13 +243,23 @@
     root.addEventListener('pointerleave', closeIfPointerLeft);
     root.addEventListener('mouseleave', closeIfPointerLeft);
 
-    if (fineHover) {
-      document.addEventListener('pointermove', (event) => {
-        if (event.pointerType === 'touch') return;
+    document.addEventListener('pointermove', (event) => {
+      if (!root.classList.contains('is-flipped')) return;
+      if (event.pointerType === 'touch') return;
+      if (!fineHover && event.pointerType !== 'mouse') return;
+      if (!pointerInsideCircle(event)) setOpen(false);
+    });
+
+    document.addEventListener(
+      'pointerover',
+      (event) => {
         if (!root.classList.contains('is-flipped')) return;
-        if (!pointerInsideCircle(event)) setOpen(false);
-      });
-    }
+        if (event.pointerType === 'touch') return;
+        if (root.contains(event.target as Node)) return;
+        setOpen(false);
+      },
+      true,
+    );
 
     back?.addEventListener('click', (event) => {
       if (fineHover) return;
