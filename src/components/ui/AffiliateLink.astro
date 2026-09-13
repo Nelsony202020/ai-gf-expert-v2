@@ -1,0 +1,14 @@
+---
+import { affiliateRel, isExternalAffiliateHref } from '../../lib/affiliate/rel';
+
+type Props = astroHTML.JSX.AnchorHTMLAttributes & { href: string };
+
+const { href, target, rel: storedRel, ...rest } = Astro.props;
+const rel = isExternalAffiliateHref(href)
+  ? affiliateRel(typeof storedRel === 'string' ? storedRel : undefined)
+  : typeof storedRel === 'string'
+    ? storedRel
+    : undefined;
+---
+
+<a href={href} target={target} rel={rel} {...rest}><slot /></a>

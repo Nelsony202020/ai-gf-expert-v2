@@ -1,0 +1,133 @@
+---
+// Hardcoded guide page — content lives in src/content/guides/ourdream-ai-image-prompt-guide.html
+// until guides get their own admin section.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import { getAuthor } from '../../data/authors';
+import { canonicalPublicUrl } from '../../lib/siteOrigin';
+import { cdnAsset } from '../../lib/media/cdn';
+import bodyHtml from '../../content/guides/ourdream-ai-image-prompt-guide.html?raw';
+
+const h1 = 'OurDream AI Image Prompt Guide';
+const title = 'OurDream AI Image Prompt Guide: Tags, Weights, and Examples';
+const description =
+  'Learn how to write OurDream AI image prompts with tags, parentheses, weights, camera terms, negative prompts, and tested examples for Dreamy and Vivid.';
+const canonical = canonicalPublicUrl('/guides/ourdream-ai-image-prompt', Astro.site);
+const heroImage = cdnAsset('/guides/ourdream-ai-image-prompt-guide/visual-prompt.webp');
+const author = getAuthor('herman-carter');
+const published = 'September 11, 2026';
+
+const jsonLd: Record<string, unknown>[] = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: h1,
+    description,
+    datePublished: '2026-09-11',
+    author: author ? { '@type': 'Person', name: author.name } : undefined,
+    image: heroImage,
+  },
+];
+---
+
+<BaseLayout title={title} description={description} image={heroImage} canonical={canonical}>
+  <Header />
+  <main>
+    <article class="section-container px-4 md:px-8 py-14 md:py-16 max-w-3xl">
+      <Breadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'Guides', href: '/guides/' },
+          { label: 'OurDream AI Image Prompt Guide' },
+        ]}
+      />
+      <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-3">{h1}</h1>
+      <div class="mb-8 flex items-center gap-3 text-sm text-on-surface-variant">
+        {author?.avatar && (
+          <img
+            src={cdnAsset(author.avatar)}
+            alt={author.name}
+            class="h-9 w-9 rounded-full object-cover"
+            width="36"
+            height="36"
+          />
+        )}
+        {author && <span class="font-semibold">{author.name}</span>}
+        <span>· {published}</span>
+      </div>
+
+      <div
+        class="guide-prose legal-prose prose prose-neutral max-w-none text-on-surface-variant leading-relaxed space-y-4"
+        data-glossary-decorate
+        set:html={bodyHtml}
+      />
+    </article>
+  </main>
+  <Footer />
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+</BaseLayout>
+
+<style is:global>
+  .guide-prose h2 {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: var(--color-on-surface);
+  }
+
+  .guide-prose h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--color-on-surface);
+  }
+
+  .guide-prose ul,
+  .guide-prose ol {
+    padding-left: 1.5rem;
+  }
+
+  .guide-prose ul {
+    list-style: disc;
+  }
+
+  .guide-prose ol {
+    list-style: decimal;
+  }
+
+  .guide-prose img {
+    border-radius: 0.75rem;
+    margin: 1.25rem 0;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .guide-prose figure {
+    margin: 1.5rem 0;
+  }
+
+  .guide-prose figcaption {
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--color-tertiary);
+  }
+
+  .guide-prose blockquote {
+    border-left: 3px solid var(--color-accent);
+    padding-left: 1rem;
+    font-style: italic;
+  }
+
+  .guide-prose a {
+    color: var(--color-accent);
+    font-weight: 700;
+  }
+
+  .guide-prose code {
+    font-size: 0.9em;
+  }
+</style>

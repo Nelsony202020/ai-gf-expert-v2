@@ -1,0 +1,204 @@
+<p>Writing good image prompts in <a href="/reviews/ourdream-ai/">OurDream AI</a> looks way more complicated than it actually is.</p>
+<p>When I first started looking into it, I found people using brackets, parentheses, numbers, tags, underscores, and all kinds of weird formatting. It can look like you need to learn a programming language just to generate a good image.</p>
+<p>You don’t. The main thing is learning how to describe an image in a way the generator understands.</p>
+<p>In this OurDream AI image prompt guide, I’ll show you the basics I use for writing prompts, controlling poses and camera angles, adding more or less importance to certain details, and fixing things with negative prompts.</p>
+<p>One important thing before we start: not every OurDream image model likes the exact same prompt style. Dreamy generally works better with short visual descriptions and tags, while Vivid models can also understand more natural language. So don’t assume one exact prompt format will always work with every generator.</p>
+<p>If you still need the interface basics — models, Free Play, presets, Remix, and in-chat images — start with <a href="/guides/how-to-use-ourdream-ai-image-generator/">How to Use OurDream AI Image Generator</a>.</p>
+
+<h2 id="start-with-visual-descriptions">Start With Visual Descriptions</h2>
+<p>The easiest way to think about an image prompt is to describe what should actually be visible in the image. Don’t write a backstory.</p>
+<p>For example, this is not very useful:</p>
+<blockquote><p>She has hair that flows like honey, and she can jump extremely high.</p></blockquote>
+<figure>
+  <img src="/guides/ourdream-ai-image-prompt-guide/bad-backstory-prompt.webp" alt="OurDream AI result from a vague backstory-style prompt" width="768" height="1360" loading="lazy" decoding="async" />
+  <figcaption>A backstory prompt does not tell the generator what to show</figcaption>
+</figure>
+<p>The image generator does not need to know what your character can do. It needs to know what you want to see. A better prompt would be:</p>
+<blockquote><p>long blonde hair, jumping, blue sky, full shot</p></blockquote>
+<figure>
+  <img src="/guides/ourdream-ai-image-prompt-guide/visual-prompt.webp" alt="OurDream AI result from a short visual tag prompt" width="768" height="1360" loading="lazy" decoding="async" />
+  <figcaption>Keep instructions visual — only what should appear in the frame</figcaption>
+</figure>
+<p>Keep your instructions visual. If something cannot be seen in the image, it probably doesn’t need to be in the image prompt.</p>
+
+<h2 id="use-short-tags-with-dreamy">Use Short Tags With Dreamy</h2>
+<p>For Dreamy, I normally keep things short and direct. Instead of writing:</p>
+<blockquote><p>She is standing outside in the city at night while wearing a black leather jacket and looking down at the camera.</p></blockquote>
+<p>You could write:</p>
+<blockquote><p>city at night, standing, black leather jacket, looking at viewer, view from below</p></blockquote>
+<p>This is called keyword-based prompting, and each part describes something the AI can actually show. Commas also make it easier to separate the different ideas.</p>
+<p>A simple structure you can use is:</p>
+<blockquote><p>subject → pose → clothing → environment → lighting → camera angle</p></blockquote>
+<p>For example:</p>
+<blockquote><p>woman, sitting, black dress, beach at sunset, warm lighting, front view</p></blockquote>
+<p>You can always add more detail later.</p>
+
+<h2 id="vivid-can-understand-more-natural-prompts">Vivid Can Understand More Natural Prompts</h2>
+<p>Vivid and Vivid 2 can handle more normal written descriptions. For example:</p>
+<blockquote><p>She is sitting on the beach during sunset wearing a black dress and looking toward the camera.</p></blockquote>
+<p>That type of prompt can work well with Vivid. This is why I wouldn’t blindly copy the exact same prompt between every OurDream model and expect the same result.</p>
+<p>If a prompt isn’t working, sometimes changing the image generator is easier than rewriting the whole thing.</p>
+
+<h2 id="use-parentheses-to-make-something-more-important">Use Parentheses to Make Something More Important</h2>
+<p>Parentheses can be used to give part of your prompt more importance. For example:</p>
+<blockquote><p>woman, (black eyeliner), jeans, city street</p></blockquote>
+<figure>
+  <img src="/guides/ourdream-ai-image-prompt-guide/eyeliner-one-paren.webp" alt="OurDream AI image using one set of parentheses around black eyeliner" width="768" height="1360" loading="lazy" decoding="async" />
+  <figcaption>(black eyeliner) gets more attention than the rest of the prompt</figcaption>
+</figure>
+<p>The <code>(black eyeliner)</code> part receives more attention than the normal text around it. You can also add more parentheses:</p>
+<blockquote><p>((black eyeliner))</p></blockquote>
+<figure>
+  <img src="/guides/ourdream-ai-image-prompt-guide/eyeliner-two-paren.webp" alt="OurDream AI image using two sets of parentheses around black eyeliner" width="768" height="1360" loading="lazy" decoding="async" />
+  <figcaption>((black eyeliner))</figcaption>
+</figure>
+<p>or:</p>
+<blockquote><p>(((black eyeliner)))</p></blockquote>
+<figure>
+  <img src="/guides/ourdream-ai-image-prompt-guide/eyeliner-three-paren.webp" alt="OurDream AI image using three sets of parentheses around black eyeliner" width="768" height="1360" loading="lazy" decoding="async" />
+  <figcaption>(((black eyeliner)))</figcaption>
+</figure>
+<p>The more emphasis you add, the more strongly the generator may try to include that detail. But don’t go crazy with this. If you put huge emphasis around everything, nothing is really important anymore, and your images can start looking weird.</p>
+<p>I normally only use extra emphasis when the generator keeps ignoring something I actually care about.</p>
+<p>P.S. Prompts with parentheses often don’t work when you select a character. Free Play characters should work.</p>
+
+<h2 id="using-numbers-for-more-control">Using Numbers for More Control</h2>
+<p>You can also use numbers to control how much importance a detail gets. For example:</p>
+<blockquote><p>(black leather jacket:1.2)</p></blockquote>
+<p>A normal prompt is basically around 1.0. So:</p>
+<ul>
+<li>1.1 = slightly stronger</li>
+<li>1.2 = stronger</li>
+<li>1.3 = even stronger</li>
+</ul>
+<p>The guide I learned this from recommends being careful once you start going much higher because too much weight can make the image worse instead of better. So I would not immediately start putting 1.5 on half your prompt.</p>
+<p>Start small. If OurDream keeps ignoring something, increase it a little and test again.</p>
+
+<h2 id="you-can-also-reduce-the-importance-of-something">You Can Also Reduce the Importance of Something</h2>
+<p>Brackets can be used when you still want something in the image, but you don’t want it to have as much influence. For example:</p>
+<blockquote><p>[forest background]</p></blockquote>
+<p>The forest is still part of the prompt, but you are giving it less importance. You can also see prompts written with lower numerical weights, for example:</p>
+<blockquote><p>(forest background:0.8)</p></blockquote>
+<p>I wouldn’t worry too much about this as a beginner. Most of the time, a clean normal prompt is enough. Weights are more useful when you already have a prompt that almost works, and you are trying to fine-tune one part.</p>
+
+<h2 id="be-careful-with-your-wording">Be Careful With Your Wording</h2>
+<p>AI image generators can understand words differently from humans. A good example is:</p>
+<blockquote><p>full body view</p></blockquote>
+<p>You might think that means you want the entire person in the image. But depending on the model, the words can sometimes affect the actual body instead of the camera framing. It is usually better to use proper camera terms. For example:</p>
+<blockquote><p>full shot</p></blockquote>
+<p>You can also include things that naturally force more of the body into the image. For example:</p>
+<blockquote><p>standing, boots, front view</p></blockquote>
+<p>If you tell the generator that the character is wearing boots, it has more reason to include their feet in the image. Small wording changes like this can make a surprisingly big difference.</p>
+
+<h2 id="useful-camera-and-pose-terms">Useful Camera and Pose Terms</h2>
+<p>Here are some basic terms worth remembering.</p>
+<h3 id="front-view">Front View</h3>
+<ul>
+<li>front view</li>
+<li>front shot</li>
+<li>from the front</li>
+<li>in front of her</li>
+<li>in front of him</li>
+</ul>
+<h3 id="view-from-behind">View From Behind</h3>
+<ul>
+<li>rear view</li>
+<li>from behind</li>
+<li>behind her</li>
+<li>behind him</li>
+</ul>
+<h3 id="full-body">Full Body</h3>
+<ul>
+<li>full shot</li>
+<li>far shot</li>
+<li>far away</li>
+</ul>
+<h3 id="other-useful-camera-terms">Other Useful Camera Terms</h3>
+<p>You can also experiment with close-up, medium shot, cowboy shot, view from above, view from below, and eye level. These are much easier than trying to explain the camera position with a long sentence.</p>
+
+<h2 id="use-hyphens-and-underscores-carefully">Use Hyphens and Underscores Carefully</h2>
+<p>You may also see prompts using hyphens or underscores to connect words. For example:</p>
+<blockquote><p>sci-fi, heart-shaped necklace, four-leaf clover</p></blockquote>
+<p>These help show that the words belong together.</p>
+<p>Some prompting systems also use underscores to keep words together as one concept. For example, <code>elf_warrior</code> instead of <code>elf warrior</code>. The idea is to stop the generator from treating “elf” and “warrior” as two completely separate things.</p>
+<p>That said, I would not build your entire prompt around weird formatting unless you actually need it. Start normally first.</p>
+
+<h2 id="dont-put-temporary-clothing-in-permanent-character-details">Don’t Put Temporary Clothing in Permanent Character Details</h2>
+<figure>
+  <img src="/guides/ourdream-ai-image-prompt-guide/character-details.webp" alt="OurDream AI character creation fields for permanent physical details versus image prompts" width="1400" height="896" loading="lazy" decoding="async" />
+  <figcaption>Permanent character details should be features you want to keep</figcaption>
+</figure>
+<p>This is an important one. When creating a character, OurDream has fields for the character’s permanent physical details. Things added there may keep appearing in future images.</p>
+<p>So if you add “black leather jacket” to the character’s permanent details, OurDream may keep trying to give them that jacket even when you want a completely different outfit.</p>
+<p>Permanent character details should be things you want the character to keep. For example: glasses, eye color, hair, a tattoo, or a signature necklace.</p>
+<p>Temporary things belong in the image prompt. For example: nurse outfit, bikini, winter jacket, red dress, school uniform.</p>
+<p>A simple rule:</p>
+<ul>
+<li>Character prompt = what the character is.</li>
+<li>Image prompt = what is happening right now.</li>
+</ul>
+
+<h2 id="use-negative-prompts-to-remove-things">Use Negative Prompts to Remove Things</h2>
+<figure>
+  <img src="/guides/ourdream-ai-image-prompt-guide/negative-prompt.webp" alt="OurDream AI Settings panel with the Negative Prompt field" width="1400" height="896" loading="lazy" decoding="async" />
+  <figcaption>The negative prompt tells OurDream what to leave out</figcaption>
+</figure>
+<p>OurDream also has a Negative Prompt field. Your normal prompt tells the AI what you want. The negative prompt tells it what you don’t want.</p>
+<p>For example:</p>
+<blockquote><p>blurry, bad anatomy, fused fingers, extra fingers</p></blockquote>
+<p>This can be useful when the generator keeps making the same mistake. I wouldn’t automatically paste a giant negative prompt into every image, though. If you have a specific problem, try adding that problem to the negative prompt and see if it helps. Again, change one thing at a time.</p>
+
+<h2 id="prompting-hair-length">Prompting Hair Length</h2>
+<p>There are also different terms people use for hair length:</p>
+<ul>
+<li><strong>Long hair</strong> — around shoulder length or slightly longer</li>
+<li><strong>Very long hair</strong> — around waist length</li>
+<li><strong>Extremely long hair</strong> — past the waist</li>
+<li><strong>Absurdly long hair</strong> — hair reaching the floor or even longer</li>
+</ul>
+<p>These kinds of terms can work better than trying to describe an exact length in centimeters.</p>
+
+<h2 id="prompting-environments">Prompting Environments</h2>
+<p>Backgrounds can stay pretty simple too. For example:</p>
+<blockquote><p>grassy hills, dirt path, trees, sunlight, clouds</p></blockquote>
+<p>or:</p>
+<blockquote><p>desert, cactus, cliffs, bright sunlight, daytime</p></blockquote>
+<p>or:</p>
+<blockquote><p>sandy beach, beach umbrella, ocean, waves, sunny</p></blockquote>
+<p>You do not need to write: “She is standing in a beautiful desert where you can see large cliffs in the distance while the sun shines down.” Just describe what should actually appear.</p>
+
+<h2 id="ourdream-ai-image-prompt-examples">OurDream AI Image Prompt Examples</h2>
+<p>Here are a few examples of what a finished image prompt can look like.</p>
+<h3 id="pool-example">Pool Example</h3>
+<blockquote><p>sitting at pool, daytime, clouds, (floral one-piece swimsuit), rear view, looking back at viewer, small smile</p></blockquote>
+<figure>
+  <img src="/guides/ourdream-ai-image-prompt-guide/pool-example.webp" alt="OurDream AI pool prompt example with a floral swimsuit and rear view" width="1024" height="1024" loading="lazy" decoding="async" />
+  <figcaption>Pool example</figcaption>
+</figure>
+<h3 id="church-example">Church Example</h3>
+<blockquote><p>church interior, church pews, huge stained-glass window, priest robes, intricate outfit, cross necklace, dynamic lighting, soft shadows</p></blockquote>
+<figure>
+  <img src="/guides/ourdream-ai-image-prompt-guide/church-example.webp" alt="OurDream AI church interior prompt example" width="1024" height="1024" loading="lazy" decoding="async" />
+  <figcaption>Church example</figcaption>
+</figure>
+<h3 id="city-example">City Example</h3>
+<blockquote><p>outside, nighttime, cityscape, skyscrapers, street, sidewalk, lamppost, standing, front view, cowboy shot, black leather jacket, black torn shorts, worn shoes, ripped shirt, hands in pockets, looking down at viewer, view from below</p></blockquote>
+<figure>
+  <img src="/guides/ourdream-ai-image-prompt-guide/city-example.webp" alt="OurDream AI nighttime city prompt example with a cowboy shot" width="1024" height="1024" loading="lazy" decoding="async" />
+  <figcaption>City example</figcaption>
+</figure>
+<p>Notice how none of these prompts are trying to tell a story. They are basically a list of visual instructions. That is the easiest way to start.</p>
+
+<h2 id="my-image-prompt-workflow">My Image Prompt Workflow</h2>
+<p>I normally don’t try to write the perfect prompt before generating anything. I start simple. For example:</p>
+<blockquote><p>woman sitting at beach, black dress, sunset, front view</p></blockquote>
+<p>Then I generate a few images. If the image is wrong, I look at what specifically is wrong. If the pose is wrong, I change the pose. If the clothing is wrong, I change the clothing. If OurDream keeps ignoring one important detail, I might add parentheses or increase its weight slightly.</p>
+<p>If the image is already good, I don’t rewrite everything. That is probably the biggest mistake you can make with AI image prompting: changing ten things when only one thing was wrong.</p>
+<p>Start simple, generate, look at the result, and fix one problem at a time. That is much easier than trying to create some insane 300-word prompt before you have even generated your first image.</p>
+
+<h2 id="more-ourdream-guides">More OurDream Guides</h2>
+<ul>
+<li><a href="/guides/how-to-use-ourdream-ai-image-generator/">How to Use OurDream AI Image Generator</a></li>
+<li><a href="/guides/ourdream-ai-prompt/">OurDream AI Prompt Guide</a></li>
+<li><a href="/guides/ourdream-ai-comics/">OurDream AI Comics</a></li>
+</ul>
