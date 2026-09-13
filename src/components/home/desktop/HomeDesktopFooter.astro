@@ -1,0 +1,151 @@
+---
+import ThemeToggle from '../../ui/ThemeToggle.astro';
+import { BRAND_SOCIAL } from '../../../data/social-links';
+import { legalPages } from '../../../data/legal-pages';
+
+const year = new Date().getFullYear();
+const legalBySlug = Object.fromEntries(legalPages.map((page) => [page.slug, page]));
+
+const channels = [
+  {
+    label: 'AI Girlfriend Expert',
+    descriptor: 'Reviews, rankings & app testing',
+    href: BRAND_SOCIAL.youtube,
+    icon: 'youtube',
+    external: true,
+  },
+  {
+    label: 'AI Girlfriend Help Desk',
+    descriptor: 'Tutorials, FAQs & how-to guides',
+    href: 'https://www.youtube.com/@ai-girlfriend-help-desk',
+    icon: 'youtube',
+    external: true,
+  },
+  {
+    label: 'TikTok',
+    descriptor: '',
+    href: BRAND_SOCIAL.tiktok,
+    icon: 'tiktok',
+    external: true,
+  },
+  {
+    label: 'Reddit Community',
+    descriptor: 'New community coming soon',
+    href: '',
+    icon: 'reddit',
+    external: false,
+  },
+] as const;
+
+const columns = [
+  {
+    title: 'Explore',
+    links: [
+      { label: 'Roundups', href: '/best/ai-girlfriend/' },
+      { label: 'Reviews', href: '/reviews/' },
+      { label: 'Guides', href: '/guides/' },
+      { label: 'AI Girlfriend Apps', href: '/ai-girlfriend-apps/' },
+    ],
+  },
+  {
+    title: 'Testing',
+    links: [
+      { label: 'How We Test', href: '/test/' },
+      { label: 'Testing Categories', href: '/test/all/' },
+      { label: 'How Scoring Works', href: '/test/tooltips/' },
+      { label: 'Market Data Methodology', href: '/test/market-data/' },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      { label: 'Glossary', href: '/glossary/' },
+      { label: 'Site Index', href: '/sitemap/' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About Us', href: '/about/' },
+      { label: 'Herman Carter', href: '/author/herman-carter/' },
+      { label: 'Contact', href: '/contact/' },
+      { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
+      { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure/' },
+    ],
+  },
+];
+
+const legal = [
+  { label: legalBySlug.privacy?.title ?? 'Privacy Policy', href: legalBySlug.privacy?.href ?? '/legal/privacy/' },
+  { label: legalBySlug.terms?.title ?? 'Terms of Service', href: legalBySlug.terms?.href ?? '/legal/terms/' },
+  { label: legalBySlug.accessibility?.title ?? 'Accessibility', href: legalBySlug.accessibility?.href ?? '/legal/accessibility/' },
+];
+---
+
+<footer class="home-v2__footer" aria-label="Site">
+  <div class="home-v2__footer-top">
+    <div class="home-v2__footer-brand">
+      <a href="/" class="home-v2__footer-logo-link" aria-label="Girlfriend Expert AI">
+        <span class="home-v2__footer-logo" role="img" aria-hidden="true"></span>
+      </a>
+      <p class="home-v2__footer-tagline">
+        Independent AI companion reviews —<br />
+        tested honestly, scored transparently,<br />
+        updated regularly.
+      </p>
+      <div class="home-v2__footer-channels">
+        <p>Channels &amp; community</p>
+        {channels.map((channel) =>
+          channel.href ? (
+            <a
+              class="home-v2__footer-channel"
+              href={channel.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img src={`/home/v2/icons/${channel.icon}.svg`} alt="" width="20" height="20" />
+              <span>
+                <span class="home-v2__footer-channel-label">
+                  {channel.label}
+                  <img src="/home/v2/icons/external.svg" alt="" width="12" height="12" />
+                </span>
+                {channel.descriptor && <small>{channel.descriptor}</small>}
+              </span>
+            </a>
+          ) : (
+            <div class="home-v2__footer-channel home-v2__footer-channel--muted">
+              <img src={`/home/v2/icons/${channel.icon}.svg`} alt="" width="20" height="20" />
+              <span>
+                <span class="home-v2__footer-channel-label">{channel.label}</span>
+                {channel.descriptor && <small>{channel.descriptor}</small>}
+              </span>
+            </div>
+          )
+        )}
+      </div>
+    </div>
+    <nav class="home-v2__footer-cols" aria-label="Footer">
+      {columns.map((col) => (
+        <div>
+          <p>{col.title}</p>
+          {col.links.map((link) => (
+            <a href={link.href}>{link.label}</a>
+          ))}
+        </div>
+      ))}
+    </nav>
+  </div>
+  <div class="home-v2__footer-rule" aria-hidden="true"></div>
+  <p class="home-v2__footer-signoff">
+    Tested, <span>not hyped.</span>
+  </p>
+  <div class="home-v2__footer-bottom">
+    <p>&copy; {year} Nelson Digital FZ-LLC. All rights reserved.</p>
+    <div class="home-v2__footer-legal">
+      {legal.map((link) => (
+        <a href={link.href}>{link.label}</a>
+      ))}
+      <ThemeToggle variant="footer" />
+    </div>
+  </div>
+</footer>

@@ -353,7 +353,7 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
       image,
       result:
         product.overallScore != null
-          ? `${formatScore(product.overallScore)}/10 after hands-on testing`
+          ? `${formatScore(product.overallScore)}/10 after 3+ months of testing`
           : undefined,
     });
   }

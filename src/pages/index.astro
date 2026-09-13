@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Footer from '../components/Footer.astro';
 import HomeDesktop from '../components/home/desktop/HomeDesktop.astro';
 import { homeMeta } from '../data/homepage';
 import { loadDesktopHomepage } from '../lib/home/loadDesktopHomepage';
@@ -23,5 +22,4 @@ const lcpImage = '/home/v2/herman-scientist.png';
   <main>
     <HomeDesktop data={data} />
   </main>
-  <Footer />
 </BaseLayout>
