@@ -12,7 +12,7 @@ interface Props {
 const { data } = Astro.props;
 ---
 
-<section class="home-v2__hero" id="home-hero" aria-labelledby="home-v2-title" data-home-hero>
+<section class="home-v2__hero" id="home-hero" aria-labelledby="home-v2-title" data-home-glow>
   <div class="home-v2__grid" aria-hidden="true"></div>
   <div class="home-v2__grid-hot" aria-hidden="true"></div>
   <div class="home-v2__cursor-glow" aria-hidden="true"></div>
@@ -54,22 +54,9 @@ const { data } = Astro.props;
         width="400"
         height="400"
       />
-      <div class="home-v2__float home-v2__float--board">
-        <div class="home-v2__board-head">
-          <span>Leaderboard</span>
-          <span>{data.updatedShort}</span>
-        </div>
-        {data.top3.map((app) => (
-          <div class="home-v2__board-row">
-            <span class="home-v2__muted">{app.rank}</span>
-            <img src={app.logo} alt="" width="28" height="28" class="home-v2__app-icon home-v2__app-icon--sm" />
-            <span class="home-v2__board-name">{app.name}</span>
-            <HomeScore score={app.overall} size="m" />
-          </div>
-        ))}
-      </div>
       {data.winner && (
         <div class="home-v2__float home-v2__float--winner">
+          <p class="home-v2__winner-kicker">Current #1 · Best overall</p>
           <div class="home-v2__winner-head">
             <img src={data.winner.logo} alt="" width="40" height="40" class="home-v2__app-icon" />
             <div>

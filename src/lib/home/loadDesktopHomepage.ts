@@ -1,9 +1,9 @@
 import { authors } from '../../data/authors';
 import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
 import { publicPagePath } from '../urls';
-import { loadRoundupForPublic, loadPublishedProducts, loadProductLogoMap } from '../content/store';
+import { loadRoundupForPublic, loadPublishedProducts, loadProductAssetMaps } from '../content/store';
 import { isPlaceholderImage } from '../media/optimize';
-import { isPlaceholderLogo, resolveBrandLogo } from './brandLogos';
+import { isPlaceholderLogo, resolveSquareProductLogo } from './brandLogos';
 import { figmaScoreTone, formatScore } from './figmaScore';
 
 const WINNER_CARD_KEYS = ['images', 'characters', 'chat'] as const;
@@ -201,10 +201,41 @@ function scoreFor(pick: { overallScore: number; categoryScores: Array<{ key: str
   return pick.categoryScores.find((c) => c.key === key)?.score ?? pick.overallScore;
 }
 
-function withLogo<T extends { slug: string; logo: string }>(item: T, logos: Map<string, string>): T {
-  const fromDb = logos.get(item.slug);
-  const next = fromDb && !isPlaceholderLogo(fromDb) ? fromDb : resolveBrandLogo(item.slug, item.logo);
+function firstRealUrl(...candidates: Array<string | undefined | null>): string {
+  for (const value of candidates) {
+    const url = String(value ?? '').trim();
+    if (url && !isPlaceholderLogo(url) && !isPlaceholderImage(url)) return url;
+  }
+  return '';
+}
+
+function withLogo<T extends { slug: string; logo: string }>(
+  item: T,
+  logos: Map<string, string>,
+  productsBySlug: Map<string, { logo?: string }>,
+): T {
+  const next =
+    firstRealUrl(productsBySlug.get(item.slug)?.logo, logos.get(item.slug), item.logo) ||
+    resolveSquareProductLogo(item.slug, item.logo);
   return next ? { ...item, logo: next } : item;
+}
+
+function reviewFeaturedImage(
+  slug: string,
+  productsBySlug: Map<string, { featuredImage?: { full?: string }; logo?: string; seo?: { ogImageUrl?: string; socialImageUrl?: string } }>,
+  featured: Map<string, string>,
+  productLogo: string,
+): string | undefined {
+  const product = productsBySlug.get(slug);
+  const url = firstRealUrl(
+    product?.featuredImage?.full,
+    featured.get(slug),
+    product?.seo?.ogImageUrl,
+    product?.seo?.socialImageUrl,
+  );
+  if (!url || url === productLogo || url === product?.logo) return undefined;
+  if (/herman-youtube-review|girlfriend-expert-logo/i.test(url)) return undefined;
+  return url;
 }
 
 function toRanked(
@@ -254,11 +285,14 @@ function formatMonthYear(value: string | undefined, fallbackMs?: number): string
 }
 
 export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
-  const [{ roundup }, published, logoMap] = await Promise.all([
+  const [{ roundup }, published, assets] = await Promise.all([
     loadRoundupForPublic('ai-girlfriend', fileAiGirlfriendRoundup),
     loadPublishedProducts([]),
-    loadProductLogoMap(),
+    loadProductAssetMaps(),
   ]);
+  const productsBySlug = new Map(published.map((p) => [p.slug, p]));
+  const logoMap = assets.logos;
+  const featuredMap = assets.featured;
 
   const picks = roundup.picks.filter((p) => p.overallScore != null);
   const emptyApp: HomeRankedApp = {
@@ -274,11 +308,12 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     bars: [],
     summary: '',
   };
-  const top3 = picks.slice(0, 3).map((p, i) => withLogo(toRanked(p, i + 1, TOP_CARD_KEYS), logoMap));
+  const top3 = picks.slice(0, 3).map((p, i) => withLogo(toRanked(p, i + 1, TOP_CARD_KEYS), logoMap, productsBySlug));
   const winnerSource = picks[0];
   const winner = withLogo(
     winnerSource ? toRanked(winnerSource, 1, TOP_CARD_KEYS) : top3[0] ?? emptyApp,
     logoMap,
+    productsBySlug,
   );
   const winnerHeroBars = WINNER_CARD_KEYS.map((key) => (winnerSource ? barFrom(winnerSource, key) : null)).filter(
     (b): b is HomeCategoryBar => b != null,
@@ -291,13 +326,13 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
   }
 
   const finalists = picks.slice(0, 5).map((p) =>
-    withLogo({ name: p.name, logo: p.logo, slug: p.slug }, logoMap),
+    withLogo({ name: p.name, logo: p.logo, slug: p.slug }, logoMap, productsBySlug),
   );
 
   const priorities: HomePriorityPanel[] = PRIORITY_META.map((meta) => {
     const sorted = [...picks].sort((a, b) => scoreFor(b, meta.categoryKey) - scoreFor(a, meta.categoryKey));
     const first = sorted[0];
-    const winnerApp = withLogo(first ? toRanked(first, 1, TOP_CARD_KEYS) : winner, logoMap);
+    const winnerApp = withLogo(first ? toRanked(first, 1, TOP_CARD_KEYS) : winner, logoMap, productsBySlug);
     const metricScore = first ? scoreFor(first, meta.categoryKey) : winner.overallNumber;
     winnerApp.award = meta.award;
     winnerApp.overall = chip(metricScore);
@@ -318,6 +353,7 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
           score: chip(scoreFor(p, meta.categoryKey)),
         },
         logoMap,
+        productsBySlug,
       ),
     );
     const roundupHref = meta.rankParam
@@ -358,10 +394,7 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
   for (const product of published) {
     if (product.overallScore == null) continue;
     const date = product.modifiedDate || product.reviewedDate || '';
-    const rawImage = product.featuredImage?.full;
-    const image = isPlaceholderImage(rawImage)
-      ? resolveBrandLogo(product.slug, product.logo)
-      : rawImage;
+    const logo = resolveSquareProductLogo(product.slug, product.logo);
     latestPool.push({
       id: `review-${product.slug}`,
       type: 'Review',
@@ -370,7 +403,7 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
       date: formatMonthYear(date),
       dateMs: parseDateMs(date),
       description: product.tagline || product.overallSummary || '',
-      image: image || undefined,
+      image: reviewFeaturedImage(product.slug, productsBySlug, featuredMap, logo),
       result:
         product.overallScore != null
           ? `${formatScore(product.overallScore)}/10 after 3+ months of testing`
@@ -381,10 +414,7 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
 
   for (const pick of picks) {
     if (reviewSeen.has(pick.slug)) continue;
-    const gallery = pick.gallery?.[0]?.full;
-    const image = isPlaceholderImage(gallery)
-      ? resolveBrandLogo(pick.slug, pick.logo)
-      : gallery;
+    const logo = resolveSquareProductLogo(pick.slug, pick.logo);
     latestPool.push({
       id: `review-${pick.slug}`,
       type: 'Review',
@@ -393,7 +423,7 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
       date: formatMonthYear(roundup.modifiedDate),
       dateMs: parseDateMs(roundup.modifiedDate) - latestPool.length,
       description: pick.overallSummary || pick.intro,
-      image: image || resolveBrandLogo(pick.slug, pick.logo) || undefined,
+      image: reviewFeaturedImage(pick.slug, productsBySlug, featuredMap, logo),
       result:
         pick.overallScore != null
           ? `${formatScore(pick.overallScore)}/10 after 3+ months of testing`
