@@ -1,8 +1,25 @@
 ---
 import ThemeToggle from '../../ui/ThemeToggle.astro';
+import { buildBrandNav } from '../../../data/brand-nav';
 import { buildSearchIndex } from '../../../data/site-search';
 import { loadComparisonProducts } from '../../../lib/content/comparisonProducts';
 import HomeIcon from './HomeIcon.astro';
+
+interface Props {
+  /** Homepage / marketing ink. Same header family as `Header.astro`. */
+  variant?: 'hero' | 'standard';
+}
+
+const { variant = 'hero' } = Astro.props;
+const publishedProducts = await loadComparisonProducts();
+const searchIndex = buildSearchIndex(publishedProducts);
+const brandNav = buildBrandNav(publishedProducts);
+const reviewLinks = publishedProducts
+  .slice()
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .slice(0, 8)
+  .map((p) => ({ label: `${p.name} Review`, href: `/reviews/${p.slug}/` }));
+---
 
 interface Props {
   /** Homepage / marketing ink. Same header family as `Header.astro`. */
@@ -42,6 +59,21 @@ const reviewLinks = publishedProducts
       <div class="home-v2__drop-panel" data-home-drop-panel hidden>
         <a href="/reviews/">All reviews</a>
         {reviewLinks.map((link) => <a href={link.href}>{link.label}</a>)}
+      </div>
+    </div>
+    <div class="home-v2__drop" data-home-drop>
+      <button type="button" class="home-v2__nav-btn" data-home-drop-btn aria-expanded="false" aria-haspopup="true">
+        Brands
+        <HomeIcon name="chevron-down" size={14} />
+      </button>
+      <div class="home-v2__drop-panel" data-home-drop-panel hidden>
+        <p class="home-v2__drop-kicker">Popular brands</p>
+        {brandNav.popular.map((brand) => (
+          <a href={brand.href}>{brand.name}</a>
+        ))}
+        {brandNav.viewAll ? (
+          <a class="home-v2__drop-all" href={brandNav.viewAll.href}>{brandNav.viewAll.label} →</a>
+        ) : null}
       </div>
     </div>
     <a href="/guides/" class="home-v2__nav-link">Guides</a>

@@ -183,9 +183,9 @@
 .home-v2__nav {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
   margin-right: auto;
-  margin-left: 48px;
+  margin-left: 40px;
 }
 
 .home-v2__nav-link,
@@ -360,6 +360,22 @@
   background: color-mix(in srgb, var(--home-pink) 8%, var(--home-page));
   color: var(--home-pink);
   padding-left: 16px;
+}
+
+.home-v2__drop-kicker {
+  margin: 0;
+  padding: 8px 12px 4px;
+  color: var(--home-muted);
+  font: 600 11px/14px var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-v2__drop-panel a.home-v2__drop-all {
+  margin-top: 4px;
+  border-top: 1px solid var(--home-hairline);
+  border-radius: 0 0 10px 10px;
+  color: var(--home-pink);
 }
 
 .home-v2__search {
