@@ -203,7 +203,6 @@
     const showLabel = root.dataset.labelShow || 'Show current number one ranked app';
     const hideLabel = root.dataset.labelHide || 'Show Herman';
     let nudged = false;
-    let lastTouchAt = 0;
 
     const setOpen = (open: boolean) => {
       root.classList.toggle('is-flipped', open);
@@ -211,9 +210,13 @@
       toggle.setAttribute('aria-label', open ? hideLabel : showLabel);
     };
 
-    toggle.addEventListener('pointerup', (event) => {
-      if (event.pointerType === 'touch') lastTouchAt = Date.now();
-    });
+    const closeIfPointerLeft = (event: PointerEvent | MouseEvent) => {
+      if (!fineHover) return;
+      if (!root.classList.contains('is-flipped')) return;
+      const next = 'relatedTarget' in event ? (event.relatedTarget as Node | null) : null;
+      if (next && root.contains(next)) return;
+      setOpen(false);
+    };
 
     toggle.addEventListener('click', (event) => {
       event.preventDefault();
@@ -227,17 +230,22 @@
       event.stopPropagation();
     });
 
-    root.addEventListener('pointerleave', (event) => {
-      if (event.pointerType === 'touch') return;
-      if (Date.now() - lastTouchAt < 600) return;
-      const next = event.relatedTarget as Node | null;
-      if (next && root.contains(next)) return;
-      if (root.classList.contains('is-flipped')) setOpen(false);
-    });
-    root.addEventListener('mouseleave', () => {
-      if (Date.now() - lastTouchAt < 600) return;
-      if (root.classList.contains('is-flipped')) setOpen(false);
-    });
+    root.addEventListener('pointerleave', closeIfPointerLeft);
+    root.addEventListener('mouseleave', closeIfPointerLeft);
+
+    if (fineHover) {
+      document.addEventListener('pointermove', (event) => {
+        if (event.pointerType !== 'mouse') return;
+        if (!root.classList.contains('is-flipped')) return;
+        const box = root.getBoundingClientRect();
+        const inside =
+          event.clientX >= box.left &&
+          event.clientX <= box.right &&
+          event.clientY >= box.top &&
+          event.clientY <= box.bottom;
+        if (!inside) setOpen(false);
+      });
+    }
 
     back?.addEventListener('click', (event) => {
       if (fineHover) return;
@@ -246,7 +254,7 @@
     });
 
     document.addEventListener('pointerdown', (event) => {
-      if (event.pointerType === 'mouse') return;
+      if (fineHover || event.pointerType === 'mouse') return;
       if (!root.classList.contains('is-flipped')) return;
       if (root.contains(event.target as Node)) return;
       setOpen(false);
@@ -255,6 +263,19 @@
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && root.classList.contains('is-flipped')) setOpen(false);
     });
+
+    const hero = document.getElementById('home-hero');
+    if (hero) {
+      const heroIo = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (!entry || entry.intersectionRatio >= 0.2) return;
+          setOpen(false);
+        },
+        { threshold: [0, 0.2] },
+      );
+      heroIo.observe(hero);
+    }
 
     if (prefersReducedMotion() || fineHover) return;
 
