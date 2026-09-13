@@ -29,8 +29,9 @@ const child = spawn(
   'npx',
   ['astro', 'dev', '--force', `--port=${DEV_PORT}`, '--host', '0.0.0.0'],
   {
-  stdio: 'inherit',
-  shell: false,
-});
+    stdio: 'inherit',
+    shell: false,
+  },
+);
 
 child.on('exit', (code) => process.exit(code ?? 0));
