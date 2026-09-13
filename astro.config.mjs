@@ -58,6 +58,10 @@ export default defineConfig({
       noExternal: ['@instantdb/admin', '@instantdb/core', '@instantdb/version'],
     },
     server: {
+      // Cloudflare / Cursor preview tunnels send a Host header Vite otherwise
+      // rejects (403). Listen on IPv4 so the tunnel can reach this process.
+      host: true,
+      allowedHosts: true,
       port: 4321,
       strictPort: true,
       watch: {
