@@ -16,7 +16,7 @@ const steps = [
 ];
 ---
 
-<section class="home-v2__method" id="home-method" aria-labelledby="home-method-title">
+<section class="home-v2__method" id="home-method" aria-labelledby="home-method-title" data-home-reveal="method">
   <div class="home-v2__method-row">
     <div>
       <HomeEyebrow text={`How we test · methodology ${data.methodologyVersion}`} theme="ink" />
@@ -24,8 +24,8 @@ const steps = [
         Nothing gets a score <em class="home-v2__accent">for free</em>
       </h2>
       <ol class="home-v2__steps">
-        {steps.map((step) => (
-          <li>
+        {steps.map((step, i) => (
+          <li style={`--stagger: ${i}`}>
             <span>{step.n}</span>
             <div>
               <h3>{step.title}</h3>
@@ -35,17 +35,35 @@ const steps = [
         ))}
       </ol>
       <a class="home-v2__btn home-v2__btn--on-ink" href="/test/">
-        Read the full methodology
+        How We Test AI Girlfriend Apps
         <HomeIcon name="arrow-right" size={16} />
       </a>
     </div>
-    <div class="home-v2__video-wrap">
-      <div class="home-v2__video" data-home-video>
-        <img src="/home/v2/testing-video-poster.png" alt="Footage from paid testing accounts" />
-        <button type="button" class="home-v2__play" data-home-play aria-label="Play testing video">
-          <HomeIcon name="play" size={26} />
-        </button>
-        <span class="home-v2__chapter">How we test AI girlfriend apps</span>
+    <div class="home-v2__video-wrap" data-home-video-wrap>
+      <div class="home-v2__video">
+        {
+          data.testingVideoSrc ? (
+            <video
+              class="home-v2__video-el"
+              data-home-video-el
+              data-src={data.testingVideoSrc}
+              poster={data.testingVideoPoster}
+              loop
+              muted
+              playsinline
+              disablepictureinpicture
+              preload="none"
+              aria-label="How we test AI girlfriend apps"
+            />
+          ) : null
+        }
+        <img
+          class="home-v2__video-fallback"
+          data-home-video-fallback
+          src={data.testingVideoPoster}
+          alt="How we test AI girlfriend apps"
+          hidden={Boolean(data.testingVideoSrc)}
+        />
       </div>
       <p class="home-v2__data-label">
         <HomeIcon name="video" size={14} />
@@ -54,18 +72,3 @@ const steps = [
     </div>
   </div>
 </section>
-
-<script>
-  function initVideo() {
-    const wrap = document.querySelector('[data-home-video]');
-    const btn = document.querySelector('[data-home-play]');
-    if (!wrap || !btn || wrap.dataset.bound === 'true') return;
-    wrap.dataset.bound = 'true';
-    btn.addEventListener('click', () => {
-      wrap.innerHTML =
-        '<iframe title="How we test AI girlfriend apps" src="https://www.youtube-nocookie.com/embed/UkvdCQ_qUcY?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>';
-    });
-  }
-  initVideo();
-  document.addEventListener('astro:page-load', initVideo);
-</script>

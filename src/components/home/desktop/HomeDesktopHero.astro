@@ -12,8 +12,10 @@ interface Props {
 const { data } = Astro.props;
 ---
 
-<section class="home-v2__hero" id="home-hero" aria-labelledby="home-v2-title">
+<section class="home-v2__hero" id="home-hero" aria-labelledby="home-v2-title" data-home-hero>
   <div class="home-v2__grid" aria-hidden="true"></div>
+  <div class="home-v2__grid-hot" aria-hidden="true"></div>
+  <div class="home-v2__cursor-glow" aria-hidden="true"></div>
   <img class="home-v2__glow" src="/home/v2/pink-glow.svg" alt="" />
   <HomeDesktopHeader />
   <div class="home-v2__hero-body">
@@ -27,11 +29,11 @@ const { data } = Astro.props;
       </p>
       <div class="home-v2__ctas">
         <a class="home-v2__btn home-v2__btn--primary" href="/best/ai-girlfriend/">
-          See the 2026 rankings
+          Best AI Girlfriend Apps
           <HomeIcon name="arrow-right" size={18} />
         </a>
         <a class="home-v2__btn home-v2__btn--on-ink" href="/reviews/">
-          Browse all reviews
+          AI Girlfriend Reviews
           <HomeIcon name="arrow-right" size={18} />
         </a>
       </div>
@@ -83,7 +85,7 @@ const { data } = Astro.props;
             {data.winnerHeroBars.map((bar) => (
               <div class="home-v2__bar">
                 <span>{bar.name}</span>
-                <span class="home-v2__track"><i class={`is-${bar.tone}`} style={`width:${bar.width}`}></i></span>
+                <span class="home-v2__track"><i class={`is-${bar.tone}`} style={`--bar:${bar.width}`}></i></span>
                 <b class={`is-${bar.tone}`}>{bar.display}</b>
               </div>
             ))}

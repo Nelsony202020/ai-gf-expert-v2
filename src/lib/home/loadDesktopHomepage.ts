@@ -1,9 +1,9 @@
 import { authors } from '../../data/authors';
-import { featuredGuides } from '../../data/homepage';
 import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
-import { guides } from '../../data/guides';
 import { publicPagePath } from '../urls';
-import { loadRoundupForPublic, loadPublishedProducts } from '../content/store';
+import { loadRoundupForPublic, loadPublishedProducts, loadProductLogoMap } from '../content/store';
+import { isPlaceholderImage } from '../media/optimize';
+import { isPlaceholderLogo, resolveBrandLogo } from './brandLogos';
 import { figmaScoreTone, formatScore } from './figmaScore';
 
 const WINNER_CARD_KEYS = ['images', 'characters', 'chat'] as const;
@@ -93,6 +93,8 @@ export interface DesktopHomepageData {
     bio: string;
     aboutHref: string;
   };
+  testingVideoSrc: string;
+  testingVideoPoster: string;
 }
 
 const PRIORITY_META: Array<{
@@ -199,6 +201,12 @@ function scoreFor(pick: { overallScore: number; categoryScores: Array<{ key: str
   return pick.categoryScores.find((c) => c.key === key)?.score ?? pick.overallScore;
 }
 
+function withLogo<T extends { slug: string; logo: string }>(item: T, logos: Map<string, string>): T {
+  const fromDb = logos.get(item.slug);
+  const next = fromDb && !isPlaceholderLogo(fromDb) ? fromDb : resolveBrandLogo(item.slug, item.logo);
+  return next ? { ...item, logo: next } : item;
+}
+
 function toRanked(
   pick: {
     slug: string;
@@ -246,9 +254,10 @@ function formatMonthYear(value: string | undefined, fallbackMs?: number): string
 }
 
 export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
-  const [{ roundup }, published] = await Promise.all([
+  const [{ roundup }, published, logoMap] = await Promise.all([
     loadRoundupForPublic('ai-girlfriend', fileAiGirlfriendRoundup),
     loadPublishedProducts([]),
+    loadProductLogoMap(),
   ]);
 
   const picks = roundup.picks.filter((p) => p.overallScore != null);
@@ -265,9 +274,12 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     bars: [],
     summary: '',
   };
-  const top3 = picks.slice(0, 3).map((p, i) => toRanked(p, i + 1, TOP_CARD_KEYS));
+  const top3 = picks.slice(0, 3).map((p, i) => withLogo(toRanked(p, i + 1, TOP_CARD_KEYS), logoMap));
   const winnerSource = picks[0];
-  const winner = winnerSource ? toRanked(winnerSource, 1, TOP_CARD_KEYS) : top3[0] ?? emptyApp;
+  const winner = withLogo(
+    winnerSource ? toRanked(winnerSource, 1, TOP_CARD_KEYS) : top3[0] ?? emptyApp,
+    logoMap,
+  );
   const winnerHeroBars = WINNER_CARD_KEYS.map((key) => (winnerSource ? barFrom(winnerSource, key) : null)).filter(
     (b): b is HomeCategoryBar => b != null,
   );
@@ -278,14 +290,14 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     if (top3[0]) top3[0].award = overallAward;
   }
 
-  const finalists = picks.slice(0, 5).map((p) => ({ name: p.name, logo: p.logo, slug: p.slug }));
+  const finalists = picks.slice(0, 5).map((p) =>
+    withLogo({ name: p.name, logo: p.logo, slug: p.slug }, logoMap),
+  );
 
   const priorities: HomePriorityPanel[] = PRIORITY_META.map((meta) => {
     const sorted = [...picks].sort((a, b) => scoreFor(b, meta.categoryKey) - scoreFor(a, meta.categoryKey));
     const first = sorted[0];
-    const winnerApp = first
-      ? toRanked(first, 1, TOP_CARD_KEYS)
-      : winner;
+    const winnerApp = withLogo(first ? toRanked(first, 1, TOP_CARD_KEYS) : winner, logoMap);
     const metricScore = first ? scoreFor(first, meta.categoryKey) : winner.overallNumber;
     winnerApp.award = meta.award;
     winnerApp.overall = chip(metricScore);
@@ -296,13 +308,18 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     } else {
       winnerApp.summary = first?.overallSummary || first?.intro || winner.summary;
     }
-    const runners = sorted.slice(1, 3).map((p, i) => ({
-      rank: i + 2,
-      slug: p.slug,
-      name: p.name,
-      logo: p.logo,
-      score: chip(scoreFor(p, meta.categoryKey)),
-    }));
+    const runners = sorted.slice(1, 3).map((p, i) =>
+      withLogo(
+        {
+          rank: i + 2,
+          slug: p.slug,
+          name: p.name,
+          logo: p.logo,
+          score: chip(scoreFor(p, meta.categoryKey)),
+        },
+        logoMap,
+      ),
+    );
     const roundupHref = meta.rankParam
       ? publicPagePath(`/best/ai-girlfriend/?rank=${meta.rankParam}`)
       : publicPagePath('/best/ai-girlfriend/');
@@ -336,15 +353,15 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     : [];
 
   const latestPool: HomeLatestItem[] = [];
+  const reviewSeen = new Set<string>();
 
   for (const product of published) {
+    if (product.overallScore == null) continue;
     const date = product.modifiedDate || product.reviewedDate || '';
-    const image = product.featuredImage?.full;
-    const weakest = [...product.categories]
-      .filter((c) => c.score != null)
-      .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))[0];
-    const bits = [product.tagline];
-    if (weakest?.score != null) bits.push(`Weakest category: ${weakest.name} (${formatScore(weakest.score)}).`);
+    const rawImage = product.featuredImage?.full;
+    const image = isPlaceholderImage(rawImage)
+      ? resolveBrandLogo(product.slug, product.logo)
+      : rawImage;
     latestPool.push({
       id: `review-${product.slug}`,
       type: 'Review',
@@ -352,68 +369,35 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
       href: publicPagePath(`/reviews/${product.slug}/`),
       date: formatMonthYear(date),
       dateMs: parseDateMs(date),
-      description: bits.filter(Boolean).join(' '),
-      image,
+      description: product.tagline || product.overallSummary || '',
+      image: image || undefined,
       result:
         product.overallScore != null
           ? `${formatScore(product.overallScore)}/10 after 3+ months of testing`
           : undefined,
     });
+    reviewSeen.add(product.slug);
   }
 
-  latestPool.push({
-    id: 'roundup-best',
-    type: 'Roundup',
-    title: roundup.title || 'Best AI Girlfriend Apps',
-    href: publicPagePath('/best/ai-girlfriend/'),
-    date: formatMonthYear(roundup.modifiedDate),
-    dateMs: parseDateMs(roundup.modifiedDate),
-    description: 'Every tested app ranked on the same 8 categories.',
-  });
-
-  latestPool.push({
-    id: 'method-hub',
-    type: 'Methodology',
-    title: 'How We Score Apps',
-    href: publicPagePath('/test/'),
-    date: formatMonthYear(undefined, Date.parse('2026-05-03')),
-    dateMs: Date.parse('2026-05-03'),
-    description: 'What each of the 8 categories measures and how it is weighted.',
-  });
-
-  latestPool.push({
-    id: 'method-score',
-    type: 'Methodology',
-    title: 'How the AIGE Score works',
-    href: publicPagePath('/test/tooltips/'),
-    date: formatMonthYear(undefined, Date.parse('2026-05-03')),
-    dateMs: Date.parse('2026-05-03') - 1,
-    description: 'How results and weights make the final score.',
-  });
-
-  for (const guide of guides.filter((g) => !g.noindex)) {
+  for (const pick of picks) {
+    if (reviewSeen.has(pick.slug)) continue;
+    const gallery = pick.gallery?.[0]?.full;
+    const image = isPlaceholderImage(gallery)
+      ? resolveBrandLogo(pick.slug, pick.logo)
+      : gallery;
     latestPool.push({
-      id: `guide-${guide.slug}`,
-      type: 'Guide',
-      title: guide.title,
-      href: publicPagePath(`/guides/${guide.slug}/`),
-      date: formatMonthYear(guide.publishedAt),
-      dateMs: parseDateMs(guide.publishedAt),
-      description: guide.excerpt || '',
-      image: undefined,
-    });
-  }
-
-  for (const guide of featuredGuides) {
-    if (latestPool.some((item) => item.href === guide.href)) continue;
-    latestPool.push({
-      id: `static-${guide.id}`,
-      type: guide.type === 'roundup' ? 'Roundup' : guide.type === 'comparison' ? 'Comparison' : 'Guide',
-      title: guide.title,
-      href: guide.href,
-      date: formatMonthYear(guide.date),
-      dateMs: parseDateMs(guide.date),
-      description: guide.excerpt,
+      id: `review-${pick.slug}`,
+      type: 'Review',
+      title: `${pick.name} Review`,
+      href: pick.reviewUrl || publicPagePath(`/reviews/${pick.slug}/`),
+      date: formatMonthYear(roundup.modifiedDate),
+      dateMs: parseDateMs(roundup.modifiedDate) - latestPool.length,
+      description: pick.overallSummary || pick.intro,
+      image: image || resolveBrandLogo(pick.slug, pick.logo) || undefined,
+      result:
+        pick.overallScore != null
+          ? `${formatScore(pick.overallScore)}/10 after 3+ months of testing`
+          : undefined,
     });
   }
 
@@ -421,7 +405,6 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
   const featured =
     latestPool.find((item) => item.type === 'Review' && item.image) ??
     latestPool.find((item) => item.type === 'Review') ??
-    latestPool[0] ??
     null;
   const latestRows = latestPool.filter((item) => item.id !== featured?.id).slice(0, 4);
 
@@ -464,5 +447,7 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
       bio: 'I personally test the apps we review using paid accounts and the same scoring framework.',
       aboutHref: publicPagePath('/author/herman-carter/'),
     },
+    testingVideoSrc: fileAiGirlfriendRoundup.testing.videoSrc,
+    testingVideoPoster: fileAiGirlfriendRoundup.testing.videoPoster,
   };
 }

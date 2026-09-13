@@ -11,7 +11,7 @@ interface Props {
 const { data } = Astro.props;
 ---
 
-<section class="home-v2__section home-v2__ranked" id="home-ranked" aria-labelledby="home-ranked-title">
+<section class="home-v2__section home-v2__ranked" id="home-ranked" aria-labelledby="home-ranked-title" data-home-reveal="ranked">
   <div class="home-v2__section-head">
     <div>
       <HomeEyebrow text={`Rankings · updated ${data.updatedLabel}`} />
@@ -19,13 +19,13 @@ const { data } = Astro.props;
       <p class="home-v2__intro">Based on the same 8-category testing system used across our reviews.</p>
     </div>
     <a class="home-v2__ghost" href="/best/ai-girlfriend/">
-      View full ranking
+      Best AI Girlfriend Apps
       <HomeIcon name="arrow-right" size={16} />
     </a>
   </div>
   <div class="home-v2__ranked-grid">
     {data.top3.map((app) => (
-      <article class="home-v2__product-card">
+      <article class="home-v2__product-card" style={`--stagger: ${app.rank - 1}`}>
         <div class="home-v2__product-head">
           <span class="home-v2__rank">{app.rank}</span>
           <img src={app.logo} alt="" width="48" height="48" class="home-v2__app-icon home-v2__app-icon--md" />
@@ -44,7 +44,7 @@ const { data } = Astro.props;
           {app.bars.map((bar) => (
             <div class="home-v2__bar">
               <span>{bar.name}</span>
-              <span class="home-v2__track"><i class={`is-${bar.tone}`} style={`width:${bar.width}`}></i></span>
+              <span class="home-v2__track"><i class={`is-${bar.tone}`} style={`--bar:${bar.width}`}></i></span>
               <b class={`is-${bar.tone}`}>{bar.display}</b>
             </div>
           ))}

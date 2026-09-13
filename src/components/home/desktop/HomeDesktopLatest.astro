@@ -13,10 +13,10 @@ const { data } = Astro.props;
   <div class="home-v2__section-head">
     <div>
       <HomeEyebrow text="Latest" />
-      <h2 id="home-latest-title" class="home-v2__h2">Latest testing &amp; guides</h2>
+      <h2 id="home-latest-title" class="home-v2__h2">Latest testing</h2>
     </div>
     <a class="home-v2__ghost" href="/reviews/">
-      All reviews &amp; guides
+      All AI Girlfriend Reviews
       <HomeIcon name="arrow-right" size={16} />
     </a>
   </div>
@@ -24,7 +24,9 @@ const { data } = Astro.props;
     {data.featured && (
       <a class="home-v2__featured" href={data.featured.href}>
         {data.featured.image ? (
-          <img src={data.featured.image} alt="" width="560" height="303" />
+          <span class="home-v2__featured-media">
+            <img src={data.featured.image} alt="" width="560" height="303" />
+          </span>
         ) : (
           <div class="home-v2__featured-empty" aria-hidden="true"></div>
         )}
@@ -36,7 +38,7 @@ const { data } = Astro.props;
         {data.featured.result && <p class="home-v2__result">{data.featured.result}</p>}
         <p class="home-v2__featured-desc">{data.featured.description}</p>
         <span class="home-v2__ghost">
-          {data.featured.type === 'Review' ? 'Read the review' : 'Read more'}
+          Read review
           <HomeIcon name="arrow-right" size={16} />
         </span>
       </a>

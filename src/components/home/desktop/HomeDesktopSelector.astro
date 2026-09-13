@@ -44,7 +44,10 @@ const icons = {
     </div>
     <div class="home-v2__selector-result">
       {data.priorities.map((priority, index) => (
-        <div class="home-v2__selector-panel" data-home-panel={priority.id} hidden={index !== 0}>
+        <div
+          class:list={['home-v2__selector-panel', index === 0 && 'is-shown']}
+          data-home-panel={priority.id}
+        >
           <HomeEyebrow text={priority.eyebrow} />
           <div class="home-v2__selector-winner">
             <img src={priority.winner.logo} alt="" width="72" height="72" class="home-v2__app-icon home-v2__app-icon--lg" />
@@ -57,7 +60,7 @@ const icons = {
             </div>
             <div class="home-v2__metric">
               <p>
-                <b class={`is-${priority.winner.overall.tone}`}>{priority.winner.overall.value}</b>
+                <b class={`is-${priority.winner.overall.tone}`} data-home-metric>{priority.winner.overall.value}</b>
                 <span>/10</span>
               </p>
               <small>{priority.metricLabel}</small>
@@ -90,27 +93,3 @@ const icons = {
     </div>
   </div>
 </section>
-
-<script>
-  function initSelector() {
-    const root = document.querySelector('[data-home-selector]');
-    if (!root || root.dataset.bound === 'true') return;
-    root.dataset.bound = 'true';
-    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-home-priority]'));
-    const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-home-panel]'));
-    buttons.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.homePriority;
-        buttons.forEach((other) => {
-          other.classList.toggle('is-active', other === btn);
-          other.setAttribute('aria-selected', other === btn ? 'true' : 'false');
-        });
-        panels.forEach((panel) => {
-          panel.hidden = panel.dataset.homePanel !== id;
-        });
-      });
-    });
-  }
-  initSelector();
-  document.addEventListener('astro:page-load', initSelector);
-</script>

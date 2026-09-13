@@ -9,6 +9,7 @@ import HomeDesktopLatest from './HomeDesktopLatest.astro';
 import HomeDesktopTester from './HomeDesktopTester.astro';
 import HomeDesktopCta from './HomeDesktopCta.astro';
 import Footer from '../../Footer.astro';
+import HomeMotion from './HomeMotion.astro';
 
 interface Props {
   data: DesktopHomepageData;
@@ -26,4 +27,5 @@ const { data } = Astro.props;
   <HomeDesktopTester data={data} />
   <HomeDesktopCta data={data} />
   <Footer />
+  <HomeMotion />
 </div>

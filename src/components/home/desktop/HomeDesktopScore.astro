@@ -21,7 +21,7 @@ const icons: Record<string, 'users' | 'sliders' | 'chat' | 'layers' | 'image' | 
 };
 ---
 
-<section class="home-v2__section" id="home-score" aria-labelledby="home-score-title">
+<section class="home-v2__section" id="home-score" aria-labelledby="home-score-title" data-home-reveal="score">
   <div class="home-v2__score-row">
     <div>
       <HomeEyebrow text="The AIGE score" />
@@ -45,8 +45,8 @@ const icons: Record<string, 'users' | 'sliders' | 'chat' | 'layers' | 'image' | 
           <span>Weak</span>
         </div>
       </div>
-      <a class="home-v2__ghost" href="/test/tooltips/">
-        How the AIGE Score works
+      <a class="home-v2__ghost" href="/test/">
+        How We Test AI Girlfriend Apps
         <HomeIcon name="arrow-right" size={16} />
       </a>
     </div>
@@ -65,8 +65,8 @@ const icons: Record<string, 'users' | 'sliders' | 'chat' | 'layers' | 'image' | 
         </div>
       </div>
       <div class="home-v2__bars home-v2__bars--score">
-        {data.scoreExample.bars.map((bar) => (
-          <div class="home-v2__bar home-v2__bar--lg">
+        {data.scoreExample.bars.map((bar, i) => (
+          <div class="home-v2__bar home-v2__bar--lg" style={`--stagger: ${i}`}>
             <span class="home-v2__bar-icon">
               <HomeIcon name={icons[bar.key] ?? 'layers'} size={20} />
             </span>
@@ -74,7 +74,7 @@ const icons: Record<string, 'users' | 'sliders' | 'chat' | 'layers' | 'image' | 
               <strong>{bar.name}</strong>
               <small>{bar.weight}</small>
             </span>
-            <span class="home-v2__track home-v2__track--lg"><i class={`is-${bar.tone}`} style={`width:${bar.width}`}></i></span>
+            <span class="home-v2__track home-v2__track--lg"><i class={`is-${bar.tone}`} style={`--bar:${bar.width}`}></i></span>
             <b class={`is-${bar.tone}`}>{bar.display}</b>
           </div>
         ))}
