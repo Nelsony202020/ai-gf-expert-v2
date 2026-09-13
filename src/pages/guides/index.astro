@@ -78,6 +78,17 @@ const allGuides = [...staticGuides, ...guides.filter((g) => !staticSlugs.has(g.s
     <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-2">Guides</h1>
     <p class="text-on-surface-variant mb-10 max-w-2xl">{description}</p>
 
+    <a
+      href="/guides/ourdream-ai/"
+      class="mb-10 flex flex-col gap-1 rounded-2xl border border-outline-variant p-5 hover:border-accent transition-colors"
+    >
+      <p class="text-xs font-semibold uppercase tracking-wide text-tertiary">Product hub</p>
+      <h2 class="font-black text-on-surface">OurDream AI Guides</h2>
+      <p class="text-sm text-on-surface-variant">
+        Prompts, images, comics, and the OurDream review — in one place.
+      </p>
+    </a>
+
     {allGuides.length === 0 ? (
       <div class="rounded-2xl border border-outline-variant p-10 text-center text-on-surface-variant">
         <p class="font-bold text-on-surface mb-1">Guides are coming soon.</p>

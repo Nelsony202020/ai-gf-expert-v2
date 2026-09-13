@@ -1,0 +1,239 @@
+---
+import ThemeToggle from '../../ui/ThemeToggle.astro';
+import type { Product } from '../../../data/products';
+import { buildSearchIndex } from '../../../data/site-search';
+import { buildMegaMenuColumns } from '../../../data/nav-mega-menu';
+
+interface Props {
+  products: Pick<Product, 'slug' | 'name'>[];
+}
+
+const { products } = Astro.props;
+const reviewLinks = [...products]
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .map((product) => ({ label: `${product.name} Review`, href: `/reviews/${product.slug}/` }));
+const searchIndex = buildSearchIndex(products, buildMegaMenuColumns(products));
+---
+
+<header class="guide-hub__header" data-hub-header>
+  <div class="guide-hub__header-left">
+    <a href="/" class="site-logo-link site-header__logo-link shrink-0">
+      <span class="site-header__logo" role="img" aria-label="Girlfriend Expert AI"></span>
+    </a>
+    <nav class="guide-hub__nav" aria-label="Main">
+      <div class="guide-hub__drop-wrap" data-hub-drop>
+        <button
+          type="button"
+          class="guide-hub__nav-btn"
+          data-hub-drop-btn
+          aria-expanded="false"
+          aria-haspopup="true"
+        >
+          Best apps
+          <img src="/guides/hub/icon-chevron-down.svg" width="14" height="14" alt="" />
+        </button>
+        <div class="guide-hub__dropdown" data-hub-drop-panel hidden>
+          <a href="/best/ai-girlfriend/">Best AI Girlfriend Apps</a>
+          <div class="guide-hub__dropdown-divider"></div>
+          <a class="is-view-all" href="/best/ai-girlfriend/">
+            View all rankings
+            <img src="/guides/hub/icon-arrow-right.svg" width="16" height="16" alt="" />
+          </a>
+        </div>
+      </div>
+      <div class="guide-hub__drop-wrap" data-hub-drop>
+        <button
+          type="button"
+          class="guide-hub__nav-btn"
+          data-hub-drop-btn
+          aria-expanded="false"
+          aria-haspopup="true"
+        >
+          Reviews
+          <img src="/guides/hub/icon-chevron-down.svg" width="14" height="14" alt="" />
+        </button>
+        <div class="guide-hub__dropdown" data-hub-drop-panel hidden>
+          <a href="/reviews/">All Reviews</a>
+          {reviewLinks.slice(0, 6).map((link) => <a href={link.href}>{link.label}</a>)}
+          <div class="guide-hub__dropdown-divider"></div>
+          <a class="is-view-all" href="/reviews/">
+            View all reviews
+            <img src="/guides/hub/icon-arrow-right.svg" width="16" height="16" alt="" />
+          </a>
+        </div>
+      </div>
+      <a class="guide-hub__nav-link" href="/guides/">Guides</a>
+      <a class="guide-hub__nav-link" href="/test/">How we test</a>
+    </nav>
+  </div>
+
+  <div class="guide-hub__header-actions">
+    <div class="guide-hub__header-search" data-hub-site-search>
+      <button type="button" class="guide-hub__icon-btn" data-hub-site-search-toggle aria-expanded="false" aria-label="Search">
+        <img src="/guides/hub/icon-search-on-ink.svg" width="20" height="20" alt="" />
+      </button>
+      <div class="guide-hub__search-panel" data-hub-site-search-panel hidden>
+        <input type="search" placeholder="Search reviews, guides, pages…" data-hub-site-search-input autocomplete="off" />
+        <div class="guide-hub__search-results" data-hub-site-search-results></div>
+      </div>
+    </div>
+    <ThemeToggle variant="header" />
+    <button type="button" class="guide-hub__icon-btn guide-hub__menu-btn" data-hub-menu-toggle aria-expanded="false" aria-label="Open menu">
+      <img src="/guides/hub/icon-menu.svg" width="20" height="20" alt="" />
+    </button>
+  </div>
+
+  <div class="guide-hub__mobile-menu" data-hub-mobile-menu hidden>
+    <a href="/best/ai-girlfriend/">Best apps</a>
+    <a href="/reviews/">Reviews</a>
+    <a href="/guides/">Guides</a>
+    <a href="/test/">How we test</a>
+    <ThemeToggle variant="footer" />
+  </div>
+</header>
+
+<script define:vars={{ searchIndex }}>
+  function initHubHeader() {
+    const header = document.querySelector('[data-hub-header]');
+    if (!header || header.dataset.bound === 'true') return;
+    header.dataset.bound = 'true';
+
+    function closeDrops(except) {
+      header.querySelectorAll('[data-hub-drop]').forEach((wrap) => {
+        if (wrap === except) return;
+        wrap.querySelector('[data-hub-drop-panel]')?.classList.remove('is-open');
+        wrap.querySelector('[data-hub-drop-panel]')?.setAttribute('hidden', '');
+        wrap.querySelector('[data-hub-drop-btn]')?.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    header.querySelectorAll('[data-hub-drop]').forEach((wrap) => {
+      const btn = wrap.querySelector('[data-hub-drop-btn]');
+      const panel = wrap.querySelector('[data-hub-drop-panel]');
+      let timer;
+      function open() {
+        closeDrops(wrap);
+        closeSiteSearch();
+        panel?.classList.add('is-open');
+        panel?.removeAttribute('hidden');
+        btn?.setAttribute('aria-expanded', 'true');
+      }
+      function close() {
+        panel?.classList.remove('is-open');
+        panel?.setAttribute('hidden', '');
+        btn?.setAttribute('aria-expanded', 'false');
+      }
+      wrap.addEventListener('mouseenter', () => {
+        clearTimeout(timer);
+        open();
+      });
+      wrap.addEventListener('mouseleave', () => {
+        timer = setTimeout(close, 150);
+      });
+      btn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (panel?.classList.contains('is-open')) close();
+        else open();
+      });
+    });
+
+    const siteRoot = header.querySelector('[data-hub-site-search]');
+    const siteToggle = header.querySelector('[data-hub-site-search-toggle]');
+    const sitePanel = header.querySelector('[data-hub-site-search-panel]');
+    const siteInput = header.querySelector('[data-hub-site-search-input]');
+    const siteResults = header.querySelector('[data-hub-site-search-results]');
+    let activeIndex = -1;
+    let current = [];
+
+    function closeSiteSearch() {
+      sitePanel?.classList.remove('is-open');
+      sitePanel?.setAttribute('hidden', '');
+      siteToggle?.setAttribute('aria-expanded', 'false');
+      if (siteInput) siteInput.value = '';
+      if (siteResults) siteResults.innerHTML = '';
+      activeIndex = -1;
+      current = [];
+    }
+
+    function renderSite(query) {
+      if (!siteResults) return;
+      const q = query.trim().toLowerCase();
+      if (!q) {
+        siteResults.innerHTML = '';
+        current = [];
+        return;
+      }
+      current = searchIndex
+        .filter((item) => `${item.label} ${item.meta ?? ''}`.toLowerCase().includes(q))
+        .slice(0, 8);
+      if (!current.length) {
+        siteResults.innerHTML = '<p class="guide-hub__search-empty">No results found.</p>';
+        return;
+      }
+      siteResults.innerHTML = current
+        .map(
+          (item, i) =>
+            `<a href="${item.href}" class="${i === activeIndex ? 'is-active' : ''}">${item.label}<span>${item.meta || ''}</span></a>`,
+        )
+        .join('');
+    }
+
+    siteToggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeDrops();
+      if (sitePanel?.classList.contains('is-open')) closeSiteSearch();
+      else {
+        sitePanel?.classList.add('is-open');
+        sitePanel?.removeAttribute('hidden');
+        siteToggle.setAttribute('aria-expanded', 'true');
+        siteInput?.focus();
+      }
+    });
+    siteInput?.addEventListener('input', () => {
+      activeIndex = -1;
+      renderSite(siteInput.value);
+    });
+    siteInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSiteSearch();
+      if (!current.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, current.length - 1);
+        renderSite(siteInput.value);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, 0);
+        renderSite(siteInput.value);
+      } else if (e.key === 'Enter' && activeIndex >= 0 && current[activeIndex]) {
+        e.preventDefault();
+        window.location.href = current[activeIndex].href;
+      }
+    });
+
+    const menu = header.querySelector('[data-hub-mobile-menu]');
+    const menuBtn = header.querySelector('[data-hub-menu-toggle]');
+    menuBtn?.addEventListener('click', () => {
+      const open = menu?.classList.contains('is-open');
+      menu?.classList.toggle('is-open', !open);
+      if (open) menu?.setAttribute('hidden', '');
+      else menu?.removeAttribute('hidden');
+      menuBtn.setAttribute('aria-expanded', open ? 'false' : 'true');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!header.contains(e.target)) {
+        closeDrops();
+        closeSiteSearch();
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeDrops();
+        closeSiteSearch();
+      }
+    });
+  }
+
+  initHubHeader();
+  document.addEventListener('astro:page-load', initHubHeader);
+</script>

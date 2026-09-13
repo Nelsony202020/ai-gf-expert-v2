@@ -1,0 +1,225 @@
+---
+import AffiliateLink from '../../ui/AffiliateLink.astro';
+import GuideHubInkHeader from './GuideHubInkHeader.astro';
+import type { Product } from '../../../data/products';
+import {
+  ourdreamHubGuides,
+  ourdreamHubMeta,
+  ourdreamHubPopular,
+  ourdreamHubStartHere,
+  ourdreamHubTopics,
+} from '../../../data/ourdream-guide-hub';
+
+interface Props {
+  product?: Pick<Product, 'name' | 'logo' | 'affiliateUrl'> | null;
+  products: Pick<Product, 'slug' | 'name'>[];
+}
+
+const { product, products } = Astro.props;
+const visitHref = product?.affiliateUrl || '/go/ourdream-ai';
+const appIcon = product?.logo || '/guides/hub/ourdream-app-icon.png';
+const productName = product?.name || ourdreamHubMeta.productName;
+const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
+---
+
+<div class="guide-hub">
+  <section class="guide-hub__hero">
+    <div class="guide-hub__glow" aria-hidden="true">
+      <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
+    </div>
+    <GuideHubInkHeader products={products} />
+    <div class="guide-hub__hero-body">
+      <h1 class="guide-hub__title">{ourdreamHubMeta.title}</h1>
+      <p class="guide-hub__lede">{ourdreamHubMeta.description}</p>
+      <form class="guide-hub__guide-search" data-hub-guide-search role="search">
+        <img src="/guides/hub/icon-search.svg" width="20" height="20" alt="" />
+        <input
+          type="search"
+          name="q"
+          placeholder="Search OurDream AI guides…"
+          aria-label="Search OurDream AI guides"
+          data-hub-guide-input
+          autocomplete="off"
+        />
+        <button type="submit">Search</button>
+      </form>
+      <div class="guide-hub__popular">
+        <span class="guide-hub__popular-label">Popular:</span>
+        {
+          ourdreamHubPopular.map((chip) => (
+            <button type="button" class="guide-hub__chip" data-hub-chip data-query={chip.query}>
+              {chip.label}
+            </button>
+          ))
+        }
+      </div>
+      <div class="guide-hub__product">
+        <div class="guide-hub__product-brand">
+          <img
+            class="guide-hub__app-icon"
+            src={appIcon}
+            alt=""
+            width="28"
+            height="28"
+          />
+          <span>{productName}</span>
+        </div>
+        <div class="guide-hub__product-actions">
+          <AffiliateLink class="guide-hub__visit" href={visitHref} target="_blank">
+            {ourdreamHubMeta.visitLabel}
+            <img src="/guides/hub/icon-arrow-up-right.svg" width="16" height="16" alt="" />
+          </AffiliateLink>
+          <p class="guide-hub__affiliate-note">Affiliate link</p>
+          <a class="guide-hub__review-link" href={ourdreamHubMeta.reviewHref}>Read review →</a>
+        </div>
+      </div>
+      <ul class="guide-hub__search-hits" data-hub-guide-hits hidden></ul>
+      <p class="guide-hub__search-none" data-hub-guide-none hidden>No matching OurDream guides.</p>
+    </div>
+  </section>
+
+  <div class="guide-hub__main">
+    <section class="guide-hub__section" aria-labelledby="hub-start">
+      <h2 class="guide-hub__section-title" id="hub-start">Start here</h2>
+      <p class="guide-hub__section-intro">The fastest path into OurDream: the review, then prompting, then images.</p>
+      {
+        ourdreamHubStartHere.map((guide, index) => (
+          <a class="guide-hub__start-row" href={guide.href}>
+            <span class="guide-hub__start-num">{String(index + 1).padStart(2, '0')}</span>
+            <span class="guide-hub__start-text">
+              <span class="guide-hub__start-title">{guide.title}</span>
+              <span class="guide-hub__start-desc">{guide.description}</span>
+            </span>
+            <img class="guide-hub__start-arrow" src="/guides/hub/icon-arrow-right.svg" width="16" height="16" alt="" />
+          </a>
+        ))
+      }
+    </section>
+
+    <section class="guide-hub__section" aria-labelledby="hub-topics">
+      <h2 class="guide-hub__section-title" id="hub-topics">Browse by topic</h2>
+      <p class="guide-hub__section-intro">Jump into the OurDream guides by what you want to do.</p>
+      <div class="guide-hub__topics">
+        {
+          ourdreamHubTopics.map((topic, i) => (
+            <details class="guide-hub__topic" data-hub-topic open={i === 0}>
+              <summary class="guide-hub__topic-head">
+                <span class="guide-hub__topic-icon">
+                  <img src={topic.icon} width="20" height="20" alt="" />
+                </span>
+                <span class="guide-hub__topic-copy">
+                  <span class="guide-hub__topic-title">{topic.title}</span>
+                  <span class="guide-hub__topic-desc guide-hub__topic-desc--desktop">{topic.description}</span>
+                  <span class="guide-hub__topic-desc guide-hub__topic-desc--mobile">{topic.mobileDescription}</span>
+                  <span class="guide-hub__topic-count guide-hub__topic-count--mobile">
+                    {topic.guides.length} {topic.guides.length === 1 ? 'guide' : 'guides'}
+                  </span>
+                </span>
+                <span class="guide-hub__topic-count guide-hub__topic-count--desktop">
+                  {topic.guides.length} {topic.guides.length === 1 ? 'guide' : 'guides'}
+                </span>
+                <span class="guide-hub__topic-toggle" aria-hidden="true">
+                  <img src="/guides/hub/icon-chevron-down.svg" width="16" height="16" alt="" />
+                </span>
+              </summary>
+              <div class="guide-hub__article-rows">
+                {topic.guides.map((guide) => (
+                  <a class="guide-hub__article-row" href={guide.href}>
+                    <span>{guide.title}</span>
+                    <img src="/guides/hub/icon-arrow-right.svg" width="16" height="16" alt="" />
+                  </a>
+                ))}
+              </div>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+  </div>
+</div>
+
+<script define:vars={{ hubGuidesJson }}>
+  const guides = JSON.parse(hubGuidesJson);
+
+  function initHubSearch() {
+    const form = document.querySelector('[data-hub-guide-search]');
+    const input = document.querySelector('[data-hub-guide-input]');
+    const hits = document.querySelector('[data-hub-guide-hits]');
+    const none = document.querySelector('[data-hub-guide-none]');
+    if (!form || !input || !hits || form.dataset.bound === 'true') return;
+    form.dataset.bound = 'true';
+
+    function run(query) {
+      const q = String(query || '').trim().toLowerCase();
+      document.querySelectorAll('[data-hub-chip]').forEach((chip) => {
+        chip.classList.toggle('is-active', chip.getAttribute('data-query') === q);
+      });
+      if (!q) {
+        hits.hidden = true;
+        hits.innerHTML = '';
+        if (none) none.hidden = true;
+        return;
+      }
+      const matched = guides.filter((g) => {
+        const hay = `${g.title} ${g.description || ''} ${(g.tags || []).join(' ')}`.toLowerCase();
+        return hay.includes(q);
+      });
+      if (!matched.length) {
+        hits.hidden = true;
+        hits.innerHTML = '';
+        if (none) none.hidden = false;
+        return;
+      }
+      if (none) none.hidden = true;
+      hits.hidden = false;
+      hits.innerHTML = matched
+        .map((g) => `<li><a href="${g.href}">${g.title}</a></li>`)
+        .join('');
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      run(input.value);
+    });
+    input.addEventListener('input', () => run(input.value));
+    document.querySelectorAll('[data-hub-chip]').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const q = chip.getAttribute('data-query') || '';
+        input.value = q;
+        run(q);
+        input.focus();
+      });
+    });
+  }
+
+  function initTopics() {
+    const root = document.querySelector('.guide-hub');
+    if (!root || root.dataset.topicsBound === 'true') return;
+    root.dataset.topicsBound = 'true';
+    const topics = document.querySelectorAll('[data-hub-topic]');
+    function syncDesktop() {
+      if (!window.matchMedia('(min-width: 768px)').matches) return;
+      topics.forEach((el) => {
+        el.open = true;
+      });
+    }
+    syncDesktop();
+    window.addEventListener('resize', syncDesktop, { passive: true });
+    topics.forEach((el) => {
+      el.addEventListener('toggle', () => {
+        if (!el.open) return;
+        if (window.matchMedia('(min-width: 768px)').matches) return;
+        topics.forEach((other) => {
+          if (other !== el) other.open = false;
+        });
+      });
+    });
+  }
+
+  initHubSearch();
+  initTopics();
+  document.addEventListener('astro:page-load', () => {
+    initHubSearch();
+    initTopics();
+  });
+</script>

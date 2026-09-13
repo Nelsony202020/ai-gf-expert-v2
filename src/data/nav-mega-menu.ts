@@ -48,6 +48,10 @@ export const megaMenuColumns: MegaMenuColumn[] = [
         href: publicPagePath(`/guides/${buyingGuideSlug}`),
       },
       {
+        label: 'OurDream AI Guides',
+        href: publicPagePath('/guides/ourdream-ai'),
+      },
+      {
         label: 'How to Use OurDream AI Image Generator',
         href: publicPagePath('/guides/how-to-use-ourdream-ai-image-generator'),
       },

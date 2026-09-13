@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Footer from '../../components/Footer.astro';
+import OurDreamGuideHub from '../../components/guides/hub/OurDreamGuideHub.astro';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
+import { canonicalPublicUrl } from '../../lib/siteOrigin';
+import { ourdreamHubMeta } from '../../data/ourdream-guide-hub';
+import '../../styles/guide-hub.css';
+
+const products = await loadComparisonProducts();
+const product = products.find((p) => p.slug === 'ourdream-ai') ?? null;
+const canonical = canonicalPublicUrl('/guides/ourdream-ai', Astro.site);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: ourdreamHubMeta.title,
+  description: ourdreamHubMeta.description,
+  url: canonical,
+};
+---
+
+<BaseLayout
+  title={ourdreamHubMeta.seoTitle}
+  description={ourdreamHubMeta.description}
+  canonical={canonical}
+  theme="core"
+>
+  <OurDreamGuideHub product={product} products={products} />
+  <Footer />
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+</BaseLayout>
