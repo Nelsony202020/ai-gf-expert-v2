@@ -19,8 +19,15 @@ export function isPlaceholderLogo(url: string | undefined | null): boolean {
   return /picsum\.photos/i.test(s);
 }
 
+function isLikelyWideWordmark(url: string): boolean {
+  return /logo[-_]?wordmark|horizontal[-_]?logo|wordmark/i.test(url);
+}
+
 /** Product / ranking UI: square app logo only. Never use gallery/featured art. */
 export function resolveSquareProductLogo(slug: string, current?: string | null): string {
-  if (!isPlaceholderLogo(current)) return String(current);
-  return SQUARE_PRODUCT_LOGO_BY_SLUG[slug] || current || '';
+  const knownSquare = SQUARE_PRODUCT_LOGO_BY_SLUG[slug];
+  if (!isPlaceholderLogo(current) && !isLikelyWideWordmark(String(current))) {
+    return String(current);
+  }
+  return knownSquare || current || '';
 }

@@ -214,25 +214,21 @@ function withLogo<T extends { slug: string; logo: string }>(
   logos: Map<string, string>,
   productsBySlug: Map<string, { logo?: string }>,
 ): T {
-  const next =
-    firstRealUrl(productsBySlug.get(item.slug)?.logo, logos.get(item.slug), item.logo) ||
-    resolveSquareProductLogo(item.slug, item.logo);
+  const candidate = firstRealUrl(productsBySlug.get(item.slug)?.logo, logos.get(item.slug), item.logo);
+  const next = resolveSquareProductLogo(item.slug, candidate || item.logo);
   return next ? { ...item, logo: next } : item;
 }
 
 function reviewFeaturedImage(
   slug: string,
-  productsBySlug: Map<string, { featuredImage?: { full?: string }; logo?: string; seo?: { ogImageUrl?: string; socialImageUrl?: string } }>,
+  productsBySlug: Map<string, { featuredImage?: { full?: string }; logo?: string }>,
   featured: Map<string, string>,
   productLogo: string,
 ): string | undefined {
   const product = productsBySlug.get(slug);
-  const url = firstRealUrl(
-    product?.featuredImage?.full,
-    featured.get(slug),
-    product?.seo?.ogImageUrl,
-    product?.seo?.socialImageUrl,
-  );
+  // Editorial cards use the admin featured/review graphic only — never logos,
+  // gallery shots, or OG fallbacks that often point at horizontal wordmarks.
+  const url = firstRealUrl(product?.featuredImage?.full, featured.get(slug));
   if (!url || url === productLogo || url === product?.logo) return undefined;
   if (/herman-youtube-review|girlfriend-expert-logo/i.test(url)) return undefined;
   return url;

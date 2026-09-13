@@ -101,15 +101,23 @@ const legal = [
                   rel="noopener noreferrer"
                 >
                   <SocialIcon platform={channel.icon} class="site-footer__channel-icon" />
-                  <span class="site-footer__channel-name">{channel.label}</span>
-                  <span class="site-footer__channel-ext" aria-hidden="true">↗</span>
-                  {channel.descriptor && <small>{channel.descriptor}</small>}
+                  <span class="site-footer__channel-copy">
+                    <span class="site-footer__channel-title">
+                      <span class="site-footer__channel-name">{channel.label}</span>
+                      <span class="site-footer__channel-ext" aria-hidden="true">↗</span>
+                    </span>
+                    {channel.descriptor && <small>{channel.descriptor}</small>}
+                  </span>
                 </a>
               ) : (
                 <div class="site-footer__channel site-footer__channel--muted">
                   <SocialIcon platform={channel.icon} class="site-footer__channel-icon" />
-                  <span class="site-footer__channel-name">{channel.label}</span>
-                  {channel.descriptor && <small>{channel.descriptor}</small>}
+                  <span class="site-footer__channel-copy">
+                    <span class="site-footer__channel-title">
+                      <span class="site-footer__channel-name">{channel.label}</span>
+                    </span>
+                    {channel.descriptor && <small>{channel.descriptor}</small>}
+                  </span>
                 </div>
               )
             )

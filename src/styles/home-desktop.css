@@ -225,6 +225,7 @@
   width: 20px;
   height: 20px;
   display: block;
+  transform: none !important;
 }
 
 .home-v2__theme .theme-toggle__label {
@@ -624,6 +625,9 @@
 .home-v2__app-icon {
   border-radius: 25%;
   object-fit: contain;
+  object-position: center;
+  flex-shrink: 0;
+  aspect-ratio: 1;
   border: 1px solid var(--home-hairline);
   background: var(--home-card);
 }
@@ -828,8 +832,9 @@
 .home-v2__ring-value {
   stroke: var(--home-high);
   stroke-linecap: round;
-  stroke-dasharray: 100;
+  stroke-dasharray: 100 100;
   stroke-dashoffset: calc(100 - var(--home-ring));
+  transform-origin: 18px 18px;
 }
 
 .home-v2__dial--mid .home-v2__ring-value { stroke: var(--home-mid); }
@@ -1455,7 +1460,11 @@
   border-top: 1px solid rgb(255 255 255 / 10%);
   border-bottom: 0;
   overflow: hidden;
-  background: #151318;
+  --mx: 72%;
+  --my: 32%;
+  background:
+    radial-gradient(circle at 78% 30%, rgb(219 39 119 / 8%), transparent 38%),
+    #151318;
 }
 
 .home-v2__cta-copy,
@@ -1476,6 +1485,14 @@
 
 .home-v2__cta .home-v2__grid {
   opacity: 0.28;
+}
+
+.home-v2__cta.is-glowing .home-v2__grid-hot {
+  opacity: 0.32;
+}
+
+.home-v2__cta.is-glowing .home-v2__cursor-glow {
+  opacity: 0.38;
 }
 
 .home-v2__cta .home-v2__btn--primary:hover {
@@ -1569,7 +1586,7 @@
 
 [data-home-reveal="score"].is-inview .home-v2__track i {
   transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: calc(var(--stagger, 0) * 100ms);
+  transition-delay: calc(var(--stagger, 0) * 90ms);
 }
 
 [data-home-reveal="ranked"]:not(.is-inview) .home-v2__bar b,
@@ -1646,7 +1663,7 @@ html[data-theme='dark'] .home-v2__btn--secondary:hover {
 
   .home-v2__cta {
     background:
-      radial-gradient(circle at 72% 40%, rgb(219 39 119 / 6%), transparent 42%),
+      radial-gradient(circle at 78% 30%, rgb(219 39 119 / 6%), transparent 38%),
       #151318;
   }
 

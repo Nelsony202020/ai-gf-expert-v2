@@ -16,14 +16,15 @@ const ring = Math.max(0, Math.min(10, Number(score.value))) * 10;
   ) : size === 'l' || size === 'xl' ? (
     <div class={`home-v2__dial home-v2__dial--${size} home-v2__dial--${score.tone}`} style={`--home-ring: ${ring}`}>
       <svg class="home-v2__ring" viewBox="0 0 36 36" aria-hidden="true">
-        <circle class="home-v2__ring-track" cx="18" cy="18" r="15.915" fill="none" pathLength="100" />
+        <circle class="home-v2__ring-track" cx="18" cy="18" r="15.9155" fill="none" pathLength="100" />
         <circle
           class="home-v2__ring-value"
           cx="18"
           cy="18"
-          r="15.915"
+          r="15.9155"
           fill="none"
           pathLength="100"
+          stroke-dasharray="100 100"
           transform="rotate(-90 18 18)"
         />
       </svg>
