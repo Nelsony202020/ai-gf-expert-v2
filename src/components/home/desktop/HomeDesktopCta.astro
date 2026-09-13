@@ -1,0 +1,25 @@
+---
+import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
+import HomeIcon from './HomeIcon.astro';
+
+interface Props {
+  data: DesktopHomepageData;
+}
+const { data } = Astro.props;
+---
+
+<section class="home-v2__cta" aria-labelledby="home-cta-title">
+  <div>
+    <h2 id="home-cta-title" class="home-v2__display home-v2__display--cta">
+      Stop guessing.<br />Start with the <em>rankings.</em>
+    </h2>
+    <p class="home-v2__data-label home-v2__data-label--ink">
+      <HomeIcon name="shield" size={14} />
+      {data.finalists.length} finalists · updated {data.updatedLabel} · no sponsored rankings
+    </p>
+  </div>
+  <a class="home-v2__btn home-v2__btn--primary" href="/best/ai-girlfriend/">
+    See the 2026 rankings
+    <HomeIcon name="arrow-right" size={18} />
+  </a>
+</section>

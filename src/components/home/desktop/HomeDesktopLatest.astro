@@ -1,0 +1,60 @@
+---
+import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
+import HomeEyebrow from './HomeEyebrow.astro';
+import HomeIcon from './HomeIcon.astro';
+
+interface Props {
+  data: DesktopHomepageData;
+}
+const { data } = Astro.props;
+---
+
+<section class="home-v2__latest" id="home-latest" aria-labelledby="home-latest-title">
+  <div class="home-v2__section-head">
+    <div>
+      <HomeEyebrow text="Latest" />
+      <h2 id="home-latest-title" class="home-v2__h2">Latest testing &amp; guides</h2>
+    </div>
+    <a class="home-v2__ghost" href="/reviews/">
+      All reviews &amp; guides
+      <HomeIcon name="arrow-right" size={16} />
+    </a>
+  </div>
+  <div class="home-v2__latest-row">
+    {data.featured && (
+      <a class="home-v2__featured" href={data.featured.href}>
+        {data.featured.image ? (
+          <img src={data.featured.image} alt="" width="560" height="303" />
+        ) : (
+          <div class="home-v2__featured-empty" aria-hidden="true"></div>
+        )}
+        <p class="home-v2__meta">
+          <span>{data.featured.type}</span>
+          <span>{data.featured.date}</span>
+        </p>
+        <h3 class="home-v2__h3">{data.featured.title}</h3>
+        {data.featured.result && <p class="home-v2__result">{data.featured.result}</p>}
+        <p class="home-v2__featured-desc">{data.featured.description}</p>
+        <span class="home-v2__ghost">
+          {data.featured.type === 'Review' ? 'Read the review' : 'Read more'}
+          <HomeIcon name="arrow-right" size={16} />
+        </span>
+      </a>
+    )}
+    <div class="home-v2__latest-list">
+      {data.latestRows.map((row) => (
+        <a class="home-v2__latest-item" href={row.href}>
+          <div>
+            <p class="home-v2__meta">
+              <span>{row.type}</span>
+              <span>{row.date}</span>
+            </p>
+            <h3>{row.title}</h3>
+            {row.description && <p>{row.description}</p>}
+          </div>
+          <HomeIcon name="arrow-right" size={20} />
+        </a>
+      ))}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,71 @@
+---
+import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
+import HomeEyebrow from './HomeEyebrow.astro';
+import HomeIcon from './HomeIcon.astro';
+
+interface Props {
+  data: DesktopHomepageData;
+}
+const { data } = Astro.props;
+
+const steps = [
+  { n: '01', title: 'We pay for it', body: 'The cheapest monthly plan of every app. No free press accounts.' },
+  { n: '02', title: 'We use it', body: '30+ days hands-on per finalist, the same tasks on every app.' },
+  { n: '03', title: 'We score it', body: '8 weighted categories, each backed by subscores and evidence.' },
+  { n: '04', title: 'We re-test it', body: 'Scores move when apps change — and the change log says why.' },
+];
+---
+
+<section class="home-v2__method" id="home-method" aria-labelledby="home-method-title">
+  <div class="home-v2__method-row">
+    <div>
+      <HomeEyebrow text={`How we test · methodology ${data.methodologyVersion}`} theme="ink" />
+      <h2 id="home-method-title" class="home-v2__h2 home-v2__h2--ink">
+        Nothing gets a score <em>for free</em>
+      </h2>
+      <ol class="home-v2__steps">
+        {steps.map((step) => (
+          <li>
+            <span>{step.n}</span>
+            <div>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <a class="home-v2__btn home-v2__btn--on-ink" href="/test/">
+        Read the full methodology
+        <HomeIcon name="arrow-right" size={16} />
+      </a>
+    </div>
+    <div class="home-v2__video-wrap">
+      <div class="home-v2__video" data-home-video>
+        <img src="/home/v2/testing-video-poster.png" alt="Footage from paid testing accounts" />
+        <button type="button" class="home-v2__play" data-home-play aria-label="Play testing video">
+          <HomeIcon name="play" size={26} />
+        </button>
+        <span class="home-v2__chapter">How we test AI girlfriend apps</span>
+      </div>
+      <p class="home-v2__data-label">
+        <HomeIcon name="video" size={14} />
+        Footage from our paid testing accounts
+      </p>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initVideo() {
+    const wrap = document.querySelector('[data-home-video]');
+    const btn = document.querySelector('[data-home-play]');
+    if (!wrap || !btn || wrap.dataset.bound === 'true') return;
+    wrap.dataset.bound = 'true';
+    btn.addEventListener('click', () => {
+      wrap.innerHTML =
+        '<iframe title="How we test AI girlfriend apps" src="https://www.youtube-nocookie.com/embed/UkvdCQ_qUcY?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>';
+    });
+  }
+  initVideo();
+  document.addEventListener('astro:page-load', initVideo);
+</script>

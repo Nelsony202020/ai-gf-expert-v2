@@ -1,0 +1,71 @@
+---
+import { affiliateRel } from '../../../lib/affiliate/rel';
+import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
+import HomeEyebrow from './HomeEyebrow.astro';
+import HomeIcon from './HomeIcon.astro';
+import HomeScore from './HomeScore.astro';
+
+interface Props {
+  data: DesktopHomepageData;
+}
+const { data } = Astro.props;
+---
+
+<section class="home-v2__section home-v2__ranked" id="home-ranked" aria-labelledby="home-ranked-title">
+  <div class="home-v2__section-head">
+    <div>
+      <HomeEyebrow text={`Rankings · updated ${data.updatedLabel}`} />
+      <h2 id="home-ranked-title" class="home-v2__h2">Our highest-rated AI girlfriend apps</h2>
+      <p class="home-v2__intro">Based on the same 8-category testing system used across our reviews.</p>
+    </div>
+    <a class="home-v2__ghost" href="/best/ai-girlfriend/">
+      View full ranking
+      <HomeIcon name="arrow-right" size={16} />
+    </a>
+  </div>
+  <div class="home-v2__ranked-grid">
+    {data.top3.map((app) => (
+      <article class="home-v2__product-card">
+        <div class="home-v2__product-head">
+          <span class="home-v2__rank">{app.rank}</span>
+          <img src={app.logo} alt="" width="48" height="48" class="home-v2__app-icon home-v2__app-icon--md" />
+          <div class="home-v2__product-id">
+            <h3>{app.name}</h3>
+            {app.rank === 1 && app.award && (
+              <p class="home-v2__award">
+                <HomeIcon name="crown" size={16} />
+                {app.award}
+              </p>
+            )}
+          </div>
+          <HomeScore score={app.overall} size="l" />
+        </div>
+        <div class="home-v2__bars">
+          {app.bars.map((bar) => (
+            <div class="home-v2__bar">
+              <span>{bar.name}</span>
+              <span class="home-v2__track"><i class={`is-${bar.tone}`} style={`width:${bar.width}`}></i></span>
+              <b class={`is-${bar.tone}`}>{bar.display}</b>
+            </div>
+          ))}
+        </div>
+        <div class="home-v2__price-row">
+          <span>Starting price</span>
+          <strong>{app.priceLabel}</strong>
+        </div>
+        <div class="home-v2__product-ctas">
+          <a
+            class="home-v2__btn home-v2__btn--primary home-v2__btn--sm"
+            href={app.affiliateUrl}
+            target="_blank"
+            rel={affiliateRel()}
+          >
+            Visit site
+            <HomeIcon name="arrow-up-right" size={16} />
+          </a>
+          <a class="home-v2__btn home-v2__btn--secondary home-v2__btn--sm" href={app.reviewUrl}>Read review</a>
+        </div>
+      </article>
+    ))}
+  </div>
+</section>

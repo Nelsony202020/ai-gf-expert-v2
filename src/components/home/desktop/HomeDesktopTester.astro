@@ -1,0 +1,52 @@
+---
+import { homeTesterFacts } from '../../../data/home-proof';
+import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
+import HomeEyebrow from './HomeEyebrow.astro';
+import HomeIcon from './HomeIcon.astro';
+
+interface Props {
+  data: DesktopHomepageData;
+}
+const { data } = Astro.props;
+---
+
+<section class="home-v2__section home-v2__tester" id="home-tester" aria-labelledby="home-tester-title">
+  <div class="home-v2__tester-row">
+    <div class="home-v2__avatar">
+      <img src="/home/v2/herman-tester.png" alt="" width="220" height="220" />
+    </div>
+    <div>
+      <HomeEyebrow text="Meet the tester" />
+      <div class="home-v2__tester-name">
+        <h2 id="home-tester-title" class="home-v2__h3">{data.tester.name}</h2>
+        <span class="home-v2__verified" aria-label="Verified">
+          <HomeIcon name="check" size={13} />
+        </span>
+      </div>
+      <p class="home-v2__tester-role">{data.tester.role} · {data.tester.education}</p>
+      <p class="home-v2__selector-blurb">{data.tester.bio}</p>
+      <div class="home-v2__tester-facts">
+        {homeTesterFacts.map((fact) => (
+          <div class="home-v2__proof-metric">
+            <p class="home-v2__proof-value">{fact.value}</p>
+            <p>{fact.label}</p>
+          </div>
+        ))}
+      </div>
+      <div class="home-v2__tester-links">
+        <a class="home-v2__ghost" href={data.tester.aboutHref}>
+          About Herman
+          <HomeIcon name="arrow-right" size={16} />
+        </a>
+        <a class="home-v2__ghost" href="/test/">
+          How we test
+          <HomeIcon name="arrow-right" size={16} />
+        </a>
+        <a class="home-v2__ghost" href="/editorial-guidelines/">
+          Editorial guidelines
+          <HomeIcon name="arrow-right" size={16} />
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
