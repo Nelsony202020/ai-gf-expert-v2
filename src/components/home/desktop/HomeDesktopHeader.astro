@@ -21,21 +21,6 @@ const reviewLinks = publishedProducts
   .map((p) => ({ label: `${p.name} Review`, href: `/reviews/${p.slug}/` }));
 ---
 
-interface Props {
-  /** Homepage / marketing ink. Same header family as `Header.astro`. */
-  variant?: 'hero' | 'standard';
-}
-
-const { variant = 'hero' } = Astro.props;
-const publishedProducts = await loadComparisonProducts();
-const searchIndex = buildSearchIndex(publishedProducts);
-const reviewLinks = publishedProducts
-  .slice()
-  .sort((a, b) => a.name.localeCompare(b.name))
-  .slice(0, 8)
-  .map((p) => ({ label: `${p.name} Review`, href: `/reviews/${p.slug}/` }));
----
-
 <header class={`home-v2__header home-v2__header--${variant}`} data-home-v2-header data-header-variant={variant} data-glossary-skip>
   <a href="/" class="home-v2__logo-link" aria-label="Girlfriend Expert AI">
     <span class="home-v2__logo" role="img" aria-hidden="true"></span>

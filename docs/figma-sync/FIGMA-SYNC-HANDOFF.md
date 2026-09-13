@@ -424,21 +424,33 @@ Verify Figma matches this current implementation:
 
 ## Screenshot index
 
+Headless Chrome captures of the live `localhost:4321` render (viewport screenshots, no OS chrome). Mobile footer files are **element screenshots** of `.site-footer` so the two-column link groups are fully visible without the fixed bottom app bar covering them.
+
 | File | What |
 | --- | --- |
-| `homepage-desktop-hero.png` | 1440 hero + header (includes Brands) |
-| `homepage-desktop-1440-full.png` | 1440 tall viewport |
+| `homepage-desktop-hero.png` | 1440×1000 hero + header (includes Brands) |
+| `homepage-desktop-1440-full.png` | 1440 full page |
 | `homepage-desktop-rankings.png` | Rankings + proof |
 | `homepage-desktop-methodology.png` | Methodology |
 | `homepage-desktop-score.png` | One number / eight tests |
-| `homepage-desktop-tester-cta.png` | Tester / CTA / footer start |
-| `homepage-desktop-brands-dropdown.png` | Brands menu open |
-| `homepage-desktop-herman-result.png` | Herman flipped (if present) |
+| `homepage-desktop-tester-cta.png` | Tester / CTA |
+| `homepage-desktop-brands-dropdown.png` | Brands menu open (OurDream hub + View all brands) |
+| `homepage-desktop-herman-result.png` | Herman flipped to current #1 |
 | `homepage-mobile-hero.png` | 390 hero |
-| `homepage-mobile-390-full.png` | 390 taller viewport |
-| `homepage-mobile-footer.png` | Mobile site footer |
-| `ourdream-hub-desktop-default-hero.png` | Hub hero + Start here + topics |
-| `ourdream-hub-desktop-search-results.png` | Hub search “prompt” |
+| `homepage-mobile-390-full.png` | 390 full page |
+| `homepage-mobile-rankings.png` | 390 rankings |
+| `homepage-mobile-methodology.png` | 390 methodology |
+| `homepage-mobile-score.png` | 390 AIGE score |
+| `homepage-mobile-tester.png` | 390 tester |
+| `homepage-mobile-footer.png` | Mobile `.site-footer` two-column groups |
+| `ourdream-hub-desktop-default-hero.png` | Hub hero |
+| `ourdream-hub-desktop-1440-full.png` | Hub 1440 full page |
+| `ourdream-hub-desktop-search-results.png` | Hub search “prompt” results |
 | `ourdream-hub-desktop-search-empty.png` | Hub search no-results |
-| `ourdream-hub-mobile-390-full.png` | Hub 390 |
-| `ourdream-hub-mobile-footer.png` | Hub mobile footer |
+| `ourdream-hub-desktop-topic-hover.png` | Browse by topic (first card open/hover treatment) |
+| `ourdream-hub-desktop-footer.png` | Hub desktop footer |
+| `ourdream-hub-mobile-390-full.png` | Hub 390 full page |
+| `ourdream-hub-mobile-default.png` | Hub 390 default viewport |
+| `ourdream-hub-mobile-search.png` | Hub 390 search results |
+| `ourdream-hub-mobile-topics.png` | Hub 390 topic cards |
+| `ourdream-hub-mobile-footer.png` | Hub mobile `.site-footer` |
