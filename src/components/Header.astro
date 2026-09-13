@@ -5,12 +5,18 @@ import { loadComparisonProducts } from '../lib/content/comparisonProducts';
 import { cdnAsset } from '../lib/media/cdn';
 import ThemeToggle from './ui/ThemeToggle.astro';
 
+interface Props {
+  /** Dark / Standard sits on content pages. Dark / Hero is for marketing ink surfaces. */
+  variant?: 'standard' | 'hero';
+}
+
+const { variant = 'standard' } = Astro.props;
 const publishedProducts = await loadComparisonProducts();
 const megaMenuColumns = buildMegaMenuColumns(publishedProducts);
 const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
 ---
 
-<header class="site-header relative z-50" data-site-header data-glossary-skip>
+<header class:list={['site-header', 'relative', 'z-50', `site-header--${variant}`]} data-site-header data-header-variant={variant} data-glossary-skip>
   <div class="section-container px-4 md:px-8 site-header__inner">
     <div class="site-header__left">
       <a href="/" class="site-logo-link site-header__logo-link shrink-0">

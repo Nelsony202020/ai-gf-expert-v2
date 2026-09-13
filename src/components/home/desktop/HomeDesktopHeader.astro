@@ -4,6 +4,12 @@ import { buildSearchIndex } from '../../../data/site-search';
 import { loadComparisonProducts } from '../../../lib/content/comparisonProducts';
 import HomeIcon from './HomeIcon.astro';
 
+interface Props {
+  /** Homepage / marketing ink. Same header family as `Header.astro`. */
+  variant?: 'hero' | 'standard';
+}
+
+const { variant = 'hero' } = Astro.props;
 const publishedProducts = await loadComparisonProducts();
 const searchIndex = buildSearchIndex(publishedProducts);
 const reviewLinks = publishedProducts
@@ -13,7 +19,7 @@ const reviewLinks = publishedProducts
   .map((p) => ({ label: `${p.name} Review`, href: `/reviews/${p.slug}/` }));
 ---
 
-<header class="home-v2__header" data-home-v2-header data-glossary-skip>
+<header class={`home-v2__header home-v2__header--${variant}`} data-home-v2-header data-header-variant={variant} data-glossary-skip>
   <a href="/" class="home-v2__logo-link" aria-label="Girlfriend Expert AI">
     <span class="home-v2__logo" role="img" aria-hidden="true"></span>
   </a>
