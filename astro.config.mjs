@@ -59,6 +59,9 @@ export default defineConfig({
     server: {
       port: 4321,
       strictPort: true,
+      // Cloud Agent / Cloudflare / Cursor port-forwards send a non-localhost Host
+      // header. Vite 6+ blocks those with 403 unless allowedHosts is open in dev.
+      allowedHosts: true,
       watch: {
         // Ignore build output — watching .vercel/ triggers thousands of HMR reloads
         // and breaks admin module loading in dev.
