@@ -272,7 +272,10 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     (b): b is HomeCategoryBar => b != null,
   );
   if (winnerSource) {
-    winner.award = winnerSource.awards?.find((a) => a.sortKey === 'overall')?.label ?? 'Best overall';
+    const overallAward =
+      winnerSource.awards?.find((a) => a.sortKey === 'overall')?.label ?? 'Best overall';
+    winner.award = overallAward;
+    if (top3[0]) top3[0].award = overallAward;
   }
 
   const finalists = picks.slice(0, 5).map((p) => ({ name: p.name, logo: p.logo, slug: p.slug }));
@@ -456,8 +459,8 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     latestRows,
     tester: {
       name: herman?.name ?? 'Herman Carter',
-      role: herman?.title ?? 'Lead Reviewer',
-      education: herman?.education?.[0]?.title ?? 'M.A. AI Ethics & Society',
+      role: 'Lead Reviewer',
+      education: 'M.A. AI Ethics & Society',
       bio: 'I personally test the apps we review using paid accounts and the same scoring framework.',
       aboutHref: publicPagePath('/author/herman-carter/'),
     },
