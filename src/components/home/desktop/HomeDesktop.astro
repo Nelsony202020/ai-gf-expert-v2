@@ -8,7 +8,7 @@ import HomeDesktopScore from './HomeDesktopScore.astro';
 import HomeDesktopLatest from './HomeDesktopLatest.astro';
 import HomeDesktopTester from './HomeDesktopTester.astro';
 import HomeDesktopCta from './HomeDesktopCta.astro';
-import HomeDesktopFooter from './HomeDesktopFooter.astro';
+import Footer from '../../Footer.astro';
 
 interface Props {
   data: DesktopHomepageData;
@@ -25,5 +25,5 @@ const { data } = Astro.props;
   <HomeDesktopLatest data={data} />
   <HomeDesktopTester data={data} />
   <HomeDesktopCta data={data} />
-  <HomeDesktopFooter />
+  <Footer />
 </div>
