@@ -189,11 +189,68 @@
     observer.observe(wrap);
   }
 
+  function initHermanBadge() {
+    const root = document.querySelector<HTMLElement>('[data-home-badge]');
+    if (!root || root.dataset.badgeBound === 'true') return;
+    root.dataset.badgeBound = 'true';
+
+    const toggle = root.querySelector<HTMLButtonElement>('[data-home-badge-toggle]');
+    const link = root.querySelector<HTMLAnchorElement>('[data-home-badge-link]');
+    const back = root.querySelector<HTMLElement>('.home-v2__badge-face--back');
+    if (!toggle) return;
+
+    const showLabel = root.dataset.labelShow || 'Show current number one ranked app';
+    const hideLabel = root.dataset.labelHide || 'Show Herman';
+    let nudged = false;
+
+    const setOpen = (open: boolean) => {
+      root.classList.toggle('is-flipped', open);
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.setAttribute('aria-label', open ? hideLabel : showLabel);
+    };
+
+    const close = () => setOpen(false);
+
+    toggle.addEventListener('click', (event) => {
+      event.preventDefault();
+      setOpen(!root.classList.contains('is-flipped'));
+    });
+
+    link?.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+
+    back?.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('[data-home-badge-link]')) return;
+      close();
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (!root.classList.contains('is-flipped')) return;
+      if (root.contains(event.target as Node)) return;
+      close();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && root.classList.contains('is-flipped')) close();
+    });
+
+    if (prefersReducedMotion()) return;
+
+    window.setTimeout(() => {
+      if (nudged || root.classList.contains('is-flipped')) return;
+      nudged = true;
+      root.classList.add('is-nudging');
+      window.setTimeout(() => root.classList.remove('is-nudging'), 700);
+    }, 1250);
+  }
+
   function init() {
     initPointerGlows();
     initReveals();
     initSelectorMotion();
     initMethodVideo();
+    initHermanBadge();
   }
 
   init();

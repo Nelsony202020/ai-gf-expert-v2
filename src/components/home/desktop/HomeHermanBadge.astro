@@ -1,0 +1,64 @@
+---
+import type { HomeCategoryBar, HomeRankedApp } from '../../../lib/home/loadDesktopHomepage';
+import HomeIcon from './HomeIcon.astro';
+
+interface Props {
+  winner: HomeRankedApp;
+  bars: HomeCategoryBar[];
+  rankingHref?: string;
+}
+
+const { winner, bars, rankingHref = '/best/ai-girlfriend/' } = Astro.props;
+const award = winner.award || 'Best overall';
+const labelShow = `Show current number one ranked app, ${winner.name}`;
+const labelHide = `Hide ${winner.name} ranking and show Herman`;
+---
+
+<div class="home-v2__badge" data-home-badge data-label-show={labelShow} data-label-hide={labelHide}>
+  <div class="home-v2__badge-scene">
+    <div class="home-v2__badge-flip">
+      <div class="home-v2__badge-face home-v2__badge-face--front">
+        <img
+          class="home-v2__herman"
+          src="/home/v2/herman-scientist.png"
+          alt=""
+          width="400"
+          height="400"
+        />
+      </div>
+      <div class="home-v2__badge-face home-v2__badge-face--back" id="home-herman-back">
+        <p class="home-v2__badge-kicker">Current #1</p>
+        <p class="home-v2__badge-award">{award}</p>
+        <div class="home-v2__badge-app">
+          <img src={winner.logo} alt="" width="40" height="40" class="home-v2__app-icon" />
+          <p class="home-v2__badge-name">{winner.name}</p>
+        </div>
+        <p class="home-v2__badge-score">
+          <b class={`is-${winner.overall.tone}`}>{winner.overall.value}</b>
+          <span>/10</span>
+        </p>
+        <ul class="home-v2__badge-cats">
+          {bars.map((bar) => (
+            <li>
+              <span>{bar.name}</span>
+              <b class={`is-${bar.tone}`}>{bar.display}</b>
+            </li>
+          ))}
+        </ul>
+        <a class="home-v2__badge-link" href={rankingHref} data-home-badge-link>
+          View ranking
+          <HomeIcon name="arrow-right" size={14} />
+        </a>
+      </div>
+    </div>
+  </div>
+  <button
+    type="button"
+    class="home-v2__badge-toggle"
+    data-home-badge-toggle
+    aria-expanded="false"
+    aria-controls="home-herman-back"
+    aria-label={labelShow}
+  >
+  </button>
+</div>
