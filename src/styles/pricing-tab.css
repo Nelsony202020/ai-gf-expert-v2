@@ -165,12 +165,12 @@
 }
 
 [data-theme='dark'] .pt-mixer-host:has([data-pt-mixer]) {
-  background: var(--color-surface-container, #1e293b);
+  background: var(--color-surface-container, #1c1c21);
   border-color: var(--dark-border-subtle);
 }
 
 [data-theme='dark'] .pt-usage-math__details {
-  background: rgb(15 23 42 / 45%);
+  background: color-mix(in srgb, var(--dark-elevated) 88%, transparent);
 }
 
 [data-theme='dark'] .pt-usage-math__chip .material-symbols-outlined,
@@ -317,7 +317,7 @@
 }
 
 [data-theme='dark'] .pt-mixer__donut-hole {
-  background: var(--color-surface-container-lowest, #0f172a);
+  background: var(--color-surface-container-lowest, #161619);
 }
 
 [data-theme='dark'] .pt-mixer__legend-item--remaining .pt-mixer__legend-swatch {
