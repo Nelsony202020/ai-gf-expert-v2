@@ -280,6 +280,10 @@
   transition: transform 0.3s ease, opacity 0.25s ease;
 }
 
+.theme-toggle__icon[hidden] {
+  display: none !important;
+}
+
 .theme-toggle--switch[aria-pressed='true'] .theme-toggle__icon,
 .theme-toggle--switch[aria-checked='true'] .theme-toggle__icon {
   transform: rotate(180deg);
