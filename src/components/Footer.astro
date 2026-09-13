@@ -1,58 +1,63 @@
 ---
-import { authors } from '../data/authors';
 import { legalPages } from '../data/legal-pages';
-import { loadComparisonProducts } from '../lib/content/comparisonProducts';
+import { BRAND_SOCIAL } from '../data/social-links';
 import SocialIcon from './ui/SocialIcon.astro';
 import ThemeToggle from './ui/ThemeToggle.astro';
 
-const publishedProducts = await loadComparisonProducts();
-const herman = authors['herman-carter'];
 const year = new Date().getFullYear();
-
 const legalBySlug = Object.fromEntries(legalPages.map((page) => [page.slug, page]));
 
-const reviewLinks = [
-  { label: 'All Reviews', href: '/reviews/' },
-  ...publishedProducts.map((product) => ({
-    label: `${product.name} Review`,
-    href: `/reviews/${product.slug}/`,
-  })),
+const channels = [
+  {
+    label: 'AI Girlfriend Expert',
+    descriptor: 'Reviews, rankings & app testing',
+    href: BRAND_SOCIAL.youtube,
+    icon: 'youtube' as const,
+  },
+  {
+    label: 'AI Girlfriend Help Desk',
+    descriptor: 'Tutorials, FAQs & how-to guides',
+    href: 'https://www.youtube.com/@ai-girlfriend-help-desk',
+    icon: 'youtube' as const,
+  },
+  {
+    label: 'TikTok',
+    descriptor: '',
+    href: BRAND_SOCIAL.tiktok,
+    icon: 'tiktok' as const,
+  },
+  {
+    label: 'Reddit Community',
+    descriptor: 'New community coming soon',
+    href: '',
+    icon: 'reddit' as const,
+  },
 ];
 
-interface FooterLink {
-  label: string;
-  href: string;
-  badge?: string;
-}
-
-interface FooterColumn {
-  title: string;
-  links: FooterLink[];
-}
-
-const columns: FooterColumn[] = [
+const columns = [
   {
     title: 'Explore',
     links: [
-      { label: 'AI Girlfriend App Directory', href: '/ai-girlfriend-apps/' },
-      { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend/' },
+      { label: 'Roundups', href: '/best/ai-girlfriend/' },
+      { label: 'Reviews', href: '/reviews/' },
       { label: 'Guides', href: '/guides/' },
-      { label: 'Comparisons', href: '/best/ai-girlfriend/#roundup-compare' },
+      { label: 'AI Girlfriend Apps', href: '/ai-girlfriend-apps/' },
     ],
   },
   {
-    title: 'Reviews',
-    links: reviewLinks,
+    title: 'Testing',
+    links: [
+      { label: 'How We Test', href: '/test/' },
+      { label: 'Testing Categories', href: '/test/all/' },
+      { label: 'How Scoring Works', href: '/test/tooltips/' },
+      { label: 'Market Data Methodology', href: '/test/market-data/' },
+    ],
   },
   {
-    title: 'How We Test',
+    title: 'Resources',
     links: [
-      { label: 'Our Methodology', href: '/test/' },
-      { label: 'All Testing Categories', href: '/test/all/' },
-      { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
-      { label: 'Market Data Methodology', href: '/test/market-data/' },
-      { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
       { label: 'Glossary', href: '/glossary/' },
+      { label: 'Site Index', href: '/sitemap/' },
     ],
   },
   {
@@ -61,51 +66,58 @@ const columns: FooterColumn[] = [
       { label: 'About Us', href: '/about/' },
       { label: 'Herman Carter', href: '/author/herman-carter/' },
       { label: 'Contact', href: '/contact/' },
+      { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
       { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure/' },
     ],
   },
 ];
 
-const bottomLinks = [
+const legal = [
   { label: legalBySlug.privacy?.title ?? 'Privacy Policy', href: legalBySlug.privacy?.href ?? '/legal/privacy/' },
   { label: legalBySlug.terms?.title ?? 'Terms of Service', href: legalBySlug.terms?.href ?? '/legal/terms/' },
   { label: legalBySlug.accessibility?.title ?? 'Accessibility', href: legalBySlug.accessibility?.href ?? '/legal/accessibility/' },
 ];
 ---
 
-<footer class="site-footer">
+<footer class="site-footer" aria-label="Site">
   <div class="site-footer__container section-container px-4 sm:px-6 lg:px-8">
     <div class="site-footer__top">
       <div class="site-footer__brand">
         <a href="/" class="site-logo-link site-footer__logo-link">
-          {/* Background image, so the off-theme variant is never fetched — see Header.astro */}
           <span class="site-footer__logo" role="img" aria-label="Girlfriend Expert AI"></span>
         </a>
-
         <p class="site-footer__description">
           Independent AI companion reviews — tested honestly, scored transparently, updated regularly.
         </p>
-
-        {
-          herman?.socials?.length ? (
-            <div class="site-footer__socials" aria-label="Social links">
-              {herman.socials.map((item) => (
+        <div class="site-footer__channels" aria-label="Channels and community">
+          <p class="site-footer__channels-label">Channels &amp; community</p>
+          {
+            channels.map((channel) =>
+              channel.href ? (
                 <a
-                  href={item.url}
+                  class="site-footer__channel"
+                  href={channel.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="site-footer__social-link"
-                  aria-label={item.platform}
                 >
-                  <SocialIcon platform={item.icon} class="site-footer__social-icon" />
+                  <SocialIcon platform={channel.icon} class="site-footer__channel-icon" />
+                  <span class="site-footer__channel-name">{channel.label}</span>
+                  <span class="site-footer__channel-ext" aria-hidden="true">↗</span>
+                  {channel.descriptor && <small>{channel.descriptor}</small>}
                 </a>
-              ))}
-            </div>
-          ) : null
-        }
+              ) : (
+                <div class="site-footer__channel site-footer__channel--muted">
+                  <SocialIcon platform={channel.icon} class="site-footer__channel-icon" />
+                  <span class="site-footer__channel-name">{channel.label}</span>
+                  {channel.descriptor && <small>{channel.descriptor}</small>}
+                </div>
+              )
+            )
+          }
+        </div>
       </div>
 
-      <div class="site-footer__nav">
+      <nav class="site-footer__nav" aria-label="Footer">
         {
           columns.map((col) => (
             <div class="site-footer__col">
@@ -115,7 +127,6 @@ const bottomLinks = [
                   <li>
                     <a href={link.href} class="site-footer__link">
                       {link.label}
-                      {link.badge && <span class="site-footer__badge">{link.badge}</span>}
                     </a>
                   </li>
                 ))}
@@ -123,14 +134,18 @@ const bottomLinks = [
             </div>
           ))
         }
-      </div>
+      </nav>
     </div>
+
+    <p class="site-footer__signoff">
+      Tested, <span>not hyped.</span>
+    </p>
 
     <div class="site-footer__bottom">
       <p class="site-footer__copyright">&copy; {year} Nelson Digital FZ-LLC. All rights reserved.</p>
       <div class="site-footer__bottom-actions">
         <nav class="site-footer__legal" aria-label="Legal">
-          {bottomLinks.map((link) => (
+          {legal.map((link) => (
             <a href={link.href} class="site-footer__legal-link">{link.label}</a>
           ))}
         </nav>

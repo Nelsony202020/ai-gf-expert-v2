@@ -1,6 +1,7 @@
 ---
 import AffiliateLink from '../../ui/AffiliateLink.astro';
-import GuideHubInkHeader from './GuideHubInkHeader.astro';
+import HomeDesktopHeader from '../../home/desktop/HomeDesktopHeader.astro';
+import HomeIcon from '../../home/desktop/HomeIcon.astro';
 import type { Product } from '../../../data/products';
 import {
   ourdreamHubGuides,
@@ -12,10 +13,9 @@ import {
 
 interface Props {
   product?: Pick<Product, 'name' | 'logo' | 'affiliateUrl'> | null;
-  products: Pick<Product, 'slug' | 'name'>[];
 }
 
-const { product, products } = Astro.props;
+const { product } = Astro.props;
 const visitHref = product?.affiliateUrl || '/go/ourdream-ai';
 const appIcon = product?.logo || '/guides/hub/ourdream-app-icon.png';
 const productName = product?.name || ourdreamHubMeta.productName;
@@ -27,22 +27,33 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
     <div class="guide-hub__glow" aria-hidden="true">
       <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
     </div>
-    <GuideHubInkHeader products={products} />
+    <HomeDesktopHeader />
     <div class="guide-hub__hero-body">
       <h1 class="guide-hub__title">{ourdreamHubMeta.title}</h1>
       <p class="guide-hub__lede">{ourdreamHubMeta.description}</p>
-      <form class="guide-hub__guide-search" data-hub-guide-search role="search">
-        <img src="/guides/hub/icon-search.svg" width="20" height="20" alt="" />
-        <input
-          type="search"
-          name="q"
-          placeholder="Search OurDream AI guides…"
-          aria-label="Search OurDream AI guides"
-          data-hub-guide-input
-          autocomplete="off"
-        />
-        <button type="submit">Search</button>
-      </form>
+      <div class="guide-hub__search-wrap">
+        <form class="guide-hub__guide-search" data-hub-guide-search role="search">
+          <img src="/guides/hub/icon-search.svg" width="20" height="20" alt="" />
+          <input
+            type="search"
+            name="q"
+            placeholder="Search OurDream AI guides…"
+            aria-label="Search OurDream AI guides"
+            data-hub-guide-input
+            autocomplete="off"
+            aria-autocomplete="list"
+            aria-controls="hub-guide-results"
+          />
+          <button type="submit">Search</button>
+        </form>
+        <div
+          class="guide-hub__search-panel"
+          id="hub-guide-results"
+          data-hub-guide-hits
+          role="listbox"
+          aria-hidden="true"
+        ></div>
+      </div>
       <div class="guide-hub__popular">
         <span class="guide-hub__popular-label">Popular:</span>
         {
@@ -55,26 +66,17 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
       </div>
       <div class="guide-hub__product">
         <div class="guide-hub__product-brand">
-          <img
-            class="guide-hub__app-icon"
-            src={appIcon}
-            alt=""
-            width="28"
-            height="28"
-          />
+          <img class="guide-hub__app-icon" src={appIcon} alt="" width="28" height="28" />
           <span>{productName}</span>
         </div>
         <div class="guide-hub__product-actions">
           <AffiliateLink class="guide-hub__visit" href={visitHref} target="_blank">
             {ourdreamHubMeta.visitLabel}
-            <img src="/guides/hub/icon-arrow-up-right.svg" width="16" height="16" alt="" />
+            <HomeIcon name="arrow-up-right" size={16} />
           </AffiliateLink>
-          <p class="guide-hub__affiliate-note">Affiliate link</p>
           <a class="guide-hub__review-link" href={ourdreamHubMeta.reviewHref}>Read review →</a>
         </div>
       </div>
-      <ul class="guide-hub__search-hits" data-hub-guide-hits hidden></ul>
-      <p class="guide-hub__search-none" data-hub-guide-none hidden>No matching OurDream guides.</p>
     </div>
   </section>
 
@@ -90,7 +92,9 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
               <span class="guide-hub__start-title">{guide.title}</span>
               <span class="guide-hub__start-desc">{guide.description}</span>
             </span>
-            <img class="guide-hub__start-arrow" src="/guides/hub/icon-arrow-right.svg" width="16" height="16" alt="" />
+            <span class="guide-hub__start-arrow" aria-hidden="true">
+              <HomeIcon name="arrow-right" size={16} />
+            </span>
           </a>
         ))
       }
@@ -126,7 +130,7 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
                 {topic.guides.map((guide) => (
                   <a class="guide-hub__article-row" href={guide.href}>
                     <span>{guide.title}</span>
-                    <img src="/guides/hub/icon-arrow-right.svg" width="16" height="16" alt="" />
+                    <HomeIcon name="arrow-right" size={16} />
                   </a>
                 ))}
               </div>
@@ -141,13 +145,55 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
 <script define:vars={{ hubGuidesJson }}>
   const guides = JSON.parse(hubGuidesJson);
 
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function initHubSearch() {
     const form = document.querySelector('[data-hub-guide-search]');
+    const wrap = form?.closest('.guide-hub__search-wrap');
     const input = document.querySelector('[data-hub-guide-input]');
-    const hits = document.querySelector('[data-hub-guide-hits]');
-    const none = document.querySelector('[data-hub-guide-none]');
-    if (!form || !input || !hits || form.dataset.bound === 'true') return;
+    const panel = document.querySelector('[data-hub-guide-hits]');
+    if (!form || !wrap || !input || !panel || form.dataset.bound === 'true') return;
     form.dataset.bound = 'true';
+
+    let activeIndex = -1;
+    let current = [];
+
+    function closePanel() {
+      panel.classList.remove('is-open');
+      panel.setAttribute('aria-hidden', 'true');
+      activeIndex = -1;
+    }
+
+    function openPanel() {
+      panel.classList.add('is-open');
+      panel.setAttribute('aria-hidden', 'false');
+    }
+
+    function render() {
+      if (!current.length) {
+        panel.innerHTML = '<p class="guide-hub__search-empty">No matching OurDream guides.</p>';
+        return;
+      }
+      const q = String(input.value || '').trim();
+      const countLabel = `${current.length} result${current.length === 1 ? '' : 's'} for “${escapeHtml(q)}”`;
+      panel.innerHTML =
+        `<p class="guide-hub__search-count">${countLabel}</p>` +
+        current
+          .map(
+            (g, i) =>
+              `<a class="guide-hub__search-item${i === activeIndex ? ' is-active' : ''}" href="${escapeHtml(g.href)}" role="option">
+                <span class="guide-hub__search-item-title">${escapeHtml(g.title)}</span>
+                <span class="guide-hub__search-item-desc">${escapeHtml(g.description || '')}</span>
+              </a>`,
+          )
+          .join('');
+    }
 
     function run(query) {
       const q = String(query || '').trim().toLowerCase();
@@ -155,33 +201,54 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
         chip.classList.toggle('is-active', chip.getAttribute('data-query') === q);
       });
       if (!q) {
-        hits.hidden = true;
-        hits.innerHTML = '';
-        if (none) none.hidden = true;
+        current = [];
+        panel.innerHTML = '';
+        closePanel();
         return;
       }
-      const matched = guides.filter((g) => {
+      current = guides.filter((g) => {
         const hay = `${g.title} ${g.description || ''} ${(g.tags || []).join(' ')}`.toLowerCase();
         return hay.includes(q);
       });
-      if (!matched.length) {
-        hits.hidden = true;
-        hits.innerHTML = '';
-        if (none) none.hidden = false;
-        return;
-      }
-      if (none) none.hidden = true;
-      hits.hidden = false;
-      hits.innerHTML = matched
-        .map((g) => `<li><a href="${g.href}">${g.title}</a></li>`)
-        .join('');
+      activeIndex = -1;
+      render();
+      openPanel();
     }
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+      if (activeIndex >= 0 && current[activeIndex]) {
+        window.location.href = current[activeIndex].href;
+        return;
+      }
       run(input.value);
     });
     input.addEventListener('input', () => run(input.value));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        input.value = '';
+        run('');
+        input.blur();
+        return;
+      }
+      if (!panel.classList.contains('is-open')) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!current.length) return;
+        activeIndex = Math.min(activeIndex + 1, current.length - 1);
+        render();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!current.length) return;
+        activeIndex = Math.max(activeIndex - 1, 0);
+        render();
+      } else if (e.key === 'Enter' && activeIndex >= 0 && current[activeIndex]) {
+        e.preventDefault();
+        window.location.href = current[activeIndex].href;
+      }
+    });
+
     document.querySelectorAll('[data-hub-chip]').forEach((chip) => {
       chip.addEventListener('click', () => {
         const q = chip.getAttribute('data-query') || '';
@@ -189,6 +256,10 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
         run(q);
         input.focus();
       });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)) closePanel();
     });
   }
 

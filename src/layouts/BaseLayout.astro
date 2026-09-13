@@ -9,9 +9,7 @@ import ThemeToggleInit from '../components/ui/ThemeToggleInit.astro';
 import ExternalLinksInit from '../components/ui/ExternalLinksInit.astro';
 import ComingSoonLayer from '../components/ui/ComingSoonLayer.astro';
 import MobileNavShell from '../components/mobile/MobileNavShell.astro';
-import PublicGlossaryTooltips from '../components/glossary/PublicGlossaryTooltips.astro';
 import { getMobileNavMode } from '../lib/mobile-nav/modes';
-import { isGuideSubpage } from '../lib/guides/paths';
 import { cdnAsset, getCdnBaseUrl } from '../lib/media/cdn';
 import { heroImageSrcSet, optimizedImageUrl } from '../lib/media/optimize';
 import { canonicalPublicUrl, resolveCanonicalUrl } from '../lib/siteOrigin';
@@ -22,6 +20,7 @@ import { MATERIAL_SYMBOLS_HREF } from '../lib/ui/materialSymbols';
 // Inter and JetBrains Mono as wght-variable normals, Instrument Serif 400 + italic.
 // @fontsource ships font-display: swap.
 import '@fontsource-variable/hanken-grotesk/wght.css';
+import '@fontsource-variable/bricolage-grotesque/standard.css';
 import '@fontsource-variable/inter/standard.css';
 import '@fontsource-variable/jetbrains-mono/wght.css';
 import '@fontsource/instrument-serif/400.css';
@@ -80,7 +79,6 @@ const ogTitleResolved = ogTitle ?? title;
 const ogDescriptionResolved = ogDescription ?? description;
 const cdnBase = getCdnBaseUrl();
 const mobileNavMode = getMobileNavMode(Astro.url.pathname);
-const enableGuideGlossaryTooltips = isGuideSubpage(Astro.url.pathname);
 // home-hero-mock.jpg is same-origin (not on the Bunny pull zone — see
 // SAME_ORIGIN_PUBLIC_PATHS in src/lib/media/cdn.ts), so optimizedImageUrl's
 // transform params are silently dropped for it. Preload the pre-generated
@@ -168,7 +166,6 @@ const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
     </script>
     <slot />
     <MobileNavShell pathname={Astro.url.pathname} />
-    {enableGuideGlossaryTooltips && <PublicGlossaryTooltips autoDecorate />}
     <ThemeToggleInit />
     <ComingSoonLayer />
     <ExternalLinksInit />

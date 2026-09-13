@@ -5,6 +5,7 @@ import OurDreamGuideHub from '../../components/guides/hub/OurDreamGuideHub.astro
 import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import { ourdreamHubMeta } from '../../data/ourdream-guide-hub';
+import '../../styles/home-desktop.css';
 import '../../styles/guide-hub.css';
 
 const products = await loadComparisonProducts();
@@ -25,7 +26,9 @@ const jsonLd = {
   canonical={canonical}
   theme="core"
 >
-  <OurDreamGuideHub product={product} products={products} />
-  <Footer />
+  <div class="home-v2">
+    <OurDreamGuideHub product={product} />
+    <Footer />
+  </div>
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>
