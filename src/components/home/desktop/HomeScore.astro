@@ -1,0 +1,42 @@
+---
+import type { HomeScoreChip } from '../../../lib/home/loadDesktopHomepage';
+
+interface Props {
+  score: HomeScoreChip;
+  size?: 's' | 'm' | 'l' | 'xl';
+  suffix?: boolean;
+}
+const { score, size = 'm', suffix = true } = Astro.props;
+const ring = Math.max(0, Math.min(10, Number(score.value))) * 10;
+---
+
+{
+  size === 's' ? (
+    <span class={`home-v2__chip home-v2__chip--${score.tone}`}>{score.value}</span>
+  ) : size === 'l' || size === 'xl' ? (
+    <div class={`home-v2__dial home-v2__dial--${size} home-v2__dial--${score.tone}`} style={`--home-ring: ${ring}`}>
+      <svg class="home-v2__ring" viewBox="0 0 36 36" aria-hidden="true">
+        <circle class="home-v2__ring-track" cx="18" cy="18" r="15.9155" fill="none" pathLength="100" />
+        <circle
+          class="home-v2__ring-value"
+          cx="18"
+          cy="18"
+          r="15.9155"
+          fill="none"
+          pathLength="100"
+          stroke-dasharray="100 100"
+          transform="rotate(-90 18 18)"
+        />
+      </svg>
+      <span class="home-v2__dial-stack">
+        <span class="home-v2__dial-value" data-home-count={size === 'xl' ? score.value : undefined}>{score.value}</span>
+        {size === 'xl' && <span class="home-v2__dial-den">/10</span>}
+      </span>
+    </div>
+  ) : (
+    <span class={`home-v2__pill home-v2__pill--${score.tone}`}>
+      <b>{score.value}</b>
+      {suffix && <span>/10</span>}
+    </span>
+  )
+}

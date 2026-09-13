@@ -190,8 +190,20 @@ const pickSections = roundup.tocSections.filter((s) => s.level === 3);
       sortPicks(value);
     });
 
+    const rankParam = new URLSearchParams(window.location.search).get('rank');
+    const rankToSort: Record<string, string> = {
+      overall: 'overall',
+      images: 'images',
+      video: 'videos',
+      videos: 'videos',
+      chat: 'chat',
+      price: 'price',
+    };
+    const fromUrl = rankParam ? rankToSort[rankParam] : undefined;
     const defaultSort = document.querySelector<HTMLInputElement>('input[name="roundup-sort"]:checked');
-    sortPicks(defaultSort?.value ?? 'overall');
+    const initialSort = fromUrl ?? defaultSort?.value ?? 'overall';
+    if (fromUrl && fromUrl !== 'chat') syncRadios('roundup-sort', fromUrl);
+    sortPicks(initialSort);
 
     document.querySelectorAll<HTMLInputElement>('input[name="roundup-reading"]').forEach((input) => {
       input.addEventListener('change', () => {

@@ -243,20 +243,19 @@
 
 @media (min-width: 768px) {
   .theme-toggle--header {
-    width: auto;
-    height: auto;
-    padding: 6px 10px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
     border-radius: 999px;
   }
 
   .theme-toggle--header .theme-toggle__label {
-    display: inline;
-    font-size: 0.875rem;
-    font-weight: 700;
+    display: none;
   }
 
   .theme-toggle--header .theme-toggle__icon {
-    font-size: 20px;
+    width: 20px;
+    height: 20px;
   }
 }
 
@@ -281,7 +280,12 @@
   transition: transform 0.3s ease, opacity 0.25s ease;
 }
 
-.theme-toggle[aria-pressed='true'] .theme-toggle__icon {
+.theme-toggle__icon[hidden] {
+  display: none !important;
+}
+
+.theme-toggle--switch[aria-pressed='true'] .theme-toggle__icon,
+.theme-toggle--switch[aria-checked='true'] .theme-toggle__icon {
   transform: rotate(180deg);
 }
 

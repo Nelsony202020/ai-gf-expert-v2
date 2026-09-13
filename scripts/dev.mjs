@@ -25,7 +25,7 @@ for (const port of PORTS_TO_CLEAR) {
   }
 }
 
-const child = spawn('npx', ['astro', 'dev', '--force', `--port=${DEV_PORT}`], {
+const child = spawn('npx', ['astro', 'dev', '--force', `--port=${DEV_PORT}`, '--host', '0.0.0.0'], {
   stdio: 'inherit',
   shell: false,
 });

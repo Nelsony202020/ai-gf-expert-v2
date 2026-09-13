@@ -22,6 +22,7 @@ import { MATERIAL_SYMBOLS_HREF } from '../lib/ui/materialSymbols';
 // Inter and JetBrains Mono as wght-variable normals, Instrument Serif 400 + italic.
 // @fontsource ships font-display: swap.
 import '@fontsource-variable/hanken-grotesk/wght.css';
+import '@fontsource-variable/bricolage-grotesque/standard.css';
 import '@fontsource-variable/inter/standard.css';
 import '@fontsource-variable/jetbrains-mono/wght.css';
 import '@fontsource/instrument-serif/400.css';
@@ -159,8 +160,10 @@ const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
         var LIGHT = '#f9f9f9';
         var DARK = '#020617';
         try {
-          var dark = localStorage.getItem('theme') === 'dark';
+          var stored = localStorage.getItem('theme');
+          var dark = stored === 'dark';
           if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+          else document.documentElement.removeAttribute('data-theme');
           var meta = document.querySelector('meta[name="theme-color"][data-theme-color]');
           if (meta) meta.setAttribute('content', dark ? DARK : LIGHT);
         } catch (e) {}

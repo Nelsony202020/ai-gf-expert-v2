@@ -851,29 +851,49 @@ export async function loadProductsWithDb(fileProducts: Product[]): Promise<Produ
   return loadPublishedProducts(fileProducts);
 }
 
-/** Slug and display-name → logo URL for products stored in InstantDB. */
-export async function loadProductLogoMap(): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
-  if (!isDbConfigured()) return map;
+/** Admin-selected square logos and review featured images from InstantDB. */
+export async function loadProductAssetMaps(): Promise<{
+  logos: Map<string, string>;
+  featured: Map<string, string>;
+}> {
+  const logos = new Map<string, string>();
+  const featured = new Map<string, string>();
+  if (!isDbConfigured()) return { logos, featured };
 
   try {
     const db = getDb();
     const { products: dbProducts } = await (db.query as any)({
-      products: { logo: { file: {} } },
+      products: { logo: { file: {} }, featuredImage: { file: {} } },
     });
 
     for (const product of dbProducts as any[]) {
       if (product.deletedAt) continue;
-      const url = resolveMediaUrl(product.logo);
-      if (!url) continue;
-      map.set(product.slug, url);
-      if (product.name) map.set(String(product.name).toLowerCase(), url);
+      const logoUrl = resolveMediaUrl(product.logo);
+      if (logoUrl && isUsablePublicMediaUrl(logoUrl)) {
+        logos.set(product.slug, logoUrl);
+        if (product.name) logos.set(String(product.name).toLowerCase(), logoUrl);
+      }
+      const featuredUrl = resolveMediaUrl(product.featuredImage);
+      if (
+        featuredUrl &&
+        isUsablePublicMediaUrl(featuredUrl) &&
+        product.featuredImage?.status !== 'draft' &&
+        featuredUrl !== logoUrl
+      ) {
+        featured.set(product.slug, featuredUrl);
+      }
     }
   } catch (error) {
-    console.error('[content] product logo map failed — using roundup logos only', error);
+    console.error('[content] product asset maps failed — using roundup media only', error);
   }
 
-  return map;
+  return { logos, featured };
+}
+
+/** Slug and display-name → logo URL for products stored in InstantDB. */
+export async function loadProductLogoMap(): Promise<Map<string, string>> {
+  const { logos } = await loadProductAssetMaps();
+  return logos;
 }
 
 /**
