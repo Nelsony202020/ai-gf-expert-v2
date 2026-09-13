@@ -190,6 +190,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  position: relative;
+  z-index: 6;
 }
 
 .home-v2__icon-btn {
@@ -214,6 +216,9 @@
   height: 40px;
   border-radius: 999px;
   color: var(--home-on-ink);
+  position: relative;
+  z-index: 7;
+  pointer-events: auto;
 }
 
 .home-v2__theme .theme-toggle--header:hover,
@@ -378,6 +383,10 @@
   color: var(--home-muted);
   font-weight: 500;
   font-size: 12px;
+}
+
+.home-v2__search-dropdown.hidden {
+  display: none;
 }
 
 .home-v2__search-empty {
