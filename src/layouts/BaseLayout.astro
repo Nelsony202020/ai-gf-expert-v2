@@ -157,8 +157,10 @@ const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
         var LIGHT = '#f9f9f9';
         var DARK = '#020617';
         try {
-          var dark = localStorage.getItem('theme') === 'dark';
+          var stored = localStorage.getItem('theme');
+          var dark = stored === 'dark';
           if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+          else document.documentElement.removeAttribute('data-theme');
           var meta = document.querySelector('meta[name="theme-color"][data-theme-color]');
           if (meta) meta.setAttribute('content', dark ? DARK : LIGHT);
         } catch (e) {}
