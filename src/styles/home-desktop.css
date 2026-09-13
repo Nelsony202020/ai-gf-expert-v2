@@ -774,11 +774,18 @@
 }
 
 .home-v2__badge-scene {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   border-radius: 50%;
   transform-origin: 50% 50%;
   transition: transform var(--home-badge-ease), filter var(--home-badge-ease);
+  pointer-events: none;
+}
+
+.home-v2__badge.is-flipped .home-v2__badge-scene {
+  z-index: 4;
 }
 
 .home-v2__badge-flip {
@@ -865,10 +872,6 @@
   background: transparent;
   cursor: pointer;
   pointer-events: auto;
-}
-
-.home-v2__badge.is-flipped .home-v2__badge-toggle {
-  pointer-events: none;
 }
 
 .home-v2__badge-toggle:focus {

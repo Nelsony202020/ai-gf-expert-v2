@@ -210,11 +210,20 @@
       toggle.setAttribute('aria-label', open ? hideLabel : showLabel);
     };
 
+    const pointerInsideCircle = (event: PointerEvent | MouseEvent) => {
+      const box = root.getBoundingClientRect();
+      const dx = event.clientX - (box.left + box.width / 2);
+      const dy = event.clientY - (box.top + box.height / 2);
+      const radius = Math.min(box.width, box.height) / 2;
+      return dx * dx + dy * dy <= radius * radius;
+    };
+
     const closeIfPointerLeft = (event: PointerEvent | MouseEvent) => {
       if (!fineHover) return;
       if (!root.classList.contains('is-flipped')) return;
       const next = 'relatedTarget' in event ? (event.relatedTarget as Node | null) : null;
-      if (next && root.contains(next)) return;
+      if (next && root.contains(next) && pointerInsideCircle(event)) return;
+      if (pointerInsideCircle(event)) return;
       setOpen(false);
     };
 
@@ -235,15 +244,9 @@
 
     if (fineHover) {
       document.addEventListener('pointermove', (event) => {
-        if (event.pointerType !== 'mouse') return;
+        if (event.pointerType === 'touch') return;
         if (!root.classList.contains('is-flipped')) return;
-        const box = root.getBoundingClientRect();
-        const inside =
-          event.clientX >= box.left &&
-          event.clientX <= box.right &&
-          event.clientY >= box.top &&
-          event.clientY <= box.bottom;
-        if (!inside) setOpen(false);
+        if (!pointerInsideCircle(event)) setOpen(false);
       });
     }
 
