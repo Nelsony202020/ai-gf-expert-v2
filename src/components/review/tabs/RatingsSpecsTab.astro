@@ -5,7 +5,6 @@ import RatingCategory from './RatingCategory.astro';
 import DetailLevelControl from '../DetailLevelControl.astro';
 import RatingsViewControls from '../RatingsViewControls.astro';
 import RatingsScoringWeights from '../RatingsScoringWeights.astro';
-import RatingsChangelogCompact from '../RatingsChangelogCompact.astro';
 import RatingsEvidenceDrawer from '../RatingsEvidenceDrawer.astro';
 import { loadDraftRatingsViewModel } from '../../../lib/draft-ratings/loadDraftRatingsData';
 import {
@@ -113,26 +112,24 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
 );
 ---
 
-<section class="ratings-body bg-background" data-ratings-root data-detail-level="medium">
-  <div class="section-container px-4 md:px-8">
-    <header class="ratings-section-head">
-      <div class="ratings-section-head__text">
-        <p class="ratings-section-head__eyebrow">
-          <span class="ratings-section-head__dot" aria-hidden="true"></span>
+<section class="rft" data-ratings-root data-detail-level="medium">
+  <div class="rft__page">
+    <header class="rft-head">
+      <div class="rft-head__text">
+        <p class="rft-head__eyebrow">
+          <span class="rft-head__dot" aria-hidden="true"></span>
           Ratings &amp; tests
         </p>
-        <h2 class="ratings-section-head__title">How {product.name} scored</h2>
-        <p class="ratings-section-head__intro">
-          Every score comes from the subscores and the evidence behind it.
-        </p>
+        <h2 class="rft-head__title">How {product.name} scored</h2>
+        <p class="rft-head__intro">Every score comes from the subscores and the evidence behind it.</p>
       </div>
       <RatingsViewControls product={product} />
     </header>
 
     <DetailLevelControl />
 
-    <div class="ratings-layout">
-      <div class="ratings-accordion" data-accordion-group>
+    <div class="rft-layout">
+      <div class="rft-list" data-accordion-group>
         {
           product.categories.map((category, index) => {
             const verdict = product.verdicts.find((v) => v.id === category.key);
@@ -145,17 +142,12 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
                 headline={verdict?.tagline}
                 summary={verdict?.summary}
                 open={true}
-                isFirst={index === 0}
-                isLast={index === product.categories.length - 1}
               />
             );
           })
         }
       </div>
-      <div class="ratings-layout__rail">
-        <RatingsScoringWeights product={product} />
-        <RatingsChangelogCompact entries={product.ratingChangelog} />
-      </div>
+      <RatingsScoringWeights product={product} />
     </div>
   </div>
 
