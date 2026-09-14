@@ -116,6 +116,7 @@ async function main() {
       notes: spec.notes,
       active: true,
       relTags: DEFAULT_AFFILIATE_REL,
+      ...('ageGate' in spec && spec.ageGate === false ? { ageGate: false } : {}),
       ...(prev ? {} : { createdAt: Date.now() }),
     };
 
