@@ -61,6 +61,15 @@ export function isSafeHttpUrl(url: string): boolean {
   }
 }
 
+/** Internal guide/review destinations skip the YouTube 18+ interstitial. */
+export function isSameSiteDestination(destinationUrl: string, siteHostname: string): boolean {
+  try {
+    return new URL(destinationUrl).hostname === siteHostname;
+  } catch {
+    return false;
+  }
+}
+
 const HERMAN_AVATAR = cdnAsset(getAuthor('herman-carter')?.avatar ?? '/brand/herman-main-icon.webp');
 
 export function renderYoutubeAgeGateHtml(opts: {

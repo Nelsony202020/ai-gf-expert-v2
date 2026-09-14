@@ -649,6 +649,7 @@ export const affiliateLinkSchema = z.object({
   lastVerifiedAt: dateMs.optional(),
   notes: z.string().optional(),
   relTags: z.string().max(120).optional(),
+  ageGate: z.boolean().optional(),
 });
 
 export const methodologyVersionSchema = z.object({

@@ -479,6 +479,8 @@ const _schema = i.schema({
       clickCount: i.number().optional(),
       /** Space-separated rel tokens on public CTAs — default applied when empty. */
       relTags: i.string().optional(),
+      /** When false, skip the YouTube 18+ interstitial even for -youtube slugs / youtube campaign. */
+      ageGate: i.boolean().optional(),
       createdAt: i.date(),
     }),
 

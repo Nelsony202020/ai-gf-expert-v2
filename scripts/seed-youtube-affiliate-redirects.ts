@@ -12,14 +12,16 @@ type Spec = {
   destinationUrl: string;
   productSlug?: string;
   notes: string;
+  ageGate?: boolean;
 };
 
 const LINKS: Spec[] = [
   {
     cloakedSlug: 'candy-ai-youtube',
-    destinationUrl: 'https://candy.ai/?via=menprovement',
+    destinationUrl: 'https://aigirlfriend.expert/guides/ourdream-ai/',
     productSlug: 'candy-ai',
     notes: 'YouTube traffic via /recommends/candy-ai → /go/candy-ai-youtube',
+    ageGate: false,
   },
   {
     cloakedSlug: 'girlfriendgpt-quiz-youtube',
@@ -82,6 +84,7 @@ async function main() {
       relTags: DEFAULT_AFFILIATE_REL,
       notes: spec.notes,
       lastCheckStatus: 'unchecked',
+      ...(spec.ageGate !== undefined ? { ageGate: spec.ageGate } : {}),
     };
 
     if (prev?.id) {

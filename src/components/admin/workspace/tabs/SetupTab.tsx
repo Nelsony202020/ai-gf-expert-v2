@@ -526,6 +526,7 @@ export function AffiliateLinkModal({
   const [campaign, setCampaign] = useState(String(link?.campaign ?? ''));
   const [relTags, setRelTags] = useState(String(link?.relTags ?? DEFAULT_AFFILIATE_REL));
   const [active, setActive] = useState(link ? Boolean(link.active) : true);
+  const [ageGate, setAgeGate] = useState(link?.ageGate !== false);
   const { busy, run } = useAsyncToast();
 
   async function save(e: React.FormEvent) {
@@ -538,6 +539,7 @@ export function AffiliateLinkModal({
     };
     if (campaign.trim()) fields.campaign = campaign.trim();
     fields.relTags = relTags.trim() || DEFAULT_AFFILIATE_REL;
+    fields.ageGate = ageGate;
     const done = await run(async () => {
       if (link) await dataApi.update('affiliateLinks', link.id, fields);
       else await dataApi.create('affiliateLinks', fields, { product: productId });
@@ -589,6 +591,11 @@ export function AffiliateLinkModal({
             placeholder={DEFAULT_AFFILIATE_REL}
           />
         </Field>
+        <Toggle
+          checked={ageGate}
+          onChange={setAgeGate}
+          label="Show 18+ interstitial (YouTube traffic)"
+        />
         <Toggle checked={active} onChange={setActive} label="Active" />
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={onClose}>

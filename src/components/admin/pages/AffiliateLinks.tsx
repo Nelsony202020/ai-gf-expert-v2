@@ -237,6 +237,7 @@ function LinkModal({
     relTags: link?.relTags ?? DEFAULT_AFFILIATE_REL,
     startAt: link?.startAt ? new Date(link.startAt).toISOString().slice(0, 10) : '',
     endAt: link?.endAt ? new Date(link.endAt).toISOString().slice(0, 10) : '',
+    ageGate: link?.ageGate !== false,
   });
   const [productId, setProductId] = useState(link?.product?.id ?? '');
   const { busy, error, run } = useAsync();
@@ -256,6 +257,7 @@ function LinkModal({
       relTags: String(fields.relTags || '').trim() || DEFAULT_AFFILIATE_REL,
       startAt: fields.startAt ? new Date(fields.startAt).getTime() : undefined,
       endAt: fields.endAt ? new Date(fields.endAt).getTime() : undefined,
+      ageGate: fields.ageGate,
     };
     // Destination changes on existing links go through the history endpoint.
     if (!link) payload.destinationUrl = fields.destinationUrl;
@@ -316,7 +318,7 @@ function LinkModal({
           </Field>
           <Field
             label="Campaign tag"
-            hint="Use youtube to show the 18+ interstitial before the destination. No sends visitors back to YouTube."
+            hint="Use youtube for YouTube-sourced traffic. The 18+ interstitial is controlled below."
           >
             <TextInput value={fields.campaign} onChange={(e) => setFields({ ...fields, campaign: e.target.value })} />
           </Field>
@@ -340,6 +342,11 @@ function LinkModal({
             placeholder={DEFAULT_AFFILIATE_REL}
           />
         </Field>
+        <Toggle
+          checked={fields.ageGate}
+          onChange={(v) => setFields({ ...fields, ageGate: v })}
+          label="Show 18+ interstitial (YouTube traffic)"
+        />
         <Toggle checked={fields.active} onChange={(v) => setFields({ ...fields, active: v })} label="Active" />
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={onClose}>

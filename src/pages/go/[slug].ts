@@ -5,6 +5,7 @@ import { getDb, isDbConfigured } from '../../lib/db/server';
 import { affiliateRel } from '../../lib/affiliate/rel';
 import {
   isSafeHttpUrl,
+  isSameSiteDestination,
   linkedProduct,
   needsYoutubeAgeGate,
   renderYoutubeAgeGateHtml,
@@ -29,39 +30,14 @@ function redirectTo(location: string, extra?: HeadersInit) {
  * YouTube campaign links show a fast 18+ interstitial first.
  * Destinations are managed in admin; changing one updates every CTA instantly.
  */
-/**
- * TEMPORARY (Aug 2026): /go/candy-ai-youtube was flagged by YouTube's nudity
- * policy while a re-review is pending, so it detours to the Candy AI review
- * (which is hiding its imagery for the same reason) instead of the affiliate
- * destination. Still goes through the same 18+ interstitial as every other
- * -youtube slug — that's a hard rule, not something this detour skips.
- * Delete this once YouTube reinstates the link.
- */
-const TEMP_REDIRECTS: Record<string, string> = {
-  'candy-ai-youtube': '/reviews/candy-ai/',
-};
-
 /** Slugs shared publicly that differ from the cloakedSlug stored in the DB. */
 const SLUG_ALIASES: Record<string, string> = {
   'kupid-ai-youtube': 'kupid-ai-2-youtube',
   'ourdream-ai-youtube': 'ourdream-ai-yt',
 };
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, url }) => {
   const rawSlug = params.slug!;
-  const temp = TEMP_REDIRECTS[rawSlug];
-  if (temp) {
-    return new Response(
-      renderYoutubeAgeGateHtml({
-        destinationUrl: temp,
-        backUrl: youtubeAgeGateBackUrl(),
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8', ...NOINDEX },
-      },
-    );
-  }
   const slug = SLUG_ALIASES[rawSlug] ?? rawSlug;
   if (!isDbConfigured()) return redirectTo('/');
 
@@ -93,7 +69,10 @@ export const GET: APIRoute = async ({ params }) => {
     db.tx.affiliateLinks[link.id].update({ clickCount: (link.clickCount ?? 0) + 1 }),
   ).catch(() => {});
 
-  if (needsYoutubeAgeGate(link)) {
+  if (
+    needsYoutubeAgeGate(link) &&
+    !isSameSiteDestination(destinationUrl, url.hostname)
+  ) {
     const product = linkedProduct(link.product);
     return new Response(
       renderYoutubeAgeGateHtml({
