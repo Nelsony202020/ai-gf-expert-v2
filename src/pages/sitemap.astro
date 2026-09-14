@@ -1,231 +1,242 @@
 ---
-// Server-rendered so newly published reviews/roundups appear immediately,
-// without waiting for a static rebuild.
+import Layout from "@/layouts/Layout.astro";
+import { SITE_NAME } from "@/data/site";
+import { getHtmlSitemapPage, buildSitemapPageSearchIndex } from "@/lib/sitemap";
+import SitemapExploreColumn from "@/components/sitemap/SitemapExploreColumn.astro";
+import SitemapTestMethodology from "@/components/sitemap/SitemapTestMethodology.astro";
+import SitemapResourcesLegal from "@/components/sitemap/SitemapResourcesLegal.astro";
+
 export const prerender = false;
 
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import SitemapLinkCard from '../components/sitemap/SitemapLinkCard.astro';
-import SitemapTestMethodology from '../components/sitemap/SitemapTestMethodology.astro';
-import SitemapResourcesLegal from '../components/sitemap/SitemapResourcesLegal.astro';
-import { buildFullHtmlSitemapPage, getAllSitemapEntries } from '../lib/sitemap';
-import { loadPublishedProducts, loadPublishedRoundupSummaries } from '../lib/content/store';
-import { getDraftedPaths } from '../lib/seo/pageOverrides';
-import { products as fileProducts } from '../data/products';
-import { loadSitemapMethodologyIntroStats } from '../lib/test-hub-stats';
-import { getTestCategories } from '../lib/test-framework';
-import { buildSitemapPageSearchIndex } from '../lib/sitemap-search';
+const page = getHtmlSitemapPage();
+const searchHits = buildSitemapPageSearchIndex(page);
+const searchHitsJson = JSON.stringify(searchHits).replace(/</g, "\\u003c");
 
-const [publishedProducts, publishedRoundups, draftedPaths] = await Promise.all([
-  loadPublishedProducts(fileProducts),
-  loadPublishedRoundupSummaries(),
-  getDraftedPaths(),
-]);
-
-const page = buildFullHtmlSitemapPage({
-  products: publishedProducts,
-  roundups: publishedRoundups,
-  excludePaths: draftedPaths,
-});
-
-const methodologyPageCount = getAllSitemapEntries({
-  products: publishedProducts,
-  roundups: publishedRoundups,
-}).filter((e) => e.sitemapSection === 'tests').length;
-
-const methodologyStats = await loadSitemapMethodologyIntroStats(methodologyPageCount);
-const categories = getTestCategories();
-const sitemapSearchIndex = buildSitemapPageSearchIndex(page, categories);
-const sitemapSearchJson = JSON.stringify(sitemapSearchIndex).replace(/</g, '\\u003c');
-
-// Browsers always revalidate (publishes show up on refresh); CDN caches for
-// an hour and is purged on every deploy.
-Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600');
+const chips = [
+  { href: "#explore", label: "Reviews", count: page.reviewsCount },
+  { href: "#rankings", label: "Rankings", count: page.rankingsCount },
+  { href: "#guides", label: "Guides", count: page.guidesCount },
+  { href: "#si-testing", label: "Tests", count: page.testsCount },
+];
 ---
 
-<BaseLayout title="Site Index" description="Complete index of reviews, roundups, guides, testing methodology, authors, resources, and legal pages on AI Girlfriend Expert.">
-  <Header />
-  <main class="sitemap-page">
-    <div class="sitemap-hero">
-      <div class="section-container px-4 md:px-8 sitemap-hero__inner">
-        <p class="sitemap-hero__eyebrow">Site Index</p>
-        <h1 class="sitemap-hero__title">Everything on AI Girlfriend Expert</h1>
-        <p class="sitemap-hero__intro">
-          Browse every published review, guide, roundup, and methodology page — or search the index below.
-        </p>
+<Layout
+  title={`Site Index | ${SITE_NAME}`}
+  description="Find every review, guide, test and resource we publish."
+>
+  <div class="si-page">
+    <section class="si-hero" aria-labelledby="si-title">
+      <div class="si-hero-inner">
+        <p class="si-eyebrow"><span class="si-dot" aria-hidden="true"></span>SITE INDEX</p>
+        <h1 id="si-title" class="si-title">Everything on AI Girlfriend Expert</h1>
+        <p class="si-lede">Find every review, guide, test and resource we publish.</p>
 
-        <div class="sitemap-search" data-sitemap-search>
-          <label class="sr-only" for="sitemap-search-input">Search the site index</label>
-          <span class="material-symbols-outlined sitemap-search__icon" aria-hidden="true">search</span>
-          <input
-            id="sitemap-search-input"
-            class="sitemap-search__input"
-            type="search"
-            name="q"
-            autocomplete="off"
-            placeholder="Find a page, test, or guide…"
-            data-sitemap-search-input
-          />
-          <div class="sitemap-search__results" data-sitemap-search-results hidden></div>
+        <div class="si-search-wrap">
+          <label class="visually-hidden" for="si-search">Search the site index</label>
+          <div class="si-search">
+            <svg class="si-search-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"></circle>
+              <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+            </svg>
+            <input
+              id="si-search"
+              class="si-search-input"
+              type="search"
+              name="q"
+              placeholder="Search the site…"
+              autocomplete="off"
+              data-search-input
+            />
+            <span class="si-search-count" data-search-count hidden></span>
+            <kbd class="si-kbd" data-search-slash>/</kbd>
+            <button type="button" class="si-search-clear" data-search-clear hidden aria-label="Clear search">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="si-chips" data-search-chips>
+          {chips.map((chip) => (
+            <a class="si-chip" href={chip.href}>
+              <span>{chip.label}</span>
+              <span class="si-chip-dot" aria-hidden="true"></span>
+              <span class="si-chip-n">{chip.count}</span>
+            </a>
+          ))}
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="section-container px-4 md:px-8 sitemap-page__body">
-      <section class="sitemap-explore" aria-labelledby="sitemap-explore-title">
-        <div class="sitemap-explore__head">
-          <h2 id="sitemap-explore-title" class="sitemap-explore__title">Explore AIGE</h2>
-          <p class="sitemap-explore__lead">Major entry points into reviews, roundups, guides, and authors.</p>
+    <div class="si-body">
+      <section class="si-results" data-search-results hidden>
+        <div class="si-results-head">
+          <h2 class="si-results-title" data-search-heading></h2>
+          <button type="button" class="si-clear-link" data-search-clear-text>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+            </svg>
+            <span data-clear-label>Clear search</span>
+          </button>
         </div>
-
-        <div class="sitemap-explore__grid">
-          <SitemapLinkCard
-            title="Reviews"
-            count={page.reviews.length}
-            icon="star"
-            tone="amber"
-            links={page.reviews}
-          />
-          <SitemapLinkCard
-            title="Roundups"
-            count={page.roundups.length}
-            icon="emoji_events"
-            tone="lime"
-            links={page.roundups}
-          />
-          <SitemapLinkCard
-            title="Guides"
-            count={page.guides.length}
-            icon="menu_book"
-            tone="green"
-            links={page.guides}
-          />
-          <SitemapLinkCard
-            title="Authors"
-            count={page.authors.length}
-            icon="person"
-            tone="amber"
-            links={page.authors}
-          />
+        <div class="si-results-list" data-search-list></div>
+        <div class="si-empty" data-search-empty hidden>
+          <div class="si-empty-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"></circle>
+              <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+            </svg>
+          </div>
+          <p class="si-empty-title" data-empty-title></p>
+          <p class="si-empty-copy">Try another word, or browse the index below.</p>
+          <button type="button" class="si-empty-btn" data-search-clear-empty>Clear search</button>
         </div>
       </section>
 
-      <SitemapTestMethodology stats={methodologyStats} />
+      <div data-directory>
+        <section class="si-explore" id="explore" aria-labelledby="si-explore-heading">
+          <h2 id="si-explore-heading" class="si-h2">Explore AIGE</h2>
+          <div class="si-explore-grid">
+            <SitemapExploreColumn column={page.reviews} variant="reviews" />
+            <SitemapExploreColumn column={page.roundups} variant="roundups" />
+            <SitemapExploreColumn column={page.guides} variant="guides" />
+            <SitemapExploreColumn column={page.authors} variant="authors" />
+          </div>
+        </section>
 
-      <SitemapResourcesLegal
-        count={page.resourcesLegalCount}
-        resources={page.resources}
-        legal={page.legal}
-      />
+        <SitemapTestMethodology page={page} />
+        <SitemapResourcesLegal page={page} />
+      </div>
     </div>
-  </main>
-  <Footer />
+  </div>
+</Layout>
 
-  <script type="application/json" id="sitemap-search-index" set:html={sitemapSearchJson} />
-</BaseLayout>
-
-<style is:global>
-  @import '../styles/sitemap.css';
-</style>
-
+<script is:inline define:vars={{ searchHitsJson }}>
+  window.__SI_HITS__ = JSON.parse(searchHitsJson);
+</script>
 <script>
-  function readSitemapSearchIndex() {
-    const el = document.getElementById('sitemap-search-index');
-    if (!el?.textContent) return [];
-    try {
-      return JSON.parse(el.textContent) as { label: string; href: string; type: string; meta?: string }[];
-    } catch {
-      return [];
-    }
+  import type { HtmlSitemapSearchHit } from "@/types/sitemap";
+  import { filterSitemapSearchHits } from "@/lib/sitemap-search";
+
+  const hits = (window as unknown as { __SI_HITS__?: HtmlSitemapSearchHit[] }).__SI_HITS__ ?? [];
+  const input = document.querySelector<HTMLInputElement>("[data-search-input]");
+  const directory = document.querySelector("[data-directory]");
+  const results = document.querySelector("[data-search-results]");
+  const list = document.querySelector("[data-search-list]");
+  const empty = document.querySelector("[data-search-empty]");
+  const heading = document.querySelector("[data-search-heading]");
+  const chips = document.querySelector("[data-search-chips]");
+  const countEl = document.querySelector("[data-search-count]");
+  const slash = document.querySelector("[data-search-slash]");
+  const clearBtn = document.querySelector("[data-search-clear]");
+  const lede = document.querySelector(".si-lede");
+  const searchBox = document.querySelector(".si-search");
+  const clearLabel = document.querySelector("[data-clear-label]");
+  const emptyTitle = document.querySelector("[data-empty-title]");
+
+  function setSearching(on: boolean) {
+    searchBox?.classList.toggle("is-searching", on);
+    slash?.toggleAttribute("hidden", on);
+    clearBtn?.toggleAttribute("hidden", !on);
+    countEl?.toggleAttribute("hidden", !on);
+    lede?.toggleAttribute("hidden", on);
+    chips?.toggleAttribute("hidden", on);
   }
 
-  function initSitemapSearch() {
-    const root = document.querySelector('[data-sitemap-search]');
-    const input = document.querySelector<HTMLInputElement>('[data-sitemap-search-input]');
-    const results = document.querySelector<HTMLElement>('[data-sitemap-search-results]');
-    if (!root || !input || !results || root.dataset.bound === 'true') return;
-    root.dataset.bound = 'true';
-
-    const index = readSitemapSearchIndex();
-    let activeIndex = -1;
-
-    function render(query: string) {
-      const q = query.trim().toLowerCase();
-      if (!q) {
-        results.innerHTML = '';
-        results.hidden = true;
-        activeIndex = -1;
-        return;
-      }
-
-      const matches = index
-        .filter((item) => `${item.label} ${item.meta ?? ''}`.toLowerCase().includes(q))
-        .slice(0, 10);
-
-      results.hidden = false;
-
-      if (matches.length === 0) {
-        results.innerHTML = '<p class="sitemap-search__empty">No results found. Try another keyword.</p>';
-        activeIndex = -1;
-        return;
-      }
-
-      results.innerHTML = matches
-        .map((item, i) => {
-          const meta = item.meta ?? 'Page';
-          return `
-            <a href="${item.href}" class="sitemap-search__item${i === activeIndex ? ' is-active' : ''}" role="option">
-              <span class="sitemap-search__item-label">${item.label}</span>
-              <span class="sitemap-search__item-meta">${meta}</span>
-            </a>
-          `;
-        })
-        .join('');
+  function render(query: string) {
+    const q = query.trim();
+    if (!q) {
+      setSearching(false);
+      results?.setAttribute("hidden", "");
+      directory?.removeAttribute("hidden");
+      if (list) list.innerHTML = "";
+      return;
     }
 
-    input.addEventListener('input', () => {
-      activeIndex = -1;
-      render(input.value);
-    });
+    setSearching(true);
+    const matched = filterSitemapSearchHits(q, hits);
+    const n = matched.length;
+    directory?.setAttribute("hidden", "");
+    results?.removeAttribute("hidden");
 
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        input.value = '';
-        render('');
-        input.blur();
-        return;
-      }
+    if (countEl) countEl.textContent = n ? `${n} results` : "No results";
+    if (heading) heading.textContent = `${n} results for “${q}”`;
+    if (clearLabel) clearLabel.textContent = window.matchMedia("(max-width: 767px)").matches ? "Clear" : "Clear search";
 
-      const q = input.value.trim().toLowerCase();
-      if (!q) return;
-      const matches = index
-        .filter((item) => `${item.label} ${item.meta ?? ''}`.toLowerCase().includes(q))
-        .slice(0, 10);
-      if (!matches.length) return;
+    if (!n) {
+      list?.setAttribute("hidden", "");
+      empty?.removeAttribute("hidden");
+      if (emptyTitle) emptyTitle.textContent = `No pages found for “${q}”`;
+      return;
+    }
 
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        activeIndex = Math.min(activeIndex + 1, matches.length - 1);
-        render(input.value);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        activeIndex = Math.max(activeIndex - 1, 0);
-        render(input.value);
-      } else if (e.key === 'Enter' && activeIndex >= 0) {
-        e.preventDefault();
-        const target = matches[activeIndex];
-        if (target?.href) window.location.href = target.href;
-      }
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!root.contains(e.target as Node)) {
-        results.hidden = true;
-      }
-    });
+    empty?.setAttribute("hidden", "");
+    list?.removeAttribute("hidden");
+    if (!list) return;
+    list.innerHTML = matched
+      .map(
+        (hit, i) => `
+      <a class="si-hit${i === 0 ? " is-active" : ""}" href="${hit.href}">
+        <span class="si-hit-kind">${hit.location}</span>
+        <span class="si-hit-row">
+          <span class="si-hit-title">${hit.title}</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 3l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </a>`,
+      )
+      .join("");
   }
 
-  initSitemapSearch();
-  document.addEventListener('astro:page-load', initSitemapSearch);
+  function clearSearch() {
+    if (!input) return;
+    input.value = "";
+    render("");
+    input.focus();
+  }
+
+  input?.addEventListener("input", () => render(input.value));
+  document.querySelectorAll("[data-search-clear], [data-search-clear-text], [data-search-clear-empty]").forEach((el) => {
+    el.addEventListener("click", clearSearch);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "/" && document.activeElement !== input && !(event.target instanceof HTMLInputElement) && !(event.target instanceof HTMLTextAreaElement)) {
+      event.preventDefault();
+      input?.focus();
+    }
+    if (event.key === "Escape" && input?.value) {
+      clearSearch();
+    }
+  });
+
+  document.querySelectorAll("[data-category-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const cat = button.closest("[data-category]");
+      const wasOpen = cat?.getAttribute("data-open") === "true";
+      document.querySelectorAll("[data-category]").forEach((node) => {
+        node.setAttribute("data-open", "false");
+        node.classList.remove("is-open");
+        node.querySelector("[data-category-toggle]")?.setAttribute("aria-expanded", "false");
+        node.querySelector("[data-panel]")?.setAttribute("hidden", "");
+      });
+      if (!wasOpen && cat) {
+        cat.setAttribute("data-open", "true");
+        cat.classList.add("is-open");
+        button.setAttribute("aria-expanded", "true");
+        cat.querySelector("[data-panel]")?.removeAttribute("hidden");
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-subcategory-toggle]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const expanded = button.getAttribute("aria-expanded") === "true";
+      const tests = button.closest("[data-subcategory]")?.querySelector("[data-tests]");
+      button.setAttribute("aria-expanded", expanded ? "false" : "true");
+      tests?.toggleAttribute("hidden", expanded);
+    });
+  });
 </script>

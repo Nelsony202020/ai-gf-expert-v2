@@ -1,67 +1,70 @@
-export type SitemapContentType =
-  | 'home'
-  | 'hub'
-  | 'review'
-  | 'roundup'
-  | 'guide'
-  | 'directory'
-  | 'test-hub'
-  | 'test-category'
-  | 'test-subscore'
-  | 'test-archive'
-  | 'methodology'
-  | 'glossary'
-  | 'author'
-  | 'legal'
-  | 'company'
-  | 'utility'
-  | 'redirect';
-
-export type SitemapSection =
-  | 'reviews'
-  | 'roundups'
-  | 'guides'
-  | 'tests'
-  | 'authors'
-  | 'resources'
-  | 'legal'
-  | 'company';
-
-export interface SitemapEntry {
-  title: string;
-  url: string;
-  contentType: SitemapContentType;
-  parentCategory?: string;
-  sitemapSection: SitemapSection;
-  sitemapOrder: number;
-  isPublished: boolean;
-  showInHtmlSitemap: boolean;
-  includeInXmlSitemap: boolean;
-  lastmod?: string;
-}
-
 export interface HtmlSitemapLink {
-  label: string;
   href: string;
+  label: string;
 }
 
-export interface HtmlSitemapSection {
-  id: string;
-  title: string;
+export interface HtmlSitemapMethodologyLink extends HtmlSitemapLink {
+  description: string;
+}
+
+export interface HtmlSitemapExploreColumn {
+  heading: string;
   count: number;
-  icon: string;
-  tone: 'amber' | 'lime' | 'green' | 'blue' | 'purple';
   links: HtmlSitemapLink[];
-  viewAll: HtmlSitemapLink | null;
+}
+
+export interface HtmlSitemapTestItem {
+  href: string;
+  label: string;
+}
+
+export interface HtmlSitemapSubcategory {
+  href: string;
+  label: string;
+  slug: string;
+  testCount: number;
+  tests: HtmlSitemapTestItem[];
+}
+
+export interface HtmlSitemapTestCategory {
+  slug: string;
+  href: string;
+  label: string;
+  testCount: number;
+  subcategoryCount: number;
+  subcategories: HtmlSitemapSubcategory[];
+}
+
+export interface HtmlSitemapSearchHit {
+  href: string;
+  title: string;
+  kind: string;
+  location: string;
 }
 
 export interface HtmlSitemapFullPage {
-  reviews: HtmlSitemapLink[];
-  roundups: HtmlSitemapLink[];
-  guides: HtmlSitemapLink[];
-  authors: HtmlSitemapLink[];
-  testCount: number;
-  resourcesLegalCount: number;
-  resources: HtmlSitemapLink[];
+  reviewsCount: number;
+  rankingsCount: number;
+  guidesCount: number;
+  testsCount: number;
+  reviews: HtmlSitemapExploreColumn;
+  roundups: HtmlSitemapExploreColumn;
+  guides: HtmlSitemapExploreColumn;
+  authors: HtmlSitemapExploreColumn;
+  testingPagesCount: number;
+  testingCategoriesCount: number;
+  testingSubcategoriesCount: number;
+  scoredTestsCount: number;
+  mainMethodology: HtmlSitemapMethodologyLink[];
+  methodology: HtmlSitemapMethodologyLink[];
+  testCategories: HtmlSitemapTestCategory[];
+  supportingMethodology: HtmlSitemapLink[];
+  supporting: HtmlSitemapLink[];
+  resources: HtmlSitemapExploreColumn;
+  resourcesCount: number;
+  company: HtmlSitemapExploreColumn;
   legal: HtmlSitemapLink[];
+  extra?: {
+    glossary?: HtmlSitemapExploreColumn;
+  };
 }

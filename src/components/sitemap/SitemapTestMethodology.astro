@@ -1,167 +1,84 @@
 ---
-import {
-  splitTestCategoriesTwoColumns,
-  testMainMethodologyLinks,
-  testSupportingLinks,
-} from '../../lib/sitemap';
-import { getTestCategories } from '../../lib/test-framework';
-import SitemapTestCategory from './SitemapTestCategory.astro';
+import SitemapTestCategory from "@/components/sitemap/SitemapTestCategory.astro";
+import type { HtmlSitemapFullPage } from "@/types/sitemap";
 
 interface Props {
-  stats: {
-    pages: number;
-    categories: number;
-    subcategories: number;
-    scoredTests: number;
-  };
+  page: HtmlSitemapFullPage;
 }
 
-const { stats } = Astro.props;
-
-const categories = getTestCategories();
-const [leftCategories, rightCategories] = splitTestCategoriesTwoColumns(categories);
+const { page } = Astro.props;
 ---
 
-<section class="sitemap-methodology" aria-labelledby="sitemap-methodology-title">
-  <div class="sitemap-methodology__intro">
-    <div class="sitemap-methodology__intro-head">
-      <span class="sitemap-methodology__eyebrow">
-        <span class="material-symbols-outlined" aria-hidden="true">science</span>
-        Testing &amp; Methodology
-      </span>
-      <h2 id="sitemap-methodology-title" class="sitemap-methodology__title">
-        How we score every app
-      </h2>
-      <p class="sitemap-methodology__lead">
-        Structured categories, subscores, and individual scored tests — the same hierarchy you see in reviews and tooltips.
-      </p>
+<section class="si-testing" id="si-testing">
+  <h2 class="si-h2">Testing &amp; Methodology</h2>
+  <p class="si-lede-sm">Explore how every AIGE score is calculated.</p>
+  <div class="si-stats">
+    <div class="si-stat">
+      <strong>{page.testingPagesCount}</strong>
+      <span>pages</span>
     </div>
-
-    <dl class="sitemap-methodology__stats">
-      <div>
-        <dt>Pages</dt>
-        <dd>{stats.pages.toLocaleString('en-US')}</dd>
-      </div>
-      <div>
-        <dt>Categories</dt>
-        <dd>{stats.categories.toLocaleString('en-US')}</dd>
-      </div>
-      <div>
-        <dt>Subcategories</dt>
-        <dd>{stats.subcategories.toLocaleString('en-US')}</dd>
-      </div>
-      <div>
-        <dt>Scored tests</dt>
-        <dd>{stats.scoredTests.toLocaleString('en-US')}</dd>
-      </div>
-    </dl>
+    <div class="si-stat-rule" aria-hidden="true"></div>
+    <div class="si-stat">
+      <strong>{page.testingCategoriesCount}</strong>
+      <span>categories</span>
+    </div>
+    <div class="si-stat-rule" aria-hidden="true"></div>
+    <div class="si-stat">
+      <strong>{page.testingSubcategoriesCount}</strong>
+      <span>subcategories</span>
+    </div>
+    <div class="si-stat-rule" aria-hidden="true"></div>
+    <div class="si-stat">
+      <strong>{page.scoredTestsCount}</strong>
+      <span>scored tests</span>
+    </div>
   </div>
 
-  <div class="sitemap-methodology__main-links">
-    {
-      testMainMethodologyLinks.map((link, index) => (
-        <a href={link.href} class="sitemap-methodology__main-link">
-          <span class="sitemap-methodology__main-link-num">{String(index + 1).padStart(2, '0')}</span>
-          <span class="sitemap-methodology__main-link-body">
-            <span class="sitemap-methodology__main-link-label">{link.label}</span>
-            <span class="sitemap-methodology__main-link-desc">{link.description}</span>
-          </span>
-          <span class="material-symbols-outlined sitemap-methodology__main-link-arrow" aria-hidden="true">
-            arrow_forward
-          </span>
+  <p class="si-kicker">Main methodology</p>
+  <div class="si-main">
+    {page.methodology.map((item, index) => (
+      <a class="si-main-row" href={item.href}>
+        <span class="si-main-num">{String(index + 1).padStart(2, "0")}</span>
+        <span class="si-main-copy">
+          <span class="si-main-title">{item.label}</span>
+          {item.description ? <span class="si-main-desc">{item.description}</span> : null}
+        </span>
+        <svg class="si-main-arrow" viewBox="0 0 13 12" fill="none" aria-hidden="true">
+          <path d="M5.25 0L10.5 5.25 5.25 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </a>
+    ))}
+  </div>
+
+  <p class="si-kicker si-kicker-desk">All scored tests</p>
+  <p class="si-kicker si-kicker-mob">All scored tests, by category</p>
+  <div class="si-cats">
+    {page.testCategories.map((category) => (
+      <SitemapTestCategory category={category} />
+    ))}
+  </div>
+
+  <p class="si-kicker">Supporting methodology</p>
+  <div class="si-support">
+    <div class="si-support-col">
+      {page.supporting.slice(0, 2).map((item) => (
+        <a class="si-row si-row-ruled" href={item.href}>
+          <span>{item.label}</span>
+          <svg class="si-chev" viewBox="0 0 5 8.5" fill="none" aria-hidden="true">
+            <path d="M0 7L3.5 3.5 0 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
         </a>
-      ))
-    }
-  </div>
-
-  <div class="sitemap-methodology__directory">
-    <div class="sitemap-methodology__directory-head">
-      <h3 class="sitemap-methodology__directory-title">All scored tests</h3>
-      <p class="sitemap-methodology__directory-hint">
-        Open a category to browse subscores. Use the subscore name to open its page; use the arrow to expand individual tests.
-      </p>
+      ))}
     </div>
-
-    <div class="sitemap-methodology__directory-cols">
-      <div class="sitemap-methodology__directory-col">
-        {leftCategories.map((cat) => <SitemapTestCategory category={cat} />)}
-      </div>
-      <div class="sitemap-methodology__directory-col">
-        {rightCategories.map((cat) => <SitemapTestCategory category={cat} />)}
-      </div>
+    <div class="si-support-col">
+      {page.supporting.slice(2).map((item) => (
+        <a class="si-row si-row-ruled" href={item.href}>
+          <span>{item.label}</span>
+          <svg class="si-chev" viewBox="0 0 5 8.5" fill="none" aria-hidden="true">
+            <path d="M0 7L3.5 3.5 0 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
+      ))}
     </div>
-  </div>
-
-  <div class="sitemap-methodology__supporting">
-    <p class="sitemap-methodology__supporting-label">Supporting methodology</p>
-    <ul class="sitemap-methodology__supporting-links">
-      {
-        testSupportingLinks.map((link) => (
-          <li>
-            <a href={link.href} class="sitemap-methodology__supporting-link">
-              {link.label}
-              <span class="material-symbols-outlined" aria-hidden="true">north_east</span>
-            </a>
-          </li>
-        ))
-      }
-    </ul>
   </div>
 </section>
-
-<script>
-  function closeCategory(catEl: HTMLElement) {
-    const btn = catEl.querySelector<HTMLButtonElement>('.sitemap-test-cat__head');
-    const panel = catEl.querySelector<HTMLElement>('.sitemap-test-cat__panel');
-    if (!btn || !panel) return;
-    btn.setAttribute('aria-expanded', 'false');
-    catEl.classList.remove('is-open');
-    panel.hidden = true;
-  }
-
-  function initSitemapTestDirectory() {
-    const root = document.querySelector('.sitemap-methodology__directory');
-    if (!root || root.dataset.bound === 'true') return;
-    root.dataset.bound = 'true';
-
-    root.querySelectorAll<HTMLElement>('[data-sitemap-test-cat]').forEach((catEl) => {
-      const head = catEl.querySelector<HTMLButtonElement>('.sitemap-test-cat__head');
-      const panel = catEl.querySelector<HTMLElement>('.sitemap-test-cat__panel');
-      if (!head || !panel) return;
-
-      head.addEventListener('click', () => {
-        const isOpen = head.getAttribute('aria-expanded') === 'true';
-        root.querySelectorAll<HTMLElement>('[data-sitemap-test-cat]').forEach((other) => {
-          if (other !== catEl) closeCategory(other);
-        });
-
-        if (isOpen) {
-          closeCategory(catEl);
-          return;
-        }
-
-        head.setAttribute('aria-expanded', 'true');
-        catEl.classList.add('is-open');
-        panel.hidden = false;
-      });
-    });
-
-    root.querySelectorAll<HTMLElement>('[data-sitemap-test-sub]').forEach((subEl) => {
-      const toggle = subEl.querySelector<HTMLButtonElement>('.sitemap-test-sub__toggle');
-      const list = subEl.querySelector<HTMLElement>('.sitemap-test-sub__tests');
-      if (!toggle || !list) return;
-
-      toggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const open = toggle.getAttribute('aria-expanded') === 'true';
-        toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
-        subEl.classList.toggle('is-expanded', !open);
-        list.hidden = open;
-      });
-    });
-  }
-
-  initSitemapTestDirectory();
-  document.addEventListener('astro:page-load', initSitemapTestDirectory);
-</script>

@@ -1,86 +1,68 @@
 ---
-import type { TestCategoryNode } from '../../lib/test-framework';
-import { countScoredTestsInCategory } from '../../lib/sitemap';
-import { getTooltipCategoryIconLocal } from '../../lib/tooltip-category-icons';
+import { Icon } from "astro-icon/components";
+import type { HtmlSitemapTestCategory } from "@/types/sitemap";
 
 interface Props {
-  category: TestCategoryNode;
+  category: HtmlSitemapTestCategory;
 }
 
-const { category: cat } = Astro.props;
-const testCount = countScoredTestsInCategory(cat);
-const testCountLabel = `${testCount} ${testCount === 1 ? 'test' : 'tests'}`;
-const iconSrc = getTooltipCategoryIconLocal(cat.key);
+const { category } = Astro.props;
 ---
 
-<div class="sitemap-test-cat" data-sitemap-test-cat>
+<article class="si-cat" data-category={category.slug}>
   <button
+    class="si-cat-head"
     type="button"
-    class="sitemap-test-cat__head"
+    data-category-toggle={category.slug}
     aria-expanded="false"
-    aria-controls={`sitemap-cat-panel-${cat.key}`}
-    id={`sitemap-cat-btn-${cat.key}`}
+    aria-controls={`si-cat-panel-${category.slug}`}
   >
-    <span class="sitemap-test-cat__icon-wrap">
-      <img
-        src={iconSrc}
-        alt=""
-        width="28"
-        height="28"
-        class="sitemap-test-cat__icon"
-        loading="lazy"
-        decoding="async"
-      />
+    <span class="si-cat-icon" aria-hidden="true">
+      <Icon name={category.icon} />
     </span>
-    <span class="sitemap-test-cat__meta">
-      <span class="sitemap-test-cat__name">{cat.name}</span>
-      <span class="sitemap-test-cat__count">{testCountLabel}</span>
-    </span>
-    <span class="material-symbols-outlined sitemap-test-cat__chevron" aria-hidden="true">
-      expand_more
-    </span>
+    <span class="si-cat-name">{category.label}</span>
+    <span class="si-cat-count">{category.testCount} tests</span>
+    <svg class="si-cat-chev" viewBox="0 0 9.5 5.5" fill="none" aria-hidden="true">
+      <path d="M0 0L4 4 8 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
   </button>
-
-  <div
-    class="sitemap-test-cat__panel"
-    id={`sitemap-cat-panel-${cat.key}`}
-    role="region"
-    aria-labelledby={`sitemap-cat-btn-${cat.key}`}
-    hidden
-  >
-    {
-      cat.subscores.map((sub) => (
-        <div class="sitemap-test-sub" data-sitemap-test-sub>
-          <div class="sitemap-test-sub__row">
-            <a href={sub.href} class="sitemap-test-sub__link">
-              {sub.name}
-            </a>
+    <div class="si-cat-panel" id={`si-cat-panel-${category.slug}`} data-panel hidden>
+    {category.subcategories.map((sub) => (
+      <div class="si-sub" data-subcategory={`${category.slug}-${sub.slug}`}>
+        <div class="si-sub-row">
+          <a class="si-sub-link" href={sub.href}>
+            <span>{sub.label}</span>
+            <svg class="si-sub-arrow" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+              <path d="M4.08 0L8.17 4.08 4.08 8.17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+          <span class="si-sub-meta">
+            <span>{sub.testCount} tests</span>
             <button
+              class="si-sub-toggle"
               type="button"
-              class="sitemap-test-sub__toggle"
+              data-subcategory-toggle={`${category.slug}-${sub.slug}`}
               aria-expanded="false"
-              aria-controls={`sitemap-sub-tests-${cat.key}-${sub.slug}`}
-              aria-label={`Show scored tests for ${sub.name}`}
+              aria-controls={`si-tests-${category.slug}-${sub.slug}`}
+              aria-label={`Show scored tests in ${sub.label}`}
             >
-              <span class="material-symbols-outlined" aria-hidden="true">
-                chevron_right
-              </span>
+              <svg viewBox="0 0 8.5 5" fill="none" aria-hidden="true">
+                <path d="M0 0L3.5 3.5 7 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
             </button>
-          </div>
-          <ul class="sitemap-test-sub__tests" id={`sitemap-sub-tests-${cat.key}-${sub.slug}`} hidden>
-            {
-              sub.contributors.map((c) => (
-                <li>
-                  <a href={c.href} class="sitemap-test-sub__test-link">
-                    <span>{c.label}</span>
-                    <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
-                  </a>
-                </li>
-              ))
-            }
-          </ul>
+          </span>
         </div>
-      ))
-    }
+        <ul class="si-tests" id={`si-tests-${category.slug}-${sub.slug}`} hidden>
+          {sub.tests.map((test) => (
+            <li>
+              <a class="si-test-link" href={test.href}>
+                <span class="si-test-dot" aria-hidden="true"></span>
+                {test.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
   </div>
-</div>
+</article>
