@@ -98,7 +98,7 @@ const chips = [
         </div>
       </section>
 
-      <div data-directory>
+        <div class="si-directory" data-directory>
         <div class="si-explore-wrap">
           <section class="si-explore" id="explore" aria-labelledby="si-explore-heading">
             <h2 id="si-explore-heading" class="si-h2">Explore AIGE</h2>
@@ -154,21 +154,34 @@ const chips = [
     chips?.toggleAttribute("hidden", on);
   }
 
-  function render(query: string) {
-    const q = query.trim();
-    if (!q) {
-      setSearching(false);
-      results?.setAttribute("hidden", "");
-      directory?.removeAttribute("hidden");
-      if (list) list.innerHTML = "";
-      return;
-    }
+    function render(query: string) {
+      const q = query.trim();
+      const pageEl = document.querySelector(".si-page");
+      if (!q) {
+        setSearching(false);
+        pageEl?.classList.remove("si-is-searching", "si-has-results", "si-no-results");
+        results?.setAttribute("hidden", "");
+        directory?.removeAttribute("hidden");
+        if (list) list.innerHTML = "";
+        return;
+      }
 
-    setSearching(true);
-    const matched = filterSitemapSearchHits(q, hits);
-    const n = matched.length;
-    directory?.setAttribute("hidden", "");
-    results?.removeAttribute("hidden");
+      setSearching(true);
+      const matched = filterSitemapSearchHits(q, hits);
+      const n = matched.length;
+      pageEl?.classList.add("si-is-searching");
+      pageEl?.classList.toggle("si-has-results", n > 0);
+      pageEl?.classList.toggle("si-no-results", n === 0);
+      directory?.setAttribute("hidden", "");
+      results?.removeAttribute("hidden");
+      if (!n) {
+        list?.setAttribute("hidden", "");
+        empty?.removeAttribute("hidden");
+        if (emptyTitle) emptyTitle.textContent = `No pages found for “${q}”`;
+        return;
+      }
+      empty?.setAttribute("hidden", "");
+      list?.removeAttribute("hidden");
 
     if (countEl) countEl.textContent = n ? `${n} results` : "No results";
     if (heading) heading.textContent = `${n} results for “${q}”`;
