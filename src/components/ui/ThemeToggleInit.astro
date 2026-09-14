@@ -1,9 +1,16 @@
 <script>
-  const THEME_COLORS = { light: '#f9f9f9', dark: '#020617' };
+  function getThemeColors() {
+    const meta = document.querySelector('meta[name="theme-color"][data-theme-color]');
+    return {
+      light: meta?.getAttribute('data-theme-color-light') ?? '#f9f9f9',
+      dark: meta?.getAttribute('data-theme-color-dark') ?? '#020617',
+    };
+  }
 
   function syncThemeColor(dark) {
     const meta = document.querySelector('meta[name="theme-color"][data-theme-color]');
-    if (meta) meta.setAttribute('content', dark ? THEME_COLORS.dark : THEME_COLORS.light);
+    const colors = getThemeColors();
+    if (meta) meta.setAttribute('content', dark ? colors.dark : colors.light);
   }
 
   function initThemeToggles() {

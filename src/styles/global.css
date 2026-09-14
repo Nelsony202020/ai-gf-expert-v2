@@ -169,6 +169,22 @@
   [data-theme='dark'] *::-webkit-scrollbar-thumb:hover {
     background-color: color-mix(in srgb, var(--color-accent) 82%, #fff);
   }
+
+  /*
+    Touch browsers: avoid a persistent pink scrollbar sliver at the viewport edge
+    (notably iOS Safari). Desktop keeps brand pink scrollbars above.
+  */
+  @media (hover: none) and (pointer: coarse) {
+    html {
+      scrollbar-width: auto;
+      scrollbar-color: auto;
+    }
+
+    html::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
+  }
 }
 
 /* ---------------------------------------------------------------------------

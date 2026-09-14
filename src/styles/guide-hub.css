@@ -29,7 +29,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow: visible;
+  overflow-x: clip;
+  overflow-y: visible;
   background: var(--hub-ink);
   color: var(--hub-on-ink);
 }
@@ -741,6 +742,8 @@
     pointer-events: none;
     opacity: 0;
     transform: translateY(14px);
+    background: var(--hub-ink);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     transition:
       opacity 240ms ease,
       transform 240ms ease;
@@ -753,7 +756,7 @@
   }
 
   .guide-hub__scroll-cta-inner {
-    padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    padding: 0 16px 16px;
     background: transparent;
   }
 

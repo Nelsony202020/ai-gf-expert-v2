@@ -45,6 +45,8 @@ interface Props {
    * Default `full` keeps existing pages styled until they opt into a slimmer bundle.
    */
   theme?: PageTheme;
+  /** Safari / mobile browser chrome (`theme-color`). Defaults match site light/dark surfaces. */
+  browserThemeColor?: { light: string; dark: string };
 }
 
 const {
@@ -57,7 +59,11 @@ const {
   ogTitle,
   ogDescription,
   theme = 'full',
+  browserThemeColor,
 } = Astro.props;
+
+const browserThemeColorLight = browserThemeColor?.light ?? '#f9f9f9';
+const browserThemeColorDark = browserThemeColor?.dark ?? '#020617';
 
 const pageStylesUrl =
   theme === 'home'
@@ -107,7 +113,13 @@ const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <!-- Lock Safari/Chrome mobile chrome to page bg — otherwise score greens/oranges bleed into the bottom bar -->
-    <meta name="theme-color" content="#f9f9f9" data-theme-color />
+    <meta
+      name="theme-color"
+      content={browserThemeColorLight}
+      data-theme-color
+      data-theme-color-light={browserThemeColorLight}
+      data-theme-color-dark={browserThemeColorDark}
+    />
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" type="image/png" href={cdnAsset('/brand/herman-main-icon-96.png')} />
     {cdnBase && <link rel="preconnect" href={cdnBase} crossorigin />}
@@ -157,15 +169,15 @@ const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
     data-mobile-nav-mode={mobileNavMode}
     data-mobile-bottom-nav={mobileBottomNav ? 'true' : 'false'}
   >
-    <script is:inline>
+    <script is:inline define:vars={{ browserThemeColorLight, browserThemeColorDark }}>
       (function () {
-        var LIGHT = '#f9f9f9';
-        var DARK = '#020617';
         try {
           var dark = localStorage.getItem('theme') === 'dark';
           if (dark) document.documentElement.setAttribute('data-theme', 'dark');
           var meta = document.querySelector('meta[name="theme-color"][data-theme-color]');
-          if (meta) meta.setAttribute('content', dark ? DARK : LIGHT);
+          if (meta) {
+            meta.setAttribute('content', dark ? browserThemeColorDark : browserThemeColorLight);
+          }
         } catch (e) {}
       })();
     </script>
