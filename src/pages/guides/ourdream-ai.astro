@@ -34,17 +34,17 @@ const jsonLd = {
   <div class="home-v2">
     <OurDreamGuideHub product={product} />
     <Footer />
-    <aside class="guide-hub__scroll-cta" data-hub-scroll-cta aria-hidden="true">
-      <div class="guide-hub__scroll-cta-inner">
-        <AffiliateLink class="guide-hub__scroll-cta-btn" href={visitHref} target="_blank">
-          <span class="guide-hub__scroll-cta-text">
-            <span>Visit</span>
-            <span>{productName}</span>
-          </span>
-          <HomeIcon name="arrow-up-right" size={18} />
-        </AffiliateLink>
-      </div>
-    </aside>
   </div>
+  <aside class="guide-hub__scroll-cta" data-hub-scroll-cta aria-hidden="true">
+    <div class="guide-hub__scroll-cta-inner">
+      <AffiliateLink class="guide-hub__scroll-cta-btn" href={visitHref} target="_blank">
+        <span class="guide-hub__scroll-cta-text">
+          <span>Visit</span>
+          <span>{productName}</span>
+        </span>
+        <HomeIcon name="arrow-up-right" size={18} />
+      </AffiliateLink>
+    </div>
+  </aside>
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>

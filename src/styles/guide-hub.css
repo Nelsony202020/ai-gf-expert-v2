@@ -751,6 +751,12 @@ body:has(.guide-hub) {
 }
 
 @media (max-width: 767px) {
+  .home-v2 > .guide-hub__scroll-cta,
+  .guide-hub__scroll-cta {
+    position: fixed;
+    z-index: 100;
+  }
+
   .home-v2:has(.guide-hub) .site-footer {
     /* Reserve space for fixed Visit pill so footer/legal stay above it (dark canvas, not body bg) */
     padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
