@@ -1,0 +1,88 @@
+---
+import Breadcrumbs from '../../ui/Breadcrumbs.astro';
+import OurDreamArticleSidebar from './OurDreamArticleSidebar.astro';
+import OurDreamArticleMobileJump from './OurDreamArticleMobileJump.astro';
+import { cdnAsset } from '../../../lib/media/cdn';
+import type { AuthorProfile } from '../../../data/authors';
+import { extractOurDreamGuideToc, estimateGuideReadMinutes } from '../../../lib/ourdream-guide-toc';
+
+interface Props {
+  title: string;
+  breadcrumbLabel: string;
+  bodyHtml: string;
+  author: AuthorProfile | undefined;
+  published: string;
+  publishedIso?: string;
+  canonical: string;
+  currentHref: string;
+  hubHref?: string;
+}
+
+const {
+  title,
+  breadcrumbLabel,
+  bodyHtml,
+  author,
+  published,
+  publishedIso,
+  canonical,
+  currentHref,
+  hubHref = '/guides/ourdream-ai/',
+} = Astro.props;
+
+const toc = extractOurDreamGuideToc(bodyHtml);
+const readMinutes = estimateGuideReadMinutes(bodyHtml);
+---
+
+<div class="ourdream-article-page" data-ourdream-article data-page-url={canonical}>
+  <header class="ourdream-article-hero section-container">
+    <Breadcrumbs
+      items={[
+        { label: 'Home', href: '/' },
+        { label: 'Guides', href: '/guides/' },
+        { label: 'OurDream AI', href: hubHref },
+        { label: breadcrumbLabel },
+      ]}
+    />
+    <h1 class="ourdream-article-hero__title">{title}</h1>
+    <div class="ourdream-article-hero__meta">
+      {
+        author?.avatar && (
+          <img
+            src={cdnAsset(author.avatar)}
+            alt=""
+            class="ourdream-article-hero__avatar"
+            width="36"
+            height="36"
+            loading="lazy"
+            decoding="async"
+          />
+        )
+      }
+      {author && <span class="ourdream-article-hero__author">{author.name}</span>}
+      <span class="ourdream-article-hero__dot" aria-hidden="true">·</span>
+      <time class="ourdream-article-hero__date" datetime={publishedIso}>{published}</time>
+      <span class="ourdream-article-hero__dot" aria-hidden="true">·</span>
+      <span class="ourdream-article-hero__read">{readMinutes} min read</span>
+    </div>
+    {toc.length > 0 && <OurDreamArticleMobileJump toc={toc} />}
+  </header>
+
+  <div class="ourdream-article-layout section-container">
+    {toc.length > 0 && <OurDreamArticleSidebar toc={toc} currentHref={currentHref} />}
+
+    <article class="ourdream-article-main min-w-0">
+      <div
+        class="ourdream-article-prose guide-prose"
+        data-glossary-decorate
+        data-ourdream-prose
+        set:html={bodyHtml}
+      />
+    </article>
+  </div>
+</div>
+
+<script>
+  import '../../test/test-hub-toc.client.ts';
+  import './ourdream-article.client.ts';
+</script>

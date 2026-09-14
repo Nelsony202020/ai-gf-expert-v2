@@ -3,7 +3,7 @@
 
 <h2 id="how-prompting-works-in-ourdream-ai">How Prompting Works in OurDream AI</h2>
 <p>It doesn’t matter whether you are generating an AI character, generating a video, or an in-chat image — all prompts work the same.</p>
-<ol>
+<ol class="od-steps">
 <li>You tell OurDream what you want</li>
 <li>The AI reads your prompt</li>
 <li>It creates the result based on your instructions</li>
@@ -11,7 +11,10 @@
 </ol>
 <p>If you type a prompt and don’t get what you want, then 9 out of 10 times it is because the prompt is too vague or unnecessarily complicated. OurDream AI specifically says that long complicated prompts are not automatically better.</p>
 <p>OurDream’s own help docs make the same point: <a href="https://help.ourdream.ai/en/articles/8747009" rel="noopener" target="_blank">prompt quality is about clarity, not stuffing in extra keywords</a>.</p>
-<p>Prompt quality isn’t about stuffing in more keywords. It’s about giving the right information to the right generator.</p>
+<div class="od-block od-block--key-takeaway">
+<p class="od-block__kicker">Key takeaway</p>
+<p class="od-block__title">Prompt quality isn’t about stuffing in more keywords. It’s about giving the right information to the right generator.</p>
+</div>
 <p>And that last part matters, because an image prompt, video prompt, and character prompt need very different information.</p>
 
 <h2 id="the-4-types-of-ourdream-ai-prompts">The 4 Types of OurDream AI Prompts</h2>
@@ -20,7 +23,10 @@
 
 <h3 id="character-prompts">Character Prompts</h3>
 <p>You use character prompts when creating a character. These prompts describe things that are part of the character, such as their face, body type, eyes, hair, and other physical features.</p>
-<p>The important thing to remember is that character prompts should describe permanent features, not temporary ones.</p>
+<div class="od-block od-block--important">
+<p class="od-block__kicker">Important</p>
+<p class="od-block__body">The important thing to remember is that character prompts should describe permanent features, not temporary ones.</p>
+</div>
 <p>For example, if you add “wearing a hospital uniform” to the character prompt, OurDream may keep trying to generate that outfit later, even when you want your character to wear something different.</p>
 <p>Something like “big blue eyes” makes much more sense because that is a feature you normally want the character to keep.</p>
 
@@ -385,7 +391,11 @@ FINAL RESULT
 Produce a realistic casino-night social-media portrait matching the supplied reference as closely as possible in composition, pose, facial proportions, expression, hairstyle, black sequined dress, blue-lit casino surroundings, mixed warm-and-cool lighting, camera perspective and natural smartphone-photo imperfections.</pre>
 <p><strong>Paragraph prompt used:</strong></p>
 <pre>Create a realistic vertical 4:5 photo of an adult woman sitting sideways on a cream-and-red casino chair in front of bright blue-lit slot machines. She’s wearing a fitted black sleeveless sequined cocktail dress, with very long blonde hair with darker roots and loose waves falling over both shoulders. Her right arm is raised with her hand in her hair, while her left hand rests naturally near her thigh. She turns her upper body and face toward the camera and gives a small relaxed closed-mouth smile. Keep the casino busy and authentic, with tall slot machines, blue LED borders, colorful jackpot screens, patterned carpet, other chairs, drink cans and a small cup on the machine console. The lighting should feel like real casino lighting, with warm golden light on her skin mixed with strong blue and cyan reflections from the machines. Make it look like a genuine smartphone photo taken by another person from slightly above eye level, with a relatively sharp background, mild wide-angle perspective, realistic skin texture, natural facial asymmetry, loose hair strands, small fabric folds, and normal social-media image processing.</pre>
-<p>At first glance, the image made with the JSON prompt and the one made with the regular prompt look very similar. But when you look closer, the details are different.</p>
+<div class="od-block od-block--aige-test">
+<p class="od-block__kicker od-block__kicker--aige">AIGE test</p>
+<p class="od-block__title">JSON prompt vs paragraph prompt</p>
+<p class="od-block__subtitle">At first glance, the image made with the JSON prompt and the one made with the regular prompt look very similar. But when you look closer, the details are different.</p>
+</div>
 <figure>
   <img src="/guides/ourdream-ai-prompt-guide/casino-json-prompt.webp" alt="OurDream AI result from a detailed JSON prompt, recreating the casino pose with a sequined dress" width="768" height="1360" loading="lazy" decoding="async" />
   <figcaption>Result from the JSON prompt</figcaption>
@@ -395,7 +405,10 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
   <figcaption>Result from the paragraph prompt</figcaption>
 </figure>
 <p>The JSON version is much closer to the original image. Her right hand is placed correctly in her hair, and the overall pose is more accurate.</p>
-<p>This is where JSON prompts can be useful. A regular prompt may get the general idea right, while a JSON prompt can give you more control over the smaller details.</p>
+<div class="od-block od-block--what-i-learned">
+<p class="od-block__kicker">What I learned</p>
+<p class="od-block__body">This is where JSON prompts can be useful. A regular prompt may get the general idea right, while a JSON prompt can give you more control over the smaller details.</p>
+</div>
 
 <h2 id="does-prompt-structure-actually-matter">Does Prompt Structure Actually Matter?</h2>
 <p>For simple images, not always.</p>
@@ -431,7 +444,10 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
   <figcaption>Very long prompt result</figcaption>
 </figure>
 <p>OurDream is better at understanding simple prompts than I expected. You don’t need to make every prompt extremely detailed.</p>
-<p>Add details when you actually care about them. The more specific you are, the more control you have, but you also give the AI more things it can get wrong.</p>
+<div class="od-block od-block--key-takeaway">
+<p class="od-block__kicker">Key takeaway</p>
+<p class="od-block__title">More detail gives you more control, but it also gives the AI more things to get wrong.</p>
+</div>
 <p>That is a much more useful takeaway than trying to prove that “structured prompts are always better.”</p>
 
 <h2 id="common-ourdream-ai-prompting-mistakes">Common OurDream AI Prompting Mistakes</h2>
