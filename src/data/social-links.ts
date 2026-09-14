@@ -18,13 +18,13 @@ export interface BrandChannel {
 /** Public community links used by the footer and mobile menu. */
 export const BRAND_CHANNELS: BrandChannel[] = [
   {
-    label: 'AI Girlfriend Expert — YouTube',
+    label: 'AI Girlfriend Expert',
     descriptor: 'Reviews, rankings & app testing',
     href: BRAND_SOCIAL.youtube,
     icon: 'youtube',
   },
   {
-    label: 'AI Girlfriend Help Desk — YouTube',
+    label: 'AI Girlfriend Help Desk',
     descriptor: 'Tutorials, FAQs & how-to guides',
     href: BRAND_SOCIAL.helpDeskYoutube,
     icon: 'youtube',
@@ -37,7 +37,7 @@ export const BRAND_CHANNELS: BrandChannel[] = [
   },
   {
     label: 'Reddit Community',
-    descriptor: 'New community coming soon',
+    descriptor: 'Coming soon',
     href: '',
     icon: 'reddit',
   },

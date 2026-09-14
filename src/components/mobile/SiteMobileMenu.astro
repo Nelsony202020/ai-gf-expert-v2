@@ -24,7 +24,7 @@ const groups = buildSiteMobileMenu(buildBrandNav(publishedProducts));
 
     <nav class="site-mobile-menu__nav" aria-label="Site">
       {groups.map((group) => (
-        <section class:list={['site-mobile-menu__group', !group.title && 'site-mobile-menu__group--primary']}>
+        <section class:list={['site-mobile-menu__group', group.title === 'Primary' && 'site-mobile-menu__group--primary']}>
           {group.title ? <h2 class="site-mobile-menu__kicker">{group.title}</h2> : null}
           <ul>
             {group.links.map((link) => (
@@ -74,7 +74,7 @@ const groups = buildSiteMobileMenu(buildBrandNav(publishedProducts));
 
 <script>
   const FOCUSABLE = 'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])';
-  const CLOSE_MS = 340;
+  const CLOSE_MS = 300;
 
   function initSiteMobileMenu() {
     const menu = document.querySelector<HTMLElement>('[data-site-menu]');

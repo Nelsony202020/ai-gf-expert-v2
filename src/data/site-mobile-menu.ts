@@ -18,7 +18,7 @@ export function buildSiteMobileMenu(brandNav: BrandNav): SiteMobileMenuGroup[] {
 
   return [
     {
-      title: '',
+      title: 'Primary',
       links: [
         { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend/' },
         { label: 'Reviews', href: '/reviews/' },
@@ -27,7 +27,7 @@ export function buildSiteMobileMenu(brandNav: BrandNav): SiteMobileMenuGroup[] {
     },
     { title: 'Discover', links: discover },
     {
-      title: 'How we test',
+      title: 'Testing',
       links: [
         { label: 'How We Test', href: '/test/' },
         { label: 'Testing Categories', href: '/test/all/' },
@@ -35,7 +35,7 @@ export function buildSiteMobileMenu(brandNav: BrandNav): SiteMobileMenuGroup[] {
       ],
     },
     {
-      title: 'About',
+      title: 'Company',
       links: [
         { label: 'Herman Carter', href: '/author/herman-carter/' },
         { label: 'About', href: '/about/' },
