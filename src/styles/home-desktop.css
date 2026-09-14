@@ -97,7 +97,8 @@
 }
 
 .home-v2__hero {
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   --mx: 68%;
   --my: 36%;
 }
@@ -159,6 +160,10 @@
   height: 620px;
   z-index: 1;
   pointer-events: none;
+}
+
+.home-v2__logo-link {
+  flex-shrink: 0;
 }
 
 .home-v2__header {
@@ -225,6 +230,8 @@
   gap: 4px;
   position: relative;
   z-index: 6;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .home-v2__icon-btn,
@@ -1390,6 +1397,15 @@
   border: 1px solid var(--home-hairline);
   border-radius: 20px;
   isolation: isolate;
+  transition: border-color var(--home-ease), box-shadow var(--home-ease), transform var(--home-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .home-v2__product-card:hover {
+    border-color: color-mix(in srgb, var(--home-pink) 28%, var(--home-hairline));
+    box-shadow: 0 10px 24px rgb(20 19 23 / 6%);
+    transform: translateY(-2px);
+  }
 }
 
 .home-v2__product-head {
@@ -1948,13 +1964,23 @@
   .home-v2__badge-score b { font-size: 34px; line-height: 32px; }
   .home-v2__selector { flex-direction: column; }
   .home-v2__selector-list { width: 100%; border-right: 0; border-bottom: 1px solid var(--home-hairline); }
-  .home-v2__header { flex-wrap: wrap; height: auto; row-gap: 12px; padding-block: 16px; }
-  .home-v2__nav { display: flex; flex-wrap: wrap; width: 100%; margin: 0; gap: 8px 16px; }
   .home-v2__cta,
   .home-v2__tester-row { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 1023px) {
+  /* Keep a single 80px bar. Desktop nav wraps badly here; MobileNavShell covers routes. */
+  .home-v2__header {
+    flex-wrap: nowrap;
+    height: 80px;
+    padding-block: 0;
+  }
+  .home-v2__nav {
+    display: none;
+  }
   .home-v2__search.is-open .home-v2__search-field {
-    width: min(calc(100vw - 5rem), 280px);
-    max-width: min(calc(100vw - 5rem), 280px);
+    width: min(calc(100vw - 8.5rem), 280px);
+    max-width: min(calc(100vw - 8.5rem), 280px);
   }
 }
 
@@ -2090,6 +2116,10 @@ html[data-theme='dark'] .home-v2 {
   --hex-line-dark: rgb(255 255 255 / var(--hex-dark-opacity));
   --home-grid-line: var(--hex-line-light);
   --home-grid-line-on-ink: var(--hex-line-dark);
+}
+
+html[data-theme='dark'] .home-v2__product-card:hover {
+  box-shadow: 0 12px 28px rgb(0 0 0 / 28%);
 }
 
 html[data-theme='dark'] .home-v2__pill--low {
