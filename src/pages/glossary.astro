@@ -1,4 +1,7 @@
 ---
+/** Load published terms from InstantDB at request time (preview builds often lack DB at build time). */
+export const prerender = false;
+
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
