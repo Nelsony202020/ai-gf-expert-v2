@@ -23,7 +23,7 @@ const icons: Record<string, 'users' | 'sliders' | 'chat' | 'layers' | 'image' | 
 
 <section class="home-v2__section" id="home-score" aria-labelledby="home-score-title" data-home-reveal="score">
   <div class="home-v2__score-row">
-    <div>
+    <div class="home-v2__score-copy">
       <HomeEyebrow text="The AIGE score" />
       <h2 id="home-score-title" class="home-v2__h2">
         One number.<br /><em>Eight tests.</em>
@@ -31,24 +31,6 @@ const icons: Record<string, 'users' | 'sliders' | 'chat' | 'layers' | 'image' | 
       <p class="home-v2__intro">
         Every app gets the same weighted 8-category test. The overall score comes from those results, not a gut feeling.
       </p>
-      <div class="home-v2__legend">
-        <div>
-          <span class="home-v2__chip home-v2__chip--high">8.0+</span>
-          <span>Strong</span>
-        </div>
-        <div>
-          <span class="home-v2__chip home-v2__chip--mid">5.0–7.9</span>
-          <span>Average — real trade-offs</span>
-        </div>
-        <div>
-          <span class="home-v2__chip home-v2__chip--low">&lt; 5.0</span>
-          <span>Weak</span>
-        </div>
-      </div>
-      <a class="home-v2__ghost" href="/test/">
-        How We Test AI Girlfriend Apps
-        <HomeIcon name="arrow-right" size={16} />
-      </a>
     </div>
     <div class="home-v2__score-card">
       <div class="home-v2__score-overall">
@@ -79,6 +61,26 @@ const icons: Record<string, 'users' | 'sliders' | 'chat' | 'layers' | 'image' | 
           </div>
         ))}
       </div>
+    </div>
+    <div class="home-v2__score-aside">
+      <div class="home-v2__legend">
+        <div>
+          <span class="home-v2__chip home-v2__chip--high">8.0+</span>
+          <span>Strong</span>
+        </div>
+        <div>
+          <span class="home-v2__chip home-v2__chip--mid">5.0–7.9</span>
+          <span>Average — real trade-offs</span>
+        </div>
+        <div>
+          <span class="home-v2__chip home-v2__chip--low">&lt; 5.0</span>
+          <span>Weak</span>
+        </div>
+      </div>
+      <a class="home-v2__ghost" href="/test/">
+        How We Test AI Girlfriend Apps
+        <HomeIcon name="arrow-right" size={16} />
+      </a>
     </div>
   </div>
 </section>

@@ -15,7 +15,7 @@ const { data } = Astro.props;
     <div class="home-v2__avatar">
       <img src="/home/v2/herman-tester.png" alt="" width="220" height="220" />
     </div>
-    <div>
+    <div class="home-v2__tester-copy">
       <HomeEyebrow text="Meet the tester" />
       <div class="home-v2__tester-name">
         <h2 id="home-tester-title" class="home-v2__h3">{data.tester.name}</h2>
@@ -24,7 +24,9 @@ const { data } = Astro.props;
         </span>
       </div>
       <p class="home-v2__tester-role">{data.tester.role} · {data.tester.education}</p>
-      <p class="home-v2__selector-blurb">{data.tester.bio}</p>
+    </div>
+    <div class="home-v2__tester-rest">
+      <p class="home-v2__selector-blurb home-v2__tester-bio">{data.tester.bio}</p>
       <div class="home-v2__tester-facts">
         {homeTesterFacts.map((fact) => (
           <div class="home-v2__proof-metric">

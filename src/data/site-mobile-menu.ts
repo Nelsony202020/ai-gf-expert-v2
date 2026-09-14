@@ -1,4 +1,3 @@
-import { BRAND_SOCIAL } from './social-links';
 import type { BrandNav } from './brand-nav';
 
 export interface SiteMobileMenuLink {
@@ -11,34 +10,24 @@ export interface SiteMobileMenuGroup {
   links: SiteMobileMenuLink[];
 }
 
-export interface SiteMobileSocialLink {
-  label: string;
-  href: string;
-  platform: 'youtube' | 'instagram' | 'tiktok';
-}
-
 export function buildSiteMobileMenu(brandNav: BrandNav): SiteMobileMenuGroup[] {
-  const groups: SiteMobileMenuGroup[] = [
+  const ourDream = brandNav.popular.find((brand) => brand.slug === 'ourdream-ai');
+  const discover: SiteMobileMenuLink[] = [];
+  if (ourDream) discover.push({ label: 'OurDream AI', href: ourDream.href });
+  discover.push({ label: 'Glossary', href: '/glossary/' });
+
+  return [
     {
-      title: 'Explore',
+      title: '',
       links: [
         { label: 'Best AI Girlfriend Apps', href: '/best/ai-girlfriend/' },
         { label: 'Reviews', href: '/reviews/' },
         { label: 'Guides', href: '/guides/' },
       ],
     },
-  ];
-
-  if (brandNav.popular.length) {
-    groups.push({
-      title: 'Brands',
-      links: brandNav.popular.map((brand) => ({ label: brand.name, href: brand.href })),
-    });
-  }
-
-  groups.push(
+    { title: 'Discover', links: discover },
     {
-      title: 'Testing',
+      title: 'How we test',
       links: [
         { label: 'How We Test', href: '/test/' },
         { label: 'Testing Categories', href: '/test/all/' },
@@ -46,26 +35,12 @@ export function buildSiteMobileMenu(brandNav: BrandNav): SiteMobileMenuGroup[] {
       ],
     },
     {
-      title: 'Resources',
+      title: 'About',
       links: [
-        { label: 'Glossary', href: '/glossary/' },
+        { label: 'Herman Carter', href: '/author/herman-carter/' },
+        { label: 'About', href: '/about/' },
         { label: 'Site Index', href: '/sitemap/' },
       ],
     },
-    {
-      title: 'Company',
-      links: [
-        { label: 'About', href: '/about/' },
-        { label: 'Herman Carter', href: '/author/herman-carter/' },
-      ],
-    },
-  );
-
-  return groups;
+  ];
 }
-
-export const SITE_MOBILE_SOCIAL: SiteMobileSocialLink[] = [
-  { label: 'YouTube', href: BRAND_SOCIAL.youtube, platform: 'youtube' },
-  { label: 'Instagram', href: BRAND_SOCIAL.instagram, platform: 'instagram' },
-  { label: 'TikTok', href: BRAND_SOCIAL.tiktok, platform: 'tiktok' },
-];
