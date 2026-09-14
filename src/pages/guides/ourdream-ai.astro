@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import AffiliateLink from '../../components/ui/AffiliateLink.astro';
 import HomeIcon from '../../components/home/desktop/HomeIcon.astro';
@@ -31,6 +32,7 @@ const jsonLd = {
   theme="core"
   browserThemeColor={{ light: '#141317', dark: '#141317' }}
 >
+  <Header />
   <div class="home-v2">
     <OurDreamGuideHub product={product} />
     <Footer />

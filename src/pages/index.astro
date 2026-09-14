@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
 import HomeDesktop from '../components/home/desktop/HomeDesktop.astro';
 import { homeMeta } from '../data/homepage';
 import { loadDesktopHomepage } from '../lib/home/loadDesktopHomepage';
@@ -19,6 +20,7 @@ const lcpImage = '/home/v2/herman-scientist.png';
   theme="home"
 >
   <JsonLd slot="head" graph={jsonLdGraph} />
+  <Header />
   <main>
     <HomeDesktop data={data} />
   </main>

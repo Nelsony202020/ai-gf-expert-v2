@@ -9,8 +9,7 @@ interface Props {
 }
 
 const { winner, bars, rankingHref = '/best/ai-girlfriend/' } = Astro.props;
-const award = winner.award || 'Best overall';
-const labelShow = `Show current number one ranked app, ${winner.name}`;
+const labelShow = `Show ${winner.name} ranking`;
 const labelHide = `Hide ${winner.name} ranking and show Herman`;
 ---
 
@@ -27,16 +26,16 @@ const labelHide = `Hide ${winner.name} ranking and show Herman`;
         />
       </div>
       <div class="home-v2__badge-face home-v2__badge-face--back" id="home-herman-back">
-        <p class="home-v2__badge-kicker">Current #1 · {award}</p>
         <div class="home-v2__badge-app">
           <img src={winner.logo} alt="" width="40" height="40" class="home-v2__app-icon" />
-          <p class="home-v2__badge-name">{winner.name}</p>
+          <p class="home-v2__badge-name">
+            {winner.name}
+            <span class="home-v2__badge-score-inline">
+              <b class={`is-${winner.overall.tone}`}>{winner.overall.value}</b>
+            </span>
+          </p>
         </div>
-        <p class="home-v2__badge-score">
-          <b class={`is-${winner.overall.tone}`}>{winner.overall.value}</b>
-          <span>/10</span>
-        </p>
-        <ul class="home-v2__badge-cats">
+        <ul class="home-v2__badge-cats home-v2__badge-cats--compact">
           {bars.map((bar) => (
             <li>
               <b class={`is-${bar.tone}`}>{bar.display}</b>

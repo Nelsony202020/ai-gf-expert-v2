@@ -1017,6 +1017,20 @@
   letter-spacing: -0.4px;
 }
 
+.home-v2__badge-score-inline {
+  margin-left: 0.35em;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.home-v2__badge-score-inline b {
+  font-family: var(--home-display);
+  font-size: 22px;
+  line-height: 24px;
+  letter-spacing: -0.4px;
+}
+
 .home-v2__badge-score {
   display: flex;
   flex-direction: column;
@@ -2280,7 +2294,8 @@
     line-height: 12px;
   }
   .home-v2__badge-name { font-size: 16px; line-height: 18px; }
-  .home-v2__badge-score b { font-size: 26px; line-height: 26px; }
+  .home-v2__badge-score-inline b { font-size: 18px; line-height: 20px; }
+  .home-v2__badge-cats--compact { display: none; }
   .home-v2__badge-cats { width: 84%; gap: 4px 6px; }
   .home-v2__badge-cats b { font-size: 13px; line-height: 15px; }
   .home-v2__badge-cats span { font-size: 9px; line-height: 11px; }

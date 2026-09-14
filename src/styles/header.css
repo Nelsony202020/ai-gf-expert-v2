@@ -961,17 +961,32 @@ body.site-header-menu-open {
     padding-top: 0;
   }
 
-  /* Search dropdown aligns with header on small screens */
+  /* Expand search left from the icon (right edge of header) — stays in viewport */
+  .site-header__search {
+    position: relative;
+    flex-shrink: 0;
+  }
+
   .site-header__search.is-open .site-header__search-field {
-    width: min(calc(100vw - 7.5rem), 280px);
-    max-width: min(calc(100vw - 7.5rem), 280px);
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: min(calc(100vw - 5.5rem), 280px);
+    max-width: min(calc(100vw - 5.5rem), 280px);
+  }
+
+  .site-header__search-input {
+    font-size: 16px;
+    line-height: 1.25;
   }
 
   .site-header__search-dropdown {
     right: 0;
     left: auto;
     width: min(calc(100vw - 1rem), 360px);
-    max-width: none;
+    max-width: calc(100vw - 1rem);
   }
 }
 
