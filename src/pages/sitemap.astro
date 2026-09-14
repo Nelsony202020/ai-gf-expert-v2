@@ -99,18 +99,23 @@ const chips = [
       </section>
 
       <div data-directory>
-        <section class="si-explore" id="explore" aria-labelledby="si-explore-heading">
-          <h2 id="si-explore-heading" class="si-h2">Explore AIGE</h2>
-          <div class="si-explore-grid">
-            <SitemapExploreColumn column={page.reviews} variant="reviews" />
-            <SitemapExploreColumn column={page.roundups} variant="roundups" />
-            <SitemapExploreColumn column={page.guides} variant="guides" />
-            <SitemapExploreColumn column={page.authors} variant="authors" />
-          </div>
-        </section>
+        <div class="si-explore-wrap">
+          <section class="si-explore" id="explore" aria-labelledby="si-explore-heading">
+            <h2 id="si-explore-heading" class="si-h2">Explore AIGE</h2>
+            <div class="si-explore-grid">
+              <SitemapExploreColumn column={page.reviews} variant="reviews" />
+              <SitemapExploreColumn column={page.roundups} variant="roundups" />
+              <SitemapExploreColumn column={page.guides} variant="guides" />
+              <SitemapExploreColumn column={page.authors} variant="authors" />
+            </div>
+          </section>
+        </div>
 
         <SitemapTestMethodology page={page} />
-        <SitemapResourcesLegal page={page} />
+
+        <div class="si-resources-wrap">
+          <SitemapResourcesLegal page={page} />
+        </div>
       </div>
     </div>
   </div>

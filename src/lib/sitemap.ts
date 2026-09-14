@@ -480,20 +480,30 @@ function htmlSitemapSupportingMethodology(): HtmlSitemapLink[] {
   ];
 }
 
-function htmlSitemapResources(): HtmlSitemapLink[] {
-  return [
+function htmlSitemapResources(): HtmlSitemapExploreColumn {
+  const links = [
     { href: '/how-we-test/', label: 'How We Test' },
     { href: '/how-we-test/score-tooltips/', label: 'How Score Tooltips Work' },
     { href: '/apps/', label: 'App Directory' },
     { href: '/glossary/', label: 'AI Girlfriend Glossary' },
   ];
+  return {
+    heading: 'Resources',
+    count: links.length,
+    links,
+  };
 }
 
-function htmlSitemapCompany(): HtmlSitemapLink[] {
-  return [
+function htmlSitemapCompany(): HtmlSitemapExploreColumn {
+  const links = [
     { href: '/about/', label: 'About Us' },
     { href: '/contact/', label: 'Contact Us' },
   ];
+  return {
+    heading: 'Company',
+    count: links.length,
+    links,
+  };
 }
 
 function htmlSitemapLegal(): HtmlSitemapLink[] {
@@ -628,7 +638,7 @@ export function buildSitemapPageSearchIndex(
     }
   }
 
-  for (const link of [...page.supporting, ...page.resources, ...page.company, ...page.legal]) {
+  for (const link of [...page.supporting, ...page.resources.links, ...page.company.links, ...page.legal]) {
     hits.push({
       href: link.href,
       title: link.label,
