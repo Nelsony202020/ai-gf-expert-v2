@@ -27,7 +27,7 @@ const detailOptions = [
   },
   {
     id: 'all-in',
-    label: 'All In',
+    label: 'All',
     description: 'Every test & evidence',
   },
 ] as const;
@@ -40,19 +40,25 @@ const categories = product.categories.map((category) => ({
 
 <div class="ratings-view-controls" data-ratings-view-controls>
   <div class="ratings-view-field" data-ratings-field="category">
-    <span class="ratings-view-field__label" id="ratings-jump-label">Jump to</span>
     <div class="ratings-view-field__wrap">
       <button
         type="button"
-        class="ratings-view-controls__trigger"
+        class="ratings-view-controls__jump"
         data-category-jump-open
         aria-haspopup="listbox"
         aria-expanded="false"
-        aria-labelledby="ratings-jump-label"
+        aria-label="Jump to category"
         aria-controls="category-jump-menu"
       >
+        <span class="ratings-view-controls__jump-prefix">Jump to</span>
         <span class="ratings-view-controls__value" data-category-jump-label>{defaultLabel}</span>
-        <span class="material-symbols-outlined ratings-view-controls__chevron" aria-hidden="true">expand_more</span>
+        <img
+          class="ratings-view-controls__chevron-img"
+          src="/icons/ratings/chevron-down.svg"
+          width="14"
+          height="14"
+          alt=""
+        />
       </button>
 
       <div
@@ -60,7 +66,7 @@ const categories = product.categories.map((category) => ({
         id="category-jump-menu"
         data-category-jump-menu
         role="listbox"
-        aria-labelledby="ratings-jump-label"
+        aria-label="Jump to category"
         hidden
       >
         {
@@ -84,52 +90,30 @@ const categories = product.categories.map((category) => ({
   </div>
 
   <div class="ratings-view-field" data-ratings-field="detail">
-    <span class="ratings-view-field__label" id="ratings-detail-label">Detail</span>
-    <div class="ratings-view-field__wrap">
-      <button
-        type="button"
-        class="ratings-view-controls__trigger"
-        data-detail-level-open
-        aria-haspopup="listbox"
-        aria-expanded="false"
-        aria-labelledby="ratings-detail-label"
-        aria-controls="detail-level-menu"
-      >
-        <span class="ratings-view-controls__value" data-detail-level-label>Skim</span>
-        <span class="material-symbols-outlined ratings-view-controls__chevron" aria-hidden="true">expand_more</span>
-      </button>
-
-      <div
-        class="ratings-view-menu ratings-view-menu--detail"
-        id="detail-level-menu"
-        data-detail-level-menu
-        role="listbox"
-        aria-labelledby="ratings-detail-label"
-        hidden
-      >
-        {
-          detailOptions.map((opt, index) => (
-            <button
-              type="button"
-              role="option"
-              class:list={['ratings-view-menu__option', 'ratings-view-menu__option--stacked', index === 0 && 'is-active']}
-              data-detail-level-option={opt.id}
-              aria-selected={index === 0 ? 'true' : 'false'}
-            >
-              <span class="ratings-view-menu__option-copy">
-                <span class="ratings-view-menu__option-label">{opt.label}</span>
-                <span class="ratings-view-menu__option-desc">{opt.description}</span>
-              </span>
-              <span class="material-symbols-outlined ratings-view-menu__check" aria-hidden="true">check</span>
-            </button>
-          ))
-        }
-      </div>
+    <div
+      class="ratings-detail-seg"
+      role="radiogroup"
+      aria-label="Detail level"
+      data-detail-level-group
+    >
+      {
+        detailOptions.map((opt, index) => (
+          <button
+            type="button"
+            role="radio"
+            class:list={['ratings-detail-seg__btn', index === 1 && 'is-active']}
+            data-detail-level-option={opt.id}
+            aria-checked={index === 1 ? 'true' : 'false'}
+            aria-label={`${opt.label}: ${opt.description}`}
+          >
+            {opt.label}
+          </button>
+        ))
+      }
     </div>
   </div>
 </div>
 
-{/* Mobile bottom sheets */}
 <div
   class="mobile-sheet category-jump-sheet"
   id="category-jump-sheet"
@@ -178,73 +162,26 @@ const categories = product.categories.map((category) => ({
   </div>
 </div>
 
-<div
-  class="mobile-sheet detail-level-sheet"
-  id="detail-level-sheet"
-  data-detail-level-sheet
-  hidden
-  aria-hidden="true"
->
-  <button type="button" class="mobile-sheet__backdrop" data-detail-level-close aria-label="Close"></button>
-  <div
-    class="mobile-sheet__panel"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="detail-level-sheet-title"
-  >
-    <div class="mobile-sheet__handle" aria-hidden="true"></div>
-    <header class="mobile-sheet__head">
-      <h2 id="detail-level-sheet-title" class="mobile-sheet__title">Detail level</h2>
-      <button type="button" class="mobile-sheet__close" data-detail-level-close aria-label="Close">
-        <span class="material-symbols-outlined" aria-hidden="true">close</span>
-      </button>
-    </header>
-    <div class="mobile-sheet__body ratings-view-sheet__body">
-      <div class="ratings-view-sheet__list" role="listbox" aria-label="Detail level">
-        {
-          detailOptions.map((opt, index) => (
-            <button
-              type="button"
-              role="option"
-              class:list={['ratings-view-sheet__option', 'ratings-view-sheet__option--stacked', index === 0 && 'is-active']}
-              data-detail-level-option={opt.id}
-              aria-selected={index === 0 ? 'true' : 'false'}
-            >
-              <span class="ratings-view-sheet__option-copy">
-                <span class="ratings-view-sheet__option-label">{opt.label}</span>
-                <span class="ratings-view-sheet__option-desc">{opt.description}</span>
-              </span>
-            </button>
-          ))
-        }
-      </div>
-    </div>
-  </div>
-</div>
-
 <style>
   .ratings-view-controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
     margin: 0;
     width: 100%;
   }
 
   .ratings-view-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
     min-width: 0;
   }
 
-  .ratings-view-field__label {
-    margin: 0;
-    font-size: 0.625rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--color-tertiary);
+  .ratings-view-field[data-ratings-field='category'] {
+    flex: 1 1 10rem;
+  }
+
+  .ratings-view-field[data-ratings-field='detail'] {
+    flex: 1 1 12rem;
   }
 
   .ratings-view-field__wrap {
@@ -252,14 +189,13 @@ const categories = product.categories.map((category) => ({
     min-width: 0;
   }
 
-  .ratings-view-controls__trigger {
+  .ratings-view-controls__jump {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 6px;
     width: 100%;
-    min-width: 0;
-    min-height: 40px;
-    padding: 0.45rem 0.45rem 0.45rem 0.75rem;
+    min-height: 42px;
+    padding: 9px 12px 9px 14px;
     border: 1px solid var(--color-surface-variant);
     border-radius: 999px;
     background: var(--color-surface-container-lowest, #fff);
@@ -267,34 +203,85 @@ const categories = product.categories.map((category) => ({
     font: inherit;
     text-align: left;
     cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease;
   }
 
-  .ratings-view-controls__trigger:hover,
-  .ratings-view-controls__trigger:focus-visible {
+  .ratings-view-controls__jump:hover,
+  .ratings-view-controls__jump:focus-visible {
     border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-surface-variant));
     outline: none;
   }
 
-  .ratings-view-controls__trigger[aria-expanded='true'] {
+  .ratings-view-controls__jump[aria-expanded='true'] {
     border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-surface-variant));
   }
 
+  .ratings-view-controls__jump-prefix {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    letter-spacing: -0.02em;
+    color: var(--color-on-surface-variant);
+    white-space: nowrap;
+  }
+
   .ratings-view-controls__value {
-    flex: 1;
     min-width: 0;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    line-height: 1.2;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    letter-spacing: -0.02em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .ratings-view-controls__chevron {
+  .ratings-view-controls__chevron-img {
+    display: block;
     flex-shrink: 0;
-    font-size: 1.125rem;
-    color: var(--color-accent);
+    width: 14px;
+    height: 14px;
+    margin-left: auto;
+  }
+
+  .ratings-detail-seg {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+    padding: 4px;
+    border: 1px solid var(--color-surface-variant);
+    border-radius: 999px;
+    background: #efefed;
+  }
+
+  .ratings-detail-seg__btn {
+    flex: 1 1 auto;
+    margin: 0;
+    padding: 6px 14px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-on-surface-variant);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    letter-spacing: -0.02em;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .ratings-detail-seg__btn.is-active {
+    background: var(--color-surface-container-lowest, #fff);
+    border-color: var(--color-surface-variant);
+    color: var(--color-on-surface);
+    font-weight: 600;
+    line-height: 20px;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+  }
+
+  .ratings-detail-seg__btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
 
   .ratings-view-menu {
@@ -311,11 +298,6 @@ const categories = product.categories.map((category) => ({
     border-radius: 0.75rem;
     background: var(--color-surface-container-lowest, #fff);
     box-shadow: 0 10px 28px rgb(15 23 42 / 12%);
-  }
-
-  .ratings-view-menu--detail {
-    right: 0;
-    left: auto;
   }
 
   .ratings-view-menu.is-open {
@@ -338,11 +320,6 @@ const categories = product.categories.map((category) => ({
     cursor: pointer;
   }
 
-  .ratings-view-menu__option--stacked {
-    min-height: 52px;
-    align-items: flex-start;
-  }
-
   .ratings-view-menu__option:hover,
   .ratings-view-menu__option:focus-visible {
     background: var(--color-surface-container-low);
@@ -351,14 +328,6 @@ const categories = product.categories.map((category) => ({
 
   .ratings-view-menu__option.is-active {
     background: rgb(219 39 119 / 7%);
-  }
-
-  .ratings-view-menu__option-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-    flex: 1;
-    min-width: 0;
   }
 
   .ratings-view-menu__option-label {
@@ -370,13 +339,6 @@ const categories = product.categories.map((category) => ({
 
   .ratings-view-menu__option.is-active .ratings-view-menu__option-label {
     color: var(--color-accent);
-  }
-
-  .ratings-view-menu__option-desc {
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1.3;
-    color: var(--color-tertiary);
   }
 
   .ratings-view-menu__check {
@@ -416,11 +378,6 @@ const categories = product.categories.map((category) => ({
     font: inherit;
     text-align: left;
     cursor: pointer;
-    transition: background 0.12s ease;
-  }
-
-  .ratings-view-sheet__option--stacked {
-    min-height: 56px;
   }
 
   .ratings-view-sheet__option:hover,
@@ -450,7 +407,6 @@ const categories = product.categories.map((category) => ({
   .ratings-view-sheet__option-copy {
     display: flex;
     flex-direction: column;
-    gap: 0.1rem;
     min-width: 0;
   }
 
@@ -464,30 +420,39 @@ const categories = product.categories.map((category) => ({
     color: var(--color-accent);
   }
 
-  .ratings-view-sheet__option-desc {
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1.3;
-    color: var(--color-tertiary);
-  }
-
   @media (min-width: 768px) {
     .ratings-view-controls {
       width: auto;
-      grid-template-columns: minmax(8.5rem, 11rem) minmax(6.75rem, 8.5rem);
-      gap: 0.65rem;
+      flex-wrap: nowrap;
       flex-shrink: 0;
     }
 
-    .ratings-view-controls__trigger {
-      min-height: 36px;
-      padding: 0.35rem 0.35rem 0.35rem 0.7rem;
+    .ratings-view-field[data-ratings-field='category'] {
+      flex: 0 0 auto;
+    }
+
+    .ratings-view-field[data-ratings-field='detail'] {
+      flex: 0 0 auto;
+    }
+
+    .ratings-view-controls__jump {
+      width: auto;
+    }
+
+    .ratings-detail-seg {
+      width: auto;
     }
   }
 
-  [data-theme='dark'] .ratings-view-controls__trigger,
-  [data-theme='dark'] .ratings-view-menu {
+  [data-theme='dark'] .ratings-view-controls__jump,
+  [data-theme='dark'] .ratings-view-menu,
+  [data-theme='dark'] .ratings-detail-seg__btn.is-active {
     background: var(--color-surface-container-lowest);
+    border-color: var(--dark-border-subtle);
+  }
+
+  [data-theme='dark'] .ratings-detail-seg {
+    background: var(--color-surface-container-low);
     border-color: var(--dark-border-subtle);
   }
 
@@ -517,13 +482,8 @@ const categories = product.categories.map((category) => ({
     const categoryPanel = categorySheet?.querySelector<HTMLElement>('.mobile-sheet__panel');
     const categoryLabel = root.querySelector<HTMLElement>('[data-category-jump-label]');
 
-    const detailOpen = root.querySelector<HTMLElement>('[data-detail-level-open]');
-    const detailMenu = document.querySelector<HTMLElement>('[data-detail-level-menu]');
-    const detailSheet = document.querySelector<HTMLElement>('[data-detail-level-sheet]');
-    const detailPanel = detailSheet?.querySelector<HTMLElement>('.mobile-sheet__panel');
-
     let releaseFocus: (() => void) | null = null;
-    let openKind: 'category' | 'detail' | null = null;
+    let openKind: 'category' | null = null;
 
     function setCategoryActive(key: string, label?: string) {
       if (label && categoryLabel) categoryLabel.textContent = label;
@@ -537,10 +497,7 @@ const categories = product.categories.map((category) => ({
     function closeMenus() {
       categoryMenu?.classList.remove('is-open');
       categoryMenu?.setAttribute('hidden', '');
-      detailMenu?.classList.remove('is-open');
-      detailMenu?.setAttribute('hidden', '');
       categoryOpen?.setAttribute('aria-expanded', 'false');
-      detailOpen?.setAttribute('aria-expanded', 'false');
     }
 
     function closeMobileSheets() {
@@ -550,14 +507,7 @@ const categories = product.categories.map((category) => ({
           releaseFocus = null;
         });
       }
-      if (detailSheet && !detailSheet.hidden) {
-        closeSheet(detailSheet, () => {
-          releaseFocus?.();
-          releaseFocus = null;
-        });
-      }
       categoryOpen?.setAttribute('aria-expanded', 'false');
-      detailOpen?.setAttribute('aria-expanded', 'false');
     }
 
     function closeAll() {
@@ -566,65 +516,46 @@ const categories = product.categories.map((category) => ({
       openKind = null;
     }
 
-    function openDesktopMenu(kind: 'category' | 'detail') {
+    function openDesktopMenu() {
       closeMobileSheets();
-      const openingSame = openKind === kind;
-      closeMenus();
-      if (openingSame) {
+      if (openKind === 'category') {
+        closeMenus();
         openKind = null;
         return;
       }
-      const menu = kind === 'category' ? categoryMenu : detailMenu;
-      const trigger = kind === 'category' ? categoryOpen : detailOpen;
-      if (!menu || !trigger) return;
-      menu.hidden = false;
-      menu.classList.add('is-open');
-      trigger.setAttribute('aria-expanded', 'true');
-      openKind = kind;
+      if (!categoryMenu || !categoryOpen) return;
+      categoryMenu.hidden = false;
+      categoryMenu.classList.add('is-open');
+      categoryOpen.setAttribute('aria-expanded', 'true');
+      openKind = 'category';
       requestAnimationFrame(() => {
-        menu.querySelector<HTMLElement>('.ratings-view-menu__option.is-active')?.focus();
+        categoryMenu.querySelector<HTMLElement>('.ratings-view-menu__option.is-active')?.focus();
       });
     }
 
-    function openMobileSheet(kind: 'category' | 'detail') {
+    function openMobileSheet() {
       closeMenus();
-      const sheet = kind === 'category' ? categorySheet : detailSheet;
-      const panel = kind === 'category' ? categoryPanel : detailPanel;
-      const trigger = kind === 'category' ? categoryOpen : detailOpen;
-      if (!sheet || !panel || !trigger) return;
-      if (openKind && openKind !== kind) closeMobileSheets();
-      if (openKind === kind && !sheet.hidden) {
+      if (!categorySheet || !categoryPanel || !categoryOpen) return;
+      if (openKind === 'category' && !categorySheet.hidden) {
         closeMobileSheets();
         openKind = null;
         return;
       }
       releaseFocus?.();
-      releaseFocus = openSheet(sheet, panel, {
+      releaseFocus = openSheet(categorySheet, categoryPanel, {
         focusSelector: '.ratings-view-sheet__option.is-active',
       });
-      trigger.setAttribute('aria-expanded', 'true');
-      openKind = kind;
+      categoryOpen.setAttribute('aria-expanded', 'true');
+      openKind = 'category';
     }
 
     categoryOpen?.addEventListener('click', (event) => {
       event.stopPropagation();
-      if (isMobile()) openMobileSheet('category');
-      else openDesktopMenu('category');
-    });
-
-    detailOpen?.addEventListener('click', (event) => {
-      event.stopPropagation();
-      if (isMobile()) openMobileSheet('detail');
-      else openDesktopMenu('detail');
+      if (isMobile()) openMobileSheet();
+      else openDesktopMenu();
     });
 
     categorySheet?.querySelectorAll('[data-category-jump-close]').forEach((el) => {
-      el.addEventListener('click', () => {
-        closeMobileSheets();
-        openKind = null;
-      });
-    });
-    detailSheet?.querySelectorAll('[data-detail-level-close]').forEach((el) => {
       el.addEventListener('click', () => {
         closeMobileSheets();
         openKind = null;
@@ -646,7 +577,6 @@ const categories = product.categories.map((category) => ({
         const level = opt.dataset.detailLevelOption;
         if (!level) return;
         document.dispatchEvent(new CustomEvent('detail-level-set', { detail: { level } }));
-        closeAll();
       });
     });
 
@@ -656,8 +586,8 @@ const categories = product.categories.map((category) => ({
         const target = event.target;
         if (!(target instanceof Node)) return;
         if (root.contains(target)) return;
-        if (categoryMenu?.contains(target) || detailMenu?.contains(target)) return;
-        if (categorySheet?.contains(target) || detailSheet?.contains(target)) return;
+        if (categoryMenu?.contains(target)) return;
+        if (categorySheet?.contains(target)) return;
         closeMenus();
         openKind = openKind && !isMobile() ? null : openKind;
       });
@@ -665,7 +595,6 @@ const categories = product.categories.map((category) => ({
         if (event.key === 'Escape') closeAll();
       });
       window.addEventListener('resize', () => {
-        // Avoid leaving a desktop menu open after rotating to mobile, etc.
         closeAll();
       });
     }
