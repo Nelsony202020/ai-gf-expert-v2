@@ -16,6 +16,12 @@ interface TipTapNode {
   content?: TipTapNode[];
 }
 
+function plainText(node: TipTapNode): string {
+  if (node.type === 'hardBreak') return '\n';
+  if (typeof node.text === 'string') return node.text;
+  return (node.content ?? []).map(plainText).join('');
+}
+
 function renderInline(nodes: TipTapNode[] | undefined): string {
   if (!nodes) return '';
   let out = '';
@@ -58,6 +64,10 @@ function renderBlock(node: TipTapNode): string {
       return `<li>${(node.content ?? []).map(renderBlock).join('')}</li>`;
     case 'blockquote':
       return `<blockquote>${(node.content ?? []).map(renderBlock).join('')}</blockquote>`;
+    case 'codeBlock': {
+      const code = escapeHtml(plainText(node)).replace(/\n$/, '');
+      return `<pre><code>${code}</code></pre>`;
+    }
     case 'horizontalRule':
       return '<hr />';
     default:
