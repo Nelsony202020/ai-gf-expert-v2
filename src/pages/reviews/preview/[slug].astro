@@ -6,7 +6,8 @@ import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import ReviewHero from '../../../components/review/ReviewHero.astro';
 import TabBar from '../../../components/review/TabBar.astro';
-import type { Tab } from '../../../components/review/TabBar.astro';
+import ReviewStickyCta from '../../../components/review/ReviewStickyCta.astro';
+import VideoReviewLightbox from '../../../components/review/VideoReviewLightbox.astro';
 import OverviewTab from '../../../components/review/tabs/OverviewTab.astro';
 import ReviewArticleTab from '../../../components/review/tabs/ReviewArticleTab.astro';
 import MarketDataTab from '../../../components/review/tabs/MarketDataTab.astro';
@@ -32,6 +33,7 @@ import {
 import { PREVIEW_COOKIE_NAME, verifyPreviewToken } from '../../../lib/previewSession';
 import { isReviewSafeView } from '../../../lib/safe-view/params';
 import { safeViewResponse } from '../../../lib/safe-view/respond';
+import { buildReviewTabs } from '../../../lib/review-shell';
 
 // Previews expose unpublished products, so production requires the editor
 // cookie issued by /api/admin/preview-session (set automatically on admin
@@ -66,17 +68,7 @@ const showPhotosVideosTab = hasPhotosVideosTab(product.slug);
 const showAlternativesTab = hasAlternativesTab(product.slug);
 const showPricingTab = hasPricingTab(product.slug);
 
-const tabs: Tab[] = [
-  { id: 'overview', label: 'Overview', tocLabel: 'Overview' },
-  { id: 'ratings', label: 'Ratings', tocLabel: 'Ratings & Specs' },
-  { id: 'review', label: 'Review', tocLabel: 'Review' },
-  { id: 'photos', label: 'Media', tocLabel: 'Photos & Videos' },
-  { id: 'pricing', label: 'Pricing', tocLabel: 'Pricing' },
-  { id: 'market-data', label: 'Market Data', tocLabel: 'Market Data' },
-];
-if (showAlternativesTab) {
-  tabs.push({ id: 'alternatives', label: 'Alternatives', tocLabel: 'Alternatives' });
-}
+const { tabs, hiddenTabs } = buildReviewTabs({ includeMarketData: true });
 
 const shareUrl = head.canonical;
 ---
@@ -99,22 +91,11 @@ const shareUrl = head.canonical;
     Draft preview — this page is only visible to editors. Not indexed. Publish the product for the live URL at
     <a href={`/reviews/${product.slug}/`} class="font-medium underline underline-offset-2">/reviews/{product.slug}/</a>.
   </div>
-  <main id="review-top">
-    <ReviewHero product={product} shareUrl={shareUrl} pageHead={head} />
-    {featuredIn.length > 0 && (
-      <div class="mx-auto max-w-6xl px-4 pt-3 text-sm text-white/60 hidden md:block">
-        Also featured in:{' '}
-        {featuredIn.map((f, i) => (
-          <>
-            <a href={`/best/${f.slug}`} class="text-white/80 underline decoration-dotted underline-offset-2 hover:text-white">
-              {f.title}{f.position ? ` (#${f.position})` : ''}
-            </a>
-            {i < featuredIn.length - 1 && ', '}
-          </>
-        ))}
-      </div>
-    )}
-    <TabBar tabs={tabs} active="overview" />
+  <main id="review-top" class="review-main">
+    <ReviewHero product={product} featuredIn={featuredIn} />
+    <ReviewStickyCta product={product} />
+    <VideoReviewLightbox product={product} />
+    <TabBar tabs={tabs} hiddenTabs={hiddenTabs} />
 
     <div data-panels>
       <div data-tab-panel="overview">
@@ -159,13 +140,9 @@ const shareUrl = head.canonical;
       <div data-tab-panel="market-data" class="hidden">
         <MarketDataTab product={product} />
       </div>
-      {
-        showAlternativesTab && (
-          <div data-tab-panel="alternatives" class="hidden">
-            <AlternativesTab product={product} />
-          </div>
-        )
-      }
+      <div data-tab-panel="alternatives" class="hidden">
+        {showAlternativesTab && <AlternativesTab product={product} />}
+      </div>
     </div>
   </main>
   <Footer />
@@ -216,7 +193,11 @@ const shareUrl = head.canonical;
         }
       });
       if (!matched) return;
-      tabButtons.forEach((btn) => btn.setAttribute('aria-current', btn.dataset.tab === id ? 'true' : 'false'));
+      tabButtons.forEach((btn) => {
+        const on = btn.dataset.tab === id;
+        btn.setAttribute('aria-current', on ? 'true' : 'false');
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
       if (history.replaceState) history.replaceState(null, '', hashOverride ?? `#${id}`);
       if (activePanel) {
         requestAnimationFrame(() => hydratePanelMedia(activePanel));

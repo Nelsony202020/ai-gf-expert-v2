@@ -1,0 +1,53 @@
+---
+import type { Product } from '../../data/products';
+import AffiliateLink from '../ui/AffiliateLink.astro';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+---
+
+<div class="review-sticky-cta" data-review-sticky-cta hidden>
+  <AffiliateLink
+    href={product.affiliateUrl}
+    class="review-sticky-cta__btn"
+    data-cta="sticky-visit"
+  >
+    Visit {product.name}
+    <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M3.2 8.8 8.8 3.2M4.6 3.2h4.2V7.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+  </AffiliateLink>
+</div>
+
+<script>
+  let observer: IntersectionObserver | null = null;
+
+  function bindStickyCta() {
+    const sticky = document.querySelector<HTMLElement>('[data-review-sticky-cta]');
+    const heroCta = document.querySelector<HTMLElement>('[data-review-hero-cta]');
+    observer?.disconnect();
+    observer = null;
+    if (!sticky) return;
+
+    const desktop = window.matchMedia('(min-width: 768px)');
+    if (!heroCta || desktop.matches) {
+      sticky.hidden = true;
+      return;
+    }
+
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        sticky.hidden = Boolean(entry?.isIntersecting);
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(heroCta);
+  }
+
+  document.addEventListener('DOMContentLoaded', bindStickyCta);
+  document.addEventListener('astro:page-load', bindStickyCta);
+  window.addEventListener('resize', bindStickyCta);
+</script>

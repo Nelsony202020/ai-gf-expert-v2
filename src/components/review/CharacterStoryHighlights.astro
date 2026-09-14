@@ -11,8 +11,10 @@ interface Props {
   characters: StoryHighlightCharacter[];
   productName: string;
   heading?: string;
+  lede?: string;
   badge?: string;
   hideHeading?: boolean;
+  hideHeadingIcon?: boolean;
   maxDisplay?: number;
   showPlatform?: boolean;
   showVerified?: boolean;
@@ -28,8 +30,10 @@ const {
   characters,
   productName,
   heading,
+  lede,
   badge,
   hideHeading = false,
+  hideHeadingIcon = false,
   maxDisplay = 4,
   showPlatform = false,
   showVerified = true,
@@ -94,12 +98,15 @@ const headingText = heading ?? 'Featured characters';
 >
   {
     !hideHeading && (
-      <div class="char-stories__heading">
-        <img src={cdnAsset('/brand/herman-in-love-icon.webp')} alt="" class="char-stories__heading-icon" width="44" height="44" aria-hidden="true" />
+      <div class:list={['char-stories__heading', hideHeadingIcon && 'char-stories__heading--plain']}>
+        {!hideHeadingIcon && (
+          <img src={cdnAsset('/brand/herman-in-love-icon.webp')} alt="" class="char-stories__heading-icon" width="44" height="44" aria-hidden="true" />
+        )}
         <p class="char-stories__heading-text">
           {headingText}
           {badge && <span class="char-stories__badge">{badge}</span>}
         </p>
+        {lede && <p class="char-stories__lede">{lede}</p>}
       </div>
     )
   }
@@ -122,55 +129,86 @@ const headingText = heading ?? 'Featured characters';
               : pickCharacterDisplayImage(char.avatar, char.storySlides, 'avatar-first', char.storyImageSlides);
             const hasImage = Boolean(thumb);
             const ItemTag = hasStory ? 'button' : 'div';
-            return (
+            const outboundProfile =
+              Boolean(char.profileUrl) &&
+              (char.profileUrl.startsWith('http') || char.profileUrl.startsWith('/go/'));
+            const profileRel =
+              char.profileRel ||
+              (outboundProfile ? 'sponsored nofollow noopener' : undefined);
+            const avatar = (
+              <div class="char-stories__ring-wrap">
+                {
+                  hasStory && (
+                    <svg class="char-stories__ring" viewBox="0 0 100 100" aria-hidden="true">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="46"
+                        fill="none"
+                        stroke-width="4"
+                        class="char-stories__ring-circle"
+                      />
+                    </svg>
+                  )
+                }
+                <div class:list={['char-stories__avatar-wrap', !hasStory && 'char-stories__avatar-wrap--plain']}>
+                  {
+                    hasImage ? (
+                      <img
+                        src={optimizedImageUrl(thumb, { width: 64, quality: 70 })}
+                        alt={char.name}
+                        class="char-stories__avatar"
+                        loading="lazy"
+                        width="64"
+                        height="64"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span class="char-stories__avatar char-stories__avatar--placeholder" aria-hidden="true">
+                        {char.name.charAt(0).toUpperCase()}
+                      </span>
+                    )
+                  }
+                </div>
+              </div>
+            );
+            const nameRow = (
+              <span class="char-stories__label-stack">
+                <span class="char-stories__name-row">
+                  {featuredGrid && char.profileUrl ? (
+                    <a
+                      class="char-stories__name char-stories__name-link"
+                      href={char.profileUrl}
+                      target={outboundProfile ? '_blank' : undefined}
+                      rel={profileRel}
+                    >
+                      {char.name}
+                    </a>
+                  ) : (
+                    <span class="char-stories__name">{char.name}</span>
+                  )}
+                  {showVerified && <VerifiedCheck class="char-stories__verified" />}
+                </span>
+                {showPlatform && char.platform && <span class="char-stories__platform">{char.platform}</span>}
+              </span>
+            );
+            const item = (
               <ItemTag
                 class:list={['char-stories__item', !hasStory && 'char-stories__item--no-story']}
                 {...hasStory ? { type: 'button', 'data-story-open': origIndex } : {}}
                 aria-label={hasStory ? `View ${char.name}'s story` : undefined}
               >
-                <div class="char-stories__ring-wrap">
-                  {
-                    hasStory && (
-                      <svg class="char-stories__ring" viewBox="0 0 100 100" aria-hidden="true">
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="46"
-                          fill="none"
-                          stroke-width="4"
-                          class="char-stories__ring-circle"
-                        />
-                      </svg>
-                    )
-                  }
-                  <div class:list={['char-stories__avatar-wrap', !hasStory && 'char-stories__avatar-wrap--plain']}>
-                    {
-                      hasImage ? (
-                        <img
-                          src={optimizedImageUrl(thumb, { width: 64, quality: 70 })}
-                          alt={char.name}
-                          class="char-stories__avatar"
-                          loading="lazy"
-                          width="64"
-                          height="64"
-                          decoding="async"
-                        />
-                      ) : (
-                        <span class="char-stories__avatar char-stories__avatar--placeholder" aria-hidden="true">
-                          {char.name.charAt(0).toUpperCase()}
-                        </span>
-                      )
-                    }
-                  </div>
-                </div>
-                <span class="char-stories__label-stack">
-                  <span class="char-stories__name-row">
-                    <span class="char-stories__name">{char.name}</span>
-                    {showVerified && <VerifiedCheck class="char-stories__verified" />}
-                  </span>
-                  {showPlatform && char.platform && <span class="char-stories__platform">{char.platform}</span>}
-                </span>
+                {avatar}
+                {!featuredGrid && nameRow}
               </ItemTag>
+            );
+            return featuredGrid ? (
+              <div class="char-stories__fg-item">
+                {item}
+                {nameRow}
+              </div>
+            ) : (
+              item
             );
           })
         }
@@ -257,7 +295,9 @@ const headingText = heading ?? 'Featured characters';
       const minWidth = carousel.clientWidth * 2;
       let guard = 0;
       while (track.scrollWidth < minWidth && guard < 12) {
-        const items = Array.from(track.querySelectorAll('.char-stories__item'));
+        const items = Array.from(
+          track.querySelectorAll('.char-stories__fg-item, :scope > .char-stories__item')
+        );
         for (let i = 0; i < sourceCount && i < items.length; i++) {
           track.appendChild(items[i].cloneNode(true));
         }
@@ -532,14 +572,18 @@ const headingText = heading ?? 'Featured characters';
       showSlide();
     }
 
-    function closeViewer() {
-      clearTimer();
-      viewer.classList.add('hidden');
-      viewer.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
-      restoreViewer();
-      paused = false;
-    }
+  function closeViewer() {
+    clearTimer();
+    viewer.classList.add('hidden');
+    viewer.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    root.querySelectorAll(`[data-story-open="${charIndex}"]`).forEach((btn) => {
+      btn.setAttribute('data-seen', '');
+      btn.closest('.char-stories__fg-item')?.setAttribute('data-seen', '');
+    });
+    restoreViewer();
+    paused = false;
+  }
 
     root.querySelectorAll('[data-story-open]').forEach((btn) => {
       btn.addEventListener('click', () => {

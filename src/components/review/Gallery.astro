@@ -1,222 +1,77 @@
 ---
-import type { GalleryImage, Product } from '../../data/products';
-import { heroImageSrcSet, optimizedHeroImageUrl, optimizedImageUrl } from '../../lib/media/optimize';
-import VideoReviewLightbox from './VideoReviewLightbox.astro';
+import type { Product } from '../../data/products';
+import { heroGalleryImages, featuredHeroImage } from '../../lib/review-shell';
 
 interface Props {
-  images: GalleryImage[];
   product: Product;
 }
 
-const { images, product } = Astro.props;
-const hero = images[0];
-const heroIsVideo = (hero?.mediaType ?? 'image') === 'video';
-const singleImage = images.length <= 1;
-const HERO_WIDTHS = [640, 960, 1280, 1600, 1920];
-const heroImgSrc = heroIsVideo ? undefined : optimizedHeroImageUrl(hero?.full, 1280);
-const heroImgSrcSet = heroIsVideo || !hero?.full ? '' : heroImageSrcSet(hero.full, HERO_WIDTHS, 90);
-const galleryLightboxItems = JSON.stringify(
-  images
-    .filter((image) => image.full)
-    .map((image) => ({
-      src: image.full,
-      alt: image.alt,
-      caption: image.alt,
-      type: image.mediaType ?? 'image',
-    })),
-);
+const { product } = Astro.props;
+const images = heroGalleryImages(product);
+const cover = featuredHeroImage(product);
+const videoUrl = product.videoReview?.embedUrl;
 ---
 
-<div class="space-y-3" data-gallery data-gallery-images={galleryLightboxItems}>
-  <div class="relative rounded-xl overflow-hidden aspect-video shadow-lg border border-surface-variant/40 bg-surface-container w-full">
+{cover && (
+  <div class="review-hero-gallery rs-gallery">
     <button
       type="button"
-      class="relative w-full h-full block group cursor-zoom-in"
-      data-lightbox-open={hero?.full}
-      data-lightbox-alt={hero?.alt}
-      data-lightbox-type={hero?.mediaType ?? 'image'}
-      data-gallery-main-trigger
+      class="review-hero-media-open"
+      data-lightbox-open={cover.full}
+      data-lightbox-alt={cover.alt || `${product.name} screenshot`}
+      aria-label="Enlarge featured image"
     >
       <img
-        data-gallery-main-img
-        alt={hero?.alt ?? ''}
-        class:list={[
-          'w-full h-full object-cover transition group-hover:scale-[1.01]',
-          heroIsVideo ? 'hidden' : '',
-        ]}
-        src={heroImgSrc}
-        srcset={heroImgSrcSet || undefined}
-        sizes="(max-width: 767px) 100vw, (max-width: 1279px) 68vw, 860px"
-        width="1280"
-        height="720"
-        loading="eager"
-        fetchpriority="high"
-        decoding="async"
+        class="rs-gallery-img"
+        src={cover.full}
+        alt={cover.alt || `${product.name} screenshot`}
+        width="792"
+        height="429"
       />
-      <video
-        data-gallery-main-video
-        src={heroIsVideo ? hero?.full : undefined}
-        class:list={['w-full h-full object-cover pointer-events-none', heroIsVideo ? '' : 'hidden']}
-        muted
-        playsinline
-        preload="metadata"
-        aria-hidden="true"
-      />
-      <span
-        data-gallery-play-overlay
-        class:list={[
-          'absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-black/35 transition-colors pointer-events-none',
-          heroIsVideo ? '' : 'hidden',
-        ]}
-      >
-        <span class="material-symbols-outlined text-white text-6xl drop-shadow-lg">play_circle</span>
-      </span>
-      <span
-        data-gallery-action-hint
-        class="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/50 text-white text-[11px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-      >
-        <span data-gallery-action-icon class="material-symbols-outlined text-[14px]">
-          {heroIsVideo ? 'play_arrow' : 'zoom_in'}
-        </span>
-        <span data-gallery-action-label>{heroIsVideo ? 'Play' : 'Enlarge'}</span>
-      </span>
     </button>
-    <VideoReviewLightbox product={product} />
+    <button
+      type="button"
+      class="review-hero-enlarge rs-gallery-enlarge"
+      data-lightbox-open={cover.full}
+      data-lightbox-alt={cover.alt || `${product.name} screenshot`}
+      aria-label="Enlarge featured image"
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M8 2h4v4M6 12H2V8M12 2 8.2 5.8M2 12l3.8-3.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="rs-gallery-enlarge-label">Enlarge</span>
+    </button>
+    {videoUrl && (
+      <div class="video-review-trigger-wrap">
+        <button
+          type="button"
+          class="video-review-trigger"
+          data-video-review-open
+          aria-haspopup="dialog"
+          aria-label="Watch full video review"
+        >
+          <span class="video-review-trigger__mascot" aria-hidden="true">
+            <img src="/images/brand/herman-carter.webp" alt="" width="42" height="42" />
+            <span class="video-review-trigger__play" aria-hidden="true">
+              <svg width="9" height="10" viewBox="0 0 9 10" fill="none">
+                <path d="M8 4.5 1.25 8.4V.6 4.5Z" fill="#fff"/>
+              </svg>
+            </span>
+          </span>
+          <svg class="video-review-trigger__yt" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path d="M16.2 5.4a2.1 2.1 0 0 0-1.48-1.48C13.5 3.6 9 3.6 9 3.6s-4.5 0-5.72.32A2.1 2.1 0 0 0 1.8 5.4 22 22 0 0 0 1.5 9a22 22 0 0 0 .3 3.6 2.1 2.1 0 0 0 1.48 1.48C4.5 14.4 9 14.4 9 14.4s4.5 0 5.72-.32A2.1 2.1 0 0 0 16.2 12.6 22 22 0 0 0 16.5 9a22 22 0 0 0-.3-3.6Z" stroke="#f7f7f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="m7.5 11.25 3.75-2.25L7.5 6.75v4.5Z" stroke="#f7f7f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="video-review-trigger__label video-review-trigger__label--desktop">Watch full video review</span>
+          <span class="video-review-trigger__label video-review-trigger__label--mobile">Watch video review</span>
+          <svg class="video-review-trigger__arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M6 3.5 11 8l-5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    )}
+    {images.length > 1 && (
+      <script type="application/json" data-gallery-images set:html={JSON.stringify(images)} />
+    )}
   </div>
-
-  {
-    !singleImage && (
-  <div class="relative">
-    <div class="flex overflow-x-auto gap-2 pb-1 no-scrollbar" data-thumb-track>
-      {
-        images.map((image, i) => {
-          const isVideo = (image.mediaType ?? 'image') === 'video';
-          const thumbSrc = isVideo
-            ? image.thumb
-            : optimizedImageUrl(image.thumb, { width: 112, quality: 82 });
-          const mainSrc = isVideo ? image.full : optimizedHeroImageUrl(image.full);
-          return (
-            <button
-              type="button"
-              data-thumb
-              data-full={image.full}
-              data-main-src={mainSrc}
-              data-alt={image.alt}
-              data-media-type={image.mediaType ?? 'image'}
-              aria-current={image.full === hero?.full ? 'true' : 'false'}
-              aria-label={`Show ${isVideo ? 'video' : 'image'} ${i + 1}`}
-              class="thumb relative flex-none w-24 h-16 sm:w-28 sm:h-18 rounded-lg overflow-hidden"
-            >
-              {
-                isVideo ? (
-                  <>
-                    <video
-                      src={image.thumb}
-                      class="w-full h-full object-cover pointer-events-none"
-                      muted
-                      playsinline
-                      preload="metadata"
-                      aria-hidden="true"
-                    />
-                    <span class="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
-                      <span class="material-symbols-outlined text-white text-xl drop-shadow">play_circle</span>
-                    </span>
-                  </>
-                ) : (
-                  <img
-                    alt={image.alt}
-                    class="w-full h-full object-cover"
-                    src={thumbSrc}
-                    width="112"
-                    height="72"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )
-              }
-            </button>
-          );
-        })
-      }
-    </div>
-  </div>
-    )
-  }
-</div>
-
-<style>
-  .thumb {
-    border: 1px solid var(--color-surface-variant);
-    transition: border-color 0.15s ease;
-  }
-  .thumb[aria-current='true'] {
-    border: 2px solid var(--color-primary-container);
-  }
-</style>
-
-<script>
-  document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((root) => {
-    if (root.dataset.bound === 'true') return;
-    root.dataset.bound = 'true';
-
-    const mainImg = root.querySelector<HTMLImageElement>('[data-gallery-main-img]');
-    const mainVideo = root.querySelector<HTMLVideoElement>('[data-gallery-main-video]');
-    const playOverlay = root.querySelector<HTMLElement>('[data-gallery-play-overlay]');
-    const actionIcon = root.querySelector<HTMLElement>('[data-gallery-action-icon]');
-    const actionLabel = root.querySelector<HTMLElement>('[data-gallery-action-label]');
-    const mainTrigger = root.querySelector<HTMLButtonElement>('[data-gallery-main-trigger]');
-    const thumbs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-thumb]'));
-
-    function setMain(full: string, alt: string, mediaType: string, mainSrc?: string) {
-      const isVideo = mediaType === 'video';
-      if (mainImg) {
-        if (isVideo) {
-          mainImg.classList.add('hidden');
-          mainImg.removeAttribute('src');
-          mainImg.removeAttribute('srcset');
-        } else {
-          mainImg.classList.remove('hidden');
-          mainImg.src = mainSrc || full;
-          mainImg.removeAttribute('srcset');
-          mainImg.alt = alt;
-        }
-      }
-      if (mainVideo) {
-        if (isVideo) {
-          mainVideo.classList.remove('hidden');
-          mainVideo.src = full;
-          mainVideo.setAttribute('aria-label', alt || 'Gallery video');
-        } else {
-          mainVideo.pause();
-          mainVideo.classList.add('hidden');
-          mainVideo.removeAttribute('src');
-        }
-      }
-      playOverlay?.classList.toggle('hidden', !isVideo);
-      if (actionIcon) actionIcon.textContent = isVideo ? 'play_arrow' : 'zoom_in';
-      if (actionLabel) actionLabel.textContent = isVideo ? 'Play' : 'Enlarge';
-      if (mainTrigger) {
-        mainTrigger.disabled = false;
-        mainTrigger.classList.add('cursor-zoom-in');
-        mainTrigger.classList.remove('cursor-default');
-        mainTrigger.dataset.lightboxOpen = full;
-        mainTrigger.dataset.lightboxAlt = alt;
-        mainTrigger.dataset.lightboxType = mediaType;
-      }
-
-    }
-
-    thumbs.forEach((thumb) => {
-      thumb.addEventListener('click', () => {
-        const full = thumb.dataset.full ?? '';
-        const alt = thumb.dataset.alt ?? '';
-        const mediaType = thumb.dataset.mediaType ?? 'image';
-        const mainSrc = thumb.dataset.mainSrc;
-        setMain(full, alt, mediaType, mainSrc);
-        thumbs.forEach((t) => t.setAttribute('aria-current', 'false'));
-        thumb.setAttribute('aria-current', 'true');
-      });
-    });
-
-  });
-</script>
+)}
