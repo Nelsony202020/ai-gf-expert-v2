@@ -1071,13 +1071,13 @@ html[data-theme='dark'] .guide-hub__search-item {
 }
 
 html[data-theme='dark'] .guide-hub__search-item:hover,
+html[data-theme='dark'] .guide-hub__search-item.is-active {
+  background: var(--hub-row-hover);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .guide-hub__scroll-cta,
   .guide-hub__sticky-bar {
     transition: none;
   }
-}
-
-html[data-theme='dark'] .guide-hub__search-item.is-active {
-  background: var(--hub-row-hover);
 }
