@@ -312,9 +312,15 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
 
   function initProductStickyCtas() {
     const sentinel = document.querySelector('[data-hub-product-sentinel]');
-    const mobileDock = document.querySelector('[data-hub-scroll-cta]');
-    const desktopBar = document.querySelector('[data-hub-sticky-bar]');
     if (!sentinel) return;
+
+    function getMobileDock() {
+      return document.querySelector('[data-hub-scroll-cta]');
+    }
+
+    function getDesktopBar() {
+      return document.querySelector('[data-hub-sticky-bar]');
+    }
 
     const alreadyBound = sentinel.dataset.stickyBound === 'true';
     if (alreadyBound) {
@@ -322,6 +328,8 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
       const inView = rect.top < window.innerHeight && rect.bottom > 0;
       const mobileMq = window.matchMedia('(max-width: 767px)');
       const showSticky = !inView;
+      const mobileDock = getMobileDock();
+      const desktopBar = getDesktopBar();
       if (mobileMq.matches) {
         if (mobileDock) {
           mobileDock.classList.toggle('is-visible', showSticky);
@@ -338,12 +346,14 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
     const mobileMq = window.matchMedia('(max-width: 767px)');
 
     function setMobile(show) {
+      const mobileDock = getMobileDock();
       if (!mobileDock) return;
       mobileDock.classList.toggle('is-visible', show);
       mobileDock.setAttribute('aria-hidden', show ? 'false' : 'true');
     }
 
     function setDesktop(show) {
+      const desktopBar = getDesktopBar();
       if (!desktopBar) return;
       desktopBar.classList.toggle('is-visible', show);
       desktopBar.setAttribute('aria-hidden', show ? 'false' : 'true');
@@ -377,12 +387,16 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
     });
   }
 
-  initHubSearch();
-  initTopics();
-  initProductStickyCtas();
-  document.addEventListener('astro:page-load', () => {
+  function initOurDreamHubPage() {
     initHubSearch();
     initTopics();
     initProductStickyCtas();
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initOurDreamHubPage, { once: true });
+  } else {
+    initOurDreamHubPage();
+  }
+  document.addEventListener('astro:page-load', initOurDreamHubPage);
 </script>
