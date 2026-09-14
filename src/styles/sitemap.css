@@ -433,6 +433,10 @@
   letter-spacing: -0.1px;
 }
 
+.si-results-title[hidden] {
+  display: none !important;
+}
+
 @media (min-width: 768px) {
   .si-results-title {
     font-size: 21px;
@@ -619,7 +623,7 @@
 }
 
 .si-explore-wrap {
-  padding: 2.5rem 0 0;
+  padding: 0;
 }
 
 .si-explore-wrap .si-h2 {
@@ -629,6 +633,7 @@
 @media (min-width: 768px) {
   .si-explore-wrap .si-h2 {
     margin-top: 0;
+    margin-bottom: 1.75rem;
   }
 }
 
@@ -638,7 +643,7 @@
 
 .si-explore-grid {
   display: grid;
-  gap: 1.75rem;
+  gap: 1.75rem 0;
 }
 
 @media (min-width: 768px) {
@@ -651,6 +656,7 @@
   .si-explore-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1.5rem;
+    column-gap: 1.5rem;
   }
 }
 

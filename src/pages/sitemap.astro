@@ -77,8 +77,8 @@ const pageSearchClass = isSearching
     <div class="si-body">
       <section class="si-results" data-search-results hidden={!isSearching} aria-live="polite">
         <div class="si-results-head">
-          <h2 data-search-heading>{hasResults ? `${initialHits.length} results for “${requestedQuery}”` : ""}</h2>
-          <button type="button" data-search-clear-text>Clear search</button>
+          <h2 class="si-results-title" data-search-heading hidden={!hasResults}>{hasResults ? `${initialHits.length} results for “${requestedQuery}”` : ""}</h2>
+            <button type="button" class="si-clear-link" data-search-clear-text>Clear search</button>
         </div>
         <div class="si-results-list" data-search-list>
           {initialHits.map((hit, index) => (
@@ -104,7 +104,7 @@ const pageSearchClass = isSearching
             {isSearching && !hasResults ? `No pages found for “${requestedQuery}”` : ""}
           </p>
           <p class="si-empty-copy">Try another word, or browse the index below.</p>
-          <button type="button" data-search-clear-empty>Clear search</button>
+            <button type="button" class="si-empty-btn" data-search-clear-empty>Clear search</button>
         </div>
       </section>
 
@@ -123,9 +123,7 @@ const pageSearchClass = isSearching
 
         <SitemapTestMethodology page={page} />
 
-        <div class="si-resources-wrap">
-          <SitemapResourcesLegal page={page} />
-        </div>
+      <SitemapResourcesLegal page={page} />
       </div>
     </div>
   </div>
@@ -197,7 +195,15 @@ const pageSearchClass = isSearching
       countEl.hidden = false;
       countEl.textContent = matched.length ? `${matched.length} results` : "No results";
     }
-    if (heading) heading.textContent = `${matched.length} results for “${q}”`;
+    if (heading) {
+      if (matched.length === 0) {
+        heading.hidden = true;
+        heading.textContent = "";
+      } else {
+        heading.hidden = false;
+        heading.textContent = `${matched.length} results for “${q}”`;
+      }
+    }
     const clearLabel = window.matchMedia("(max-width: 767px)").matches ? "Clear" : "Clear search";
     document.querySelectorAll("[data-search-clear-text]").forEach((node) => {
       node.textContent = clearLabel;
