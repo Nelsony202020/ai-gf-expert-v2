@@ -707,7 +707,7 @@ function verdictCmsField(
   id="verdict-overview-data"
   set:html={JSON.stringify({
     verdictMeta: verdictEntries.map((v) => ({ id: v.id, label: v.label })),
-    defaultVerdictId: defaultVerdict.id,
+    defaultVerdictId: defaultVerdict?.id ?? '',
   })}
 />
 <script>
