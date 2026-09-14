@@ -61,7 +61,7 @@ export function getActiveBottomNavItem(pathname: string): BottomNavId | null {
   return null;
 }
 
-/** Bottom nav on hub/listing pages; hidden on article-style pages. */
-export function showMobileBottomNav(_mode: MobileNavMode, pathname: string): boolean {
-  return !isArticleLikePath(pathname);
+/** Global floating bottom nav is retired; guide/article rails keep their own sheets. */
+export function showMobileBottomNav(_mode: MobileNavMode, _pathname?: string): boolean {
+  return false;
 }

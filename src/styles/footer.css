@@ -12,7 +12,7 @@
 .site-footer__container {
   max-width: 80rem;
   padding-top: 5.5rem;
-  padding-bottom: 2rem;
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
 }
 
 .site-footer__top {

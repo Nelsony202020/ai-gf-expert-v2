@@ -362,7 +362,9 @@
   width: 100%;
   max-width: 1040px;
   margin: 0 auto;
-  padding: 48px 20px calc(88px + env(safe-area-inset-bottom, 0px));
+  padding: 48px 20px calc(80px + env(safe-area-inset-bottom, 0px));
+  border-radius: 0;
+  background: color-mix(in srgb, var(--hub-page) 94%, transparent);
 }
 
 .guide-hub__section + .guide-hub__section {
