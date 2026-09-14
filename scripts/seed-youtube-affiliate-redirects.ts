@@ -24,6 +24,13 @@ const LINKS: Spec[] = [
     ageGate: false,
   },
   {
+    cloakedSlug: 'girlfriendgpt-youtube',
+    destinationUrl: 'https://aigirlfriend.expert/guides/ourdream-ai/',
+    productSlug: 'girlfriendgpt',
+    notes: 'YouTube traffic via /go/girlfriendgpt-youtube (OurDream hub for now)',
+    ageGate: false,
+  },
+  {
     cloakedSlug: 'girlfriendgpt-quiz-youtube',
     destinationUrl: 'https://www.gptgirlfriend.online/?ref=njjhywm&tm_datingtoolsai=datingtoolsai',
     productSlug: 'girlfriendgpt',

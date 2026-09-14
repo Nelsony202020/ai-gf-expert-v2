@@ -37,29 +37,37 @@ const SLUG_ALIASES: Record<string, string> = {
   'ourdream-ai-youtube': 'ourdream-ai-yt',
 };
 
-/** One-time DB sync: legacy Candy YouTube link still pointed at candy.ai in production. */
-const CANDY_AI_YOUTUBE_GUIDE = 'https://aigirlfriend.expert/guides/ourdream-ai/';
+const OURDREAM_AI_HUB = 'https://aigirlfriend.expert/guides/ourdream-ai/';
 
-function candyYoutubeGuideDestination(
+/** YouTube /go slugs temporarily routed to the OurDream hub (editable in admin). */
+const OURDREAM_HUB_YOUTUBE_SLUGS = new Set(['candy-ai-youtube', 'girlfriendgpt-youtube']);
+
+function normalizeRedirectUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    parsed.hash = '';
+    const path = parsed.pathname.replace(/\/+$/, '') || '/';
+    return `${parsed.protocol}//${parsed.host}${path}${parsed.search}`;
+  } catch {
+    return url.trim().replace(/\/+$/, '');
+  }
+}
+
+function resolveOurdreamHubYoutubeDestination(
   slug: string,
   link: { id: string; destinationUrl?: string | null },
   db: ReturnType<typeof getDb>,
 ): string {
   const raw = String(link.destinationUrl ?? '');
-  if (slug !== 'candy-ai-youtube') return raw;
-  try {
-    const host = new URL(raw).hostname.replace(/^www\./i, '').toLowerCase();
-    if (host !== 'candy.ai') return raw;
-  } catch {
-    return raw;
-  }
+  if (!OURDREAM_HUB_YOUTUBE_SLUGS.has(slug)) return raw;
+  if (normalizeRedirectUrl(raw) === normalizeRedirectUrl(OURDREAM_AI_HUB)) return raw;
   db.transact(
     db.tx.affiliateLinks[link.id].update({
-      destinationUrl: CANDY_AI_YOUTUBE_GUIDE,
+      destinationUrl: OURDREAM_AI_HUB,
       ageGate: false,
     }),
   ).catch(() => {});
-  return CANDY_AI_YOUTUBE_GUIDE;
+  return OURDREAM_AI_HUB;
 }
 
 export const GET: APIRoute = async ({ params, url }) => {
@@ -86,7 +94,7 @@ export const GET: APIRoute = async ({ params, url }) => {
     return redirectTo('/');
   }
 
-  const destinationUrl = candyYoutubeGuideDestination(slug, link, db);
+  const destinationUrl = resolveOurdreamHubYoutubeDestination(slug, link, db);
   if (!isSafeHttpUrl(destinationUrl)) {
     return redirectTo('/');
   }
