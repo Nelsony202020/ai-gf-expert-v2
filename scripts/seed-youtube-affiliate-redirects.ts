@@ -15,7 +15,15 @@ type Spec = {
   ageGate?: boolean;
 };
 
+const OURDREAM_YT_DEST = 'https://www.ourdreamersai13.com/9776S5J/3QQG7/?uid=540';
+
 const LINKS: Spec[] = [
+  {
+    cloakedSlug: 'ourdream-ai-yt',
+    destinationUrl: OURDREAM_YT_DEST,
+    productSlug: 'ourdream-ai',
+    notes: 'OurDream YouTube traffic (uid=540). Also /go/ourdream-ai-youtube alias.',
+  },
   {
     cloakedSlug: 'candy-ai-youtube',
     destinationUrl: 'https://aigirlfriend.expert/guides/ourdream-ai/',

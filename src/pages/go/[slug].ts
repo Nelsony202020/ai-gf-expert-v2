@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { getDb, isDbConfigured } from '../../lib/db/server';
 import { affiliateRel } from '../../lib/affiliate/rel';
+import { ensureOurdreamYtAffiliateLink } from '../../lib/affiliate/ourdreamYtLink';
 import {
   isSafeHttpUrl,
   isSameSiteDestination,
@@ -89,7 +90,11 @@ export const GET: APIRoute = async ({ params, url }) => {
   const { affiliateLinks } = await db.query({
     affiliateLinks: { $: { where: { cloakedSlug: slug } }, product: {} },
   });
-  const link = affiliateLinks[0] as (typeof affiliateLinks)[0] & {
+  let link = (await ensureOurdreamYtAffiliateLink(
+    db,
+    slug,
+    affiliateLinks[0] as Parameters<typeof ensureOurdreamYtAffiliateLink>[2],
+  ) ?? affiliateLinks[0]) as (typeof affiliateLinks)[0] & {
     product?: { youtubeReviewUrl?: string | null } | { youtubeReviewUrl?: string | null }[];
   };
 
