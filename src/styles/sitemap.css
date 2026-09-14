@@ -311,7 +311,7 @@
   }
 }
 
-.si-is-searching .si-chips {
+.si-page.si-is-searching .si-chips {
   display: none;
 }
 
@@ -1177,7 +1177,7 @@
 }
 
 .si-cat-panel[hidden] {
-  display: none;
+  display: none !important;
 }
 
 .si-sub + .si-sub {
@@ -1248,6 +1248,10 @@
   flex-wrap: wrap;
   gap: 24px;
   padding: 4px 0 16px;
+}
+
+.si-tests[hidden] {
+  display: none !important;
 }
 
 .si-test-link {

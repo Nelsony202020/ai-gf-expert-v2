@@ -155,40 +155,39 @@ const chips = [
   }
 
     function render(query: string) {
-      const q = query.trim();
-      const pageEl = document.querySelector(".si-page");
-      if (!q) {
-        setSearching(false);
-        pageEl?.classList.remove("si-is-searching", "si-has-results", "si-no-results");
-        results?.setAttribute("hidden", "");
-        directory?.removeAttribute("hidden");
-        if (list) list.innerHTML = "";
-        return;
-      }
+    const q = query.trim();
+    const pageEl = document.querySelector(".si-page");
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    if (clearLabel) {
+      clearLabel.textContent = isMobile ? "Clear" : "Clear search";
+    }
 
-      setSearching(true);
-      const matched = filterSitemapSearchHits(q, hits);
-      const n = matched.length;
-      pageEl?.classList.add("si-is-searching");
-      pageEl?.classList.toggle("si-has-results", n > 0);
-      pageEl?.classList.toggle("si-no-results", n === 0);
-      directory?.setAttribute("hidden", "");
-      results?.removeAttribute("hidden");
-      if (!n) {
-        list?.setAttribute("hidden", "");
-        empty?.removeAttribute("hidden");
-        if (emptyTitle) emptyTitle.textContent = `No pages found for “${q}”`;
-        return;
-      }
+    if (!q) {
+      setSearching(false);
+      pageEl?.classList.remove("si-is-searching", "si-has-results", "si-no-results");
+      results?.setAttribute("hidden", "");
+      directory?.removeAttribute("hidden");
+      if (list) list.innerHTML = "";
+      if (countEl) countEl.textContent = "";
       empty?.setAttribute("hidden", "");
-      list?.removeAttribute("hidden");
+      return;
+    }
+
+    setSearching(true);
+    const matched = filterSitemapSearchHits(q, hits);
+    const n = matched.length;
+    pageEl?.classList.add("si-is-searching");
+    pageEl?.classList.toggle("si-has-results", n > 0);
+    pageEl?.classList.toggle("si-no-results", n === 0);
+    directory?.setAttribute("hidden", "");
+    results?.removeAttribute("hidden");
 
     if (countEl) countEl.textContent = n ? `${n} results` : "No results";
     if (heading) heading.textContent = `${n} results for “${q}”`;
-    if (clearLabel) clearLabel.textContent = window.matchMedia("(max-width: 767px)").matches ? "Clear" : "Clear search";
 
     if (!n) {
       list?.setAttribute("hidden", "");
+      if (list) list.innerHTML = "";
       empty?.removeAttribute("hidden");
       if (emptyTitle) emptyTitle.textContent = `No pages found for “${q}”`;
       return;
@@ -199,67 +198,48 @@ const chips = [
     if (!list) return;
     list.innerHTML = matched
       .map(
-        (hit, i) => `
-      <a class="si-hit${i === 0 ? " is-active" : ""}" href="${hit.href}">
-        <span class="si-hit-kind">${hit.location}</span>
-        <span class="si-hit-row">
-          <span class="si-hit-title">${hit.title}</span>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 3l6 5-6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
-      </a>`,
+        (hit, index) => `
+      <li>
+        <a href="${escapeHtml(hit.href)}" class="si-result${index === 0 ? " is-active" : ""}">
+          <span class="si-result-kind">${escapeHtml(hit.kind)}</span>
+          <span class="si-result-row">
+            <span class="si-result-title">${escapeHtml(hit.title)}</span>
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.67 2 12 8l-7.33 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </a>
+      </li>`,
       )
       .join("");
   }
 
-  function clearSearch() {
-    if (!input) return;
-    input.value = "";
-    render("");
-    input.focus();
+  function applyQuery(query: string, push: boolean) {
+    render(query);
+    if (push) {
+      const url = new URL(window.location.href);
+      if (query) url.searchParams.set("q", query);
+      else url.searchParams.delete("q");
+      window.history.replaceState({}, "", url);
+    }
   }
 
-  input?.addEventListener("input", () => render(input.value));
-  document.querySelectorAll("[data-search-clear], [data-search-clear-text], [data-search-clear-empty]").forEach((el) => {
-    el.addEventListener("click", clearSearch);
-  });
+  function escapeHtml(value: string) {
+    return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char] ?? char);
+  }
 
-  document.addEventListener("keydown", (event) => {
+  input.addEventListener("input", () => applyQuery(input.value, true));
+  clearBtn?.addEventListener("click", () => { input.value = ""; applyQuery("", true); input.focus(); });
+  document.querySelectorAll("[data-search-clear-text], [data-search-clear-empty]").forEach((el) => {
+    el.addEventListener("click", () => { input.value = ""; applyQuery("", true); input.focus(); });
+  });
+  window.addEventListener("keydown", (event) => {
     if (event.key === "/" && document.activeElement !== input && !(event.target instanceof HTMLInputElement) && !(event.target instanceof HTMLTextAreaElement)) {
       event.preventDefault();
-      input?.focus();
+      input.focus();
     }
-    if (event.key === "Escape" && input?.value) {
-      clearSearch();
+    if (event.key === "Escape" && document.activeElement === input) {
+      input.value = "";
+      applyQuery("", true);
     }
   });
-
-  document.querySelectorAll("[data-category-toggle]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const cat = button.closest("[data-category]");
-      const wasOpen = cat?.getAttribute("data-open") === "true";
-      document.querySelectorAll("[data-category]").forEach((node) => {
-        node.setAttribute("data-open", "false");
-        node.classList.remove("is-open");
-        node.querySelector("[data-category-toggle]")?.setAttribute("aria-expanded", "false");
-        node.querySelector("[data-panel]")?.setAttribute("hidden", "");
-      });
-      if (!wasOpen && cat) {
-        cat.setAttribute("data-open", "true");
-        cat.classList.add("is-open");
-        button.setAttribute("aria-expanded", "true");
-        cat.querySelector("[data-panel]")?.removeAttribute("hidden");
-      }
-    });
-  });
-
-  document.querySelectorAll("[data-subcategory-toggle]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const expanded = button.getAttribute("aria-expanded") === "true";
-      const tests = button.closest("[data-subcategory]")?.querySelector("[data-tests]");
-      button.setAttribute("aria-expanded", expanded ? "false" : "true");
-      tests?.toggleAttribute("hidden", expanded);
-    });
-  });
+  applyQuery(new URLSearchParams(window.location.search).get("q") ?? "", false);
 </script>
