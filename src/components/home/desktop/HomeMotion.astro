@@ -189,11 +189,139 @@
     observer.observe(wrap);
   }
 
+  function initHermanBadge() {
+    const root = document.querySelector<HTMLElement>('[data-home-badge]');
+    if (!root || root.dataset.badgeBound === 'true') return;
+    root.dataset.badgeBound = 'true';
+
+    const toggle = root.querySelector<HTMLButtonElement>('[data-home-badge-toggle]');
+    const link = root.querySelector<HTMLAnchorElement>('[data-home-badge-link]');
+    const back = root.querySelector<HTMLElement>('.home-v2__badge-face--back');
+    if (!toggle) return;
+
+    const fineHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const showLabel = root.dataset.labelShow || 'Show current number one ranked app';
+    const hideLabel = root.dataset.labelHide || 'Show Herman';
+    let nudged = false;
+
+    const setOpen = (open: boolean) => {
+      root.classList.toggle('is-flipped', open);
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.setAttribute('aria-label', open ? hideLabel : showLabel);
+    };
+
+    const pointerInsideCircle = (event: PointerEvent | MouseEvent) => {
+      const box = root.getBoundingClientRect();
+      const dx = event.clientX - (box.left + box.width / 2);
+      const dy = event.clientY - (box.top + box.height / 2);
+      const radius = Math.min(box.width, box.height) / 2;
+      return dx * dx + dy * dy <= radius * radius;
+    };
+
+    const closeFromCoordinates = (event: { clientX: number; clientY: number }) => {
+      if (!root.classList.contains('is-flipped')) return;
+      if (pointerInsideCircle(event)) return;
+      setOpen(false);
+    };
+
+    const closeIfPointerLeft = (event: PointerEvent | MouseEvent) => {
+      if (!root.classList.contains('is-flipped')) return;
+      if ('pointerType' in event && event.pointerType === 'touch') return;
+      closeFromCoordinates(event);
+    };
+
+    toggle.addEventListener('click', (event) => {
+      event.preventDefault();
+      setOpen(!root.classList.contains('is-flipped'));
+    });
+
+    link?.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+    link?.addEventListener('pointerdown', (event) => {
+      event.stopPropagation();
+    });
+
+    root.addEventListener('pointerleave', closeIfPointerLeft);
+    root.addEventListener('mouseleave', closeIfPointerLeft);
+
+    document.addEventListener('pointermove', (event) => {
+      if (event.pointerType === 'touch') return;
+      closeFromCoordinates(event);
+    });
+    document.addEventListener('mousemove', closeFromCoordinates);
+
+    document.addEventListener(
+      'pointerover',
+      (event) => {
+        if (!root.classList.contains('is-flipped')) return;
+        if (event.pointerType === 'touch') return;
+        if (root.contains(event.target as Node)) return;
+        setOpen(false);
+      },
+      true,
+    );
+
+    document.addEventListener('pointerdown', (event) => {
+      if (!root.classList.contains('is-flipped')) return;
+      if (root.contains(event.target as Node)) return;
+      if (event.pointerType === 'touch') return;
+      setOpen(false);
+    });
+
+    back?.addEventListener('click', (event) => {
+      if (fineHover) return;
+      if ((event.target as HTMLElement).closest('[data-home-badge-link]')) return;
+      setOpen(false);
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (fineHover || event.pointerType === 'mouse') return;
+      if (!root.classList.contains('is-flipped')) return;
+      if (root.contains(event.target as Node)) return;
+      setOpen(false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && root.classList.contains('is-flipped')) setOpen(false);
+    });
+
+    const hero = document.getElementById('home-hero');
+    if (hero) {
+      const heroIo = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (!entry || entry.intersectionRatio >= 0.2) return;
+          setOpen(false);
+        },
+        { threshold: [0, 0.2] },
+      );
+      heroIo.observe(hero);
+    }
+
+    if (prefersReducedMotion() || fineHover) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (nudged || root.classList.contains('is-flipped')) return;
+        const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.45);
+        if (!visible) return;
+        nudged = true;
+        root.classList.add('is-nudging');
+        window.setTimeout(() => root.classList.remove('is-nudging'), 680);
+        io.disconnect();
+      },
+      { threshold: [0.45, 0.7] },
+    );
+    io.observe(root);
+  }
+
   function init() {
     initPointerGlows();
     initReveals();
     initSelectorMotion();
     initMethodVideo();
+    initHermanBadge();
   }
 
   init();

@@ -1,16 +1,16 @@
-/* Site-wide dark mode — slate-blue palette (matches admin dashboard).
+/* Site-wide dark mode — charcoal / near-black.
    Loaded last so it wins over scoped Astro component styles. */
 
 html[data-theme='dark'] {
-  --roundup-header-bg: #0f172a;
-  --site-header-bg: #0f172a;
-  --site-header-border: #1e293b;
+  --roundup-header-bg: #161619;
+  --site-header-bg: #101014;
+  --site-header-border: rgb(255 255 255 / 8%);
 }
 
 html[data-theme='dark'] body,
 html[data-theme='dark'] body.bg-white {
-  background-color: #020617 !important;
-  color: #f1f5f9;
+  background-color: var(--color-background) !important;
+  color: var(--color-on-surface);
 }
 
 /* Header / footer chrome — frosted glass (tokens in header.css) */
@@ -21,7 +21,7 @@ html[data-theme='dark'] .site-header {
 
 html[data-theme='dark'] .site-header__mobile-menu {
   background: var(--color-header-surface) !important;
-  border-top-color: #1e293b !important;
+  border-top-color: var(--dark-border) !important;
 }
 
 html[data-theme='dark'] .site-footer {
@@ -51,7 +51,7 @@ html[data-theme='dark'] .site-footer__bottom {
 
 /* Roundup blocks that used green-tinted header bg variable */
 html[data-theme='dark'] .roundup-page {
-  --roundup-header-bg: #0f172a;
+  --roundup-header-bg: #161619;
 }
 
 /* Lime detail-level tab → pink in dark mode */
@@ -63,7 +63,7 @@ html[data-theme='dark'] .detail-level-tab[aria-selected='true'] {
 
 /* Green-tinted surface fallbacks used in component CSS */
 html[data-theme='dark'] .border-surface-variant {
-  border-color: #1e293b;
+  border-color: var(--dark-border);
 }
 
 html[data-theme='dark'] .bg-surface-container-low,

@@ -1,6 +1,10 @@
 ---
 import ThemeToggle from '../ui/ThemeToggle.astro';
+import { buildBrandNav } from '../../data/brand-nav';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 
+const publishedProducts = await loadComparisonProducts();
+const brandNav = buildBrandNav(publishedProducts);
 ---
 
 <div class="mobile-sheet mobile-more-sheet" data-mobile-more-sheet hidden aria-hidden="true">
@@ -36,6 +40,22 @@ import ThemeToggle from '../ui/ThemeToggle.astro';
         <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
         Back to top
       </button>
+
+      <div class="mobile-sheet__divider"></div>
+
+      <p class="mobile-sheet__section-label">Brands</p>
+      {brandNav.popular.map((brand) => (
+        <a href={brand.href} class="mobile-sheet__link">
+          <span class="material-symbols-outlined" aria-hidden="true">apps</span>
+          {brand.name}
+        </a>
+      ))}
+      {brandNav.viewAll ? (
+        <a href={brandNav.viewAll.href} class="mobile-sheet__link">
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+          {brandNav.viewAll.label}
+        </a>
+      ) : null}
 
       <div class="mobile-sheet__divider"></div>
 
