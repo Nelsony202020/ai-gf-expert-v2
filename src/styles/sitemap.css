@@ -1,6 +1,7 @@
 /* Site Index — visual tokens from Figma AIGE-EX node 501:2082 */
 
 .si-page {
+  padding-bottom: calc(var(--mobile-nav-bar-height, 4rem) + env(safe-area-inset-bottom, 0px));
   --si-ink: #141317;
   --si-muted: #55545b;
   --si-faint: #8a8991;
@@ -28,6 +29,7 @@
 @media (min-width: 768px) {
   .si-page {
     --si-gutter: 2.5rem;
+    padding-bottom: 0;
   }
 }
 
@@ -607,6 +609,35 @@
 
 .si-empty .si-clear-link svg {
   display: none;
+}
+
+.si-empty[hidden] {
+  display: none !important;
+}
+
+.si-empty-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  margin-top: 12px;
+  padding: 0 18px;
+  border: 1.5px solid var(--si-ink);
+  border-radius: 999px;
+  background: var(--si-white);
+  font: 600 14px/18px var(--si-sans);
+  letter-spacing: -0.1px;
+  color: var(--si-ink);
+  cursor: pointer;
+}
+
+.si-empty-btn:hover {
+  background: var(--si-surface);
+}
+
+.si-empty-btn:focus-visible {
+  outline: 2px solid var(--si-pink);
+  outline-offset: 2px;
 }
 
 /* ——— Explore / Resources columns ——— */
