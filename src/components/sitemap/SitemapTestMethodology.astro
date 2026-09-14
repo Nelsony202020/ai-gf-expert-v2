@@ -1,127 +1,84 @@
 ---
-import type { TestCategoryNode } from '../../lib/test-framework';
-import {
-  distributeTestCategoryColumns,
-  testMainMethodologyLinks,
-  testSupportingLinks,
-} from '../../lib/sitemap';
-import { getTestCategories } from '../../lib/test-framework';
+import SitemapTestCategory from "./SitemapTestCategory.astro";
+import type { HtmlSitemapFullPage } from "../../types/sitemap";
 
 interface Props {
-  count: number;
+  page: HtmlSitemapFullPage;
 }
 
-const { count } = Astro.props;
-
-const categories = getTestCategories();
-const columns = distributeTestCategoryColumns(categories);
+const { page } = Astro.props;
 ---
 
-<section class="sitemap-card sitemap-card--tests">
-  <div class="sitemap-card__head">
-    <span class="sitemap-card__icon sitemap-card__icon--blue">
-      <span class="material-symbols-outlined">science</span>
-    </span>
-    <h2 class="sitemap-card__title">Tests &amp; Methodology ({count})</h2>
+<section class="si-testing" id="si-testing">
+  <h2 class="si-h2">Testing &amp; Methodology</h2>
+  <p class="si-lede-sm">Explore how every AIGE score is calculated.</p>
+  <div class="si-stats">
+    <div class="si-stat">
+      <strong>{page.testingPagesCount}</strong>
+      <span>pages</span>
+    </div>
+    <div class="si-stat-rule" aria-hidden="true"></div>
+    <div class="si-stat">
+      <strong>{page.testingCategoriesCount}</strong>
+      <span>categories</span>
+    </div>
+    <div class="si-stat-rule" aria-hidden="true"></div>
+    <div class="si-stat">
+      <strong>{page.testingSubcategoriesCount}</strong>
+      <span>subcategories</span>
+    </div>
+    <div class="si-stat-rule" aria-hidden="true"></div>
+    <div class="si-stat">
+      <strong>{page.scoredTestsCount}</strong>
+      <span>scored tests</span>
+    </div>
   </div>
 
-  <p class="sitemap-tests__hint">
-    <span class="material-symbols-outlined" aria-hidden="true">info</span>
-    Click a name to open the page. Click the arrow beside it to expand scored tests.
-  </p>
+  <p class="si-kicker">Main methodology</p>
+  <div class="si-main">
+    {page.methodology.map((item, index) => (
+      <a class="si-main-row" href={item.href}>
+        <span class="si-main-num">{String(index + 1).padStart(2, "0")}</span>
+        <span class="si-main-copy">
+          <span class="si-main-title">{item.label}</span>
+          {item.description ? <span class="si-main-desc">{item.description}</span> : null}
+        </span>
+        <svg class="si-main-arrow" viewBox="0 0 13 12" fill="none" aria-hidden="true">
+          <path d="M5.25 0L10.5 5.25 5.25 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </a>
+    ))}
+  </div>
 
-  <div class="sitemap-tests__grid">
-    {
-      columns.map((colCategories, colIndex) => (
-        <div class:list={['sitemap-tests__col', colIndex < columns.length - 1 && 'sitemap-tests__col--divider']}>
-          {
-            colIndex === 0 && (
-              <div class="sitemap-tests__group">
-                <p class="sitemap-tests__label">Main methodology</p>
-                <ul class="sitemap-card__links">
-                  {
-                    testMainMethodologyLinks.map((link) => (
-                      <li>
-                        <a href={link.href} class="sitemap-card__link">
-                          <span>{link.label}</span>
-                          <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
-                        </a>
-                      </li>
-                    ))
-                  }
-                </ul>
-              </div>
-            )
-          }
+  <p class="si-kicker si-kicker-desk">All scored tests</p>
+  <p class="si-kicker si-kicker-mob">All scored tests, by category</p>
+  <div class="si-cats">
+    {page.testCategories.map((category) => (
+      <SitemapTestCategory category={category} />
+    ))}
+  </div>
 
-          {
-            colCategories.map((cat: TestCategoryNode) => (
-              <div class="sitemap-tests__group">
-                <p class="sitemap-tests__cat">
-                  <a href={cat.href}>{cat.name}</a>
-                </p>
-                {
-                  cat.subscores.map((sub) => (
-                    <details class="sitemap-tests__sub">
-                      <summary class="sitemap-tests__sub-summary">
-                        <a href={sub.href} class="sitemap-tests__sub-link">{sub.name}</a>
-                        <span class="sitemap-tests__expand" aria-hidden="true">
-                          <span class="material-symbols-outlined">chevron_right</span>
-                        </span>
-                      </summary>
-                      <ul class="sitemap-tests__evidence">
-                        {
-                          sub.contributors.map((c) => (
-                            <li>
-                              <a href={c.href} class="sitemap-card__link sitemap-card__link--compact">
-                                <span>{c.label}</span>
-                                <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
-                              </a>
-                            </li>
-                          ))
-                        }
-                      </ul>
-                    </details>
-                  ))
-                }
-              </div>
-            ))
-          }
-
-          {
-            colIndex === columns.length - 1 && (
-              <div class="sitemap-tests__group sitemap-tests__group--supporting">
-                <p class="sitemap-tests__label">Supporting methodology</p>
-                <ul class="sitemap-card__links">
-                  {
-                    testSupportingLinks.map((link) => (
-                      <li>
-                        <a href={link.href} class="sitemap-card__link">
-                          <span>{link.label}</span>
-                          <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
-                        </a>
-                      </li>
-                    ))
-                  }
-                </ul>
-              </div>
-            )
-          }
-        </div>
-      ))
-    }
+  <p class="si-kicker">Supporting methodology</p>
+  <div class="si-support">
+    <div class="si-support-col">
+      {page.supporting.slice(0, 2).map((item) => (
+        <a class="si-row si-row-ruled" href={item.href}>
+          <span>{item.label}</span>
+          <svg class="si-chev" viewBox="0 0 5 8.5" fill="none" aria-hidden="true">
+            <path d="M0 7L3.5 3.5 0 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
+      ))}
+    </div>
+    <div class="si-support-col">
+      {page.supporting.slice(2).map((item) => (
+        <a class="si-row si-row-ruled" href={item.href}>
+          <span>{item.label}</span>
+          <svg class="si-chev" viewBox="0 0 5 8.5" fill="none" aria-hidden="true">
+            <path d="M0 7L3.5 3.5 0 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
+      ))}
+    </div>
   </div>
 </section>
-
-<script>
-  function initSitemapTestLinks() {
-    document.querySelectorAll('.sitemap-tests__sub-link').forEach((link) => {
-      if (link.dataset.bound === 'true') return;
-      link.dataset.bound = 'true';
-      link.addEventListener('click', (e) => e.stopPropagation());
-    });
-  }
-
-  initSitemapTestLinks();
-  document.addEventListener('astro:page-load', initSitemapTestLinks);
-</script>

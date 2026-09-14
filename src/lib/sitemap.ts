@@ -1,7 +1,16 @@
-import type { HtmlSitemapFullPage, HtmlSitemapLink, SitemapEntry } from '../types/sitemap';
+import type {
+  HtmlSitemapExploreColumn,
+  HtmlSitemapFullPage,
+  HtmlSitemapLink,
+  HtmlSitemapMethodologyLink,
+  HtmlSitemapSearchHit,
+  HtmlSitemapTestCategory,
+  SitemapEntry,
+} from '../types/sitemap';
 import type { Product } from '../data/products';
-import { authors } from '../data/authors';
+import { getAllAuthors } from '../data/authors';
 import { guides } from '../data/guides';
+import { legalPages as publishedLegalPages } from '../data/legal-pages';
 import { products } from '../data/products';
 import { getTestCategories } from './test-framework';
 import { buyingGuideSlug } from '../data/buying-guide-content';
@@ -259,7 +268,7 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
     sitemapSection: 'resources',
   });
 
-  for (const author of Object.values(authors)) {
+  for (const author of getAllAuthors()) {
     push({
       title: author.name,
       url: author.profileUrl,
@@ -367,96 +376,6 @@ export function getChildSitemapEntries(
   }
   return result;
 }
-
-function dedupeLinks(items: HtmlSitemapLink[]): HtmlSitemapLink[] {
-  return [...new Map(items.map((l) => [normalizePath(l.href), l])).values()];
-}
-
-function entriesToLinks(items: SitemapEntry[]): HtmlSitemapLink[] {
-  return items.map((e) => ({ label: e.title, href: e.url }));
-}
-
-/** Distribute test categories across methodology columns (col 0 holds fewer cats). */
-export function distributeTestCategoryColumns(categories: ReturnType<typeof getTestCategories>) {
-  const cols: (typeof categories)[] = [[], [], [], [], []];
-
-  if (categories.length === 0) return cols;
-
-  // Column 0 is reserved for main methodology links only — categories start in column 1.
-  const bucketCount = cols.length - 1;
-  const perCol = Math.ceil(categories.length / bucketCount);
-
-  for (let c = 1; c < cols.length; c++) {
-    const start = (c - 1) * perCol;
-    cols[c] = categories.slice(start, start + perCol);
-  }
-
-  return cols;
-}
-
-export const testMainMethodologyLinks: HtmlSitemapLink[] = [
-  { label: 'How We Test AI Girlfriend Apps', href: testHubUrl() },
-  { label: 'Scoring System', href: `${testHubUrl()}#how-scores-work` },
-  { label: 'Testing Process Overview', href: `${testHubUrl()}#in-practice` },
-];
-
-export const testSupportingLinks: HtmlSitemapLink[] = [
-  { label: 'All Tests Directory', href: '/test/all/' },
-  { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
-  { label: 'Market Data Methodology', href: '/test/market-data/' },
-  { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
-];
-
-/**
- * Full HTML sitemap page data — every published, HTML-visible link. Pages set
- * to draft from the admin (inputs.excludePaths) are dropped, matching the XML
- * sitemaps.
- */
-export function buildFullHtmlSitemapPage(inputs: SitemapInputs = {}): HtmlSitemapFullPage {
-  const excludePaths = inputs.excludePaths;
-  const everyEntry = getAllSitemapEntries(inputs).filter(
-    (e) => !excludePaths?.has(normalizePath(e.url)),
-  );
-  // Card counts include deep pages (e.g. test subscores) even when the card
-  // itself only links to the parent level.
-  const testCount = everyEntry.filter((e) => e.sitemapSection === 'tests').length;
-  const all = everyEntry.filter((e) => e.showInHtmlSitemap);
-
-  const reviews = dedupeLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'reviews')));
-  const roundups = dedupeLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'roundups')));
-  const guides = dedupeLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'guides')));
-  const authors = dedupeLinks(entriesToLinks(all.filter((e) => e.sitemapSection === 'authors')));
-
-  const resources = dedupeLinks([
-    { label: 'How We Test', href: testHubUrl() },
-    { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
-    ...entriesToLinks(
-      all.filter(
-        (e) =>
-          e.sitemapSection === 'resources'
-          && e.contentType !== 'test-hub'
-          && e.url !== '/editorial-guidelines/',
-      ),
-    ),
-  ]);
-
-  const legal = dedupeLinks([
-    ...entriesToLinks(all.filter((e) => e.sitemapSection === 'legal')),
-    ...entriesToLinks(all.filter((e) => e.sitemapSection === 'company' && e.url !== '/')),
-  ]);
-
-  return {
-    reviews,
-    roundups,
-    guides,
-    authors,
-    testCount,
-    resourcesLegalCount: resources.length + legal.length,
-    resources,
-    legal,
-  };
-}
-
 /** The sitemap index served at /sitemap.xml — the only URL submitted to Google. */
 export function buildXmlSitemapIndex(siteOrigin: string): string {
   const origin = siteOrigin.replace(/\/$/, '');
@@ -492,3 +411,272 @@ function escapeXml(value: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 }
+
+function htmlSitemapExploreColumns(): HtmlSitemapExploreColumn[] {
+  return [
+    {
+      heading: 'Reviews',
+      count: 2,
+      links: [
+        { href: '/reviews/', label: 'All Reviews' },
+        { href: '/reviews/aura-ai/', label: 'Aura AI Review' },
+      ],
+    },
+    {
+      heading: 'Roundups',
+      count: 1,
+      links: [{ href: '/best-ai-girlfriend-apps/', label: 'Best AI Girlfriend Apps' }],
+    },
+    {
+      heading: 'Guides',
+      count: 7,
+      links: [
+        { href: '/guides/', label: 'All Guides' },
+        { href: '/guides/ourdream-ai/', label: 'OurDream AI Guides' },
+        { href: '/guides/how-to-choose-an-ai-girlfriend-app/', label: 'How to Choose an AI Girlfriend App' },
+        { href: '/guides/ourdream-ai-comics/', label: 'OurDream AI Comics' },
+        { href: '/guides/how-to-use-ourdream-ai-image-generator/', label: 'How to Use OurDream AI Image Generator' },
+        { href: '/guides/ourdream-ai-image-prompt-guide/', label: 'OurDream AI Image Prompt Guide' },
+        { href: '/guides/ourdream-ai-prompt-guide/', label: 'OurDream AI Prompt Guide' },
+      ],
+    },
+    {
+      heading: 'Authors',
+      count: getAllAuthors().length,
+      links: getAllAuthors().map((author) => ({
+        href: `/author/${author.slug}/`,
+        label: author.name,
+      })),
+    },
+  ];
+}
+
+function htmlSitemapMainMethodology(): HtmlSitemapMethodologyLink[] {
+  return [
+    {
+      href: '/how-we-test/',
+      label: 'How We Test AI Girlfriend Apps',
+      description: 'The full testing process, category by category.',
+    },
+    {
+      href: '/how-we-test/scoring/',
+      label: 'Scoring System',
+      description: 'How the 1–10 score and the eight categories are built.',
+    },
+    {
+      href: '/how-we-test/process/',
+      label: 'Testing Process Overview',
+      description: 'What happens from signing up to the final score.',
+    },
+  ];
+}
+
+function htmlSitemapSupportingMethodology(): HtmlSitemapLink[] {
+  return [
+    { href: '/test/all/', label: 'All Tests Directory' },
+    { href: '/how-we-test/score-tooltips/', label: 'How Score Tooltips Work' },
+    { href: '/methodology/market-data/', label: 'Market Data Methodology' },
+    { href: '/editorial-guidelines/', label: 'Editorial Guidelines' },
+  ];
+}
+
+function htmlSitemapResources(): HtmlSitemapExploreColumn {
+  const links = [
+    { href: '/how-we-test/', label: 'How We Test' },
+    { href: '/how-we-test/score-tooltips/', label: 'How Score Tooltips Work' },
+    { href: '/apps/', label: 'App Directory' },
+    { href: '/glossary/', label: 'AI Girlfriend Glossary' },
+  ];
+  return {
+    heading: 'Resources',
+    count: links.length,
+    links,
+  };
+}
+
+function htmlSitemapCompany(): HtmlSitemapExploreColumn {
+  const links = [
+    { href: '/about/', label: 'About Us' },
+    { href: '/contact/', label: 'Contact Us' },
+  ];
+  return {
+    heading: 'Company',
+    count: links.length,
+    links,
+  };
+}
+
+function htmlSitemapLegal(): HtmlSitemapLink[] {
+  return publishedLegalPages.map((page) => ({ href: page.href, label: page.title }));
+}
+
+function htmlSitemapTestCategories(): HtmlSitemapTestCategory[] {
+  return getTestCategories().map((category) => {
+    const subcategories = category.subscores.map((subscore) => ({
+      href: subscore.href,
+      label: subscore.name,
+      slug: subscore.slug,
+      testCount: subscore.contributors.length,
+      tests: subscore.contributors.map((test) => ({ href: test.href, label: test.label })),
+    }));
+
+    return {
+      slug: category.key,
+      href: category.href,
+      label: category.name,
+      testCount: subcategories.reduce((sum, item) => sum + item.testCount, 0),
+      subcategoryCount: subcategories.length,
+      subcategories,
+    };
+  });
+}
+
+function extraSearchHits(): HtmlSitemapSearchHit[] {
+  return [
+    { href: '/sitemap/', title: 'Site Index', kind: 'page', location: 'PAGE' },
+    { href: '/apps/', title: 'AI Girlfriend Apps', kind: 'page', location: 'DIRECTORY' },
+    { href: '/glossary/', title: 'AI Girlfriend Glossary', kind: 'page', location: 'RESOURCE' },
+    { href: '/about/', title: 'About Us', kind: 'page', location: 'COMPANY' },
+    { href: '/contact/', title: 'Contact Us', kind: 'page', location: 'COMPANY' },
+  ];
+}
+
+export function getHtmlSitemapPage(): HtmlSitemapFullPage {
+  const explore = htmlSitemapExploreColumns();
+  const reviews = explore.find((column) => column.heading === 'Reviews')!;
+  const roundups = explore.find((column) => column.heading === 'Roundups')!;
+  const guidesColumn = explore.find((column) => column.heading === 'Guides')!;
+  const authors = explore.find((column) => column.heading === 'Authors')!;
+  const testCategories = htmlSitemapTestCategories();
+  const methodology = htmlSitemapMainMethodology();
+  const supporting = htmlSitemapSupportingMethodology();
+  const resources = htmlSitemapResources();
+  const company = htmlSitemapCompany();
+  const legal = htmlSitemapLegal();
+  const testsCount = getAllSitemapEntries().filter((entry) => entry.sitemapSection === 'tests').length;
+  const scoredTestsCount = testCategories.reduce((sum, category) => sum + category.testCount, 0);
+  const subcategoryCount = testCategories.reduce((sum, category) => sum + category.subcategoryCount, 0);
+
+  return {
+    reviews,
+    roundups,
+    guides: guidesColumn,
+    authors,
+    methodology,
+    testCategories,
+    supporting,
+    resources,
+    company,
+    legal,
+    reviewsCount: reviews.count,
+    roundupsCount: roundups.count,
+    guidesCount: guidesColumn.count,
+    authorsCount: authors.count,
+    testsCount,
+    methodologyPagesCount: testsCount,
+    categoryCount: testCategories.length,
+    subcategoryCount,
+    scoredTestsCount,
+    mainMethodology: methodology,
+    supportingMethodology: supporting,
+    rankingsCount: roundups.count,
+    testingPagesCount: testsCount,
+    testingCategoriesCount: testCategories.length,
+    testingSubcategoriesCount: subcategoryCount,
+    resourcesCount: resources.count,
+    testing: testCategories,
+  };
+}
+
+export function getSiteIndexPage(): HtmlSitemapFullPage {
+  const page = getHtmlSitemapPage();
+  return {
+    ...page,
+    searchHits: buildSitemapPageSearchIndex(page),
+  };
+}
+
+export function buildSitemapPageSearchIndex(
+  page: HtmlSitemapFullPage = getHtmlSitemapPage(),
+): HtmlSitemapSearchHit[] {
+  const hits: HtmlSitemapSearchHit[] = extraSearchHits();
+
+  for (const column of [page.reviews, page.roundups, page.guides, page.authors]) {
+    hits.push({
+      href: column.links[0]?.href ?? '/',
+      title: column.heading,
+      kind: 'section',
+      location: 'SECTION',
+    });
+    for (const link of column.links) {
+      hits.push({
+        href: link.href,
+        title: link.label,
+        kind: column.heading === 'Guides' ? 'guide' : 'page',
+        location: column.heading.toUpperCase(),
+      });
+    }
+  }
+
+  for (const item of page.methodology) {
+    hits.push({
+      href: item.href,
+      title: item.label,
+      kind: 'page',
+      location: 'METHODOLOGY',
+    });
+  }
+
+  for (const category of page.testCategories) {
+    hits.push({
+      href: category.href,
+      title: category.label,
+      kind: 'test-category',
+      location: 'TEST CATEGORY',
+    });
+    for (const subcategory of category.subcategories) {
+      hits.push({
+        href: subcategory.href,
+        title: subcategory.label,
+        kind: 'test',
+        location: `TEST · ${category.label.toUpperCase()}`,
+      });
+      for (const test of subcategory.tests) {
+        hits.push({
+          href: test.href,
+          title: test.label,
+          kind: 'test',
+          location: `TEST · ${category.label.toUpperCase()} · ${subcategory.label.toUpperCase()}`,
+        });
+      }
+    }
+  }
+
+  for (const link of [...page.supporting, ...page.resources.links, ...page.company.links, ...page.legal]) {
+    hits.push({
+      href: link.href,
+      title: link.label,
+      kind: 'page',
+      location: 'PAGE',
+    });
+  }
+
+  const seen = new Set<string>();
+  return hits.filter((hit) => {
+    const key = `${hit.href}::${hit.title}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+export function filterHtmlSitemapSearchHits(
+  hits: HtmlSitemapSearchHit[],
+  query: string,
+): HtmlSitemapSearchHit[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return hits;
+  return hits.filter((hit) => `${hit.title} ${hit.location} ${hit.kind}`.toLowerCase().includes(needle));
+}
+
+export const filterSitemapSearchHits = filterHtmlSitemapSearchHits;
