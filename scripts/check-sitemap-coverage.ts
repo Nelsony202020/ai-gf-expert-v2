@@ -24,6 +24,7 @@ const IGNORED_PREFIXES = ['/api/', '/admin', '/go/', '/recommends/', '/dev/'];
 /** Exact routes that are intentionally not in the sitemap. */
 const IGNORED_ROUTES = new Set([
   '/guides/preview/', // draft preview, requires ?secret=
+  '/guides/ourdream-ai-prompt-guide/', // 301 alias → /guides/ourdream-ai-prompt/
   '/sitemap.xml',
 ]);
 
