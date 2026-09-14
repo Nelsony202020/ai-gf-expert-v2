@@ -32,6 +32,7 @@ function redirectTo(location: string, extra?: HeadersInit) {
  */
 /** Slugs shared publicly that differ from the cloakedSlug stored in the DB. */
 const SLUG_ALIASES: Record<string, string> = {
+  'candy-ai-yt': 'candy-ai-youtube',
   'kupid-ai-youtube': 'kupid-ai-2-youtube',
   'ourdream-ai-youtube': 'ourdream-ai-yt',
 };
