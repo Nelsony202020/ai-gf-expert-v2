@@ -371,8 +371,21 @@
 }
 
 .si-is-searching.si-has-results .si-results,
+.si-is-searching.si-no-results .si-results {
+  display: block;
+}
+
+.si-is-searching.si-no-results .si-results-head,
+.si-is-searching.si-no-results .si-results-list {
+  display: none;
+}
+
 .si-is-searching.si-no-results .si-empty {
   display: block;
+}
+
+.si-is-searching.si-has-results .si-empty {
+  display: none;
 }
 
 .si-results,
