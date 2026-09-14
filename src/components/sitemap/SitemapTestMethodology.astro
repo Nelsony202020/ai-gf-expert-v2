@@ -1,127 +1,244 @@
 ---
 import type { TestCategoryNode } from '../../lib/test-framework';
 import {
-  distributeTestCategoryColumns,
+  countScoredTestsInCategory,
+  splitTestCategoriesTwoColumns,
   testMainMethodologyLinks,
   testSupportingLinks,
 } from '../../lib/sitemap';
 import { getTestCategories } from '../../lib/test-framework';
+import { getTooltipCategoryIconLocal } from '../../lib/tooltip-category-icons';
 
 interface Props {
-  count: number;
+  stats: {
+    pages: number;
+    categories: number;
+    subcategories: number;
+    scoredTests: number;
+  };
 }
 
-const { count } = Astro.props;
+const { stats } = Astro.props;
 
 const categories = getTestCategories();
-const columns = distributeTestCategoryColumns(categories);
----
+const [leftCategories, rightCategories] = splitTestCategoriesTwoColumns(categories);
 
-<section class="sitemap-card sitemap-card--tests">
-  <div class="sitemap-card__head">
-    <span class="sitemap-card__icon sitemap-card__icon--blue">
-      <span class="material-symbols-outlined">science</span>
-    </span>
-    <h2 class="sitemap-card__title">Tests &amp; Methodology ({count})</h2>
-  </div>
+function testCountLabel(count: number) {
+  return `${count} ${count === 1 ? 'test' : 'tests'}`;
+}
 
-  <p class="sitemap-tests__hint">
-    <span class="material-symbols-outlined" aria-hidden="true">info</span>
-    Click a name to open the page. Click the arrow beside it to expand scored tests.
-  </p>
+function renderCategory(cat: TestCategoryNode) {
+  const testCount = countScoredTestsInCategory(cat);
+  const iconSrc = getTooltipCategoryIconLocal(cat.key);
 
-  <div class="sitemap-tests__grid">
-    {
-      columns.map((colCategories, colIndex) => (
-        <div class:list={['sitemap-tests__col', colIndex < columns.length - 1 && 'sitemap-tests__col--divider']}>
-          {
-            colIndex === 0 && (
-              <div class="sitemap-tests__group">
-                <p class="sitemap-tests__label">Main methodology</p>
-                <ul class="sitemap-card__links">
-                  {
-                    testMainMethodologyLinks.map((link) => (
-                      <li>
-                        <a href={link.href} class="sitemap-card__link">
-                          <span>{link.label}</span>
-                          <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
-                        </a>
-                      </li>
-                    ))
-                  }
-                </ul>
+  return (
+    <div class="sitemap-test-cat" data-sitemap-test-cat>
+      <button
+        type="button"
+        class="sitemap-test-cat__head"
+        aria-expanded="false"
+        aria-controls={`sitemap-cat-panel-${cat.key}`}
+        id={`sitemap-cat-btn-${cat.key}`}
+      >
+        <span class="sitemap-test-cat__icon-wrap">
+          <img src={iconSrc} alt="" width="28" height="28" class="sitemap-test-cat__icon" loading="lazy" decoding="async" />
+        </span>
+        <span class="sitemap-test-cat__meta">
+          <span class="sitemap-test-cat__name">{cat.name}</span>
+          <span class="sitemap-test-cat__count">{testCountLabel(testCount)}</span>
+        </span>
+        <span class="material-symbols-outlined sitemap-test-cat__chevron" aria-hidden="true">
+          expand_more
+        </span>
+      </button>
+
+      <div
+        class="sitemap-test-cat__panel"
+        id={`sitemap-cat-panel-${cat.key}`}
+        role="region"
+        aria-labelledby={`sitemap-cat-btn-${cat.key}`}
+        hidden
+      >
+        {
+          cat.subscores.map((sub) => (
+            <div class="sitemap-test-sub" data-sitemap-test-sub>
+              <div class="sitemap-test-sub__row">
+                <a href={sub.href} class="sitemap-test-sub__link">
+                  {sub.name}
+                </a>
+                <button
+                  type="button"
+                  class="sitemap-test-sub__toggle"
+                  aria-expanded="false"
+                  aria-controls={`sitemap-sub-tests-${cat.key}-${sub.slug}`}
+                  aria-label={`Show scored tests for ${sub.name}`}
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">
+                    chevron_right
+                  </span>
+                </button>
               </div>
-            )
-          }
-
-          {
-            colCategories.map((cat: TestCategoryNode) => (
-              <div class="sitemap-tests__group">
-                <p class="sitemap-tests__cat">
-                  <a href={cat.href}>{cat.name}</a>
-                </p>
+              <ul class="sitemap-test-sub__tests" id={`sitemap-sub-tests-${cat.key}-${sub.slug}`} hidden>
                 {
-                  cat.subscores.map((sub) => (
-                    <details class="sitemap-tests__sub">
-                      <summary class="sitemap-tests__sub-summary">
-                        <a href={sub.href} class="sitemap-tests__sub-link">{sub.name}</a>
-                        <span class="sitemap-tests__expand" aria-hidden="true">
-                          <span class="material-symbols-outlined">chevron_right</span>
-                        </span>
-                      </summary>
-                      <ul class="sitemap-tests__evidence">
-                        {
-                          sub.contributors.map((c) => (
-                            <li>
-                              <a href={c.href} class="sitemap-card__link sitemap-card__link--compact">
-                                <span>{c.label}</span>
-                                <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
-                              </a>
-                            </li>
-                          ))
-                        }
-                      </ul>
-                    </details>
+                  sub.contributors.map((c) => (
+                    <li>
+                      <a href={c.href} class="sitemap-test-sub__test-link">
+                        <span>{c.label}</span>
+                        <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+                      </a>
+                    </li>
                   ))
                 }
-              </div>
-            ))
-          }
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+---
 
-          {
-            colIndex === columns.length - 1 && (
-              <div class="sitemap-tests__group sitemap-tests__group--supporting">
-                <p class="sitemap-tests__label">Supporting methodology</p>
-                <ul class="sitemap-card__links">
-                  {
-                    testSupportingLinks.map((link) => (
-                      <li>
-                        <a href={link.href} class="sitemap-card__link">
-                          <span>{link.label}</span>
-                          <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
-                        </a>
-                      </li>
-                    ))
-                  }
-                </ul>
-              </div>
-            )
-          }
-        </div>
+<section class="sitemap-methodology" aria-labelledby="sitemap-methodology-title">
+  <div class="sitemap-methodology__intro">
+    <div class="sitemap-methodology__intro-head">
+      <span class="sitemap-methodology__eyebrow">
+        <span class="material-symbols-outlined" aria-hidden="true">science</span>
+        Testing &amp; Methodology
+      </span>
+      <h2 id="sitemap-methodology-title" class="sitemap-methodology__title">
+        How we score every app
+      </h2>
+      <p class="sitemap-methodology__lead">
+        Structured categories, subscores, and individual scored tests — the same hierarchy you see in reviews and tooltips.
+      </p>
+    </div>
+
+    <dl class="sitemap-methodology__stats">
+      <div>
+        <dt>Pages</dt>
+        <dd>{stats.pages.toLocaleString('en-US')}</dd>
+      </div>
+      <div>
+        <dt>Categories</dt>
+        <dd>{stats.categories.toLocaleString('en-US')}</dd>
+      </div>
+      <div>
+        <dt>Subcategories</dt>
+        <dd>{stats.subcategories.toLocaleString('en-US')}</dd>
+      </div>
+      <div>
+        <dt>Scored tests</dt>
+        <dd>{stats.scoredTests.toLocaleString('en-US')}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="sitemap-methodology__main-links">
+    {
+      testMainMethodologyLinks.map((link, index) => (
+        <a href={link.href} class="sitemap-methodology__main-link">
+          <span class="sitemap-methodology__main-link-num">{String(index + 1).padStart(2, '0')}</span>
+          <span class="sitemap-methodology__main-link-body">
+            <span class="sitemap-methodology__main-link-label">{link.label}</span>
+            <span class="sitemap-methodology__main-link-desc">{link.description}</span>
+          </span>
+          <span class="material-symbols-outlined sitemap-methodology__main-link-arrow" aria-hidden="true">
+            arrow_forward
+          </span>
+        </a>
       ))
     }
+  </div>
+
+  <div class="sitemap-methodology__directory">
+    <div class="sitemap-methodology__directory-head">
+      <h3 class="sitemap-methodology__directory-title">All scored tests</h3>
+      <p class="sitemap-methodology__directory-hint">
+        Open a category to browse subscores. Use the subscore name to open its page; use the arrow to expand individual tests.
+      </p>
+    </div>
+
+    <div class="sitemap-methodology__directory-cols">
+      <div class="sitemap-methodology__directory-col">
+        {leftCategories.map((cat) => renderCategory(cat))}
+      </div>
+      <div class="sitemap-methodology__directory-col">
+        {rightCategories.map((cat) => renderCategory(cat))}
+      </div>
+    </div>
+  </div>
+
+  <div class="sitemap-methodology__supporting">
+    <p class="sitemap-methodology__supporting-label">Supporting methodology</p>
+    <ul class="sitemap-methodology__supporting-links">
+      {
+        testSupportingLinks.map((link) => (
+          <li>
+            <a href={link.href} class="sitemap-methodology__supporting-link">
+              {link.label}
+              <span class="material-symbols-outlined" aria-hidden="true">north_east</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
   </div>
 </section>
 
 <script>
-  function initSitemapTestLinks() {
-    document.querySelectorAll('.sitemap-tests__sub-link').forEach((link) => {
-      if (link.dataset.bound === 'true') return;
-      link.dataset.bound = 'true';
-      link.addEventListener('click', (e) => e.stopPropagation());
+  function closeCategory(catEl: HTMLElement) {
+    const btn = catEl.querySelector<HTMLButtonElement>('.sitemap-test-cat__head');
+    const panel = catEl.querySelector<HTMLElement>('.sitemap-test-cat__panel');
+    if (!btn || !panel) return;
+    btn.setAttribute('aria-expanded', 'false');
+    catEl.classList.remove('is-open');
+    panel.hidden = true;
+  }
+
+  function initSitemapTestDirectory() {
+    const root = document.querySelector('.sitemap-methodology__directory');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    root.querySelectorAll<HTMLElement>('[data-sitemap-test-cat]').forEach((catEl) => {
+      const head = catEl.querySelector<HTMLButtonElement>('.sitemap-test-cat__head');
+      const panel = catEl.querySelector<HTMLElement>('.sitemap-test-cat__panel');
+      if (!head || !panel) return;
+
+      head.addEventListener('click', () => {
+        const isOpen = head.getAttribute('aria-expanded') === 'true';
+        root.querySelectorAll<HTMLElement>('[data-sitemap-test-cat]').forEach((other) => {
+          if (other !== catEl) closeCategory(other);
+        });
+
+        if (isOpen) {
+          closeCategory(catEl);
+          return;
+        }
+
+        head.setAttribute('aria-expanded', 'true');
+        catEl.classList.add('is-open');
+        panel.hidden = false;
+      });
+    });
+
+    root.querySelectorAll<HTMLElement>('[data-sitemap-test-sub]').forEach((subEl) => {
+      const toggle = subEl.querySelector<HTMLButtonElement>('.sitemap-test-sub__toggle');
+      const list = subEl.querySelector<HTMLElement>('.sitemap-test-sub__tests');
+      if (!toggle || !list) return;
+
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const open = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+        subEl.classList.toggle('is-expanded', !open);
+        list.hidden = open;
+      });
     });
   }
 
-  initSitemapTestLinks();
-  document.addEventListener('astro:page-load', initSitemapTestLinks);
+  initSitemapTestDirectory();
+  document.addEventListener('astro:page-load', initSitemapTestDirectory);
 </script>

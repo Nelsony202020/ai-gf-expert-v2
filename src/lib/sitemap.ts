@@ -394,11 +394,37 @@ export function distributeTestCategoryColumns(categories: ReturnType<typeof getT
   return cols;
 }
 
-export const testMainMethodologyLinks: HtmlSitemapLink[] = [
-  { label: 'How We Test AI Girlfriend Apps', href: testHubUrl() },
-  { label: 'Scoring System', href: `${testHubUrl()}#how-scores-work` },
-  { label: 'Testing Process Overview', href: `${testHubUrl()}#in-practice` },
+export type HtmlSitemapRichLink = HtmlSitemapLink & { description: string };
+
+export const testMainMethodologyLinks: HtmlSitemapRichLink[] = [
+  {
+    label: 'How We Test AI Girlfriend Apps',
+    href: testHubUrl(),
+    description: 'Our full framework — paid accounts, structured scenarios, and measurable evidence.',
+  },
+  {
+    label: 'Scoring System',
+    href: `${testHubUrl()}#how-scores-work`,
+    description: 'How category weights, subscores, and evidence combine into the overall score.',
+  },
+  {
+    label: 'Testing Process Overview',
+    href: `${testHubUrl()}#in-practice`,
+    description: 'What we run in practice and how we keep scores consistent across reviews.',
+  },
 ];
+
+/** Two-column layout for the scored-tests directory on the Site Index. */
+export function splitTestCategoriesTwoColumns<T>(items: T[]): [T[], T[]] {
+  const mid = Math.ceil(items.length / 2);
+  return [items.slice(0, mid), items.slice(mid)];
+}
+
+export function countScoredTestsInCategory(category: {
+  subscores: { contributors: unknown[] }[];
+}): number {
+  return category.subscores.reduce((sum, sub) => sum + sub.contributors.length, 0);
+}
 
 export const testSupportingLinks: HtmlSitemapLink[] = [
   { label: 'All Tests Directory', href: '/test/all/' },

@@ -14,7 +14,7 @@ type FrameworkCounts = {
   evidenceLabel: string;
 };
 
-function countFromFramework(): FrameworkCounts {
+export function countFromFramework(): FrameworkCounts {
   const categories = getTestCategories();
   let subscores = 0;
   let evidencePoints = 0;
@@ -101,6 +101,25 @@ async function countFromActiveMethodology(): Promise<FrameworkCounts | null> {
 
 function formatCount(value: number): string {
   return value.toLocaleString('en-US');
+}
+
+/** Compact stats row for the Site Index methodology section. */
+export async function loadSitemapMethodologyIntroStats(methodologyPageCount: number): Promise<{
+  pages: number;
+  categories: number;
+  subcategories: number;
+  scoredTests: number;
+}> {
+  const framework = countFromFramework();
+  const methodology = await countFromActiveMethodology();
+  const counts = methodology ?? framework;
+
+  return {
+    pages: methodologyPageCount,
+    categories: counts.ratingCategories,
+    subcategories: counts.subscores,
+    scoredTests: counts.evidencePoints,
+  };
 }
 
 /** Live trust metrics for the /test/ hub hero — DB + methodology tree when available. */
