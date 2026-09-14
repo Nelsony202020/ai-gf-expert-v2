@@ -173,6 +173,10 @@
 }
 
 @media (min-width: 1100px) {
+  .ourdream-article-hero__read--desktop {
+    display: inline;
+  }
+
   .ourdream-article-hero__read--mobile {
     display: none;
   }
@@ -776,6 +780,12 @@
 .od-block--important {
   background: var(--od-orange-soft);
   border: none;
+  color: #141317;
+}
+
+.od-block--important .od-block__kicker,
+.od-block--important .od-block__body {
+  color: #141317;
 }
 
 .od-block--important .od-block__kicker::before {
@@ -1075,6 +1085,12 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.375rem;
+}
+
+.od-chip-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
 }
 
 .od-chip {

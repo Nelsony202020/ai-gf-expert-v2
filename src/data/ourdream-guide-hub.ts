@@ -76,14 +76,17 @@ export function getOurDreamGuideCategory(href: string): string | undefined {
 }
 
 export function getRelatedOurDreamGuides(currentHref: string, limit = 3) {
-  return ourdreamHubGuides
-    .filter((g) => g.href !== currentHref && !g.href.startsWith('/reviews/'))
-    .slice(0, limit)
-    .map((g) => ({
-      title: g.title,
-      href: g.href,
-      category: getOurDreamGuideCategory(g.href) ?? '',
-    }));
+  const currentCat = getOurDreamGuideCategory(currentHref);
+  const candidates = ourdreamHubGuides.filter(
+    (g) => g.href !== currentHref && !g.href.startsWith('/reviews/'),
+  );
+  const same = candidates.filter((g) => getOurDreamGuideCategory(g.href) === currentCat);
+  const other = candidates.filter((g) => getOurDreamGuideCategory(g.href) !== currentCat);
+  return [...same, ...other].slice(0, limit).map((g) => ({
+    title: g.title,
+    href: g.href,
+    category: getOurDreamGuideCategory(g.href) ?? '',
+  }));
 }
 
 export const ourdreamHubTopics = [
