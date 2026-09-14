@@ -36,6 +36,31 @@ const SLUG_ALIASES: Record<string, string> = {
   'ourdream-ai-youtube': 'ourdream-ai-yt',
 };
 
+/** One-time DB sync: legacy Candy YouTube link still pointed at candy.ai in production. */
+const CANDY_AI_YOUTUBE_GUIDE = 'https://aigirlfriend.expert/guides/ourdream-ai/';
+
+function candyYoutubeGuideDestination(
+  slug: string,
+  link: { id: string; destinationUrl?: string | null },
+  db: ReturnType<typeof getDb>,
+): string {
+  const raw = String(link.destinationUrl ?? '');
+  if (slug !== 'candy-ai-youtube') return raw;
+  try {
+    const host = new URL(raw).hostname.replace(/^www\./i, '').toLowerCase();
+    if (host !== 'candy.ai') return raw;
+  } catch {
+    return raw;
+  }
+  db.transact(
+    db.tx.affiliateLinks[link.id].update({
+      destinationUrl: CANDY_AI_YOUTUBE_GUIDE,
+      ageGate: false,
+    }),
+  ).catch(() => {});
+  return CANDY_AI_YOUTUBE_GUIDE;
+}
+
 export const GET: APIRoute = async ({ params, url }) => {
   const rawSlug = params.slug!;
   const slug = SLUG_ALIASES[rawSlug] ?? rawSlug;
@@ -60,7 +85,7 @@ export const GET: APIRoute = async ({ params, url }) => {
     return redirectTo('/');
   }
 
-  const destinationUrl = String(link.destinationUrl ?? '');
+  const destinationUrl = candyYoutubeGuideDestination(slug, link, db);
   if (!isSafeHttpUrl(destinationUrl)) {
     return redirectTo('/');
   }
