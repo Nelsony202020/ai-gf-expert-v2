@@ -25,14 +25,13 @@
     root.querySelectorAll<HTMLElement>('[data-home-count]').forEach((el) => {
       const to = Number(el.dataset.homeCount);
       if (!Number.isFinite(to)) return;
-      tweenNumber(el, 0, to, 700);
+      tweenNumber(el, 0, to, 1350);
     });
   }
 
-  function initHeroGlow() {
-    const hero = document.querySelector<HTMLElement>('[data-home-hero]');
-    if (!hero || hero.dataset.glowBound === 'true') return;
-    hero.dataset.glowBound = 'true';
+  function bindPointerGlow(root: HTMLElement) {
+    if (root.dataset.glowBound === 'true') return;
+    root.dataset.glowBound = 'true';
     if (!canUsePointerGlow()) return;
 
     let tx = 0.68;
@@ -43,13 +42,13 @@
     let raf = 0;
 
     const setVars = () => {
-      hero.style.setProperty('--mx', `${(cx * 100).toFixed(2)}%`);
-      hero.style.setProperty('--my', `${(cy * 100).toFixed(2)}%`);
+      root.style.setProperty('--mx', `${(cx * 100).toFixed(2)}%`);
+      root.style.setProperty('--my', `${(cy * 100).toFixed(2)}%`);
     };
 
     const tick = () => {
-      cx += (tx - cx) * 0.12;
-      cy += (ty - cy) * 0.12;
+      cx += (tx - cx) * 0.1;
+      cy += (ty - cy) * 0.1;
       setVars();
       const still = Math.abs(tx - cx) < 0.0008 && Math.abs(ty - cy) < 0.0008;
       if (!still || visible) raf = requestAnimationFrame(tick);
@@ -60,22 +59,26 @@
       if (!raf) raf = requestAnimationFrame(tick);
     };
 
-    hero.addEventListener('pointermove', (e) => {
+    root.addEventListener('pointermove', (e) => {
       if (e.pointerType !== 'mouse') return;
-      const r = hero.getBoundingClientRect();
+      const r = root.getBoundingClientRect();
       tx = (e.clientX - r.left) / r.width;
       ty = (e.clientY - r.top) / r.height;
       if (!visible) {
         visible = true;
-        hero.classList.add('is-glowing');
+        root.classList.add('is-glowing');
       }
       start();
     });
 
-    hero.addEventListener('pointerleave', () => {
+    root.addEventListener('pointerleave', () => {
       visible = false;
-      hero.classList.remove('is-glowing');
+      root.classList.remove('is-glowing');
     });
+  }
+
+  function initPointerGlows() {
+    document.querySelectorAll<HTMLElement>('[data-home-glow]').forEach(bindPointerGlow);
   }
 
   function revealOnce(root: HTMLElement) {
@@ -93,7 +96,7 @@
           io.unobserve(el);
         }
       },
-      { threshold: 0.28, rootMargin: '0px 0px -8% 0px' },
+      { threshold: 0.32, rootMargin: '0px 0px -6% 0px' },
     );
     io.observe(root);
   }
@@ -186,11 +189,170 @@
     observer.observe(wrap);
   }
 
+  function initHermanBadge() {
+    const root = document.querySelector<HTMLElement>('[data-home-badge]');
+    if (!root || root.dataset.badgeBound === 'true') return;
+    root.dataset.badgeBound = 'true';
+
+    const toggle = root.querySelector<HTMLButtonElement>('[data-home-badge-toggle]');
+    const link = root.querySelector<HTMLAnchorElement>('[data-home-badge-link]');
+    const back = root.querySelector<HTMLElement>('.home-v2__badge-face--back');
+    if (!toggle) return;
+
+    const fineHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const showLabel = root.dataset.labelShow || 'Show current number one ranked app';
+    const hideLabel = root.dataset.labelHide || 'Show Herman';
+    let nudged = false;
+
+    const setOpen = (open: boolean) => {
+      root.classList.toggle('is-flipped', open);
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.setAttribute('aria-label', open ? hideLabel : showLabel);
+    };
+
+    const pointerInsideCircle = (event: PointerEvent | MouseEvent) => {
+      const box = root.getBoundingClientRect();
+      const dx = event.clientX - (box.left + box.width / 2);
+      const dy = event.clientY - (box.top + box.height / 2);
+      const radius = Math.min(box.width, box.height) / 2;
+      return dx * dx + dy * dy <= radius * radius;
+    };
+
+    const closeFromCoordinates = (event: { clientX: number; clientY: number }) => {
+      if (!root.classList.contains('is-flipped')) return;
+      if (pointerInsideCircle(event)) return;
+      setOpen(false);
+    };
+
+    const closeIfPointerLeft = (event: PointerEvent | MouseEvent) => {
+      if (!root.classList.contains('is-flipped')) return;
+      if ('pointerType' in event && event.pointerType === 'touch') return;
+      closeFromCoordinates(event);
+    };
+
+    const flipFromToggle = (event: Event) => {
+      event.preventDefault();
+      setOpen(!root.classList.contains('is-flipped'));
+    };
+
+    toggle.addEventListener('click', flipFromToggle);
+    toggle.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        flipFromToggle(event);
+      }
+    });
+
+    link?.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+    link?.addEventListener('pointerdown', (event) => {
+      event.stopPropagation();
+    });
+
+    root.addEventListener('pointerleave', closeIfPointerLeft);
+    root.addEventListener('mouseleave', closeIfPointerLeft);
+
+    document.addEventListener('pointermove', (event) => {
+      if (event.pointerType === 'touch') return;
+      closeFromCoordinates(event);
+    });
+    document.addEventListener('mousemove', closeFromCoordinates);
+
+    document.addEventListener(
+      'pointerover',
+      (event) => {
+        if (!root.classList.contains('is-flipped')) return;
+        if (event.pointerType === 'touch') return;
+        if (root.contains(event.target as Node)) return;
+        setOpen(false);
+      },
+      true,
+    );
+
+    document.addEventListener('pointerdown', (event) => {
+      if (!root.classList.contains('is-flipped')) return;
+      if (root.contains(event.target as Node)) return;
+      if (event.pointerType === 'touch') return;
+      setOpen(false);
+    });
+
+    back?.addEventListener('click', (event) => {
+      if (fineHover) return;
+      if ((event.target as HTMLElement).closest('[data-home-badge-link]')) return;
+      event.preventDefault();
+      setOpen(false);
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (fineHover || event.pointerType === 'mouse') return;
+      if (!root.classList.contains('is-flipped')) return;
+      if (root.contains(event.target as Node)) return;
+      setOpen(false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && root.classList.contains('is-flipped')) setOpen(false);
+    });
+
+    const hero = document.getElementById('home-hero');
+    if (hero) {
+      const heroIo = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (!entry || entry.intersectionRatio >= 0.2) return;
+          setOpen(false);
+        },
+        { threshold: [0, 0.2] },
+      );
+      heroIo.observe(hero);
+    }
+
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+
+    if (fineHover && !prefersReducedMotion()) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (nudged || root.classList.contains('is-flipped')) return;
+          const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.45);
+          if (!visible) return;
+          nudged = true;
+          root.classList.add('is-nudging');
+          window.setTimeout(() => root.classList.remove('is-nudging'), 680);
+          io.disconnect();
+        },
+        { threshold: [0.45, 0.7] },
+      );
+      io.observe(root);
+      return;
+    }
+
+    if (prefersReducedMotion() || !coarsePointer) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (nudged || root.classList.contains('is-flipped')) return;
+        const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.35);
+        if (!visible) return;
+        nudged = true;
+        io.disconnect();
+        window.setTimeout(() => {
+          if (root.classList.contains('is-flipped')) return;
+          root.classList.add('is-wiggling');
+          window.setTimeout(() => root.classList.remove('is-wiggling'), 540);
+        }, 850);
+      },
+      { threshold: [0.35, 0.55] },
+    );
+    io.observe(root);
+  }
+
   function init() {
-    initHeroGlow();
+    initPointerGlows();
     initReveals();
     initSelectorMotion();
     initMethodVideo();
+    initHermanBadge();
   }
 
   init();
