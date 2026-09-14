@@ -735,12 +735,19 @@
   flex-shrink: 0;
 }
 
+/* OurDream hub: footer follows hub in DOM — keep it below the fixed mobile Visit CTA */
+.home-v2:has(.guide-hub) .site-footer {
+  position: relative;
+  z-index: 1;
+}
+
 @media (max-width: 767px) {
   .guide-hub__scroll-cta {
     display: block;
     position: fixed;
     inset: auto 0 0;
-    z-index: 45;
+    /* Above site footer when scrolled to the bottom (mobile nav is hidden on this page) */
+    z-index: 100;
     pointer-events: none;
     opacity: 0;
     transform: translateY(14px);
