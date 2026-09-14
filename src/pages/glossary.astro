@@ -525,6 +525,22 @@ const jsonLdGraph = buildWebPageSchema({
     let category = 'all';
     let deepLinkTimer = 0;
     let filtersScrollY = 0;
+    let filtersCloseTimer = 0;
+    const FILTERS_SHEET_MS = 320;
+
+    function filtersSheetMotionMs() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 0;
+      return FILTERS_SHEET_MS;
+    }
+
+    function finishFiltersSheetClose() {
+      if (!(filtersSheet instanceof HTMLElement)) return;
+      filtersSheet.hidden = true;
+      filtersSheet.setAttribute('aria-hidden', 'true');
+      filtersSheet.classList.remove('is-open');
+      document.body.classList.remove('glossary-filters-open');
+      window.scrollTo(0, filtersScrollY);
+    }
 
     function query() {
       return (searchInputs[0]?.value ?? '').trim();
@@ -564,18 +580,27 @@ const jsonLdGraph = buildWebPageSchema({
 
     function openFiltersSheet() {
       if (!(filtersSheet instanceof HTMLElement)) return;
+      window.clearTimeout(filtersCloseTimer);
       filtersScrollY = window.scrollY;
       filtersSheet.hidden = false;
       filtersSheet.setAttribute('aria-hidden', 'false');
       document.body.classList.add('glossary-filters-open');
+      filtersSheet.classList.remove('is-open');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => filtersSheet.classList.add('is-open'));
+      });
     }
 
     function closeFiltersSheet() {
-      if (!(filtersSheet instanceof HTMLElement)) return;
-      filtersSheet.hidden = true;
-      filtersSheet.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('glossary-filters-open');
-      window.scrollTo(0, filtersScrollY);
+      if (!(filtersSheet instanceof HTMLElement) || filtersSheet.hidden) return;
+      window.clearTimeout(filtersCloseTimer);
+      filtersSheet.classList.remove('is-open');
+      const ms = filtersSheetMotionMs();
+      if (ms === 0) {
+        finishFiltersSheetClose();
+        return;
+      }
+      filtersCloseTimer = window.setTimeout(finishFiltersSheetClose, ms);
     }
 
     function setOpen(term: HTMLElement, open: boolean, opts?: { deep?: boolean }) {
