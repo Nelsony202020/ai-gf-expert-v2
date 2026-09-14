@@ -23,6 +23,7 @@ const LINKS: Spec[] = [
     destinationUrl: OURDREAM_YT_DEST,
     productSlug: 'ourdream-ai',
     notes: 'OurDream YouTube traffic (uid=540). Also /go/ourdream-ai-youtube alias.',
+    ageGate: false,
   },
   {
     cloakedSlug: 'candy-ai-youtube',

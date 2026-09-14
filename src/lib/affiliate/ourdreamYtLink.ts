@@ -11,6 +11,7 @@ type AffiliateLinkRow = {
   id: string;
   destinationUrl?: string | null;
   active?: boolean | null;
+  ageGate?: boolean | null;
   cloakedSlug?: string | null;
   linkType?: string | null;
   campaign?: string | null;
@@ -54,6 +55,7 @@ export async function ensureOurdreamYtAffiliateLink(
         linkType: 'campaign',
         campaign: 'youtube',
         active: true,
+        ageGate: false,
         relTags: DEFAULT_AFFILIATE_REL,
         notes:
           'OurDream YouTube traffic (uid=540). Edit destination in Admin → OurDream AI → Affiliate links.',
@@ -71,7 +73,8 @@ export async function ensureOurdreamYtAffiliateLink(
 
   const outOfSync =
     normalizeRedirectUrl(String(existing.destinationUrl ?? '')) !== normalizeRedirectUrl(dest) ||
-    !existing.active;
+    !existing.active ||
+    existing.ageGate !== false;
 
   if (outOfSync) {
     await db
@@ -79,13 +82,14 @@ export async function ensureOurdreamYtAffiliateLink(
         db.tx.affiliateLinks[existing.id].update({
           destinationUrl: dest,
           active: true,
+          ageGate: false,
           linkType: 'campaign',
           campaign: 'youtube',
         }),
       )
       .catch(() => {});
-    return { ...existing, destinationUrl: dest, active: true };
+    return { ...existing, destinationUrl: dest, active: true, ageGate: false };
   }
 
-  return existing;
+  return { ...existing, ageGate: false };
 }

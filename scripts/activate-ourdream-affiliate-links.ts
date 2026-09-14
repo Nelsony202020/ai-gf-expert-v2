@@ -3,7 +3,7 @@
  * Activate OurDream AI affiliate destinations (unique UID per page).
  *
  *   /go/ourdream-ai          → Normal (uid=10) — product CTA
- *   /go/ourdream-ai-yt       → Affiliate (uid=540), 18+ interstitial first
+ *   /go/ourdream-ai-yt       → Affiliate (uid=540), direct redirect (no 18+ interstitial)
  *   /go/ourdream-elara       → Elara character (uid=544&sub1=…)
  *   /go/ourdream-emily       → Emily character (uid=544&sub1=…)
  *
@@ -43,6 +43,7 @@ const LINKS = [
     destinationUrl: 'https://www.ourdreamersai13.com/9776S5J/3QQG7/?uid=540',
     linkType: 'campaign',
     campaign: 'youtube',
+    ageGate: false,
     notes: 'OurDream Guides hub Visit CTA + YouTube traffic (uid=540). Edit destination in Admin → Affiliate links.',
   },
   {
