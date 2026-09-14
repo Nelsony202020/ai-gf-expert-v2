@@ -20,8 +20,9 @@ import ReviewScrollRestore from '../../components/review/ReviewScrollRestore.ast
 import ImageLightbox from '../../components/ui/ImageLightbox.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
 import ReviewMobileNavSheet from '../../components/mobile/ReviewMobileNavSheet.astro';
-import { getProductFeaturedIn, loadReviewPageProduct } from '../../lib/content/store';
+import { getProductFeaturedIn, loadPublishedReviewSlugs, loadReviewPageProduct } from '../../lib/content/store';
 import {
+  DEV_REVIEW_SLUGS,
   hasAlternativesTab,
   hasMarketDataTab,
   hasPhotosVideosTab,
@@ -35,10 +36,21 @@ import { safeViewResponse } from '../../lib/safe-view/respond';
 import { buildReviewTabs } from '../../lib/review-shell';
 
 /**
- * On-demand so `?safe=1` can return a standalone interstitial without the
- * prerendered review HTML (and without requesting review media).
+ * Prerender known review slugs so this nested `[slug]` route wins over
+ * `pages/[...fallback].ts` (SSR-only nested dynamics lose the match in
+ * `output: 'static'`). `?safe=1` is handled by middleware before routing.
  */
-export const prerender = false;
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const slugs = await loadPublishedReviewSlugs();
+  if (import.meta.env.DEV) {
+    for (const slug of DEV_REVIEW_SLUGS) {
+      if (!slugs.includes(slug)) slugs.push(slug);
+    }
+  }
+  return slugs.map((slug) => ({ params: { slug } }));
+}
 
 const { slug } = Astro.params;
 

@@ -1,6 +1,4 @@
 ---
-export const prerender = false;
-
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
@@ -22,10 +20,15 @@ import ReviewScrollRestore from '../../../components/review/ReviewScrollRestore.
 import ImageLightbox from '../../../components/ui/ImageLightbox.astro';
 import ArticleUtilityRail from '../../../components/article/ArticleUtilityRail.astro';
 import ReviewMobileNavSheet from '../../../components/mobile/ReviewMobileNavSheet.astro';
-import { getProductFeaturedIn, loadProductPreviewBySlug } from '../../../lib/content/store';
+import {
+  getProductFeaturedIn,
+  loadProductPreviewBySlug,
+  loadPublishedReviewSlugs,
+} from '../../../lib/content/store';
 import { loadDraftRatingsViewModel } from '../../../lib/draft-ratings/loadDraftRatingsData';
 import { resolveProductPageHead } from '../../../lib/seo/productPageHead';
 import {
+  DEV_REVIEW_SLUGS,
   hasAlternativesTab,
   hasPhotosVideosTab,
   hasPricingTab,
@@ -34,6 +37,21 @@ import { PREVIEW_COOKIE_NAME, verifyPreviewToken } from '../../../lib/previewSes
 import { isReviewSafeView } from '../../../lib/safe-view/params';
 import { safeViewResponse } from '../../../lib/safe-view/respond';
 import { buildReviewTabs } from '../../../lib/review-shell';
+
+/**
+ * In `astro dev`, prerender known slugs so this nested route wins over the
+ * catch-all. Production stays on-demand (`prerender = false`) so unpublished
+ * previews are not baked into the static build.
+ */
+export const prerender = import.meta.env.DEV;
+
+export async function getStaticPaths() {
+  const slugs = await loadPublishedReviewSlugs();
+  for (const slug of DEV_REVIEW_SLUGS) {
+    if (!slugs.includes(slug)) slugs.push(slug);
+  }
+  return slugs.map((slug) => ({ params: { slug } }));
+}
 
 // Previews expose unpublished products, so production requires the editor
 // cookie issued by /api/admin/preview-session (set automatically on admin
