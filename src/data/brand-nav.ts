@@ -57,9 +57,6 @@ export function buildBrandNav(
 
   return {
     popular,
-    viewAll: {
-      label: 'View all brands',
-      href: publicPagePath(BRAND_DIRECTORY_HREF),
-    },
+    viewAll: null,
   };
 }
