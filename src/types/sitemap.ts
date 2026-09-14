@@ -1,3 +1,10 @@
+export interface HtmlSitemapEntry {
+  loc: string;
+  lastmod?: string;
+}
+
+export type SitemapEntry = HtmlSitemapEntry;
+
 export interface HtmlSitemapLink {
   href: string;
   label: string;
@@ -45,7 +52,9 @@ export interface HtmlSitemapSearchHit {
 export interface HtmlSitemapFullPage {
   reviewsCount: number;
   rankingsCount: number;
+  roundupsCount: number;
   guidesCount: number;
+  authorsCount: number;
   testsCount: number;
   reviews: HtmlSitemapExploreColumn;
   roundups: HtmlSitemapExploreColumn;
@@ -54,6 +63,9 @@ export interface HtmlSitemapFullPage {
   testingPagesCount: number;
   testingCategoriesCount: number;
   testingSubcategoriesCount: number;
+  methodologyPagesCount: number;
+  categoryCount: number;
+  subcategoryCount: number;
   scoredTestsCount: number;
   mainMethodology: HtmlSitemapMethodologyLink[];
   methodology: HtmlSitemapMethodologyLink[];
@@ -67,4 +79,5 @@ export interface HtmlSitemapFullPage {
   extra?: {
     glossary?: HtmlSitemapExploreColumn;
   };
+  searchHits?: HtmlSitemapSearchHit[];
 }

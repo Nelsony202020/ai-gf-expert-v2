@@ -579,6 +579,21 @@ export function getHtmlSitemapPage(): HtmlSitemapFullPage {
     scoredTestsCount,
     mainMethodology: methodology,
     supportingMethodology: supporting,
+    rankingsCount: roundups.count,
+    testingPagesCount: testsCount,
+    testingCategoriesCount: testCategories.length,
+    testingSubcategoriesCount: subcategoryCount,
+    resourcesCount: resources.count,
+    testing: testCategories,
+    extra: { glossary: { href: "/glossary/", label: "AI Girlfriend Glossary" } },
+  };
+}
+
+export function getSiteIndexPage(): HtmlSitemapFullPage {
+  const page = getHtmlSitemapPage();
+  return {
+    ...page,
+    searchHits: buildSitemapPageSearchIndex(page),
   };
 }
 

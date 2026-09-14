@@ -1,193 +1,220 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
-import Header from "../components/Header.astro";
-import Footer from "../components/Footer.astro";
-import { organizationConfig } from "../data/organization";
-import { getHtmlSitemapPage, buildSitemapPageSearchIndex } from "../lib/sitemap";
+import Layout from "../layouts/Layout.astro";
 import SitemapExploreColumn from "../components/sitemap/SitemapExploreColumn.astro";
-import SitemapTestMethodology from "../components/sitemap/SitemapTestMethodology.astro";
 import SitemapResourcesLegal from "../components/sitemap/SitemapResourcesLegal.astro";
+import SitemapTestMethodology from "../components/sitemap/SitemapTestMethodology.astro";
+import { getSiteIndexPage } from "../lib/sitemap";
+import { SITE } from "../lib/constants";
+import { filterSitemapSearchHits } from "../lib/sitemap-search";
 import "../styles/sitemap.css";
 
 export const prerender = false;
 
-const page = getHtmlSitemapPage();
-const searchHits = buildSitemapPageSearchIndex(page);
-const searchHitsJson = JSON.stringify(searchHits).replace(/</g, "\\u003c");
-
-const chips = [
-  { href: "#explore", label: "Reviews", count: page.reviewsCount },
-  { href: "#rankings", label: "Rankings", count: page.rankingsCount },
-  { href: "#guides", label: "Guides", count: page.guidesCount },
-  { href: "#si-testing", label: "Tests", count: page.testsCount },
-];
+const page = await getSiteIndexPage();
+const canonicalUrl = new URL("/sitemap/", SITE.url).toString();
+const searchHitsJson = JSON.stringify(page.searchHits);
+const requestedQuery = Astro.url.searchParams.get("q")?.trim() ?? "";
+const initialHits = requestedQuery ? filterSitemapSearchHits(page.searchHits, requestedQuery) : [];
+const isSearching = requestedQuery.length > 0;
+const hasResults = initialHits.length > 0;
+const pageSearchClass = isSearching
+  ? hasResults
+    ? "si-is-searching si-has-results"
+    : "si-is-searching si-no-results"
+  : "";
 ---
 
-<BaseLayout
-  title={`Site Index | ${organizationConfig.name}`}
-  description="Find every review, guide, test and resource we publish."
+<Layout
+  title={page.seoTitle}
+  description={page.seoDescription}
+  canonicalUrl={canonicalUrl}
+  ogType="website"
 >
-  <Header />
-  <div class="si-page">
-    <section class="si-hero" aria-labelledby="si-title">
+  <div class:list={["si-page", pageSearchClass]}>
+    <header class="si-hero">
       <div class="si-hero-inner">
-        <p class="si-eyebrow"><span class="si-dot" aria-hidden="true"></span>SITE INDEX</p>
-        <h1 id="si-title" class="si-title">Everything on AI Girlfriend Expert</h1>
+        <p class="si-kicker"><span class="si-kicker-dot" aria-hidden="true"></span>SITE INDEX</p>
+        <h1 class="si-title">Everything on AI Girlfriend Expert</h1>
         <p class="si-lede">Find every review, guide, test and resource we publish.</p>
 
-        <div class="si-search-wrap">
-          <label class="visually-hidden" for="si-search">Search the site index</label>
-          <div class="si-search">
-            <svg class="si-search-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"></circle>
-              <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+        <form class:list={["si-search", { "is-searching": isSearching }]} role="search" data-search-form onsubmit="return false">
+          <span class="si-search-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="10" cy="10" r="7.3" stroke="currentColor" stroke-width="1.5" />
+              <path d="M15.4 15.4L19 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
             </svg>
-            <input
-              id="si-search"
-              class="si-search-input"
-              type="search"
-              name="q"
-              placeholder="Search the site…"
-              autocomplete="off"
-              data-search-input
-            />
-            <span class="si-search-count" data-search-count hidden></span>
-            <kbd class="si-kbd" data-search-slash>/</kbd>
-            <button type="button" class="si-search-clear" data-search-clear hidden aria-label="Clear search">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
+          </span>
+          <input
+            id="si-search"
+            class="si-search-input"
+            type="search"
+            name="q"
+            placeholder="Search the site…"
+            autocomplete="off"
+            spellcheck="false"
+            value={requestedQuery}
+            data-search-input
+          />
+          <span class="si-search-count" data-search-count hidden={!isSearching}>
+            {isSearching ? (hasResults ? `${initialHits.length} results` : "No results") : ""}
+          </span>
+          <kbd class="si-kbd" data-search-slash>/</kbd>
+          <button class="si-search-clear" type="button" aria-label="Clear search" data-search-clear hidden={!isSearching}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M3.5 3.5L12.5 12.5M12.5 3.5L3.5 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </button>
+        </form>
 
-        <div class="si-chips" data-search-chips>
-          {chips.map((chip) => (
-            <a class="si-chip" href={chip.href}>
-              <span>{chip.label}</span>
-              <span class="si-chip-dot" aria-hidden="true"></span>
-              <span class="si-chip-n">{chip.count}</span>
+        <div class="si-chips" data-search-chips hidden={isSearching}>
+          <a class="si-chip" href="#si-explore">Reviews<span class="si-chip-dot"></span><span class="si-chip-n">{page.reviewsCount}</span></a>
+          <a class="si-chip" href="#si-explore">Rankings<span class="si-chip-dot"></span><span class="si-chip-n">{page.rankingsCount}</span></a>
+          <a class="si-chip" href="#si-explore">Guides<span class="si-chip-dot"></span><span class="si-chip-n">{page.guidesCount}</span></a>
+          <a class="si-chip" href="#si-testing">Tests<span class="si-chip-dot"></span><span class="si-chip-n">{page.testsCount}</span></a>
+        </div>
+      </div>
+    </header>
+
+    <div class="si-body">
+      <section class="si-results" data-search-results hidden={!isSearching} aria-live="polite">
+        <div class="si-results-head">
+          <h2 data-search-heading>{hasResults ? `${initialHits.length} results for “${requestedQuery}”` : ""}</h2>
+          <button type="button" data-search-clear-text>Clear search</button>
+        </div>
+        <div class="si-results-list" data-search-list>
+          {initialHits.map((hit, index) => (
+            <a class:list={["si-hit", { "is-active": index === 0 }]} href={hit.href}>
+              <span class="si-hit-kind">{hit.kind}</span>
+              <span class="si-hit-row">
+                <span class="si-hit-title">{hit.title}</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M5 3L11 8L5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
             </a>
           ))}
         </div>
-      </div>
-    </section>
-
-    <div class="si-body">
-      <section class="si-results" data-search-results hidden>
-        <div class="si-results-head">
-          <h2 class="si-results-title" data-search-heading></h2>
-          <button type="button" class="si-clear-link" data-search-clear-text>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
-            </svg>
-            <span data-clear-label>Clear search</span>
-          </button>
-        </div>
-        <div class="si-results-list" data-search-list></div>
-        <div class="si-empty" data-search-empty hidden>
+        <div class="si-empty" data-search-empty hidden={hasResults || !isSearching}>
           <div class="si-empty-icon" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"></circle>
-              <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="10" cy="10" r="7.3" stroke="currentColor" stroke-width="1.5" />
+              <path d="M15.4 15.4L19 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
             </svg>
           </div>
-          <p class="si-empty-title" data-empty-title></p>
+          <p class="si-empty-title" data-empty-title>
+            {isSearching && !hasResults ? `No pages found for “${requestedQuery}”` : ""}
+          </p>
           <p class="si-empty-copy">Try another word, or browse the index below.</p>
-          <button type="button" class="si-empty-btn" data-search-clear-empty>Clear search</button>
+          <button type="button" data-search-clear-empty>Clear search</button>
         </div>
       </section>
 
-        <div class="si-directory" data-directory>
+      <div class="si-directory" data-directory hidden={isSearching}>
         <div class="si-explore-wrap">
-          <section class="si-explore" id="explore" aria-labelledby="si-explore-heading">
-            <h2 id="si-explore-heading" class="si-h2">Explore AIGE</h2>
-            <div class="si-explore-grid">
-              <SitemapExploreColumn column={page.reviews} variant="reviews" />
-              <SitemapExploreColumn column={page.roundups} variant="roundups" />
-              <SitemapExploreColumn column={page.guides} variant="guides" />
-              <SitemapExploreColumn column={page.authors} variant="authors" />
-            </div>
+          <section class="si-explore" id="si-explore">
+            <h2>Explore AIGE</h2>
           </section>
+          <div class="si-explore-grid">
+            <SitemapExploreColumn column={page.reviews} />
+            <SitemapExploreColumn column={page.roundups} />
+            <SitemapExploreColumn column={page.guides} />
+            <SitemapExploreColumn column={page.authors} />
+          </div>
         </div>
 
-        <SitemapTestMethodology page={page} />
+        <SitemapTestMethodology
+          methodology={page.methodology}
+          supporting={page.supporting}
+          testing={page.testing}
+        />
 
         <div class="si-resources-wrap">
-          <SitemapResourcesLegal page={page} />
+          <SitemapResourcesLegal
+            resources={page.resources}
+            company={page.company}
+            legal={page.legal}
+          />
         </div>
       </div>
     </div>
   </div>
-  <Footer />
-</BaseLayout>
+</Layout>
 
 <script is:inline define:vars={{ searchHitsJson }}>
   window.__SI_HITS__ = JSON.parse(searchHitsJson);
 </script>
-<script>
-      import type { HtmlSitemapSearchHit } from "../types/sitemap";
-      import { filterSitemapSearchHits } from "../lib/sitemap-search";
 
-  const hits = (window as unknown as { __SI_HITS__?: HtmlSitemapSearchHit[] }).__SI_HITS__ ?? [];
-  const input = document.querySelector<HTMLInputElement>("[data-search-input]");
+<script>
+  import { filterSitemapSearchHits } from "../lib/sitemap-search";
+
+  const hits = window.__SI_HITS__ ?? [];
+  const pageEl = document.querySelector(".si-page");
+  const form = document.querySelector("[data-search-form]");
+  const input = document.querySelector("[data-search-input]");
+  const slash = document.querySelector("[data-search-slash]");
+  const clearBtn = document.querySelector("[data-search-clear]");
+  const countEl = document.querySelector("[data-search-count]");
+  const chips = document.querySelector("[data-search-chips]");
+  const lede = document.querySelector(".si-lede");
   const directory = document.querySelector("[data-directory]");
   const results = document.querySelector("[data-search-results]");
   const list = document.querySelector("[data-search-list]");
   const empty = document.querySelector("[data-search-empty]");
   const heading = document.querySelector("[data-search-heading]");
-  const chips = document.querySelector("[data-search-chips]");
-  const countEl = document.querySelector("[data-search-count]");
-  const slash = document.querySelector("[data-search-slash]");
-  const clearBtn = document.querySelector("[data-search-clear]");
-  const lede = document.querySelector(".si-lede");
-  const searchBox = document.querySelector(".si-search");
-  const clearLabel = document.querySelector("[data-clear-label]");
   const emptyTitle = document.querySelector("[data-empty-title]");
 
-  function setSearching(on: boolean) {
-    searchBox?.classList.toggle("is-searching", on);
-    slash?.toggleAttribute("hidden", on);
-    clearBtn?.toggleAttribute("hidden", !on);
-    countEl?.toggleAttribute("hidden", !on);
-    lede?.toggleAttribute("hidden", on);
-    chips?.toggleAttribute("hidden", on);
+  function escapeHtml(value) {
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
   }
 
-    function render(query: string) {
-    const q = query.trim();
-    const pageEl = document.querySelector(".si-page");
-    const isMobile = window.matchMedia("(max-width: 767px)").matches;
-    if (clearLabel) {
-      clearLabel.textContent = isMobile ? "Clear" : "Clear search";
-    }
+  function setSearching(on: boolean) {
+    form?.classList.toggle("is-searching", on);
+    slash?.toggleAttribute("hidden", on);
+    clearBtn?.toggleAttribute("hidden", !on);
+    chips?.toggleAttribute("hidden", on);
+    lede?.toggleAttribute("hidden", on);
+  }
 
+  function render(query: string) {
+    const q = query.trim();
     if (!q) {
       setSearching(false);
       pageEl?.classList.remove("si-is-searching", "si-has-results", "si-no-results");
       results?.setAttribute("hidden", "");
       directory?.removeAttribute("hidden");
       if (list) list.innerHTML = "";
-      if (countEl) countEl.textContent = "";
+      if (countEl) {
+        countEl.hidden = true;
+        countEl.textContent = "";
+      }
       empty?.setAttribute("hidden", "");
       return;
     }
 
     setSearching(true);
-    const matched = filterSitemapSearchHits(q, hits);
-    const n = matched.length;
+    const matched = filterSitemapSearchHits(hits, q);
     pageEl?.classList.add("si-is-searching");
-    pageEl?.classList.toggle("si-has-results", n > 0);
-    pageEl?.classList.toggle("si-no-results", n === 0);
+    pageEl?.classList.toggle("si-has-results", matched.length > 0);
+    pageEl?.classList.toggle("si-no-results", matched.length === 0);
     directory?.setAttribute("hidden", "");
     results?.removeAttribute("hidden");
+    if (countEl) {
+      countEl.hidden = false;
+      countEl.textContent = matched.length ? `${matched.length} results` : "No results";
+    }
+    if (heading) heading.textContent = `${matched.length} results for “${q}”`;
+    const clearLabel = window.matchMedia("(max-width: 767px)").matches ? "Clear" : "Clear search";
+    document.querySelectorAll("[data-search-clear-text]").forEach((node) => {
+      node.textContent = clearLabel;
+    });
 
-    if (countEl) countEl.textContent = n ? `${n} results` : "No results";
-    if (heading) heading.textContent = `${n} results for “${q}”`;
-
-    if (!n) {
-      list?.setAttribute("hidden", "");
+    if (!matched.length) {
       if (list) list.innerHTML = "";
+      list?.setAttribute("hidden", "");
       empty?.removeAttribute("hidden");
       if (emptyTitle) emptyTitle.textContent = `No pages found for “${q}”`;
       return;
@@ -195,51 +222,92 @@ const chips = [
 
     empty?.setAttribute("hidden", "");
     list?.removeAttribute("hidden");
-    if (!list) return;
-    list.innerHTML = matched
-      .map(
-        (hit, index) => `
-      <li>
-        <a href="${escapeHtml(hit.href)}" class="si-result${index === 0 ? " is-active" : ""}">
-          <span class="si-result-kind">${escapeHtml(hit.kind)}</span>
-          <span class="si-result-row">
-            <span class="si-result-title">${escapeHtml(hit.title)}</span>
-            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.67 2 12 8l-7.33 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </span>
-        </a>
-      </li>`,
-      )
-      .join("");
+    if (list) {
+      list.innerHTML = matched
+        .map(
+          (hit, index) => `
+            <a class="si-hit${index === 0 ? " is-active" : ""}" href="${hit.href}">
+              <span class="si-hit-kind">${escapeHtml(hit.kind)}</span>
+              <span class="si-hit-row">
+                <span class="si-hit-title">${escapeHtml(hit.title)}</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M5 3L11 8L5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </a>`,
+        )
+        .join("");
+    }
   }
 
   function applyQuery(query: string, push: boolean) {
     render(query);
-    if (push) {
-      const url = new URL(window.location.href);
-      if (query) url.searchParams.set("q", query);
-      else url.searchParams.delete("q");
-      window.history.replaceState({}, "", url);
-    }
+    if (!push) return;
+    const url = new URL(window.location.href);
+    const next = query.trim();
+    if (next) url.searchParams.set("q", next);
+    else url.searchParams.delete("q");
+    history.replaceState({}, "", url);
   }
 
-  function escapeHtml(value: string) {
-    return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char] ?? char);
-  }
-
-  input.addEventListener("input", () => applyQuery(input.value, true));
-  clearBtn?.addEventListener("click", () => { input.value = ""; applyQuery("", true); input.focus(); });
-  document.querySelectorAll("[data-search-clear-text], [data-search-clear-empty]").forEach((el) => {
-    el.addEventListener("click", () => { input.value = ""; applyQuery("", true); input.focus(); });
+  input?.addEventListener("input", () => applyQuery(input.value, true));
+  clearBtn?.addEventListener("click", () => {
+    if (input) input.value = "";
+    applyQuery("", true);
+    input?.focus();
+  });
+  document.querySelectorAll("[data-search-clear-text], [data-search-clear-empty]").forEach((node) => {
+    node.addEventListener("click", () => {
+      if (input) input.value = "";
+      applyQuery("", true);
+      input?.focus();
+    });
   });
   window.addEventListener("keydown", (event) => {
-    if (event.key === "/" && document.activeElement !== input && !(event.target instanceof HTMLInputElement) && !(event.target instanceof HTMLTextAreaElement)) {
+    if (event.key === "/" && document.activeElement !== input && !(document.activeElement instanceof HTMLInputElement) && !(document.activeElement instanceof HTMLTextAreaElement)) {
       event.preventDefault();
-      input.focus();
+      input?.focus();
     }
-    if (event.key === "Escape" && document.activeElement === input) {
-      input.value = "";
+  });
+  input?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      if (input) input.value = "";
       applyQuery("", true);
     }
   });
+
   applyQuery(new URLSearchParams(window.location.search).get("q") ?? "", false);
+
+  const cats = Array.from(document.querySelectorAll("[data-category-toggle]"));
+  cats.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const slug = btn.getAttribute("data-category-toggle");
+      const wrap = btn.closest(".si-cat");
+      const panel = wrap?.querySelector("[data-panel]");
+      const was = btn.getAttribute("aria-expanded") === "true";
+      cats.forEach((other) => {
+        other.setAttribute("aria-expanded", "false");
+        other.closest(".si-cat")?.classList.remove("is-open");
+        other.closest(".si-cat")?.querySelector("[data-panel]")?.setAttribute("hidden", "");
+      });
+      if (!was && slug) {
+        btn.setAttribute("aria-expanded", "true");
+        wrap?.classList.add("is-open");
+        panel?.removeAttribute("hidden");
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-subcategory-toggle]").forEach((btn) => {
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const open = btn.getAttribute("aria-expanded") === "true";
+      const row = btn.closest(".si-sub");
+      const tests = row?.querySelector("[data-tests]");
+      btn.setAttribute("aria-expanded", open ? "false" : "true");
+      row?.classList.toggle("is-open", !open);
+      if (open) tests?.setAttribute("hidden", "");
+      else tests?.removeAttribute("hidden");
+    });
+  });
 </script>

@@ -50,7 +50,7 @@ const { category } = Astro.props;
             </button>
           </span>
         </div>
-        <ul class="si-tests" id={`si-tests-${category.slug}-${sub.slug}`} hidden>
+            <ul class="si-tests" id={`si-tests-${category.slug}-${sub.slug}`} data-tests hidden>
           {sub.tests.map((test) => (
             <li>
               <a class="si-test-link" href={test.href}>
