@@ -359,6 +359,7 @@
 
 .si-chip-n {
   color: var(--si-pink);
+  font-weight: 600;
 }
 
 /* ——— Body ——— */
@@ -639,6 +640,11 @@
     margin-top: 0;
     margin-bottom: 1.75rem;
   }
+
+  .si-resources-wrap {
+    padding: 0;
+    margin: 7.5rem 0 6rem;
+  }
 }
 
 .si-explore {
@@ -834,6 +840,12 @@
   background: var(--si-surface);
 }
 
+@media (min-width: 768px) {
+  .si-resources-wrap {
+    margin: 7.5rem 0 6rem;
+  }
+}
+
 .si-testing-intro {
   margin-bottom: 1.5rem;
 }
@@ -878,7 +890,7 @@
   display: flex;
   align-items: baseline;
   gap: 6px;
-  width: 50%;
+  width: 179px;
 }
 
 @media (min-width: 768px) {
