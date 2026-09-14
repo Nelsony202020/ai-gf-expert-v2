@@ -10,8 +10,14 @@ const { toc } = Astro.props;
 
 <details class="ourdream-article-jump" data-ourdream-jump>
   <summary class="ourdream-article-jump__toggle">
-    <span>Jump to section</span>
-    <span class="material-symbols-outlined ourdream-article-jump__chevron" aria-hidden="true">expand_more</span>
+    <svg class="ourdream-article-jump__icon" viewBox="0 0 16 14" fill="none" aria-hidden="true">
+      <path d="M3.3 13H12M3.3 7H12M3.3 1H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+    </svg>
+    <span class="ourdream-article-jump__label">Jump to section</span>
+    <svg class="ourdream-article-jump__chevron" viewBox="0 0 12 8" fill="none" aria-hidden="true">
+      <path d="M1 1.5 5.5 6 10 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+      ></path>
+    </svg>
   </summary>
   <nav class="ourdream-article-jump__panel" aria-label="Jump to section">
     <ul class="ourdream-article-jump__list">
@@ -21,13 +27,6 @@ const { toc } = Astro.props;
             <a class="ourdream-article-jump__link" href={`#${section.id}`}>
               {section.label}
             </a>
-            {
-              section.children?.map((child) => (
-                <a class="ourdream-article-jump__link ourdream-article-jump__link--child" href={`#${child.id}`}>
-                  {child.label}
-                </a>
-              ))
-            }
           </li>
         ))
       }

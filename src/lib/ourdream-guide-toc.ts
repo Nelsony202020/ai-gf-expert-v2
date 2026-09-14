@@ -4,33 +4,21 @@ export interface OurDreamTocSection {
   children?: { id: string; label: string }[];
 }
 
-const headingRe = /<h([23])\s+[^>]*id="([^"]+)"[^>]*>([\s\S]*?)<\/h\1>/gi;
+const headingRe = /<h2\s+[^>]*id="([^"]+)"[^>]*>([\s\S]*?)<\/h2>/gi;
 
 function stripTags(html: string): string {
   return html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 }
 
-/** Build sidebar TOC from h2/h3 ids in guide HTML (h3 nest under preceding h2). */
+/** Build sidebar TOC from h2 ids — Figma article rail lists H2 sections only. */
 export function extractOurDreamGuideToc(bodyHtml: string): OurDreamTocSection[] {
   const sections: OurDreamTocSection[] = [];
-  let current: OurDreamTocSection | null = null;
 
   for (const match of bodyHtml.matchAll(headingRe)) {
-    const level = Number(match[1]);
-    const id = match[2];
-    const label = stripTags(match[3]);
+    const id = match[1];
+    const label = stripTags(match[2]);
     if (!id || !label) continue;
-
-    if (level === 2) {
-      current = { id, label, children: [] };
-      sections.push(current);
-    } else if (level === 3 && current) {
-      current.children!.push({ id, label });
-    }
-  }
-
-  for (const section of sections) {
-    if (section.children?.length === 0) delete section.children;
+    sections.push({ id, label });
   }
 
   return sections;

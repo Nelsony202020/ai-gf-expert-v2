@@ -2,6 +2,7 @@
 import Breadcrumbs from '../../ui/Breadcrumbs.astro';
 import OurDreamArticleSidebar from './OurDreamArticleSidebar.astro';
 import OurDreamArticleMobileJump from './OurDreamArticleMobileJump.astro';
+import OurDreamArticleRelated from './OurDreamArticleRelated.astro';
 import { cdnAsset } from '../../../lib/media/cdn';
 import type { AuthorProfile } from '../../../data/authors';
 import { extractOurDreamGuideToc, estimateGuideReadMinutes } from '../../../lib/ourdream-guide-toc';
@@ -12,6 +13,7 @@ interface Props {
   bodyHtml: string;
   author: AuthorProfile | undefined;
   published: string;
+  publishedShort?: string;
   publishedIso?: string;
   canonical: string;
   currentHref: string;
@@ -24,6 +26,7 @@ const {
   bodyHtml,
   author,
   published,
+  publishedShort,
   publishedIso,
   canonical,
   currentHref,
@@ -32,53 +35,62 @@ const {
 
 const toc = extractOurDreamGuideToc(bodyHtml);
 const readMinutes = estimateGuideReadMinutes(bodyHtml);
+const avatarUrl = author?.avatar ? cdnAsset(author.avatar) : undefined;
+const dateShort = publishedShort ?? published;
 ---
 
-<div class="ourdream-article-page" data-ourdream-article data-page-url={canonical}>
-  <header class="ourdream-article-hero section-container">
-    <Breadcrumbs
-      items={[
-        { label: 'Home', href: '/' },
-        { label: 'Guides', href: '/guides/' },
-        { label: 'OurDream AI', href: hubHref },
-        { label: breadcrumbLabel },
-      ]}
-    />
-    <h1 class="ourdream-article-hero__title">{title}</h1>
-    <div class="ourdream-article-hero__meta">
-      {
-        author?.avatar && (
-          <img
-            src={cdnAsset(author.avatar)}
-            alt=""
-            class="ourdream-article-hero__avatar"
-            width="36"
-            height="36"
-            loading="lazy"
-            decoding="async"
-          />
-        )
-      }
-      {author && <span class="ourdream-article-hero__author">{author.name}</span>}
-      <span class="ourdream-article-hero__dot" aria-hidden="true">·</span>
-      <time class="ourdream-article-hero__date" datetime={publishedIso}>{published}</time>
-      <span class="ourdream-article-hero__dot" aria-hidden="true">·</span>
-      <span class="ourdream-article-hero__read">{readMinutes} min read</span>
+<div
+  class="ourdream-article-page"
+  data-ourdream-article
+  data-page-url={canonical}
+  style={avatarUrl ? `--od-author-avatar: url('${avatarUrl}')` : undefined}
+>
+  <div class="ourdream-article-layout">
+    <div class="ourdream-article-primary">
+      <header class="ourdream-article-hero">
+        <Breadcrumbs
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Guides', href: '/guides/' },
+            { label: breadcrumbLabel },
+          ]}
+        />
+        <h1 class="ourdream-article-hero__title">{title}</h1>
+        <div class="ourdream-article-hero__meta">
+          {
+            avatarUrl && (
+              <img
+                src={avatarUrl}
+                alt=""
+                class="ourdream-article-hero__avatar"
+                width="28"
+                height="28"
+                loading="lazy"
+                decoding="async"
+              />
+            )
+          }
+          <div class="ourdream-article-hero__meta-copy">
+            {author && <span class="ourdream-article-hero__author">{author.name}</span>}
+            <span class="ourdream-article-hero__byline">
+              <span class="ourdream-article-hero__read--desktop">· {published}</span>
+              <span class="ourdream-article-hero__read--mobile">
+                · Updated {dateShort} · {readMinutes} min read
+              </span>
+            </span>
+          </div>
+        </div>
+        {toc.length > 0 && <OurDreamArticleMobileJump toc={toc} />}
+      </header>
+
+      <article class="ourdream-article-main min-w-0">
+        <div class="ourdream-article-prose" data-glossary-decorate data-ourdream-prose set:html={bodyHtml} />
+      </article>
+
+      <OurDreamArticleRelated currentHref={currentHref} hubHref={hubHref} />
     </div>
-    {toc.length > 0 && <OurDreamArticleMobileJump toc={toc} />}
-  </header>
 
-  <div class="ourdream-article-layout section-container">
-    {toc.length > 0 && <OurDreamArticleSidebar toc={toc} currentHref={currentHref} />}
-
-    <article class="ourdream-article-main min-w-0">
-      <div
-        class="ourdream-article-prose guide-prose"
-        data-glossary-decorate
-        data-ourdream-prose
-        set:html={bodyHtml}
-      />
-    </article>
+    {toc.length > 0 && <OurDreamArticleSidebar toc={toc} hubHref={hubHref} />}
   </div>
 </div>
 

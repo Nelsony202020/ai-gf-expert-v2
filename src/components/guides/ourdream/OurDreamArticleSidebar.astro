@@ -1,77 +1,28 @@
 ---
 import type { OurDreamTocSection } from '../../../lib/ourdream-guide-toc';
-import { ourdreamHubGuides } from '../../../data/ourdream-guide-hub';
 
 interface Props {
   toc: OurDreamTocSection[];
-  currentHref: string;
+  hubHref?: string;
 }
 
-const { toc, currentHref } = Astro.props;
-
-const related = ourdreamHubGuides.filter(
-  (g) => g.href !== currentHref && !g.href.startsWith('/reviews/'),
-);
+const { toc, hubHref = '/guides/ourdream-ai/' } = Astro.props;
 ---
 
-<aside class="ourdream-article-sidebar roundup-sidebar" aria-label="Guide navigation" data-ourdream-toc-root>
-  <nav class="ourdream-article-toc roundup-toc" aria-label="In this guide">
+<aside class="ourdream-article-sidebar" aria-label="Guide navigation" data-ourdream-toc-root>
+  <nav class="ourdream-article-toc" aria-label="In this guide">
     <p class="ourdream-article-toc__title">In this guide</p>
-    <ul class="ourdream-article-toc__list roundup-toc__list">
+    <ul class="ourdream-article-toc__list">
       {
         toc.map((section) => (
-          <li
-            class:list={[section.children?.length && 'has-toc-children']}
-            data-toc-section={section.children?.length ? section.id : undefined}
-          >
-            <a class="ourdream-article-toc__link roundup-toc__link" href={`#${section.id}`} data-toc-link={section.id}>
+          <li>
+            <a class="ourdream-article-toc__link" href={`#${section.id}`} data-toc-link={section.id}>
               {section.label}
             </a>
-            {
-              section.children && section.children.length > 0 && (
-                <ul class="roundup-toc__sublist" data-toc-sublist>
-                  {
-                    section.children.map((child) => (
-                      <li>
-                        <a
-                          class="ourdream-article-toc__link roundup-toc__link roundup-toc__link--h3"
-                          href={`#${child.id}`}
-                          data-toc-link={child.id}
-                        >
-                          {child.label}
-                        </a>
-                      </li>
-                    ))
-                  }
-                </ul>
-              )
-            }
           </li>
         ))
       }
     </ul>
+    <a class="ourdream-article-toc__explore" href={hubHref}>Explore all OurDream AI guides →</a>
   </nav>
-
-  {
-    related.length > 0 && (
-      <div class="ourdream-article-related">
-        <p class="ourdream-article-related__title">Related OurDream guides</p>
-        <ul class="ourdream-article-related__list">
-          {
-            related.map((guide) => (
-              <li>
-                <a class="ourdream-article-related__link" href={guide.href}>
-                  <span class="ourdream-article-related__name">{guide.title}</span>
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-        <a class="ourdream-article-related__hub" href="/guides/ourdream-ai/">
-          Explore all OurDream AI guides
-          <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-        </a>
-      </div>
-    )
-  }
 </aside>

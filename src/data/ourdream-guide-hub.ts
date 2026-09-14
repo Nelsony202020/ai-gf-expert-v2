@@ -68,6 +68,24 @@ export const ourdreamHubCategoryTitles = {
   imagesVideoComics: 'Images, Video & Comics',
 } as const;
 
+export function getOurDreamGuideCategory(href: string): string | undefined {
+  for (const topic of ourdreamHubTopics) {
+    if (topic.guides.some((g) => g.href === href)) return topic.title;
+  }
+  return undefined;
+}
+
+export function getRelatedOurDreamGuides(currentHref: string, limit = 3) {
+  return ourdreamHubGuides
+    .filter((g) => g.href !== currentHref && !g.href.startsWith('/reviews/'))
+    .slice(0, limit)
+    .map((g) => ({
+      title: g.title,
+      href: g.href,
+      category: getOurDreamGuideCategory(g.href) ?? '',
+    }));
+}
+
 export const ourdreamHubTopics = [
   {
     id: 'prompts-characters',
