@@ -134,8 +134,6 @@ const pageSearchClass = isSearching
 </script>
 
 <script>
-  import { filterSitemapSearchHits } from "../lib/sitemap-search";
-
   const hits = window.__SI_HITS__ ?? [];
   const pageEl = document.querySelector(".si-page");
   const form = document.querySelector("[data-search-form]");
@@ -185,7 +183,16 @@ const pageSearchClass = isSearching
     }
 
     setSearching(true);
-    const matched = filterSitemapSearchHits(hits, q);
+    const needle = q.trim().toLowerCase();
+    const matched = needle
+      ? hits.filter((hit) => {
+          return [hit.title, hit.section, hit.kind, hit.parent, hit.group]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(needle);
+        })
+      : hits;
     pageEl?.classList.add("si-is-searching");
     pageEl?.classList.toggle("si-has-results", matched.length > 0);
     pageEl?.classList.toggle("si-no-results", matched.length === 0);
