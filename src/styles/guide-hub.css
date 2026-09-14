@@ -742,8 +742,7 @@
     pointer-events: none;
     opacity: 0;
     transform: translateY(14px);
-    background: var(--hub-ink);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: transparent;
     transition:
       opacity 240ms ease,
       transform 240ms ease;
@@ -756,7 +755,7 @@
   }
 
   .guide-hub__scroll-cta-inner {
-    padding: 0 16px 16px;
+    padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
     background: transparent;
   }
 
