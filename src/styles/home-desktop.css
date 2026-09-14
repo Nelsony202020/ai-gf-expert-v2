@@ -445,7 +445,7 @@
   padding: 0;
   background: transparent;
   color: var(--home-on-ink);
-  font: 500 14px/20px var(--font-sans);
+  font: 500 16px/20px var(--font-sans);
   outline: none;
 }
 
@@ -2142,9 +2142,26 @@
   .home-v2__menu-toggle {
     display: grid;
   }
+  .home-v2__search {
+    position: relative;
+    flex-shrink: 0;
+  }
+
   .home-v2__search.is-open .home-v2__search-field {
-    width: min(calc(100vw - 8.5rem), 280px);
-    max-width: min(calc(100vw - 8.5rem), 280px);
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: min(calc(100vw - 5.5rem), 280px);
+    max-width: min(calc(100vw - 5.5rem), 280px);
+  }
+
+  .home-v2__search-dropdown {
+    right: 0;
+    left: auto;
+    width: min(calc(100vw - 1rem), 360px);
+    max-width: calc(100vw - 1rem);
   }
   .home-v2__hero-copy .home-v2__eyebrow {
     display: none;

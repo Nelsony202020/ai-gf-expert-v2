@@ -1,5 +1,6 @@
 ---
 import AffiliateLink from '../../ui/AffiliateLink.astro';
+import HomeDesktopHeader from '../../home/desktop/HomeDesktopHeader.astro';
 import HomeIcon from '../../home/desktop/HomeIcon.astro';
 import type { Product } from '../../../data/products';
 import {
@@ -26,6 +27,7 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
     <div class="guide-hub__glow" aria-hidden="true">
       <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
     </div>
+    <HomeDesktopHeader variant="hero" />
     <div class="guide-hub__hero-body">
       <h1 class="guide-hub__title">{ourdreamHubMeta.title}</h1>
       <p class="guide-hub__lede">{ourdreamHubMeta.description}</p>

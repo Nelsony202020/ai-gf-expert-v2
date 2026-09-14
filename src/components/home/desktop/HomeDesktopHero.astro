@@ -1,6 +1,7 @@
 ---
 import { homeProofFacts } from '../../../data/home-proof';
 import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
+import HomeDesktopHeader from './HomeDesktopHeader.astro';
 import HomeEyebrow from './HomeEyebrow.astro';
 import HomeHermanBadge from './HomeHermanBadge.astro';
 import HomeIcon from './HomeIcon.astro';
@@ -16,6 +17,7 @@ const { data } = Astro.props;
   <div class="home-v2__grid-hot" aria-hidden="true"></div>
   <div class="home-v2__cursor-glow" aria-hidden="true"></div>
   <img class="home-v2__glow" src="/home/v2/pink-glow.svg" alt="" />
+  <HomeDesktopHeader />
   <div class="home-v2__hero-body">
     <div class="home-v2__hero-main">
       <div class="home-v2__hero-copy">
