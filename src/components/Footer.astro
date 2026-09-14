@@ -7,17 +7,23 @@ import ThemeToggle from './ui/ThemeToggle.astro';
 const year = new Date().getFullYear();
 const legalBySlug = Object.fromEntries(legalPages.map((page) => [page.slug, page]));
 
+function youtubeSubscribeUrl(url: string) {
+  const parsed = new URL(url);
+  parsed.searchParams.set('sub_confirmation', '1');
+  return parsed.toString();
+}
+
 const channels = [
   {
     label: 'AI Girlfriend Expert',
     descriptor: 'Reviews, rankings & app testing',
-    href: BRAND_SOCIAL.youtube,
+    href: youtubeSubscribeUrl(BRAND_SOCIAL.youtube),
     icon: 'youtube' as const,
   },
   {
     label: 'AI Girlfriend Help Desk',
     descriptor: 'Tutorials, FAQs & how-to guides',
-    href: 'https://www.youtube.com/@ai-girlfriend-help-desk',
+    href: youtubeSubscribeUrl('https://www.youtube.com/@ai-girlfriend-help-desk'),
     icon: 'youtube' as const,
   },
   {

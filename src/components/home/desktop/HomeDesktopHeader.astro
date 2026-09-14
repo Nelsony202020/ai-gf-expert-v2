@@ -1,8 +1,15 @@
 ---
 import ThemeToggle from '../../ui/ThemeToggle.astro';
+import { popularBrandGuideHubs } from '../../../data/brand-guide-hubs';
 import { buildSearchIndex } from '../../../data/site-search';
 import { loadComparisonProducts } from '../../../lib/content/comparisonProducts';
 import HomeIcon from './HomeIcon.astro';
+
+interface Props {
+  variant?: 'default' | 'hero';
+}
+
+const { variant = 'default' } = Astro.props;
 
 const publishedProducts = await loadComparisonProducts();
 const searchIndex = buildSearchIndex(publishedProducts);
@@ -13,7 +20,13 @@ const reviewLinks = publishedProducts
   .map((p) => ({ label: `${p.name} Review`, href: `/reviews/${p.slug}/` }));
 ---
 
-<header class="home-v2__header" data-site-header data-home-v2-header data-glossary-skip>
+<header
+  class:list={['home-v2__header', variant === 'hero' && 'home-v2__header--hero']}
+  data-site-header
+  data-home-v2-header
+  data-header-variant={variant}
+  data-glossary-skip
+>
   <a href="/" class="home-v2__logo-link" aria-label="Girlfriend Expert AI">
     <span class="home-v2__logo" role="img" aria-hidden="true"></span>
   </a>
@@ -36,6 +49,18 @@ const reviewLinks = publishedProducts
       <div class="home-v2__drop-panel" data-home-drop-panel hidden>
         <a href="/reviews/">All reviews</a>
         {reviewLinks.map((link) => <a href={link.href}>{link.label}</a>)}
+      </div>
+    </div>
+    <div class="home-v2__drop" data-home-drop>
+      <button type="button" class="home-v2__nav-btn" data-home-drop-btn aria-expanded="false" aria-haspopup="true">
+        Brands
+        <HomeIcon name="chevron-down" size={14} />
+      </button>
+      <div class="home-v2__drop-panel" data-home-drop-panel hidden>
+        <p class="home-v2__drop-kicker">Popular brands</p>
+        {popularBrandGuideHubs.map((hub) => (
+          <a href={hub.href}>{hub.label}</a>
+        ))}
       </div>
     </div>
     <a href="/guides/" class="home-v2__nav-link">Guides</a>

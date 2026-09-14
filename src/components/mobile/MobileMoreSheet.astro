@@ -1,5 +1,6 @@
 ---
 import ThemeToggle from '../ui/ThemeToggle.astro';
+import { popularBrandGuideHubs } from '../../data/brand-guide-hubs';
 
 ---
 
@@ -36,6 +37,18 @@ import ThemeToggle from '../ui/ThemeToggle.astro';
         <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
         Back to top
       </button>
+
+      <div class="mobile-sheet__divider"></div>
+
+      <p class="mobile-sheet__section-label">Brands</p>
+      {
+        popularBrandGuideHubs.map((hub) => (
+          <a href={hub.href} class="mobile-sheet__link">
+            <span class="material-symbols-outlined" aria-hidden="true">apps</span>
+            {hub.label}
+          </a>
+        ))
+      }
 
       <div class="mobile-sheet__divider"></div>
 
