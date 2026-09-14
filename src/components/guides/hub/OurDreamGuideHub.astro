@@ -380,6 +380,10 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
 
     observer.observe(sentinel);
 
+    const initialRect = sentinel.getBoundingClientRect();
+    const initiallyInView = initialRect.top < window.innerHeight && initialRect.bottom > 0;
+    apply(!initiallyInView);
+
     mobileMq.addEventListener('change', () => {
       const rect = sentinel.getBoundingClientRect();
       const inView = rect.top < window.innerHeight && rect.bottom > 0;
