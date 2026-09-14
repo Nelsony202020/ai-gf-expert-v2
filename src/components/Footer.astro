@@ -1,44 +1,11 @@
 ---
 import { legalPages } from '../data/legal-pages';
-import { BRAND_SOCIAL } from '../data/social-links';
+import { BRAND_CHANNELS } from '../data/social-links';
 import SocialIcon from './ui/SocialIcon.astro';
 import ThemeToggle from './ui/ThemeToggle.astro';
 
 const year = new Date().getFullYear();
 const legalBySlug = Object.fromEntries(legalPages.map((page) => [page.slug, page]));
-
-function youtubeSubscribeUrl(url: string) {
-  const parsed = new URL(url);
-  parsed.searchParams.set('sub_confirmation', '1');
-  return parsed.toString();
-}
-
-const channels = [
-  {
-    label: 'AI Girlfriend Expert',
-    descriptor: 'Reviews, rankings & app testing',
-    href: youtubeSubscribeUrl(BRAND_SOCIAL.youtube),
-    icon: 'youtube' as const,
-  },
-  {
-    label: 'AI Girlfriend Help Desk',
-    descriptor: 'Tutorials, FAQs & how-to guides',
-    href: youtubeSubscribeUrl('https://www.youtube.com/@ai-girlfriend-help-desk'),
-    icon: 'youtube' as const,
-  },
-  {
-    label: 'TikTok',
-    descriptor: '',
-    href: BRAND_SOCIAL.tiktok,
-    icon: 'tiktok' as const,
-  },
-  {
-    label: 'Reddit Community',
-    descriptor: 'New community coming soon',
-    href: '',
-    icon: 'reddit' as const,
-  },
-];
 
 const columns = [
   {
@@ -98,7 +65,7 @@ const legal = [
         <div class="site-footer__channels" aria-label="Channels and community">
           <p class="site-footer__channels-label">Channels &amp; community</p>
           {
-            channels.map((channel) =>
+            BRAND_CHANNELS.map((channel) =>
               channel.href ? (
                 <a
                   class="site-footer__channel"
@@ -143,18 +110,22 @@ const legal = [
       </nav>
     </div>
 
+    <div class="site-footer__utility">
+      <ThemeToggle variant="switch" />
+    </div>
+
     <p class="site-footer__signoff">
       Tested, <span>not hyped.</span>
     </p>
 
     <div class="site-footer__bottom">
       <p class="site-footer__copyright">&copy; {year} Nelson Digital FZ-LLC. All rights reserved.</p>
-      <div class="site-footer__bottom-actions">
-        <nav class="site-footer__legal" aria-label="Legal">
-          {legal.map((link) => (
-            <a href={link.href} class="site-footer__legal-link">{link.label}</a>
-          ))}
-        </nav>
+      <nav class="site-footer__legal" aria-label="Legal">
+        {legal.map((link) => (
+          <a href={link.href} class="site-footer__legal-link">{link.label}</a>
+        ))}
+      </nav>
+      <div class="site-footer__theme-desktop">
         <ThemeToggle variant="footer" />
       </div>
     </div>

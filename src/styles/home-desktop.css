@@ -2271,21 +2271,57 @@
   .home-v2__hero-art {
     padding: 8px 0 16px;
   }
+  .home-v2__badge.is-flipped {
+    width: min(100%, 320px);
+    height: auto;
+    perspective: none;
+  }
+  .home-v2__badge.is-flipped .home-v2__badge-scene,
+  .home-v2__badge.is-flipped .home-v2__badge-flip {
+    height: auto;
+    min-height: 0;
+    transform: none;
+    transform-style: flat;
+    border-radius: 24px;
+    overflow: visible;
+  }
+  .home-v2__badge.is-flipped .home-v2__badge-face {
+    overflow: visible;
+    border-radius: 24px;
+    backface-visibility: visible;
+  }
+  .home-v2__badge.is-flipped .home-v2__badge-face--front {
+    display: none;
+  }
+  .home-v2__badge.is-flipped .home-v2__badge-face--back {
+    position: relative;
+    inset: auto;
+    transform: none;
+    border-radius: 24px;
+    padding: 20px 16px 16px;
+    gap: 10px;
+    pointer-events: auto;
+  }
+  .home-v2__badge.is-flipped .home-v2__badge-toggle {
+    border-radius: 24px;
+  }
+  .home-v2__badge.is-flipped .home-v2__badge-kicker {
+    max-width: none;
+  }
+  .home-v2__badge.is-flipped .home-v2__badge-cats {
+    width: 100%;
+  }
   .home-v2__badge-face--back {
-    padding: 26px 18px 22px;
-    gap: 5px;
+    padding: 18px 16px 16px;
+    gap: 8px;
   }
-  .home-v2__badge-kicker {
-    font-size: 9px;
-    line-height: 12px;
-  }
-  .home-v2__badge-name { font-size: 16px; line-height: 18px; }
-  .home-v2__badge-score b { font-size: 26px; line-height: 26px; }
-  .home-v2__badge-cats { width: 84%; gap: 4px 6px; }
-  .home-v2__badge-cats b { font-size: 13px; line-height: 15px; }
-  .home-v2__badge-cats span { font-size: 9px; line-height: 11px; }
-  .home-v2__badge-link { min-height: 24px; font-size: 11px; }
-  .home-v2__badge-app .home-v2__app-icon { width: 28px; height: 28px; }
+  .home-v2__badge-name { font-size: 18px; line-height: 22px; }
+  .home-v2__badge-score b { font-size: 28px; line-height: 28px; }
+  .home-v2__badge-cats { width: 100%; gap: 8px; }
+  .home-v2__badge-cats b { font-size: 15px; line-height: 18px; }
+  .home-v2__badge-cats span { font-size: 11px; line-height: 14px; }
+  .home-v2__badge-link { min-height: 28px; font-size: 13px; }
+  .home-v2__badge-app .home-v2__app-icon { width: 32px; height: 32px; }
   .home-v2__badge-toggle {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
