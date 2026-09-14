@@ -630,6 +630,13 @@
   display: none;
 }
 
+/* Dock renders outside `.guide-hub` on ourdream-ai — keep hub tokens on the node */
+.guide-hub__scroll-cta {
+  --hub-pink: #db2777;
+  --hub-pink-press: #be185d;
+  --hub-on-ink: #f7f7f6;
+}
+
 .guide-hub__sticky-bar {
   position: fixed;
   top: 0;
@@ -801,8 +808,8 @@ body:has(.guide-hub) {
     height: 52px;
     padding: 0 18px;
     border-radius: 999px;
-    background: var(--hub-pink);
-    color: var(--hub-on-ink);
+    background-color: var(--hub-pink, #db2777);
+    color: var(--hub-on-ink, #f7f7f6);
     font-size: 16px;
     font-weight: 600;
     line-height: 24px;
@@ -815,7 +822,7 @@ body:has(.guide-hub) {
   }
 
   .guide-hub__scroll-cta-btn:hover {
-    background: var(--hub-pink-press);
+    background-color: var(--hub-pink-press, #be185d);
   }
 
   .guide-hub__scroll-cta-text {
