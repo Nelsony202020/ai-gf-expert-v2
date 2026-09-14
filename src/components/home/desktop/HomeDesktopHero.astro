@@ -19,25 +19,31 @@ const { data } = Astro.props;
   <img class="home-v2__glow" src="/home/v2/pink-glow.svg" alt="" />
   <HomeDesktopHeader />
   <div class="home-v2__hero-body">
-    <div class="home-v2__hero-copy">
-      <HomeEyebrow text="Independent AI companion testing lab" theme="ink" />
-      <h1 id="home-v2-title" class="home-v2__display">
-        Find the best<br />AI girlfriend app<br />for <em class="home-v2__accent">you.</em>
-      </h1>
-      <p class="home-v2__lead home-v2__lead--ink">
-        We buy, test, score and compare AI companion apps — so you can choose with confidence, not marketing hype.
-      </p>
-      <div class="home-v2__ctas">
+    <div class="home-v2__hero-main">
+      <div class="home-v2__hero-copy">
+        <HomeEyebrow text="Independent AI companion testing lab" theme="ink" />
+        <h1 id="home-v2-title" class="home-v2__display">
+          Find the best<br />AI girlfriend app<br />for <em class="home-v2__accent">you.</em>
+        </h1>
+        <p class="home-v2__lead home-v2__lead--ink">
+          We buy, test, score and compare AI companion apps — so you can choose with confidence, not marketing hype.
+        </p>
+      </div>
+      <div class="home-v2__hero-actions">
         <a class="home-v2__btn home-v2__btn--primary" href="/best/ai-girlfriend/">
           Best AI Girlfriend Apps
           <HomeIcon name="arrow-right" size={18} />
         </a>
-        <a class="home-v2__btn home-v2__btn--on-ink" href="/reviews/">
+        <a class="home-v2__btn home-v2__btn--on-ink home-v2__hero-secondary--desktop" href="/reviews/">
           AI Girlfriend Reviews
           <HomeIcon name="arrow-right" size={18} />
         </a>
+        <a class="home-v2__btn home-v2__btn--text home-v2__hero-secondary--mobile" href="/reviews/">
+          Browse reviews
+          <HomeIcon name="arrow-right" size={16} />
+        </a>
       </div>
-      <div class="home-v2__finalists">
+      <div class="home-v2__finalists home-v2__finalists--hero">
         <div class="home-v2__finalist-stack">
           {data.finalists.map((app) => (
             <img src={app.logo} alt="" width="28" height="28" class="home-v2__app-icon home-v2__app-icon--sm" />
@@ -78,5 +84,13 @@ const { data } = Astro.props;
         </div>
       </>
     ))}
+  </div>
+  <div class="home-v2__finalists home-v2__finalists--proof">
+    <div class="home-v2__finalist-stack">
+      {data.finalists.map((app) => (
+        <img src={app.logo} alt="" width="28" height="28" class="home-v2__app-icon home-v2__app-icon--sm" />
+      ))}
+    </div>
+    <p>The {data.finalists.length} finalists in our 2026 rankings</p>
   </div>
 </section>

@@ -1,0 +1,164 @@
+/* Global mobile burger overlay — shown below the desktop header breakpoint. */
+
+body.site-menu-open {
+  overflow: hidden;
+}
+
+.site-mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  background: #101014;
+  color: #f7f7f6;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.site-mobile-menu.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.site-mobile-menu[hidden] {
+  display: none !important;
+}
+
+.site-mobile-menu__panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  min-height: 100dvh;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.site-mobile-menu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.site-mobile-menu__brand {
+  margin: 0;
+  font-family: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #f7f7f6;
+}
+
+.site-mobile-menu__close {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-right: -6px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 8%);
+  color: #f7f7f6;
+  cursor: pointer;
+}
+
+.site-mobile-menu__close:focus-visible {
+  outline: 2px solid #db2777;
+  outline-offset: 2px;
+}
+
+.site-mobile-menu__nav {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+
+.site-mobile-menu__group ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.site-mobile-menu__kicker {
+  margin: 0;
+  font: 600 11px/16px var(--font-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a4a3aa;
+}
+
+.site-mobile-menu__link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 0;
+  color: #f7f7f6;
+  font-family: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.site-mobile-menu__link:hover,
+.site-mobile-menu__link:focus-visible {
+  color: #db2777;
+}
+
+.site-mobile-menu__foot {
+  margin-top: auto;
+  padding-top: 28px;
+  display: grid;
+  gap: 16px;
+}
+
+.site-mobile-menu .theme-toggle--switch {
+  color: #f7f7f6;
+  background: rgb(255 255 255 / 6%);
+  border-radius: 12px;
+}
+
+.site-mobile-menu .theme-toggle--switch:hover,
+.site-mobile-menu .theme-toggle--switch:focus-visible {
+  background: rgb(255 255 255 / 10%);
+}
+
+.site-mobile-menu .theme-toggle--switch .theme-toggle__icon {
+  color: #f7f7f6;
+}
+
+.site-mobile-menu__social {
+  display: flex;
+  gap: 10px;
+}
+
+.site-mobile-menu__social-link {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 8%);
+  color: #f7f7f6;
+}
+
+.site-mobile-menu__social-link:hover,
+.site-mobile-menu__social-link:focus-visible {
+  color: #db2777;
+}
+
+.site-mobile-menu__social-icon {
+  width: 16px;
+  height: 16px;
+}
+
+@media (min-width: 1024px) {
+  .site-mobile-menu {
+    display: none !important;
+  }
+}

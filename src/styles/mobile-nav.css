@@ -25,24 +25,6 @@
   body.mobile-sheet-open {
     overflow: hidden;
   }
-
-  body[data-mobile-nav-mode='site'],
-  body[data-mobile-nav-mode='hub'],
-  body[data-mobile-nav-mode='review'] {
-    padding-bottom: calc(
-      var(--mobile-nav-bar-height) + var(--mobile-nav-fab-lift) + var(--mobile-nav-float-bottom) +
-        var(--mobile-nav-page-gap) + env(safe-area-inset-bottom, 0px)
-    );
-  }
-
-  body[data-mobile-nav-mode='review'] .article-util-rail,
-  body[data-mobile-nav-mode='hub'] .article-util-rail {
-    display: none !important;
-  }
-
-  body[data-mobile-nav-mode='review'] .review-mobile-util-trigger-wrap {
-    display: none !important;
-  }
 }
 
 .review-mobile-util-trigger-wrap {

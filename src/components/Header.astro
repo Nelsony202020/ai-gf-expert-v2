@@ -131,7 +131,7 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
       <button
         type="button"
         class="site-header__menu-toggle"
-        data-mobile-menu-toggle
+        data-site-menu-toggle
         aria-expanded="false"
         aria-controls="site-mobile-menu"
         aria-label="Open menu"
@@ -144,33 +144,6 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
         </svg>
       </button>
     </div>
-  </div>
-
-  <div class="site-header__mobile-backdrop hidden" data-mobile-menu-backdrop aria-hidden="true"></div>
-
-  <div id="site-mobile-menu" class="site-header__mobile-menu hidden" data-mobile-menu hidden>
-    <div class="site-header__mobile-menu-handle" aria-hidden="true"></div>
-    <nav class="site-header__mobile-nav" aria-label="Site">
-      <a href="/" class="site-header__mobile-link">Home</a>
-      <a href="/reviews/" class="site-header__mobile-link">All Reviews</a>
-      <a href="/best/ai-girlfriend/" class="site-header__mobile-link">Best AI Girlfriend</a>
-      <p class="site-header__mobile-kicker">Brands</p>
-      {brandNav.popular.map((brand) => (
-        <a href={brand.href} class="site-header__mobile-link">{brand.name}</a>
-      ))}
-      {brandNav.viewAll ? (
-        <a href={brandNav.viewAll.href} class="site-header__mobile-link">{brandNav.viewAll.label} →</a>
-      ) : null}
-      <a href="/test/" class="site-header__mobile-link">How We Test</a>
-      <a href="/about/" class="site-header__mobile-link">About</a>
-      <a href="/contact/" class="site-header__mobile-link">Contact</a>
-    </nav>
-    <div class="site-header__mobile-actions">
-      <ThemeToggle variant="footer" />
-    </div>
-    <button type="button" class="site-header__mobile-close-sheet" data-mobile-menu-toggle aria-label="Close menu">
-      Close
-    </button>
   </div>
 
   <div
@@ -240,57 +213,6 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
     const searchField = header.querySelector('[data-search-field]');
     const searchInput = header.querySelector('[data-search-input]');
     const searchResults = header.querySelector('[data-search-results]');
-    const mobileMenu = header.querySelector('[data-mobile-menu]');
-    const mobileMenuBackdrop = header.querySelector('[data-mobile-menu-backdrop]');
-
-    let activeMenuToggle = null;
-
-    function closeMobileMenu() {
-      mobileMenu?.classList.add('hidden');
-      mobileMenu?.setAttribute('hidden', '');
-      mobileMenuBackdrop?.classList.add('hidden');
-      mobileMenuBackdrop?.setAttribute('aria-hidden', 'true');
-      document.querySelectorAll('[data-mobile-menu-toggle]').forEach((btn) => {
-        btn.setAttribute('aria-expanded', 'false');
-        btn.setAttribute('aria-label', 'Open menu');
-        btn.querySelector('.site-header__menu-icon--bars')?.classList.remove('hidden');
-        btn.querySelector('.site-header__menu-icon--close')?.classList.add('hidden');
-      });
-      header.classList.remove('site-header--menu-open');
-      document.body.classList.remove('site-header-menu-open');
-      activeMenuToggle = null;
-    }
-
-    function openMobileMenu(toggle) {
-      closeMega();
-      closeDrops();
-      closeSearch();
-      activeMenuToggle = toggle;
-      mobileMenu?.classList.remove('hidden');
-      mobileMenu?.removeAttribute('hidden');
-      mobileMenuBackdrop?.classList.remove('hidden');
-      mobileMenuBackdrop?.setAttribute('aria-hidden', 'false');
-      toggle.setAttribute('aria-expanded', 'true');
-      toggle.setAttribute('aria-label', 'Close menu');
-      toggle.querySelector('.site-header__menu-icon--bars')?.classList.add('hidden');
-      toggle.querySelector('.site-header__menu-icon--close')?.classList.remove('hidden');
-      header.classList.add('site-header--menu-open');
-      document.body.classList.add('site-header-menu-open');
-    }
-
-    document.querySelectorAll('[data-mobile-menu-toggle]').forEach((toggle) => {
-      toggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (mobileMenu?.classList.contains('hidden')) openMobileMenu(toggle);
-        else closeMobileMenu();
-      });
-      toggle.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-      });
-    });
-
-    mobileMenuBackdrop?.addEventListener('click', closeMobileMenu);
 
     let activeIndex = -1;
     let currentResults = [];
@@ -486,15 +408,8 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
     });
 
     document.addEventListener('click', (e) => {
-      if (e.target.closest('[data-mobile-menu-toggle]')) return;
+      if (e.target.closest('[data-site-menu-toggle]')) return;
       if (!searchRoot?.contains(e.target)) closeSearch();
-      if (
-        mobileMenu &&
-        !mobileMenu.classList.contains('hidden') &&
-        !header.contains(e.target)
-      ) {
-        closeMobileMenu();
-      }
     });
 
     document.addEventListener('keydown', (e) => {
@@ -502,7 +417,6 @@ const searchIndex = buildSearchIndex(publishedProducts, megaMenuColumns);
         closeMega();
         closeDrops();
         closeSearch();
-        closeMobileMenu();
       }
     });
 

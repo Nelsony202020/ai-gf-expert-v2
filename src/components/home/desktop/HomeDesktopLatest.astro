@@ -15,7 +15,7 @@ const { data } = Astro.props;
       <HomeEyebrow text="Latest" />
       <h2 id="home-latest-title" class="home-v2__h2">Latest testing</h2>
     </div>
-    <a class="home-v2__ghost" href="/reviews/">
+    <a class="home-v2__ghost home-v2__ghost--desktop" href="/reviews/">
       All AI Girlfriend Reviews
       <HomeIcon name="arrow-right" size={16} />
     </a>
@@ -59,4 +59,8 @@ const { data } = Astro.props;
       ))}
     </div>
   </div>
+  <a class="home-v2__section-cta" href="/reviews/">
+    View all AI Girlfriend Reviews
+    <HomeIcon name="arrow-right" size={16} />
+  </a>
 </section>

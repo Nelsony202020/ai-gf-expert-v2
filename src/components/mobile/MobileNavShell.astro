@@ -1,21 +1,11 @@
 ---
-import {
-  getMobileNavMode,
-  getActiveBottomNavItem,
-  showMobileBottomNav,
-} from '../../lib/mobile-nav/modes';
-import MobileBottomNav from './MobileBottomNav.astro';
-import MobileMoreSheet from './MobileMoreSheet.astro';
 import DefaultMobileNavSheet from './DefaultMobileNavSheet.astro';
 
 interface Props {
   pathname: string;
 }
 
-const { pathname } = Astro.props;
-const mode = getMobileNavMode(pathname);
-const activeItem = getActiveBottomNavItem(pathname);
-const bottomNav = showMobileBottomNav(mode);
+const { pathname: _pathname } = Astro.props;
 ---
 
 <script>
@@ -25,12 +15,5 @@ const bottomNav = showMobileBottomNav(mode);
   document.addEventListener('astro:page-load', () => bindDrawerScrollFades());
 </script>
 
-{
-  bottomNav && (
-    <>
-      <MobileBottomNav mode={mode} activeItem={activeItem} />
-      <MobileMoreSheet />
-      <DefaultMobileNavSheet />
-    </>
-  )
-}
+{/* Page/guide TOC sheets still open from the article utility rail. */}
+<DefaultMobileNavSheet />

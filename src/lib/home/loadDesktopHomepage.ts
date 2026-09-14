@@ -221,14 +221,21 @@ function withLogo<T extends { slug: string; logo: string }>(
 
 function reviewFeaturedImage(
   slug: string,
-  productsBySlug: Map<string, { featuredImage?: { full?: string }; logo?: string }>,
+  productsBySlug: Map<
+    string,
+    { featuredImage?: { full?: string }; heroGallery?: Array<{ full?: string }>; logo?: string }
+  >,
   featured: Map<string, string>,
   productLogo: string,
 ): string | undefined {
   const product = productsBySlug.get(slug);
-  // Editorial cards use the admin featured/review graphic only — never logos,
-  // gallery shots, or OG fallbacks that often point at horizontal wordmarks.
-  const url = firstRealUrl(product?.featuredImage?.full, featured.get(slug));
+  // Prefer the review featured graphic, then the existing review hero asset.
+  // Still skip logos / brand wordmarks so the card does not show a stretched mark.
+  const url = firstRealUrl(
+    product?.featuredImage?.full,
+    featured.get(slug),
+    product?.heroGallery?.[0]?.full,
+  );
   if (!url || url === productLogo || url === product?.logo) return undefined;
   if (/herman-youtube-review|girlfriend-expert-logo/i.test(url)) return undefined;
   return url;
