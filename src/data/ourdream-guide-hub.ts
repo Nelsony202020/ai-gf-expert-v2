@@ -60,20 +60,26 @@ export const ourdreamHubPopular = [
   { label: 'DreamCoins', query: 'dreamcoins' },
 ] as const;
 
+/** Primary Browse by topic labels — single source for hub (and any shared OurDream nav). */
+export const ourdreamHubCategoryTitles = {
+  promptsCharacters: 'Prompts & Characters',
+  imagesVideoComics: 'Images, Video & Comics',
+} as const;
+
 export const ourdreamHubTopics = [
   {
-    id: 'create',
-    title: 'Create & customize',
-    description: 'Learn how to control characters, prompts and generations.',
-    mobileDescription: 'Characters, prompts and generations',
+    id: 'prompts-characters',
+    title: ourdreamHubCategoryTitles.promptsCharacters,
+    description: 'Writing prompts, character setup, and prompt control in OurDream.',
+    mobileDescription: 'Prompts and characters',
     icon: '/guides/hub/icon-sliders.svg',
     guides: [ourdreamHubGuides[1], ourdreamHubGuides[3]],
   },
   {
-    id: 'media',
-    title: 'Images, video & comics',
-    description: 'Generate stills, comics, and motion inside OurDream.',
-    mobileDescription: 'Images, comics and video',
+    id: 'images-video-comics',
+    title: ourdreamHubCategoryTitles.imagesVideoComics,
+    description: 'Image generation, comics, and video inside OurDream.',
+    mobileDescription: 'Images, video, and comics',
     icon: '/guides/hub/icon-images.svg',
     guides: [ourdreamHubGuides[2], ourdreamHubGuides[4]],
   },
