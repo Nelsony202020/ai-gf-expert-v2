@@ -961,20 +961,53 @@ body.glossary-toolbar-stuck .glossary-letter__heading {
 .glossary-term__body ul,
 .glossary-term__body ol {
   margin: 0 0 1rem;
-  padding-left: 1.1rem;
+  padding-left: 1.5rem;
+  list-style-position: outside;
+}
+
+.glossary-term__body ul {
+  list-style-type: disc;
+}
+
+.glossary-term__body ol {
+  list-style-type: decimal;
+}
+
+.glossary-term__body ul ul {
+  list-style-type: circle;
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.glossary-term__body ol ol {
+  list-style-type: lower-alpha;
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
 }
 
 @media (min-width: 768px) {
-  .glossary-term__body ul {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 1.5rem;
-    padding-left: 1.1rem;
+  /* columns (not grid) keeps list markers visible in two-column layouts */
+  .glossary-term__body ul:not(:has(ul)):not(:has(ol)),
+  .glossary-term__body ol:not(:has(ul)):not(:has(ol)) {
+    columns: 2;
+    column-gap: 1.75rem;
+  }
+
+  .glossary-term__body li {
+    break-inside: avoid;
   }
 }
 
 .glossary-term__body li {
   margin-bottom: 0.35rem;
+}
+
+.glossary-term__body li > p:first-child {
+  margin-top: 0;
+}
+
+.glossary-term__body li > p:last-child {
+  margin-bottom: 0;
 }
 
 .glossary-term__body a {
