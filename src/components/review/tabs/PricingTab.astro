@@ -174,6 +174,23 @@ const usageCostsIdentical =
 const flatUsageCost = usageCostsIdentical ? usageCosts[0] : null;
 
 const defaultUsage = vm.usageTiers.find((t) => t.id === 'regular') ?? vm.usageTiers[0] ?? null;
+const recommendedPlan = vm.plans.find((p) => p.isRecommended && !p.isFree) ?? vm.plans.find((p) => !p.isFree) ?? null;
+
+function packNoteForTier(tier: (typeof vm.usageTiers)[number]): string | null {
+  const lines = tier.calculation?.packageLines ?? [];
+  if (lines.length === 0) return null;
+  const combo = lines
+    .map((line) =>
+      line.quantity > 1
+        ? `${line.quantity} × ${line.creditsLabel} at ${line.priceLabel}`
+        : `${line.creditsLabel} at ${line.priceLabel}`,
+    )
+    .join(' · ');
+  const leftover = tier.calculation?.leftoverCredits
+    ? ` · ${tier.calculation.leftoverCreditsLabel} spare`
+    : '';
+  return combo + leftover;
+}
 
 function topUpLabel(topUp: number | null | undefined): string {
   if (topUp == null) return '—';
@@ -206,6 +223,10 @@ const usagePayload = JSON.stringify(
           videos: tier.assumptions.videos,
           voice: tier.assumptions.voice,
           character: tier.assumptions.character,
+          packNote: packNoteForTier(tier),
+          subline:
+            (recommendedPlan?.displayName ?? 'Paid plan')
+            + (topUp != null && topUp > 0 ? ' subscription + credit top-ups' : ' subscription'),
           calculation: tier.calculation,
         },
       ];
@@ -348,275 +369,285 @@ const plansPayload = JSON.stringify({
 function withUnit(value: string) {
   return splitUnitSuffix(value);
 }
+
+function usageSwitchLabel(id: string) {
+  if (id === 'casual') return 'Light use';
+  if (id === 'power') return 'Heavy use';
+  return 'Regular use';
+}
+
+const yearlyOpt = recommendedPlan?.billing?.yearly;
+const annualNote =
+  yearlyOpt?.monthlyPriceLabel && recommendedPlan
+    ? `Annual billing drops ${recommendedPlan.displayName} to ${yearlyOpt.monthlyPriceLabel}/mo — the cheapest way to use it.`
+    : null;
+const yearlySavePct = vm.billingToggle.maxYearlySavingsPercent;
+
+function planBestFor(plan: (typeof vm.plans)[number]): string {
+  if (plan.isRecommended) return 'Best for most people';
+  if (plan.isFree) return 'Best for trying the app';
+  const highlight = vm.creditPool?.byPlan?.[plan.key]?.highlights?.[0];
+  return highlight || 'Best for heavier use';
+}
+
+const defaultPackNote = defaultUsage ? packNoteForTier(defaultUsage) : null;
+const defaultSubline = (() => {
+  const planName = recommendedPlan?.displayName ?? 'Paid plan';
+  const topUp = defaultUsage?.topUpCost;
+  if (topUp != null && topUp > 0) return `${planName} subscription + credit top-ups`;
+  return `${planName} subscription`;
+})();
+const estimateTitle = defaultUsage
+  ? `How we estimated ${defaultUsage.costLabel} a month`
+  : 'How we estimated this month';
+const estimateSummary = defaultUsage?.description ?? usageIntro ?? '';
+const compactCompare = vm.compareRows.slice(0, 2);
 ---
 
-<section class="py-12 md:py-14 bg-background dark-section pricing-tab">
-  <div class="section-container px-4 md:px-8">
-    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-8 lg:gap-10 min-w-0">
-      <div class="min-w-0">
-        <header class="pt-intro mb-10" id="pricing-intro">
-          <p class="pt-eyebrow">Page intro</p>
-          <h2 class="pt-title">{vm.productName} pricing</h2>
-          {pageIntro && (
-            <p
-              class="pt-lead"
-              set:html={renderReviewProseText(pageIntro, pricingGlossary)}
-            />
-          )}
-          {
-            introMeta && (
-              <p class="pt-page-meta">{introMeta}</p>
-            )
-          }
-          {
-            vm.pricingEvidence?.main && (
-              <p class="pt-evidence">
-                <VerifiedCheck class="w-[14px] h-[14px]" />
-                <span>{vm.pricingEvidence.verifiedLabel}</span>
-                <span class="pt-evidence__sep" aria-hidden="true">·</span>
-                <button
-                  type="button"
-                  class="pt-evidence__view"
-                  data-lightbox-open={vm.pricingEvidence.main.src}
-                  data-lightbox-alt={vm.pricingEvidence.main.alt}
-                  data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
-                >
-                  View pricing screenshot ↗
-                </button>
-              </p>
-            )
-          }
-        </header>
+<section
+  class="pricing-tab pt2"
+  data-pt-plans
+  data-pt-billing={vm.billingToggle.defaultInterval}
+  data-pt-selected-plan={defaultPlanKey}
+  data-pt-plan-count={vm.plans.length}
+  data-pt-plans-payload={plansPayload}
+  data-pt-usage
+  data-pt-usage-payload={usagePayload}
+  data-pt-usage-flat={usageCostsIdentical ? 'true' : 'false'}
+>
+  <div class="pt2-page">
+    <section class="pt2-section" id="pricing-intro" aria-labelledby="pt-snapshot-title">
+      <h2 class="pt2-h2" id="pt-snapshot-title">What {vm.productName} really costs</h2>
+      {pageIntro && (
+        <p class="pt2-lead" set:html={renderReviewProseText(pageIntro, pricingGlossary)} />
+      )}
 
-        <!-- Is [Product] expensive? -->
-        <section class="pt-block" id="pricing-benchmark" aria-labelledby="pt-market-title">
-          <header class="pt-section-head">
-            <p class="pt-eyebrow">Market position</p>
-            <h3 id="pt-market-title" class="pt-title">Is {vm.productName} expensive?</h3>
-          </header>
+      {vm.usageTiers.length > 0 && !usageCostsIdentical && (
+        <div class="pt2-usage-switch" role="tablist" aria-label="Usage level">
+          {vm.usageTiers.map((tier) => (
+            <button
+              type="button"
+              role="tab"
+              class:list={[tier.id === defaultUsage?.id && 'is-active']}
+              data-pt-usage-option={tier.id}
+              aria-selected={tier.id === defaultUsage?.id ? 'true' : 'false'}
+            >
+              {usageSwitchLabel(tier.id)}
+            </button>
+          ))}
+        </div>
+      )}
 
-          {
-            marketIntro ? (
-              <p class="pt-prose__body">{marketIntro}</p>
-            ) : marketTakeawayTone && marketTakeawayTone !== 'neutral' && marketTakeaway ? (
-              <p class="pt-prose__body">
-                {
-                  cheaperIsGood ? (
-                    <>
-                      {vm.productName} is <span class="pt-market__pct">{cheaperPctAbs}%</span> cheaper
-                      than most AI girlfriend apps we tested.
-                    </>
-                  ) : (
-                    <>
-                      {vm.productName} is <span class="pt-market__pct pt-market__pct--bad">{cheaperPctAbs}%</span> more
-                      expensive than most AI girlfriend apps we tested.
-                    </>
-                  )
-                }
-              </p>
-            ) : null
-          }
+      {defaultUsage && (
+        <>
+          <p class="pt2-hero-price">
+            <span class="pt2-hero-price__n" data-pt-usage-detail-total>{defaultUsage.costLabel}</span>
+            <span class="pt2-hero-price__u">/ month</span>
+          </p>
+          <p class="pt2-hero-sub" data-pt-usage-subline>{defaultSubline}</p>
+          <div class="pt2-breakdown" aria-label="Cost breakdown">
+            <div class="pt2-breakdown__item">
+              <span class="pt2-breakdown__n" data-pt-usage-detail-plan>{defaultPlanLabel}</span>
+              <span class="pt2-breakdown__l">{recommendedPlan?.displayName ?? 'Plan'}</span>
+            </div>
+            <span class="pt2-breakdown__op" aria-hidden="true">+</span>
+            <div class="pt2-breakdown__item">
+              <span class="pt2-breakdown__n" data-pt-usage-detail-topup>{defaultTopUpLabel}</span>
+              <span class="pt2-breakdown__l">Credit top-ups</span>
+            </div>
+            <span class="pt2-breakdown__op" aria-hidden="true">=</span>
+            <div class="pt2-breakdown__item">
+              <span class="pt2-breakdown__n is-total" data-pt-usage-detail-total-row>{defaultUsage.costLabel}</span>
+              <span class="pt2-breakdown__l">Estimated monthly cost</span>
+            </div>
+          </div>
+          {defaultPackNote && <p class="pt2-pack-note" data-pt-usage-pack-note>{defaultPackNote}</p>}
+        </>
+      )}
 
-          {
-            productBarPct != null && (
-              <div
-                class:list={[
-                  'pt-bench',
-                  typicalBarPct != null && 'has-typical-below',
-                  benchOverlapSSR && 'is-overlap',
-                  benchStackedSSR && 'is-stacked',
-                ]}
-                data-pt-bench
-                data-pt-product-pct={productBarPct}
-                data-pt-avg-pct={typicalBarPct ?? ''}
-                aria-label="Starting price market position"
-              >
-                <div class="pt-bench__chart" data-pt-bench-chart>
-                  {
-                    typicalBarPct != null && (
-                      <div
-                        class="pt-bench__marker pt-bench__marker--avg"
-                        style={`left: ${typicalBarPct}%`}
-                        data-pt-bench-marker="avg"
-                        aria-label={`Typical monthly price ${marketTypicalLabel}`}
-                      >
-                        <span
-                          class="pt-bench__float pt-bench__float--avg pt-bench__float--below"
-                          data-pt-bench-float="avg"
-                        >
-                          <span class="pt-bench__float-name">Typical monthly price</span>
-                          <span class="pt-bench__float-price">{marketTypicalLabel}</span>
-                        </span>
-                        <span class="pt-bench__leader pt-bench__leader--avg" aria-hidden="true" />
-                        <span class="pt-bench__dot pt-bench__dot--avg" />
-                      </div>
-                    )
-                  }
-                  <div
-                    class="pt-bench__marker pt-bench__marker--product"
-                    style={`left: ${productBarPct}%`}
-                    data-pt-bench-marker="product"
-                    aria-label={`${vm.productName} ${advertisedShort}`}
-                  >
-                    <span class="pt-bench__float pt-bench__float--product">
-                      <span class="pt-bench__float-name">{vm.productName}</span>
-                      <span class="pt-bench__float-price">{advertisedShort}</span>
-                    </span>
-                    <span class="pt-bench__leader pt-bench__leader--product" aria-hidden="true" />
-                    <span class="pt-bench__dot pt-bench__dot--product" />
-                  </div>
+      {annualNote && <p class="pt2-annual-note">{annualNote}</p>}
 
-                  <div class="pt-bench__track" />
-
-                  <div class="pt-bench__axis">
-                    {
-                      axisTicks.map((tick) => (
-                        <span
-                          class:list={[
-                            'pt-bench__tick',
-                            tick.pct === 0 && 'pt-bench__tick--start',
-                            tick.pct === 100 && 'pt-bench__tick--end',
-                          ]}
-                          style={`left: ${tick.pct}%`}
-                        >
-                          <span class="pt-bench__tick-label">{tick.label}</span>
-                        </span>
-                      ))
-                    }
-                  </div>
+      {(vm.advertisedMonthly != null || marketTypicalAmount != null) && (
+        <>
+          <hr class="pt2-rule" />
+          <p class="pt2-bench-head">Starting price vs category</p>
+          <div
+            class:list={[
+              'pt-bench',
+              benchOverlapSSR && 'is-overlap',
+              benchStackedSSR && 'is-stacked',
+              'has-typical-below',
+            ]}
+            data-pt-bench
+            data-pt-product-pct={productBarPct}
+            data-pt-avg-pct={typicalBarPct ?? ''}
+          >
+            <div class="pt-bench__chart" data-pt-bench-chart>
+              {typicalBarPct != null && (
+                <div class="pt-bench__marker pt-bench__marker--avg" style={`left:${typicalBarPct}%`} data-pt-bench-marker="avg">
+                  <span class="pt-bench__float pt-bench__float--avg pt-bench__float--below" data-pt-bench-float="avg">
+                    <span class="pt-bench__float-name">Typical comparison app</span>
+                    <span class="pt-bench__float-price">{marketTypicalLabel}</span>
+                  </span>
+                  <span class="pt-bench__leader pt-bench__leader--avg" aria-hidden="true" />
+                  <span class="pt-bench__dot pt-bench__dot--avg" />
                 </div>
-                {
-                  marketTakeaway && (
-                    <p
-                      class:list={[
-                        'pt-bench__takeaway',
-                        marketTakeawayTone === 'neutral' && 'pt-bench__takeaway--neutral',
-                        marketTakeawayTone === 'good' && 'pt-bench__takeaway--good',
-                        marketTakeawayTone === 'bad' && 'pt-bench__takeaway--bad',
-                      ]}
-                    >
-                      {marketTakeaway}
-                    </p>
-                  )
-                }
+              )}
+              {productBarPct != null && (
+                <div class="pt-bench__marker pt-bench__marker--product" style={`left:${productBarPct}%`} data-pt-bench-marker="product">
+                  <span class="pt-bench__float pt-bench__float--product">
+                    <span class="pt-bench__float-name">{vm.productName}</span>
+                    <span class="pt-bench__float-price">{advertisedLabel}</span>
+                  </span>
+                  <span class="pt-bench__leader pt-bench__leader--product" aria-hidden="true" />
+                  <span class="pt-bench__dot pt-bench__dot--product" />
+                </div>
+              )}
+              <div class="pt-bench__track" />
+              <div class="pt-bench__axis">
+                {axisTicks.map((tick) => (
+                  <span class="pt-bench__tick" style={`left:${tick.pct}%`}>
+                    <span class="pt-bench__tick-label">{tick.label}</span>
+                  </span>
+                ))}
               </div>
-            )
-          }
-        </section>
+            </div>
+          </div>
+          {marketTakeaway && cheaperPctAbs != null && (
+            <p class:list={['pt2-market-pct', marketTakeawayTone === 'bad' && 'is-bad', marketTakeawayTone === 'good' && 'is-good']}>
+              {cheaperPctAbs}% {marketCompare.cheaperPct != null && marketCompare.cheaperPct > 3 ? 'lower' : marketCompare.cheaperPct != null && marketCompare.cheaperPct < -3 ? 'higher' : ''} starting price
+            </p>
+          )}
+        </>
+      )}
 
-        <!-- Plans -->
-        <section
-          class="pt-block"
-          id="pricing-plans"
-          aria-labelledby="pt-plans-title"
-          data-pt-plans
-          data-pt-billing={vm.billingToggle.defaultInterval}
-          data-pt-selected-plan={defaultPlanKey}
-          data-pt-plan-count={vm.plans.length}
-          data-pt-plans-payload={plansPayload}
-        >
-          {
-            vm.plans.length > 0 ? (
-              <div class="pt-plans-wrap">
-                <header class="pt-section-head">
-                  <p class="pt-eyebrow">Plans</p>
-                  <h3 id="pt-plans-title" class="pt-title">Plans & what you get</h3>
-                  {plansIntro && <p class="pt-lead pt-lead--tight">{plansIntro}</p>}
-                </header>
+      {vm.pricingEvidence?.main && (
+        <p class="pt2-evidence">
+          <VerifiedCheck class="w-[14px] h-[14px]" />
+          <span>{vm.pricingEvidence.verifiedLabel}</span>
+          <span class="pt2-dot" aria-hidden="true" />
+          <button
+            type="button"
+            class="pt-evidence__view"
+            data-lightbox-open={vm.pricingEvidence.main.src}
+            data-lightbox-alt={vm.pricingEvidence.main.alt}
+            data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
+          >
+            View pricing screenshot ↗
+          </button>
+        </p>
+      )}
 
-                {
-                  showPlansBilling && (
-                    <div class="pt-billing" data-pt-plans-billing>
-                      <span class="pt-billing__label" id="pt-plans-billing-label">Billing</span>
-                      <div
-                        class="pt-billing__switch"
-                        role="group"
-                        aria-labelledby="pt-plans-billing-label"
-                      >
-                        {
-                          billingIntervals.map((interval) => (
-                            <button
-                              type="button"
-                              class:list={[
-                                'pt-billing__btn',
-                                defaultBilling === interval.key && 'is-active',
-                              ]}
-                              data-pt-plans-billing-select={interval.key}
-                              aria-pressed={defaultBilling === interval.key ? 'true' : 'false'}
-                            >
-                              {interval.label}
-                            </button>
-                          ))
-                        }
-                      </div>
-                    </div>
-                  )
-                }
+      <span hidden data-pt-usage-detail-title></span>
+      <span hidden data-pt-usage-detail-icon></span>
+      <span hidden data-pt-usage-detail-desc></span>
+      <span hidden data-pt-usage-detail-chat></span>
+      <span hidden data-pt-usage-detail-images></span>
+      <span hidden data-pt-usage-detail-videos></span>
+      <span hidden data-pt-usage-detail-voice></span>
+      <span hidden data-pt-usage-detail-character></span>
+    </section>
 
+    <section class="pt2-section" id="pricing-plans" aria-labelledby="pt-plans-title">
+      {vm.plans.length > 0 ? (
+        <div class="pt-plans-wrap">
+          <div class="pt2-plans-head">
+            <div>
+              <h3 id="pt-plans-title" class="pt2-h2">Plans and what you get</h3>
+              {plansIntro && <p class="pt2-lead">{plansIntro}</p>}
+            </div>
+            {showPlansBilling && (
+              <div class="pt2-billing" data-pt-plans-billing role="group" aria-label="Billing">
+                {billingIntervals.map((interval) => (
+                  <button
+                    type="button"
+                    class:list={[defaultBilling === interval.key && 'is-active']}
+                    data-pt-plans-billing-select={interval.key}
+                    aria-pressed={defaultBilling === interval.key ? 'true' : 'false'}
+                  >
+                    {interval.key === 'yearly' ? 'Annual' : interval.label}
+                    {interval.key === 'yearly' && yearlySavePct != null && yearlySavePct > 0 && (
+                      <span class="pt2-billing__save">Save {yearlySavePct}%</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div
+            class="pt-plan-overview"
+            style={`--pt-plan-cols: ${Math.max(vm.plans.length, 1)}`}
+            aria-label="Plan comparison"
+            data-pt-plan-overview
+          >
+            {vm.plans.map((plan) => {
+              const monthly = plan.billing?.monthly;
+              const opt = monthly ?? plan.billing?.yearly ?? plan.billing?.quarterly;
+              const sale = opt?.sale ?? null;
+              const price = plan.isFree
+                ? plan.priceLabel
+                : monthly?.monthlyPriceLabel ?? plan.priceLabel;
+              return (
                 <div
-                  class="pt-plan-overview"
-                  style={`--pt-plan-cols: ${Math.max(vm.plans.length, 1)}`}
-                  aria-label="Plan comparison"
-                  data-pt-plan-overview
+                  class:list={['pt-plan-overview__col', plan.isRecommended && 'is-recommended']}
+                  data-pt-overview-plan={plan.key}
                 >
-                  {
-                    vm.plans.map((plan) => {
-                      const monthly = plan.billing?.monthly;
-                      const opt = monthly ?? plan.billing?.yearly ?? plan.billing?.quarterly;
-                      const sale = opt?.sale ?? null;
-                      const price = plan.isFree
-                        ? plan.priceLabel
-                        : monthly?.monthlyPriceLabel ?? plan.priceLabel;
-                      return (
-                        <div class="pt-plan-overview__col" data-pt-overview-plan={plan.key}>
-                          <p class="pt-plan-overview__name">{plan.displayName}</p>
-                          <div class="pt-plan-overview__pricing" data-pt-overview-pricing>
-                            <p class="pt-plan-overview__price" data-pt-overview-price>
-                              {
-                                sale?.listPriceLabel ? (
-                                  <span class="pt-plan-overview__list" data-pt-overview-list>
-                                    {sale.listPriceLabel}
-                                    {!plan.isFree && <span class="pt-unit">/mo</span>}
-                                  </span>
-                                ) : (
-                                  <span class="pt-plan-overview__list" data-pt-overview-list hidden />
-                                )
-                              }
-                              <span data-pt-overview-price-main>
-                                {price}
-                                {!plan.isFree && <span class="pt-unit">/mo</span>}
-                              </span>
-                              {
-                                sale?.badge ? (
-                                  <span class="pt-plan-overview__badge" data-pt-overview-badge>
-                                    {sale.badge}
-                                  </span>
-                                ) : (
-                                  <span class="pt-plan-overview__badge" data-pt-overview-badge hidden />
-                                )
-                              }
-                            </p>
-                            <p class="pt-plan-overview__billed" data-pt-overview-billed hidden />
-                            <p class="pt-plan-overview__save" data-pt-overview-save hidden />
-                            <p
-                              class="pt-plan-overview__unavailable"
-                              data-pt-overview-unavailable
-                              hidden
-                            />
-                          </div>
-                          <p class="pt-plan-overview__credits" data-pt-overview-credits>
-                            {plan.summaryLine}
-                          </p>
-                        </div>
-                      );
-                    })
-                  }
+                  <div class="pt2-plan-top">
+                    <p class="pt-plan-overview__name">{plan.displayName}</p>
+                    {plan.isRecommended && <span class="pt2-plan-badge">Best for most people</span>}
+                  </div>
+                  <div class="pt-plan-overview__pricing" data-pt-overview-pricing>
+                    <p class="pt-plan-overview__price" data-pt-overview-price>
+                      {sale?.listPriceLabel ? (
+                        <span class="pt-plan-overview__list" data-pt-overview-list>
+                          {sale.listPriceLabel}
+                          {!plan.isFree && <span class="pt-unit">/mo</span>}
+                        </span>
+                      ) : (
+                        <span class="pt-plan-overview__list" data-pt-overview-list hidden />
+                      )}
+                      <span data-pt-overview-price-main>
+                        {price}
+                        {!plan.isFree && <span class="pt-unit">/mo</span>}
+                      </span>
+                      {sale?.badge ? (
+                        <span class="pt-plan-overview__badge" data-pt-overview-badge>
+                          {sale.badge}
+                        </span>
+                      ) : (
+                        <span class="pt-plan-overview__badge" data-pt-overview-badge hidden />
+                      )}
+                    </p>
+                    <p class="pt-plan-overview__billed" data-pt-overview-billed hidden />
+                    <p class="pt-plan-overview__save" data-pt-overview-save hidden />
+                    <p class="pt-plan-overview__unavailable" data-pt-overview-unavailable hidden />
+                  </div>
+                  <p class="pt-plan-overview__credits" data-pt-overview-credits>
+                    {plan.summaryLine}
+                  </p>
+                  <div class="pt2-plan-rule" />
+                  <p class="pt2-plan-best">{planBestFor(plan)}</p>
                 </div>
+              );
+            })}
+          </div>
 
-
-                {
-                  vm.limitRows.length > 0 && (
-                    <div class="pt-other-limits" data-pt-limits>
+          {vm.limitRows.length > 0 && (
+            <div class="pt2-disclose" data-pt2-disclose>
+              <button type="button" class="pt2-disclose__btn" aria-expanded="false">
+                <span class="pt2-disclose__copy">
+                  <span class="pt2-disclose__title">Compare all plan features</span>
+                  <span class="pt2-disclose__sum">{freeVsPaidIntro || 'See what you get with each plan.'}</span>
+                </span>
+                <span class="pt2-disclose__action">
+                  Compare
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+              </button>
+              <div class="pt2-disclose__panel" hidden>
+                <p class="pt2-table-kicker">{defaultLimitsHeading}</p>
+                <div class="pt-other-limits" data-pt-limits>
                       <header class="pt-other-limits__head">
                         <h4 class="pt-subhead" data-pt-limits-title>
                           {defaultLimitsHeading}
@@ -673,12 +704,23 @@ function withUnit(value: string) {
                         </table>
                       </div>
                     </div>
-                  )
-                }
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <p class="pt-empty">Plan details are still being verified.</p>
+      )}
+    </section>
 
-                {
-                  vm.creditPool && (
-                    <div
+    {vm.creditPool && (
+      <section class="pt2-section pt2-mix-head" id="pricing-credits" aria-labelledby="pt-credits-title">
+        <h3 class="pt2-h2 pt2-h2-desktop" id="pt-credits-title">Build your credit mix</h3>
+        <h3 class="pt2-h2 pt2-h2-mobile">Estimate your own monthly cost</h3>
+        <p class="pt2-lead">
+          {poolReady ? poolIntroReady : poolIntroAwaiting}
+        </p>
+        <div
                       class="pt-credit-pool"
                       data-pt-credit-pool
                       data-pt-credit-mixer={poolReady && defaultBudget?.mixer ? 'true' : 'false'}
@@ -691,16 +733,16 @@ function withUnit(value: string) {
                       data-pt-pool-plan={poolPlanKey}
                       data-pt-pool-ready={poolReady ? 'true' : 'false'}
                     >
-                      <header class="pt-section-head">
-                        <p class="pt-eyebrow">Credit value</p>
-                        <h3 class="pt-title">What your credits can buy</h3>
-                      </header>
-
-                      <p class="pt-credit-pool__intro" data-pt-pool-intro>
+                      <p class="pt-credit-pool__intro" data-pt-pool-intro hidden>
                         {poolReady ? poolIntroReady : poolIntroAwaiting}
                       </p>
-
-                      <div class="pt-credit-pool__config">
+                      <div class="pt2-tool" data-pt2-mixer-tool>
+                        <div class="pt2-mixer-entry">
+                          <p class="pt2-mixer-entry__label">Monthly cost calculator</p>
+                          <button type="button" class="pt2-mixer-entry__btn" data-pt2-mixer-open>Build my usage</button>
+                        </div>
+                        <div class="pt2-tool__body">
+<div class="pt-credit-pool__config">
                         <div
                           class="pt-credit-pool__field"
                           data-pt-tool-plan-select
@@ -1265,297 +1307,30 @@ function withUnit(value: string) {
                       </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                }
-
-
-                {
-                  vm.topUps && (
-                    <div class="pt-topups" data-pt-topups>
-                      <header class="pt-section-head">
-                        <p class="pt-eyebrow">Top-ups</p>
-                        <h3 class="pt-title">{vm.topUps.heading}</h3>
-                        <p class="pt-lead pt-lead--tight">{vm.topUps.intro}</p>
-                      </header>
-                      <div class="pt-topups__scroll">
-                        <table class="pt-topups__table">
-                          <thead>
-                            <tr>
-                              <th scope="col">Credits you get</th>
-                              <th scope="col">Price</th>
-                              <th scope="col">{vm.topUps.valueColumnLabel || 'Value'}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {
-                              vm.topUps.packages.map((pkg) => (
-                                <tr class:list={[pkg.isEstimatePackage && 'is-estimate']}>
-                                  <th scope="row">
-                                    <span class="pt-topups__credits">{pkg.creditsLabel}</span>
-                                    {
-                                      pkg.bonusDetail && (
-                                        <span class="pt-topups__bonus">{pkg.bonusDetail}</span>
-                                      )
-                                    }
-                                    {
-                                      pkg.isEstimatePackage && (
-                                        <span class="pt-topups__estimate-tag">
-                                          Used in our regular-use estimate
-                                        </span>
-                                      )
-                                    }
-                                  </th>
-                                  <td>{pkg.priceLabel}</td>
-                                  <td>
-                                    {
-                                      pkg.isBestValue ? (
-                                        <>
-                                          <span class="pt-topups__best">Best value</span>
-                                          {
-                                            pkg.valueLabel !== '—' && (
-                                              <span class="pt-topups__value-detail">{pkg.valueLabel}</span>
-                                            )
-                                          }
-                                        </>
-                                      ) : (
-                                        pkg.valueLabel
-                                      )
-                                    }
-                                  </td>
-                                </tr>
-                              ))
-                            }
-                          </tbody>
-                        </table>
-                      </div>
-                      {
-                        vm.topUps.estimateNote && (
-                          <p class="pt-topups__note">{vm.topUps.estimateNote}</p>
-                        )
-                      }
-                      {
-                        vm.topUps.truncated && (
-                          <p class="pt-topups__more">Showing selected packs — more options may exist in-app.</p>
-                        )
-                      }
-                      {
-                        vm.pricingEvidence?.topUps && (
-                          <p class="pt-evidence pt-evidence--inline">
-                            <button
-                              type="button"
-                              class="pt-evidence__view"
-                              data-lightbox-open={vm.pricingEvidence.topUps.src}
-                              data-lightbox-alt={vm.pricingEvidence.topUps.alt}
-                              data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
-                            >
-                              <span class="material-symbols-outlined" aria-hidden="true">image</span>
-                              View top-up pricing screenshot
-                            </button>
-                          </p>
-                        )
-                      }
-                    </div>
-                  )
-                }
-              </div>
-            ) : (
-              <>
-                <h3 id="pt-plans-title" class="pt-title">Plans & what you get</h3>
-                {plansIntro && <p class="pt-lead">{plansIntro}</p>}
-                <p class="pt-empty">Plan details are still being verified.</p>
-              </>
-            )
-          }
-        </section>
-
-        <!-- What you'll actually pay -->
-        <section
-          class="pt-block"
-          id="pricing-real-world-cost"
-          aria-labelledby="pt-usage-title"
-          data-pt-usage
-          data-pt-usage-payload={usagePayload}
-          data-pt-usage-flat={usageCostsIdentical ? 'true' : 'false'}
-        >
-          {
-            !vm.usageEstimatesAvailable ? (
-              <>
-                <header class="pt-section-head">
-                  <p class="pt-eyebrow">Real-world cost</p>
-                  <h3 id="pt-usage-title" class="pt-title">What you'll actually pay</h3>
-                  {usageIntro && <p class="pt-lead">{usageIntro}</p>}
-                </header>
-                <p class="pt-empty">Not enough data to estimate</p>
-              </>
-            ) : usageCostsIdentical && flatUsageCost != null ? (
-              <>
-                <header class="pt-section-head">
-                  <p class="pt-eyebrow">Real-world cost</p>
-                  <h3 id="pt-usage-title" class="pt-title">What you'll actually pay</h3>
-                  {usageIntro && <p class="pt-lead">{usageIntro}</p>}
-                </header>
-                <div class="pt-usage-flat">
-                  <p class="pt-usage-flat__price">
-                    {fmtMoney(flatUsageCost, vm.currency)}/mo at all usage levels
-                  </p>
-                  <p class="pt-usage-flat__copy">
-                    This plan includes enough usage that our light, regular, and heavy scenarios do not
-                    require additional purchases.
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <header class="pt-section-head">
-                  <p class="pt-eyebrow">Real-world cost</p>
-                  <h3 id="pt-usage-title" class="pt-title">What you'll actually pay</h3>
-                  <p class="pt-lead">
-                    {usageIntro}
-                  </p>
-                </header>
-
-                <div class="pt-menu-select pt-menu-select--inline" data-pt-usage-select>
-                  <span class="pt-label" id="pt-usage-level-label">Usage level</span>
-                  <div class="pt-menu-select__wrap">
-                    <button
-                      type="button"
-                      class="pt-menu-select__trigger"
-                      data-pt-usage-open
-                      aria-haspopup="listbox"
-                      aria-expanded="false"
-                      aria-labelledby="pt-usage-level-label"
-                    >
-                      <span class="pt-menu-select__value" data-pt-usage-label>
-                        {
-                          defaultUsage?.id === 'casual'
-                            ? 'Light'
-                            : defaultUsage?.id === 'power'
-                              ? 'Heavy'
-                              : 'Regular (most users)'
-                        }
-                      </span>
-                      <span class="material-symbols-outlined pt-menu-select__chevron" aria-hidden="true">expand_more</span>
-                    </button>
-                    <div class="pt-menu-select__menu" data-pt-usage-menu role="listbox" hidden>
-                      {
-                        vm.usageTiers.map((tier) => {
-                          const label =
-                            tier.id === 'casual'
-                              ? 'Light'
-                              : tier.id === 'power'
-                                ? 'Heavy'
-                                : 'Regular (most users)';
-                          const selected = tier.id === (defaultUsage?.id ?? 'regular');
-                          return (
-                            <button
-                              type="button"
-                              role="option"
-                              class:list={['pt-menu-select__option', selected && 'is-active']}
-                              data-pt-usage-option={tier.id}
-                              aria-selected={selected ? 'true' : 'false'}
-                            >
-                              {label}
-                            </button>
-                          );
-                        })
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                {
-                  defaultUsage && (
-                    <>
-                      <div class="pt-usage-detail" data-pt-usage-detail>
-                        <div class="pt-usage-detail__main">
-                          <div class="pt-usage-detail__summary">
-                            <span class="pt-usage-detail__icon" aria-hidden="true">
-                              <span class="material-symbols-outlined" data-pt-usage-detail-icon>
-                                {defaultUsage.icon}
-                              </span>
-                            </span>
-                            <div class="pt-usage-detail__copy">
-                              <p class="pt-usage-detail__name" data-pt-usage-detail-title>
-                                {defaultUsage.title}
-                              </p>
-                              <p class="pt-usage-detail__price" data-pt-usage-detail-total>
-                                {defaultUsage.costLabel}
-                              </p>
-                              <p class="pt-usage-detail__price-sub">Estimated monthly cost</p>
-                              <p class="pt-usage-detail__lead" data-pt-usage-detail-desc>
-                                {defaultUsage.description}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div class="pt-usage-detail__calc">
-                            <p class="pt-label pt-usage-detail__col-label">Cost breakdown</p>
-                            <dl class="pt-usage-calc">
-                              <div class="pt-usage-calc__row">
-                                <dt>Subscription</dt>
-                                <dd data-pt-usage-detail-plan>{defaultPlanLabel}</dd>
-                              </div>
-                              <div class="pt-usage-calc__row">
-                                <dt>Extra credits</dt>
-                                <dd data-pt-usage-detail-topup>{defaultTopUpLabel}</dd>
-                              </div>
-                              <div class="pt-usage-calc__row pt-usage-calc__row--total">
-                                <dt>Total</dt>
-                                <dd data-pt-usage-detail-total-row>{defaultUsage.costLabel}</dd>
-                              </div>
-                            </dl>
-                          </div>
-                        </div>
-
-                        <div class="pt-usage-detail__includes">
-                          <p class="pt-label pt-usage-detail__col-label">Included in this estimate</p>
-                          <dl class="pt-usage-includes">
-                            {
-                              (
-                                [
-                                  ['chat_bubble', 'Chat', 'data-pt-usage-detail-chat', defaultUsage.assumptions.chat],
-                                  ['image', 'Images', 'data-pt-usage-detail-images', defaultUsage.assumptions.images],
-                                  ['videocam', 'Video', 'data-pt-usage-detail-videos', defaultUsage.assumptions.videos],
-                                  ['mic', 'Voice', 'data-pt-usage-detail-voice', defaultUsage.assumptions.voice],
-                                  [
-                                    'person_edit',
-                                    'Custom character',
-                                    'data-pt-usage-detail-character',
-                                    defaultUsage.assumptions.character,
-                                  ],
-                                ] as const
-                              ).map(([icon, label, attr, value]) => {
-                                const parts = withUnit(value);
-                                return (
-                                  <div class="pt-usage-includes__item">
-                                    <span
-                                      class="material-symbols-outlined pt-usage-includes__icon"
-                                      aria-hidden="true"
-                                    >
-                                      {icon}
-                                    </span>
-                                    <dt>{label}</dt>
-                                    <dd {...{ [attr]: true }}>
-                                      {parts.main}
-                                      {parts.unit && <span class="pt-unit">{parts.unit}</span>}
-                                    </dd>
-                                  </div>
-                                );
-                              })
-                            }
-                          </dl>
+                        <button type="button" class="pt2-hide-calc" data-pt2-mixer-close>Hide calculator</button>
                         </div>
                       </div>
+                    </div>
 
-                      <div class="pt-usage-links">
-                        {
-                          defaultCalculation ? (
-                            <details class="pt-usage-calc-details" data-pt-usage-calc-details>
-                              <summary class="pt-usage-links__btn" data-pt-usage-calc-summary>
-                                {defaultCalculation.summaryLabel}
-                              </summary>
-                              <div class="pt-usage-math" data-pt-usage-calc>
+      </section>
+    )}
+
+    <section class="pt2-section" id="pricing-detail">
+      {defaultCalculation && (
+        <div class="pt2-disclose" data-pt2-disclose>
+          <button type="button" class="pt2-disclose__btn" aria-expanded="false">
+            <span class="pt2-disclose__copy">
+              <span class="pt2-disclose__title" data-pt-estimate-title>{estimateTitle}</span>
+              <span class="pt2-disclose__sum">{estimateSummary}</span>
+            </span>
+            <span class="pt2-disclose__action">
+              View calculation
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+          <div class="pt2-disclose__panel" hidden>
+            <span hidden data-pt-usage-calc-summary></span>
+            <div class="pt-usage-math" data-pt-usage-calc>
                                 <p class="pt-usage-math__heading" data-pt-usage-calc-heading>
                                   {defaultCalculation.heading}
                                 </p>
@@ -1735,42 +1510,24 @@ function withUnit(value: string) {
                                   </p>
                                 </section>
                               </div>
-                            </details>
-                          ) : null
-                        }
-                      </div>
-                    </>
-                  )
-                }
-              </>
-            )
-          }
-        </section>
+          </div>
+        </div>
+      )}
 
-        <!-- What each feature costs -->
-        <section class="pt-block" id="pricing-feature-costs" aria-labelledby="pt-feature-title">
-          <header class="pt-section-head">
-            <p class="pt-eyebrow">Feature costs</p>
-            <h3 id="pt-feature-title" class="pt-title">What each feature costs</h3>
-            {featureCostsIntro && <p class="pt-lead">{featureCostsIntro}</p>}
-            {
-              vm.pricingEvidence?.featureCosts && (
-                <p class="pt-evidence pt-evidence--inline">
-                  <button
-                    type="button"
-                    class="pt-evidence__view"
-                    data-lightbox-open={vm.pricingEvidence.featureCosts.src}
-                    data-lightbox-alt={vm.pricingEvidence.featureCosts.alt}
-                    data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">image</span>
-                    View feature costs screenshot
-                  </button>
-                </p>
-              )
-            }
-          </header>
-          <ul class="pt-feature-list">
+      {vm.featureCosts.length > 0 && (
+        <div class="pt2-disclose" data-pt2-disclose>
+          <button type="button" class="pt2-disclose__btn" aria-expanded="false">
+            <span class="pt2-disclose__copy">
+              <span class="pt2-disclose__title">What each feature costs</span>
+              <span class="pt2-disclose__sum">{featureCostsIntro || 'See how credits translate into real money.'}</span>
+            </span>
+            <span class="pt2-disclose__action">
+              View breakdown
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+          <div class="pt2-disclose__panel" hidden>
+            <ul class="pt-feature-list">
             {
               vm.featureCosts.map((row) => {
                 const parts = withUnit(row.value);
@@ -1794,19 +1551,165 @@ function withUnit(value: string) {
               })
             }
           </ul>
-        </section>
+            {vm.pricingEvidence?.featureCosts && (
+              <p class="pt2-evidence">
+                <button
+                  type="button"
+                  class="pt-evidence__view"
+                  data-lightbox-open={vm.pricingEvidence.featureCosts.src}
+                  data-lightbox-alt={vm.pricingEvidence.featureCosts.alt}
+                  data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
+                >
+                  View feature costs screenshot ↗
+                </button>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
-        <!-- How [Product] pricing compares -->
-        <section class="pt-block" id="pricing-comparison" aria-labelledby="pt-compare-title">
-          <header class="pt-section-head">
-            <p class="pt-eyebrow">Market comparison</p>
-            <h3 id="pt-compare-title" class="pt-title">
-              How {vm.productName} pricing compares
-            </h3>
-          </header>
+      {vm.topUps && (
+        <div class="pt2-disclose" data-pt2-disclose>
+          <button type="button" class="pt2-disclose__btn" aria-expanded="false">
+            <span class="pt2-disclose__copy">
+              <span class="pt2-disclose__title">Dreamcoin top-up prices</span>
+              <span class="pt2-disclose__sum">{vm.topUps.intro}</span>
+            </span>
+            <span class="pt2-disclose__action">
+              View prices
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+          <div class="pt2-disclose__panel" hidden>
+            <div class="pt-topups" data-pt-topups>
+                      <header class="pt-section-head">
+                        <p class="pt-eyebrow">Top-ups</p>
+                        <h3 class="pt-title">{vm.topUps.heading}</h3>
+                        <p class="pt-lead pt-lead--tight">{vm.topUps.intro}</p>
+                      </header>
+                      <div class="pt-topups__scroll">
+                        <table class="pt-topups__table">
+                          <thead>
+                            <tr>
+                              <th scope="col">Credits you get</th>
+                              <th scope="col">Price</th>
+                              <th scope="col">{vm.topUps.valueColumnLabel || 'Value'}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {
+                              vm.topUps.packages.map((pkg) => (
+                                <tr class:list={[pkg.isEstimatePackage && 'is-estimate']}>
+                                  <th scope="row">
+                                    <span class="pt-topups__credits">{pkg.creditsLabel}</span>
+                                    {
+                                      pkg.bonusDetail && (
+                                        <span class="pt-topups__bonus">{pkg.bonusDetail}</span>
+                                      )
+                                    }
+                                    {
+                                      pkg.isEstimatePackage && (
+                                        <span class="pt-topups__estimate-tag">
+                                          Used in our regular-use estimate
+                                        </span>
+                                      )
+                                    }
+                                  </th>
+                                  <td>{pkg.priceLabel}</td>
+                                  <td>
+                                    {
+                                      pkg.isBestValue ? (
+                                        <>
+                                          <span class="pt-topups__best">Best value</span>
+                                          {
+                                            pkg.valueLabel !== '—' && (
+                                              <span class="pt-topups__value-detail">{pkg.valueLabel}</span>
+                                            )
+                                          }
+                                        </>
+                                      ) : (
+                                        pkg.valueLabel
+                                      )
+                                    }
+                                  </td>
+                                </tr>
+                              ))
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                      {
+                        vm.topUps.estimateNote && (
+                          <p class="pt-topups__note">{vm.topUps.estimateNote}</p>
+                        )
+                      }
+                      {
+                        vm.topUps.truncated && (
+                          <p class="pt-topups__more">Showing selected packs — more options may exist in-app.</p>
+                        )
+                      }
+                      {
+                        vm.pricingEvidence?.topUps && (
+                          <p class="pt-evidence pt-evidence--inline">
+                            <button
+                              type="button"
+                              class="pt-evidence__view"
+                              data-lightbox-open={vm.pricingEvidence.topUps.src}
+                              data-lightbox-alt={vm.pricingEvidence.topUps.alt}
+                              data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
+                            >
+                              <span class="material-symbols-outlined" aria-hidden="true">image</span>
+                              View top-up pricing screenshot
+                            </button>
+                          </p>
+                        )
+                      }
+                    </div>
+          </div>
+        </div>
+      )}
+    </section>
+
+    <section class="pt2-section" id="pricing-comparison" aria-labelledby="pt-compare-title">
+      <h3 class="pt2-h2" id="pt-compare-title">How it compares to the market</h3>
+      {vm.compareIntro && <p class="pt2-lead">{vm.compareIntro}</p>}
+      {compactCompare.length > 0 && (
+        <div class="pt2-market-grid">
+          {compactCompare.map((row) => (
+            <div>
+              <p class="pt2-market-pair__label">{row.metric}</p>
+              <dl>
+                <div class="pt2-market-row">
+                  <dt>{vm.productName}</dt>
+                  <dd>{row.productValue}</dd>
+                </div>
+                <div class="pt2-market-row">
+                  <dt>Typical comparison app</dt>
+                  <dd>{row.typicalValue}</dd>
+                </div>
+              </dl>
+              <p class:list={['pt2-market-pct', row.diffTone === 'worse' && 'is-bad', row.diffTone === 'better' && 'is-good']}>
+                {row.diffLabel}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+      <div class="pt2-disclose" data-pt2-disclose>
+        <button type="button" class="pt2-disclose__btn" aria-expanded="false">
+          <span class="pt2-disclose__copy">
+            <span class="pt2-disclose__title">See the full market comparison</span>
+            <span class="pt2-disclose__sum">Every metric we compare, including rows where the category has insufficient data.</span>
+          </span>
+          <span class="pt2-disclose__action">
+            View table
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </button>
+        <div class="pt2-disclose__panel" hidden>
           {
             vm.compareRows.length > 0 ? (
-              <div class="pt-compare-wrap">
+          <div class="pt-compare-wrap">
                 <table class="pt-compare">
                   <thead>
                     <tr>
@@ -1851,75 +1754,41 @@ function withUnit(value: string) {
               <p class="pt-compare-note">{comparisonNote}</p>
             )
           }
-        </section>
-
-        {
-          vm.hermanTake && (
-            <section class="pt-block" id="pricing-verdict" aria-labelledby="pt-verdict-title">
-              <header class="pt-section-head">
-                <p class="pt-eyebrow">Expert opinion</p>
-                <h3 class="pt-title" id="pt-verdict-title">
-                  Our take on {vm.productName}'s pricing
-                </h3>
-              </header>
-              <div class="pt-opinion">
-                {
-                  herman && (
-                    <div class="pt-opinion__byline">
-                      <img
-                        class="pt-opinion__avatar"
-                        src={herman.avatar}
-                        alt=""
-                        width="40"
-                        height="40"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <div class="pt-opinion__who">
-                        <p class="pt-opinion__name">{herman.name}</p>
-                        <p class="pt-opinion__role">Lead reviewer</p>
-                      </div>
-                    </div>
-                  )
-                }
-                <p
-                  class="pt-opinion__body"
-                  set:html={renderReviewProseText(vm.hermanTake, pricingGlossary)}
-                />
-                <AffiliateLink
-                  href={product.affiliateUrl}
-                  target="_blank"
-                  class="pt-opinion__cta"
-                >
-                  Visit {vm.productName} ↗
-                </AffiliateLink>
-              </div>
-            </section>
-          )
-        }
+        </div>
       </div>
+    </section>
 
-      <aside class="overview-sidebar-stack order-first lg:order-none lg:sticky self-start" aria-label="Pricing summary">
-        <div class="pt-sum">
-          <p class="pt-label pt-sum__eyebrow">Pricing</p>
-          {
-            vm.pricingScore != null && (
-              <p class="pt-sum__score">
-                <span class:list={['pt-sum__score-num', scoreVisual.text]}>{fmtScore(vm.pricingScore)}</span>
-                <span class="pt-sum__score-of">/10</span>
+    {(vm.hermanTake || vm.pricingScore != null) && (
+      <section class="pt2-section" id="pricing-verdict" aria-labelledby="pt-verdict-title">
+        <div class="pt2-verdict">
+          <div>
+            <p class="pt2-verdict__score-label">Pricing score</p>
+            {vm.pricingScore != null && (
+              <p class="pt2-verdict__score">
+                <span class="pt2-verdict__n">{fmtScore(vm.pricingScore)}</span>
+                <span class="pt2-verdict__of">/10</span>
               </p>
-            )
-          }
-          <AffiliateLink
-            href={product.affiliateUrl}
-            target="_blank"
-            class="pt-sum__link"
-          >
+            )}
+          </div>
+          <div>
+            <h3 class="pt2-verdict__title" id="pt-verdict-title">{vm.scoreInsight || `Our take on ${vm.productName}'s pricing`}</h3>
+            {vm.hermanTake && (
+              <p class="pt2-verdict__body" set:html={renderReviewProseText(vm.hermanTake, pricingGlossary)} />
+            )}
+            {herman && (
+              <p class="pt2-verdict__byline">
+                <strong>{herman.name}</strong>
+                {' · '}
+                Lead reviewer
+              </p>
+            )}
+          </div>
+          <AffiliateLink href={product.affiliateUrl} target="_blank" class="pt2-verdict__cta">
             Visit {vm.productName} ↗
           </AffiliateLink>
         </div>
-      </aside>
-    </div>
+      </section>
+    )}
   </div>
 </section>
 
@@ -6573,6 +6442,8 @@ function withUnit(value: string) {
       videos: string;
       voice: string;
       character: string;
+      packNote?: string | null;
+      subline?: string | null;
       calculation: UsageCalculation | null;
     };
 
@@ -6766,6 +6637,20 @@ function withUnit(value: string) {
       if (desc) desc.textContent = data.description;
       if (plan) plan.textContent = data.planLabel;
       if (topup) topup.textContent = data.topUpLabel;
+      const subline = root.querySelector<HTMLElement>('[data-pt-usage-subline]');
+      if (subline && data.subline) subline.textContent = data.subline;
+      const packNote = root.querySelector<HTMLElement>('[data-pt-usage-pack-note]');
+      if (packNote) {
+        if (data.packNote) {
+          packNote.textContent = data.packNote;
+          packNote.hidden = false;
+        } else {
+          packNote.textContent = '';
+          packNote.hidden = true;
+        }
+      }
+      const estimateTitleEl = root.querySelector<HTMLElement>('[data-pt-estimate-title]');
+      if (estimateTitleEl) estimateTitleEl.textContent = `How we estimated ${data.totalLabel} a month`;
       setUnitText(chat, data.chat);
       setUnitText(images, data.images);
       setUnitText(videos, data.videos);
@@ -6830,6 +6715,39 @@ function withUnit(value: string) {
       avgFloat?.classList.add('pt-bench__float--below');
     });
   }
+
+  document.querySelectorAll<HTMLElement>('[data-pt2-disclose]').forEach((block) => {
+    const btn = block.querySelector<HTMLButtonElement>('.pt2-disclose__btn');
+    const panel = block.querySelector<HTMLElement>('.pt2-disclose__panel');
+    const action = block.querySelector<HTMLElement>('.pt2-disclose__action');
+    if (!btn || !panel) return;
+    const verb = document.createElement('span');
+    const first = action?.firstChild;
+    const original = (first && first.nodeType === Node.TEXT_NODE ? first.textContent : 'View')?.trim() || 'View';
+    if (first && first.nodeType === Node.TEXT_NODE) {
+      first.textContent = '';
+      action?.insertBefore(verb, first);
+    } else if (action) {
+      action.prepend(verb);
+    }
+    verb.textContent = original + ' ';
+    btn.addEventListener('click', () => {
+      const open = !block.classList.contains('is-open');
+      block.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      panel.hidden = !open;
+      verb.textContent = (open ? 'Hide' : original) + ' ';
+    });
+  });
+
+  document.querySelectorAll<HTMLElement>('[data-pt2-mixer-tool]').forEach((tool) => {
+    tool.querySelector('[data-pt2-mixer-open]')?.addEventListener('click', () => {
+      tool.classList.add('is-open');
+    });
+    tool.querySelector('[data-pt2-mixer-close]')?.addEventListener('click', () => {
+      tool.classList.remove('is-open');
+    });
+  });
 
   syncBenchCollision();
   window.addEventListener('resize', () => syncBenchCollision());
