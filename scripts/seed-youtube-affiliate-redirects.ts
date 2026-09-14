@@ -38,21 +38,22 @@ const LINKS: Spec[] = [
   },
   {
     cloakedSlug: 'spicychat-ai-youtube',
-    destinationUrl: 'https://spicychat.ai/',
-    notes:
-      'YouTube traffic via /recommends/spicychat-ai-youtube. Destination is homepage — replace with tracked affiliate URL in admin when available.',
+    destinationUrl: 'https://aigirlfriend.expert/guides/ourdream-ai/',
+    notes: 'YouTube traffic via /recommends/spicychat-ai-youtube (OurDream hub for now)',
+    ageGate: false,
   },
   {
     cloakedSlug: 'nectar-ai-youtube',
-    destinationUrl: 'https://nectar.ai/?utm_source=affiliate&utm_medium=referral&utm_campaign=menprovement',
+    destinationUrl: 'https://aigirlfriend.expert/guides/ourdream-ai/',
     productSlug: 'nectar-ai',
-    notes: 'YouTube traffic via /recommends/nectar-ai-youtube (also nectar-ai-2)',
+    notes: 'YouTube traffic via /recommends/nectar-ai-youtube (OurDream hub for now)',
+    ageGate: false,
   },
   {
     cloakedSlug: 'kupid-ai-2-youtube',
-    destinationUrl: 'https://www.kupid.ai/',
-    notes:
-      'YouTube traffic via /recommends/kupid-ai-2. Destination is homepage — replace with tracked affiliate URL in admin when available.',
+    destinationUrl: 'https://aigirlfriend.expert/guides/ourdream-ai/',
+    notes: 'YouTube traffic via /recommends/kupid-ai-2 and /go/kupid-ai-youtube (OurDream hub for now)',
+    ageGate: false,
   },
 ];
 

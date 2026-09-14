@@ -33,6 +33,10 @@ function redirectTo(location: string, extra?: HeadersInit) {
 /** Slugs shared publicly that differ from the cloakedSlug stored in the DB. */
 const SLUG_ALIASES: Record<string, string> = {
   'candy-ai-yt': 'candy-ai-youtube',
+  'girlfriendgpt-yt': 'girlfriendgpt-youtube',
+  'spicychat-ai-yt': 'spicychat-ai-youtube',
+  'nectar-ai-yt': 'nectar-ai-youtube',
+  'kupid-ai-yt': 'kupid-ai-2-youtube',
   'kupid-ai-youtube': 'kupid-ai-2-youtube',
   'ourdream-ai-youtube': 'ourdream-ai-yt',
 };
@@ -40,7 +44,13 @@ const SLUG_ALIASES: Record<string, string> = {
 const OURDREAM_AI_HUB = 'https://aigirlfriend.expert/guides/ourdream-ai/';
 
 /** YouTube /go slugs temporarily routed to the OurDream hub (editable in admin). */
-const OURDREAM_HUB_YOUTUBE_SLUGS = new Set(['candy-ai-youtube', 'girlfriendgpt-youtube']);
+const OURDREAM_HUB_YOUTUBE_SLUGS = new Set([
+  'candy-ai-youtube',
+  'girlfriendgpt-youtube',
+  'spicychat-ai-youtube',
+  'nectar-ai-youtube',
+  'kupid-ai-2-youtube',
+]);
 
 function normalizeRedirectUrl(url: string): string {
   try {
