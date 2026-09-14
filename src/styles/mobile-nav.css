@@ -26,13 +26,17 @@
     overflow: hidden;
   }
 
-  body[data-mobile-nav-mode='site'],
-  body[data-mobile-nav-mode='hub'],
-  body[data-mobile-nav-mode='review'] {
+  body[data-mobile-nav-mode='site'][data-mobile-bottom-nav='true'],
+  body[data-mobile-nav-mode='hub'][data-mobile-bottom-nav='true'],
+  body[data-mobile-nav-mode='review'][data-mobile-bottom-nav='true'] {
     padding-bottom: calc(
       var(--mobile-nav-bar-height) + var(--mobile-nav-fab-lift) + var(--mobile-nav-float-bottom) +
         var(--mobile-nav-page-gap) + env(safe-area-inset-bottom, 0px)
     );
+  }
+
+  body[data-mobile-bottom-nav='false'] {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   body[data-mobile-nav-mode='review'] .article-util-rail,

@@ -105,8 +105,8 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
       <p class="guide-hub__section-intro">Jump into the OurDream guides by what you want to do.</p>
       <div class="guide-hub__topics">
         {
-          ourdreamHubTopics.map((topic, i) => (
-            <details class="guide-hub__topic" data-hub-topic open={i === 0}>
+          ourdreamHubTopics.map((topic) => (
+            <details class="guide-hub__topic" data-hub-topic>
               <summary class="guide-hub__topic-head">
                 <span class="guide-hub__topic-icon">
                   <img src={topic.icon} width="20" height="20" alt="" />
@@ -114,7 +114,6 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
                 <span class="guide-hub__topic-copy">
                   <span class="guide-hub__topic-title">{topic.title}</span>
                   <span class="guide-hub__topic-desc guide-hub__topic-desc--desktop">{topic.description}</span>
-                  <span class="guide-hub__topic-desc guide-hub__topic-desc--mobile">{topic.mobileDescription}</span>
                   <span class="guide-hub__topic-count guide-hub__topic-count--mobile">
                     {topic.guides.length} {topic.guides.length === 1 ? 'guide' : 'guides'}
                   </span>
@@ -140,6 +139,18 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
       </div>
     </section>
   </div>
+
+  <aside class="guide-hub__scroll-cta" data-hub-scroll-cta aria-hidden="true">
+    <div class="guide-hub__scroll-cta-inner">
+      <AffiliateLink class="guide-hub__scroll-cta-btn" href={visitHref} target="_blank">
+        <span class="guide-hub__scroll-cta-text">
+          <span>Visit</span>
+          <span>{productName}</span>
+        </span>
+        <HomeIcon name="arrow-up-right" size={18} />
+      </AffiliateLink>
+    </div>
+  </aside>
 </div>
 
 <script define:vars={{ hubGuidesJson }}>
@@ -268,18 +279,26 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
     if (!root || root.dataset.topicsBound === 'true') return;
     root.dataset.topicsBound = 'true';
     const topics = document.querySelectorAll('[data-hub-topic]');
-    function syncDesktop() {
-      if (!window.matchMedia('(min-width: 768px)').matches) return;
+    const desktopMq = window.matchMedia('(min-width: 768px)');
+
+    function syncLayout() {
+      if (desktopMq.matches) {
+        topics.forEach((el) => {
+          el.open = true;
+        });
+        return;
+      }
       topics.forEach((el) => {
-        el.open = true;
+        el.open = false;
       });
     }
-    syncDesktop();
-    window.addEventListener('resize', syncDesktop, { passive: true });
+
+    syncLayout();
+    desktopMq.addEventListener('change', syncLayout);
     topics.forEach((el) => {
       el.addEventListener('toggle', () => {
         if (!el.open) return;
-        if (window.matchMedia('(min-width: 768px)').matches) return;
+        if (desktopMq.matches) return;
         topics.forEach((other) => {
           if (other !== el) other.open = false;
         });
@@ -287,10 +306,50 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
     });
   }
 
+  function initScrollCta() {
+    const root = document.querySelector('.guide-hub');
+    const dock = document.querySelector('[data-hub-scroll-cta]');
+    const hero = document.querySelector('.guide-hub__hero');
+    if (!root || !dock || !hero || dock.dataset.bound === 'true') return;
+    dock.dataset.bound = 'true';
+
+    const mobileMq = window.matchMedia('(max-width: 767px)');
+    let ticking = false;
+
+    function setVisible(show) {
+      dock.classList.toggle('is-visible', show);
+      dock.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
+
+    function update() {
+      ticking = false;
+      if (!mobileMq.matches) {
+        setVisible(false);
+        return;
+      }
+      const heroBottom = hero.getBoundingClientRect().bottom;
+      const show = heroBottom < 48;
+      setVisible(show);
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    mobileMq.addEventListener('change', update);
+    window.addEventListener('resize', onScroll, { passive: true });
+  }
+
   initHubSearch();
   initTopics();
+  initScrollCta();
   document.addEventListener('astro:page-load', () => {
     initHubSearch();
     initTopics();
+    initScrollCta();
   });
 </script>

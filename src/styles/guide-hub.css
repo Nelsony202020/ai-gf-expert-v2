@@ -361,7 +361,7 @@
   width: 100%;
   max-width: 1040px;
   margin: 0 auto;
-  padding: 48px 20px calc(80px + var(--mobile-nav-bar-height, 4rem));
+  padding: 48px 20px calc(88px + env(safe-area-inset-bottom, 0px));
 }
 
 .guide-hub__section + .guide-hub__section {
@@ -622,6 +622,165 @@
   display: none;
 }
 
+.guide-hub__scroll-cta {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .guide-hub__scroll-cta {
+    display: block;
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 45;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 240ms ease,
+      transform 240ms ease;
+  }
+
+  .guide-hub__scroll-cta.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .guide-hub__scroll-cta-inner {
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0) 0%,
+      rgb(255 255 255 / 66%) 45%,
+      rgb(255 255 255 / 92%) 100%
+    );
+    backdrop-filter: blur(7px);
+  }
+
+  .guide-hub__scroll-cta-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 52px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: var(--hub-pink);
+    color: var(--hub-on-ink);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    letter-spacing: -0.3px;
+    text-decoration: none;
+    box-shadow:
+      0 1px 3px rgb(23 15 26 / 10%),
+      0 6px 18px -2px rgb(23 15 26 / 22%);
+    transition: background 180ms ease;
+  }
+
+  .guide-hub__scroll-cta-btn:hover {
+    background: var(--hub-pink-press);
+  }
+
+  .guide-hub__scroll-cta-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .guide-hub__scroll-cta-btn .home-v2__icon {
+    flex-shrink: 0;
+  }
+
+  .guide-hub__topics {
+    gap: 0;
+    border-top: 1px solid var(--hub-hairline);
+  }
+
+  .guide-hub__topic {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    border-bottom: 1px solid var(--hub-hairline);
+  }
+
+  .guide-hub__topic:hover {
+    border-color: var(--hub-hairline);
+  }
+
+  .guide-hub__topic-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    gap: 2px 12px;
+    align-items: center;
+    padding: 14px 0;
+  }
+
+  .guide-hub__topic-icon {
+    display: none;
+  }
+
+  .guide-hub__topic-copy {
+    display: contents;
+  }
+
+  .guide-hub__topic-title {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .guide-hub__topic-desc--desktop {
+    display: none;
+  }
+
+  .guide-hub__topic-count--mobile {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    color: var(--hub-secondary);
+  }
+
+  .guide-hub__topic-count--desktop {
+    display: none;
+  }
+
+  .guide-hub__topic-toggle {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    width: auto;
+    height: auto;
+    padding: 4px;
+    background: transparent;
+  }
+
+  .guide-hub__article-rows {
+    gap: 0;
+    padding-bottom: 8px;
+  }
+
+  .guide-hub__article-row {
+    min-height: 48px;
+    margin: 0;
+    padding: 12px 0;
+    border-radius: 0;
+    border-bottom: 1px solid var(--hub-hairline);
+    font-size: 15px;
+    line-height: 22px;
+  }
+
+  .guide-hub__article-row:last-child {
+    border-bottom: none;
+  }
+}
+
 @media (min-width: 768px) {
   .guide-hub__glow {
     top: 60px;
@@ -692,6 +851,10 @@
 
   .guide-hub__main {
     padding: 72px 24px 120px;
+  }
+
+  .guide-hub__scroll-cta {
+    display: none !important;
   }
 
   .guide-hub__topics {
@@ -782,6 +945,15 @@
     width: 14px;
     height: 14px;
   }
+}
+
+html[data-theme='dark'] .guide-hub__scroll-cta-inner {
+  background: linear-gradient(
+    180deg,
+    rgb(20 19 23 / 0) 0%,
+    rgb(20 19 23 / 66%) 45%,
+    rgb(20 19 23 / 92%) 100%
+  );
 }
 
 html[data-theme='dark'] .guide-hub {

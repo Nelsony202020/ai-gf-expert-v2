@@ -15,7 +15,7 @@ interface Props {
 const { pathname } = Astro.props;
 const mode = getMobileNavMode(pathname);
 const activeItem = getActiveBottomNavItem(pathname);
-const bottomNav = showMobileBottomNav(mode);
+const bottomNav = showMobileBottomNav(mode, pathname);
 ---
 
 <script>
