@@ -79,6 +79,10 @@ export async function loadAllGlossaryEntries(): Promise<GlossaryEntryRecord[]> {
 }
 
 export async function loadPublishedGlossaryEntries(): Promise<GlossaryEntryRecord[]> {
+  if (!isDbConfigured() && import.meta.env.DEV) {
+    const { localPreviewEntries } = await import('./localPreview');
+    return localPreviewEntries();
+  }
   const all = await loadAllGlossaryEntries();
   return all.filter((e) => e.status === 'published' && e.term && e.anchor && e.tooltipDefinition.trim());
 }

@@ -1,4 +1,7 @@
 ---
+/** Load published terms from InstantDB at request time (preview builds often lack DB at build time). */
+export const prerender = false;
+
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
@@ -9,7 +12,12 @@ import { buildWebPageSchema } from '../lib/seo/jsonld';
 import { canonicalPublicUrl } from '../lib/siteOrigin';
 import { loadPublishedGlossaryEntries } from '../lib/glossary/load';
 import { renderGlossaryTipTapHtml } from '../lib/glossary/renderTipTap';
-import { GLOSSARY_CATEGORY_OPTIONS, glossaryAlsoCalledText } from '../lib/glossary/types';
+import { relatedGlossaryTerms } from '../lib/glossary/related';
+import {
+  GLOSSARY_CATEGORY_OPTIONS,
+  extractPlainTextFromTipTap,
+  glossaryAlsoCalledText,
+} from '../lib/glossary/types';
 import '../styles/glossary.css';
 
 const entries = await loadPublishedGlossaryEntries();
@@ -22,6 +30,9 @@ const canonical = canonicalPublicUrl('/glossary/', Astro.site);
 const usedCategories = GLOSSARY_CATEGORY_OPTIONS.filter((cat) =>
   entries.some((e) => e.category === cat),
 );
+const categoryCounts = Object.fromEntries(
+  usedCategories.map((cat) => [cat, entries.filter((e) => e.category === cat).length]),
+) as Record<string, number>;
 
 const letterOf = (term: string) => {
   const ch = term.trim().charAt(0).toUpperCase();
@@ -29,6 +40,7 @@ const letterOf = (term: string) => {
 };
 
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
 const byLetter = new Map<string, typeof entries>();
 for (const entry of entries) {
   const letter = letterOf(entry.term);
@@ -45,6 +57,29 @@ const letterKeys = [...byLetter.keys()].sort((a, b) => {
   return a.localeCompare(b);
 });
 
+function restOfDefinition(html: string, tooltip: string) {
+  const match = html.match(/^<p>([\s\S]*?)<\/p>\s*/i);
+  if (!match) return html;
+  const text = match[1]
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+  const tip = tooltip.replace(/\s+/g, ' ').trim().toLowerCase();
+  if (!text) return html.slice(match[0].length);
+  if (tip.startsWith(text) || text.startsWith(tip.slice(0, Math.min(48, tip.length)))) {
+    return html.slice(match[0].length);
+  }
+  return html;
+}
+
+function decorateDefinitionHtml(html: string) {
+  return html.replace(
+    /<p>(Example(?: command)?:)\s*([\s\S]*?)<\/p>/gi,
+    '<div class="glossary-term__example"><p class="glossary-term__kicker">$1</p><div class="glossary-term__example-box"><p>$2</p></div></div>',
+  );
+}
+
 const jsonLdGraph = buildWebPageSchema({
   pathname: '/glossary/',
   name: pageTitle,
@@ -60,7 +95,7 @@ const jsonLdGraph = buildWebPageSchema({
   <JsonLd slot="head" graph={jsonLdGraph} />
   <Header />
   <main class="glossary-page">
-    <div class="section-container px-4 md:px-8 py-10 md:py-14 max-w-3xl">
+    <div class="glossary-page__canvas">
       <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Glossary' }]} />
 
       <header class="glossary-page__hero">
@@ -69,6 +104,19 @@ const jsonLdGraph = buildWebPageSchema({
         <p class="glossary-page__intro">
           Everything you need to understand the terms we use when testing AI companion apps.
         </p>
+        {
+          entries.length > 0 ? (
+            <p class="glossary-page__meta">
+              <span>
+                {entries.length} {entries.length === 1 ? 'term' : 'terms'}
+              </span>
+              <span class="glossary-page__meta-dot" aria-hidden="true"></span>
+              <span>
+                {usedCategories.length} {usedCategories.length === 1 ? 'category' : 'categories'}
+              </span>
+            </p>
+          ) : null
+        }
       </header>
 
       {
@@ -79,103 +127,358 @@ const jsonLdGraph = buildWebPageSchema({
         ) : (
           <>
             <div class="glossary-page__controls" data-glossary-controls>
-              <label class="sr-only" for="glossary-search">Search the glossary</label>
-              <input
-                id="glossary-search"
-                class="glossary-page__search"
-                type="search"
-                placeholder="Search the glossary..."
-                autocomplete="off"
-                data-glossary-search
-              />
-              <div class="glossary-page__categories" role="group" aria-label="Filter by category">
-                <button type="button" class="glossary-page__chip is-active" data-glossary-category="all">
-                  All
+              <div class="glossary-search glossary-search--page">
+                <span class="glossary-search__icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="m20 20-3-3"></path>
+                  </svg>
+                </span>
+                <label class="sr-only" for="glossary-search">Search the glossary</label>
+                <input
+                  id="glossary-search"
+                  class="glossary-search__input"
+                  type="search"
+                  placeholder="Search the glossary…"
+                  autocomplete="off"
+                  spellcheck="false"
+                  data-glossary-search="page"
+                />
+                <span class="glossary-search__kbd" aria-hidden="true">/</span>
+                <span class="glossary-search__count" data-glossary-count hidden></span>
+                <button type="button" class="glossary-search__clear" data-glossary-clear hidden aria-label="Clear search">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="glossary-chips" role="group" aria-label="Filter by category" data-glossary-chip-row>
+                <button type="button" class="glossary-chip is-active" data-glossary-category="all">
+                  All <span class="glossary-chip__count">{entries.length}</span>
                 </button>
                 {usedCategories.map((cat) => (
-                  <button type="button" class="glossary-page__chip" data-glossary-category={cat}>
-                    {cat}
+                  <button type="button" class="glossary-chip" data-glossary-category={cat}>
+                    {cat} <span class="glossary-chip__count">{categoryCounts[cat]}</span>
                   </button>
                 ))}
               </div>
+
+              <div class="glossary-az glossary-az--desktop" data-glossary-az-row>
+                <p class="glossary-az__label" id="glossary-az-label">Jump to letter</p>
+                <nav class="glossary-az__letters" aria-labelledby="glossary-az-label">
+                  {alphabet.map((letter) => {
+                    const active = byLetter.has(letter);
+                    return active ? (
+                      <a class="glossary-az__letter is-active" href={`#letter-${letter}`} data-glossary-az={letter}>
+                        {letter}
+                      </a>
+                    ) : (
+                      <span class="glossary-az__letter is-disabled" aria-disabled="true">
+                        {letter}
+                      </span>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              <div class="glossary-az glossary-az--mobile">
+                <button type="button" class="glossary-az__jump" data-glossary-filters-open>
+                  Jump to letter
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m6 9 6 6 6-6"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
 
-            <nav class="glossary-page__az" aria-label="Jump to letter">
-              {alphabet.map((letter) => {
-                const active = byLetter.has(letter);
-                return active ? (
-                  <a class="glossary-page__az-link is-active" href={`#letter-${letter}`} data-glossary-az={letter}>
-                    {letter}
-                  </a>
-                ) : (
-                  <span class="glossary-page__az-link is-disabled" aria-disabled="true">
-                    {letter}
+            <div class="glossary-sentinel" data-glossary-sentinel aria-hidden="true"></div>
+
+            <div class="glossary-toolbar" data-glossary-toolbar hidden>
+              <div class="glossary-toolbar__inner">
+                <div class="glossary-search glossary-search--compact">
+                  <span class="glossary-search__icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="7"></circle>
+                      <path d="m20 20-3-3"></path>
+                    </svg>
                   </span>
-                );
-              })}
-            </nav>
+                  <label class="sr-only" for="glossary-search-sticky">Search the glossary</label>
+                  <input
+                    id="glossary-search-sticky"
+                    class="glossary-search__input"
+                    type="search"
+                    placeholder="Search the glossary…"
+                    autocomplete="off"
+                    spellcheck="false"
+                    data-glossary-search="sticky"
+                  />
+                  <span class="glossary-search__count" data-glossary-count hidden></span>
+                  <button type="button" class="glossary-search__clear" data-glossary-clear hidden aria-label="Clear search">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M18 6 6 18"></path>
+                      <path d="m6 6 12 12"></path>
+                    </svg>
+                  </button>
+                </div>
 
-            <p class="glossary-page__no-results" data-glossary-empty hidden>
-              No terms match your search.
-            </p>
-
-            {letterKeys.map((letter) => (
-              <section
-                class="glossary-letter"
-                id={letter === '#' ? 'letter-other' : `letter-${letter}`}
-                data-glossary-letter={letter}
-              >
-                <h2 class="glossary-letter__heading">{letter === '#' ? '#' : letter}</h2>
-                {(byLetter.get(letter) ?? []).map((entry) => {
-                  const bodyHtml = renderGlossaryTipTapHtml(entry.fullDefinition);
-                  const searchBlob = [
-                    entry.term,
-                    ...entry.aliases,
-                    entry.tooltipDefinition,
-                    entry.category,
-                  ]
-                    .join(' ')
-                    .toLowerCase();
-                  return (
-                    <article
-                      class="glossary-term"
-                      id={entry.anchor}
-                      data-glossary-term
-                      data-category={entry.category}
-                      data-search={searchBlob}
+                <div class="glossary-toolbar__utilities glossary-toolbar__utilities--desktop">
+                  <div class="glossary-menu" data-glossary-category-menu>
+                    <button
+                      type="button"
+                      class="glossary-menu__trigger"
+                      data-glossary-category-trigger
+                      aria-expanded="false"
+                      aria-haspopup="listbox"
                     >
-                      <div class="glossary-term__header">
-                        <h3 class="glossary-term__title">{entry.term}</h3>
-                        <a
-                          class="glossary-term__anchor"
-                          href={`/glossary/#${entry.anchor}`}
-                          aria-label={`Link to ${entry.term}`}
-                          data-glossary-copy-link
-                          title="Copy link"
-                        >
-                          <span class="material-symbols-outlined text-[1.1rem]" aria-hidden="true">link</span>
-                        </a>
+                      <span data-glossary-category-label>All categories</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m6 9 6 6 6-6"></path>
+                      </svg>
+                    </button>
+                    <div class="glossary-menu__panel" data-glossary-category-panel hidden role="listbox" aria-label="Filter by category">
+                      <button type="button" class="glossary-menu__option is-active" data-glossary-category="all" role="option">
+                        All <span class="glossary-menu__count">{entries.length}</span>
+                      </button>
+                      {usedCategories.map((cat) => (
+                        <button type="button" class="glossary-menu__option" data-glossary-category={cat} role="option">
+                          {cat} <span class="glossary-menu__count">{categoryCounts[cat]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div class="glossary-menu" data-glossary-az-menu>
+                    <button
+                      type="button"
+                      class="glossary-menu__trigger"
+                      data-glossary-az-trigger
+                      aria-expanded="false"
+                      aria-haspopup="menu"
+                    >
+                      A–Z
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m6 9 6 6 6-6"></path>
+                      </svg>
+                    </button>
+                    <div class="glossary-menu__panel glossary-menu__panel--az" data-glossary-az-panel hidden>
+                      <p class="glossary-menu__panel-title">Jump to letter</p>
+                      <div class="glossary-menu__letters">
+                        {alphabet.map((letter) => {
+                          const active = byLetter.has(letter);
+                          return active ? (
+                            <a class="glossary-menu__letter" href={`#letter-${letter}`} data-glossary-az={letter}>
+                              {letter}
+                            </a>
+                          ) : (
+                            <span class="glossary-menu__letter is-disabled" aria-disabled="true">
+                              {letter}
+                            </span>
+                          );
+                        })}
                       </div>
-                      <p class="glossary-term__meta">
-                        <span class="glossary-term__category">{entry.category}</span>
-                        {glossaryAlsoCalledText(entry.term, entry.displayAliases) ? (
-                          <span class="glossary-term__aliases">
-                            Also called: {glossaryAlsoCalledText(entry.term, entry.displayAliases)}
-                          </span>
-                        ) : null}
-                      </p>
-                      {bodyHtml ? (
-                        <div class="glossary-term__body" set:html={bodyHtml} />
-                      ) : (
-                        <div class="glossary-term__body">
-                          <p>{entry.tooltipDefinition}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="glossary-toolbar__filters" data-glossary-filters-open>
+                  Filters
+                </button>
+              </div>
+            </div>
+
+            <div class="glossary-filters-sheet" data-glossary-filters-sheet hidden aria-hidden="true">
+              <div class="glossary-filters-sheet__backdrop" data-glossary-filters-close tabindex="-1"></div>
+              <div class="glossary-filters-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="glossary-filters-title">
+                <div class="glossary-filters-sheet__head">
+                  <h2 id="glossary-filters-title" class="glossary-filters-sheet__title">Filters</h2>
+                  <button type="button" class="glossary-filters-sheet__close" data-glossary-filters-close aria-label="Close filters">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M18 6 6 18"></path>
+                      <path d="m6 6 12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+                <p class="glossary-filters-sheet__kicker">Categories</p>
+                <div class="glossary-filters-sheet__categories" role="group" aria-label="Filter by category">
+                  <button type="button" class="glossary-chip is-active" data-glossary-category="all">
+                    All <span class="glossary-chip__count">{entries.length}</span>
+                  </button>
+                  {usedCategories.map((cat) => (
+                    <button type="button" class="glossary-chip" data-glossary-category={cat}>
+                      {cat} <span class="glossary-chip__count">{categoryCounts[cat]}</span>
+                    </button>
+                  ))}
+                </div>
+                <p class="glossary-filters-sheet__kicker">Jump to letter</p>
+                <div class="glossary-filters-sheet__letters">
+                  {alphabet.map((letter) => {
+                    const active = byLetter.has(letter);
+                    return active ? (
+                      <a class="glossary-menu__letter" href={`#letter-${letter}`} data-glossary-az={letter}>
+                        {letter}
+                      </a>
+                    ) : (
+                      <span class="glossary-menu__letter is-disabled" aria-disabled="true">
+                        {letter}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div class="glossary-results" data-glossary-results hidden>
+              <p class="glossary-results__header" data-glossary-results-header></p>
+              <div data-glossary-results-list></div>
+              <p class="glossary-results__hint">
+                Press Enter or click a result to jump to that definition — it opens automatically.
+              </p>
+            </div>
+
+            <div class="glossary-page__no-results" data-glossary-empty hidden>
+              <div class="glossary-page__no-results-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <path d="m20 20-3-3"></path>
+                </svg>
+              </div>
+              <p class="glossary-page__no-results-title" data-glossary-empty-title>
+                No glossary terms found
+              </p>
+              <p>Try a different search or browse by category.</p>
+              <button type="button" class="glossary-page__clear-search" data-glossary-clear>
+                Clear search
+              </button>
+            </div>
+
+            <div data-glossary-index>
+              {letterKeys.map((letter) => (
+                <section
+                  class="glossary-letter"
+                  id={letter === '#' ? 'letter-other' : `letter-${letter}`}
+                  data-glossary-letter={letter}
+                >
+                  <h2 class="glossary-letter__heading">{letter === '#' ? '#' : letter}</h2>
+                  {(byLetter.get(letter) ?? []).map((entry) => {
+                    const bodyHtml = decorateDefinitionHtml(
+                      restOfDefinition(
+                        renderGlossaryTipTapHtml(entry.fullDefinition),
+                        entry.tooltipDefinition,
+                      ),
+                    );
+                    const related = relatedGlossaryTerms(entry, entries);
+                    const also = glossaryAlsoCalledText(entry.term, entry.displayAliases);
+                    const searchBlob = [
+                      entry.term,
+                      ...entry.aliases,
+                      ...entry.displayAliases,
+                      entry.tooltipDefinition,
+                      entry.category,
+                      extractPlainTextFromTipTap(entry.fullDefinition),
+                    ]
+                      .join(' ')
+                      .toLowerCase();
+                    return (
+                      <article
+                        class="glossary-term"
+                        id={entry.anchor}
+                        data-glossary-term
+                        data-category={entry.category}
+                        data-search={searchBlob}
+                        data-term={entry.term}
+                      >
+                        <div class="glossary-term__summary">
+                          <div class="glossary-term__head">
+                            <div class="glossary-term__title-row">
+                              <h3 class="glossary-term__title">{entry.term}</h3>
+                              <button
+                                type="button"
+                                class="glossary-term__copy glossary-term__copy--icon"
+                                data-glossary-copy-link
+                                data-href={`/glossary/#${entry.anchor}`}
+                                aria-label={`Copy link to ${entry.term}`}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                  <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+                                  <path d="M4 16V6a2 2 0 0 1 2-2h10"></path>
+                                </svg>
+                                <span class="sr-only" data-glossary-copy-label>Copy link</span>
+                              </button>
+                            </div>
+                            <span class="glossary-term__tag">{entry.category}</span>
+                          </div>
+                          {also ? <p class="glossary-term__aliases">Also called: {also}</p> : null}
+                          <p class="glossary-term__lede">{entry.tooltipDefinition}</p>
+                          <div class="glossary-term__actions">
+                            <button
+                              type="button"
+                              class="glossary-term__toggle"
+                              data-glossary-toggle
+                              aria-expanded="false"
+                            >
+                              <span data-glossary-toggle-label>View definition</span>
+                              <svg class="glossary-term__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m6 9 6 6 6-6"></path>
+                              </svg>
+                            </button>
+                          </div>
                         </div>
-                      )}
-                    </article>
-                  );
-                })}
-              </section>
-            ))}
+                        <div class="glossary-term__full" hidden data-glossary-full>
+                          {bodyHtml ? (
+                            <div class="glossary-term__body" set:html={bodyHtml} />
+                          ) : null}
+                          {related.length > 0 ? (
+                            <div class="glossary-term__related">
+                              <p class="glossary-term__kicker">Related terms</p>
+                              <ul>
+                                {related.map((rel) => (
+                                  <li>
+                                    <a href={`/glossary/#${rel.anchor}`} data-glossary-related={rel.anchor}>
+                                      {rel.term}
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M5 12h14"></path>
+                                        <path d="m13 6 6 6-6 6"></path>
+                                      </svg>
+                                    </a>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+                          <div class="glossary-term__actions glossary-term__actions--end">
+                            <button
+                              type="button"
+                              class="glossary-term__toggle"
+                              data-glossary-toggle
+                              aria-expanded="true"
+                            >
+                              <span>Collapse</span>
+                              <svg class="glossary-term__chevron is-open" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m6 9 6 6 6-6"></path>
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              class="glossary-term__copy"
+                              data-glossary-copy-link
+                              data-href={`/glossary/#${entry.anchor}`}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+                                <path d="M4 16V6a2 2 0 0 1 2-2h10"></path>
+                              </svg>
+                              <span data-glossary-copy-label>Copy link</span>
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </section>
+              ))}
+            </div>
           </>
         )
       }
@@ -187,21 +490,144 @@ const jsonLdGraph = buildWebPageSchema({
 
 <script>
   function initGlossaryPage() {
-    const root = document.querySelector('[data-glossary-controls]');
-    if (!root || root instanceof HTMLElement === false) return;
-    if ((root as HTMLElement).dataset.bound === 'true') return;
-    (root as HTMLElement).dataset.bound = 'true';
+    const page = document.querySelector('.glossary-page');
+    if (!(page instanceof HTMLElement) || page.dataset.bound === 'true') return;
+    page.dataset.bound = 'true';
 
-    const search = document.querySelector<HTMLInputElement>('[data-glossary-search]');
-    const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-glossary-category]'));
-    const terms = Array.from(document.querySelectorAll<HTMLElement>('[data-glossary-term]'));
-    const letters = Array.from(document.querySelectorAll<HTMLElement>('[data-glossary-letter]'));
-    const empty = document.querySelector<HTMLElement>('[data-glossary-empty]');
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    const searchInputs = Array.from(document.querySelectorAll('[data-glossary-search]'));
+    const chips = Array.from(document.querySelectorAll('[data-glossary-category]'));
+    const terms = Array.from(document.querySelectorAll('[data-glossary-term]'));
+    const letters = Array.from(document.querySelectorAll('[data-glossary-letter]'));
+    const empty = document.querySelector('[data-glossary-empty]');
+    const emptyTitle = document.querySelector('[data-glossary-empty-title]');
+    const index = document.querySelector('[data-glossary-index]');
+    const results = document.querySelector('[data-glossary-results]');
+    const resultsHeader = document.querySelector('[data-glossary-results-header]');
+    const resultsList = document.querySelector('[data-glossary-results-list]');
+    const toolbar = document.querySelector('[data-glossary-toolbar]');
+    const sentinel = document.querySelector('[data-glossary-sentinel]');
+    const categoryPanel = document.querySelector('[data-glossary-category-panel]');
+    const azPanel = document.querySelector('[data-glossary-az-panel]');
+    const categoryTrigger = document.querySelector('[data-glossary-category-trigger]');
+    const azTrigger = document.querySelector('[data-glossary-az-trigger]');
+    const filtersSheet = document.querySelector('[data-glossary-filters-sheet]');
+    const categoryLabels = Array.from(document.querySelectorAll('[data-glossary-category-label]'));
+    const clearBtns = Array.from(document.querySelectorAll('[data-glossary-clear]'));
+    const counts = Array.from(document.querySelectorAll('[data-glossary-count]'));
     let category = 'all';
+    let deepLinkTimer = 0;
+    let filtersScrollY = 0;
+    let filtersCloseTimer = 0;
+    const FILTERS_SHEET_MS = 320;
+
+    function filtersSheetMotionMs() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 0;
+      return FILTERS_SHEET_MS;
+    }
+
+    function finishFiltersSheetClose() {
+      if (!(filtersSheet instanceof HTMLElement)) return;
+      filtersSheet.hidden = true;
+      filtersSheet.setAttribute('aria-hidden', 'true');
+      filtersSheet.classList.remove('is-open');
+      document.body.classList.remove('glossary-filters-open');
+      window.scrollTo(0, filtersScrollY);
+    }
+
+    function query() {
+      return (searchInputs[0]?.value ?? '').trim();
+    }
+
+    function setQuery(value: string) {
+      for (const input of searchInputs) input.value = value;
+      for (const btn of clearBtns) {
+        if (btn.classList.contains('glossary-search__clear')) btn.hidden = !value;
+      }
+    }
+
+    function categoryLabel(value: string) {
+      return value === 'all' ? 'All categories' : value;
+    }
+
+    function setCategory(next: string) {
+      category = next;
+      for (const chip of chips) {
+        chip.classList.toggle('is-active', (chip.dataset.glossaryCategory ?? 'all') === category);
+      }
+      for (const label of categoryLabels) {
+        label.textContent = categoryLabel(category);
+      }
+    }
+
+    function closeMenus() {
+      if (categoryPanel instanceof HTMLElement) {
+        categoryPanel.hidden = true;
+        categoryTrigger?.setAttribute('aria-expanded', 'false');
+      }
+      if (azPanel instanceof HTMLElement) {
+        azPanel.hidden = true;
+        azTrigger?.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    function openFiltersSheet() {
+      if (!(filtersSheet instanceof HTMLElement)) return;
+      window.clearTimeout(filtersCloseTimer);
+      filtersScrollY = window.scrollY;
+      filtersSheet.hidden = false;
+      filtersSheet.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('glossary-filters-open');
+      filtersSheet.classList.remove('is-open');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => filtersSheet.classList.add('is-open'));
+      });
+    }
+
+    function closeFiltersSheet() {
+      if (!(filtersSheet instanceof HTMLElement) || filtersSheet.hidden) return;
+      window.clearTimeout(filtersCloseTimer);
+      filtersSheet.classList.remove('is-open');
+      const ms = filtersSheetMotionMs();
+      if (ms === 0) {
+        finishFiltersSheetClose();
+        return;
+      }
+      filtersCloseTimer = window.setTimeout(finishFiltersSheetClose, ms);
+    }
+
+    function setOpen(term: HTMLElement, open: boolean, opts?: { deep?: boolean }) {
+      const full = term.querySelector<HTMLElement>('[data-glossary-full]');
+      if (full) full.hidden = !open;
+      term.classList.toggle('is-open', open);
+      for (const btn of term.querySelectorAll<HTMLButtonElement>('[data-glossary-toggle]')) {
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        const label = btn.querySelector('[data-glossary-toggle-label]');
+        if (label) label.textContent = open ? 'Collapse' : 'View definition';
+      }
+      if (opts?.deep) {
+        term.classList.add('is-deep-link');
+        window.clearTimeout(deepLinkTimer);
+        deepLinkTimer = window.setTimeout(() => term.classList.remove('is-deep-link'), 4000);
+      }
+    }
+
+    function termByAnchor(anchor: string) {
+      const id = anchor.replace(/^#/, '');
+      return terms.find((t) => t.id === id) ?? null;
+    }
 
     function applyFilter() {
-      const q = (search?.value ?? '').trim().toLowerCase();
-      let visibleCount = 0;
+      const q = query().toLowerCase();
+      const searching = q.length > 0;
+      let visible: HTMLElement[] = [];
       for (const term of terms) {
         const cat = term.dataset.category ?? '';
         const blob = term.dataset.search ?? '';
@@ -209,40 +635,231 @@ const jsonLdGraph = buildWebPageSchema({
         const qOk = !q || blob.includes(q);
         const show = catOk && qOk;
         term.classList.toggle('is-hidden', !show);
-        if (show) visibleCount += 1;
+        if (show) visible.push(term);
       }
       for (const letter of letters) {
         const hasVisible = letter.querySelector('[data-glossary-term]:not(.is-hidden)');
         letter.classList.toggle('is-hidden', !hasVisible);
       }
-      if (empty) {
-        empty.hidden = visibleCount > 0;
-        empty.classList.toggle('is-visible', visibleCount === 0);
+
+      for (const field of document.querySelectorAll('.glossary-search')) {
+        field.classList.toggle('is-filled', searching);
+      }
+      const countLabel = `${visible.length} ${visible.length === 1 ? 'result' : 'results'}`;
+      for (const el of counts) {
+        el.hidden = !searching;
+        el.textContent = countLabel;
+      }
+
+      if (results && resultsList && resultsHeader && index) {
+        if (searching && visible.length > 0) {
+          index.hidden = true;
+          results.hidden = false;
+          if (empty) {
+            empty.hidden = true;
+            empty.classList.remove('is-visible');
+          }
+          resultsHeader.textContent = `${countLabel} for “${query()}”`;
+          resultsList.innerHTML = visible
+            .map((term, i) => {
+              const name = escapeHtml(term.dataset.term ?? '');
+              const cat = escapeHtml(term.dataset.category ?? '');
+              const lede = escapeHtml(term.querySelector('.glossary-term__lede')?.textContent ?? '');
+              return `<button type="button" class="glossary-result" data-glossary-result="${term.id}">
+                <span class="glossary-result__term">${name}</span>
+                <span class="glossary-result__tag">${cat}</span>
+                <span class="glossary-result__lede">${lede}</span>
+              </button>`;
+            })
+            .join('');
+        } else if (searching && visible.length === 0) {
+          index.hidden = true;
+          results.hidden = true;
+          if (empty) {
+            empty.hidden = false;
+            empty.classList.add('is-visible');
+            if (emptyTitle) emptyTitle.textContent = `No glossary terms found for “${query()}”`;
+          }
+        } else {
+          index.hidden = false;
+          results.hidden = true;
+          if (empty) {
+            empty.hidden = visible.length > 0;
+            empty.classList.toggle('is-visible', visible.length === 0);
+            if (emptyTitle) emptyTitle.textContent = 'No glossary terms found';
+          }
+        }
       }
     }
 
-    search?.addEventListener('input', applyFilter);
-    for (const chip of chips) {
-      chip.addEventListener('click', () => {
-        category = chip.dataset.glossaryCategory ?? 'all';
-        for (const c of chips) c.classList.toggle('is-active', c === chip);
+    function openFromHash(opts?: { deep?: boolean }) {
+      const hash = window.location.hash.replace(/^#/, '');
+      if (!hash || hash.startsWith('letter-')) return;
+      const term = termByAnchor(hash);
+      if (!term) return;
+      setQuery('');
+      applyFilter();
+      setOpen(term, true, { deep: opts?.deep ?? true });
+      term.scrollIntoView({ block: 'start' });
+    }
+
+    for (const input of searchInputs) {
+      input.addEventListener('input', () => {
+        setQuery(input.value);
         applyFilter();
+      });
+      input.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        const first = resultsList?.querySelector<HTMLButtonElement>('[data-glossary-result]');
+        if (first) first.click();
       });
     }
 
-    for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-glossary-copy-link]')) {
-      link.addEventListener('click', async (event) => {
-        const href = link.getAttribute('href');
-        if (!href) return;
-        const absolute = new URL(href, window.location.origin).toString();
-        try {
-          await navigator.clipboard.writeText(absolute);
-          event.preventDefault();
-        } catch {
-          /* fall through to native hash navigation */
-        }
+    for (const chip of chips) {
+      chip.addEventListener('click', () => {
+        setCategory(chip.dataset.glossaryCategory ?? 'all');
+        applyFilter();
+        closeMenus();
+        closeFiltersSheet();
       });
     }
+
+    for (const btn of clearBtns) {
+      btn.addEventListener('click', () => {
+        setQuery('');
+        applyFilter();
+        searchInputs[0]?.focus();
+      });
+    }
+
+    page.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const toggle = target.closest<HTMLButtonElement>('[data-glossary-toggle]');
+      if (toggle) {
+        const term = toggle.closest<HTMLElement>('[data-glossary-term]');
+        if (term) setOpen(term, !term.classList.contains('is-open'));
+        return;
+      }
+      const copy = target.closest<HTMLButtonElement>('[data-glossary-copy-link]');
+      if (copy) {
+        const href = copy.getAttribute('data-href');
+        if (!href) return;
+        const absolute = new URL(href, window.location.origin).toString();
+        void navigator.clipboard.writeText(absolute).then(() => {
+          const prevLabel = copy.getAttribute('aria-label') ?? 'Copy link';
+          copy.setAttribute('aria-label', 'Copied');
+          window.setTimeout(() => {
+            copy.setAttribute('aria-label', prevLabel);
+          }, 1600);
+        });
+        return;
+      }
+      const related = target.closest<HTMLAnchorElement>('[data-glossary-related]');
+      if (related) {
+        event.preventDefault();
+        const id = related.dataset.glossaryRelated ?? '';
+        history.replaceState(null, '', `#${id}`);
+        const term = termByAnchor(id);
+        if (term) {
+          setQuery('');
+          applyFilter();
+          setOpen(term, true);
+          term.scrollIntoView({ block: 'start' });
+        }
+        return;
+      }
+      const result = target.closest<HTMLButtonElement>('[data-glossary-result]');
+      if (result) {
+        const id = result.dataset.glossaryResult ?? '';
+        history.replaceState(null, '', `#${id}`);
+        setQuery('');
+        applyFilter();
+        const term = termByAnchor(id);
+        if (term) {
+          setOpen(term, true);
+          term.scrollIntoView({ block: 'start' });
+        }
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
+      const el = event.target;
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || (el instanceof HTMLElement && el.isContentEditable)) {
+        return;
+      }
+      event.preventDefault();
+      (toolbar?.hidden === false ? searchInputs[1] : searchInputs[0])?.focus();
+    });
+
+    if (toolbar && sentinel) {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          const stuck = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+          toolbar.hidden = !stuck;
+          toolbar.classList.toggle('is-stuck', stuck);
+          document.body.classList.toggle('glossary-toolbar-stuck', stuck);
+        },
+        { threshold: 0 },
+      );
+      observer.observe(sentinel);
+    }
+
+    categoryTrigger?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (!(categoryPanel instanceof HTMLElement)) return;
+      const open = categoryPanel.hidden;
+      closeMenus();
+      categoryPanel.hidden = !open;
+      categoryTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    azTrigger?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (!(azPanel instanceof HTMLElement)) return;
+      const open = azPanel.hidden;
+      closeMenus();
+      azPanel.hidden = !open;
+      azTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-glossary-filters-open]')) {
+      btn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        closeMenus();
+        openFiltersSheet();
+      });
+    }
+
+    for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-glossary-filters-close]')) {
+      btn.addEventListener('click', () => closeFiltersSheet());
+    }
+
+    for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-glossary-az]')) {
+      link.addEventListener('click', () => {
+        closeMenus();
+        closeFiltersSheet();
+      });
+    }
+
+    document.addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return;
+      if (event.target.closest('[data-glossary-category-menu], [data-glossary-az-menu]')) return;
+      closeMenus();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeMenus();
+        closeFiltersSheet();
+      }
+    });
+
+    window.addEventListener('hashchange', () => openFromHash({ deep: true }));
+    openFromHash({ deep: true });
+    applyFilter();
   }
 
   initGlossaryPage();
