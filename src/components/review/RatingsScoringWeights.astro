@@ -1,0 +1,32 @@
+---
+import type { Product } from '../../data/products';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const categories = product.categories;
+const totalWeight = categories.reduce((sum, cat) => sum + (cat.weight ?? 0), 0);
+---
+
+<aside class="ratings-weights" aria-labelledby="ratings-weights-title">
+  <h3 id="ratings-weights-title" class="ratings-weights__title">Scoring weights</h3>
+  <p class="ratings-weights__meta">
+    {categories.length} categor{categories.length === 1 ? 'y' : 'ies'} · {totalWeight}% total
+  </p>
+  <ul class="ratings-weights__list">
+    {
+      categories.map((category) => (
+        <li class="ratings-weights__row">
+          <span class="ratings-weights__name">{category.key === 'pricing' ? 'Pricing' : category.name}</span>
+          <span class="ratings-weights__value">{category.weight}%</span>
+        </li>
+      ))
+    }
+  </ul>
+  <a class="ratings-weights__link" href="/test/">
+    How the AIGE Score works
+    <img src="/icons/ratings/arrow-right.svg" width="13" height="13" alt="" />
+  </a>
+</aside>

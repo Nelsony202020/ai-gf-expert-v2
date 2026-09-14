@@ -1,7 +1,7 @@
 ---
 import type { DraftEvidenceCategory } from '../../lib/draft-ratings/types';
 import { fmtScore } from '../../lib/scores';
-import { getDraftScoreChipClass } from '../../lib/draft-ratings/scoreBands';
+import { getFigmaScoreTone } from '../../lib/ratings/figmaScoreTone';
 
 interface Props {
   tableId: string;
@@ -17,15 +17,21 @@ const { tableId, items, hideScores = false } = Astro.props;
     <p id={`${tableId}-label`} class="evidence-cat-table__sr-only">Evidence categories</p>
     <div class="evidence-cat-table__head" role="row">
       <span role="columnheader" class="evidence-cat-table__score-col">Score</span>
-      <span role="columnheader">Evidence category</span>
-      <span role="columnheader">Summary</span>
+      <span role="columnheader" class="evidence-cat-table__name-col">
+        <span class="evidence-cat-table__name-col-full">Evidence category</span>
+        <span class="evidence-cat-table__name-col-short">Evidence</span>
+      </span>
+      <span role="columnheader" class="evidence-cat-table__summary-col">Summary</span>
       <span role="columnheader" class="evidence-cat-table__proof-col">Proof</span>
+      <span role="columnheader" class="evidence-cat-table__action-col">
+        <span class="evidence-cat-table__sr-only">Details</span>
+      </span>
     </div>
 
     {
       items.map((item) => {
         const displayScore = hideScores ? null : item.score;
-        const chip = getDraftScoreChipClass(displayScore);
+        const tone = getFigmaScoreTone(displayScore);
         const summary = item.cardTeaser || item.summary;
         return (
           <button
@@ -37,15 +43,25 @@ const { tableId, items, hideScores = false } = Astro.props;
             aria-label={`${item.name}, score ${fmtScore(displayScore)}. Open evidence details.`}
           >
             <span class="evidence-cat-table__score" role="cell">
-              <span class={`rt-score-chip rt-score-chip--outline ${chip}`}>{fmtScore(displayScore)}</span>
+              <span class={`ratings-figma-chip ratings-figma-chip--${tone}`}>{fmtScore(displayScore)}</span>
             </span>
-            <span class="evidence-cat-table__name" role="cell">{item.name}</span>
-            <span class="evidence-cat-table__summary" role="cell">{summary}</span>
+            <span class="evidence-cat-table__copy" role="cell">
+              <span class="evidence-cat-table__name">{item.name}</span>
+              <span class="evidence-cat-table__summary">{summary}</span>
+            </span>
             <span class="evidence-cat-table__proof" role="cell">
-              <span class="evidence-cat-table__proof-link" aria-hidden="true">
-                <span class="material-symbols-outlined">attach_file</span>
-                {item.proofCount > 0 ? <span class="evidence-cat-table__proof-count">{item.proofCount}</span> : null}
-              </span>
+              {item.proofCount > 0 ? (
+                <span class="evidence-cat-table__proof-chip" aria-hidden="true">
+                  <img src="/icons/ratings/paperclip.svg" width="13" height="13" alt="" />
+                  <span class="evidence-cat-table__proof-count">{item.proofCount}</span>
+                </span>
+              ) : (
+                <span class="evidence-cat-table__proof-empty" aria-hidden="true">—</span>
+              )}
+            </span>
+            <span class="evidence-cat-table__action" role="cell" aria-hidden="true">
+              Details
+              <img src="/icons/ratings/arrow-right.svg" width="13" height="13" alt="" />
             </span>
           </button>
         );

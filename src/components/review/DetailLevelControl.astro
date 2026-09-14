@@ -39,18 +39,12 @@
     }
   }
 
-  [data-ratings-root][data-detail-level='medium'] .ratings-subscore-nav__item {
-    border: none !important;
-    box-shadow: none !important;
-    background: transparent !important;
-  }
-
   [data-ratings-root][data-detail-level='medium'] .ratings-subscore-nav__item:hover {
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-container-lowest, #fff);
   }
 
   [data-ratings-root][data-detail-level='medium'] .ratings-subscore-nav__item--active {
-    background: rgb(219 39 119 / 6%) !important;
+    background: var(--color-surface-container-lowest, #fff);
   }
 
   [data-ratings-root][data-detail-level='all-in'] .ratings-subscore-nav__item--active {
@@ -106,7 +100,7 @@
       const labels: Record<DetailLevel, string> = {
         skim: 'Skim',
         medium: 'Medium',
-        'all-in': 'All In',
+        'all-in': 'All',
       };
       el.textContent = labels[level];
     });
@@ -114,6 +108,7 @@
       const active = opt.dataset.detailLevelOption === level;
       opt.classList.toggle('is-active', active);
       opt.setAttribute('aria-selected', active ? 'true' : 'false');
+      opt.setAttribute('aria-checked', active ? 'true' : 'false');
     });
   }
 

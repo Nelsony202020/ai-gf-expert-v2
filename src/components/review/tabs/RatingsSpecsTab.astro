@@ -4,6 +4,7 @@ import type { DraftCategory, DraftRatingsViewModel } from '../../../lib/draft-ra
 import RatingCategory from './RatingCategory.astro';
 import DetailLevelControl from '../DetailLevelControl.astro';
 import RatingsViewControls from '../RatingsViewControls.astro';
+import RatingsScoringWeights from '../RatingsScoringWeights.astro';
 import RatingsChangelogCompact from '../RatingsChangelogCompact.astro';
 import RatingsEvidenceDrawer from '../RatingsEvidenceDrawer.astro';
 import { loadDraftRatingsViewModel } from '../../../lib/draft-ratings/loadDraftRatingsData';
@@ -16,6 +17,7 @@ import { buildSubscoreCalcDrawer } from '../../../lib/ratings/evidenceGroupScori
 import { buildDrawerNavChain } from '../../../lib/draft-ratings/drawerNav';
 import { deferPayAsYouGoScores, iconForEvidenceDef, PRICING_BENCHMARK_PENDING_NOTE } from '../../../lib/ratings/evidenceIcons';
 import '../ratings-evidence.css';
+import '../ratings-body.css';
 
 interface Props {
   product: Product;
@@ -111,37 +113,49 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
 );
 ---
 
-<section class="bg-background py-12 md:py-14" data-ratings-root data-detail-level="skim">
+<section class="ratings-body bg-background" data-ratings-root data-detail-level="medium">
   <div class="section-container px-4 md:px-8">
     <header class="ratings-section-head">
-      <h2 class="ratings-section-head__title review-tab-title">Ratings &amp; Specs</h2>
-      <div class="ratings-section-head__row">
-        <p class="ratings-section-head__intro">
-          See the full test results from our <strong>{product.name} review</strong>, with scores across all
-          the categories we test.
+      <div class="ratings-section-head__text">
+        <p class="ratings-section-head__eyebrow">
+          <span class="ratings-section-head__dot" aria-hidden="true"></span>
+          Ratings &amp; tests
         </p>
-        <RatingsViewControls product={product} />
+        <h2 class="ratings-section-head__title">How {product.name} scored</h2>
+        <p class="ratings-section-head__intro">
+          Every score comes from the subscores and the evidence behind it.
+        </p>
       </div>
+      <RatingsViewControls product={product} />
     </header>
 
     <DetailLevelControl />
 
-    <RatingsChangelogCompact entries={product.ratingChangelog} />
-
-    <div class="ratings-accordion" data-accordion-group>
-      {
-        product.categories.map((category, index) => (
-          <RatingCategory
-            category={displayCategories[index] ?? category}
-            enrichedCategory={enrichedByKey.get(category.key)}
-            productName={product.name}
-            productSlug={product.slug}
-            open={false}
-            isFirst={index === 0}
-            isLast={index === product.categories.length - 1}
-          />
-        ))
-      }
+    <div class="ratings-layout">
+      <div class="ratings-accordion" data-accordion-group>
+        {
+          product.categories.map((category, index) => {
+            const verdict = product.verdicts.find((v) => v.id === category.key);
+            return (
+              <RatingCategory
+                category={displayCategories[index] ?? category}
+                enrichedCategory={enrichedByKey.get(category.key)}
+                productName={product.name}
+                productSlug={product.slug}
+                headline={verdict?.tagline}
+                summary={verdict?.summary}
+                open={true}
+                isFirst={index === 0}
+                isLast={index === product.categories.length - 1}
+              />
+            );
+          })
+        }
+      </div>
+      <div class="ratings-layout__rail">
+        <RatingsScoringWeights product={product} />
+        <RatingsChangelogCompact entries={product.ratingChangelog} />
+      </div>
     </div>
   </div>
 
@@ -155,41 +169,3 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
   />
 </section>
 
-<style>
-  .ratings-section-head {
-    margin: 0 0 1.25rem;
-  }
-
-  .ratings-section-head__title {
-    margin: 0;
-  }
-
-  .ratings-section-head__row {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-top: 0.65rem;
-  }
-
-  @media (min-width: 768px) {
-    .ratings-section-head__row {
-      flex-direction: row;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 1.5rem 2rem;
-    }
-  }
-
-  .ratings-section-head__intro {
-    margin: 0;
-    max-width: 40rem;
-    font-size: 1rem;
-    line-height: 1.55;
-    color: var(--color-on-surface-variant);
-  }
-
-  .ratings-section-head__intro strong {
-    font-weight: 700;
-    color: var(--color-on-surface);
-  }
-</style>
