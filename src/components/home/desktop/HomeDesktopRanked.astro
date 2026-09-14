@@ -18,7 +18,7 @@ const { data } = Astro.props;
       <h2 id="home-ranked-title" class="home-v2__h2">Our highest-rated AI girlfriend apps</h2>
       <p class="home-v2__intro">Based on the same 8-category testing system used across our reviews.</p>
     </div>
-    <a class="home-v2__ghost" href="/best/ai-girlfriend/">
+    <a class="home-v2__ghost home-v2__ghost--desktop" href="/best/ai-girlfriend/">
       Best AI Girlfriend Apps
       <HomeIcon name="arrow-right" size={16} />
     </a>
@@ -68,4 +68,8 @@ const { data } = Astro.props;
       </article>
     ))}
   </div>
+  <a class="home-v2__section-cta" href="/best/ai-girlfriend/">
+    View full ranking
+    <HomeIcon name="arrow-right" size={16} />
+  </a>
 </section>

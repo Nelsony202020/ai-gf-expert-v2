@@ -51,7 +51,7 @@ export function getActiveBottomNavItem(pathname: string): BottomNavId | null {
   return null;
 }
 
-/** Unified bottom nav on every public page (including individual reviews). */
+/** Global floating bottom nav is retired; guide/article rails keep their own sheets. */
 export function showMobileBottomNav(_mode: MobileNavMode): boolean {
-  return true;
+  return false;
 }

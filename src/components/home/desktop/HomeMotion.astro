@@ -230,9 +230,17 @@
       closeFromCoordinates(event);
     };
 
-    toggle.addEventListener('click', (event) => {
+    const flipFromToggle = (event: Event) => {
       event.preventDefault();
       setOpen(!root.classList.contains('is-flipped'));
+    };
+
+    toggle.addEventListener('click', flipFromToggle);
+    toggle.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        flipFromToggle(event);
+      }
     });
 
     link?.addEventListener('click', (event) => {
@@ -272,6 +280,7 @@
     back?.addEventListener('click', (event) => {
       if (fineHover) return;
       if ((event.target as HTMLElement).closest('[data-home-badge-link]')) return;
+      event.preventDefault();
       setOpen(false);
     });
 
@@ -299,19 +308,41 @@
       heroIo.observe(hero);
     }
 
-    if (prefersReducedMotion() || fineHover) return;
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+
+    if (fineHover && !prefersReducedMotion()) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (nudged || root.classList.contains('is-flipped')) return;
+          const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.45);
+          if (!visible) return;
+          nudged = true;
+          root.classList.add('is-nudging');
+          window.setTimeout(() => root.classList.remove('is-nudging'), 680);
+          io.disconnect();
+        },
+        { threshold: [0.45, 0.7] },
+      );
+      io.observe(root);
+      return;
+    }
+
+    if (prefersReducedMotion() || !coarsePointer) return;
 
     const io = new IntersectionObserver(
       (entries) => {
         if (nudged || root.classList.contains('is-flipped')) return;
-        const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.45);
+        const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.35);
         if (!visible) return;
         nudged = true;
-        root.classList.add('is-nudging');
-        window.setTimeout(() => root.classList.remove('is-nudging'), 680);
         io.disconnect();
+        window.setTimeout(() => {
+          if (root.classList.contains('is-flipped')) return;
+          root.classList.add('is-wiggling');
+          window.setTimeout(() => root.classList.remove('is-wiggling'), 540);
+        }, 850);
       },
-      { threshold: [0.45, 0.7] },
+      { threshold: [0.35, 0.55] },
     );
     io.observe(root);
   }

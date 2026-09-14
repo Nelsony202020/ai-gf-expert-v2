@@ -19,26 +19,11 @@ const steps = [
 <section class="home-v2__method" id="home-method" aria-labelledby="home-method-title" data-home-reveal="method">
   <div class="home-v2__grid" aria-hidden="true"></div>
   <div class="home-v2__method-row">
-    <div>
+    <div class="home-v2__method-intro">
       <HomeEyebrow text={`How we test · methodology ${data.methodologyVersion}`} theme="ink" />
       <h2 id="home-method-title" class="home-v2__h2 home-v2__h2--ink">
         Nothing gets a score <em class="home-v2__accent">for free</em>
       </h2>
-      <ol class="home-v2__steps">
-        {steps.map((step, i) => (
-          <li style={`--stagger: ${i}`}>
-            <span>{step.n}</span>
-            <div>
-              <h3>{step.title}</h3>
-              <p>{step.body}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-      <a class="home-v2__btn home-v2__btn--on-ink" href="/test/">
-        How We Test AI Girlfriend Apps
-        <HomeIcon name="arrow-right" size={16} />
-      </a>
     </div>
     <div class="home-v2__video-wrap" data-home-video-wrap>
       <div class="home-v2__video">
@@ -70,6 +55,23 @@ const steps = [
         <HomeIcon name="video" size={14} />
         Footage from our paid testing accounts
       </p>
+    </div>
+    <div class="home-v2__method-body">
+      <ol class="home-v2__steps">
+        {steps.map((step, i) => (
+          <li style={`--stagger: ${i}`}>
+            <span>{step.n}</span>
+            <div>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <a class="home-v2__btn home-v2__btn--on-ink" href="/test/">
+        How We Test AI Girlfriend Apps
+        <HomeIcon name="arrow-right" size={16} />
+      </a>
     </div>
   </div>
 </section>

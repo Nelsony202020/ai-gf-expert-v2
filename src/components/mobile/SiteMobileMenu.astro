@@ -1,0 +1,179 @@
+---
+import { BRAND_CHANNELS } from '../../data/social-links';
+import { buildBrandNav } from '../../data/brand-nav';
+import { buildSiteMobileMenu } from '../../data/site-mobile-menu';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
+import SocialIcon from '../ui/SocialIcon.astro';
+import ThemeToggle from '../ui/ThemeToggle.astro';
+
+const publishedProducts = await loadComparisonProducts();
+const groups = buildSiteMobileMenu(buildBrandNav(publishedProducts));
+---
+
+<div id="site-mobile-menu" class="site-mobile-menu" data-site-menu hidden aria-hidden="true">
+  <button type="button" class="site-mobile-menu__backdrop" data-site-menu-close tabindex="-1" aria-label="Close menu"></button>
+  <div class="site-mobile-menu__panel" role="dialog" aria-modal="true" aria-labelledby="site-mobile-menu-title" data-site-menu-panel>
+    <header class="site-mobile-menu__head">
+      <p id="site-mobile-menu-title" class="site-mobile-menu__brand">AI Girlfriend Expert</p>
+      <button type="button" class="site-mobile-menu__close" data-site-menu-close aria-label="Close menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4Z" />
+        </svg>
+      </button>
+    </header>
+
+    <nav class="site-mobile-menu__nav" aria-label="Site">
+      {groups.map((group) => (
+        <section class:list={['site-mobile-menu__group', group.title === 'Primary' && 'site-mobile-menu__group--primary']}>
+          {group.title ? <h2 class="site-mobile-menu__kicker">{group.title}</h2> : null}
+          <ul>
+            {group.links.map((link) => (
+              <li>
+                <a href={link.href} class="site-mobile-menu__link" data-site-menu-link>
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </nav>
+
+    <footer class="site-mobile-menu__foot">
+      <div class="site-mobile-menu__channels">
+        {BRAND_CHANNELS.map((channel) =>
+          channel.href ? (
+            <a
+              href={channel.href}
+              class="site-mobile-menu__channel"
+              data-site-menu-link
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <SocialIcon platform={channel.icon} class="site-mobile-menu__channel-icon" />
+              <span class="site-mobile-menu__channel-copy">
+                <span class="site-mobile-menu__channel-name">{channel.label}</span>
+                {channel.descriptor ? <small>{channel.descriptor}</small> : null}
+              </span>
+            </a>
+          ) : (
+            <div class="site-mobile-menu__channel site-mobile-menu__channel--muted">
+              <SocialIcon platform={channel.icon} class="site-mobile-menu__channel-icon" />
+              <span class="site-mobile-menu__channel-copy">
+                <span class="site-mobile-menu__channel-name">{channel.label}</span>
+                {channel.descriptor ? <small>{channel.descriptor}</small> : null}
+              </span>
+            </div>
+          )
+        )}
+      </div>
+      <ThemeToggle variant="switch" />
+    </footer>
+  </div>
+</div>
+
+<script>
+  const FOCUSABLE = 'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])';
+  const CLOSE_MS = 300;
+
+  function initSiteMobileMenu() {
+    const menu = document.querySelector<HTMLElement>('[data-site-menu]');
+    if (!menu || menu.dataset.bound === 'true') return;
+    menu.dataset.bound = 'true';
+
+    const root = menu;
+    const panel = root.querySelector<HTMLElement>('[data-site-menu-panel]');
+    let lastFocus: HTMLElement | null = null;
+    let closeTimer = 0;
+
+    function setExpanded(open: boolean) {
+      document.querySelectorAll('[data-site-menu-toggle]').forEach((btn) => {
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+        btn.querySelector('.site-header__menu-icon--bars')?.classList.toggle('hidden', open);
+        btn.querySelector('.site-header__menu-icon--close')?.classList.toggle('hidden', !open);
+      });
+    }
+
+    function closeMenu() {
+      if (root.hidden && !root.classList.contains('is-open')) return;
+      root.classList.remove('is-open');
+      document.body.classList.remove('site-menu-open');
+      setExpanded(false);
+      root.setAttribute('aria-hidden', 'true');
+      window.clearTimeout(closeTimer);
+      closeTimer = window.setTimeout(() => {
+        root.hidden = true;
+        lastFocus?.focus();
+      }, CLOSE_MS);
+    }
+
+    function openMenu(trigger?: HTMLElement) {
+      if (root.classList.contains('is-open')) return;
+      window.clearTimeout(closeTimer);
+      document.querySelectorAll('[data-header-search].is-open').forEach((searchRoot) => {
+        searchRoot.classList.remove('is-open');
+        searchRoot.querySelector('[data-search-toggle]')?.setAttribute('aria-expanded', 'false');
+        searchRoot.querySelector('[data-search-results]')?.classList.add('hidden');
+      });
+      lastFocus = trigger ?? (document.activeElement as HTMLElement | null);
+      root.hidden = false;
+      root.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          root.classList.add('is-open');
+        });
+      });
+      document.body.classList.add('site-menu-open');
+      setExpanded(true);
+      const closeBtn = root.querySelector<HTMLElement>('.site-mobile-menu__close');
+      closeBtn?.focus();
+    }
+
+    function toggleMenu(trigger?: HTMLElement) {
+      if (root.classList.contains('is-open')) closeMenu();
+      else openMenu(trigger);
+    }
+
+    document.addEventListener('click', (event) => {
+      const toggle = (event.target as HTMLElement).closest?.('[data-site-menu-toggle]');
+      if (!toggle) return;
+      event.preventDefault();
+      toggleMenu(toggle as HTMLElement);
+    });
+
+    root.querySelectorAll('[data-site-menu-close]').forEach((btn) => {
+      btn.addEventListener('click', closeMenu);
+    });
+
+    root.querySelectorAll('[data-site-menu-link]').forEach((link) => {
+      link.addEventListener('click', closeMenu);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (!root.classList.contains('is-open')) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeMenu();
+        return;
+      }
+      if (event.key !== 'Tab' || !panel) return;
+      const nodes = [...panel.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+        (el) => !el.hasAttribute('hidden') && el.getAttribute('aria-hidden') !== 'true',
+      );
+      if (!nodes.length) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+  }
+
+  initSiteMobileMenu();
+  document.addEventListener('astro:page-load', initSiteMobileMenu);
+</script>
