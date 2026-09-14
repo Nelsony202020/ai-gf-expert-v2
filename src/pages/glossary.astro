@@ -142,8 +142,12 @@ const jsonLdGraph = buildWebPageSchema({
                   data-glossary-search="page"
                 />
                 <span class="glossary-search__kbd" aria-hidden="true">/</span>
-                <button type="button" class="glossary-search__clear" data-glossary-clear hidden>
-                  Clear
+                <span class="glossary-search__count" data-glossary-count hidden></span>
+                <button type="button" class="glossary-search__clear" data-glossary-clear hidden aria-label="Clear search">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                  </svg>
                 </button>
               </div>
 
@@ -207,8 +211,12 @@ const jsonLdGraph = buildWebPageSchema({
                     spellcheck="false"
                     data-glossary-search="sticky"
                   />
-                  <button type="button" class="glossary-search__clear" data-glossary-clear hidden>
-                    Clear
+                  <span class="glossary-search__count" data-glossary-count hidden></span>
+                  <button type="button" class="glossary-search__clear" data-glossary-clear hidden aria-label="Clear search">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M18 6 6 18"></path>
+                      <path d="m6 6 12 12"></path>
+                    </svg>
                   </button>
                 </div>
                 <div class="glossary-chips glossary-chips--toolbar" role="group" aria-label="Filter by category">
@@ -250,6 +258,12 @@ const jsonLdGraph = buildWebPageSchema({
             </div>
 
             <div class="glossary-page__no-results" data-glossary-empty hidden>
+              <div class="glossary-page__no-results-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <path d="m20 20-3-3"></path>
+                </svg>
+              </div>
               <p class="glossary-page__no-results-title" data-glossary-empty-title>
                 No glossary terms found
               </p>
@@ -419,6 +433,7 @@ const jsonLdGraph = buildWebPageSchema({
     const sentinel = document.querySelector('[data-glossary-sentinel]');
     const letterPanel = document.querySelector('[data-glossary-letter-panel]');
     const clearBtns = Array.from(document.querySelectorAll('[data-glossary-clear]'));
+    const counts = Array.from(document.querySelectorAll('[data-glossary-count]'));
     let category = 'all';
     let deepLinkTimer = 0;
 
@@ -479,6 +494,16 @@ const jsonLdGraph = buildWebPageSchema({
         letter.classList.toggle('is-hidden', !hasVisible);
       }
 
+      page.classList.toggle('is-searching', searching);
+      for (const field of document.querySelectorAll('.glossary-search')) {
+        field.classList.toggle('is-filled', searching);
+      }
+      const countLabel = `${visible.length} ${visible.length === 1 ? 'result' : 'results'}`;
+      for (const el of counts) {
+        el.hidden = !searching;
+        el.textContent = countLabel;
+      }
+
       if (results && resultsList && resultsHeader && index) {
         if (searching && visible.length > 0) {
           index.hidden = true;
@@ -487,13 +512,13 @@ const jsonLdGraph = buildWebPageSchema({
             empty.hidden = true;
             empty.classList.remove('is-visible');
           }
-          resultsHeader.textContent = `${visible.length} ${visible.length === 1 ? 'result' : 'results'} for “${query()}”`;
+          resultsHeader.textContent = `${countLabel} for “${query()}”`;
           resultsList.innerHTML = visible
-            .map((term) => {
+            .map((term, i) => {
               const name = escapeHtml(term.dataset.term ?? '');
               const cat = escapeHtml(term.dataset.category ?? '');
               const lede = escapeHtml(term.querySelector('.glossary-term__lede')?.textContent ?? '');
-              return `<button type="button" class="glossary-result" data-glossary-result="${term.id}">
+              return `<button type="button" class="glossary-result${i === 0 ? ' is-active' : ''}" data-glossary-result="${term.id}">
                 <span class="glossary-result__term">${name}</span>
                 <span class="glossary-result__tag">${cat}</span>
                 <span class="glossary-result__lede">${lede}</span>
