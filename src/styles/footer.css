@@ -5,6 +5,8 @@
   background: #141317;
   color: #f7f7f6;
   border-top: 1px solid #333239;
+  /* Extend footer canvas through iOS home-indicator / Safari bottom chrome */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .site-footer__container {
