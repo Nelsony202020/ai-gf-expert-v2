@@ -44,6 +44,7 @@ const TEMP_REDIRECTS: Record<string, string> = {
 /** Slugs shared publicly that differ from the cloakedSlug stored in the DB. */
 const SLUG_ALIASES: Record<string, string> = {
   'kupid-ai-youtube': 'kupid-ai-2-youtube',
+  'ourdream-ai-youtube': 'ourdream-ai-yt',
 };
 
 export const GET: APIRoute = async ({ params }) => {

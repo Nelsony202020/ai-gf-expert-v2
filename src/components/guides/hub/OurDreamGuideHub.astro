@@ -16,7 +16,7 @@ interface Props {
 }
 
 const { product } = Astro.props;
-const visitHref = product?.affiliateUrl || '/go/ourdream-ai';
+const visitHref = ourdreamHubMeta.visitGoHref;
 const appIcon = product?.logo || '/guides/hub/ourdream-app-icon.png';
 const productName = product?.name || ourdreamHubMeta.productName;
 const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
