@@ -76,8 +76,5 @@ export interface HtmlSitemapFullPage {
   resourcesCount: number;
   company: HtmlSitemapExploreColumn;
   legal: HtmlSitemapLink[];
-  extra?: {
-    glossary?: HtmlSitemapExploreColumn;
-  };
   searchHits?: HtmlSitemapSearchHit[];
 }

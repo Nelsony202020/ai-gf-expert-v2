@@ -67,8 +67,8 @@ const pageSearchClass = isSearching
 
         <div class="si-chips" data-search-chips hidden={isSearching}>
           <a class="si-chip" href="#si-explore">Reviews<span class="si-chip-dot"></span><span class="si-chip-n">{page.reviewsCount}</span></a>
-          <a class="si-chip" href="#si-explore">Rankings<span class="si-chip-dot"></span><span class="si-chip-n">{page.rankingsCount}</span></a>
-          <a class="si-chip" href="#si-explore">Guides<span class="si-chip-dot"></span><span class="si-chip-n">{page.guidesCount}</span></a>
+          <a class="si-chip" href="#rankings">Rankings<span class="si-chip-dot"></span><span class="si-chip-n">{page.rankingsCount}</span></a>
+          <a class="si-chip" href="#guides">Guides<span class="si-chip-dot"></span><span class="si-chip-n">{page.guidesCount}</span></a>
           <a class="si-chip" href="#si-testing">Tests<span class="si-chip-dot"></span><span class="si-chip-n">{page.testsCount}</span></a>
         </div>
       </div>
@@ -114,25 +114,17 @@ const pageSearchClass = isSearching
             <h2>Explore AIGE</h2>
           </section>
           <div class="si-explore-grid">
-            <SitemapExploreColumn column={page.reviews} />
-            <SitemapExploreColumn column={page.roundups} />
-            <SitemapExploreColumn column={page.guides} />
-            <SitemapExploreColumn column={page.authors} />
+            <SitemapExploreColumn column={page.reviews} variant="reviews" />
+            <SitemapExploreColumn column={page.roundups} variant="roundups" />
+            <SitemapExploreColumn column={page.guides} variant="guides" />
+            <SitemapExploreColumn column={page.authors} variant="authors" />
           </div>
         </div>
 
-        <SitemapTestMethodology
-          methodology={page.methodology}
-          supporting={page.supporting}
-          testing={page.testing}
-        />
+        <SitemapTestMethodology page={page} />
 
         <div class="si-resources-wrap">
-          <SitemapResourcesLegal
-            resources={page.resources}
-            company={page.company}
-            legal={page.legal}
-          />
+          <SitemapResourcesLegal page={page} />
         </div>
       </div>
     </div>

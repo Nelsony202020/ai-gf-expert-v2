@@ -585,7 +585,6 @@ export function getHtmlSitemapPage(): HtmlSitemapFullPage {
     testingSubcategoriesCount: subcategoryCount,
     resourcesCount: resources.count,
     testing: testCategories,
-    extra: { glossary: { href: "/glossary/", label: "AI Girlfriend Glossary" } },
   };
 }
 
