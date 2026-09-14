@@ -1,0 +1,28 @@
+---
+import type { OurDreamTocSection } from '../../../lib/ourdream-guide-toc';
+
+interface Props {
+  toc: OurDreamTocSection[];
+  hubHref?: string;
+}
+
+const { toc, hubHref = '/guides/ourdream-ai/' } = Astro.props;
+---
+
+<aside class="ourdream-article-sidebar" aria-label="Guide navigation" data-ourdream-toc-root>
+  <nav class="ourdream-article-toc" aria-label="In this guide">
+    <p class="ourdream-article-toc__title">In this guide</p>
+    <ul class="ourdream-article-toc__list">
+      {
+        toc.map((section) => (
+          <li>
+            <a class="ourdream-article-toc__link" href={`#${section.id}`} data-toc-link={section.id}>
+              {section.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <a class="ourdream-article-toc__explore" href={hubHref}>Explore all OurDream AI guides →</a>
+  </nav>
+</aside>

@@ -1,0 +1,52 @@
+---
+import { getRelatedOurDreamGuides } from '../../../data/ourdream-guide-hub';
+
+interface Props {
+  currentHref: string;
+  hubHref?: string;
+}
+
+const { currentHref, hubHref = '/guides/ourdream-ai/' } = Astro.props;
+const related = getRelatedOurDreamGuides(currentHref, 3);
+---
+
+{
+  related.length > 0 && (
+    <nav class="ourdream-article-related" aria-label="Related OurDream guides">
+      <p class="ourdream-article-related__title">Related OurDream guides</p>
+      <ul class="ourdream-article-related__list">
+        {related.map((guide) => (
+          <li>
+            <a class="ourdream-article-related__link" href={guide.href}>
+              <span class="ourdream-article-related__copy">
+                <span class="ourdream-article-related__name">{guide.title}</span>
+                {guide.category && <span class="ourdream-article-related__cat">{guide.category}</span>}
+              </span>
+              <svg class="ourdream-article-related__arrow" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path
+                  d="M4.7 1 9.3 5.7 4.7 10.3"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <a class="ourdream-article-related__hub" href={hubHref}>
+        Explore all OurDream AI guides
+        <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path
+            d="M4.1 1 8.2 5.1 4.1 9.2"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </a>
+    </nav>
+  )
+}
