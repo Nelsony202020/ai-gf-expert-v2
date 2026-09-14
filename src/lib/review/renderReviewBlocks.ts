@@ -37,20 +37,25 @@ interface GlossaryRenderContext {
   state: GlossaryDecorateState;
 }
 
-const DYNAMIC_BLOCK_TYPES = new Set([
+/** Score/CTA dashboards stay out of the Full Review article (Figma board 3). */
+const SKIP_ARTICLE_DASHBOARDS = new Set([
   'scoreOverall',
   'scoreCategory',
   'pricingTable',
   'characterGallery',
   'publicGallery',
   'evidenceSummary',
-  'methodologyLink',
-  'callout',
-  'prosCons',
-  'faq',
-  'relatedGuide',
   'cta',
 ]);
+
+const CALLOUT_LABEL: Record<string, string> = {
+  info: 'Tip',
+  warning: 'Important',
+  success: 'Worth knowing',
+};
+
+const CALLOUT_ICON =
+  '<svg class="review-callout__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 18h6M10 22h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 function escapeHtml(value: string): string {
   return value
@@ -302,6 +307,7 @@ function blockPlainText(block: ReviewBlockPublic): string {
     case 'h3':
     case 'h4':
     case 'quote':
+    case 'callout':
       return String(d.text ?? '');
     case 'bulletList':
     case 'numberedList':
@@ -323,11 +329,6 @@ export function countReviewBlockWords(blocks: ReviewBlockPublic[]): number {
 
 export function reviewReadingMinutes(blocks: ReviewBlockPublic[], wpm = 200): number {
   return Math.max(1, Math.ceil(countReviewBlockWords(blocks) / wpm));
-}
-
-function renderPlaceholder(type: string): string {
-  const label = type.replace(/([A-Z])/g, ' $1').replace(/-/g, ' ');
-  return `<div class="review-block-placeholder" data-block-type="${escapeHtml(type)}">[${escapeHtml(label.trim())} — dynamic block]</div>`;
 }
 
 export function renderReviewBlocksHtml(
@@ -426,6 +427,52 @@ export function renderReviewBlocksHtml(
         parts.push(html);
         break;
       }
+      case 'callout': {
+        const tone = String(data.tone ?? 'info');
+        const label = CALLOUT_LABEL[tone] ?? 'Tip';
+        const inner = renderInline(data, glossary);
+        if (!inner.trim()) break;
+        parts.push(
+          `<aside class="review-callout review-callout--${escapeHtml(tone)}" role="note"><div class="review-callout__label">${CALLOUT_ICON}<span>${escapeHtml(label)}</span></div><div class="review-callout__body">${inner}</div></aside>`,
+        );
+        break;
+      }
+      case 'prosCons': {
+        const pros = Array.isArray(data.pros) ? (data.pros as unknown[]).map((s) => String(s ?? '')) : [];
+        const cons = Array.isArray(data.cons) ? (data.cons as unknown[]).map((s) => String(s ?? '')) : [];
+        if (pros.length === 0 && cons.length === 0) break;
+        const list = (items: string[]) =>
+          items.length ? `<ul class="review-list">${items.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}</ul>` : '';
+        parts.push(
+          `<div class="review-proscons">${pros.length ? `<p class="review-proscons__heading">Pros</p>${list(pros)}` : ''}${cons.length ? `<p class="review-proscons__heading">Cons</p>${list(cons)}` : ''}</div>`,
+        );
+        break;
+      }
+      case 'faq': {
+        const items = Array.isArray(data.items) ? (data.items as { q?: string; a?: string; question?: string; answer?: string }[]) : [];
+        if (items.length === 0) break;
+        const rows = items
+          .map((item) => {
+            const q = String(item.q ?? item.question ?? '').trim();
+            const a = String(item.a ?? item.answer ?? '').trim();
+            if (!q) return '';
+            return `<details class="review-faq__item"><summary>${escapeHtml(q)}</summary><p>${escapeHtml(a)}</p></details>`;
+          })
+          .filter(Boolean);
+        if (rows.length) parts.push(`<div class="review-faq">${rows.join('')}</div>`);
+        break;
+      }
+      case 'relatedGuide': {
+        const title = String(data.title ?? '').trim();
+        const path = String(data.path ?? data.href ?? '').trim();
+        if (!title || !path) break;
+        parts.push(`<p><a href="${escapeHtml(path)}" class="content-link">${escapeHtml(title)}</a></p>`);
+        break;
+      }
+      case 'methodologyLink': {
+        parts.push(`<p><a href="/test/" class="content-link">How we test</a></p>`);
+        break;
+      }
       case 'image': {
         const rendered = renderImageFigure(data, { mediaById: opts?.mediaById });
         if (rendered.html) parts.push(rendered.html);
@@ -477,8 +524,9 @@ export function renderReviewBlocksHtml(
         break;
       }
       default:
-        if (DYNAMIC_BLOCK_TYPES.has(type)) {
-          parts.push(renderPlaceholder(type));
+        if (SKIP_ARTICLE_DASHBOARDS.has(type)) break;
+        if (type) {
+          /* Unknown future blocks stay hidden in the article rather than as dashboards. */
         }
         break;
     }

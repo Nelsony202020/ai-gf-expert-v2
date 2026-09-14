@@ -49,104 +49,103 @@ const savedReviewHtml = hasSavedReview
   ? renderReviewBlocksHtml(reviewBlocks, { mediaById, glossaryTerms })
   : '';
 
-const readingMinutes = hasSavedReview ? reviewReadingMinutes(reviewBlocks) : null;
+const readingMinutes = hasSavedReview ? reviewReadingMinutes(reviewBlocks) : 5;
 
-function youtubeIdFromUrl(url: string): string | null {
-  const m =
-    url.match(/[?&]v=([\w-]{6,})/) ??
-    url.match(/youtu\.be\/([\w-]{6,})/) ??
-    url.match(/\/embed\/([\w-]{6,})/);
-  return m?.[1] ?? null;
-}
+const author = product.authors?.[0];
+const authorHref = author?.slug ? `/author/${author.slug}/` : undefined;
+const authorName = author?.name ?? 'Herman Carter';
+const authorAvatar = author?.avatar ?? '/brand/herman-main-icon.webp';
 
-const reviewVideoId = product.videoReview?.embedUrl
-  ? youtubeIdFromUrl(product.videoReview.embedUrl)
+const deck =
+  product.seo?.searchExcerpt?.trim() ||
+  product.directoryDescription?.trim() ||
+  product.ourTake?.trim() ||
+  product.tagline?.trim() ||
+  `What hands-on testing of ${product.name} was really like.`;
+
+const updatedLabel = product.modifiedDate
+  ? product.modifiedDate.toLowerCase().startsWith('updated')
+    ? product.modifiedDate
+    : `Updated ${product.modifiedDate}`
   : null;
 ---
 
-<section class="bg-background py-12 md:py-14" data-review-article>
-  <div class="section-container px-4 md:px-8">
-    <div class="review-article-layout">
-      <aside class="review-toc" data-review-toc aria-label="Table of contents">
-        <div class="review-toc__sticky">
-          <div class="review-toc__rail">
-            <button
-              type="button"
-              class="review-toc__toggle"
-              data-review-toc-toggle
-              aria-expanded="false"
-              aria-controls="review-toc-panel"
-              aria-label="Toggle table of contents"
-            >
-              <span class="material-symbols-outlined">menu_book</span>
-            </button>
-          </div>
-          <nav class="review-toc__drawer" data-review-toc-panel id="review-toc-panel" aria-hidden="true">
-            <p class="review-toc__title">On this page</p>
-            <ol class="review-toc__list">
-              {
-                sections.map((s) => (
-                  <li class:list={[{ 'review-toc__item--h3': s.level === 3 }]}>
-                    <a
-                      href={`#${s.id}`}
-                      class="review-toc__link"
-                      data-review-toc-link
-                      data-review-toc-level={s.level}
-                    >
-                      {s.label}
-                    </a>
-                  </li>
-                ))
-              }
-            </ol>
-          </nav>
+<section data-review-article>
+  <div class="review-article-layout">
+    <div class="review-article-main">
+      <header class="review-article-head">
+        <div class="review-article-eyebrow">
+          <span class="review-article-eyebrow__mark" aria-hidden="true"></span>
+          <span class="review-article-eyebrow__text">Full review</span>
         </div>
-      </aside>
+        <h2 class="review-article-title">{product.name} Hands-On Review</h2>
+        <p class="review-article-deck">{deck}</p>
+        <div class="review-article-meta">
+          <img
+            class="review-article-meta__avatar"
+            src={authorAvatar}
+            alt=""
+            width="28"
+            height="28"
+          />
+          {
+            authorHref ? (
+              <a class="review-article-meta__author" href={authorHref}>{authorName}</a>
+            ) : (
+              <span class="review-article-meta__author">{authorName}</span>
+            )
+          }
+          <span class="review-article-meta__dot" aria-hidden="true">·</span>
+          <span>{readingMinutes} min read</span>
+          {
+            updatedLabel && (
+              <>
+                <span class="review-article-meta__dot" aria-hidden="true">·</span>
+                <span>{updatedLabel}</span>
+              </>
+            )
+          }
+        </div>
+      </header>
 
-      <article class="review-article prose-review min-w-0">
+      {
+        sections.length > 0 && (
+          <details class="review-jump" data-review-jump>
+            <summary class="review-jump__summary">
+              <svg class="review-jump__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span class="review-jump__label">Jump to section</span>
+              <svg class="review-jump__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </summary>
+            <nav aria-label="Jump to section">
+              <ol class="review-jump__list">
+                {
+                  sections.map((s, i) => (
+                    <li>
+                      <a class:list={['review-jump__link', { 'is-active': i === 0 }]} href={`#${s.id}`} data-review-toc-link>
+                        <span class="review-jump__dot" aria-hidden="true"></span>
+                        {s.label}
+                      </a>
+                    </li>
+                  ))
+                }
+              </ol>
+            </nav>
+          </details>
+        )
+      }
+
+      <article class="review-article prose-review">
         {
           hasSavedReview ? (
-            <>
-              <header class="mb-4">
-                <h2 class="review-tab-title mb-3">
-                  {product.name} Hands-On Review
-                </h2>
-                <div class="review-article-meta flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-on-surface-variant">
-                  {readingMinutes != null && (
-                    <span class="inline-flex items-center gap-1.5">
-                      <span class="material-symbols-outlined text-[18px] text-accent">schedule</span>
-                      {readingMinutes} min read
-                    </span>
-                  )}
-                  {reviewVideoId && (
-                    <a
-                      href={`https://www.youtube.com/watch?v=${reviewVideoId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="inline-flex items-center gap-1.5 font-semibold text-accent hover:underline"
-                    >
-                      <span class="material-symbols-outlined text-[18px]">smart_display</span>
-                      Watch video review
-                    </a>
-                  )}
-                </div>
-              </header>
-              <div class="review-blocks" set:html={savedReviewHtml} />
-            </>
+            <div class="review-blocks" set:html={savedReviewHtml} />
           ) : (
             <>
-              <header class="mb-4">
-                <h2 class="review-tab-title mb-3">
-                  {product.name} Hands-On Review
-                </h2>
-                <p class="text-base text-on-surface-variant leading-relaxed max-w-2xl">
-                  This is my personal write-up after spending real time with {product.name}. The scores tell one story;
-                  this section is what it actually felt like day to day.
-                </p>
-              </header>
-
               <section id="first-impressions" class="review-section">
-                <h3>First Impressions</h3>
+                <h3 class="review-heading">First Impressions</h3>
                 <p>
                   I opened {product.name} expecting another polished chat wrapper, and the first surprise was how quickly
                   the characters felt like people rather than templates. Setup was straightforward — no awkward onboarding
@@ -160,7 +159,7 @@ const reviewVideoId = product.videoReview?.embedUrl
               </section>
 
               <section id="chat-experience" class="review-section">
-                <h3>Chat Experience</h3>
+                <h3 class="review-heading">Chat Experience</h3>
                 <p>
                   This is where {product.name} earns most of its score for me. Replies stay in character, remember context
                   across sessions better than average, and rarely fall into the generic "As an AI language model…" trap.
@@ -177,7 +176,7 @@ const reviewVideoId = product.videoReview?.embedUrl
               </section>
 
               <section id="media-experience" class="review-section">
-                <h3>Media Experience</h3>
+                <h3 class="review-heading">Media Experience</h3>
                 <p>
                   Images and video are a mixed bag. When generation hits, results can look genuinely good — especially
                   character portraits that match the chat persona. When it misses, you wait longer than you'd like for
@@ -190,13 +189,22 @@ const reviewVideoId = product.videoReview?.embedUrl
               </section>
 
               <section id="pricing-in-real-use" class="review-section">
-                <h3>Pricing in Real Use</h3>
+                <h3 class="review-heading">Pricing in Real Use</h3>
                 {
                   product.pricingDisplay.typicalMonthly && (
-                    <p class="review-pricing-callout">
-                      <strong>Typical monthly spend:</strong> {product.pricingDisplay.typicalMonthly} for a regular user
-                      (subscription plus any extra tokens needed). Sticker price starts at {product.pricingDisplay.monthly}.
-                    </p>
+                    <aside class="review-callout" role="note">
+                      <div class="review-callout__label">
+                        <svg class="review-callout__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                          <path d="M9 18h6M10 22h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                        <span>Tip</span>
+                      </div>
+                      <div class="review-callout__body">
+                        Typical monthly spend: {product.pricingDisplay.typicalMonthly} for a regular user
+                        (subscription plus any extra tokens needed). Sticker price starts at {product.pricingDisplay.monthly}.
+                      </div>
+                    </aside>
                   )
                 }
                 <p>
@@ -212,7 +220,7 @@ const reviewVideoId = product.videoReview?.embedUrl
               </section>
 
               <section id="what-stands-out" class="review-section">
-                <h3>What Stands Out</h3>
+                <h3 class="review-heading">What Stands Out</h3>
                 <p>
                   Character depth and consistency. {product.name} does not just offer quantity — the companions feel
                   differentiated, and that makes repeat sessions more interesting than swapping skins on the same bot.
@@ -224,7 +232,7 @@ const reviewVideoId = product.videoReview?.embedUrl
               </section>
 
               <section id="what-frustrated-me" class="review-section">
-                <h3>What Frustrated Me</h3>
+                <h3 class="review-heading">What Frustrated Me</h3>
                 <p>
                   Media latency is the main friction point. When I am in a flow state chatting, waiting 10–15 seconds
                   for an image pulls me out. Privacy settings also take a bit of digging — not terrible, but not as
@@ -237,7 +245,7 @@ const reviewVideoId = product.videoReview?.embedUrl
               </section>
 
               <section id="final-recommendation" class="review-section">
-                <h3>Final Recommendation</h3>
+                <h3 class="review-heading">Final Recommendation</h3>
                 <p>
                   Would I keep using {product.name}? Yes — primarily for chat and character variety. I'd treat media
                   as a bonus, not the main reason to subscribe.
@@ -252,620 +260,53 @@ const reviewVideoId = product.videoReview?.embedUrl
           )
         }
       </article>
+
+      <footer class="review-article-end">
+        <img class="review-article-end__avatar" src={authorAvatar} alt="" width="40" height="40" />
+        <div class="review-article-end__copy">
+          {
+            authorHref ? (
+              <a class="review-article-end__by" href={authorHref}>Written by {authorName}</a>
+            ) : (
+              <p class="review-article-end__by">Written by {authorName}</p>
+            )
+          }
+          <p class="review-article-end__note">Every claim in this review is scored with evidence in Ratings &amp; Tests.</p>
+        </div>
+        <button type="button" class="review-article-end__scores" data-tab="ratings">
+          See the scores →
+        </button>
+      </footer>
     </div>
+
+    {
+      sections.length > 0 && (
+        <aside class="review-toc" data-review-toc aria-label="In this review">
+          <p class="review-toc__title">In this review</p>
+          <nav>
+            <ol class="review-toc__list">
+              {
+                sections.map((s, i) => (
+                  <li class:list={['review-toc__item', { 'review-toc__item--h3': s.level === 3 }]}>
+                    <a
+                      class:list={['review-toc__link', { 'is-active': i === 0 }]}
+                      href={`#${s.id}`}
+                      data-review-toc-link
+                      data-review-toc-level={s.level}
+                    >
+                      <span class="review-toc__bar" aria-hidden="true"></span>
+                      <span class="review-toc__text">{s.label}</span>
+                    </a>
+                  </li>
+                ))
+              }
+            </ol>
+          </nav>
+        </aside>
+      )
+    }
   </div>
 </section>
-
-<style is:global>
-  .gallery-thumb-scroll {
-    color: var(--color-on-surface);
-  }
-
-  [data-theme='dark'] .gallery-thumb-scroll {
-    background: rgb(15 23 42 / 92%) !important;
-    border-color: var(--dark-border-subtle) !important;
-    color: var(--color-on-surface);
-    box-shadow: 0 2px 10px rgb(0 0 0 / 35%);
-  }
-
-  .review-article-layout {
-    margin: 0 auto;
-  }
-
-  .review-toc {
-    display: none;
-  }
-
-  @media (min-width: 1100px) {
-    [data-review-article] .section-container {
-      max-width: none;
-      padding-left: max(1rem, calc((100vw - 720px) / 2));
-      padding-right: max(1rem, calc((100vw - 720px) / 2));
-      overflow: visible;
-    }
-
-    .review-article-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 720px);
-      justify-content: center;
-    }
-
-    .review-toc {
-      display: block;
-      grid-column: 1;
-      grid-row: 1;
-      justify-self: start;
-      align-self: start;
-      position: sticky;
-      top: 8.5rem;
-      z-index: 20;
-      margin-left: calc(-56px - 12px);
-      width: max-content;
-      overflow: visible;
-      pointer-events: none;
-    }
-
-    .review-toc__sticky,
-    .review-toc__rail,
-    .review-toc__toggle,
-    .review-toc__drawer {
-      pointer-events: auto;
-    }
-
-    .review-toc__sticky {
-      position: relative;
-      display: flex;
-      align-items: flex-start;
-      overflow: visible;
-    }
-
-    .review-article {
-      grid-column: 1;
-      grid-row: 1;
-    }
-  }
-
-  .review-toc__rail {
-    flex-shrink: 0;
-    position: relative;
-    z-index: 2;
-  }
-
-  .review-toc__toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--color-surface-variant);
-    border-radius: 10px;
-    background: var(--color-surface-container-low);
-    color: var(--color-on-surface);
-    cursor: pointer;
-    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
-  }
-
-  .review-toc__toggle:hover,
-  .review-toc.is-open .review-toc__toggle {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-    background: rgb(219 39 119 / 5%);
-  }
-
-  .review-toc__drawer {
-    position: absolute;
-    top: 0;
-    right: calc(100% + 8px);
-    width: 0;
-    overflow: hidden;
-    opacity: 0;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    background: var(--color-surface-container-lowest);
-    transition:
-      width 0.25s ease,
-      opacity 0.2s ease,
-      padding 0.25s ease,
-      border-color 0.2s ease;
-    padding: 0;
-    pointer-events: none;
-  }
-
-  .review-toc.is-open .review-toc__drawer {
-    width: 220px;
-    opacity: 1;
-    padding: 14px 16px;
-    border-color: var(--color-surface-variant);
-    pointer-events: auto;
-  }
-
-  .review-toc__title {
-    margin: 0 0 10px;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-tertiary);
-    white-space: nowrap;
-  }
-
-  .review-toc__list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .review-toc__item--h3 .review-toc__link {
-    padding-left: 18px;
-    font-weight: 500;
-    font-size: 12px;
-  }
-
-  .review-toc__link {
-    display: block;
-    padding: 6px 8px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--color-on-surface-variant);
-    text-decoration: none;
-    white-space: nowrap;
-    transition: background 0.15s ease, color 0.15s ease;
-  }
-
-  .review-toc__link:hover,
-  .review-toc__link.is-active {
-    background: rgb(219 39 119 / 8%);
-    color: var(--color-accent);
-  }
-
-  .prose-review {
-    width: 100%;
-  }
-
-  .review-section {
-    margin-bottom: 2.5rem;
-    scroll-margin-top: 8rem;
-  }
-
-  .review-section h3 {
-    margin: 0 0 12px;
-    font-size: 1.375rem;
-    font-weight: 800;
-    color: var(--color-on-surface);
-  }
-
-  .review-section p {
-    margin: 0 0 14px;
-    font-size: 1rem;
-    line-height: 1.7;
-    color: var(--color-on-surface-variant);
-  }
-
-  .review-section p:last-child {
-    margin-bottom: 0;
-  }
-
-  .review-pricing-callout {
-    padding: 12px 14px;
-    border-radius: 10px;
-    border: 1px solid rgb(219 39 119 / 20%);
-    background: rgb(219 39 119 / 6%);
-    color: var(--color-on-surface);
-  }
-
-  /* Saved review blocks */
-  .review-blocks {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .review-blocks p {
-    margin: 0 0 14px;
-    font-size: 1rem;
-    line-height: 1.7;
-    color: var(--color-on-surface-variant);
-  }
-
-  .review-blocks .review-heading,
-  .review-blocks h2,
-  .review-blocks h3,
-  .review-blocks h4 {
-    scroll-margin-top: 8rem;
-    color: var(--color-on-surface);
-    font-weight: 800;
-  }
-
-  .review-blocks .review-heading__text {
-    display: inline;
-  }
-
-  .review-blocks .review-heading__rule {
-    display: block;
-    width: 2.75rem;
-    height: 3px;
-    margin-top: 10px;
-    border-radius: 999px;
-    background: var(--color-accent);
-    opacity: 0.85;
-  }
-
-  .review-blocks .review-section-lead {
-    display: none;
-  }
-
-  .review-article-meta {
-    margin-top: 4px;
-  }
-
-  .review-blocks .review-heading:first-child,
-  .review-blocks > .review-heading:first-child,
-  .review-blocks > h2:first-child,
-  .review-blocks > h3:first-child {
-    margin-top: 0.25rem;
-  }
-
-  .review-blocks .review-heading,
-  .review-blocks h2 {
-    margin: 1.75rem 0 12px;
-    font-size: 1.5rem;
-  }
-
-  .review-blocks h3.review-heading,
-  .review-blocks h3 {
-    margin: 1.75rem 0 12px;
-    font-size: 1.375rem;
-  }
-
-  .review-blocks h4 {
-    margin: 1.5rem 0 10px;
-    font-size: 1.2rem;
-  }
-
-  .review-blocks ul.review-list {
-    margin: 0 0 14px 1.25rem;
-    padding: 0 0 0 0.25rem;
-    list-style-type: disc;
-    line-height: 1.7;
-    color: var(--color-on-surface-variant);
-  }
-
-  .review-blocks ol.review-list {
-    margin: 0 0 14px 1.25rem;
-    padding: 0 0 0 0.25rem;
-    list-style-type: decimal;
-    line-height: 1.7;
-    color: var(--color-on-surface-variant);
-  }
-
-  .review-blocks .review-list li {
-    margin-bottom: 6px;
-  }
-
-  .review-blocks .review-quote {
-    margin: 0 0 14px;
-    padding: 12px 16px;
-    border-left: 3px solid var(--color-accent);
-    background: rgb(219 39 119 / 5%);
-    font-style: italic;
-    color: var(--color-on-surface-variant);
-  }
-
-  .review-blocks .review-quote footer {
-    margin-top: 8px;
-    font-size: 0.875rem;
-    font-style: normal;
-    color: var(--color-tertiary);
-  }
-
-  .review-blocks .review-divider {
-    margin: 1.5rem 0;
-    border: 0;
-    border-top: 1px solid var(--color-surface-variant);
-  }
-
-  .review-blocks .review-figure {
-    display: block;
-    box-sizing: border-box;
-    margin: 0 0 1.25rem;
-    position: relative;
-    overflow: visible;
-  }
-
-  .review-blocks .review-figure__media {
-    position: relative;
-    display: block;
-    width: 100%;
-    line-height: 0;
-  }
-
-  .review-blocks .review-figure--crop {
-    overflow: visible;
-  }
-
-  .review-blocks .review-figure--crop .review-figure__media {
-    overflow: hidden;
-    height: 100%;
-  }
-
-  /* Permanent 18+ blur — click shows coming-soon notice */
-  .review-blocks .review-figure--nsfw .review-figure__media {
-    overflow: hidden;
-  }
-
-  .review-blocks .review-figure--nsfw img,
-  .review-blocks .review-figure--nsfw video {
-    filter: blur(28px) brightness(0.75);
-    transform: scale(1.08);
-  }
-
-  .review-blocks .review-figure--nsfw .review-figure__zoom {
-    filter: none;
-    transform: none;
-    pointer-events: auto;
-    cursor: pointer;
-  }
-
-  .review-blocks .review-figure__nsfw {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    margin: 0;
-    border: 0;
-    border-radius: inherit;
-    background: rgba(15, 23, 42, 0.45);
-    color: #fff;
-    font: inherit;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  .review-nsfw-toast {
-    position: fixed;
-    left: 50%;
-    bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
-    z-index: 240;
-    max-width: min(20rem, calc(100vw - 2rem));
-    padding: 0.65rem 1rem;
-    border-radius: 999px;
-    background: rgb(15 23 42 / 92%);
-    color: #fff;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    line-height: 1.35;
-    text-align: center;
-    box-shadow: 0 10px 30px rgb(0 0 0 / 28%);
-    transform: translate(-50%, 12px);
-    opacity: 0;
-    pointer-events: none;
-    transition:
-      opacity 0.2s ease,
-      transform 0.22s cubic-bezier(0.34, 1.2, 0.64, 1);
-  }
-
-  @media (min-width: 768px) {
-    .review-nsfw-toast {
-      bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
-    }
-  }
-
-  .review-nsfw-toast.is-visible {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .review-nsfw-toast {
-      transition: none;
-      transform: translate(-50%, 0);
-    }
-  }
-
-  .review-blocks .review-figure__nsfw span:first-child {
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-  }
-
-  .review-blocks .review-figure__zoom {
-    display: block;
-    width: 100%;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    cursor: zoom-in;
-    text-align: inherit;
-    overflow: hidden;
-    outline: none;
-    line-height: 0;
-    opacity: 1;
-  }
-
-  .review-blocks .review-figure--crop .review-figure__zoom {
-    position: absolute;
-    inset: 0;
-    height: 100%;
-  }
-
-  .review-blocks .review-figure--crop .review-figure__zoom img,
-  .review-blocks .review-figure--crop .review-figure__zoom video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .review-blocks .review-figure__zoom:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-  }
-
-  .review-blocks .review-figure:not(.review-figure--nsfw) .review-figure__zoom:hover img {
-    opacity: 0.96;
-  }
-
-  .review-blocks .review-figure__zoom img {
-    pointer-events: none;
-  }
-
-  .review-blocks .review-image-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin: 0 0 1.25rem;
-    align-items: flex-start;
-  }
-
-  .review-blocks .review-layout-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .review-blocks .review-layout-column {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .review-blocks .review-image-row__cell {
-    margin: 0;
-    min-width: 0;
-  }
-
-  .review-blocks .review-image-row__cell img {
-    width: 100%;
-    height: auto;
-    border-radius: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  .review-blocks .review-image-row__cell figcaption {
-    margin-top: 6px;
-    font-size: 0.8125rem;
-    font-style: italic;
-    color: var(--color-tertiary);
-    text-align: center;
-  }
-
-  .review-blocks .review-figure img {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    border-radius: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  .review-blocks .review-video-native--preview {
-    display: block;
-    width: 100%;
-    height: auto;
-    border-radius: 0;
-    background: #000;
-  }
-
-  .review-blocks .review-figure figcaption {
-    margin-top: 8px;
-    font-size: 0.8125rem;
-    font-style: italic;
-    color: var(--color-tertiary);
-    text-align: center;
-  }
-
-  .review-blocks .review-video-embed {
-    position: relative;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    border-radius: 10px;
-    background: #000;
-  }
-
-  .review-blocks .review-video-embed iframe,
-  .review-blocks .review-video-native {
-    width: 100%;
-    height: 100%;
-    border: 0;
-    border-radius: 10px;
-  }
-
-  .review-blocks .review-table-wrap {
-    margin: 0 0 14px;
-    overflow-x: auto;
-  }
-
-  .review-blocks .review-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9375rem;
-  }
-
-  .review-blocks .review-table th,
-  .review-blocks .review-table td {
-    padding: 8px 12px;
-    border: 1px solid var(--color-surface-variant);
-    text-align: left;
-  }
-
-  .review-blocks .review-table th {
-    background: rgb(219 39 119 / 6%);
-    font-weight: 700;
-  }
-
-  .review-blocks .review-block-placeholder {
-    margin: 0 0 14px;
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px dashed var(--color-surface-variant);
-    font-size: 0.8125rem;
-    color: var(--color-tertiary);
-  }
-
-  .review-blocks a:not(.glossary-tooltip__link):not(.glossary-trigger) {
-    font-weight: 800;
-    color: var(--color-on-surface);
-    text-decoration: underline;
-    text-decoration-color: var(--content-link-underline, rgb(219 39 119 / 35%));
-    text-decoration-thickness: from-font;
-    text-underline-offset: 3px;
-    text-decoration-skip-ink: none;
-  }
-
-  .review-blocks a:not(.glossary-tooltip__link):not(.glossary-trigger):hover,
-  .review-blocks a:not(.glossary-tooltip__link):not(.glossary-trigger):focus-visible {
-    color: var(--color-on-surface);
-    text-decoration-color: var(--color-accent);
-    outline: none;
-  }
-
-  [data-theme='dark'] .review-toc__toggle {
-    background: var(--dark-elevated);
-    border-color: var(--dark-border-subtle);
-    color: var(--color-on-surface);
-  }
-
-  [data-theme='dark'] .review-toc__drawer {
-    background: var(--dark-elevated);
-  }
-
-  [data-theme='dark'] .review-toc.is-open .review-toc__drawer {
-    border-color: var(--dark-border-subtle);
-  }
-
-  [data-theme='dark'] .review-toc__link:hover,
-  [data-theme='dark'] .review-toc__link.is-active {
-    background: rgb(219 39 119 / 12%);
-  }
-</style>
 
 <script>
   import { deferUntilIdle } from '../../../lib/ui/deferUntilIdle';
@@ -882,7 +323,6 @@ const reviewVideoId = product.videoReview?.embedUrl
     }
 
     toast.classList.remove('is-visible');
-    // Force reflow so repeat clicks replay the enter animation.
     void toast.offsetWidth;
     toast.classList.add('is-visible');
 
@@ -920,32 +360,19 @@ const reviewVideoId = product.videoReview?.embedUrl
     if (!root || root.dataset.bound === 'true') return;
     root.dataset.bound = 'true';
 
-    const toc = root.querySelector('[data-review-toc]');
-    const toggle = root.querySelector('[data-review-toc-toggle]');
-    const panel = root.querySelector('[data-review-toc-panel]');
-    const links = Array.from(root.querySelectorAll('[data-review-toc-link]'));
-    if (!toc || !toggle || !panel) return;
-
-    toggle.addEventListener('click', () => {
-      const open = toggle.getAttribute('aria-expanded') === 'true';
-      toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
-      panel.setAttribute('aria-hidden', open ? 'true' : 'false');
-      toc.classList.toggle('is-open', !open);
-    });
+    const jump = root.querySelector<HTMLDetailsElement>('[data-review-jump]');
+    const links = Array.from(root.querySelectorAll<HTMLAnchorElement>('[data-review-toc-link]'));
+    if (links.length === 0) return;
 
     links.forEach((link) => {
       link.addEventListener('click', () => {
-        if (window.innerWidth < 1100) {
-          toggle.setAttribute('aria-expanded', 'false');
-          panel.setAttribute('aria-hidden', 'true');
-          toc.classList.remove('is-open');
-        }
+        if (jump && window.innerWidth < 1100) jump.open = false;
       });
     });
 
     const headings = links
       .map((l) => document.querySelector(l.getAttribute('href') || ''))
-      .filter(Boolean) as Element[];
+      .filter((el, i, arr) => Boolean(el) && arr.indexOf(el) === i) as Element[];
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -963,7 +390,6 @@ const reviewVideoId = product.videoReview?.embedUrl
     headings.forEach((h) => observer.observe(h));
   }
 
-  // Article body TOC + NSFW gates are inside the hidden "Full review" tab panel.
   deferUntilIdle(() => {
     initReviewToc();
     initNsfwGates();
