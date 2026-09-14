@@ -1,13 +1,7 @@
 ---
-import HomeDesktopHeader from './home/desktop/HomeDesktopHeader.astro';
-
-interface Props {
-  /** `hero` = on dark ink surfaces; `standard` = sticky glass bar on content pages. */
-  variant?: 'standard' | 'hero';
-}
-
-const { variant = 'standard' } = Astro.props;
-const homeVariant = variant === 'hero' ? 'hero' : 'standard';
+import SiteInkHero from './layout/SiteInkHero.astro';
 ---
 
-<HomeDesktopHeader variant={homeVariant} />
+<SiteInkHero>
+  <slot />
+</SiteInkHero>

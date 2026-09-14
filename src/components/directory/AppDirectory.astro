@@ -23,6 +23,8 @@ interface Props {
   title?: string;
   subtitle?: string;
   breadcrumbs?: BreadcrumbItem[];
+  /** When true, page head (breadcrumbs + H1) is rendered in SiteInkHero instead. */
+  hidePageHead?: boolean;
 }
 
 const {
@@ -31,6 +33,7 @@ const {
   title = 'Explore AI girlfriend apps',
   subtitle = 'Browse every app we have tested. Sort results or customize ranking to match what matters most to you.',
   breadcrumbs,
+  hidePageHead = false,
 } = Astro.props;
 
 const priorityByValue = Object.fromEntries(explorerPriorityOptions.map((opt) => [opt.value, opt]));
@@ -52,13 +55,18 @@ function formatReviewCount(count: number): string {
   data-per-page={APPS_PER_PAGE}
 >
   <div class="section-container px-4 md:px-8">
-    {breadcrumbs && <Breadcrumbs items={breadcrumbs} />}
-    <div class="home-explorer__page-head">
-      <div>
-        <h1 id="app-directory-title" class="home-section__title">{title}</h1>
-        <p class="home-explorer__subtitle">{subtitle}</p>
+    {!hidePageHead && breadcrumbs && <Breadcrumbs items={breadcrumbs} />}
+    {!hidePageHead && (
+      <div class="home-explorer__page-head">
+        <div>
+          <h1 id="app-directory-title" class="home-section__title">{title}</h1>
+          <p class="home-explorer__subtitle">{subtitle}</p>
+        </div>
       </div>
-    </div>
+    )}
+    {hidePageHead && (
+      <h1 id="app-directory-title" class="sr-only">{title}</h1>
+    )}
 
     <div class="dir-notice" data-home-prefs-notice hidden>
       <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>

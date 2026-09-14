@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
 import AppDirectory from '../components/directory/AppDirectory.astro';
 import JsonLd from '../components/seo/JsonLd.astro';
 import { loadExplorerApps } from '../data/homepage';
@@ -22,15 +23,25 @@ const jsonLdGraph = buildDirectoryItemListSchema(apps, {
 
 <BaseLayout title={pageTitle} description={pageDescription} theme="directory">
   {jsonLdGraph.length > 0 && <JsonLd slot="head" graph={jsonLdGraph} />}
-  <Header />
+  <Header>
+    <div class="site-ink-hero__body--center">
+      <Breadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'AI Girlfriend Apps' },
+        ]}
+      />
+      <h1 class="site-ink-hero__title">{pageTitle}</h1>
+      <p class="site-ink-hero__lede">{pageDescription}</p>
+    </div>
+  </Header>
   <main>
     <AppDirectory
       apps={apps}
       basePath={directoryPath}
-      breadcrumbs={[
-        { label: 'Home', href: '/' },
-        { label: 'AI Girlfriend Apps' },
-      ]}
+      hidePageHead
+      title="Explore AI girlfriend apps"
+      subtitle="Browse every app we have tested. Sort results or customize ranking to match what matters most to you."
     />
   </main>
   <Footer />

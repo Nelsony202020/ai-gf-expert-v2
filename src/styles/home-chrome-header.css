@@ -260,6 +260,14 @@ html[data-theme='dark'] .home-v2__header--standard .home-v2__theme .theme-toggle
   display: none;
 }
 
+.home-v2__theme .theme-toggle__icon[data-theme-icon='moon'] {
+  transform: translate(-0.5px, 0.5px);
+}
+
+.home-v2__theme .theme-toggle__icon[hidden] {
+  display: none !important;
+}
+
 .home-v2__drop {
   position: relative;
 }

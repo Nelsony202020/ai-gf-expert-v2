@@ -72,11 +72,14 @@ const allGuides = [...staticGuides, ...guides.filter((g) => !staticSlugs.has(g.s
 ---
 
 <BaseLayout title={title} description={description}>
-  <Header />
+  <Header>
+    <div class="site-ink-hero__body--center">
+      <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Guides' }]} />
+      <h1 class="site-ink-hero__title">Guides</h1>
+      <p class="site-ink-hero__lede">{description}</p>
+    </div>
+  </Header>
   <main class="section-container px-4 md:px-8 py-14 md:py-16 max-w-5xl">
-    <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Guides' }]} />
-    <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-2">Guides</h1>
-    <p class="text-on-surface-variant mb-10 max-w-2xl">{description}</p>
 
     <a
       href="/guides/ourdream-ai/"
