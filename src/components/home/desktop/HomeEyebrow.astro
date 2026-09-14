@@ -1,0 +1,12 @@
+---
+interface Props {
+  text: string;
+  theme?: 'light' | 'ink';
+}
+const { text, theme = 'light' } = Astro.props;
+---
+
+<p class:list={['home-v2__eyebrow', theme === 'ink' && 'home-v2__eyebrow--ink']}>
+  <span class="home-v2__eyebrow-mark" aria-hidden="true"></span>
+  {text}
+</p>

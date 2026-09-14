@@ -2,6 +2,7 @@
 import type { RoundupPick } from '../../data/roundups/ai-girlfriend';
 import ScorePill from '../review/ScorePill.astro';
 import { optimizedLogoUrl } from '../../lib/media/optimize';
+import AffiliateLink from '../ui/AffiliateLink.astro';
 
 interface Props {
   heading: string;
@@ -46,30 +47,28 @@ const { heading, picks } = Astro.props;
               <div class="roundup-quick-card__score" aria-label={`${pick.overallScore} out of 10`}>
                 <ScorePill score={pick.overallScore} size="sm" />
               </div>
-              <a
+              <AffiliateLink
                 class="roundup-quick-card__brand"
                 href={pick.affiliateUrl}
                 target="_blank"
-                rel="nofollow sponsored noopener"
                 draggable="false"
                 aria-label={`Visit ${pick.name} (opens in new tab)`}
               >
                 <img class="roundup-quick-card__logo" src={optimizedLogoUrl(pick.logo, 56)} alt="" width="56" height="56" loading="lazy" draggable="false" />
                 <h3 class="roundup-quick-card__name">{pick.name}</h3>
-              </a>
+              </AffiliateLink>
               {pick.ribbon ? <span class="roundup-quick-card__ribbon">{pick.ribbon}</span> : null}
               <a class="roundup-quick-card__details" href={`#pick-${pick.id}`} draggable="false">
                 See details ↓
               </a>
-              <a
+              <AffiliateLink
                 class="roundup-quick-card__cta"
                 href={pick.affiliateUrl}
                 target="_blank"
-                rel="nofollow sponsored noopener"
                 draggable="false"
               >
                 Visit site
-              </a>
+              </AffiliateLink>
             </article>
           ))
         }

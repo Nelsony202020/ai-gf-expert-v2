@@ -1,0 +1,84 @@
+---
+import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
+import HomeEyebrow from './HomeEyebrow.astro';
+import HomeIcon from './HomeIcon.astro';
+import HomeScore from './HomeScore.astro';
+
+interface Props {
+  data: DesktopHomepageData;
+}
+const { data } = Astro.props;
+
+const icons: Record<string, 'users' | 'sliders' | 'chat' | 'layers' | 'image' | 'video' | 'shield' | 'card'> = {
+  characters: 'users',
+  customization: 'sliders',
+  chat: 'chat',
+  'chat-features': 'layers',
+  images: 'image',
+  video: 'video',
+  privacy: 'shield',
+  pricing: 'card',
+};
+---
+
+<section class="home-v2__section" id="home-score" aria-labelledby="home-score-title" data-home-reveal="score">
+  <div class="home-v2__score-row">
+    <div>
+      <HomeEyebrow text="The AIGE score" />
+      <h2 id="home-score-title" class="home-v2__h2">
+        One number.<br /><em>Eight tests.</em>
+      </h2>
+      <p class="home-v2__intro">
+        Every app gets the same weighted 8-category test. The overall score comes from those results, not a gut feeling.
+      </p>
+      <div class="home-v2__legend">
+        <div>
+          <span class="home-v2__chip home-v2__chip--high">8.0+</span>
+          <span>Strong</span>
+        </div>
+        <div>
+          <span class="home-v2__chip home-v2__chip--mid">5.0–7.9</span>
+          <span>Average — real trade-offs</span>
+        </div>
+        <div>
+          <span class="home-v2__chip home-v2__chip--low">&lt; 5.0</span>
+          <span>Weak</span>
+        </div>
+      </div>
+      <a class="home-v2__ghost" href="/test/">
+        How We Test AI Girlfriend Apps
+        <HomeIcon name="arrow-right" size={16} />
+      </a>
+    </div>
+    <div class="home-v2__score-card">
+      <div class="home-v2__score-overall">
+        <HomeScore score={data.scoreExample.app.overall} size="xl" />
+        <div>
+          <p class="home-v2__score-app">
+            <img src={data.scoreExample.app.logo} alt="" width="20" height="20" class="home-v2__app-icon home-v2__app-icon--xs" />
+            {data.scoreExample.app.name} · overall score
+          </p>
+          <p class={`home-v2__score-word is-${data.scoreExample.app.overall.tone}`}>
+            {data.scoreExample.app.overall.tone === 'high' ? 'Strong' : data.scoreExample.app.overall.tone === 'mid' ? 'Average' : 'Weak'}
+          </p>
+          <p class="home-v2__muted-copy">Weighted average of the 8 category tests below.</p>
+        </div>
+      </div>
+      <div class="home-v2__bars home-v2__bars--score">
+        {data.scoreExample.bars.map((bar, i) => (
+          <div class="home-v2__bar home-v2__bar--lg" style={`--stagger: ${i}`}>
+            <span class="home-v2__bar-icon">
+              <HomeIcon name={icons[bar.key] ?? 'layers'} size={20} />
+            </span>
+            <span class="home-v2__bar-label">
+              <strong>{bar.name}</strong>
+              <small>{bar.weight}</small>
+            </span>
+            <span class="home-v2__track home-v2__track--lg"><i class={`is-${bar.tone}`} style={`--bar:${bar.width}`}></i></span>
+            <b class={`is-${bar.tone}`}>{bar.display}</b>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

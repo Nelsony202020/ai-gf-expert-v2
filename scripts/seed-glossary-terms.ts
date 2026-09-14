@@ -4,102 +4,14 @@
  *
  * Upserts by `anchor` — safe to re-run.
  */
+import { PROMPTING_GLOSSARY_TERMS, type GlossarySeedTerm } from '../src/data/glossary-prompting-terms';
 import { getDb, id, isDbConfigured, tx } from '../src/lib/db/server';
-import { slugifyGlossaryAnchor, type GlossaryTipTapDoc } from '../src/lib/glossary/types';
+import { explanationToDoc } from '../src/lib/glossary/markdownDoc';
+import { slugifyGlossaryAnchor } from '../src/lib/glossary/types';
 
-type SeedTerm = {
-  term: string;
-  category: string;
-  /** Match triggers (hyphen/plural variants). Not shown as other names unless also listed below. */
-  aliases?: string[];
-  /** True alternate names for the tooltip “Other names” line. Defaults to [] when omitted. */
-  displayAliases?: string[];
-  ctaLabel: string;
-  tooltipDefinition: string;
-  fullExplanation: string;
-};
+type SeedTerm = GlossarySeedTerm;
 
-function textNode(text: string, marks?: Array<{ type: string }>) {
-  return marks?.length
-    ? { type: 'text' as const, text, marks }
-    : { type: 'text' as const, text };
-}
-
-function unwrapLine(line: string) {
-  const trimmed = line.trim();
-  const fenced = trimmed.match(/^`([^`]+)`$/);
-  return fenced ? fenced[1] : trimmed;
-}
-
-function inlineNodes(text: string) {
-  const content: Array<{ type: string; text?: string; marks?: Array<{ type: string }> }> = [];
-  const re = /\*\*(.+?)\*\*/g;
-  let last = 0;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(text)) !== null) {
-    if (match.index > last) content.push(textNode(text.slice(last, match.index)));
-    content.push(textNode(match[1], [{ type: 'bold' }]));
-    last = match.index + match[0].length;
-  }
-  if (last < text.length) content.push(textNode(text.slice(last)));
-  return content.length ? content : [textNode('')];
-}
-
-function paragraph(...lines: string[]) {
-  const content: Array<{ type: string; text?: string; marks?: Array<{ type: string }> }> = [];
-  lines.forEach((line, i) => {
-    if (i > 0) content.push({ type: 'hardBreak' });
-    const unwrapped = unwrapLine(line);
-    if (unwrapped) content.push(...inlineNodes(unwrapped));
-  });
-  return { type: 'paragraph' as const, content: content.length ? content : [textNode('')] };
-}
-
-function bulletList(items: string[]) {
-  return {
-    type: 'bulletList' as const,
-    content: items.map((item) => ({
-      type: 'listItem' as const,
-      content: [paragraph(item)],
-    })),
-  };
-}
-
-/** Convert markdown-ish explanation text into a TipTap doc. */
-function explanationToDoc(raw: string): GlossaryTipTapDoc {
-  const blocks = raw
-    .trim()
-    .split(/\n\s*\n+/)
-    .map((b) => b.trim())
-    .filter(Boolean);
-
-  const content: unknown[] = [];
-
-  for (const block of blocks) {
-    const lines = block
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean);
-    const isBullet = (l: string) => l.startsWith('- ') || l.startsWith('* ');
-    const bulletText = (l: string) => l.replace(/^[-*] /, '').trim();
-    const bulletLines = lines.filter(isBullet);
-    if (bulletLines.length > 0 && bulletLines.length === lines.length) {
-      content.push(bulletList(bulletLines.map(bulletText)));
-      continue;
-    }
-    if (bulletLines.length > 0 && lines.length > bulletLines.length) {
-      const intro = lines.filter((l) => !isBullet(l));
-      if (intro.length) content.push(paragraph(...intro));
-      content.push(bulletList(bulletLines.map(bulletText)));
-      continue;
-    }
-    content.push(paragraph(...lines));
-  }
-
-  return { type: 'doc', content: content as GlossaryTipTapDoc['content'] };
-}
-
-const TERMS: SeedTerm[] = [
+const BASE_TERMS: SeedTerm[] = [
   {
     term: 'Unfiltered Roleplay',
     category: 'Chat',
@@ -841,6 +753,12 @@ JSON prompts are not automatically better, though. Some AI generators respond be
       'Discreet billing means the charge on your bank or card statement does not clearly show the name or type of the app you used.',
     fullExplanation: `Discreet billing helps keep your purchase private. Instead of showing the app name clearly on your bank or card statement, the charge may appear under a different company or neutral payment name. This can be useful if you share a bank account or do not want other people to know what you paid for.`,
   },
+];
+
+const overlayNames = new Set(PROMPTING_GLOSSARY_TERMS.map((term) => term.term));
+const TERMS: SeedTerm[] = [
+  ...BASE_TERMS.filter((term) => !overlayNames.has(term.term)),
+  ...PROMPTING_GLOSSARY_TERMS,
 ];
 
 async function main() {

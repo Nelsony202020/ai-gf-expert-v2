@@ -410,8 +410,17 @@ const headingText = heading ?? 'Featured characters';
         nameLinkEl.href = char.profileUrl || '#';
         const outbound = char.profileUrl && (char.profileUrl.startsWith('http') || char.profileUrl.startsWith('/go/'));
         if (outbound) {
-          nameLinkEl.rel = char.profileRel || 'nofollow sponsored noopener';
           nameLinkEl.target = '_blank';
+          let isGo = char.profileUrl.startsWith('/go/');
+          if (!isGo) {
+            try {
+              const path = new URL(char.profileUrl, location.origin).pathname;
+              isGo = path === '/go' || path.startsWith('/go/');
+            } catch (e) {}
+          }
+          nameLinkEl.rel = isGo
+            ? 'sponsored nofollow noopener'
+            : (char.profileRel || 'noopener');
         } else {
           nameLinkEl.removeAttribute('rel');
           nameLinkEl.removeAttribute('target');

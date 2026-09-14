@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 import vercel from '@astrojs/vercel';
 import { astroScriptTsPlugin } from './vite/astro-script-ts-plugin.mjs';
 import { canonicalGuard } from './integrations/canonical-guard.mjs';
+import { rehypeAffiliateLinks } from './src/lib/affiliate/rel.ts';
 
 // https://astro.build/config
 export default defineConfig({
@@ -57,6 +58,10 @@ export default defineConfig({
       noExternal: ['@instantdb/admin', '@instantdb/core', '@instantdb/version'],
     },
     server: {
+      // Cloudflare / Cursor preview tunnels send a Host header Vite otherwise
+      // rejects (403). Listen on IPv4 so the tunnel can reach this process.
+      host: true,
+      allowedHosts: true,
       port: 4321,
       strictPort: true,
       watch: {
@@ -69,5 +74,8 @@ export default defineConfig({
     resolve: {
       dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
     },
+  },
+  markdown: {
+    rehypePlugins: [rehypeAffiliateLinks],
   },
 });

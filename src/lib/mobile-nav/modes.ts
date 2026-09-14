@@ -34,6 +34,16 @@ export function isHubPath(pathname: string): boolean {
   return path === ROUNDUP_PATH || path === BUYING_GUIDE_PATH || path === '/test' || path.startsWith('/test/');
 }
 
+/** Long-form article pages — no global bottom nav (footer stays clear on mobile). */
+export function isArticleLikePath(pathname: string): boolean {
+  const path = normalizePath(pathname);
+  if (path === '/guides' || path.startsWith('/guides/')) return true;
+  if (isIndividualReviewPath(pathname)) return true;
+  const segments = path.split('/').filter(Boolean);
+  if (segments[0] === 'test' && segments.length >= 2) return true;
+  return false;
+}
+
 export function getMobileNavMode(pathname: string): MobileNavMode {
   if (isIndividualReviewPath(pathname)) return 'review';
   if (isHubPath(pathname)) return 'hub';
@@ -51,7 +61,7 @@ export function getActiveBottomNavItem(pathname: string): BottomNavId | null {
   return null;
 }
 
-/** Unified bottom nav on every public page (including individual reviews). */
-export function showMobileBottomNav(_mode: MobileNavMode): boolean {
-  return true;
+/** Bottom nav on hub/listing pages; hidden on article-style pages. */
+export function showMobileBottomNav(_mode: MobileNavMode, pathname: string): boolean {
+  return !isArticleLikePath(pathname);
 }

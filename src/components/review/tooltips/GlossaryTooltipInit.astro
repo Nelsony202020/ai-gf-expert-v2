@@ -279,7 +279,12 @@ const decorateTermsJson = autoDecorate && terms.length > 0 ? JSON.stringify(term
   function initGlossaryTooltips() {
     const decorateTerms = readJson('glossary-decorate-terms', [] as unknown[]);
     if (decorateTerms.length > 0) {
-      document.querySelectorAll('[data-glossary-decorate]').forEach((root) => {
+      const marked = Array.from(document.querySelectorAll('[data-glossary-decorate]'));
+      const fallback =
+        marked.length > 0
+          ? marked
+          : Array.from(document.querySelectorAll('main .guide-prose, main article'));
+      fallback.forEach((root) => {
         if (!(root instanceof HTMLElement)) return;
         if (root.dataset.glossaryDecorated === 'true') return;
         decorateGlossaryDom(root, decorateTerms as Parameters<typeof decorateGlossaryDom>[1]);

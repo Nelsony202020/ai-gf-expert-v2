@@ -125,6 +125,14 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
   });
 
   push({
+    title: 'OurDream AI Guides',
+    url: '/guides/ourdream-ai',
+    contentType: 'hub',
+    sitemapSection: 'guides',
+    parentCategory: 'guides',
+  });
+
+  push({
     title: 'How to Choose an AI Girlfriend App',
     url: `/guides/${buyingGuideSlug}`,
     contentType: 'guide',
@@ -140,9 +148,41 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
     parentCategory: 'guides',
   });
 
+  push({
+    title: 'How to Use OurDream AI Image Generator',
+    url: '/guides/how-to-use-ourdream-ai-image-generator',
+    contentType: 'guide',
+    sitemapSection: 'guides',
+    parentCategory: 'guides',
+  });
+
+  push({
+    title: 'OurDream AI Image Prompt Guide',
+    url: '/guides/ourdream-ai-image-prompt',
+    contentType: 'guide',
+    sitemapSection: 'guides',
+    parentCategory: 'guides',
+  });
+
+  push({
+    title: 'OurDream AI Prompt Guide',
+    url: '/guides/ourdream-ai-prompt',
+    contentType: 'guide',
+    sitemapSection: 'guides',
+    parentCategory: 'guides',
+  });
+
+  const hardcodedGuideSlugs = new Set([
+    buyingGuideSlug,
+    'ourdream-ai-comics',
+    'how-to-use-ourdream-ai-image-generator',
+    'ourdream-ai-image-prompt',
+    'ourdream-ai-prompt',
+  ]);
+
   // Guides from Sanity (empty until the CMS has published guides)
   for (const guide of guides) {
-    if (guide.slug === buyingGuideSlug) continue;
+    if (hardcodedGuideSlugs.has(guide.slug)) continue;
     push({
       title: guide.title,
       url: `/guides/${guide.slug}`,

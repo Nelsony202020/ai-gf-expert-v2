@@ -1115,6 +1115,21 @@ body.glossary-toolbar-stuck .glossary-letter__heading {
   transition: background 0.6s ease, box-shadow 0.6s ease;
 }
 
+.glossary-term__body pre {
+  margin: 0 0 0.9rem;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-surface-variant);
+  background: color-mix(in srgb, var(--color-on-surface) 4%, transparent);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.glossary-term__body pre code {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+
 .glossary-page__empty {
   padding: 2.5rem 0;
   color: var(--color-on-surface-variant);

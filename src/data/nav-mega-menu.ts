@@ -47,6 +47,18 @@ export const megaMenuColumns: MegaMenuColumn[] = [
         label: 'How to Choose an AI Girlfriend App',
         href: publicPagePath(`/guides/${buyingGuideSlug}`),
       },
+      {
+        label: 'OurDream AI Guides',
+        href: publicPagePath('/guides/ourdream-ai'),
+      },
+      {
+        label: 'How to Use OurDream AI Image Generator',
+        href: publicPagePath('/guides/how-to-use-ourdream-ai-image-generator'),
+      },
+      {
+        label: 'OurDream AI Image Prompt Guide',
+        href: publicPagePath('/guides/ourdream-ai-image-prompt'),
+      },
     ],
     viewAll: { label: 'View all guides', href: '/guides/' },
   },

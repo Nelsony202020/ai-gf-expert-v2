@@ -1,0 +1,256 @@
+---
+import ThemeToggle from '../../ui/ThemeToggle.astro';
+import { popularBrandGuideHubs } from '../../../data/brand-guide-hubs';
+import { buildSearchIndex } from '../../../data/site-search';
+import { loadComparisonProducts } from '../../../lib/content/comparisonProducts';
+import HomeIcon from './HomeIcon.astro';
+
+interface Props {
+  variant?: 'default' | 'hero';
+}
+
+const { variant = 'default' } = Astro.props;
+
+const publishedProducts = await loadComparisonProducts();
+const searchIndex = buildSearchIndex(publishedProducts);
+const reviewLinks = publishedProducts
+  .slice()
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .slice(0, 8)
+  .map((p) => ({ label: `${p.name} Review`, href: `/reviews/${p.slug}/` }));
+---
+
+<header
+  class:list={['home-v2__header', variant === 'hero' && 'home-v2__header--hero']}
+  data-site-header
+  data-home-v2-header
+  data-header-variant={variant}
+  data-glossary-skip
+>
+  <a href="/" class="home-v2__logo-link" aria-label="Girlfriend Expert AI">
+    <span class="home-v2__logo" role="img" aria-hidden="true"></span>
+  </a>
+  <nav class="home-v2__nav" aria-label="Main">
+    <div class="home-v2__drop" data-home-drop>
+      <button type="button" class="home-v2__nav-btn" data-home-drop-btn aria-expanded="false" aria-haspopup="true">
+        Best apps
+        <HomeIcon name="chevron-down" size={14} />
+      </button>
+      <div class="home-v2__drop-panel" data-home-drop-panel hidden>
+        <a href="/best/ai-girlfriend/">Best AI Girlfriend Apps</a>
+        <a href="/ai-girlfriend-apps/">App directory</a>
+      </div>
+    </div>
+    <div class="home-v2__drop" data-home-drop>
+      <button type="button" class="home-v2__nav-btn" data-home-drop-btn aria-expanded="false" aria-haspopup="true">
+        Reviews
+        <HomeIcon name="chevron-down" size={14} />
+      </button>
+      <div class="home-v2__drop-panel" data-home-drop-panel hidden>
+        <a href="/reviews/">All reviews</a>
+        {reviewLinks.map((link) => <a href={link.href}>{link.label}</a>)}
+      </div>
+    </div>
+    <div class="home-v2__drop" data-home-drop>
+      <button type="button" class="home-v2__nav-btn" data-home-drop-btn aria-expanded="false" aria-haspopup="true">
+        Brands
+        <HomeIcon name="chevron-down" size={14} />
+      </button>
+      <div class="home-v2__drop-panel" data-home-drop-panel hidden>
+        <p class="home-v2__drop-kicker">Popular brands</p>
+        {popularBrandGuideHubs.map((hub) => (
+          <a href={hub.href}>{hub.label}</a>
+        ))}
+      </div>
+    </div>
+    <a href="/guides/" class="home-v2__nav-link">Guides</a>
+    <a href="/test/" class="home-v2__nav-link">How we test</a>
+  </nav>
+  <div class="home-v2__header-actions">
+    <div class="home-v2__search" data-header-search>
+      <button type="button" class="home-v2__icon-btn" data-search-toggle aria-expanded="false" aria-label="Search">
+        <HomeIcon name="search" size={20} />
+      </button>
+      <div class="home-v2__search-field" data-search-field>
+        <HomeIcon name="search" size={18} />
+        <input
+          type="search"
+          class="home-v2__search-input"
+          data-search-input
+          placeholder="Search reviews, guides, pages…"
+          autocomplete="off"
+          spellcheck="false"
+          tabindex="-1"
+          aria-label="Search reviews, guides, and pages"
+        />
+      </div>
+      <div class="home-v2__search-dropdown hidden" data-search-results role="listbox"></div>
+    </div>
+    <div class="home-v2__theme">
+      <ThemeToggle variant="header" />
+    </div>
+  </div>
+</header>
+
+<script define:vars={{ searchIndex }}>
+  function initHomeHeader() {
+    const header = document.querySelector('[data-home-v2-header]');
+    if (!header || header.dataset.bound === 'true') return;
+    header.dataset.bound = 'true';
+
+    const searchRoot = header.querySelector('[data-header-search]');
+    const searchToggle = header.querySelector('[data-search-toggle]');
+    const searchInput = header.querySelector('[data-search-input]');
+    const searchResults = header.querySelector('[data-search-results]');
+    let dropCloseTimer = null;
+    let activeIndex = -1;
+    let currentResults = [];
+
+    function closeDrops() {
+      if (dropCloseTimer) {
+        clearTimeout(dropCloseTimer);
+        dropCloseTimer = null;
+      }
+      header.querySelectorAll('[data-home-drop]').forEach((drop) => {
+        drop.classList.remove('is-open');
+        drop.querySelector('[data-home-drop-btn]')?.setAttribute('aria-expanded', 'false');
+        const panel = drop.querySelector('[data-home-drop-panel]');
+        if (panel) panel.hidden = true;
+      });
+    }
+
+    function openDrop(drop) {
+      if (dropCloseTimer) {
+        clearTimeout(dropCloseTimer);
+        dropCloseTimer = null;
+      }
+      closeSearch();
+      header.querySelectorAll('[data-home-drop]').forEach((other) => {
+        const open = other === drop;
+        other.classList.toggle('is-open', open);
+        other.querySelector('[data-home-drop-btn]')?.setAttribute('aria-expanded', open ? 'true' : 'false');
+        const panel = other.querySelector('[data-home-drop-panel]');
+        if (panel) panel.hidden = !open;
+      });
+    }
+
+    function scheduleDropClose() {
+      if (dropCloseTimer) clearTimeout(dropCloseTimer);
+      dropCloseTimer = setTimeout(closeDrops, 120);
+    }
+
+    header.querySelectorAll('[data-home-drop]').forEach((drop) => {
+      const btn = drop.querySelector('[data-home-drop-btn]');
+      drop.addEventListener('mouseenter', () => openDrop(drop));
+      drop.addEventListener('mouseleave', scheduleDropClose);
+      btn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const open = btn.getAttribute('aria-expanded') === 'true';
+        if (open) closeDrops();
+        else openDrop(drop);
+      });
+    });
+
+    function closeSearch() {
+      searchRoot?.classList.remove('is-open');
+      searchToggle?.setAttribute('aria-expanded', 'false');
+      searchResults?.classList.add('hidden');
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.setAttribute('tabindex', '-1');
+      }
+      if (searchResults) searchResults.innerHTML = '';
+      activeIndex = -1;
+      currentResults = [];
+    }
+
+    function openSearch() {
+      closeDrops();
+      searchRoot?.classList.add('is-open');
+      searchToggle?.setAttribute('aria-expanded', 'true');
+      searchInput?.setAttribute('tabindex', '0');
+      window.setTimeout(() => searchInput?.focus(), 180);
+    }
+
+    function renderResults(query) {
+      if (!searchResults) return;
+      const q = query.trim().toLowerCase();
+      if (!q) {
+        searchResults.innerHTML = '';
+        searchResults.classList.add('hidden');
+        currentResults = [];
+        activeIndex = -1;
+        return;
+      }
+
+      currentResults = searchIndex
+        .filter((item) => `${item.label} ${item.meta ?? ''}`.toLowerCase().includes(q))
+        .slice(0, 8);
+
+      searchResults.classList.remove('hidden');
+      if (!currentResults.length) {
+        searchResults.innerHTML = '<p class="home-v2__search-empty">No results found.</p>';
+        activeIndex = -1;
+        return;
+      }
+
+      searchResults.innerHTML = currentResults
+        .map(
+          (item, i) => `
+        <a href="${item.href}" class="home-v2__search-item${i === activeIndex ? ' is-active' : ''}" role="option">
+          <span>${item.label}</span>
+          <small>${item.meta || item.type}</small>
+        </a>`
+        )
+        .join('');
+    }
+
+    searchToggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (searchRoot?.classList.contains('is-open')) closeSearch();
+      else openSearch();
+    });
+
+    searchInput?.addEventListener('input', () => {
+      activeIndex = -1;
+      renderResults(searchInput.value);
+    });
+
+    searchInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeSearch();
+        return;
+      }
+      if (!currentResults.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, currentResults.length - 1);
+        renderResults(searchInput.value);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, 0);
+        renderResults(searchInput.value);
+      } else if (e.key === 'Enter' && activeIndex >= 0) {
+        e.preventDefault();
+        const target = currentResults[activeIndex];
+        if (target?.href) window.location.href = target.href;
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!header.contains(e.target)) {
+        closeDrops();
+        closeSearch();
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeDrops();
+        closeSearch();
+      }
+    });
+  }
+  initHomeHeader();
+  document.addEventListener('astro:page-load', initHomeHeader);
+</script>

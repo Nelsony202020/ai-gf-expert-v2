@@ -16,6 +16,36 @@ const description =
 
 const staticGuides = [
   {
+    slug: 'how-to-use-ourdream-ai-image-generator',
+    title: 'How to Use OurDream AI Image Generator',
+    excerpt:
+      'Beginner walkthrough of OurDream’s image generator: Dreamy vs Vivid vs Vivid 2, Free Play, presets, Remix, editing, inpainting, and in-chat images.',
+    heroImageUrl: '/guides/ourdream-ai-image-generator/generate-sidebar.webp',
+    heroImageAlt: 'OurDream AI sidebar with the Generate button used to open the image generator',
+    author: { name: 'Herman Carter' },
+    noindex: false,
+  },
+  {
+    slug: 'ourdream-ai-image-prompt',
+    title: 'OurDream AI Image Prompt Guide',
+    excerpt:
+      'How to write OurDream AI image prompts with tags, parentheses, weights, camera terms, negative prompts, and tested examples for Dreamy and Vivid.',
+    heroImageUrl: '/guides/ourdream-ai-image-prompt-guide/visual-prompt.webp',
+    heroImageAlt: 'OurDream AI result from a short visual tag prompt',
+    author: { name: 'Herman Carter' },
+    noindex: false,
+  },
+  {
+    slug: 'ourdream-ai-prompt',
+    title: 'OurDream AI Prompt Guide',
+    excerpt:
+      'How to write better OurDream AI prompts for characters, images, videos, and roleplay — with examples, JSON prompts, common mistakes, and tested tips.',
+    heroImageUrl: '/guides/ourdream-ai-prompt-guide/writing-style.webp',
+    heroImageAlt: 'OurDream AI writing style panel for chat mode, reply format, and creativity',
+    author: { name: 'Herman Carter' },
+    noindex: false,
+  },
+  {
     slug: 'ourdream-ai-comics',
     title: 'OurDream AI Comics: How to Use the Comic Generator',
     excerpt:
@@ -47,6 +77,17 @@ const allGuides = [...staticGuides, ...guides.filter((g) => !staticSlugs.has(g.s
     <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Guides' }]} />
     <h1 class="text-3xl md:text-4xl font-black text-on-surface mb-2">Guides</h1>
     <p class="text-on-surface-variant mb-10 max-w-2xl">{description}</p>
+
+    <a
+      href="/guides/ourdream-ai/"
+      class="mb-10 flex flex-col gap-1 rounded-2xl border border-outline-variant p-5 hover:border-accent transition-colors"
+    >
+      <p class="text-xs font-semibold uppercase tracking-wide text-tertiary">Product hub</p>
+      <h2 class="font-black text-on-surface">OurDream AI Guides</h2>
+      <p class="text-sm text-on-surface-variant">
+        Prompts, images, comics, and the OurDream review — in one place.
+      </p>
+    </a>
 
     {allGuides.length === 0 ? (
       <div class="rounded-2xl border border-outline-variant p-10 text-center text-on-surface-variant">

@@ -1,0 +1,74 @@
+---
+import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
+import HomeEyebrow from './HomeEyebrow.astro';
+import HomeIcon from './HomeIcon.astro';
+
+interface Props {
+  data: DesktopHomepageData;
+}
+const { data } = Astro.props;
+
+const steps = [
+  { n: '01', title: 'We pay for it', body: 'The cheapest monthly plan of every app. No free press accounts.' },
+  { n: '02', title: 'We use it', body: '30+ days hands-on per finalist, the same tasks on every app.' },
+  { n: '03', title: 'We score it', body: '8 weighted categories, each backed by subscores and evidence.' },
+  { n: '04', title: 'We re-test it', body: 'Scores move when apps change — and the change log says why.' },
+];
+---
+
+<section class="home-v2__method" id="home-method" aria-labelledby="home-method-title" data-home-reveal="method">
+  <div class="home-v2__method-row">
+    <div>
+      <HomeEyebrow text={`How we test · methodology ${data.methodologyVersion}`} theme="ink" />
+      <h2 id="home-method-title" class="home-v2__h2 home-v2__h2--ink">
+        Nothing gets a score <em class="home-v2__accent">for free</em>
+      </h2>
+      <ol class="home-v2__steps">
+        {steps.map((step, i) => (
+          <li style={`--stagger: ${i}`}>
+            <span>{step.n}</span>
+            <div>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <a class="home-v2__btn home-v2__btn--on-ink" href="/test/">
+        How We Test AI Girlfriend Apps
+        <HomeIcon name="arrow-right" size={16} />
+      </a>
+    </div>
+    <div class="home-v2__video-wrap" data-home-video-wrap>
+      <div class="home-v2__video">
+        {
+          data.testingVideoSrc ? (
+            <video
+              class="home-v2__video-el"
+              data-home-video-el
+              data-src={data.testingVideoSrc}
+              poster={data.testingVideoPoster}
+              loop
+              muted
+              playsinline
+              disablepictureinpicture
+              preload="none"
+              aria-label="How we test AI girlfriend apps"
+            />
+          ) : null
+        }
+        <img
+          class="home-v2__video-fallback"
+          data-home-video-fallback
+          src={data.testingVideoPoster}
+          alt="How we test AI girlfriend apps"
+          hidden={Boolean(data.testingVideoSrc)}
+        />
+      </div>
+      <p class="home-v2__data-label">
+        <HomeIcon name="video" size={14} />
+        Footage from our paid testing accounts
+      </p>
+    </div>
+  </div>
+</section>

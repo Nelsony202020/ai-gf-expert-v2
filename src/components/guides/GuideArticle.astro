@@ -36,7 +36,11 @@ const published = guide.publishedAt
     />
   )}
 
-  <div class="guide-prose legal-prose prose prose-neutral max-w-none text-on-surface-variant leading-relaxed space-y-4" set:html={bodyHtml} />
+  <div
+    class="guide-prose legal-prose prose prose-neutral max-w-none text-on-surface-variant leading-relaxed space-y-4"
+    data-glossary-decorate
+    set:html={bodyHtml}
+  />
 </article>
 
 <style is:global>
