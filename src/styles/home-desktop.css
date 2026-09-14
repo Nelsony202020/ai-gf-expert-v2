@@ -315,6 +315,10 @@
   transform: none;
 }
 
+.home-v2__menu-toggle svg.hidden {
+  display: none;
+}
+
 .home-v2__theme .theme-toggle__icon[data-theme-icon='moon'] {
   transform: translate(-0.5px, 0.5px);
 }
@@ -553,7 +557,14 @@
   gap: 20px;
 }
 
-.home-v2__hero-secondary--mobile {
+.home-v2__hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.home-v2__btn.home-v2__hero-secondary--mobile {
   display: none;
 }
 
@@ -2005,8 +2016,8 @@
   .home-v2__hero-copy { order: 1; }
   .home-v2__hero-art { order: 2; }
   .home-v2__hero-actions { order: 3; }
-  .home-v2__hero-secondary--desktop { display: none; }
-  .home-v2__hero-secondary--mobile { display: inline-flex; }
+  .home-v2__btn.home-v2__hero-secondary--desktop { display: none; }
+  .home-v2__btn.home-v2__hero-secondary--mobile { display: inline-flex; }
   .home-v2__finalists--hero { display: none; }
   .home-v2__method-intro,
   .home-v2__method-body,
