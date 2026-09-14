@@ -12,6 +12,8 @@ export const ourdreamHubMeta = {
   productName: 'OurDream AI',
   reviewHref: '/reviews/ourdream-ai/',
   visitLabel: 'Visit OurDream AI',
+  /** Cloaked affiliate slug for hub Visit CTAs (manage destination in Admin → Affiliate links). */
+  visitGoHref: '/go/ourdream-ai-yt',
 };
 
 export const ourdreamHubGuides: HubGuide[] = [

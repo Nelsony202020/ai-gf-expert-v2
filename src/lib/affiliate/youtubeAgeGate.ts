@@ -15,7 +15,7 @@ export function needsYoutubeAgeGate(link: {
   const campaign = String(link.campaign ?? '').trim().toLowerCase();
   if (campaign === 'youtube' || campaign === 'yt') return true;
   const slug = String(link.cloakedSlug ?? '').toLowerCase();
-  return slug.endsWith('-youtube') || slug.includes('-youtube-');
+  return slug.endsWith('-youtube') || slug.includes('-youtube-') || slug.endsWith('-yt');
 }
 
 export function youtubeWatchUrl(raw?: string | null): string | null {
