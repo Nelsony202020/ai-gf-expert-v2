@@ -3,8 +3,8 @@ import { homeProofFacts } from '../../../data/home-proof';
 import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
 import HomeDesktopHeader from './HomeDesktopHeader.astro';
 import HomeEyebrow from './HomeEyebrow.astro';
+import HomeHermanBadge from './HomeHermanBadge.astro';
 import HomeIcon from './HomeIcon.astro';
-import HomeScore from './HomeScore.astro';
 
 interface Props {
   data: DesktopHomepageData;
@@ -12,7 +12,7 @@ interface Props {
 const { data } = Astro.props;
 ---
 
-<section class="home-v2__hero" id="home-hero" aria-labelledby="home-v2-title" data-home-hero>
+<section class="home-v2__hero" id="home-hero" aria-labelledby="home-v2-title" data-home-glow>
   <div class="home-v2__grid" aria-hidden="true"></div>
   <div class="home-v2__grid-hot" aria-hidden="true"></div>
   <div class="home-v2__cursor-glow" aria-hidden="true"></div>
@@ -53,53 +53,24 @@ const { data } = Astro.props;
       </div>
     </div>
     <div class="home-v2__hero-art">
-      <img
-        class="home-v2__herman"
-        src="/home/v2/herman-scientist.png"
-        alt="Herman Carter, lead reviewer"
-        width="400"
-        height="400"
-      />
-      <div class="home-v2__float home-v2__float--board">
-        <div class="home-v2__board-head">
-          <span>Leaderboard</span>
-          <span>{data.updatedShort}</span>
-        </div>
-        {data.top3.map((app) => (
-          <div class="home-v2__board-row">
-            <span class="home-v2__muted">{app.rank}</span>
-            <img src={app.logo} alt="" width="28" height="28" class="home-v2__app-icon home-v2__app-icon--sm" />
-            <span class="home-v2__board-name">{app.name}</span>
-            <HomeScore score={app.overall} size="m" />
-          </div>
-        ))}
-      </div>
-      {data.winner && (
-        <div class="home-v2__float home-v2__float--winner">
-          <div class="home-v2__winner-head">
-            <img src={data.winner.logo} alt="" width="40" height="40" class="home-v2__app-icon" />
-            <div>
-              <p class="home-v2__winner-name">{data.winner.name}</p>
-              <p class="home-v2__award">
-                <HomeIcon name="crown" size={16} />
-                {data.winner.award ?? 'Best overall'}
-              </p>
-            </div>
-            <HomeScore score={data.winner.overall} size="m" />
-          </div>
-          <div class="home-v2__bars home-v2__bars--compact">
-            {data.winnerHeroBars.map((bar) => (
-              <div class="home-v2__bar">
-                <span>{bar.name}</span>
-                <span class="home-v2__track"><i class={`is-${bar.tone}`} style={`--bar:${bar.width}`}></i></span>
-                <b class={`is-${bar.tone}`}>{bar.display}</b>
-              </div>
-            ))}
-          </div>
-        </div>
+      {data.winner ? (
+        <HomeHermanBadge
+          winner={data.winner}
+          bars={data.winnerHeroBars}
+          rankingHref="/best/ai-girlfriend/"
+        />
+      ) : (
+        <img
+          class="home-v2__herman"
+          src="/home/v2/herman-scientist.png"
+          alt="Herman Carter, lead reviewer"
+          width="400"
+          height="400"
+        />
       )}
     </div>
   </div>
+  <div class="home-v2__hero-fill" aria-hidden="true"></div>
 </section>
 
 <section class="home-v2__proof-bridge" aria-label="Testing proof">

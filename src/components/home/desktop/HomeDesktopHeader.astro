@@ -1,18 +1,19 @@
 ---
 import ThemeToggle from '../../ui/ThemeToggle.astro';
-import { popularBrandGuideHubs } from '../../../data/brand-guide-hubs';
+import { buildBrandNav } from '../../../data/brand-nav';
 import { buildSearchIndex } from '../../../data/site-search';
 import { loadComparisonProducts } from '../../../lib/content/comparisonProducts';
 import HomeIcon from './HomeIcon.astro';
 
 interface Props {
-  variant?: 'default' | 'hero';
+  /** Homepage / marketing ink. Same header family as `Header.astro`. */
+  variant?: 'hero' | 'standard';
 }
 
-const { variant = 'default' } = Astro.props;
-
+const { variant = 'hero' } = Astro.props;
 const publishedProducts = await loadComparisonProducts();
 const searchIndex = buildSearchIndex(publishedProducts);
+const brandNav = buildBrandNav(publishedProducts);
 const reviewLinks = publishedProducts
   .slice()
   .sort((a, b) => a.name.localeCompare(b.name))
@@ -20,13 +21,7 @@ const reviewLinks = publishedProducts
   .map((p) => ({ label: `${p.name} Review`, href: `/reviews/${p.slug}/` }));
 ---
 
-<header
-  class:list={['home-v2__header', variant === 'hero' && 'home-v2__header--hero']}
-  data-site-header
-  data-home-v2-header
-  data-header-variant={variant}
-  data-glossary-skip
->
+<header class={`home-v2__header home-v2__header--${variant}`} data-home-v2-header data-header-variant={variant} data-glossary-skip>
   <a href="/" class="home-v2__logo-link" aria-label="Girlfriend Expert AI">
     <span class="home-v2__logo" role="img" aria-hidden="true"></span>
   </a>
@@ -58,9 +53,12 @@ const reviewLinks = publishedProducts
       </button>
       <div class="home-v2__drop-panel" data-home-drop-panel hidden>
         <p class="home-v2__drop-kicker">Popular brands</p>
-        {popularBrandGuideHubs.map((hub) => (
-          <a href={hub.href}>{hub.label}</a>
+        {brandNav.popular.map((brand) => (
+          <a href={brand.href}>{brand.name}</a>
         ))}
+        {brandNav.viewAll ? (
+          <a class="home-v2__drop-all" href={brandNav.viewAll.href}>{brandNav.viewAll.label} →</a>
+        ) : null}
       </div>
     </div>
     <a href="/guides/" class="home-v2__nav-link">Guides</a>
