@@ -28,40 +28,10 @@ html[data-theme='dark']:has(.glossary-page) body {
   background-color: var(--color-background) !important;
 }
 
-html[data-theme='dark']:has(.glossary-page) .glossary-page.is-searching::before {
-  background: radial-gradient(
-    ellipse 78% 52% at 50% 22%,
-    rgb(219 39 119 / 22%),
-    rgb(219 39 119 / 6%) 40%,
-    transparent 72%
-  );
-}
-
 .glossary-page {
-  position: relative;
-  isolation: isolate;
   background: var(--color-background);
   color: var(--color-on-surface);
   padding-bottom: 4rem;
-}
-
-.glossary-page.is-searching::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: radial-gradient(
-    ellipse 78% 52% at 50% 22%,
-    rgb(219 39 119 / 16%),
-    rgb(219 39 119 / 5%) 42%,
-    transparent 70%
-  );
-}
-
-.glossary-page > * {
-  position: relative;
-  z-index: 1;
 }
 
 .glossary-page__canvas {
@@ -411,11 +381,42 @@ html[data-theme='dark']:has(.glossary-page) .glossary-page.is-searching::before 
   width: 100%;
   max-width: 60rem;
   margin: 0 auto;
-  padding: 0.55rem 1rem;
+  padding: 0.5rem 1rem;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.65rem 0.85rem;
+  gap: 0.5rem;
+}
+
+.glossary-toolbar .glossary-search--compact {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+}
+
+.glossary-toolbar__utilities {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.glossary-toolbar__filters {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--color-surface-variant);
+  background: var(--color-surface-container-lowest);
+  color: var(--color-on-surface);
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.glossary-toolbar__filters:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, var(--color-surface-variant));
 }
 
 @media (min-width: 768px) {
@@ -426,100 +427,240 @@ html[data-theme='dark']:has(.glossary-page) .glossary-page.is-searching::before 
   .glossary-toolbar__inner {
     height: 3.75rem;
     padding: 0 1.5rem;
-    flex-wrap: nowrap;
   }
 
-  .glossary-chips--toolbar {
-    overflow: hidden;
-    flex: 1 1 auto;
+  .glossary-toolbar__utilities--desktop {
+    display: flex;
   }
 
-  .glossary-toolbar .glossary-az__compact {
-    margin-left: auto;
+  .glossary-toolbar__filters {
+    display: none;
+  }
+
+  .glossary-toolbar .glossary-search--compact {
+    max-width: 22rem;
   }
 }
 
 @media (max-width: 767px) {
   .glossary-toolbar__inner {
-    padding: 0.65rem 1rem 0.7rem;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.55rem 0.65rem;
+    padding: 0.45rem 1rem;
   }
 
   .glossary-toolbar .glossary-search--compact {
-    max-width: none;
-    width: auto;
-    flex: none;
-    grid-column: 1;
+    height: 2.35rem;
   }
 
-  .glossary-toolbar .glossary-az__compact {
-    grid-column: 2;
-    width: auto;
-    padding: 0.45rem 0.8rem;
+  .glossary-result {
+    padding: 0.65rem 0;
   }
 
-  .glossary-chips--toolbar {
-    width: 100%;
-    grid-column: 1 / -1;
+  .glossary-result__lede {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    -webkit-line-clamp: 2;
   }
 }
 
-.glossary-letter-panel {
-  position: sticky;
-  top: 4.5rem;
-  z-index: 45;
-  margin: 0.75rem 0 0;
-  padding: 0.9rem 1rem;
+.glossary-menu {
+  position: relative;
+}
+
+.glossary-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--color-surface-variant);
+  background: var(--color-surface-container-lowest);
+  color: var(--color-on-surface);
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.glossary-menu__trigger:hover,
+.glossary-menu__trigger[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, var(--color-surface-variant));
+}
+
+.glossary-menu__panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 50;
+  min-width: 11rem;
+  max-height: min(18rem, 70vh);
+  overflow: auto;
+  padding: 0.35rem;
   background: var(--color-surface-container-lowest);
   border: 1px solid var(--color-surface-variant);
   border-radius: 0.75rem;
+  box-shadow:
+    0 1px 1px rgb(59 42 30 / 6%),
+    0 8px 24px rgb(59 42 30 / 10%);
 }
 
-body.glossary-toolbar-stuck .glossary-letter-panel {
-  position: fixed;
-  top: 4.25rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 2rem);
-  max-width: 60rem;
-  margin: 0;
-  z-index: 46;
+.glossary-menu__panel--az {
+  min-width: 16rem;
+  padding: 0.75rem;
 }
 
-@media (max-width: 767px) {
-  body.glossary-toolbar-stuck .glossary-letter-panel {
-    top: 6.9rem;
-  }
-}
-
-.glossary-letter-panel__title {
-  margin: 0 0 0.65rem;
-  font-size: 0.75rem;
+.glossary-menu__panel-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
   font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--color-tertiary);
 }
 
-.glossary-letter-panel__list {
+.glossary-menu__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  color: var(--color-on-surface);
+}
+
+.glossary-menu__option:hover {
+  background: var(--color-accent-soft);
+}
+
+.glossary-menu__option.is-active {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.glossary-menu__count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-tertiary);
+}
+
+.glossary-menu__letters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.glossary-menu__letter {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  color: var(--color-on-surface);
+  background: var(--color-background);
+  border: 1px solid var(--color-surface-variant);
+}
+
+.glossary-menu__letter.is-disabled {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-surface-variant);
+  pointer-events: none;
+}
+
+.glossary-filters-sheet[hidden] {
+  display: none !important;
+}
+
+.glossary-filters-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+}
+
+.glossary-filters-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(20 19 23 / 40%);
+}
+
+.glossary-filters-sheet__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: min(85vh, 32rem);
+  overflow: auto;
+  padding: 1rem 1rem 1.25rem;
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  background: var(--color-surface-container-lowest);
+  border-radius: 1rem 1rem 0 0;
+  box-shadow: 0 -8px 32px rgb(59 42 30 / 12%);
+}
+
+.glossary-filters-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.glossary-filters-sheet__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.glossary-filters-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-surface-container);
+  cursor: pointer;
+  color: var(--color-on-surface);
+}
+
+.glossary-filters-sheet__kicker {
+  margin: 0.85rem 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+}
+
+.glossary-filters-sheet__kicker:first-of-type {
+  margin-top: 0;
+}
+
+.glossary-filters-sheet__categories {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
 }
 
-.glossary-letter-panel__list a {
-  min-width: 2.25rem;
-  height: 2.25rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.5rem;
-  background: var(--color-background);
-  border: 1px solid var(--color-surface-variant);
-  color: var(--color-on-surface);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.875rem;
+.glossary-filters-sheet__letters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+body.glossary-filters-open {
+  overflow: hidden;
 }
 
 .glossary-results {
@@ -546,15 +687,20 @@ body.glossary-toolbar-stuck .glossary-letter-panel {
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: auto auto;
   column-gap: 0.625rem;
-  row-gap: 0.35rem;
+  row-gap: 0.25rem;
   width: 100%;
   text-align: left;
-  border: 1px solid transparent;
-  border-radius: 0.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--color-surface-variant);
+  border-radius: 0;
   background: transparent;
-  padding: 1rem;
+  padding: 0.85rem 0;
   cursor: pointer;
   color: inherit;
+}
+
+.glossary-result:last-of-type {
+  border-bottom: 0;
 }
 
 .glossary-result__term {
@@ -587,14 +733,22 @@ body.glossary-toolbar-stuck .glossary-letter-panel {
   overflow: hidden;
 }
 
-.glossary-result.is-active,
-.glossary-result:hover {
-  background: var(--color-surface-container-lowest);
-  border-color: var(--color-surface-variant);
+.glossary-result:hover .glossary-result__term {
+  color: var(--color-accent);
+}
+
+.glossary-result:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+  outline-offset: 2px;
 }
 
 .glossary-letter {
-  margin: 2.25rem 0 0;
+  margin: 0;
+  padding-top: 3rem;
+}
+
+.glossary-letter:first-child {
+  padding-top: 1.5rem;
 }
 
 .glossary-letter__heading {
@@ -602,11 +756,11 @@ body.glossary-toolbar-stuck .glossary-letter-panel {
   align-items: center;
   gap: 1rem;
   font-family: var(--font-display);
-  font-size: 1.75rem;
+  font-size: clamp(1.75rem, 4vw, 2rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--color-on-surface);
-  margin: 0;
+  margin: 0 0 1.5rem;
   scroll-margin-top: 1.5rem;
 }
 
@@ -618,34 +772,40 @@ body.glossary-toolbar-stuck .glossary-letter-panel {
 }
 
 .glossary-term {
-  padding: 1.55rem 0 1.45rem;
+  padding: 1.25rem 0;
   border-bottom: 1px solid var(--color-surface-variant);
   scroll-margin-top: 1.5rem;
 }
 
-body.glossary-toolbar-stuck .glossary-term,
-body.glossary-toolbar-stuck .glossary-letter__heading {
-  scroll-margin-top: 5rem;
+.glossary-letter .glossary-term:last-child {
+  border-bottom: 0;
 }
 
-@media (max-width: 767px) {
-  body.glossary-toolbar-stuck .glossary-term,
-  body.glossary-toolbar-stuck .glossary-letter__heading {
-    scroll-margin-top: 7.5rem;
-  }
+body.glossary-toolbar-stuck .glossary-term,
+body.glossary-toolbar-stuck .glossary-letter__heading {
+  scroll-margin-top: 4.75rem;
 }
 
 .glossary-term__head {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.glossary-term__title-row {
+  display: flex;
   align-items: center;
-  gap: 0.65rem 0.75rem;
-  margin-bottom: 0.45rem;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .glossary-term__title {
   font-family: var(--font-display);
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-on-surface);
@@ -672,29 +832,34 @@ body.glossary-toolbar-stuck .glossary-letter__heading {
 }
 
 .glossary-term__aliases {
-  margin: 0 0 0.45rem;
-  font-size: 0.875rem;
+  margin: 0 0 0.35rem;
+  font-size: 0.8125rem;
   color: var(--color-tertiary);
 }
 
 .glossary-term__lede {
-  margin: 0 0 0.85rem;
-  font-size: 1rem;
-  line-height: 1.6;
+  margin: 0 0 0.65rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
   color: var(--color-on-surface-variant);
   max-width: 45rem;
 }
 
+.glossary-term.is-open {
+  background: color-mix(in srgb, var(--color-accent) 3%, var(--color-background));
+  margin-inline: -0.75rem;
+  padding-inline: 0.75rem;
+  border-radius: 0.5rem;
+  border-bottom-color: transparent;
+}
+
 .glossary-term.is-open .glossary-term__lede {
-  font-size: 1.125rem;
-  line-height: 1.7;
   color: var(--color-on-surface);
 }
 
 .glossary-term__actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
 }
 
@@ -703,9 +868,10 @@ body.glossary-toolbar-stuck .glossary-letter__heading {
 }
 
 .glossary-term__actions--end {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
   border-top: 1px solid var(--color-surface-variant);
+  justify-content: space-between;
 }
 
 .glossary-term__toggle,
@@ -735,6 +901,33 @@ body.glossary-toolbar-stuck .glossary-letter__heading {
   color: var(--color-tertiary);
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+.glossary-term__copy--icon {
+  opacity: 0;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.35rem;
+}
+
+.glossary-term__copy--icon:focus-visible,
+.glossary-term:hover .glossary-term__copy--icon,
+.glossary-term.is-open .glossary-term__copy--icon {
+  opacity: 1;
+}
+
+.glossary-term__copy--icon:hover {
+  color: var(--color-on-surface);
+  background: var(--color-surface-container);
+}
+
+@media (max-width: 767px) {
+  .glossary-term:not(.is-open) .glossary-term__copy--icon {
+    display: none;
+  }
 }
 
 .glossary-term__copy:hover {

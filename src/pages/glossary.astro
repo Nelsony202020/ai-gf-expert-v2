@@ -184,7 +184,7 @@ const jsonLdGraph = buildWebPageSchema({
               </div>
 
               <div class="glossary-az glossary-az--mobile">
-                <button type="button" class="glossary-az__jump" data-glossary-letter-menu>
+                <button type="button" class="glossary-az__jump" data-glossary-filters-open>
                   Jump to letter
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="m6 9 6 6 6-6"></path>
@@ -222,7 +222,86 @@ const jsonLdGraph = buildWebPageSchema({
                     </svg>
                   </button>
                 </div>
-                <div class="glossary-chips glossary-chips--toolbar" role="group" aria-label="Filter by category">
+
+                <div class="glossary-toolbar__utilities glossary-toolbar__utilities--desktop">
+                  <div class="glossary-menu" data-glossary-category-menu>
+                    <button
+                      type="button"
+                      class="glossary-menu__trigger"
+                      data-glossary-category-trigger
+                      aria-expanded="false"
+                      aria-haspopup="listbox"
+                    >
+                      <span data-glossary-category-label>All categories</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m6 9 6 6 6-6"></path>
+                      </svg>
+                    </button>
+                    <div class="glossary-menu__panel" data-glossary-category-panel hidden role="listbox" aria-label="Filter by category">
+                      <button type="button" class="glossary-menu__option is-active" data-glossary-category="all" role="option">
+                        All <span class="glossary-menu__count">{entries.length}</span>
+                      </button>
+                      {usedCategories.map((cat) => (
+                        <button type="button" class="glossary-menu__option" data-glossary-category={cat} role="option">
+                          {cat} <span class="glossary-menu__count">{categoryCounts[cat]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div class="glossary-menu" data-glossary-az-menu>
+                    <button
+                      type="button"
+                      class="glossary-menu__trigger"
+                      data-glossary-az-trigger
+                      aria-expanded="false"
+                      aria-haspopup="menu"
+                    >
+                      A–Z
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m6 9 6 6 6-6"></path>
+                      </svg>
+                    </button>
+                    <div class="glossary-menu__panel glossary-menu__panel--az" data-glossary-az-panel hidden>
+                      <p class="glossary-menu__panel-title">Jump to letter</p>
+                      <div class="glossary-menu__letters">
+                        {alphabet.map((letter) => {
+                          const active = byLetter.has(letter);
+                          return active ? (
+                            <a class="glossary-menu__letter" href={`#letter-${letter}`} data-glossary-az={letter}>
+                              {letter}
+                            </a>
+                          ) : (
+                            <span class="glossary-menu__letter is-disabled" aria-disabled="true">
+                              {letter}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="glossary-toolbar__filters" data-glossary-filters-open>
+                  Filters
+                </button>
+              </div>
+            </div>
+
+            <div class="glossary-filters-sheet" data-glossary-filters-sheet hidden aria-hidden="true">
+              <div class="glossary-filters-sheet__backdrop" data-glossary-filters-close tabindex="-1"></div>
+              <div class="glossary-filters-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="glossary-filters-title">
+                <div class="glossary-filters-sheet__head">
+                  <h2 id="glossary-filters-title" class="glossary-filters-sheet__title">Filters</h2>
+                  <button type="button" class="glossary-filters-sheet__close" data-glossary-filters-close aria-label="Close filters">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M18 6 6 18"></path>
+                      <path d="m6 6 12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+                <p class="glossary-filters-sheet__kicker">Categories</p>
+                <div class="glossary-filters-sheet__categories" role="group" aria-label="Filter by category">
                   <button type="button" class="glossary-chip is-active" data-glossary-category="all">
                     All <span class="glossary-chip__count">{entries.length}</span>
                   </button>
@@ -232,23 +311,21 @@ const jsonLdGraph = buildWebPageSchema({
                     </button>
                   ))}
                 </div>
-                <button type="button" class="glossary-az__compact" data-glossary-letter-menu>
-                  A–Z
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="m6 9 6 6 6-6"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div class="glossary-letter-panel" data-glossary-letter-panel hidden>
-              <p class="glossary-letter-panel__title">Jump to letter</p>
-              <div class="glossary-letter-panel__list">
-                {letterKeys.filter((l) => l !== '#').map((letter) => (
-                  <a href={`#letter-${letter}`} data-glossary-az={letter}>
-                    {letter}
-                  </a>
-                ))}
+                <p class="glossary-filters-sheet__kicker">Jump to letter</p>
+                <div class="glossary-filters-sheet__letters">
+                  {alphabet.map((letter) => {
+                    const active = byLetter.has(letter);
+                    return active ? (
+                      <a class="glossary-menu__letter" href={`#letter-${letter}`} data-glossary-az={letter}>
+                        {letter}
+                      </a>
+                    ) : (
+                      <span class="glossary-menu__letter is-disabled" aria-disabled="true">
+                        {letter}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -314,7 +391,22 @@ const jsonLdGraph = buildWebPageSchema({
                       >
                         <div class="glossary-term__summary">
                           <div class="glossary-term__head">
-                            <h3 class="glossary-term__title">{entry.term}</h3>
+                            <div class="glossary-term__title-row">
+                              <h3 class="glossary-term__title">{entry.term}</h3>
+                              <button
+                                type="button"
+                                class="glossary-term__copy glossary-term__copy--icon"
+                                data-glossary-copy-link
+                                data-href={`/glossary/#${entry.anchor}`}
+                                aria-label={`Copy link to ${entry.term}`}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                  <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+                                  <path d="M4 16V6a2 2 0 0 1 2-2h10"></path>
+                                </svg>
+                                <span class="sr-only" data-glossary-copy-label>Copy link</span>
+                              </button>
+                            </div>
                             <span class="glossary-term__tag">{entry.category}</span>
                           </div>
                           {also ? <p class="glossary-term__aliases">Also called: {also}</p> : null}
@@ -330,18 +422,6 @@ const jsonLdGraph = buildWebPageSchema({
                               <svg class="glossary-term__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="m6 9 6 6 6-6"></path>
                               </svg>
-                            </button>
-                            <button
-                              type="button"
-                              class="glossary-term__copy"
-                              data-glossary-copy-link
-                              data-href={`/glossary/#${entry.anchor}`}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <rect x="8" y="8" width="12" height="12" rx="2"></rect>
-                                <path d="M4 16V6a2 2 0 0 1 2-2h10"></path>
-                              </svg>
-                              <span data-glossary-copy-label>Copy link</span>
                             </button>
                           </div>
                         </div>
@@ -434,11 +514,17 @@ const jsonLdGraph = buildWebPageSchema({
     const resultsList = document.querySelector('[data-glossary-results-list]');
     const toolbar = document.querySelector('[data-glossary-toolbar]');
     const sentinel = document.querySelector('[data-glossary-sentinel]');
-    const letterPanel = document.querySelector('[data-glossary-letter-panel]');
+    const categoryPanel = document.querySelector('[data-glossary-category-panel]');
+    const azPanel = document.querySelector('[data-glossary-az-panel]');
+    const categoryTrigger = document.querySelector('[data-glossary-category-trigger]');
+    const azTrigger = document.querySelector('[data-glossary-az-trigger]');
+    const filtersSheet = document.querySelector('[data-glossary-filters-sheet]');
+    const categoryLabels = Array.from(document.querySelectorAll('[data-glossary-category-label]'));
     const clearBtns = Array.from(document.querySelectorAll('[data-glossary-clear]'));
     const counts = Array.from(document.querySelectorAll('[data-glossary-count]'));
     let category = 'all';
     let deepLinkTimer = 0;
+    let filtersScrollY = 0;
 
     function query() {
       return (searchInputs[0]?.value ?? '').trim();
@@ -451,11 +537,45 @@ const jsonLdGraph = buildWebPageSchema({
       }
     }
 
+    function categoryLabel(value: string) {
+      return value === 'all' ? 'All categories' : value;
+    }
+
     function setCategory(next: string) {
       category = next;
       for (const chip of chips) {
         chip.classList.toggle('is-active', (chip.dataset.glossaryCategory ?? 'all') === category);
       }
+      for (const label of categoryLabels) {
+        label.textContent = categoryLabel(category);
+      }
+    }
+
+    function closeMenus() {
+      if (categoryPanel instanceof HTMLElement) {
+        categoryPanel.hidden = true;
+        categoryTrigger?.setAttribute('aria-expanded', 'false');
+      }
+      if (azPanel instanceof HTMLElement) {
+        azPanel.hidden = true;
+        azTrigger?.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    function openFiltersSheet() {
+      if (!(filtersSheet instanceof HTMLElement)) return;
+      filtersScrollY = window.scrollY;
+      filtersSheet.hidden = false;
+      filtersSheet.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('glossary-filters-open');
+    }
+
+    function closeFiltersSheet() {
+      if (!(filtersSheet instanceof HTMLElement)) return;
+      filtersSheet.hidden = true;
+      filtersSheet.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('glossary-filters-open');
+      window.scrollTo(0, filtersScrollY);
     }
 
     function setOpen(term: HTMLElement, open: boolean, opts?: { deep?: boolean }) {
@@ -497,7 +617,6 @@ const jsonLdGraph = buildWebPageSchema({
         letter.classList.toggle('is-hidden', !hasVisible);
       }
 
-      page.classList.toggle('is-searching', searching);
       for (const field of document.querySelectorAll('.glossary-search')) {
         field.classList.toggle('is-filled', searching);
       }
@@ -521,7 +640,7 @@ const jsonLdGraph = buildWebPageSchema({
               const name = escapeHtml(term.dataset.term ?? '');
               const cat = escapeHtml(term.dataset.category ?? '');
               const lede = escapeHtml(term.querySelector('.glossary-term__lede')?.textContent ?? '');
-              return `<button type="button" class="glossary-result${i === 0 ? ' is-active' : ''}" data-glossary-result="${term.id}">
+              return `<button type="button" class="glossary-result" data-glossary-result="${term.id}">
                 <span class="glossary-result__term">${name}</span>
                 <span class="glossary-result__tag">${cat}</span>
                 <span class="glossary-result__lede">${lede}</span>
@@ -576,6 +695,8 @@ const jsonLdGraph = buildWebPageSchema({
       chip.addEventListener('click', () => {
         setCategory(chip.dataset.glossaryCategory ?? 'all');
         applyFilter();
+        closeMenus();
+        closeFiltersSheet();
       });
     }
 
@@ -602,11 +723,10 @@ const jsonLdGraph = buildWebPageSchema({
         if (!href) return;
         const absolute = new URL(href, window.location.origin).toString();
         void navigator.clipboard.writeText(absolute).then(() => {
-          const label = copy.querySelector('[data-glossary-copy-label]');
-          if (!label) return;
-          label.textContent = 'Copied';
+          const prevLabel = copy.getAttribute('aria-label') ?? 'Copy link';
+          copy.setAttribute('aria-label', 'Copied');
           window.setTimeout(() => {
-            label.textContent = 'Copy link';
+            copy.setAttribute('aria-label', prevLabel);
           }, 1600);
         });
         return;
@@ -662,26 +782,54 @@ const jsonLdGraph = buildWebPageSchema({
       observer.observe(sentinel);
     }
 
-    function closeLetterPanel() {
-      if (letterPanel) letterPanel.hidden = true;
+    categoryTrigger?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (!(categoryPanel instanceof HTMLElement)) return;
+      const open = categoryPanel.hidden;
+      closeMenus();
+      categoryPanel.hidden = !open;
+      categoryTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    azTrigger?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (!(azPanel instanceof HTMLElement)) return;
+      const open = azPanel.hidden;
+      closeMenus();
+      azPanel.hidden = !open;
+      azTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-glossary-filters-open]')) {
+      btn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        closeMenus();
+        openFiltersSheet();
+      });
     }
 
-    for (const menuBtn of document.querySelectorAll<HTMLButtonElement>('[data-glossary-letter-menu]')) {
-      menuBtn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        if (!letterPanel) return;
-        letterPanel.hidden = !letterPanel.hidden;
-      });
+    for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-glossary-filters-close]')) {
+      btn.addEventListener('click', () => closeFiltersSheet());
     }
+
     for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-glossary-az]')) {
       link.addEventListener('click', () => {
-        closeLetterPanel();
+        closeMenus();
+        closeFiltersSheet();
       });
     }
+
     document.addEventListener('click', (event) => {
       if (!(event.target instanceof Element)) return;
-      if (event.target.closest('[data-glossary-letter-panel], [data-glossary-letter-menu]')) return;
-      closeLetterPanel();
+      if (event.target.closest('[data-glossary-category-menu], [data-glossary-az-menu]')) return;
+      closeMenus();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeMenus();
+        closeFiltersSheet();
+      }
     });
 
     window.addEventListener('hashchange', () => openFromHash({ deep: true }));
