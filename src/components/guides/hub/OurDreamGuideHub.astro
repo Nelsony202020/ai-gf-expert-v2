@@ -64,7 +64,7 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
           ))
         }
       </div>
-      <div class="guide-hub__product">
+      <div class="guide-hub__product" data-hub-product-sentinel>
         <div class="guide-hub__product-brand">
           <img class="guide-hub__app-icon" src={appIcon} alt="" width="28" height="28" />
           <span>{productName}</span>
@@ -79,6 +79,22 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
       </div>
     </div>
   </section>
+
+  <div class="guide-hub__sticky-bar" data-hub-sticky-bar aria-hidden="true" role="region" aria-label="OurDream AI">
+    <div class="guide-hub__sticky-bar-inner">
+      <div class="guide-hub__sticky-bar-brand">
+        <img class="guide-hub__app-icon" src={appIcon} alt="" width="28" height="28" />
+        <span>{productName}</span>
+      </div>
+      <div class="guide-hub__sticky-bar-actions">
+        <a class="guide-hub__sticky-review" href={ourdreamHubMeta.reviewHref}>Read review →</a>
+        <AffiliateLink class="guide-hub__sticky-visit" href={visitHref} target="_blank">
+          {ourdreamHubMeta.visitLabel}
+          <HomeIcon name="arrow-up-right" size={16} />
+        </AffiliateLink>
+      </div>
+    </div>
+  </div>
 
   <div class="guide-hub__main">
     <section class="guide-hub__section" aria-labelledby="hub-start">
@@ -306,50 +322,61 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
     });
   }
 
-  function initScrollCta() {
-    const root = document.querySelector('.guide-hub');
-    const dock = document.querySelector('[data-hub-scroll-cta]');
-    const hero = document.querySelector('.guide-hub__hero');
-    if (!root || !dock || !hero || dock.dataset.bound === 'true') return;
-    dock.dataset.bound = 'true';
+  function initProductStickyCtas() {
+    const sentinel = document.querySelector('[data-hub-product-sentinel]');
+    const mobileDock = document.querySelector('[data-hub-scroll-cta]');
+    const desktopBar = document.querySelector('[data-hub-sticky-bar]');
+    if (!sentinel || sentinel.dataset.stickyBound === 'true') return;
+    sentinel.dataset.stickyBound = 'true';
 
     const mobileMq = window.matchMedia('(max-width: 767px)');
-    let ticking = false;
 
-    function setVisible(show) {
-      dock.classList.toggle('is-visible', show);
-      dock.setAttribute('aria-hidden', show ? 'false' : 'true');
+    function setMobile(show) {
+      if (!mobileDock) return;
+      mobileDock.classList.toggle('is-visible', show);
+      mobileDock.setAttribute('aria-hidden', show ? 'false' : 'true');
     }
 
-    function update() {
-      ticking = false;
-      if (!mobileMq.matches) {
-        setVisible(false);
-        return;
+    function setDesktop(show) {
+      if (!desktopBar) return;
+      desktopBar.classList.toggle('is-visible', show);
+      desktopBar.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
+
+    function apply(showSticky) {
+      if (mobileMq.matches) {
+        setDesktop(false);
+        setMobile(showSticky);
+      } else {
+        setMobile(false);
+        setDesktop(showSticky);
       }
-      const heroBottom = hero.getBoundingClientRect().bottom;
-      const show = heroBottom < 48;
-      setVisible(show);
     }
 
-    function onScroll() {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(update);
-    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        apply(!entry.isIntersecting);
+      },
+      { root: null, threshold: 0 },
+    );
 
-    update();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    mobileMq.addEventListener('change', update);
-    window.addEventListener('resize', onScroll, { passive: true });
+    observer.observe(sentinel);
+
+    mobileMq.addEventListener('change', () => {
+      const rect = sentinel.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      apply(!inView);
+    });
   }
 
   initHubSearch();
   initTopics();
-  initScrollCta();
+  initProductStickyCtas();
   document.addEventListener('astro:page-load', () => {
     initHubSearch();
     initTopics();
-    initScrollCta();
+    initProductStickyCtas();
   });
 </script>
