@@ -58,7 +58,8 @@ const groups = buildSiteMobileMenu(buildBrandNav(publishedProducts));
     if (!menu || menu.dataset.bound === 'true') return;
     menu.dataset.bound = 'true';
 
-    const panel = menu.querySelector<HTMLElement>('[data-site-menu-panel]');
+    const root = menu;
+    const panel = root.querySelector<HTMLElement>('[data-site-menu-panel]');
     let lastFocus: HTMLElement | null = null;
 
     function setExpanded(open: boolean) {
@@ -71,32 +72,32 @@ const groups = buildSiteMobileMenu(buildBrandNav(publishedProducts));
     }
 
     function closeMenu() {
-      if (menu.hidden) return;
-      menu.hidden = true;
-      menu.classList.remove('is-open');
+      if (root.hidden) return;
+      root.hidden = true;
+      root.classList.remove('is-open');
       document.body.classList.remove('site-menu-open');
       setExpanded(false);
       lastFocus?.focus();
     }
 
     function openMenu(trigger?: HTMLElement) {
-      if (!menu.hidden) return;
-      document.querySelectorAll('[data-header-search].is-open').forEach((root) => {
-        root.classList.remove('is-open');
-        root.querySelector('[data-search-toggle]')?.setAttribute('aria-expanded', 'false');
-        root.querySelector('[data-search-results]')?.classList.add('hidden');
+      if (!root.hidden) return;
+      document.querySelectorAll('[data-header-search].is-open').forEach((searchRoot) => {
+        searchRoot.classList.remove('is-open');
+        searchRoot.querySelector('[data-search-toggle]')?.setAttribute('aria-expanded', 'false');
+        searchRoot.querySelector('[data-search-results]')?.classList.add('hidden');
       });
       lastFocus = trigger ?? (document.activeElement as HTMLElement | null);
-      menu.hidden = false;
-      requestAnimationFrame(() => menu.classList.add('is-open'));
+      root.hidden = false;
+      requestAnimationFrame(() => root.classList.add('is-open'));
       document.body.classList.add('site-menu-open');
       setExpanded(true);
-      const closeBtn = menu.querySelector<HTMLElement>('[data-site-menu-close]');
+      const closeBtn = root.querySelector<HTMLElement>('[data-site-menu-close]');
       closeBtn?.focus();
     }
 
     function toggleMenu(trigger?: HTMLElement) {
-      if (menu.hidden) openMenu(trigger);
+      if (root.hidden) openMenu(trigger);
       else closeMenu();
     }
 
@@ -107,14 +108,14 @@ const groups = buildSiteMobileMenu(buildBrandNav(publishedProducts));
       toggleMenu(toggle as HTMLElement);
     });
 
-    menu.querySelector('[data-site-menu-close]')?.addEventListener('click', closeMenu);
+    root.querySelector('[data-site-menu-close]')?.addEventListener('click', closeMenu);
 
-    menu.querySelectorAll('[data-site-menu-link]').forEach((link) => {
+    root.querySelectorAll('[data-site-menu-link]').forEach((link) => {
       link.addEventListener('click', closeMenu);
     });
 
     document.addEventListener('keydown', (event) => {
-      if (menu.hidden) return;
+      if (root.hidden) return;
       if (event.key === 'Escape') {
         event.preventDefault();
         closeMenu();
