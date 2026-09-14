@@ -1,0 +1,95 @@
+---
+import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
+import HomeEyebrow from './HomeEyebrow.astro';
+import HomeIcon from './HomeIcon.astro';
+import HomeScore from './HomeScore.astro';
+
+interface Props {
+  data: DesktopHomepageData;
+}
+const { data } = Astro.props;
+const icons = {
+  overall: 'trophy',
+  chat: 'chat',
+  images: 'image',
+  video: 'video',
+  price: 'card',
+} as const;
+---
+
+<section class="home-v2__section" id="home-choose" aria-labelledby="home-choose-title">
+  <HomeEyebrow text="Decision shortcuts" />
+  <h2 id="home-choose-title" class="home-v2__h2">
+    Pick what <em>matters most</em> to you
+  </h2>
+  <p class="home-v2__intro">
+    Choose a priority to see which tested app scores highest for it — and jump straight into that ranking.
+  </p>
+  <div class="home-v2__selector" data-home-selector>
+    <div class="home-v2__selector-list" role="tablist" aria-label="What matters most?">
+      <p class="home-v2__selector-kicker">What matters most?</p>
+      {data.priorities.map((priority, index) => (
+        <button
+          type="button"
+          class:list={['home-v2__selector-opt', index === 0 && 'is-active']}
+          role="tab"
+          aria-selected={index === 0}
+          data-home-priority={priority.id}
+        >
+          <HomeIcon name={icons[priority.id]} size={20} />
+          <span>{priority.label}</span>
+          <HomeIcon name="chevron-right" size={16} />
+        </button>
+      ))}
+    </div>
+    <div class="home-v2__selector-result">
+      {data.priorities.map((priority, index) => (
+        <div
+          class:list={['home-v2__selector-panel', index === 0 && 'is-shown']}
+          data-home-panel={priority.id}
+        >
+          <HomeEyebrow text={priority.eyebrow} />
+          <div class="home-v2__selector-winner">
+            <img src={priority.winner.logo} alt="" width="72" height="72" class="home-v2__app-icon home-v2__app-icon--lg" />
+            <div>
+              <p class="home-v2__h3">{priority.winner.name}</p>
+              <p class="home-v2__award">
+                <HomeIcon name="crown" size={16} />
+                {priority.award}
+              </p>
+            </div>
+            <div class="home-v2__metric">
+              <p>
+                <b class={`is-${priority.winner.overall.tone}`} data-home-metric>{priority.winner.overall.value}</b>
+                <span>/10</span>
+              </p>
+              <small>{priority.metricLabel}</small>
+            </div>
+          </div>
+          <p class="home-v2__selector-blurb">{priority.winner.summary}</p>
+          <div class="home-v2__next-best">
+            <p>Next best</p>
+            {priority.runners.map((runner) => (
+              <div class="home-v2__runner">
+                <span>{runner.rank}</span>
+                <img src={runner.logo} alt="" width="28" height="28" class="home-v2__app-icon home-v2__app-icon--sm" />
+                <span>{runner.name}</span>
+                <HomeScore score={runner.score} size="s" />
+              </div>
+            ))}
+          </div>
+          <div class="home-v2__selector-actions">
+            <a class="home-v2__btn home-v2__btn--primary" href={priority.roundupHref}>
+              {priority.ctaLabel}
+              <HomeIcon name="arrow-right" size={18} />
+            </a>
+            <a class="home-v2__ghost" href={priority.winner.reviewUrl}>
+              Read {priority.winner.name} review
+              <HomeIcon name="arrow-right" size={16} />
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

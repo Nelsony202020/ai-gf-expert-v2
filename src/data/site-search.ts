@@ -28,6 +28,12 @@ const staticPages: SearchResult[] = [
     meta: 'Guides',
   },
   {
+    label: 'OurDream AI Guides',
+    href: '/guides/ourdream-ai/',
+    type: 'guide',
+    meta: 'Guides',
+  },
+  {
     label: 'How to Use OurDream AI Image Generator',
     href: '/guides/how-to-use-ourdream-ai-image-generator/',
     type: 'guide',
@@ -36,6 +42,18 @@ const staticPages: SearchResult[] = [
   {
     label: 'OurDream AI Image Prompt Guide',
     href: '/guides/ourdream-ai-image-prompt/',
+    type: 'guide',
+    meta: 'Guides',
+  },
+  {
+    label: 'OurDream AI Prompt Guide',
+    href: '/guides/ourdream-ai-prompt/',
+    type: 'guide',
+    meta: 'Guides',
+  },
+  {
+    label: 'OurDream AI Comics',
+    href: '/guides/ourdream-ai-comics/',
     type: 'guide',
     meta: 'Guides',
   },

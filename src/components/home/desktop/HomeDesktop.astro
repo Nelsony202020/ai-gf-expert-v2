@@ -1,0 +1,31 @@
+---
+import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
+import HomeDesktopHero from './HomeDesktopHero.astro';
+import HomeDesktopRanked from './HomeDesktopRanked.astro';
+import HomeDesktopSelector from './HomeDesktopSelector.astro';
+import HomeDesktopMethod from './HomeDesktopMethod.astro';
+import HomeDesktopScore from './HomeDesktopScore.astro';
+import HomeDesktopLatest from './HomeDesktopLatest.astro';
+import HomeDesktopTester from './HomeDesktopTester.astro';
+import HomeDesktopCta from './HomeDesktopCta.astro';
+import Footer from '../../Footer.astro';
+import HomeMotion from './HomeMotion.astro';
+
+interface Props {
+  data: DesktopHomepageData;
+}
+const { data } = Astro.props;
+---
+
+<div class="home-v2">
+  <HomeDesktopHero data={data} />
+  <HomeDesktopRanked data={data} />
+  <HomeDesktopSelector data={data} />
+  <HomeDesktopMethod data={data} />
+  <HomeDesktopScore data={data} />
+  <HomeDesktopLatest data={data} />
+  <HomeDesktopTester data={data} />
+  <HomeDesktopCta data={data} />
+  <Footer />
+  <HomeMotion />
+</div>

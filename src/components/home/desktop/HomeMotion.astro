@@ -1,0 +1,198 @@
+<script>
+  function prefersReducedMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function canUsePointerGlow() {
+    return window.matchMedia('(hover: hover) and (pointer: fine)').matches && !prefersReducedMotion();
+  }
+
+  function tweenNumber(el: HTMLElement, from: number, to: number, duration: number) {
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const value = from + (to - from) * eased;
+      el.textContent = value.toFixed(1);
+      if (t < 1) requestAnimationFrame(step);
+      else el.textContent = to.toFixed(1);
+    };
+    requestAnimationFrame(step);
+  }
+
+  function animateCounts(root: HTMLElement) {
+    if (prefersReducedMotion()) return;
+    root.querySelectorAll<HTMLElement>('[data-home-count]').forEach((el) => {
+      const to = Number(el.dataset.homeCount);
+      if (!Number.isFinite(to)) return;
+      tweenNumber(el, 0, to, 700);
+    });
+  }
+
+  function initHeroGlow() {
+    const hero = document.querySelector<HTMLElement>('[data-home-hero]');
+    if (!hero || hero.dataset.glowBound === 'true') return;
+    hero.dataset.glowBound = 'true';
+    if (!canUsePointerGlow()) return;
+
+    let tx = 0.68;
+    let ty = 0.36;
+    let cx = tx;
+    let cy = ty;
+    let visible = false;
+    let raf = 0;
+
+    const setVars = () => {
+      hero.style.setProperty('--mx', `${(cx * 100).toFixed(2)}%`);
+      hero.style.setProperty('--my', `${(cy * 100).toFixed(2)}%`);
+    };
+
+    const tick = () => {
+      cx += (tx - cx) * 0.12;
+      cy += (ty - cy) * 0.12;
+      setVars();
+      const still = Math.abs(tx - cx) < 0.0008 && Math.abs(ty - cy) < 0.0008;
+      if (!still || visible) raf = requestAnimationFrame(tick);
+      else raf = 0;
+    };
+
+    const start = () => {
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+
+    hero.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const r = hero.getBoundingClientRect();
+      tx = (e.clientX - r.left) / r.width;
+      ty = (e.clientY - r.top) / r.height;
+      if (!visible) {
+        visible = true;
+        hero.classList.add('is-glowing');
+      }
+      start();
+    });
+
+    hero.addEventListener('pointerleave', () => {
+      visible = false;
+      hero.classList.remove('is-glowing');
+    });
+  }
+
+  function revealOnce(root: HTMLElement) {
+    if (prefersReducedMotion()) {
+      root.classList.add('is-inview');
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const el = entry.target as HTMLElement;
+          el.classList.add('is-inview');
+          animateCounts(el);
+          io.unobserve(el);
+        }
+      },
+      { threshold: 0.28, rootMargin: '0px 0px -8% 0px' },
+    );
+    io.observe(root);
+  }
+
+  function initReveals() {
+    document.querySelectorAll<HTMLElement>('[data-home-reveal]').forEach((el) => {
+      if (el.dataset.revealBound === 'true') return;
+      el.dataset.revealBound = 'true';
+      revealOnce(el);
+    });
+  }
+
+  function initSelectorMotion() {
+    const root = document.querySelector<HTMLElement>('[data-home-selector]');
+    if (!root || root.dataset.motionBound === 'true') return;
+    root.dataset.motionBound = 'true';
+
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-home-priority]'));
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-home-panel]'));
+    let currentScore = Number(root.querySelector<HTMLElement>('.is-shown [data-home-metric]')?.textContent) || 0;
+
+    function activate(id: string) {
+      buttons.forEach((btn) => {
+        const on = btn.dataset.homePriority === id;
+        btn.classList.toggle('is-active', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      panels.forEach((panel) => {
+        panel.classList.toggle('is-shown', panel.dataset.homePanel === id);
+      });
+      const metric = root.querySelector<HTMLElement>('.is-shown [data-home-metric]');
+      if (metric) {
+        const next = Number(metric.textContent);
+        if (Number.isFinite(next) && !prefersReducedMotion()) {
+          tweenNumber(metric, currentScore, next, 220);
+          currentScore = next;
+        } else if (Number.isFinite(next)) {
+          currentScore = next;
+        }
+      }
+    }
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.homePriority;
+        if (!id) return;
+        activate(id);
+      });
+    });
+  }
+
+  function initMethodVideo() {
+    const wrap = document.querySelector<HTMLElement>('[data-home-video-wrap]');
+    const video = document.querySelector<HTMLVideoElement>('[data-home-video-el]');
+    const fallback = document.querySelector<HTMLImageElement>('[data-home-video-fallback]');
+    if (!wrap || !video || wrap.dataset.bound === 'true') return;
+    wrap.dataset.bound = 'true';
+
+    let sourceAttached = false;
+    const enableFallback = () => {
+      video.hidden = true;
+      if (fallback) fallback.hidden = false;
+    };
+    const ensureSource = () => {
+      const src = video.dataset.src;
+      if (!src || sourceAttached) return;
+      const source = document.createElement('source');
+      source.src = src;
+      source.type = 'video/mp4';
+      video.appendChild(source);
+      video.load();
+      sourceAttached = true;
+    };
+    const startPlayback = () => {
+      ensureSource();
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
+      void video.play().catch(enableFallback);
+    };
+    video.addEventListener('error', enableFallback);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.some((entry) => entry.isIntersecting);
+        if (visible) startPlayback();
+        else if (!video.hidden) video.pause();
+      },
+      { threshold: 0.25, rootMargin: '80px 0px' },
+    );
+    observer.observe(wrap);
+  }
+
+  function init() {
+    initHeroGlow();
+    initReveals();
+    initSelectorMotion();
+    initMethodVideo();
+  }
+
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>

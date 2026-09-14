@@ -3,6 +3,8 @@ import { isGuideSubpage } from './paths';
 
 assert.equal(isGuideSubpage('/guides'), false);
 assert.equal(isGuideSubpage('/guides/'), false);
+assert.equal(isGuideSubpage('/guides/ourdream-ai'), false);
+assert.equal(isGuideSubpage('/guides/ourdream-ai/'), false);
 assert.equal(isGuideSubpage('/guides/ourdream-ai-prompt'), true);
 assert.equal(isGuideSubpage('/guides/ourdream-ai-prompt/'), true);
 assert.equal(isGuideSubpage('/guides/preview'), true);

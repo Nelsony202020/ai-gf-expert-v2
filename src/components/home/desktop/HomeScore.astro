@@ -1,0 +1,28 @@
+---
+import type { HomeScoreChip } from '../../../lib/home/loadDesktopHomepage';
+
+interface Props {
+  score: HomeScoreChip;
+  size?: 's' | 'm' | 'l' | 'xl';
+  suffix?: boolean;
+}
+const { score, size = 'm', suffix = true } = Astro.props;
+---
+
+{
+  size === 's' ? (
+    <span class={`home-v2__chip home-v2__chip--${score.tone}`}>{score.value}</span>
+  ) : size === 'l' || size === 'xl' ? (
+    <div class={`home-v2__dial home-v2__dial--${size} home-v2__dial--${score.tone}`} style={`--home-dial-to: ${Number(score.value) * 36}deg`}>
+      <span class="home-v2__dial-stack">
+        <span class="home-v2__dial-value" data-home-count={size === 'xl' ? score.value : undefined}>{score.value}</span>
+        {size === 'xl' && <span class="home-v2__dial-den">/10</span>}
+      </span>
+    </div>
+  ) : (
+    <span class={`home-v2__pill home-v2__pill--${score.tone}`}>
+      <b>{score.value}</b>
+      {suffix && <span>/10</span>}
+    </span>
+  )
+}

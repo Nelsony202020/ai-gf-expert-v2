@@ -125,6 +125,14 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
   });
 
   push({
+    title: 'OurDream AI Guides',
+    url: '/guides/ourdream-ai',
+    contentType: 'hub',
+    sitemapSection: 'guides',
+    parentCategory: 'guides',
+  });
+
+  push({
     title: 'How to Choose an AI Girlfriend App',
     url: `/guides/${buyingGuideSlug}`,
     contentType: 'guide',
