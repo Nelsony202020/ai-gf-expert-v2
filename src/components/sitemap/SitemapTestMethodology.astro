@@ -1,13 +1,11 @@
 ---
-import type { TestCategoryNode } from '../../lib/test-framework';
 import {
-  countScoredTestsInCategory,
   splitTestCategoriesTwoColumns,
   testMainMethodologyLinks,
   testSupportingLinks,
 } from '../../lib/sitemap';
 import { getTestCategories } from '../../lib/test-framework';
-import { getTooltipCategoryIconLocal } from '../../lib/tooltip-category-icons';
+import SitemapTestCategory from './SitemapTestCategory.astro';
 
 interface Props {
   stats: {
@@ -22,81 +20,6 @@ const { stats } = Astro.props;
 
 const categories = getTestCategories();
 const [leftCategories, rightCategories] = splitTestCategoriesTwoColumns(categories);
-
-function testCountLabel(count: number) {
-  return `${count} ${count === 1 ? 'test' : 'tests'}`;
-}
-
-function renderCategory(cat: TestCategoryNode) {
-  const testCount = countScoredTestsInCategory(cat);
-  const iconSrc = getTooltipCategoryIconLocal(cat.key);
-
-  return (
-    <div class="sitemap-test-cat" data-sitemap-test-cat>
-      <button
-        type="button"
-        class="sitemap-test-cat__head"
-        aria-expanded="false"
-        aria-controls={`sitemap-cat-panel-${cat.key}`}
-        id={`sitemap-cat-btn-${cat.key}`}
-      >
-        <span class="sitemap-test-cat__icon-wrap">
-          <img src={iconSrc} alt="" width="28" height="28" class="sitemap-test-cat__icon" loading="lazy" decoding="async" />
-        </span>
-        <span class="sitemap-test-cat__meta">
-          <span class="sitemap-test-cat__name">{cat.name}</span>
-          <span class="sitemap-test-cat__count">{testCountLabel(testCount)}</span>
-        </span>
-        <span class="material-symbols-outlined sitemap-test-cat__chevron" aria-hidden="true">
-          expand_more
-        </span>
-      </button>
-
-      <div
-        class="sitemap-test-cat__panel"
-        id={`sitemap-cat-panel-${cat.key}`}
-        role="region"
-        aria-labelledby={`sitemap-cat-btn-${cat.key}`}
-        hidden
-      >
-        {
-          cat.subscores.map((sub) => (
-            <div class="sitemap-test-sub" data-sitemap-test-sub>
-              <div class="sitemap-test-sub__row">
-                <a href={sub.href} class="sitemap-test-sub__link">
-                  {sub.name}
-                </a>
-                <button
-                  type="button"
-                  class="sitemap-test-sub__toggle"
-                  aria-expanded="false"
-                  aria-controls={`sitemap-sub-tests-${cat.key}-${sub.slug}`}
-                  aria-label={`Show scored tests for ${sub.name}`}
-                >
-                  <span class="material-symbols-outlined" aria-hidden="true">
-                    chevron_right
-                  </span>
-                </button>
-              </div>
-              <ul class="sitemap-test-sub__tests" id={`sitemap-sub-tests-${cat.key}-${sub.slug}`} hidden>
-                {
-                  sub.contributors.map((c) => (
-                    <li>
-                      <a href={c.href} class="sitemap-test-sub__test-link">
-                        <span>{c.label}</span>
-                        <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
-                      </a>
-                    </li>
-                  ))
-                }
-              </ul>
-            </div>
-          ))
-        }
-      </div>
-    </div>
-  );
-}
 ---
 
 <section class="sitemap-methodology" aria-labelledby="sitemap-methodology-title">
@@ -161,10 +84,10 @@ function renderCategory(cat: TestCategoryNode) {
 
     <div class="sitemap-methodology__directory-cols">
       <div class="sitemap-methodology__directory-col">
-        {leftCategories.map((cat) => renderCategory(cat))}
+        {leftCategories.map((cat) => <SitemapTestCategory category={cat} />)}
       </div>
       <div class="sitemap-methodology__directory-col">
-        {rightCategories.map((cat) => renderCategory(cat))}
+        {rightCategories.map((cat) => <SitemapTestCategory category={cat} />)}
       </div>
     </div>
   </div>
