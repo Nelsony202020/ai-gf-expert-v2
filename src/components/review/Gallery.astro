@@ -1,5 +1,6 @@
 ---
 import type { Product } from '../../data/products';
+import { getAuthor } from '../../data/authors';
 import { heroGalleryImages, featuredHeroImage } from '../../lib/review-shell';
 
 interface Props {
@@ -10,6 +11,9 @@ const { product } = Astro.props;
 const images = heroGalleryImages(product);
 const cover = featuredHeroImage(product);
 const videoUrl = product.videoReview?.embedUrl;
+const videoAuthor =
+  getAuthor(product.authors[0]?.slug || 'herman-carter') ?? getAuthor('herman-carter');
+const videoAuthorAvatar = videoAuthor?.avatar || '/brand/herman-main-icon.svg';
 ---
 
 {cover && (
@@ -51,7 +55,13 @@ const videoUrl = product.videoReview?.embedUrl;
           aria-label="Watch full video review"
         >
           <span class="video-review-trigger__mascot" aria-hidden="true">
-            <img src="/images/brand/herman-carter.webp" alt="" width="42" height="42" />
+            <img
+              src={videoAuthorAvatar}
+              alt=""
+              width="42"
+              height="42"
+              onerror="this.onerror=null;this.src='/brand/herman-main-icon.svg'"
+            />
             <span class="video-review-trigger__play" aria-hidden="true">
               <svg width="9" height="10" viewBox="0 0 9 10" fill="none">
                 <path d="M8 4.5 1.25 8.4V.6 4.5Z" fill="#fff"/>
