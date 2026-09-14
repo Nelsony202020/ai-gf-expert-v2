@@ -314,7 +314,25 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
     const sentinel = document.querySelector('[data-hub-product-sentinel]');
     const mobileDock = document.querySelector('[data-hub-scroll-cta]');
     const desktopBar = document.querySelector('[data-hub-sticky-bar]');
-    if (!sentinel || sentinel.dataset.stickyBound === 'true') return;
+    if (!sentinel) return;
+
+    const alreadyBound = sentinel.dataset.stickyBound === 'true';
+    if (alreadyBound) {
+      const rect = sentinel.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      const mobileMq = window.matchMedia('(max-width: 767px)');
+      const showSticky = !inView;
+      if (mobileMq.matches) {
+        if (mobileDock) {
+          mobileDock.classList.toggle('is-visible', showSticky);
+          mobileDock.setAttribute('aria-hidden', showSticky ? 'false' : 'true');
+        }
+      } else if (desktopBar) {
+        desktopBar.classList.toggle('is-visible', showSticky);
+        desktopBar.setAttribute('aria-hidden', showSticky ? 'false' : 'true');
+      }
+      return;
+    }
     sentinel.dataset.stickyBound = 'true';
 
     const mobileMq = window.matchMedia('(max-width: 767px)');

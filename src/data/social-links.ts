@@ -1,6 +1,13 @@
+/** Append YouTube subscribe confirmation for channel links. */
+export function youtubeSubscribeUrl(channelUrl: string): string {
+  const url = new URL(channelUrl);
+  url.searchParams.set('sub_confirmation', '1');
+  return url.toString();
+}
+
 /** Canonical public profiles for AI Girlfriend Expert (brand). */
 export const BRAND_SOCIAL = {
-  youtube: 'https://www.youtube.com/@ai-girlfriend-expert',
+  youtube: youtubeSubscribeUrl('https://www.youtube.com/@ai-girlfriend-expert'),
   instagram: 'https://www.instagram.com/ai.girlfriend.expert/',
   tiktok: 'https://www.tiktok.com/@ai.girlfriend.expert',
   helpDeskYoutube: 'https://www.youtube.com/@ai-girlfriend-help-desk?sub_confirmation=1',

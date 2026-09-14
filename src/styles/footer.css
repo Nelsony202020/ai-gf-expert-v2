@@ -340,9 +340,11 @@ a.site-footer__channel:hover .site-footer__channel-ext {
   }
 
   .site-footer__signoff {
-    margin-top: 0.85rem;
-    padding-top: 0.85rem;
-    font-size: 1.05rem;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    font-size: clamp(1.35rem, 5vw, 1.75rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
   }
 
   .site-footer__bottom {

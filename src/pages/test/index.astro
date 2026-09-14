@@ -60,7 +60,11 @@ const jsonLdGraph = buildWebPageSchema({
   canonical={canonical}
 >
   <JsonLd slot="head" graph={jsonLdGraph} />
-  <Header />
+  <Header>
+    <div id="test-hub-top" class="site-ink-hero__body--wide">
+      <TestHubHeroIntro meta={testMethodologyPageMeta} metrics={trustMetrics} shareUrl={canonical} />
+    </div>
+  </Header>
   <StandardContentLayout pageClass="test-hub-page">
     <TestHubSidebar
       slot="sidebar"
@@ -68,10 +72,6 @@ const jsonLdGraph = buildWebPageSchema({
       tocSections={tocSections}
       collapsibleToc
     />
-
-    <div id="test-hub-top" slot="hero" class="standard-content-hero test-hub-hero">
-      <TestHubHeroIntro meta={testMethodologyPageMeta} metrics={trustMetrics} shareUrl={canonical} />
-    </div>
 
     <article class="test-hub__main">
       <section id="how-scores-work" class="test-hub__section">
