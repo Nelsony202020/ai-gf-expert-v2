@@ -430,8 +430,11 @@
 }
 
 .guide-hub__start-row:hover {
-  background: color-mix(in srgb, var(--hub-card) 70%, transparent);
-  border-color: color-mix(in srgb, var(--hub-pink) 38%, var(--hub-hairline));
+  background: color-mix(in srgb, var(--hub-pink) 5%, var(--hub-card));
+  border-bottom-color: var(--hub-hairline);
+  border-left-color: transparent;
+  border-right-color: transparent;
+  border-top-color: transparent;
   box-shadow: 0 10px 24px rgb(20 19 23 / 6%);
   transform: translateY(-2px);
 }
@@ -630,9 +633,8 @@
 }
 
 .guide-hub__article-row:hover {
-  background: color-mix(in srgb, var(--hub-primary) 3.5%, transparent);
+  background: color-mix(in srgb, var(--hub-pink) 6%, var(--hub-card));
   color: var(--hub-primary);
-  box-shadow: inset 3px 0 0 var(--hub-pink);
 }
 
 .guide-hub__article-row:hover .home-v2__icon {
@@ -844,7 +846,11 @@ html[data-theme='dark'] .guide-hub__search-item.is-active {
 }
 
 html[data-theme='dark'] .guide-hub__start-row:hover {
-  background: color-mix(in srgb, #fff 3.5%, var(--hub-card));
+  background: color-mix(in srgb, var(--hub-pink) 10%, var(--hub-card));
+  border-bottom-color: var(--hub-hairline);
+  border-left-color: transparent;
+  border-right-color: transparent;
+  border-top-color: transparent;
   box-shadow: 0 12px 28px rgb(0 0 0 / 28%);
 }
 
@@ -855,5 +861,5 @@ html[data-theme='dark'] .guide-hub__topic:hover {
 }
 
 html[data-theme='dark'] .guide-hub__article-row:hover {
-  background: color-mix(in srgb, #fff 3.5%, transparent);
+  background: color-mix(in srgb, var(--hub-pink) 10%, var(--hub-card));
 }
