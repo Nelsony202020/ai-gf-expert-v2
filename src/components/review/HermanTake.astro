@@ -10,13 +10,21 @@ interface Props {
 const { author, quote } = Astro.props;
 const trimmed = quote.trim();
 if (!trimmed) return;
+const avatarSrc = author.avatar || '/brand/herman-main-icon.svg';
 ---
 
 <div class="rs-herman">
   <span class="rs-herman-bar" aria-hidden="true"></span>
   <div class="rs-herman-body">
     <div class="rs-herman-head">
-      <img class="rs-herman-avatar" src={author.avatar} alt="" width="36" height="36" />
+      <img
+        class="rs-herman-avatar"
+        src={avatarSrc}
+        alt=""
+        width="36"
+        height="36"
+        onerror="this.onerror=null;this.src='/brand/herman-main-icon.svg'"
+      />
       <div>
         <p class="rs-herman-title">Herman’s take</p>
         <p class="rs-herman-role">{author.name} · Lead reviewer</p>
