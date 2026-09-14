@@ -1,6 +1,6 @@
 ---
-import { Icon } from "astro-icon/components";
-import type { HtmlSitemapTestCategory } from "@/types/sitemap";
+import type { HtmlSitemapTestCategory } from "../../types/sitemap";
+import { testCategoryIconHtml } from "../../lib/test-category-icons";
 
 interface Props {
   category: HtmlSitemapTestCategory;
@@ -17,9 +17,7 @@ const { category } = Astro.props;
     aria-expanded="false"
     aria-controls={`si-cat-panel-${category.slug}`}
   >
-    <span class="si-cat-icon" aria-hidden="true">
-      <Icon name={category.icon} />
-    </span>
+    <span class="si-cat-icon" aria-hidden="true" set:html={testCategoryIconHtml(category.slug)} />
     <span class="si-cat-name">{category.label}</span>
     <span class="si-cat-count">{category.testCount} tests</span>
     <svg class="si-cat-chev" viewBox="0 0 9.5 5.5" fill="none" aria-hidden="true">

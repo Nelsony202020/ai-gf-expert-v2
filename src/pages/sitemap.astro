@@ -1,10 +1,13 @@
 ---
-import Layout from "@/layouts/Layout.astro";
-import { SITE_NAME } from "@/data/site";
-import { getHtmlSitemapPage, buildSitemapPageSearchIndex } from "@/lib/sitemap";
-import SitemapExploreColumn from "@/components/sitemap/SitemapExploreColumn.astro";
-import SitemapTestMethodology from "@/components/sitemap/SitemapTestMethodology.astro";
-import SitemapResourcesLegal from "@/components/sitemap/SitemapResourcesLegal.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { organizationConfig } from "../data/organization";
+import { getHtmlSitemapPage, buildSitemapPageSearchIndex } from "../lib/sitemap";
+import SitemapExploreColumn from "../components/sitemap/SitemapExploreColumn.astro";
+import SitemapTestMethodology from "../components/sitemap/SitemapTestMethodology.astro";
+import SitemapResourcesLegal from "../components/sitemap/SitemapResourcesLegal.astro";
+import "../styles/sitemap.css";
 
 export const prerender = false;
 
@@ -20,10 +23,11 @@ const chips = [
 ];
 ---
 
-<Layout
-  title={`Site Index | ${SITE_NAME}`}
+<BaseLayout
+  title={`Site Index | ${organizationConfig.name}`}
   description="Find every review, guide, test and resource we publish."
 >
+  <Header />
   <div class="si-page">
     <section class="si-hero" aria-labelledby="si-title">
       <div class="si-hero-inner">
@@ -110,14 +114,15 @@ const chips = [
       </div>
     </div>
   </div>
-</Layout>
+  <Footer />
+</BaseLayout>
 
 <script is:inline define:vars={{ searchHitsJson }}>
   window.__SI_HITS__ = JSON.parse(searchHitsJson);
 </script>
 <script>
-  import type { HtmlSitemapSearchHit } from "@/types/sitemap";
-  import { filterSitemapSearchHits } from "@/lib/sitemap-search";
+      import type { HtmlSitemapSearchHit } from "../types/sitemap";
+      import { filterSitemapSearchHits } from "../lib/sitemap-search";
 
   const hits = (window as unknown as { __SI_HITS__?: HtmlSitemapSearchHit[] }).__SI_HITS__ ?? [];
   const input = document.querySelector<HTMLInputElement>("[data-search-input]");

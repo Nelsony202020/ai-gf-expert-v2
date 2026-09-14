@@ -1,4 +1,4 @@
 export {
   buildSitemapPageSearchIndex,
   filterSitemapSearchHits,
-} from "@/lib/sitemap";
+} from "./sitemap";
