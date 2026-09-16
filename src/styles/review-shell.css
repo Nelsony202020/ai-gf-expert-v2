@@ -231,16 +231,31 @@
 .rs-hero-media {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
+  border: 1px solid var(--rs-line);
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--rs-card);
 }
 
 .rs-gallery {
   position: relative;
   width: 100%;
   height: 188px;
-  border-radius: 20px;
+  border-radius: 0;
   overflow: hidden;
   background: #efefed;
+}
+
+.rs-gallery .review-hero-media-open {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  overflow: hidden;
 }
 
 .rs-gallery-img {
@@ -274,92 +289,70 @@
 }
 
 .rs-score-card {
-  border: 1px solid var(--rs-line);
-  border-radius: 20px;
+  border: 0;
+  border-radius: 0;
   background: var(--rs-card);
-  padding: 16px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  min-width: 0;
 }
 
-.rs-score-head {
+.rs-score-banner {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 16px;
+  background: var(--rs-green);
+  color: #fff;
 }
 
-.rs-ring {
-  --ring-track: #e6e6e3;
-  --ring-color: var(--rs-green);
-  position: relative;
-  width: 46px;
-  height: 46px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: conic-gradient(
-    from -90deg,
-    var(--ring-color) var(--ring-deg, 0deg),
-    var(--ring-track) 0
-  );
+.rs-score-banner-num {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  line-height: 24px;
+  color: #fff;
 }
 
-.rs-ring::before {
-  content: '';
-  position: absolute;
-  inset: 5px;
-  border-radius: 50%;
-  background: var(--rs-card);
+.rs-score-banner-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+  color: #fff;
 }
 
-.rs-ring-num {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
+.rs-score-banner .rt-tooltip-trigger {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: -0.4px;
-  line-height: 16px;
-  color: var(--rs-ink);
+  width: 32px;
+  height: 32px;
+  margin: -6px -4px -6px 0;
+  color: #fff;
+  flex-shrink: 0;
 }
 
-.rs-score-copy {
-  min-width: 0;
-  flex: 1;
+.rs-score-banner-info {
+  filter: brightness(0) invert(1);
+}
+
+.rs-score-body {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  align-items: flex-start;
-}
-
-.rs-score-label-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.rs-score-label {
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 22px;
-  color: var(--rs-ink);
+  padding: 14px 16px 16px;
 }
 
 .rs-score-summary {
   margin: 0;
   font-size: 14px;
   line-height: 20px;
-  color: var(--rs-muted);
-}
-
-.rs-score-rule {
-  height: 1px;
-  background: var(--rs-line);
+  color: var(--rs-ink);
 }
 
 .rs-score-toggle {
@@ -367,6 +360,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
+  margin-top: 8px;
   padding: 12px 0;
   font-size: 14px;
   font-weight: 600;
@@ -374,6 +368,7 @@
   color: var(--rs-ink);
   background: none;
   border: 0;
+  border-top: 1px solid var(--rs-line);
   cursor: pointer;
   text-align: left;
 }
@@ -508,16 +503,22 @@
   gap: 8px;
   width: 100%;
   min-height: 44px;
-  padding: 10px 0;
+  padding: 10px 4px;
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;
   color: var(--rs-pink);
   text-decoration: none;
+  border-radius: 12px;
 }
 
 .rs-featured-in:hover {
   color: var(--rs-pink-deep);
+  background: rgba(219, 39, 119, 0.04);
+}
+
+.rs-featured-in:hover .rs-featured-in-kicker {
+  color: var(--rs-muted);
 }
 
 .rs-featured-in-ico,
@@ -530,7 +531,7 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -885,6 +886,10 @@ ul.rs-list {
     flex-direction: row;
     align-items: flex-start;
     gap: 24px;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
   }
 
   .rs-gallery {
@@ -893,6 +898,12 @@ ul.rs-list {
     max-width: none;
     width: auto;
     height: 429px;
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .rs-gallery .review-hero-media-open {
+    border-radius: 20px;
   }
 
   .rs-gallery-enlarge-label {
@@ -902,34 +913,47 @@ ul.rs-list {
   .rs-score-card {
     width: 384px;
     flex-shrink: 0;
-    padding: 18px 24px;
-    gap: 10px;
+    border: 1px solid var(--rs-line);
+    border-radius: 20px;
+    overflow: hidden;
+    align-self: stretch;
   }
 
   .rs-score-card.is-expanded {
-    padding-bottom: 18px;
+    padding-bottom: 0;
   }
 
-  .rs-ring {
-    width: 56px;
-    height: 56px;
+  .rs-score-banner {
+    min-height: 52px;
+    padding: 12px 20px;
+    gap: 12px;
   }
 
-  .rs-ring-num {
-    font-size: 18px;
-    letter-spacing: -0.6px;
-    line-height: 18px;
+  .rs-score-banner-num {
+    font-size: 24px;
+    line-height: 26px;
   }
 
-  .rs-score-label {
+  .rs-score-banner-label {
     font-size: 16px;
-    font-weight: 700;
-    line-height: 24px;
+    line-height: 22px;
+  }
+
+  .rs-score-body {
+    padding: 16px 20px 18px;
+    gap: 8px;
+    flex: 1;
   }
 
   .rs-score-summary {
     font-size: 14px;
     line-height: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rs-line);
+  }
+
+  .rs-cta-wrap {
+    margin-top: auto;
   }
 
   .rs-score-toggle {
@@ -948,7 +972,7 @@ ul.rs-list {
   }
 
   .rs-score-ico {
-    display: inline-flex;
+    display: none;
   }
 
   .rs-badge {
@@ -956,8 +980,19 @@ ul.rs-list {
   }
 
   .rs-featured-in {
+    display: inline-flex;
+    width: auto;
+    max-width: 100%;
+    align-self: flex-start;
+    gap: 8px;
     min-height: 40px;
-    padding: 8px 0 4px;
+    padding: 8px 12px;
+    border: 1px solid var(--rs-line);
+    background: #fff;
+  }
+
+  .rs-featured-in-copy {
+    flex: 0 1 auto;
   }
 
   .rs-featured-in-kicker,
@@ -1218,6 +1253,8 @@ ul.rs-list {
 /* Hide legacy review-page chrome that fights the light Figma canvas */
 .review-page .review-hero-gallery {
   display: block;
+  border-radius: inherit;
+  overflow: hidden;
 }
 
 .review-page .gallery-enlarge-hint,

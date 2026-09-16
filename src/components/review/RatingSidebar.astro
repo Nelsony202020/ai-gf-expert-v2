@@ -1,7 +1,7 @@
 ---
 import type { Product } from '../../data/products';
 import { fmtScore } from '../../lib/scores';
-import { getScoreBadgeColor, getScoreRingColor, getScoreRingDeg, categoryRowIcon } from '../../lib/review-shell';
+import { getScoreBadgeColor, categoryRowIcon } from '../../lib/review-shell';
 import AffiliateLink from '../ui/AffiliateLink.astro';
 import OverallScoreTooltip from './tooltips/OverallScoreTooltip.astro';
 import CategoryScoreTooltip from './tooltips/CategoryScoreTooltip.astro';
@@ -14,8 +14,7 @@ interface Props {
 const { product } = Astro.props;
 const categories = product.categories;
 const overall = product.overallScore;
-const ringDeg = getScoreRingDeg(overall);
-const ringColor = getScoreRingColor(overall);
+const headerColor = getScoreBadgeColor(overall);
 const overallLabel = product.tagline || product.overallSummary || '';
 const catCount = categories.length;
 
@@ -33,62 +32,55 @@ ICONS['credit-card'] = ICONS.credit;
 ---
 
 <div class="rs-score-card">
-  <div class="rs-score-head">
-    <div class="rs-score-copy">
-      <div class="rs-score-label-row">
-        <span class="rs-score-label">Overall performance</span>
-        <OverallScoreTooltip product={product} />
-      </div>
-      {overallLabel && <p class="rs-score-summary">{overallLabel}</p>}
-    </div>
-    <div
-      class="rs-ring"
-      style={`--ring-deg: ${ringDeg}deg; --ring-color: ${ringColor}`}
-      aria-hidden="true"
-    >
-      <span class="rs-ring-num">{overall != null ? fmtScore(overall) : '—'}</span>
-    </div>
+  <div class="rs-score-banner" style={`background:${headerColor}`}>
+    <span class="rs-score-banner-num">{overall != null ? fmtScore(overall) : '—'}</span>
+    <span class="rs-score-banner-label">Overall performance</span>
+    <OverallScoreTooltip product={product}>
+      <ReviewIcon name="info" size={16} class="rs-score-banner-info" />
+    </OverallScoreTooltip>
   </div>
 
-  <div class="rs-score-rule" aria-hidden="true"></div>
+  <div class="rs-score-body">
+    {overallLabel && <p class="rs-score-summary">{overallLabel}</p>}
 
-  <button type="button" class="rs-score-toggle" data-score-toggle aria-expanded="false">
-    <span class="rs-score-toggle-label" data-score-toggle-label>View all {catCount} category scores</span>
-    <ReviewIcon name="chevron-down" size={18} class="rs-score-chevron" />
-  </button>
+    <button type="button" class="rs-score-toggle" data-score-toggle aria-expanded="false">
+      <span class="rs-score-toggle-label" data-score-toggle-label>View all {catCount} category scores</span>
+      <ReviewIcon name="chevron-down" size={18} class="rs-score-chevron" />
+    </button>
 
-  <div class="rs-score-rows" data-score-rows>
-    {categories.map((cat) => {
-      const score = cat.score;
-      const color = getScoreBadgeColor(score);
-      const iconKey = categoryRowIcon(cat.key);
-      return (
-        <button
-          type="button"
-          class="rs-score-row"
-          data-tab-link="ratings"
-          data-goto-category={cat.key}
-        >
-          <span class="rs-score-ico" set:html={ICONS[iconKey] || ICONS.sliders} />
-          <span class="rs-score-row-name">
-            {cat.name}
-            <CategoryScoreTooltip category={cat} />
-          </span>
-          <span class="rs-badge" style={`background:${color}`}>{score != null ? fmtScore(score) : '—'}</span>
-        </button>
-      );
-    })}
-  </div>
+    <div class="rs-score-rows" data-score-rows>
+      {categories.map((cat) => {
+        const score = cat.score;
+        const color = getScoreBadgeColor(score);
+        const iconKey = categoryRowIcon(cat.key);
+        return (
+          <button
+            type="button"
+            class="rs-score-row"
+            data-tab-link="ratings"
+            data-goto-category={cat.key}
+          >
+            <span class="rs-score-ico" set:html={ICONS[iconKey] || ICONS.sliders} />
+            <span class="rs-score-row-name">
+              {cat.name}
+              <CategoryScoreTooltip category={cat} />
+            </span>
+            <span class="rs-badge" style={`background:${color}`}>{score != null ? fmtScore(score) : '—'}</span>
+          </button>
+        );
+      })}
+    </div>
 
-  <div class="rs-cta-wrap">
-    <AffiliateLink href={product.affiliateUrl} class="rs-visit" data-review-hero-cta>
-      Visit {product.name}
-      <ReviewIcon name="arrow-up-right" size={18} />
-    </AffiliateLink>
-    <p class="rs-aff-note">
-      <ReviewIcon name="shield-check" size={14} />
-      Affiliate link · secure site · never affects scores
-    </p>
+    <div class="rs-cta-wrap">
+      <AffiliateLink href={product.affiliateUrl} class="rs-visit" data-review-hero-cta>
+        Visit {product.name}
+        <ReviewIcon name="arrow-up-right" size={18} />
+      </AffiliateLink>
+      <p class="rs-aff-note">
+        <ReviewIcon name="shield-check" size={14} />
+        Affiliate link · secure site · never affects scores
+      </p>
+    </div>
   </div>
 </div>
 
