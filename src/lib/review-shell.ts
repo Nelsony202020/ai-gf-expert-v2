@@ -274,7 +274,19 @@ export function getStaticFeaturedIn(productSlug: string): FeaturedIn[] {
 }
 
 export function resolveFeaturedIn(productSlug: string, items: FeaturedIn[]): FeaturedIn[] {
-  return items.length ? items : getStaticFeaturedIn(productSlug);
+  if (items.length) return items;
+  const fromRoundup = getStaticFeaturedIn(productSlug);
+  if (fromRoundup.length) return fromRoundup;
+  if (import.meta.env.DEV && productSlug === 'aura-ai') {
+    return [
+      {
+        title: 'Best AI Girlfriend Apps',
+        slug: 'ai-girlfriend',
+        position: 1,
+      },
+    ];
+  }
+  return [];
 }
 
 export const getScoreRingSweep = getScoreRingDeg;

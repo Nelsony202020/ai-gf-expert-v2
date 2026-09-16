@@ -104,6 +104,9 @@ ICONS['credit-card'] = ICONS.credit;
         const open = card?.classList.toggle('is-expanded');
         btn.setAttribute('aria-expanded', open ? 'true' : 'false');
         document.body.classList.toggle('rs-scores-expanded', Boolean(open));
+        document.querySelectorAll<HTMLElement>('[data-review-sticky-cta]').forEach((el) => {
+          el.hidden = Boolean(open);
+        });
         if (label) {
           label.textContent = open ? 'Hide category scores' : `View all ${count} category scores`;
         }
