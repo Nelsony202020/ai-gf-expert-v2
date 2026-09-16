@@ -260,14 +260,28 @@ function mapProduct(
   const mediaItems = productMediaItems(dbProduct);
   const reviewMediaById = buildMediaLookup(collectProductMediaRows(dbProduct));
 
+  const logoMediaUrl = resolveMediaUrl(dbProduct.logo);
+  const logo =
+    logoMediaUrl && isUsablePublicMediaUrl(logoMediaUrl)
+      ? logoMediaUrl
+      : fileFallback?.logo;
+
   const featuredMedia = dbProduct.featuredImage;
   const featuredUrl = resolveMediaUrl(featuredMedia);
+  const logoHeroFallback: GalleryImage | undefined = logo
+    ? {
+        full: logo,
+        thumb: logo,
+        alt: `${dbProduct.name} logo`,
+        mediaType: 'image',
+      }
+    : undefined;
   // Product-assigned hero art is always shown when it resolves — draft gating
   // applies to the general media library, not the explicit featuredImage link.
   const featuredImage: GalleryImage | undefined =
     featuredUrl && isUsablePublicMediaUrl(featuredUrl)
       ? { full: featuredUrl, thumb: featuredUrl, alt: featuredMedia?.altText ?? '', mediaType: 'image' }
-      : fileFallback?.featuredImage ?? fileFallback?.gallery?.[0];
+      : logoHeroFallback ?? fileFallback?.featuredImage ?? fileFallback?.gallery?.[0];
 
   const popArtMedia = dbProduct.secondaryLogo;
   const popArtUrl = resolveMediaUrl(popArtMedia);
@@ -369,12 +383,6 @@ function mapProduct(
   const methodologyVersion = snapshots[0]?.methodologyVersion ?? 'v3.1';
 
   const derivedOverview = deriveOverview(dbProduct, monthlyPriceLabel);
-
-  const logoMediaUrl = resolveMediaUrl(dbProduct.logo);
-  const logo =
-    logoMediaUrl && isUsablePublicMediaUrl(logoMediaUrl)
-      ? logoMediaUrl
-      : fileFallback?.logo;
 
   return {
     slug: dbProduct.slug,
