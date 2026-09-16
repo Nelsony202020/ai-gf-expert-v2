@@ -58,6 +58,7 @@ import { cdnAsset } from '../media/cdn';
 import { isPlaceholderImage, PUBLIC_HERO_FALLBACK } from '../media/optimize';
 import { buildGroupedContributors } from '../ratings/groupContributors';
 import type { Roundup, RoundupPick } from '../../data/roundups/ai-girlfriend';
+import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
 import { resolveRoundupPicks, enrichRoundupWithPicks, enrichPicksWithAtGlance, type RoundupEntryMeta } from './roundupPick';
 import { launchCompareDefaultIds } from './launchProducts';
 import { isDevReviewSlug } from './reviewDevProducts';
@@ -575,33 +576,53 @@ export interface FeaturedIn {
 
 /**
  * Internal relationships: which published roundups feature this product.
- * Rendered on review pages as "Also featured in: …".
+ * Rank on /best/ai-girlfriend comes from the same pick order as that page
+ * (live overall scores), not a stale publishedPosition on the entry.
  */
 export async function getProductFeaturedIn(productSlug: string): Promise<FeaturedIn[]> {
-  if (!isDbConfigured()) return [];
+  const items: FeaturedIn[] = [];
+  const fromBestPage = await getFeaturedInFromBestAiGirlfriend(productSlug);
+  if (fromBestPage) items.push(fromBestPage);
+
+  if (!isDbConfigured()) return items;
   try {
     const db = getDb();
     const { roundupEntries } = await (db.query as any)({
       roundupEntries: { $: {}, product: {}, roundup: {} },
     });
-    return (roundupEntries as any[])
+    const extras = (roundupEntries as any[])
       .filter(
         (e) =>
           e.included &&
           e.product?.slug === productSlug &&
           e.roundup?.status === 'published' &&
-          !e.roundup?.deletedAt,
+          !e.roundup?.deletedAt &&
+          e.roundup?.slug &&
+          e.roundup.slug !== 'ai-girlfriend',
       )
       .map((e) => ({
         title: e.roundup.title,
         slug: e.roundup.slug,
         position: e.publishedPosition ?? e.calculatedPosition ?? null,
         awardLabel: e.awardLabel ?? undefined,
-      }))
-      .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+      }));
+    items.push(...extras);
+    return items.sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
   } catch {
-    return [];
+    return items;
   }
+}
+
+/** Same pick order as the public /best/ai-girlfriend page in this environment. */
+async function getFeaturedInFromBestAiGirlfriend(productSlug: string): Promise<FeaturedIn | null> {
+  const { roundup } = await loadRoundupForPublic('ai-girlfriend', fileAiGirlfriendRoundup);
+  const idx = roundup.picks.findIndex((pick) => pick.slug === productSlug);
+  if (idx < 0) return null;
+  return {
+    title: roundup.title,
+    slug: roundup.slug,
+    position: idx + 1,
+  };
 }
 
 function mapRoundupEntries(entries: any[]): RoundupEntryMeta[] {

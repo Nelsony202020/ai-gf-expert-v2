@@ -34,11 +34,11 @@ export const VISIBLE_REVIEW_TABS: ReviewTabDef[] = [
   { id: REVIEW_TAB_IDS.ratings, label: 'Ratings & Tests', tocLabel: 'Ratings' },
   { id: REVIEW_TAB_IDS.review, label: 'Full Review', tocLabel: 'Review' },
   { id: REVIEW_TAB_IDS.pricing, label: 'Pricing' },
-  { id: REVIEW_TAB_IDS.alternatives, label: 'Alternatives' },
 ];
 
 export const HIDDEN_REVIEW_TABS: ReviewTabDef[] = [
   { id: HIDDEN_REVIEW_TAB_IDS.photos, label: 'Media', tocLabel: 'Photos' },
+  { id: REVIEW_TAB_IDS.alternatives, label: 'Alternatives' },
   { id: HIDDEN_REVIEW_TAB_IDS.marketData, label: 'Market Data' },
 ];
 
@@ -48,14 +48,10 @@ export function buildReviewTabs(options?: {
   tabs: ReviewTabDef[];
   hiddenTabs: ReviewTabDef[];
 } {
-  const hiddenTabs = [
-    HIDDEN_REVIEW_TABS.find((tab) => tab.id === HIDDEN_REVIEW_TAB_IDS.photos)!,
-  ];
-  if (options?.includeMarketData) {
-    hiddenTabs.push(
-      HIDDEN_REVIEW_TABS.find((tab) => tab.id === HIDDEN_REVIEW_TAB_IDS.marketData)!,
-    );
-  }
+  const hiddenTabs = HIDDEN_REVIEW_TABS.filter((tab) => {
+    if (tab.id === HIDDEN_REVIEW_TAB_IDS.marketData) return Boolean(options?.includeMarketData);
+    return true;
+  });
   return { tabs: VISIBLE_REVIEW_TABS, hiddenTabs };
 }
 
@@ -232,6 +228,19 @@ export function authorRoleLabel(role?: string, profileTitle?: string): string {
   return stripped || 'Lead Tester';
 }
 
+export function featuredInFromRoundupPicks(
+  productSlug: string,
+  roundup: { title: string; slug: string; picks: Array<{ slug: string }> },
+): FeaturedIn | null {
+  const idx = roundup.picks.findIndex((pick) => pick.slug === productSlug);
+  if (idx < 0) return null;
+  return {
+    title: roundup.title,
+    slug: roundup.slug,
+    position: idx + 1,
+  };
+}
+
 export function featuredInHref(item: FeaturedIn): string {
   return `/best/${item.slug}`;
 }
@@ -261,16 +270,8 @@ export function getBestFeaturedIn(items: FeaturedIn[]): FeaturedIn | null {
 
 /** File-roundup fallback so the ranking row still renders when InstantDB is empty. */
 export function getStaticFeaturedIn(productSlug: string): FeaturedIn[] {
-  const roundup = aiGirlfriendRoundup;
-  const idx = roundup.picks.findIndex((pick) => pick.slug === productSlug);
-  if (idx < 0) return [];
-  return [
-    {
-      title: roundup.title,
-      slug: roundup.slug,
-      position: idx + 1,
-    },
-  ];
+  const item = featuredInFromRoundupPicks(productSlug, aiGirlfriendRoundup);
+  return item ? [item] : [];
 }
 
 export function resolveFeaturedIn(productSlug: string, items: FeaturedIn[]): FeaturedIn[] {

@@ -452,20 +452,27 @@
   color: inherit;
   cursor: pointer;
   box-shadow: none;
+  appearance: none;
+  font: inherit;
+  text-align: left;
+  transition: border-color 0.16s ease-out, background 0.16s ease-out;
 }
 
-.rft-subscore:hover,
+@media (hover: hover) {
+  .rft-subscore:hover:not(.rft-subscore--selected):not([aria-expanded='true']) {
+    border-color: color-mix(in srgb, var(--rft-pink) 32%, var(--rft-hairline));
+    background: var(--rft-card);
+  }
+}
+
 .rft-subscore:focus-visible {
   background: var(--rft-card);
   outline: none;
-}
-
-.rft-subscore:focus-visible {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--rft-pink) 35%, transparent);
 }
 
 .rft-subscore--selected,
-.rft-subscore[aria-selected='true'] {
+.rft-subscore[aria-expanded='true'] {
   border: 1.5px solid var(--rft-pink);
   background: var(--rft-card);
 }
@@ -491,6 +498,14 @@
   width: 16px;
   height: 16px;
   flex-shrink: 0;
+  transform: rotate(0deg);
+  transform-origin: center;
+  transition: transform 180ms ease-out;
+}
+
+.rft-subscore--selected .rft-subscore__chevron,
+.rft-subscore[aria-expanded='true'] .rft-subscore__chevron {
+  transform: rotate(90deg);
 }
 
 .rft-subscore__name {
@@ -531,6 +546,46 @@
   }
 }
 
+.rft-evidence-stack {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  margin-top: -14px;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    grid-template-rows 180ms ease-out,
+    opacity 180ms ease-out,
+    margin-top 180ms ease-out;
+}
+
+.rft-evidence-stack.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 0;
+  pointer-events: auto;
+}
+
+.rft-evidence-stack__clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.rft-evidence-slot {
+  display: none;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.rft-evidence-slot.is-open {
+  display: block;
+}
+
+.rft-evidence-slot__inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .rft-evidence {
   display: flex;
   flex-direction: column;
@@ -544,6 +599,24 @@
 
 .rft-evidence.hidden {
   display: none;
+}
+
+@media (min-width: 768px) {
+  .rft-evidence-stack {
+    margin-top: -16px;
+  }
+
+  .rft-evidence-stack.is-open {
+    margin-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rft-subscore,
+  .rft-subscore__chevron,
+  .rft-evidence-stack {
+    transition: none;
+  }
 }
 
 .rft-evidence__head {

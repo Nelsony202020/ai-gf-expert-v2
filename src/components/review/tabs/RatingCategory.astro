@@ -107,15 +107,17 @@ const sectionHash = buildReviewRatingsHash(category.key);
       <p class="rft-subscores-label">Subscores</p>
       <div class="rft-subscores" data-subscore-list>
         {
-          subscorePanels.map(({ sub, index: i, evidenceCount, tone: subTone }) => (
-            <div
+          subscorePanels.map(({ sub, index: i, evidenceCount, tone: subTone }) => {
+            const evidenceId = `evidence-region-${category.key}-${i}`;
+            return (
+            <button
+              type="button"
               class="rft-subscore"
               data-subscore-select
               data-subscore-index={i}
               data-score-text={fmtScore(sub.score)}
-              role="button"
-              tabindex="0"
-              aria-selected="false"
+              aria-expanded="false"
+              aria-controls={evidenceId}
             >
               <span class="rft-subscore__top">
                 <span class:list={['rft-subscore__score', `rft-score--${subTone}`]}>{fmtScore(sub.score)}</span>
@@ -134,77 +136,90 @@ const sectionHash = buildReviewRatingsHash(category.key);
               <span class="rft-subscore__meta">
                 {evidenceCount} evidence item{evidenceCount === 1 ? '' : 's'}
               </span>
-            </div>
-          ))
+            </button>
+            );
+          })
         }
       </div>
-      {
-        subscorePanels.map(({ sub, index: i, calcDrawerId, evidenceCategories }) => {
-          const enrichedSub = enrichedCategory?.subscores.find((s) => s.name === sub.name);
-          const showBenchmarkNote =
-            category.key === 'pricing' &&
-            productSlug &&
-            enrichedSub &&
-            deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
-          const tableId = `evidence-${category.key}-${sub.name}`.replace(/[^a-zA-Z0-9_-]/g, '-');
-          const deferScores =
-            enrichedSub && productSlug && deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
-          return (
-            <div
-              data-subscore-panel
-              data-subscore-breakdown
-              data-detail-tier="deep"
-              data-subscore-index={i}
-              class="rft-evidence hidden"
-            >
-              <div class="rft-evidence__head">
-                <p class="rft-evidence__title">Evidence · {sub.name}</p>
-                {calcDrawerId && (
-                  <button
-                    type="button"
-                    class="rft-evidence__why"
-                    data-ratings-open-drawer={calcDrawerId}
-                    aria-haspopup="dialog"
-                    aria-label={`Why ${deferScores ? 'this score' : fmtScore(sub.score)}? Open score calculation`}
-                  >
-                    Why {deferScores ? 'this score' : fmtScore(sub.score)}?
-                    <img src="/icons/ratings/arrow-right.svg" width="13" height="13" alt="" />
-                  </button>
+      <div class="rft-evidence-stack" data-evidence-stack>
+        <div class="rft-evidence-stack__clip">
+        {
+          subscorePanels.map(({ sub, index: i, calcDrawerId, evidenceCategories }) => {
+            const enrichedSub = enrichedCategory?.subscores.find((s) => s.name === sub.name);
+            const showBenchmarkNote =
+              category.key === 'pricing' &&
+              productSlug &&
+              enrichedSub &&
+              deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
+            const tableId = `evidence-${category.key}-${sub.name}`.replace(/[^a-zA-Z0-9_-]/g, '-');
+            const evidenceId = `evidence-region-${category.key}-${i}`;
+            const deferScores =
+              enrichedSub && productSlug && deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
+            return (
+              <div
+                id={evidenceId}
+                data-subscore-panel
+                data-subscore-breakdown
+                data-detail-tier="deep"
+                data-subscore-index={i}
+                class="rft-evidence-slot"
+                aria-hidden="true"
+                inert
+              >
+                <div class="rft-evidence-slot__inner">
+                <div class="rft-evidence">
+                <div class="rft-evidence__head">
+                  <p class="rft-evidence__title">Evidence · {sub.name}</p>
+                  {calcDrawerId && (
+                    <button
+                      type="button"
+                      class="rft-evidence__why"
+                      data-ratings-open-drawer={calcDrawerId}
+                      aria-haspopup="dialog"
+                      aria-label={`Why ${deferScores ? 'this score' : fmtScore(sub.score)}? Open score calculation`}
+                    >
+                      Why {deferScores ? 'this score' : fmtScore(sub.score)}?
+                      <img src="/icons/ratings/arrow-right.svg" width="13" height="13" alt="" />
+                    </button>
+                  )}
+                </div>
+                {showBenchmarkNote && (
+                  <p class="rft-evidence__note" role="note">
+                    {PRICING_BENCHMARK_PENDING_NOTE}
+                  </p>
                 )}
-              </div>
-              {showBenchmarkNote && (
-                <p class="rft-evidence__note" role="note">
-                  {PRICING_BENCHMARK_PENDING_NOTE}
+                <EvidenceCategoryTable tableId={tableId} items={
+                  evidenceCategories.length > 0
+                    ? evidenceCategories
+                    : sub.contributors.map((c, ci) => ({
+                        slug: c.label.toLowerCase().replace(/\s+/g, '-'),
+                        name: c.label,
+                        score: deferScores ? null : c.internalScore ?? sub.score,
+                        summary: c.value,
+                        cardTeaser: c.value,
+                        testResults: [],
+                        drawerId: `evidence-fallback-${category.key}-${i}-${ci}`,
+                        proofCount: 0,
+                        proofLabel: '',
+                        selectedProof: [],
+                      }))
+                } hideScores={deferScores} />
+                <p class="rft-evidence__foot">
+                  <span class="rft-evidence__foot-desktop">
+                    Showing evidence for the selected subscore. Pick another subscore card to switch tables.
+                  </span>
+                  <span class="rft-evidence__foot-mobile">
+                    Showing evidence for the selected subscore. Tap another subscore card to switch tables.
+                  </span>
                 </p>
-              )}
-              <EvidenceCategoryTable tableId={tableId} items={
-                evidenceCategories.length > 0
-                  ? evidenceCategories
-                  : sub.contributors.map((c, ci) => ({
-                      slug: c.label.toLowerCase().replace(/\s+/g, '-'),
-                      name: c.label,
-                      score: deferScores ? null : c.internalScore ?? sub.score,
-                      summary: c.value,
-                      cardTeaser: c.value,
-                      testResults: [],
-                      drawerId: `evidence-fallback-${category.key}-${i}-${ci}`,
-                      proofCount: 0,
-                      proofLabel: '',
-                      selectedProof: [],
-                    }))
-              } hideScores={deferScores} />
-              <p class="rft-evidence__foot">
-                <span class="rft-evidence__foot-desktop">
-                  Showing evidence for the selected subscore. Pick another subscore card to switch tables.
-                </span>
-                <span class="rft-evidence__foot-mobile">
-                  Showing evidence for the selected subscore. Tap another subscore card to switch tables.
-                </span>
-              </p>
-            </div>
-          );
-        })
-      }
+                </div>
+                </div>
+              </div>
+            );
+          })
+        }
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -219,45 +234,54 @@ const sectionHash = buildReviewRatingsHash(category.key);
       const panels = Array.from(categoryEl.querySelectorAll<HTMLElement>('[data-subscore-panel]'));
       if (!cards.length || !panels.length) return;
 
-      function setChevron(card: HTMLElement, open: boolean) {
-        const chevron = card.querySelector<HTMLImageElement>('[data-subscore-chevron]');
-        if (!chevron) return;
-        chevron.src = open ? '/icons/ratings/chevron-down.svg' : '/icons/ratings/chevron-right.svg';
-        chevron.width = 16;
-        chevron.height = 16;
+      let activeIndex: string | null = null;
+      const stack = categoryEl.querySelector<HTMLElement>('[data-evidence-stack]');
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let collapseTimer = 0;
+
+      function syncPanel(panel: HTMLElement, isActive: boolean) {
+        panel.classList.toggle('is-open', isActive);
+        panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+        panel.toggleAttribute('inert', !isActive);
+      }
+
+      function applySubscoreState(index: string | null, scrollToBreakdown = false) {
+        window.clearTimeout(collapseTimer);
+        activeIndex = index;
+        cards.forEach((card) => {
+          const isActive = index != null && card.dataset.subscoreIndex === index;
+          card.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+          card.classList.toggle('rft-subscore--selected', isActive);
+        });
+
+        const grid = categoryEl.querySelector<HTMLElement>('[data-subscore-grid]');
+        if (index) {
+          panels.forEach((panel) => syncPanel(panel, panel.dataset.subscoreIndex === index));
+          grid?.setAttribute('data-subscore-open', 'true');
+          stack?.classList.add('is-open');
+        } else {
+          stack?.classList.remove('is-open');
+          grid?.removeAttribute('data-subscore-open');
+          const hide = () => panels.forEach((panel) => syncPanel(panel, false));
+          if (reduceMotion) hide();
+          else collapseTimer = window.setTimeout(hide, 200);
+        }
+
+        if (scrollToBreakdown && index) {
+          requestAnimationFrame(() => {
+            categoryEl
+              .querySelector<HTMLElement>(`[data-subscore-panel][data-subscore-index="${index}"].is-open`)
+              ?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
+          });
+        }
       }
 
       function clearSubscoreSelection() {
-        cards.forEach((card) => {
-          card.setAttribute('aria-selected', 'false');
-          card.classList.remove('rft-subscore--selected');
-          setChevron(card, false);
-        });
-        panels.forEach((panel) => panel.classList.add('hidden'));
-        categoryEl.querySelector<HTMLElement>('[data-subscore-grid]')?.removeAttribute('data-subscore-open');
+        applySubscoreState(null);
       }
 
       function selectSubscore(index: string, scrollToBreakdown = false) {
-        cards.forEach((card) => {
-          const isActive = card.dataset.subscoreIndex === index;
-          card.setAttribute('aria-selected', isActive ? 'true' : 'false');
-          card.classList.toggle('rft-subscore--selected', isActive);
-          setChevron(card, isActive);
-        });
-
-        panels.forEach((panel) => {
-          panel.classList.toggle('hidden', panel.dataset.subscoreIndex !== index);
-        });
-
-        categoryEl.querySelector<HTMLElement>('[data-subscore-grid]')?.setAttribute('data-subscore-open', 'true');
-
-        if (scrollToBreakdown) {
-          requestAnimationFrame(() => {
-            categoryEl
-              .querySelector<HTMLElement>(`[data-subscore-panel][data-subscore-index="${index}"]:not(.hidden)`)
-              ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          });
-        }
+        applySubscoreState(index, scrollToBreakdown);
       }
 
       categoryEl.clearSubscoreSelection = clearSubscoreSelection;
@@ -266,18 +290,14 @@ const sectionHash = buildReviewRatingsHash(category.key);
       cards.forEach((card) => {
         card.addEventListener('click', (e) => {
           if ((e.target as HTMLElement).closest('.rt-tooltip-trigger')) return;
+          if ((e.target as HTMLElement).closest('[data-ratings-open-drawer]')) return;
           const index = card.dataset.subscoreIndex;
           if (index === undefined) return;
-          selectSubscore(index, true);
-        });
-
-        card.addEventListener('keydown', (e) => {
-          if (e.key !== 'Enter' && e.key !== ' ') return;
-          if ((e.target as HTMLElement).closest('.rt-tooltip-trigger')) return;
-          e.preventDefault();
-          const index = card.dataset.subscoreIndex;
-          if (index === undefined) return;
-          selectSubscore(index, true);
+          if (activeIndex === index) {
+            applySubscoreState(null);
+            return;
+          }
+          applySubscoreState(index, true);
         });
       });
 
@@ -299,10 +319,11 @@ const sectionHash = buildReviewRatingsHash(category.key);
       const content = el.querySelector<HTMLElement>('[data-accordion-content]');
       const isOpen = content && !content.classList.contains('hidden');
       if (level === 'all-in' && isOpen) {
-        el.selectSubscore?.('0', false);
+        const alreadyOpen = el.querySelector('[data-subscore-select][aria-expanded="true"]');
+        if (!alreadyOpen) el.selectSubscore?.('0', false);
         return;
       }
-      el.clearSubscoreSelection?.();
+      // Skim / Medium stay independent of the current subscore toggle.
     });
   }) as EventListener);
 
