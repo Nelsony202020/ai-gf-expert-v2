@@ -3,6 +3,7 @@ import { fileProductsBaseline } from '../../data/products';
 import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
 import { publicPagePath } from '../urls';
 import { loadRoundupForPublic, loadPublishedProducts, loadProductLogoMap } from '../content/store';
+import { productToRoundupPick } from '../content/roundupPick';
 import { isPlaceholderImage } from '../media/optimize';
 import { isPlaceholderLogo, resolveBrandLogo } from './brandLogos';
 import { figmaScoreTone, formatScore } from './figmaScore';
