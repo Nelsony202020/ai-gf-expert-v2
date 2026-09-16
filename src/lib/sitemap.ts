@@ -10,7 +10,6 @@ import type {
 import type { Product } from '../data/products';
 import { getAllAuthors } from '../data/authors';
 import { guides } from '../data/guides';
-import { legalPages as publishedLegalPages } from '../data/legal-pages';
 import { products } from '../data/products';
 import { getTestCategories } from './test-framework';
 import { buyingGuideSlug } from '../data/buying-guide-content';
@@ -412,102 +411,55 @@ function escapeXml(value: string): string {
     .replace(/'/g, '&apos;');
 }
 
-function htmlSitemapExploreColumns(): HtmlSitemapExploreColumn[] {
-  return [
-    {
-      heading: 'Reviews',
-      count: 2,
-      links: [
-        { href: '/reviews/', label: 'All Reviews' },
-        { href: '/reviews/aura-ai/', label: 'Aura AI Review' },
-      ],
-    },
-    {
-      heading: 'Roundups',
-      count: 1,
-      links: [{ href: '/best-ai-girlfriend-apps/', label: 'Best AI Girlfriend Apps' }],
-    },
-    {
-      heading: 'Guides',
-      count: 7,
-      links: [
-        { href: '/guides/', label: 'All Guides' },
-        { href: '/guides/ourdream-ai/', label: 'OurDream AI Guides' },
-        { href: '/guides/how-to-choose-an-ai-girlfriend-app/', label: 'How to Choose an AI Girlfriend App' },
-        { href: '/guides/ourdream-ai-comics/', label: 'OurDream AI Comics' },
-        { href: '/guides/how-to-use-ourdream-ai-image-generator/', label: 'How to Use OurDream AI Image Generator' },
-        { href: '/guides/ourdream-ai-image-prompt-guide/', label: 'OurDream AI Image Prompt Guide' },
-        { href: '/guides/ourdream-ai-prompt-guide/', label: 'OurDream AI Prompt Guide' },
-      ],
-    },
-    {
-      heading: 'Authors',
-      count: getAllAuthors().length,
-      links: getAllAuthors().map((author) => ({
-        href: `/author/${author.slug}/`,
-        label: author.name,
-      })),
-    },
-  ];
+function dedupeLinks(items: HtmlSitemapLink[]): HtmlSitemapLink[] {
+  return [...new Map(items.map((link) => [normalizePath(link.href), link])).values()];
 }
 
-function htmlSitemapMainMethodology(): HtmlSitemapMethodologyLink[] {
-  return [
-    {
-      href: '/how-we-test/',
-      label: 'How We Test AI Girlfriend Apps',
-      description: 'The full testing process, category by category.',
-    },
-    {
-      href: '/how-we-test/scoring/',
-      label: 'Scoring System',
-      description: 'How the 1–10 score and the eight categories are built.',
-    },
-    {
-      href: '/how-we-test/process/',
-      label: 'Testing Process Overview',
-      description: 'What happens from signing up to the final score.',
-    },
-  ];
+function entriesToLinks(items: SitemapEntry[]): HtmlSitemapLink[] {
+  return items.map((entry) => ({ label: entry.title, href: entry.url }));
 }
 
-function htmlSitemapSupportingMethodology(): HtmlSitemapLink[] {
-  return [
-    { href: '/test/all/', label: 'All Tests Directory' },
-    { href: '/how-we-test/score-tooltips/', label: 'How Score Tooltips Work' },
-    { href: '/methodology/market-data/', label: 'Market Data Methodology' },
-    { href: '/editorial-guidelines/', label: 'Editorial Guidelines' },
-  ];
+function toColumn(heading: string, links: HtmlSitemapLink[]): HtmlSitemapExploreColumn {
+  return { heading, count: links.length, links };
 }
 
-function htmlSitemapResources(): HtmlSitemapExploreColumn {
-  const links = [
-    { href: '/how-we-test/', label: 'How We Test' },
-    { href: '/how-we-test/score-tooltips/', label: 'How Score Tooltips Work' },
-    { href: '/apps/', label: 'App Directory' },
-    { href: '/glossary/', label: 'AI Girlfriend Glossary' },
-  ];
-  return {
-    heading: 'Resources',
-    count: links.length,
-    links,
-  };
-}
+/** Destinations match the live Site Index at /sitemap/ — never inferred from labels. */
+export const testMainMethodologyLinks: HtmlSitemapMethodologyLink[] = [
+  {
+    label: 'How We Test AI Girlfriend Apps',
+    href: testHubUrl(),
+    description: 'The full testing process, category by category.',
+  },
+  {
+    label: 'Scoring System',
+    href: `${testHubUrl()}#how-scores-work`,
+    description: 'How the 1–10 score and the eight categories are built.',
+  },
+  {
+    label: 'Testing Process Overview',
+    href: `${testHubUrl()}#in-practice`,
+    description: 'What happens from signing up to the final score.',
+  },
+];
 
-function htmlSitemapCompany(): HtmlSitemapExploreColumn {
-  const links = [
-    { href: '/about/', label: 'About Us' },
-    { href: '/contact/', label: 'Contact Us' },
-  ];
-  return {
-    heading: 'Company',
-    count: links.length,
-    links,
-  };
-}
+export const testSupportingLinks: HtmlSitemapLink[] = [
+  { label: 'All Tests Directory', href: '/test/all/' },
+  { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
+  { label: 'Market Data Methodology', href: '/test/market-data/' },
+  { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
+];
 
-function htmlSitemapLegal(): HtmlSitemapLink[] {
-  return publishedLegalPages.map((page) => ({ href: page.href, label: page.title }));
+/** Distribute test categories across methodology columns (col 0 holds fewer cats). */
+export function distributeTestCategoryColumns(categories: ReturnType<typeof getTestCategories>) {
+  const cols: (typeof categories)[] = [[], [], [], [], []];
+  if (categories.length === 0) return cols;
+  const bucketCount = cols.length - 1;
+  const perCol = Math.ceil(categories.length / bucketCount);
+  for (let c = 1; c < cols.length; c++) {
+    const start = (c - 1) * perCol;
+    cols[c] = categories.slice(start, start + perCol);
+  }
+  return cols;
 }
 
 function htmlSitemapTestCategories(): HtmlSitemapTestCategory[] {
@@ -534,30 +486,72 @@ function htmlSitemapTestCategories(): HtmlSitemapTestCategory[] {
 function extraSearchHits(): HtmlSitemapSearchHit[] {
   return [
     { href: '/sitemap/', title: 'Site Index', kind: 'page', location: 'PAGE' },
-    { href: '/apps/', title: 'AI Girlfriend Apps', kind: 'page', location: 'DIRECTORY' },
+    { href: '/ai-girlfriend-apps/', title: 'AI Girlfriend Apps', kind: 'page', location: 'DIRECTORY' },
     { href: '/glossary/', title: 'AI Girlfriend Glossary', kind: 'page', location: 'RESOURCE' },
     { href: '/about/', title: 'About Us', kind: 'page', location: 'COMPANY' },
     { href: '/contact/', title: 'Contact Us', kind: 'page', location: 'COMPANY' },
+    { href: '/legal/', title: 'Legal', kind: 'page', location: 'LEGAL' },
   ];
 }
 
-export function getHtmlSitemapPage(): HtmlSitemapFullPage {
-  const explore = htmlSitemapExploreColumns();
-  const reviews = explore.find((column) => column.heading === 'Reviews')!;
-  const roundups = explore.find((column) => column.heading === 'Roundups')!;
-  const guidesColumn = explore.find((column) => column.heading === 'Guides')!;
-  const authors = explore.find((column) => column.heading === 'Authors')!;
+/**
+ * Full HTML sitemap page data — destinations come from published sitemap
+ * entries and the live /test/ URL system, not from title-derived slugs.
+ */
+export function buildFullHtmlSitemapPage(inputs: SitemapInputs = {}): HtmlSitemapFullPage {
+  const excludePaths = inputs.excludePaths;
+  const everyEntry = getAllSitemapEntries(inputs).filter(
+    (entry) => !excludePaths?.has(normalizePath(entry.url)),
+  );
+  const testsCount = everyEntry.filter((entry) => entry.sitemapSection === 'tests').length;
+  const all = everyEntry.filter((entry) => entry.showInHtmlSitemap);
+
+  const reviews = toColumn(
+    'Reviews',
+    dedupeLinks(entriesToLinks(all.filter((entry) => entry.sitemapSection === 'reviews'))),
+  );
+  const roundups = toColumn(
+    'Roundups',
+    dedupeLinks(entriesToLinks(all.filter((entry) => entry.sitemapSection === 'roundups'))),
+  );
+  const guidesColumn = toColumn(
+    'Guides',
+    dedupeLinks(entriesToLinks(all.filter((entry) => entry.sitemapSection === 'guides'))),
+  );
+  const authors = toColumn(
+    'Authors',
+    dedupeLinks(entriesToLinks(all.filter((entry) => entry.sitemapSection === 'authors'))),
+  );
+
+  const resources = toColumn(
+    'Resources',
+    dedupeLinks([
+      { label: 'How We Test', href: testHubUrl() },
+      { label: 'How Score Tooltips Work', href: '/test/tooltips/' },
+      { label: 'App Directory', href: '/ai-girlfriend-apps/' },
+      { label: 'AI Girlfriend Glossary', href: '/glossary/' },
+    ]),
+  );
+
+  const company = toColumn(
+    'Company',
+    dedupeLinks(entriesToLinks(all.filter((entry) => entry.sitemapSection === 'company' && entry.url !== '/'))),
+  );
+
+  const legal = dedupeLinks([
+    { label: 'Legal', href: '/legal/' },
+    ...entriesToLinks(all.filter((entry) => entry.sitemapSection === 'legal')),
+  ]);
+
+  const methodology = testMainMethodologyLinks;
+  const supporting = testSupportingLinks;
   const testCategories = htmlSitemapTestCategories();
-  const methodology = htmlSitemapMainMethodology();
-  const supporting = htmlSitemapSupportingMethodology();
-  const resources = htmlSitemapResources();
-  const company = htmlSitemapCompany();
-  const legal = htmlSitemapLegal();
-  const testsCount = getAllSitemapEntries().filter((entry) => entry.sitemapSection === 'tests').length;
   const scoredTestsCount = testCategories.reduce((sum, category) => sum + category.testCount, 0);
   const subcategoryCount = testCategories.reduce((sum, category) => sum + category.subcategoryCount, 0);
 
   return {
+    seoTitle: 'Site Index — AI Girlfriend Expert',
+    seoDescription: 'Find every review, guide, test and resource we publish.',
     reviews,
     roundups,
     guides: guidesColumn,
@@ -584,12 +578,15 @@ export function getHtmlSitemapPage(): HtmlSitemapFullPage {
     testingCategoriesCount: testCategories.length,
     testingSubcategoriesCount: subcategoryCount,
     resourcesCount: resources.count,
-    testing: testCategories,
   };
 }
 
-export function getSiteIndexPage(): HtmlSitemapFullPage {
-  const page = getHtmlSitemapPage();
+export function getHtmlSitemapPage(inputs: SitemapInputs = {}): HtmlSitemapFullPage {
+  return buildFullHtmlSitemapPage(inputs);
+}
+
+export function getSiteIndexPage(inputs: SitemapInputs = {}): HtmlSitemapFullPage {
+  const page = buildFullHtmlSitemapPage(inputs);
   return {
     ...page,
     searchHits: buildSitemapPageSearchIndex(page),

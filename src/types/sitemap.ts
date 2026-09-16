@@ -1,9 +1,44 @@
-export interface HtmlSitemapEntry {
-  loc: string;
+export type SitemapContentType =
+  | 'home'
+  | 'hub'
+  | 'review'
+  | 'roundup'
+  | 'guide'
+  | 'directory'
+  | 'test-hub'
+  | 'test-category'
+  | 'test-subscore'
+  | 'test-archive'
+  | 'methodology'
+  | 'glossary'
+  | 'author'
+  | 'legal'
+  | 'company'
+  | 'utility'
+  | 'redirect';
+
+export type SitemapSection =
+  | 'reviews'
+  | 'roundups'
+  | 'guides'
+  | 'tests'
+  | 'authors'
+  | 'resources'
+  | 'legal'
+  | 'company';
+
+export interface SitemapEntry {
+  title: string;
+  url: string;
+  contentType: SitemapContentType;
+  parentCategory?: string;
+  sitemapSection: SitemapSection;
+  sitemapOrder: number;
+  isPublished: boolean;
+  showInHtmlSitemap: boolean;
+  includeInXmlSitemap: boolean;
   lastmod?: string;
 }
-
-export type SitemapEntry = HtmlSitemapEntry;
 
 export interface HtmlSitemapLink {
   href: string;
@@ -47,6 +82,9 @@ export interface HtmlSitemapSearchHit {
   title: string;
   kind: string;
   location: string;
+  section?: string;
+  parent?: string;
+  group?: string;
 }
 
 export interface HtmlSitemapFullPage {
@@ -77,4 +115,6 @@ export interface HtmlSitemapFullPage {
   company: HtmlSitemapExploreColumn;
   legal: HtmlSitemapLink[];
   searchHits?: HtmlSitemapSearchHit[];
+  seoTitle: string;
+  seoDescription: string;
 }

@@ -1,6 +1,7 @@
 ---
 import type { HtmlSitemapTestCategory } from "../../types/sitemap";
-import { testCategoryIconHtml } from "../../lib/test-category-icons";
+import { testCategoryIconName } from "../../lib/test-category-icons";
+import HomeIcon from "../home/desktop/HomeIcon.astro";
 
 interface Props {
   category: HtmlSitemapTestCategory;
@@ -17,40 +18,37 @@ const { category } = Astro.props;
     aria-expanded="false"
     aria-controls={`si-cat-panel-${category.slug}`}
   >
-    <span class="si-cat-icon" aria-hidden="true" set:html={testCategoryIconHtml(category.slug)} />
+    <span class="si-cat-icon" aria-hidden="true">
+      <HomeIcon name={testCategoryIconName(category.slug)} size={16} />
+    </span>
     <span class="si-cat-name">{category.label}</span>
     <span class="si-cat-count">{category.testCount} tests</span>
-    <svg class="si-cat-chev" viewBox="0 0 9.5 5.5" fill="none" aria-hidden="true">
-      <path d="M0 0L4 4 8 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
+    <span class="si-cat-chev" aria-hidden="true">
+      <HomeIcon name="chevron-down" size={16} />
+    </span>
   </button>
-    <div class="si-cat-panel" id={`si-cat-panel-${category.slug}`} data-panel hidden>
+  <div class="si-cat-panel" id={`si-cat-panel-${category.slug}`} data-panel hidden>
     {category.subcategories.map((sub) => (
       <div class="si-sub" data-subcategory={`${category.slug}-${sub.slug}`}>
         <div class="si-sub-row">
           <a class="si-sub-link" href={sub.href}>
             <span>{sub.label}</span>
-            <svg class="si-sub-arrow" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-              <path d="M4.08 0L8.17 4.08 4.08 8.17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
           </a>
-          <span class="si-sub-meta">
-            <span>{sub.testCount} tests</span>
-            <button
-              class="si-sub-toggle"
-              type="button"
-              data-subcategory-toggle={`${category.slug}-${sub.slug}`}
-              aria-expanded="false"
-              aria-controls={`si-tests-${category.slug}-${sub.slug}`}
-              aria-label={`Show scored tests in ${sub.label}`}
-            >
-              <svg viewBox="0 0 8.5 5" fill="none" aria-hidden="true">
-                <path d="M0 0L3.5 3.5 7 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </button>
-          </span>
+          <span class="si-sub-meta">{sub.testCount} tests</span>
+          <button
+            class="si-sub-toggle"
+            type="button"
+            data-subcategory-toggle={`${category.slug}-${sub.slug}`}
+            aria-expanded="false"
+            aria-controls={`si-tests-${category.slug}-${sub.slug}`}
+            aria-label={`Show scored tests in ${sub.label}`}
+          >
+            <span class="si-sub-chev" aria-hidden="true">
+              <HomeIcon name="chevron-right" size={14} />
+            </span>
+          </button>
         </div>
-            <ul class="si-tests" id={`si-tests-${category.slug}-${sub.slug}`} data-tests hidden>
+        <ul class="si-tests" id={`si-tests-${category.slug}-${sub.slug}`} data-tests hidden>
           {sub.tests.map((test) => (
             <li>
               <a class="si-test-link" href={test.href}>

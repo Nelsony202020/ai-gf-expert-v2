@@ -1,6 +1,7 @@
 ---
 import SitemapTestCategory from "./SitemapTestCategory.astro";
 import type { HtmlSitemapFullPage } from "../../types/sitemap";
+import HomeIcon from "../home/desktop/HomeIcon.astro";
 
 interface Props {
   page: HtmlSitemapFullPage;
@@ -45,9 +46,9 @@ const { page } = Astro.props;
           <span class="si-main-title">{item.label}</span>
           {item.description ? <span class="si-main-desc">{item.description}</span> : null}
         </span>
-        <svg class="si-main-arrow" viewBox="0 0 13 12" fill="none" aria-hidden="true">
-          <path d="M5.25 0L10.5 5.25 5.25 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+        <span class="si-main-arrow" aria-hidden="true">
+          <HomeIcon name="chevron-right" size={16} />
+        </span>
       </a>
     ))}
   </div>
@@ -66,9 +67,9 @@ const { page } = Astro.props;
       {page.supporting.slice(0, 2).map((item) => (
         <a class="si-row si-row-ruled" href={item.href}>
           <span>{item.label}</span>
-          <svg class="si-chev" viewBox="0 0 5 8.5" fill="none" aria-hidden="true">
-            <path d="M0 7L3.5 3.5 0 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <span class="si-chev" aria-hidden="true">
+            <HomeIcon name="chevron-right" size={14} />
+          </span>
         </a>
       ))}
     </div>
@@ -76,9 +77,9 @@ const { page } = Astro.props;
       {page.supporting.slice(2).map((item) => (
         <a class="si-row si-row-ruled" href={item.href}>
           <span>{item.label}</span>
-          <svg class="si-chev" viewBox="0 0 5 8.5" fill="none" aria-hidden="true">
-            <path d="M0 7L3.5 3.5 0 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <span class="si-chev" aria-hidden="true">
+            <HomeIcon name="chevron-right" size={14} />
+          </span>
         </a>
       ))}
     </div>
