@@ -212,6 +212,14 @@
   .rs-hero .rs-author-avatar {
     display: none !important;
   }
+
+  .rs-gallery,
+  .review-page .review-hero-gallery,
+  .rs-gallery .review-hero-media-open,
+  .rs-gallery-img {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
 }
 
 .rs-share {
@@ -228,7 +236,13 @@
   color: var(--rs-pink);
 }
 
-.rs-hero-media {
+.rs-hero-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rs-hero-module {
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -242,9 +256,14 @@
   position: relative;
   width: 100%;
   height: 188px;
-  border-radius: 0;
+  border-radius: 20px 20px 0 0;
   overflow: hidden;
   background: #efefed;
+}
+
+.rs-gallery .review-hero-media-open,
+.rs-gallery-img {
+  border-radius: 0;
 }
 
 .rs-gallery .review-hero-media-open {
@@ -318,7 +337,9 @@
 }
 
 .rs-score-banner-label {
-  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
   font-size: 15px;
   font-weight: 700;
@@ -332,7 +353,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  margin: -6px -4px -6px 0;
+  margin: -6px 0;
   color: #fff;
   flex-shrink: 0;
 }
@@ -498,27 +519,35 @@
 }
 
 .rs-featured-in {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
+  align-self: flex-start;
+  gap: 6px;
+  max-width: 100%;
   min-height: 44px;
-  padding: 10px 4px;
+  margin: 0;
+  padding: 8px 0;
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;
   color: var(--rs-pink);
   text-decoration: none;
-  border-radius: 12px;
+  background: none;
+  border: 0;
+  border-radius: 0;
 }
 
 .rs-featured-in:hover {
   color: var(--rs-pink-deep);
-  background: rgba(219, 39, 119, 0.04);
+  background: none;
 }
 
 .rs-featured-in:hover .rs-featured-in-kicker {
   color: var(--rs-muted);
+}
+
+.rs-featured-in:hover .rs-featured-in-arrow {
+  transform: translateX(2px);
 }
 
 .rs-featured-in-ico,
@@ -526,13 +555,16 @@
   flex-shrink: 0;
 }
 
+.rs-featured-in-arrow {
+  transition: transform 0.15s ease;
+}
+
 .rs-featured-in-copy {
-  flex: 1;
-  min-width: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .rs-featured-in-kicker {
@@ -882,10 +914,17 @@ ul.rs-list {
     line-height: 22px;
   }
 
-  .rs-hero-media {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 24px;
+  .rs-hero-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 384px;
+    grid-template-rows: auto auto;
+    column-gap: 24px;
+    row-gap: 8px;
+    align-items: start;
+  }
+
+  .rs-hero-module {
+    display: contents;
     border: 0;
     border-radius: 0;
     overflow: visible;
@@ -893,7 +932,8 @@ ul.rs-list {
   }
 
   .rs-gallery {
-    flex: 1 1 0;
+    grid-column: 1;
+    grid-row: 1;
     min-width: 0;
     max-width: none;
     width: auto;
@@ -911,12 +951,13 @@ ul.rs-list {
   }
 
   .rs-score-card {
+    grid-column: 2;
+    grid-row: 1;
     width: 384px;
     flex-shrink: 0;
     border: 1px solid var(--rs-line);
     border-radius: 20px;
     overflow: hidden;
-    align-self: stretch;
   }
 
   .rs-score-card.is-expanded {
@@ -980,19 +1021,11 @@ ul.rs-list {
   }
 
   .rs-featured-in {
-    display: inline-flex;
-    width: auto;
-    max-width: 100%;
-    align-self: flex-start;
-    gap: 8px;
-    min-height: 40px;
-    padding: 8px 12px;
-    border: 1px solid var(--rs-line);
-    background: #fff;
-  }
-
-  .rs-featured-in-copy {
-    flex: 0 1 auto;
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    min-height: 32px;
+    padding: 4px 0 0;
   }
 
   .rs-featured-in-kicker,
@@ -1081,12 +1114,11 @@ ul.rs-list {
 }
 
 @media (min-width: 1200px) {
-  .rs-hero-media {
+  .rs-hero-pair {
     max-width: 1200px;
   }
 
   .rs-gallery {
-    flex: 1 1 792px;
     max-width: 792px;
   }
 }
@@ -1253,7 +1285,6 @@ ul.rs-list {
 /* Hide legacy review-page chrome that fights the light Figma canvas */
 .review-page .review-hero-gallery {
   display: block;
-  border-radius: inherit;
   overflow: hidden;
 }
 

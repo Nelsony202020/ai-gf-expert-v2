@@ -34,10 +34,12 @@ ICONS['credit-card'] = ICONS.credit;
 <div class="rs-score-card">
   <div class="rs-score-banner" style={`background:${headerColor}`}>
     <span class="rs-score-banner-num">{overall != null ? fmtScore(overall) : '—'}</span>
-    <span class="rs-score-banner-label">Overall performance</span>
-    <OverallScoreTooltip product={product}>
-      <ReviewIcon name="info" size={16} class="rs-score-banner-info" />
-    </OverallScoreTooltip>
+    <span class="rs-score-banner-label">
+      Overall performance
+      <OverallScoreTooltip product={product}>
+        <ReviewIcon name="info" size={16} class="rs-score-banner-info" />
+      </OverallScoreTooltip>
+    </span>
   </div>
 
   <div class="rs-score-body">
