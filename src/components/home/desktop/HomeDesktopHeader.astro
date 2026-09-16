@@ -1,6 +1,5 @@
 ---
 import ThemeToggle from '../../ui/ThemeToggle.astro';
-import { buildBrandNav } from '../../../data/brand-nav';
 import { buildSearchIndex } from '../../../data/site-search';
 import { loadComparisonProducts } from '../../../lib/content/comparisonProducts';
 import HomeIcon from './HomeIcon.astro';
@@ -13,7 +12,6 @@ interface Props {
 const { variant = 'hero' } = Astro.props;
 const publishedProducts = await loadComparisonProducts();
 const searchIndex = buildSearchIndex(publishedProducts);
-const brandNav = buildBrandNav(publishedProducts);
 const reviewLinks = publishedProducts
   .slice()
   .sort((a, b) => a.name.localeCompare(b.name))
