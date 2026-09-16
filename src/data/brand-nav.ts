@@ -17,6 +17,10 @@ export interface BrandNav {
  * Do not point these at review URLs.
  */
 export const BRAND_HUB_BY_SLUG: Record<string, string> = {
+  'candy-ai': '/guides/candy-ai/',
+  'girlfriendgpt': '/guides/girlfriendgpt/',
+  'juicychat-ai': '/guides/juicychat-ai/',
+  'nectar-ai': '/guides/nectar-ai/',
   'ourdream-ai': '/guides/ourdream-ai/',
 };
 
