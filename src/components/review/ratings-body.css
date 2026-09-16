@@ -377,12 +377,13 @@
   display: flex !important;
   flex-direction: column;
   grid-template-columns: none !important;
-  gap: 16px;
-  padding: 4px 16px 24px;
+  gap: 14px;
+  padding: 4px 16px 18px;
 }
 
 @media (min-width: 768px) {
   .rft-cat__body {
+    gap: 16px;
     padding: 4px 24px 24px;
   }
 }
@@ -420,14 +421,15 @@
   color: var(--rft-text);
 }
 
-/* Horizontal subscore cards — Figma Review / Subscore Card in a flex row.
-   Mobile wraps 2-up (148×96 in a 326 track). Desktop is one equal-width row. */
+/* Horizontal subscore cards — Figma Review / Subscore Card.
+   Mobile: wrap, fixed 148×96 tiles, 10px gap (02B). Desktop: one equal-width row, 12px gap (02A). */
 .rft [data-subscore-list],
 .rft-subscores {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: wrap;
-  align-items: stretch;
+  align-items: flex-start;
+  align-content: flex-start;
   gap: 10px;
   width: 100%;
   max-width: none !important;
@@ -438,13 +440,13 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  flex: 1 1 calc(50% - 5px);
-  width: calc(50% - 5px);
-  max-width: calc(50% - 5px);
-  min-width: 0;
+  flex: 0 0 148px;
+  width: 148px;
+  max-width: 148px;
+  min-width: 148px;
   min-height: 96px;
   padding: 14px 16px;
-  border: 1.5px solid var(--rft-hairline);
+  border: 1px solid var(--rft-hairline);
   border-radius: 14px;
   background: var(--rft-card);
   color: inherit;
@@ -464,7 +466,7 @@
 
 .rft-subscore--selected,
 .rft-subscore[aria-selected='true'] {
-  border-color: var(--rft-pink);
+  border: 1.5px solid var(--rft-pink);
   background: var(--rft-card);
 }
 
@@ -514,7 +516,7 @@
   max-width: 100%;
 }
 
-@media (min-width: 720px) {
+@media (min-width: 768px) {
   .rft [data-subscore-list],
   .rft-subscores {
     flex-wrap: nowrap;
@@ -522,9 +524,10 @@
   }
 
   .rft-subscore {
-    flex: 1 1 0;
+    flex: 1 0 0;
     width: auto;
     max-width: none;
+    min-width: 0;
   }
 }
 
@@ -735,35 +738,53 @@
   color: #475569;
 }
 
-/* Evidence table — beat legacy .evidence-cat-table rules inside this board only. */
+/* Evidence table — Figma Review / Evidence Row. Beat legacy mobile
+   (hidden header/summary, 3-col grid, hidden proof count) inside .rft only. */
 .rft .evidence-cat-table-wrap {
-  margin: 0;
+  margin: 0 !important;
   width: 100%;
 }
 
 .rft .evidence-cat-table {
   display: flex;
   flex-direction: column;
+  gap: 10px;
   width: 100%;
   background: transparent;
 }
 
+.rft .evidence-cat-table__score,
+.rft .evidence-cat-table__copy,
+.rft .evidence-cat-table__name,
+.rft .evidence-cat-table__summary,
+.rft .evidence-cat-table__proof,
+.rft .evidence-cat-table__action,
+.rft .evidence-cat-table__score-col,
+.rft .evidence-cat-table__name-col,
+.rft .evidence-cat-table__summary-col,
+.rft .evidence-cat-table__proof-col,
+.rft .evidence-cat-table__action-col {
+  grid-area: auto !important;
+}
+
 .rft .evidence-cat-table__head,
 .rft .evidence-cat-table__row {
-  display: grid !important;
-  grid-template-columns: 40px minmax(0, 1fr) auto auto;
-  grid-template-areas: none;
+  display: flex !important;
+  flex-direction: row;
+  grid-template-columns: none !important;
+  grid-template-areas: none !important;
+  align-items: flex-start;
   gap: 12px;
-  align-items: center;
   width: 100%;
   text-align: left;
 }
 
 .rft .evidence-cat-table__head {
+  align-items: center;
   padding: 10px 12px !important;
-  border: none;
+  border: none !important;
   border-radius: 10px;
-  background: var(--rft-page);
+  background: var(--rft-page) !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   letter-spacing: 0 !important;
@@ -783,8 +804,8 @@
 .rft .evidence-cat-table__row {
   margin: 0;
   padding: 12px !important;
-  border: none;
-  border-bottom: 1px solid var(--rft-hairline);
+  border: none !important;
+  border-bottom: 1px solid var(--rft-hairline) !important;
   border-radius: 0;
   background: transparent;
   cursor: pointer;
@@ -798,6 +819,7 @@
 
 .rft .evidence-cat-table__copy {
   display: flex !important;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
@@ -820,15 +842,25 @@
   color: var(--rft-secondary);
 }
 
-.rft .evidence-cat-table__score {
+.rft .evidence-cat-table__score,
+.rft .evidence-cat-table__score-col {
   display: flex;
+  flex: 0 0 40px;
   align-items: center;
   width: 40px !important;
   min-width: 40px;
+  max-width: 40px;
 }
 
-.rft .evidence-cat-table__proof {
+.rft .evidence-cat-table__name-col {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rft .evidence-cat-table__proof,
+.rft .evidence-cat-table__proof-col {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: flex-start;
   width: auto !important;
@@ -862,10 +894,13 @@
   justify-content: flex-start;
 }
 
-.rft .evidence-cat-table__action {
+.rft .evidence-cat-table__action,
+.rft .evidence-cat-table__action-col {
   display: inline-flex !important;
+  flex: 0 0 auto;
   align-items: center;
   gap: 4px;
+  min-width: 56px;
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;
@@ -883,9 +918,8 @@
 @media (min-width: 768px) {
   .rft .evidence-cat-table__head,
   .rft .evidence-cat-table__row {
-    grid-template-columns: 64px 200px minmax(0, 1fr) 72px auto;
-    gap: 16px;
     align-items: center;
+    gap: 16px;
   }
 
   .rft .evidence-cat-table__head {
@@ -909,11 +943,30 @@
     display: contents !important;
   }
 
-  .rft .evidence-cat-table__score {
+  .rft .evidence-cat-table__score,
+  .rft .evidence-cat-table__score-col {
+    flex: 0 0 64px;
     width: 64px !important;
+    min-width: 64px;
+    max-width: 64px;
   }
 
-  .rft .evidence-cat-table__proof {
+  .rft .evidence-cat-table__name,
+  .rft .evidence-cat-table__name-col {
+    flex: 0 0 200px;
+    width: 200px;
+    max-width: 200px;
+  }
+
+  .rft .evidence-cat-table__summary,
+  .rft .evidence-cat-table__summary-col {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .rft .evidence-cat-table__proof,
+  .rft .evidence-cat-table__proof-col {
+    flex: 0 0 72px;
     width: 72px !important;
   }
 }
