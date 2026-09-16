@@ -71,25 +71,3 @@ const { data } = Astro.props;
   </div>
   <div class="home-v2__hero-fill" aria-hidden="true"></div>
 </section>
-
-<section class="home-v2__proof-bridge" aria-label="Testing proof">
-  <div class="home-v2__proof">
-    {data.proofFacts.map((fact, i) => (
-      <>
-        {i > 0 && <span class="home-v2__proof-div" aria-hidden="true"></span>}
-        <div class="home-v2__proof-metric">
-          <p class="home-v2__proof-value">{fact.value}</p>
-          <p>{fact.label}</p>
-        </div>
-      </>
-    ))}
-  </div>
-  <div class="home-v2__finalists home-v2__finalists--proof">
-    <div class="home-v2__finalist-stack">
-      {data.finalists.map((app) => (
-        <img src={app.logo} alt="" width="28" height="28" class="home-v2__app-icon home-v2__app-icon--sm" />
-      ))}
-    </div>
-    <p>The {data.finalists.length} finalists in our 2026 rankings</p>
-  </div>
-</section>
