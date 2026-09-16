@@ -5,6 +5,9 @@
   --site-on-ink: #f7f7f6;
   --site-on-ink-muted: #a4a3aa;
   --site-ink-border: rgb(255 255 255 / 8%);
+  /* Match /guides/ourdream-ai (.home-v2) so header content shares that column. */
+  --home-gutter: 32px;
+  --home-max: 1120px;
   position: relative;
   z-index: 2;
   display: flex;
@@ -37,9 +40,11 @@
 .site-ink-hero .home-v2__header {
   position: relative;
   z-index: 4;
+  box-sizing: border-box;
   width: 100%;
   max-width: none;
-  padding-inline: max(1rem, calc((100% - 1120px) / 2 + 1rem));
+  margin-inline: 0;
+  padding-inline: max(var(--home-gutter, 32px), calc((100% - var(--home-max, 1120px)) / 2));
 }
 
 .site-ink-hero__body {
@@ -126,6 +131,18 @@
 
 .site-ink-hero .test-inline-link {
   color: rgb(219 39 119 / 90%);
+}
+
+@media (max-width: 1200px) {
+  .site-ink-hero {
+    --home-gutter: 28px;
+  }
+}
+
+@media (max-width: 720px) {
+  .site-ink-hero {
+    --home-gutter: 20px;
+  }
 }
 
 @media (min-width: 768px) {

@@ -95,6 +95,9 @@ html[data-theme='dark'] .home-v2__header--standard .home-v2__logo {
   justify-content: space-between;
   height: 80px;
   padding-block: 0;
+  /* Same centered 1120px / gutter system as .home-v2 (OurDream hub). Fallbacks
+     keep global SiteInkHero pages aligned when they are not wrapped in .home-v2. */
+  padding-inline: max(var(--home-gutter, 32px), calc((100% - var(--home-max, 1120px)) / 2));
   background: transparent;
   border-bottom: 1px solid var(--home-ink-border);
 }

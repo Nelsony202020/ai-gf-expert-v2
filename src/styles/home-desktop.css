@@ -80,7 +80,7 @@
 .home-v2__latest,
 .home-v2__method,
 .home-v2__cta {
-  padding-inline: max(var(--home-gutter), calc((100% - var(--home-max)) / 2));
+  padding-inline: max(var(--home-gutter, 32px), calc((100% - var(--home-max, 1120px)) / 2));
 }
 
 .home-v2__hero,
