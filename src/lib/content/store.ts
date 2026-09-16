@@ -53,6 +53,7 @@ function categorySortKey(slug: string, detail?: { displayOrder?: number }): numb
 import { formatAudienceList, splitLegacyLines } from '../cms/format';
 import { mapCharacterForPublic, selectPublicHighlightCharacters } from '../characters/public';
 import { affiliateRel, DEFAULT_AFFILIATE_REL } from '../affiliate/rel';
+import { publicAffiliateHref } from '../affiliate/publicHref';
 import { cdnAsset } from '../media/cdn';
 import { isPlaceholderImage, PUBLIC_HERO_FALLBACK } from '../media/optimize';
 import { buildGroupedContributors } from '../ratings/groupContributors';
@@ -384,7 +385,7 @@ function mapProduct(
     websiteUrl: dbProduct.websiteUrl ?? fileFallback?.websiteUrl ?? '',
     affiliateUrl: activeLink
       ? `/go/${activeLink.cloakedSlug}`
-      : dbProduct.websiteUrl ?? fileFallback?.affiliateUrl ?? '',
+      : publicAffiliateHref(dbProduct.slug, fileFallback?.affiliateUrl) ?? '',
     affiliateRel: affiliateRel(activeLink?.relTags),
     logo,
     featuredImage,
@@ -619,16 +620,24 @@ export interface RoundupPublicLoad {
  * Overlays DB metadata when a roundup record exists and hydrates individual picks
  * from published products where available.
  */
+function normalizeRoundupPickAffiliateUrls(picks: RoundupPick[]): RoundupPick[] {
+  return picks.map((pick) => ({
+    ...pick,
+    affiliateUrl: publicAffiliateHref(pick.slug, pick.affiliateUrl) ?? pick.affiliateUrl ?? '',
+  }));
+}
+
 export async function loadRoundupForPublic(
   slug: string,
   fileTemplate: Roundup,
 ): Promise<RoundupPublicLoad> {
   if (!isDbConfigured()) {
+    const picks = normalizeRoundupPickAffiliateUrls(fileTemplate.picks);
     return {
       roundup: {
         ...fileTemplate,
-        picks: fileTemplate.picks,
-        compareDefaultIds: launchCompareDefaultIds(fileTemplate.picks, fileTemplate.compareDefaultIds),
+        picks,
+        compareDefaultIds: launchCompareDefaultIds(picks, fileTemplate.compareDefaultIds),
       },
       isDraft: false,
     };
@@ -674,7 +683,11 @@ export async function loadRoundupForPublic(
     return { roundup, isDraft };
   } catch (error) {
     console.error('[content] roundup public load failed — using file template', error);
-    return { roundup: fileTemplate, isDraft: true };
+    const picks = normalizeRoundupPickAffiliateUrls(fileTemplate.picks);
+    return {
+      roundup: { ...fileTemplate, picks },
+      isDraft: true,
+    };
   }
 }
 

@@ -263,7 +263,7 @@ const auraAi: Product = {
     },
   ],
   websiteUrl: 'https://example.com/aura-ai',
-  affiliateUrl: 'https://example.com/go/aura-ai',
+  affiliateUrl: '/go/aura-ai',
   affiliateRel: 'sponsored nofollow',
   gallery: [
     { full: img('aura-hero', 1280, 720), thumb: img('aura-hero', 320, 200), alt: 'Aura AI interface' },

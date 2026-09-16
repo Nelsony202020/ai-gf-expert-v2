@@ -317,7 +317,7 @@ const picks: RoundupPick[] = [
     cons: ['Premium features locked behind higher tiers', 'No native Android app yet'],
     ourTake:
       'Candy AI is the app we recommend when someone asks for a single best AI girlfriend in 2026. It rarely tops every individual category, but it avoids weak spots better than any rival.',
-    affiliateUrl: 'https://example.com/go/candy-ai',
+    affiliateUrl: '/go/candy-ai',
     reviewUrl: '/reviews/candy-ai/',
   },
   {
@@ -352,7 +352,7 @@ const picks: RoundupPick[] = [
     cons: ['Some negative press'],
     ourTake:
       'OurDream AI scored very well across all categories in our tests — one of the most complete platforms in the category.',
-    affiliateUrl: 'https://example.com/go/ourdream-ai',
+    affiliateUrl: '/go/ourdream-ai',
     reviewUrl: '/reviews/ourdream-ai/',
   },
   {
@@ -381,7 +381,7 @@ const picks: RoundupPick[] = [
     cons: ['Image quality trails top picks', 'No voice or video calling'],
     ourTake:
       'GirlfriendGPT offers one of the best adult roleplay experiences we have tested — ideal for story-driven sessions.',
-    affiliateUrl: 'https://example.com/go/girlfriendgpt',
+    affiliateUrl: '/go/girlfriendgpt',
     reviewUrl: '/reviews/girlfriendgpt/',
   },
 ];

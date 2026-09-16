@@ -5,6 +5,7 @@ import { loadRoundupForPublic, loadPublishedProducts, loadProductLogoMap } from 
 import { isPlaceholderImage } from '../media/optimize';
 import { isPlaceholderLogo, resolveBrandLogo } from './brandLogos';
 import { figmaScoreTone, formatScore } from './figmaScore';
+import { publicAffiliateHref } from '../affiliate/publicHref';
 
 const WINNER_CARD_KEYS = ['images', 'characters', 'chat'] as const;
 const TOP_CARD_KEYS = ['chat', 'images', 'video'] as const;
@@ -234,7 +235,7 @@ function toRanked(
     overallNumber: pick.overallScore,
     award: pick.awards?.[0]?.label,
     reviewUrl: pick.reviewUrl,
-    affiliateUrl: pick.affiliateUrl,
+    affiliateUrl: publicAffiliateHref(pick.slug, pick.affiliateUrl) ?? '',
     priceLabel: priceLabel(pick.priceMonthly),
     bars,
     summary: pick.overallSummary || pick.intro,

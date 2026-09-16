@@ -5,6 +5,7 @@ import { launchCompareDefaultIds } from './launchProducts';
 import { buildAtGlanceStats } from '../roundup/atGlance';
 import { loadPricingTabViewModel } from '../pricing-tab/loadPricingTab';
 import { attachAwardsToPicks } from '../awards/compute';
+import { publicAffiliateHref } from '../affiliate/publicHref';
 
 export interface RoundupEntryMeta {
   slug: string;
@@ -53,7 +54,8 @@ export function productToRoundupPick(template: RoundupPick, product: Product): R
     pros: overall?.pros?.length ? overall.pros : template.pros,
     cons: overall?.cons?.length ? overall.cons : template.cons,
     reviewUrl: reviewPageUrl(product.slug),
-    affiliateUrl: product.affiliateUrl || template.affiliateUrl,
+    affiliateUrl:
+      publicAffiliateHref(product.slug, product.affiliateUrl || template.affiliateUrl) ?? '',
     priceMonthly: parseMonthlyPrice(product.pricingDisplay.monthly) ?? template.priceMonthly,
   };
 }

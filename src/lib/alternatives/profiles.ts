@@ -22,7 +22,7 @@ const FALLBACK_PROFILES: Record<
     priceMonthly: 19.99,
     searchInterest: 70,
     reviewUrl: '/reviews/ourdream-ai/',
-    affiliateUrl: 'https://example.com/go/ourdream-ai',
+    affiliateUrl: '/go/ourdream-ai',
     categoryScores: [8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 8.4, 8.0],
   },
   'candy-ai': {
@@ -31,7 +31,7 @@ const FALLBACK_PROFILES: Record<
     priceMonthly: 12.99,
     searchInterest: 85,
     reviewUrl: '/reviews/candy-ai/',
-    affiliateUrl: 'https://example.com/go/candy-ai',
+    affiliateUrl: '/go/candy-ai',
     categoryScores: [9.3, 9.1, 9.4, 9.0, 9.2, 8.6, 8.8, 8.5],
   },
   kindroid: {
@@ -47,7 +47,7 @@ const FALLBACK_PROFILES: Record<
     priceMonthly: 15.0,
     searchInterest: 58,
     reviewUrl: '/reviews/girlfriendgpt/',
-    affiliateUrl: 'https://example.com/go/girlfriendgpt',
+    affiliateUrl: '/go/girlfriendgpt',
     categoryScores: [8.0, 7.8, 8.5, 8.2, 7.5, 6.8, 7.8, 7.6],
   },
   'nectar-ai': {
