@@ -3,11 +3,14 @@ import { legalPages } from '../data/legal-pages';
 import { BRAND_CHANNELS } from '../data/social-links';
 import SocialIcon from './ui/SocialIcon.astro';
 import ThemeToggle from './ui/ThemeToggle.astro';
+import ArticleFeedbackPanel from './article/ArticleFeedbackPanel.astro';
 
 const year = new Date().getFullYear();
 const legalBySlug = Object.fromEntries(legalPages.map((page) => [page.slug, page]));
 
-const columns = [
+type FooterLink = { label: string; href?: string; action?: 'feedback' };
+
+const columns: { title: string; links: FooterLink[] }[] = [
   {
     title: 'Explore',
     links: [
@@ -41,6 +44,7 @@ const columns = [
       { label: 'Contact', href: '/contact/' },
       { label: 'Editorial Guidelines', href: '/editorial-guidelines/' },
       { label: 'Affiliate Disclosure', href: '/legal/affiliate-disclosure/' },
+      { label: 'Send feedback', action: 'feedback' },
     ],
   },
 ];
@@ -98,9 +102,15 @@ const legal = [
               <ul class="site-footer__links">
                 {col.links.map((link) => (
                   <li>
-                    <a href={link.href} class="site-footer__link">
-                      {link.label}
-                    </a>
+                    {link.action === 'feedback' ? (
+                      <button type="button" class="site-footer__link" data-footer-feedback>
+                        {link.label}
+                      </button>
+                    ) : (
+                      <a href={link.href} class="site-footer__link">
+                        {link.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -131,3 +141,24 @@ const legal = [
     </div>
   </div>
 </footer>
+
+<ArticleFeedbackPanel />
+
+<script>
+  function initFooterFeedback() {
+    document.querySelectorAll<HTMLButtonElement>('[data-footer-feedback]').forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+      btn.addEventListener('click', () => {
+        window.dispatchEvent(
+          new CustomEvent('article-feedback:open', {
+            detail: { title: document.title, url: window.location.href },
+          }),
+        );
+      });
+    });
+  }
+
+  initFooterFeedback();
+  document.addEventListener('astro:page-load', initFooterFeedback);
+</script>

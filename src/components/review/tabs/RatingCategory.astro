@@ -1,14 +1,11 @@
 ---
 import type { RatingCategory as RatingCategoryType } from '../../../data/products';
-import type { DraftCategory, DraftEvidenceCategory } from '../../../lib/draft-ratings/types';
-import { getDraftScoreVisual } from '../../../lib/draft-ratings/scoreBands';
+import type { DraftCategory } from '../../../lib/draft-ratings/types';
 import { deferPricingBenchmarkScores, PRICING_BENCHMARK_PENDING_NOTE } from '../../../lib/ratings/evidenceIcons';
-import { evidenceCategoriesToTooltipItems } from '../../../lib/ratings/evidenceTooltipItems';
 import { fmtScore } from '../../../lib/scores';
-import DraftScorePill from '../DraftScorePill.astro';
+import { figmaScoreBarWidth, getFigmaScoreTone } from '../../../lib/ratings/figmaScoreTone';
 import EvidenceCategoryTable from '../EvidenceCategoryTable.astro';
-import SubscoreScoreTooltip from '../tooltips/SubscoreScoreTooltip.astro';
-import CategoryScoreTooltip from '../tooltips/CategoryScoreTooltip.astro';
+import RatingsCategoryIcon from '../RatingsCategoryIcon.astro';
 import { buildReviewRatingsHash } from '../../../lib/review/ratingsDeepLink';
 
 interface Props {
@@ -16,211 +13,212 @@ interface Props {
   enrichedCategory?: DraftCategory;
   productName?: string;
   productSlug?: string;
+  headline?: string;
+  summary?: string;
   open?: boolean;
-  isFirst?: boolean;
-  isLast?: boolean;
 }
 
-const { category, enrichedCategory, productName, productSlug, open = false, isFirst = false, isLast = false } = Astro.props;
+const {
+  category,
+  enrichedCategory,
+  productSlug,
+  headline,
+  summary,
+  open = false,
+} = Astro.props;
 const categoryLabel = category.key === 'pricing' ? 'Pricing' : category.name;
 const subscoreCount = category.subscores.length;
 const subscoreMeta = `${subscoreCount} subscore${subscoreCount === 1 ? '' : 's'} · ${category.weight}% of overall score`;
-
-function contributorDrawerIdsForSub(
-  subIndex: number,
-  sub: RatingCategoryType['subscores'][number],
-  evidenceCategories: DraftEvidenceCategory[],
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const ec of evidenceCategories) {
-    out[ec.name] = ec.drawerId;
-  }
-  sub.contributors.forEach((c, ci) => {
-    if (out[c.label]) return;
-    const match = evidenceCategories.find((ec) => ec.name.toLowerCase() === c.label.toLowerCase());
-    out[c.label] = match?.drawerId ?? `evidence-fallback-${category.key}-${subIndex}-${ci}`;
-  });
-  return out;
-}
+const contentId = `ratings-panel-${category.key}`;
+const tone = getFigmaScoreTone(category.score);
+const barWidth = figmaScoreBarWidth(category.score);
 
 const subscorePanels = category.subscores.map((sub, i) => {
   const enrichedSub = enrichedCategory?.subscores.find((s) => s.name === sub.name);
   const evidenceCategories = enrichedSub?.evidenceCategories ?? [];
-  const deferScores =
-    productSlug && enrichedSub ? deferPricingBenchmarkScores(productSlug, enrichedSub.slug) : false;
   const calcDrawerId = enrichedSub
     ? `subscore-calc-${enrichedCategory?.slug}-${enrichedSub.slug}`
     : undefined;
+  const evidenceCount = evidenceCategories.length || sub.contributors.length;
   return {
     sub,
     index: i,
     evidenceCategories,
-    evidenceItems: evidenceCategoriesToTooltipItems(evidenceCategories, deferScores),
     calcDrawerId,
-    contributorDrawerIds: contributorDrawerIdsForSub(i, sub, evidenceCategories),
-    deferScores,
+    evidenceCount,
+    tone: getFigmaScoreTone(sub.score),
   };
 });
 const sectionHash = buildReviewRatingsHash(category.key);
 ---
 
-<div
-  class:list={[
-    'ratings-accordion__item',
-    isFirst && 'ratings-accordion__item--first',
-    isLast && 'ratings-accordion__item--last',
-  ]}
-  id={sectionHash}
-  data-category={category.key}
->
-  <div class="ratings-accordion__category-heading">
-    <button
-      type="button"
-      data-accordion-toggle
-      aria-expanded={open ? 'true' : 'false'}
-      aria-label={`Toggle ${categoryLabel} details`}
-      class="ratings-accordion__toggle"
-    >
-      <div class="ratings-accordion__toggle-main">
-        <span aria-hidden="true">
-          <DraftScorePill score={category.score} size="md" variant="solid" shape="badge" />
+<div class="rft-cat" id={sectionHash} data-category={category.key}>
+  <button
+    type="button"
+    data-accordion-toggle
+    aria-expanded={open ? 'true' : 'false'}
+    aria-controls={contentId}
+    aria-label={`Toggle ${categoryLabel} details`}
+    class="rft-cat__toggle"
+  >
+    <span class="rft-cat__icon">
+      <RatingsCategoryIcon categoryKey={category.key} />
+    </span>
+    <span class="rft-cat__main">
+      <span class="rft-cat__top">
+        <span class="rft-cat__copy">
+          <span class="rft-cat__name ratings-accordion__title">{categoryLabel}</span>
+          <span class="rft-cat__meta">{subscoreMeta}</span>
         </span>
-        <div class="ratings-accordion__toggle-copy">
-          <div class="ratings-accordion__title-row">
-            <h3 class="ratings-accordion__title">{categoryLabel}</h3>
-            <CategoryScoreTooltip category={category} instance="ratings" />
+        <span class:list={['rft-cat__score', `rft-score--${tone}`]}>{fmtScore(category.score)}</span>
+      </span>
+      <span class="rft-cat__track" aria-hidden="true">
+        <span class:list={['rft-cat__fill', `rft-score-fill--${tone}`]} style={`width: ${barWidth}`}></span>
+      </span>
+    </span>
+    <span class="rft-cat__chevron" aria-hidden="true">
+      <img
+        class="rft-cat__chevron-img rft-cat__chevron-img--down"
+        src="/icons/ratings/chevron-down.svg"
+        width="16"
+        height="16"
+        alt=""
+      />
+      <img
+        class="rft-cat__chevron-img rft-cat__chevron-img--up"
+        src="/icons/ratings/chevron-up.svg"
+        width="16"
+        height="16"
+        alt=""
+      />
+    </span>
+  </button>
+
+  <div id={contentId} data-accordion-content class:list={['rft-cat__panel', !open && 'hidden']}>
+    <div class="rft-cat__body" data-subscore-grid>
+      {
+        (headline || summary) && (
+          <div class="rft-summary">
+            {headline && <p class="rft-summary__headline">{headline}</p>}
+            {summary && <p class="rft-summary__text">{summary}</p>}
           </div>
-          <p class="ratings-accordion__meta">{subscoreMeta}</p>
-        </div>
-      </div>
-      <span class="material-symbols-outlined ratings-accordion__chevron" aria-hidden="true">expand_more</span>
-    </button>
-  </div>
-
-  <div data-accordion-content class:list={['ratings-accordion__content', !open && 'hidden']}>
-    <div class="ratings-accordion__expanded" data-subscore-grid>
-      <p class="ratings-subscore-nav__label ratings-tree-eyebrow">Subscores</p>
-      <div class="ratings-subscore-stack ratings-tree ratings-tree--subscores" data-subscore-list>
+        )
+      }
+      <p class="rft-subscores-label">Subscores</p>
+      <div class="rft-subscores" data-subscore-list>
         {
-          subscorePanels.map(
-            ({
-              sub,
-              index: i,
-              calcDrawerId,
-              contributorDrawerIds,
-              evidenceItems,
-              evidenceCategories,
-            }) => {
-              const sv = getDraftScoreVisual(sub.score);
-              const enrichedSub = enrichedCategory?.subscores.find((s) => s.name === sub.name);
-              const showBenchmarkNote =
-                category.key === 'pricing' &&
-                productSlug &&
-                enrichedSub &&
-                deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
-              const tableId = `evidence-${category.key}-${sub.name}`.replace(/[^a-zA-Z0-9_-]/g, '-');
-              const deferScores =
-                enrichedSub && productSlug && deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
-              return (
-                <div class="ratings-subscore-block" data-subscore-block data-subscore-index={i}>
-                  <div
-                    class="ratings-subscore-nav__item"
-                    data-subscore-select
-                    data-subscore-index={i}
-                    data-score-text={sv.text}
-                    role="button"
-                    tabindex="0"
-                    aria-selected="false"
-                  >
-                    <DraftScorePill score={sub.score} size="sm" variant="outline" />
-                    <span class="ratings-subscore-nav__label-row">
-                      <span data-subscore-label class="ratings-subscore-nav__name">{sub.name}</span>
-                      <SubscoreScoreTooltip
-                        categoryKey={category.key}
-                        categoryName={category.name}
-                        brandName={productName}
-                        sub={sub}
-                        compact
-                        calcDrawerId={calcDrawerId}
-                        contributorDrawerIds={contributorDrawerIds}
-                        evidenceItems={evidenceItems.length > 0 ? evidenceItems : undefined}
-                      />
-                    </span>
-                    <span
-                      data-subscore-chevron
-                      class="material-symbols-outlined ratings-subscore-nav__chevron"
-                      aria-hidden="true"
-                    >
-                      chevron_right
-                    </span>
-                  </div>
-
-                  <div
-                    data-subscore-panel
-                    data-subscore-breakdown
-                    data-detail-tier="deep"
-                    data-subscore-index={i}
-                    class="ratings-subscore-panel-inline hidden"
-                  >
-                    <div class="ratings-evidence-head">
-                      <p class="ratings-evidence-head__title">
-                        <span class="ratings-evidence-head__title-full">Evidence breakdown</span>
-                        <span class="ratings-evidence-head__title-short">Evidence</span>
-                      </p>
-                      {
-                        calcDrawerId && (
-                          <button
-                            type="button"
-                            class="ratings-subscore-panel__calc-link"
-                            data-ratings-open-drawer={calcDrawerId}
-                            aria-haspopup="dialog"
-                            aria-label={`Why ${deferScores ? 'this score' : fmtScore(sub.score)}? Open score calculation`}
-                          >
-                            Why {deferScores ? 'this score' : fmtScore(sub.score)}?
-                            <span class="ratings-subscore-panel__calc-arrow" aria-hidden="true">→</span>
-                          </button>
-                        )
-                      }
-                    </div>
-
-                    {
-                      showBenchmarkNote && (
-                        <p class="ratings-subscore-panel__benchmark-note" role="note">
-                          {PRICING_BENCHMARK_PENDING_NOTE}
-                        </p>
-                      )
-                    }
-
-                    <div class="ratings-tree ratings-tree--evidence">
-                      {
-                        evidenceCategories.length > 0 ? (
-                          <EvidenceCategoryTable tableId={tableId} items={evidenceCategories} hideScores={deferScores} />
-                        ) : (
-                          <EvidenceCategoryTable
-                            tableId={tableId}
-                            hideScores={deferScores}
-                            items={sub.contributors.map((c, ci) => ({
-                              slug: c.label.toLowerCase().replace(/\s+/g, '-'),
-                              name: c.label,
-                              score: deferScores ? null : c.internalScore ?? sub.score,
-                              summary: c.value,
-                              cardTeaser: c.value,
-                              testResults: [],
-                              drawerId: `evidence-fallback-${category.key}-${i}-${ci}`,
-                              proofCount: 0,
-                              proofLabel: '',
-                              selectedProof: [],
-                            }))}
-                          />
-                        )
-                      }
-                    </div>
-                  </div>
-                </div>
-              );
-            },
-          )
+          subscorePanels.map(({ sub, index: i, evidenceCount, tone: subTone }) => {
+            const evidenceId = `evidence-region-${category.key}-${i}`;
+            return (
+            <button
+              type="button"
+              class="rft-subscore"
+              data-subscore-select
+              data-subscore-index={i}
+              data-score-text={fmtScore(sub.score)}
+              aria-expanded="false"
+              aria-controls={evidenceId}
+            >
+              <span class="rft-subscore__top">
+                <span class:list={['rft-subscore__score', `rft-score--${subTone}`]}>{fmtScore(sub.score)}</span>
+                <img
+                  data-subscore-chevron
+                  class="rft-subscore__chevron"
+                  src="/icons/ratings/chevron-right.svg"
+                  width="16"
+                  height="16"
+                  alt=""
+                />
+              </span>
+              <span data-subscore-label class="rft-subscore__name">
+                {sub.name}
+              </span>
+              <span class="rft-subscore__meta">
+                {evidenceCount} evidence item{evidenceCount === 1 ? '' : 's'}
+              </span>
+            </button>
+            );
+          })
         }
+      </div>
+      <div class="rft-evidence-stack" data-evidence-stack>
+        <div class="rft-evidence-stack__clip">
+        {
+          subscorePanels.map(({ sub, index: i, calcDrawerId, evidenceCategories }) => {
+            const enrichedSub = enrichedCategory?.subscores.find((s) => s.name === sub.name);
+            const showBenchmarkNote =
+              category.key === 'pricing' &&
+              productSlug &&
+              enrichedSub &&
+              deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
+            const tableId = `evidence-${category.key}-${sub.name}`.replace(/[^a-zA-Z0-9_-]/g, '-');
+            const evidenceId = `evidence-region-${category.key}-${i}`;
+            const deferScores =
+              enrichedSub && productSlug && deferPricingBenchmarkScores(productSlug, enrichedSub.slug);
+            return (
+              <div
+                id={evidenceId}
+                data-subscore-panel
+                data-subscore-breakdown
+                data-detail-tier="deep"
+                data-subscore-index={i}
+                class="rft-evidence-slot"
+                aria-hidden="true"
+                inert
+              >
+                <div class="rft-evidence-slot__inner">
+                <div class="rft-evidence">
+                <div class="rft-evidence__head">
+                  <p class="rft-evidence__title">Evidence · {sub.name}</p>
+                  {calcDrawerId && (
+                    <button
+                      type="button"
+                      class="rft-evidence__why"
+                      data-ratings-open-drawer={calcDrawerId}
+                      aria-haspopup="dialog"
+                      aria-label={`Why ${deferScores ? 'this score' : fmtScore(sub.score)}? Open score calculation`}
+                    >
+                      Why {deferScores ? 'this score' : fmtScore(sub.score)}?
+                      <img src="/icons/ratings/arrow-right.svg" width="13" height="13" alt="" />
+                    </button>
+                  )}
+                </div>
+                {showBenchmarkNote && (
+                  <p class="rft-evidence__note" role="note">
+                    {PRICING_BENCHMARK_PENDING_NOTE}
+                  </p>
+                )}
+                <EvidenceCategoryTable tableId={tableId} items={
+                  evidenceCategories.length > 0
+                    ? evidenceCategories
+                    : sub.contributors.map((c, ci) => ({
+                        slug: c.label.toLowerCase().replace(/\s+/g, '-'),
+                        name: c.label,
+                        score: deferScores ? null : c.internalScore ?? sub.score,
+                        summary: c.value,
+                        cardTeaser: c.value,
+                        testResults: [],
+                        drawerId: `evidence-fallback-${category.key}-${i}-${ci}`,
+                        proofCount: 0,
+                        proofLabel: '',
+                        selectedProof: [],
+                      }))
+                } hideScores={deferScores} />
+                <p class="rft-evidence__foot">
+                  <span class="rft-evidence__foot-desktop">
+                    Showing evidence for the selected subscore. Pick another subscore card to switch tables.
+                  </span>
+                  <span class="rft-evidence__foot-mobile">
+                    Showing evidence for the selected subscore. Tap another subscore card to switch tables.
+                  </span>
+                </p>
+                </div>
+                </div>
+              </div>
+            );
+          })
+        }
+        </div>
       </div>
     </div>
   </div>
@@ -228,7 +226,7 @@ const sectionHash = buildReviewRatingsHash(category.key);
 
 <script>
   function initSubscoreSelect() {
-    document.querySelectorAll<HTMLElement>('[data-category]').forEach((categoryEl) => {
+    document.querySelectorAll<HTMLElement>('[data-ratings-root] [data-category]').forEach((categoryEl) => {
       if (categoryEl.dataset.subscoreBound === 'true') return;
       categoryEl.dataset.subscoreBound = 'true';
 
@@ -236,46 +234,54 @@ const sectionHash = buildReviewRatingsHash(category.key);
       const panels = Array.from(categoryEl.querySelectorAll<HTMLElement>('[data-subscore-panel]'));
       if (!cards.length || !panels.length) return;
 
-      function setChevron(card: HTMLElement, open: boolean) {
-        const chevron = card.querySelector<HTMLElement>('[data-subscore-chevron]');
-        if (chevron) chevron.textContent = open ? 'expand_less' : 'chevron_right';
+      let activeIndex: string | null = null;
+      const stack = categoryEl.querySelector<HTMLElement>('[data-evidence-stack]');
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let collapseTimer = 0;
+
+      function syncPanel(panel: HTMLElement, isActive: boolean) {
+        panel.classList.toggle('is-open', isActive);
+        panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+        panel.toggleAttribute('inert', !isActive);
+      }
+
+      function applySubscoreState(index: string | null, scrollToBreakdown = false) {
+        window.clearTimeout(collapseTimer);
+        activeIndex = index;
+        cards.forEach((card) => {
+          const isActive = index != null && card.dataset.subscoreIndex === index;
+          card.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+          card.classList.toggle('rft-subscore--selected', isActive);
+        });
+
+        const grid = categoryEl.querySelector<HTMLElement>('[data-subscore-grid]');
+        if (index) {
+          panels.forEach((panel) => syncPanel(panel, panel.dataset.subscoreIndex === index));
+          grid?.setAttribute('data-subscore-open', 'true');
+          stack?.classList.add('is-open');
+        } else {
+          stack?.classList.remove('is-open');
+          grid?.removeAttribute('data-subscore-open');
+          const hide = () => panels.forEach((panel) => syncPanel(panel, false));
+          if (reduceMotion) hide();
+          else collapseTimer = window.setTimeout(hide, 200);
+        }
+
+        if (scrollToBreakdown && index) {
+          requestAnimationFrame(() => {
+            categoryEl
+              .querySelector<HTMLElement>(`[data-subscore-panel][data-subscore-index="${index}"].is-open`)
+              ?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
+          });
+        }
       }
 
       function clearSubscoreSelection() {
-        cards.forEach((card) => {
-          card.setAttribute('aria-selected', 'false');
-          card.classList.remove('ratings-subscore-nav__item--active');
-          setChevron(card, false);
-        });
-        panels.forEach((panel) => panel.classList.add('hidden'));
-        categoryEl.querySelector<HTMLElement>('[data-subscore-grid]')?.removeAttribute('data-subscore-open');
+        applySubscoreState(null);
       }
 
       function selectSubscore(index: string, scrollToBreakdown = false) {
-        cards.forEach((card) => {
-          const isActive = card.dataset.subscoreIndex === index;
-          card.setAttribute('aria-selected', isActive ? 'true' : 'false');
-          card.classList.toggle('ratings-subscore-nav__item--active', isActive);
-          setChevron(card, isActive);
-        });
-
-        panels.forEach((panel) => {
-          panel.classList.toggle('hidden', panel.dataset.subscoreIndex !== index);
-        });
-
-        categoryEl.querySelector<HTMLElement>('[data-subscore-grid]')?.setAttribute('data-subscore-open', 'true');
-
-        if (scrollToBreakdown) {
-          requestAnimationFrame(() => {
-            const activePanel = categoryEl.querySelector<HTMLElement>(
-              `[data-subscore-panel][data-subscore-index="${index}"]:not(.hidden)`,
-            );
-            (activePanel ?? categoryEl.querySelector<HTMLElement>('[data-subscore-grid]'))?.scrollIntoView({
-              behavior: 'smooth',
-              block: 'nearest',
-            });
-          });
-        }
+        applySubscoreState(index, scrollToBreakdown);
       }
 
       categoryEl.clearSubscoreSelection = clearSubscoreSelection;
@@ -284,40 +290,22 @@ const sectionHash = buildReviewRatingsHash(category.key);
       cards.forEach((card) => {
         card.addEventListener('click', (e) => {
           if ((e.target as HTMLElement).closest('.rt-tooltip-trigger')) return;
+          if ((e.target as HTMLElement).closest('[data-ratings-open-drawer]')) return;
           const index = card.dataset.subscoreIndex;
           if (index === undefined) return;
-
-          const root = document.querySelector<HTMLElement>('[data-ratings-root]');
-          const level = root?.dataset.detailLevel ?? 'skim';
-
-          if (level === 'medium' || window.matchMedia('(max-width: 1023px)').matches) {
-            const isActive = card.getAttribute('aria-selected') === 'true';
-            if (isActive) {
-              clearSubscoreSelection();
-              return;
-            }
-          } else if (level === 'all-in') {
-            const isActive = card.getAttribute('aria-selected') === 'true';
-            if (isActive) return;
+          if (activeIndex === index) {
+            applySubscoreState(null);
+            return;
           }
-
-          selectSubscore(index, true);
-        });
-
-        card.addEventListener('keydown', (e) => {
-          if (e.key !== 'Enter' && e.key !== ' ') return;
-          if ((e.target as HTMLElement).closest('.rt-tooltip-trigger')) return;
-          e.preventDefault();
-          const index = card.dataset.subscoreIndex;
-          if (index === undefined) return;
-          selectSubscore(index, true);
+          applySubscoreState(index, true);
         });
       });
 
       const root = document.querySelector<HTMLElement>('[data-ratings-root]');
       const content = categoryEl.querySelector<HTMLElement>('[data-accordion-content]');
       const isOpen = content && !content.classList.contains('hidden');
-      if (root?.dataset.detailLevel === 'all-in' && isOpen) {
+      const level = root?.dataset.detailLevel ?? 'medium';
+      if (level === 'all-in' && isOpen) {
         selectSubscore('0', false);
       } else {
         clearSubscoreSelection();
@@ -325,30 +313,18 @@ const sectionHash = buildReviewRatingsHash(category.key);
     });
   }
 
-  function clearAllSubscores() {
-    document.querySelectorAll<HTMLElement>('[data-category]').forEach((el) => {
-      el.clearSubscoreSelection?.();
-    });
-  }
-
   document.addEventListener('detail-level-change', ((e: CustomEvent) => {
-    if (e.detail?.level === 'medium') clearAllSubscores();
-    if (e.detail?.level === 'all-in') {
-      document.querySelectorAll<HTMLElement>('[data-subscore-list]').forEach((nav) => {
-        nav.classList.add('ratings-subscore-nav--instant');
-      });
-      document.querySelectorAll<HTMLElement>('[data-category]').forEach((el) => {
-        const content = el.querySelector<HTMLElement>('[data-accordion-content]');
-        if (content && !content.classList.contains('hidden')) {
-          el.selectSubscore?.('0', false);
-        }
-      });
-      requestAnimationFrame(() => {
-        document.querySelectorAll<HTMLElement>('[data-subscore-list]').forEach((nav) => {
-          nav.classList.remove('ratings-subscore-nav--instant');
-        });
-      });
-    }
+    const level = e.detail?.level;
+    document.querySelectorAll<HTMLElement>('[data-ratings-root] [data-category]').forEach((el) => {
+      const content = el.querySelector<HTMLElement>('[data-accordion-content]');
+      const isOpen = content && !content.classList.contains('hidden');
+      if (level === 'all-in' && isOpen) {
+        const alreadyOpen = el.querySelector('[data-subscore-select][aria-expanded="true"]');
+        if (!alreadyOpen) el.selectSubscore?.('0', false);
+        return;
+      }
+      // Skim / Medium stay independent of the current subscore toggle.
+    });
   }) as EventListener);
 
   initSubscoreSelect();

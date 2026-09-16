@@ -4,7 +4,8 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import ReviewHero from '../../components/review/ReviewHero.astro';
 import TabBar from '../../components/review/TabBar.astro';
-import type { Tab } from '../../components/review/TabBar.astro';
+import ReviewStickyCta from '../../components/review/ReviewStickyCta.astro';
+import VideoReviewLightbox from '../../components/review/VideoReviewLightbox.astro';
 import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
 import ReviewArticleTab from '../../components/review/tabs/ReviewArticleTab.astro';
 import MarketDataTab from '../../components/review/tabs/MarketDataTab.astro';
@@ -28,6 +29,13 @@ import {
 import { resolveProductPageHead } from '../../lib/seo/productPageHead';
 import JsonLd from '../../components/seo/JsonLd.astro';
 import { buildReviewProductSchema } from '../../lib/seo/jsonld';
+import { buildReviewTabs } from '../../lib/review-shell';
+
+/**
+ * Keep production's on-demand review routing (`prerender = false`).
+ * Overview's later `prerender = true` + `?safe=1` age-gate is not restored:
+ * production already removed the interstitial.
+ */
 export const prerender = false;
 
 const { slug } = Astro.params;
@@ -46,19 +54,7 @@ const showAlternativesTab = hasAlternativesTab(product.slug) && (import.meta.env
 const showPhotosVideosTab = hasPhotosVideosTab(product.slug);
 const showPricingTab = hasPricingTab(product.slug);
 
-const tabs: Tab[] = [
-  { id: 'overview', label: 'Overview', tocLabel: 'Overview' },
-  { id: 'ratings', label: 'Ratings', tocLabel: 'Ratings & Specs' },
-  { id: 'review', label: 'Review', tocLabel: 'Review' },
-  { id: 'photos', label: 'Media', tocLabel: 'Photos & Videos' },
-  { id: 'pricing', label: 'Pricing', tocLabel: 'Pricing' },
-];
-if (showMarketDataTab) {
-  tabs.push({ id: 'market-data', label: 'Market Data', tocLabel: 'Market Data' });
-}
-if (showAlternativesTab) {
-  tabs.push({ id: 'alternatives', label: 'Alternatives', tocLabel: 'Alternatives' });
-}
+const { tabs, hiddenTabs } = buildReviewTabs({ includeMarketData: showMarketDataTab });
 
 const shareUrl = head.canonical;
 const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
@@ -95,22 +91,11 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
       </div>
     )
   }
-  <main id="review-top">
-    <ReviewHero product={product} shareUrl={shareUrl} pageHead={head} isDraft={isDraft} />
-    {featuredIn.length > 0 && (
-      <div class="mx-auto max-w-6xl px-4 pt-3 text-sm text-white/60 hidden md:block">
-        Also featured in:{' '}
-        {featuredIn.map((f, i) => (
-          <>
-            <a href={`/best/${f.slug}`} class="text-white/80 underline decoration-dotted underline-offset-2 hover:text-white">
-              {f.title}{f.position ? ` (#${f.position})` : ''}
-            </a>
-            {i < featuredIn.length - 1 && ', '}
-          </>
-        ))}
-      </div>
-    )}
-    <TabBar tabs={tabs} active="overview" />
+  <main id="review-top" class="review-main">
+    <ReviewHero product={product} featuredIn={featuredIn} />
+    <ReviewStickyCta product={product} />
+    <VideoReviewLightbox product={product} />
+    <TabBar tabs={tabs} hiddenTabs={hiddenTabs} />
 
     <div data-panels>
       <div data-tab-panel="overview">
@@ -166,13 +151,9 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
           </div>
         )
       }
-      {
-        showAlternativesTab && (
-          <div data-tab-panel="alternatives" class="hidden">
-            <AlternativesTab product={product} />
-          </div>
-        )
-      }
+      <div data-tab-panel="alternatives" class="hidden">
+        {showAlternativesTab && <AlternativesTab product={product} />}
+      </div>
     </div>
   </main>
   <Footer />
@@ -192,6 +173,7 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
   import { hydratePanelMedia } from '../../lib/review/hydratePanelMedia.client.ts';
   import { loadRatingsPanel } from '../../lib/review/loadRatingsPanel.client.ts';
   import { subscoreSlugFromLabel } from '../../lib/review/ratingsDeepLink.ts';
+  import { swapReviewTabPanel } from '../../lib/review/reviewTabUi.client.ts';
 
   const TABBAR_OFFSET = 52;
 
@@ -213,53 +195,44 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
     const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-tab-panel]'));
 
     async function setActiveTab(id: string, scroll = true, hashOverride?: string) {
-      let matched = false;
-      let activePanel: HTMLElement | null = null;
-      panels.forEach((panel) => {
-        const isMatch = panel.dataset.tabPanel === id;
-        panel.classList.toggle('hidden', !isMatch);
-        if (isMatch) {
-          matched = true;
-          activePanel = panel;
-        }
+      const hasPanel = panels.some((panel) => panel.dataset.tabPanel === id);
+      if (!hasPanel) return;
+
+      const currentId =
+        panels.find((panel) => !panel.classList.contains('hidden'))?.dataset.tabPanel ?? null;
+      const instant = currentId === id;
+
+      tabButtons.forEach((btn) => {
+        const on = btn.dataset.tab === id;
+        btn.setAttribute('aria-current', on ? 'true' : 'false');
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
       });
-      if (!matched) return;
-      if (id === 'ratings' && activePanel) {
+      document.dispatchEvent(new CustomEvent('review-tabbar:sync-indicator'));
+
+      const activePanel = await swapReviewTabPanel(panels, id, instant);
+      if (!activePanel) return;
+
+      if (id === 'ratings') {
         try {
           await loadRatingsPanel(activePanel);
         } catch {
           /* placeholder stays visible */
         }
       }
-      tabButtons.forEach((btn) => btn.setAttribute('aria-current', btn.dataset.tab === id ? 'true' : 'false'));
       if (history.replaceState) history.replaceState(null, '', hashOverride ?? `#${id}`);
-      if (activePanel) {
-        requestAnimationFrame(() => hydratePanelMedia(activePanel));
-      }
+      requestAnimationFrame(() => hydratePanelMedia(activePanel));
       if (scroll) {
         const y = panelsWrap.getBoundingClientRect().top + window.scrollY - getScrollOffset();
         window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
       }
     }
 
-    // Accordions — only one category open at a time
     function toggleAccordion(toggle: HTMLElement, force?: boolean) {
       const wrapper = toggle.closest('[data-category]');
       const content = wrapper?.querySelector<HTMLElement>('[data-accordion-content]');
       if (!content) return;
 
       const willOpen = force ?? content.classList.contains('hidden');
-
-      if (willOpen) {
-        document.querySelectorAll<HTMLElement>('[data-accordion-group] [data-category]').forEach((cat) => {
-          if (cat === wrapper) return;
-          const otherContent = cat.querySelector<HTMLElement>('[data-accordion-content]');
-          const otherToggle = cat.querySelector<HTMLElement>('[data-accordion-toggle]');
-          if (otherContent) otherContent.classList.add('hidden');
-          if (otherToggle) otherToggle.setAttribute('aria-expanded', 'false');
-        });
-      }
-
       content.classList.toggle('hidden', !willOpen);
       wrapper?.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((el) => {
         el.setAttribute('aria-expanded', willOpen ? 'true' : 'false');

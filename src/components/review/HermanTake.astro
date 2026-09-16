@@ -1,0 +1,43 @@
+---
+import type { AuthorProfile } from '../../data/authors';
+import CmsField from '../cms/CmsField.astro';
+
+interface Props {
+  author: AuthorProfile;
+  quote: string;
+}
+
+const { author, quote } = Astro.props;
+function firstTwoSentences(text: string): string {
+  const parts = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g);
+  if (!parts) return text.trim();
+  return parts.slice(0, 2).join(' ').trim();
+}
+const trimmed = quote.trim();
+if (!trimmed) return;
+const compact = firstTwoSentences(trimmed);
+const avatarSrc = author.avatar || '/brand/herman-main-icon.svg';
+---
+
+<aside class="rs-herman">
+  <span class="rs-herman-bar" aria-hidden="true"></span>
+  <div class="rs-herman-body">
+    <div class="rs-herman-head">
+      <img
+        class="rs-herman-avatar"
+        src={avatarSrc}
+        alt=""
+        width="36"
+        height="36"
+        onerror="this.onerror=null;this.src='/brand/herman-main-icon.svg'"
+      />
+      <div class="rs-herman-id">
+        <p class="rs-herman-title">Herman’s take</p>
+        <p class="rs-herman-role">{author.name} · Lead reviewer</p>
+      </div>
+    </div>
+    <p class="rs-herman-copy">
+      <CmsField path="expertOpinion">{compact}</CmsField>
+    </p>
+  </div>
+</aside>

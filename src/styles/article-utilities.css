@@ -445,6 +445,29 @@
   border: none;
   background: var(--color-surface-container-lowest);
   box-shadow: 0 4px 14px rgb(0 0 0 / 7%);
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.88);
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out,
+    visibility 0.2s ease-out;
+}
+
+.article-util-rail__btn--top.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.article-util-rail__btn--top[hidden] {
+  display: none;
+}
+
+.article-util-rail__btn--top.is-visible[hidden] {
+  display: inline-flex;
 }
 
 .article-util-rail__progress {
@@ -717,9 +740,12 @@ html.article-feedback-open {
     transform: none !important;
   }
 
+  .article-util-rail__btn--top,
+  .article-util-rail__btn--top.is-visible,
   .article-util-rail__btn--feedback:hover,
   .article-util-rail__btn--feedback:active {
-    transform: none;
+    transition: none !important;
+    transform: none !important;
   }
 
   .article-feedback__cat:hover {

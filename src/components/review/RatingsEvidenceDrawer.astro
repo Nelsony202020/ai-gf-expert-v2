@@ -1,14 +1,13 @@
 ---
 import type { DraftEvidenceCategory } from '../../lib/draft-ratings/types';
-import { proofShortCaption, enhancedScopeDescription } from '../../lib/draft-ratings/evidenceDrawerContent';
+import { proofShortCaption, enhancedScopeDescription, interpretScoreBand } from '../../lib/draft-ratings/evidenceDrawerContent';
 import {
   getEvidenceMethodology,
   getSubscoreMethodology,
 } from '../../data/evidence-drawer-methodology';
 import { getSubscoreDescription } from '../../data/subscore-descriptions';
 import { fmtScore } from '../../lib/scores';
-import { getDraftScoreChipClass } from '../../lib/draft-ratings/scoreBands';
-import DraftScorePill from './DraftScorePill.astro';
+import { getFigmaScoreTone } from '../../lib/ratings/figmaScoreTone';
 import DrawerNavFooter from './DrawerNavFooter.astro';
 import type { DrawerNav } from '../../lib/draft-ratings/drawerNav';
 
@@ -26,6 +25,7 @@ interface SubscoreCalc {
   categorySlug: string;
   subscoreSlug: string;
   categoryName: string;
+  categoryWeight?: number;
   subscoreName: string;
   subscoreScore: number | null;
   scopeDescription: string;
@@ -50,6 +50,10 @@ interface Props {
 
 const { evidenceCategories, subscoreCalcs, drawerNavById } = Astro.props;
 
+const calcByKey = new Map(
+  subscoreCalcs.map((calc) => [`${calc.categorySlug}/${calc.subscoreSlug}`, calc]),
+);
+
 function relatedMeasurement(ec: DraftEvidenceCategory, proofCaption?: string) {
   if (!proofCaption) return ec.testResults[0];
   const lower = proofCaption.toLowerCase();
@@ -60,24 +64,26 @@ function relatedMeasurement(ec: DraftEvidenceCategory, proofCaption?: string) {
   );
 }
 
-function interpClass(tone?: string): string {
-  if (tone === 'good') return 'ratings-drawer-interp-text ratings-drawer-interp-text--good';
-  if (tone === 'fair') return 'ratings-drawer-interp-text ratings-drawer-interp-text--fair';
-  if (tone === 'poor') return 'ratings-drawer-interp-text ratings-drawer-interp-text--poor';
-  if (tone === 'na') return 'ratings-drawer-interp-text ratings-drawer-interp-text--na';
-  return 'ratings-drawer-interp-text';
+function formatWeight(weight: number | null | undefined): string {
+  if (weight == null || Number.isNaN(weight)) return '—';
+  const rounded = Math.round(weight * 100) / 100;
+  return Number.isInteger(rounded) ? `${rounded}%` : `${rounded.toFixed(2)}%`;
 }
 
-function isPlatformExtras(ec: DraftEvidenceCategory): boolean {
-  return (
-    ec.slug === 'platform-extras-list' ||
-    ec.slug === 'platform-extras' ||
-    ec.testResults.some((m) => m.slug === 'platform-extras-list')
-  );
+function calcScoreLine(score: number | null, items: SubscoreCalcItem[]): string {
+  if (score == null || Number.isNaN(score)) return 'Pending';
+  const band = interpretScoreBand(score);
+  const scored = items.filter((item) => item.score != null && !item.excluded);
+  if (scored.length === 0) return band;
+  const highest = [...scored].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+  if (score >= 7 && highest) return `${band} — strongest on ${highest.name.toLowerCase()}`;
+  return band;
 }
 
-function breadcrumbParts(breadcrumb: string): string[] {
-  return breadcrumb.split(/\s*[›>]\s*/).filter(Boolean);
+function evidenceWeight(ec: DraftEvidenceCategory): number | null {
+  const calc = calcByKey.get(`${ec.categorySlug}/${ec.subscoreSlug}`);
+  const item = calc?.items.find((row) => row.name === ec.name);
+  return item?.weight ?? null;
 }
 ---
 
@@ -98,19 +104,6 @@ function breadcrumbParts(breadcrumb: string): string[] {
             proof,
           };
         });
-      const proofGalleryJson = JSON.stringify(
-        proofItems.map((item) => ({
-          src: item.src,
-          alt: item.alt,
-          caption: item.caption,
-        })),
-      );
-      const showResultsTable = ec.testResults.length > 0 && !isPlatformExtras(ec);
-      const liveCamResult = ec.testResults.find((m) => m.slug === 'live-cam');
-      const showLiveCam =
-        liveCamResult?.value?.toLowerCase().startsWith('yes') ||
-        Boolean(ec.liveCamProof?.length);
-      const showBonusSection = showLiveCam || Boolean(ec.bonusExtras?.length);
       const nav = drawerNavById[ec.drawerId] ?? {};
       const methodology = getEvidenceMethodology(
         ec.categorySlug ?? '',
@@ -120,353 +113,176 @@ function breadcrumbParts(breadcrumb: string): string[] {
       const whatItMeasures =
         methodology?.whatItMeasures ?? enhancedScopeDescription(ec.slug);
       const howWeTested = methodology?.howWeTested;
+      const tone = getFigmaScoreTone(ec.score);
+      const bandLabel = ec.score != null ? interpretScoreBand(ec.score) : 'Pending';
+      const weightLabel = formatWeight(evidenceWeight(ec));
+      const eyebrow = [ec.categoryName, ec.subscoreName].filter(Boolean).join(' · ');
+      const collapsedGallery = proofItems.length > 6;
+      const extraCount = Math.max(0, proofItems.length - 6);
+      const resultRows = [
+        ...ec.testResults.map((m) => ({
+          label: m.label,
+          value: m.value,
+        })),
+        { label: 'Score', value: ec.score != null ? `${fmtScore(ec.score)} / 10` : '—' },
+        {
+          label: 'Interpretation',
+          value: ec.testResults.find((m) => m.interpretation)?.interpretation || bandLabel,
+        },
+      ];
 
       return (
         <template data-ratings-drawer-template={ec.drawerId}>
         <aside
-          class="ratings-drawer-panel"
+          class="ratings-drawer-panel rdv"
           role="dialog"
           aria-modal="true"
           aria-labelledby={`ratings-drawer-title-${ec.drawerId}`}
           data-ratings-drawer-panel={ec.drawerId}
           hidden
         >
-          <div class="ratings-drawer-panel__header">
-            <h2 id={`ratings-drawer-title-${ec.drawerId}`} class="ratings-drawer-panel__title">
-              {ec.name}
-            </h2>
-            <button
-              type="button"
-              class="ratings-drawer-panel__close"
-              data-ratings-close-drawer
-              aria-label="Close evidence details"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">close</span>
-            </button>
+          <div class="rdv-head">
+            <div class="rdv-head__top">
+              <p class="rdv-eyebrow">{eyebrow || 'Evidence'}</p>
+              <button
+                type="button"
+                class="rdv-close"
+                data-ratings-close-drawer
+                aria-label="Close evidence details"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                </svg>
+              </button>
+            </div>
+            <h2 id={`ratings-drawer-title-${ec.drawerId}`} class="rdv-title">{ec.name}</h2>
+            <div class="rdv-scoreline">
+              <span class:list={['rdv-score', `rdv-score--${tone}`]}>{fmtScore(ec.score)}</span>
+              <span class="rdv-scoremeta">
+                <span class="rdv-kicker">Evidence score</span>
+                <span class="rdv-scoremeta__value">{bandLabel}</span>
+              </span>
+              <span class="rdv-scoreline__grow" aria-hidden="true"></span>
+              <span class="rdv-scoremeta rdv-scoremeta--end">
+                <span class="rdv-kicker">Weight in {ec.subscoreName || 'subscore'}</span>
+                <span class="rdv-scoremeta__value">{weightLabel}</span>
+              </span>
+            </div>
           </div>
 
-          <div class="ratings-drawer-panel__body">
-            <header class="ratings-drawer-hero">
-              {ec.breadcrumb && (
-                <p class="ratings-drawer-breadcrumb">
-                  {
-                    breadcrumbParts(ec.breadcrumb).map((part, index, parts) => (
-                      <>
-                        <span
-                          class={
-                            index === parts.length - 1
-                              ? 'ratings-drawer-breadcrumb__current'
-                              : 'ratings-drawer-breadcrumb__parent'
-                          }
-                        >
-                          {part}
-                        </span>
-                        {
-                          index < parts.length - 1 && (
-                            <span
-                              class="material-symbols-outlined ratings-drawer-breadcrumb__sep"
-                              aria-hidden="true"
-                            >
-                              chevron_right
-                            </span>
-                          )
-                        }
-                      </>
-                    ))
-                  }
-                </p>
-              )}
-              <div class="ratings-drawer-hero__banner">
-                <DraftScorePill
-                  score={ec.score}
-                  size="sm"
-                  variant="outline"
-                  shape="badge"
-                  class="ratings-drawer-hero__score-pill"
-                />
-                <div class="ratings-drawer-hero__copy">
-                  <p class="ratings-drawer-hero__score-label">Evidence score</p>
-                  {ec.headlineConclusion && (
-                    <p class="ratings-drawer-hero__conclusion">{ec.headlineConclusion}</p>
-                  )}
-                </div>
-              </div>
-            </header>
+          <div class="rdv-rule" aria-hidden="true"></div>
 
-            <hr class="ratings-drawer-divider" />
-
-            {(whatItMeasures || ec.whatThisMeans) && (
-              <div class="ratings-drawer-dual-cards">
-                {whatItMeasures && (
-                  <section class="ratings-drawer-card ratings-drawer-card--measures">
-                    <p class="ratings-drawer-card__label">
-                      <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
-                        lightbulb
-                      </span>
-                      What this measures
-                    </p>
-                    <p class="ratings-drawer-card__text">{whatItMeasures}</p>
-                  </section>
-                )}
-                {ec.whatThisMeans && (
-                  <section class="ratings-drawer-card ratings-drawer-card--finding">
-                    <p class="ratings-drawer-card__label">
-                      <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
-                        star
-                      </span>
-                      What this means
-                    </p>
-                    <p class="ratings-drawer-card__text">{ec.whatThisMeans}</p>
-                  </section>
-                )}
-              </div>
+          <div class="ratings-drawer-panel__body rdv-body">
+            {whatItMeasures && (
+              <section class="rdv-block">
+                <h3 class="rdv-kicker">What this measures</h3>
+                <p class="rdv-copy">{whatItMeasures}</p>
+              </section>
             )}
 
-            {showBonusSection && (
-              <section class="ratings-drawer-section">
-                <p class="ratings-drawer-section__label">Bonus features</p>
-                <div class="ratings-bonus-cards">
-                  {showLiveCam && (
-                    <article class="ratings-bonus-card">
-                      <div class="ratings-bonus-card__header">
-                        <span class="material-symbols-outlined ratings-bonus-card__icon" aria-hidden="true">
-                          videocam
-                        </span>
-                        <div class="ratings-bonus-card__copy">
-                          <h3 class="ratings-bonus-card__title">Live cam</h3>
-                          <p class="ratings-bonus-card__note">Webcam-style character experience.</p>
-                        </div>
-                      </div>
-                      {ec.liveCamProof && ec.liveCamProof.length > 0 && (
-                        <div class="ratings-bonus-card__proof">
-                          {ec.liveCamProof.map((proof) => (
-                            <button
-                              type="button"
-                              class="ratings-bonus-proof-btn"
-                              data-lightbox-open={proof.fullUrl ?? proof.thumbUrl}
-                              data-lightbox-alt={proof.alt}
-                              data-lightbox-caption="Live cam proof"
-                            >
-                              <img
-                                src={proof.thumbUrl}
-                                alt={proof.alt ?? 'Live cam proof'}
-                                loading="lazy"
-                                class="ratings-bonus-proof-btn__img"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </article>
-                  )}
-                  {ec.bonusExtras?.map((extra) => (
-                    <article class="ratings-bonus-card">
-                      <div class="ratings-bonus-card__header">
-                        <span class="material-symbols-outlined ratings-bonus-card__icon" aria-hidden="true">
-                          stars
-                        </span>
-                        <div class="ratings-bonus-card__copy">
-                          <h3 class="ratings-bonus-card__title">{extra.name}</h3>
-                          {extra.note && <p class="ratings-bonus-card__note">{extra.note}</p>}
-                        </div>
-                      </div>
-                      {extra.proof && extra.proof.length > 0 && (
-                        <div class="ratings-bonus-card__proof">
-                          {extra.proof.map((proof) => (
-                            <button
-                              type="button"
-                              class="ratings-bonus-proof-btn"
-                              data-lightbox-open={proof.fullUrl ?? proof.thumbUrl}
-                              data-lightbox-alt={proof.alt}
-                              data-lightbox-caption={extra.name}
-                            >
-                              <img
-                                src={proof.thumbUrl}
-                                alt={proof.alt ?? extra.name}
-                                loading="lazy"
-                                class="ratings-bonus-proof-btn__img"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </article>
+            {resultRows.length > 0 && (
+              <section class="rdv-block">
+                <h3 class="rdv-kicker">Test result</h3>
+                <div class="rdv-kv">
+                  {resultRows.map((row) => (
+                    <div class="rdv-kv__row">
+                      <span class="rdv-kv__label">{row.label}</span>
+                      <span class="rdv-kv__value">{row.value || '—'}</span>
+                    </div>
                   ))}
                 </div>
               </section>
             )}
 
-            {showResultsTable && (
-              <section class="ratings-drawer-section">
-                <p class="ratings-drawer-section__label">Test results</p>
-                <table class="ratings-drawer-results">
-                  <thead>
-                    <tr>
-                      <th scope="col">{ec.slug === 'amount' ? 'Character group' : 'Test'}</th>
-                      <th scope="col" class="ratings-drawer-results__num">
-                        {ec.slug === 'amount' ? 'Count' : 'Measured result'}
-                      </th>
-                      <th scope="col">Interpretation</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ec.testResults.map((m) => (
-                      <tr>
-                        <td>{m.label}</td>
-                        <td class="ratings-drawer-results__num tabular-nums">
-                          {m.detailLines && m.detailLines.length > 0 ? (
-                            <div class="text-left font-normal normal-case tracking-normal">
-                              <p class="mb-1.5 font-semibold tabular-nums">{m.value}</p>
-                              <ul class="space-y-1.5 text-xs leading-snug">
-                                {m.detailLines.map((line) => (
-                                  <li class="break-words">
-                                    <span class="font-medium text-slate-700 dark:text-slate-200"
-                                      >{line.label}:</span
-                                    >
-                                    {' '}
-                                    <span class="text-slate-500 dark:text-slate-400">{line.value}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ) : (
-                            m.value
-                          )}
-                        </td>
-                        <td>
-                          <span class={interpClass(m.interpretationTone)}>
-                            {m.interpretation ?? '—'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </section>
-            )}
-
             {howWeTested && (
-              <section class="ratings-drawer-section">
-                <p class="ratings-drawer-section__label">How we tested</p>
-                <p class="ratings-drawer-section__text">{howWeTested}</p>
+              <section class="rdv-block">
+                <h3 class="rdv-kicker">How we tested</h3>
+                <p class="rdv-copy">{howWeTested}</p>
                 {ec.methodologyUrl && (
-                  <a href={ec.methodologyUrl} class="ratings-drawer-method-link">
-                    View full {ec.name} methodology
-                    <span class="material-symbols-outlined text-base" aria-hidden="true">arrow_forward</span>
+                  <a href={ec.methodologyUrl} class="rdv-link">
+                    View full {ec.name} methodology →
                   </a>
                 )}
               </section>
             )}
 
-            {proofItems.length > 0 && (
-              <>
-                <hr class="ratings-drawer-divider" />
-                <section class="ratings-drawer-section">
-                  <p class="ratings-drawer-section__label">
-                    Proof ({ec.proofCount} {ec.proofCount === 1 ? 'file' : 'files'})
-                  </p>
-                  <div
-                    class="ratings-proof-gallery"
-                    data-gallery
-                    data-gallery-images={proofGalleryJson}
-                  >
-                    {proofItems.map((item) => (
-                      <button
-                        type="button"
-                        class="ratings-proof-thumb-btn"
-                        data-lightbox-open={item.src}
-                        data-lightbox-alt={item.alt}
-                        data-lightbox-caption={item.caption}
-                      >
-                        <span class="ratings-proof-thumb-btn__frame">
-                          <img
-                            class="ratings-proof-thumb"
-                            src={item.proof.thumbUrl || item.proof.fullUrl}
-                            alt={item.alt}
-                            loading="lazy"
-                          />
-                          <span class="ratings-proof-thumb-btn__zoom" aria-hidden="true">
-                            <span class="material-symbols-outlined">zoom_in</span>
-                          </span>
-                        </span>
-                        <span class="ratings-proof-thumb-btn__label">{item.caption}</span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              </>
-            )}
-
             {ec.calculation && (
-              <details class="ratings-drawer-collapsible ratings-drawer-collapsible--calc">
-                <summary class="ratings-drawer-collapsible__summary">
-                  How the {ec.name} score was calculated
-                  <span class="material-symbols-outlined ratings-drawer-collapsible__chevron" aria-hidden="true">
-                    expand_more
-                  </span>
+              <details class="rdv-calc">
+                <summary class="rdv-calc__summary">
+                  <span>How the {ec.name} score was calculated</span>
+                  <svg class="rdv-calc__chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                    <path d="M4 7l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                  </svg>
                 </summary>
-                <div class="ratings-drawer-collapsible__body">
+                <div class="rdv-calc__body">
                   {ec.calculation.rows.length > 0 && (
-                    <div class="ratings-drawer-table-wrap">
-                      <table class="ratings-drawer-results ratings-drawer-results--calc">
-                        <thead>
-                          <tr>
-                            <th scope="col">Test result</th>
-                            <th scope="col">Measured value</th>
-                            <th scope="col" class="ratings-drawer-results__num">Score (0–10)</th>
-                            {ec.calculation.method !== 'single' && (
-                              <>
-                                <th scope="col" class="ratings-drawer-results__num">Weight</th>
-                                <th scope="col" class="ratings-drawer-results__num">Contribution</th>
-                              </>
-                            )}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {ec.calculation.rows.map((row) => (
-                            <tr>
-                              <td>{row.label}</td>
-                              <td class="tabular-nums">{row.measuredValue}</td>
-                              <td class="ratings-drawer-results__num">
-                                <span
-                                  class={`rt-score-chip rt-score-chip--outline ${getDraftScoreChipClass(row.internalScore)}`}
-                                >
-                                  {fmtScore(row.internalScore)}
-                                </span>
-                              </td>
-                              {ec.calculation!.method !== 'single' && (
-                                <>
-                                  <td class="ratings-drawer-results__num tabular-nums">
-                                    {row.weight != null ? `${row.weight}%` : '—'}
-                                  </td>
-                                  <td class="ratings-drawer-results__num tabular-nums">
-                                    {row.contribution != null ? row.contribution.toFixed(2) : '—'}
-                                  </td>
-                                </>
-                              )}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div class="rdv-kv">
+                      {ec.calculation.rows.map((row) => (
+                        <div class="rdv-kv__row">
+                          <span class="rdv-kv__label">{row.label}</span>
+                          <span class="rdv-kv__value">
+                            {row.measuredValue}
+                            {row.internalScore != null ? ` · ${fmtScore(row.internalScore)}` : ''}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   )}
                   {ec.calculation.method !== 'single' && ec.calculation.formulaParts.length > 0 && (
-                    <p class="ratings-calc-formula">
-                      {ec.calculation.formulaParts.join(' + ')} ={' '}
-                      <span
-                        class={`rt-score-chip rt-score-chip--outline ratings-calc-formula__total ${getDraftScoreChipClass(ec.calculation.finalScore ?? ec.calculation.formulaTotal)}`}
-                      >
-                        {ec.calculation.formulaTotal?.toFixed(2)}
-                      </span>
+                    <p class="rdv-formula">
+                      {ec.calculation.formulaParts.join(' + ')} = {ec.calculation.formulaTotal?.toFixed(2)} → {fmtScore(ec.calculation.finalScore ?? ec.calculation.formulaTotal)}
                     </p>
                   )}
-
                 </div>
               </details>
             )}
 
-            <DrawerNavFooter {...nav} />
+            {proofItems.length > 0 && (
+              <section class="rdv-block">
+                <div class="rdv-evidence-head">
+                  <svg class="rdv-evidence-head__icon" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                    <rect x="1.25" y="1.25" width="12.5" height="12.5" rx="1.5" stroke="currentColor" stroke-width="1.5"></rect>
+                    <circle cx="5.25" cy="5.25" r="1.25" stroke="currentColor" stroke-width="1.2"></circle>
+                    <path d="M13.5 10.25l-3.1-3.1a1.7 1.7 0 00-2.4 0L2.5 12.65" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                  </svg>
+                  <h3 class="rdv-kicker">Evidence</h3>
+                  <span class="rdv-evidence-head__count">
+                    {proofItems.length} screenshot{proofItems.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <div
+                  class:list={['rdv-gallery', proofItems.length === 1 && 'rdv-gallery--single']}
+                  data-rdv-gallery
+                  data-gallery-collapsed={collapsedGallery ? 'true' : 'false'}
+                >
+                  {proofItems.map((item, index) => (
+                    <button
+                      type="button"
+                      class:list={['rdv-shot', index >= 6 && 'rdv-shot--more']}
+                      data-lightbox-open={item.src}
+                      data-lightbox-alt={item.alt}
+                      data-lightbox-caption={item.caption}
+                    >
+                      <img
+                        src={item.proof.thumbUrl || item.proof.fullUrl}
+                        alt={item.alt}
+                        loading="lazy"
+                      />
+                    </button>
+                  ))}
+                </div>
+                {collapsedGallery && (
+                  <button type="button" class="rdv-more" data-rdv-gallery-more>
+                    Show {extraCount} more ↓
+                  </button>
+                )}
+                <p class="rdv-hint">Tap a screenshot to open the full-size viewer</p>
+              </section>
+            )}
           </div>
+
+          <div class="rdv-rule" aria-hidden="true"></div>
+          <DrawerNavFooter {...nav} />
         </aside>
         </template>
       );
@@ -486,150 +302,110 @@ function breadcrumbParts(breadcrumb: string): string[] {
       const rawTotal = calc.items
         .filter((i) => i.contribution != null)
         .reduce((sum, i) => sum + i.contribution!, 0);
+      const tone = getFigmaScoreTone(calc.subscoreScore);
+      const scoreLine = calcScoreLine(calc.subscoreScore, calc.items);
+
       return (
         <template data-ratings-drawer-template={calc.drawerId}>
         <aside
-          class="ratings-drawer-panel ratings-drawer-panel--calc"
+          class="ratings-drawer-panel rdv rdv--calc"
           role="dialog"
           aria-modal="true"
           aria-labelledby={`ratings-calc-title-${calc.drawerId}`}
           data-ratings-drawer-panel={calc.drawerId}
           hidden
         >
-          <div class="ratings-drawer-panel__header">
-            <h2 id={`ratings-calc-title-${calc.drawerId}`} class="ratings-drawer-panel__title">
-              {calc.subscoreName} score calculation
-            </h2>
-            <button
-              type="button"
-              class="ratings-drawer-panel__close"
-              data-ratings-close-drawer
-              aria-label="Close score calculation"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">close</span>
-            </button>
+          <div class="rdv-head">
+            <div class="rdv-head__top">
+              <p class="rdv-eyebrow">{calc.categoryName}</p>
+              <button
+                type="button"
+                class="rdv-close"
+                data-ratings-close-drawer
+                aria-label="Close score calculation"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                </svg>
+              </button>
+            </div>
+            <h2 id={`ratings-calc-title-${calc.drawerId}`} class="rdv-title">{calc.subscoreName}</h2>
+            <div class="rdv-scoreline">
+              <span class:list={['rdv-score', `rdv-score--${tone}`]}>{fmtScore(calc.subscoreScore)}</span>
+              <span class="rdv-scoremeta">
+                <span class="rdv-kicker">Subscore</span>
+                <span class="rdv-scoremeta__value">{scoreLine}</span>
+              </span>
+              <span class="rdv-scoreline__grow" aria-hidden="true"></span>
+              <span class="rdv-scoremeta rdv-scoremeta--end">
+                <span class="rdv-kicker">Weight in {calc.categoryName}</span>
+                <span class="rdv-scoremeta__value">{formatWeight(calc.categoryWeight)}</span>
+              </span>
+            </div>
           </div>
 
-          <div class="ratings-drawer-panel__body ratings-drawer-panel__body--calc">
-            <p class="ratings-drawer-breadcrumb">
-              <span class="ratings-drawer-breadcrumb__parent">{calc.categoryName}</span>
-              <span class="material-symbols-outlined ratings-drawer-breadcrumb__sep" aria-hidden="true">
-                chevron_right
-              </span>
-              <span class="ratings-drawer-breadcrumb__current">{calc.subscoreName}</span>
-            </p>
+          <div class="rdv-rule" aria-hidden="true"></div>
 
-            <div class="ratings-drawer-calc__hero">
-              <DraftScorePill
-                score={calc.subscoreScore}
-                size="sm"
-                variant="outline"
-                shape="badge"
-                class="ratings-drawer-calc__score"
-              />
-              <div class="ratings-drawer-calc__hero-copy">
-                <p class="ratings-drawer-calc__score-label">Final {calc.subscoreName} score</p>
-                <p class="ratings-drawer-calc__conclusion">{calc.headlineConclusion}</p>
-              </div>
-            </div>
-
-            <div class="ratings-drawer-dual-cards">
-              <section class="ratings-drawer-card ratings-drawer-card--measures">
-                <p class="ratings-drawer-card__label">
-                  <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
-                    lightbulb
-                  </span>
-                  What this measures
-                </p>
-                <p class="ratings-drawer-card__text">{calcWhatItMeasures}</p>
+          <div class="ratings-drawer-panel__body rdv-body">
+            {calcWhatItMeasures && (
+              <section class="rdv-block">
+                <h3 class="rdv-kicker">What this measures</h3>
+                <p class="rdv-copy">{calcWhatItMeasures}</p>
               </section>
-              <section class="ratings-drawer-card ratings-drawer-card--finding">
-                <p class="ratings-drawer-card__label">
-                  <span class="material-symbols-outlined ratings-drawer-card__icon" aria-hidden="true">
-                    star
-                  </span>
-                  Key takeaways
-                </p>
-                <p class="ratings-drawer-card__text">{calc.keyTakeaways}</p>
-              </section>
-            </div>
+            )}
 
-            <section class="ratings-drawer-section ratings-drawer-section--calc">
-              <p class="ratings-drawer-section__label">Breakdown</p>
-              <div class="ratings-drawer-table-wrap">
-                <table class="ratings-drawer-results ratings-drawer-results--calc">
-                  <thead>
-                    <tr>
-                      <th scope="col">Evidence category</th>
-                      <th scope="col" class="ratings-drawer-results__num">Score (0–10)</th>
-                      <th scope="col" class="ratings-drawer-results__num">Weight</th>
-                      <th scope="col" class="ratings-drawer-results__num">Contribution</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {calc.items.map((item) => (
-                      <tr class:list={[item.excluded && 'ratings-drawer-results__row--excluded']}>
-                        <td>
-                          <span class="ratings-drawer-calc__evidence-name">
-                            <span class="material-symbols-outlined ratings-drawer-calc__evidence-icon" aria-hidden="true">
-                              {item.icon}
-                            </span>
-                            {item.name}
-                            {item.excluded && (
-                              <span class="ratings-drawer-calc__excluded-tag">Excluded</span>
-                            )}
-                          </span>
-                        </td>
-                        <td class="ratings-drawer-results__num">
-                          {
-                            item.excluded ? (
-                              <span class="ratings-drawer-calc__na">N/A</span>
-                            ) : (
-                              <span
-                                class={`rt-score-chip rt-score-chip--outline ${getDraftScoreChipClass(item.score)}`}
-                              >
-                                {fmtScore(item.score)}
-                              </span>
-                            )
-                          }
-                        </td>
-                        <td class="ratings-drawer-results__num tabular-nums">
-                          {item.excluded ? '—' : `${item.weight}%`}
-                        </td>
-                        <td class="ratings-drawer-results__num tabular-nums">
-                          {item.contribution != null ? item.contribution.toFixed(2) : '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <section class="rdv-block">
+              <h3 class="rdv-kicker">Breakdown</h3>
+              <div class="rdv-table" role="table">
+                <div class="rdv-table__row rdv-table__row--head" role="row">
+                  <span class="rdv-table__cell rdv-table__cell--name">Evidence</span>
+                  <span class="rdv-table__cell">Score</span>
+                  <span class="rdv-table__cell">Weight</span>
+                  <span class="rdv-table__cell">Contrib.</span>
+                </div>
+                {calc.items.map((item) => (
+                  <div class:list={['rdv-table__row', item.excluded && 'rdv-table__row--muted']} role="row">
+                    <span class="rdv-table__cell rdv-table__cell--name">{item.name}</span>
+                    <span class="rdv-table__cell">{item.excluded ? 'N/A' : fmtScore(item.score)}</span>
+                    <span class="rdv-table__cell">{item.excluded ? '—' : formatWeight(item.weight)}</span>
+                    <span class="rdv-table__cell">{item.contribution != null ? item.contribution.toFixed(2) : '—'}</span>
+                  </div>
+                ))}
+                <div class="rdv-table__row rdv-table__row--total" role="row">
+                  <span class="rdv-table__cell rdv-table__cell--name">Final score</span>
+                  <span class="rdv-table__cell"></span>
+                  <span class="rdv-table__cell">100%</span>
+                  <span class="rdv-table__cell">{rawTotal.toFixed(2)}</span>
+                </div>
               </div>
               {parts.length > 0 && (
-                <div class="ratings-drawer-calc__total">
-                  <span class="ratings-drawer-calc__total-label">Total</span>
-                  <span class="ratings-drawer-calc__total-formula tabular-nums">
-                    {parts.join(' + ')} = {rawTotal.toFixed(2)} →{' '}
-                    <strong>{fmtScore(calc.subscoreScore)}</strong>
-                  </span>
-                </div>
+                <p class="rdv-formula">
+                  {parts.join(' + ')} = {rawTotal.toFixed(2)} → {fmtScore(calc.subscoreScore)}
+                </p>
+              )}
+              {calc.excludedNote && <p class="rdv-hint">{calc.excludedNote}</p>}
+            </section>
+
+            <section class="rdv-block">
+              <h3 class="rdv-kicker">How this score is calculated</h3>
+              <p class="rdv-copy">
+                {scoreCalculation ??
+                  'Each evidence test is scored out of 10 and weighted, then the weighted contributions are added together. Weights come from the global testing taxonomy, not from this review.'}
+              </p>
+              {calc.subscoreSlug && (
+                <a href={`/test/${calc.categorySlug}/${calc.subscoreSlug}/`} class="rdv-link">
+                  View full {calc.subscoreName} methodology →
+                </a>
               )}
             </section>
-
-            <section class="ratings-drawer-section ratings-drawer-section--calc-footer">
-              <p class="ratings-drawer-section__label">How the score is calculated</p>
-              <p class="ratings-drawer-section__text">
-                {scoreCalculation ??
-                  `Each evidence category is scored on a 0–10 scale, weighted, and combined for the final ${calc.subscoreName} score.`}
-              </p>
-            </section>
-
-            <DrawerNavFooter
-              prevDrawerId={calc.prevDrawerId}
-              prevLabel={calc.prevLabel}
-              nextDrawerId={calc.nextDrawerId}
-              nextLabel={calc.nextLabel}
-            />
           </div>
+
+          <div class="rdv-rule" aria-hidden="true"></div>
+          <DrawerNavFooter
+            prevLabel={calc.prevLabel}
+            nextDrawerId={calc.nextDrawerId}
+            nextLabel={calc.nextLabel}
+          />
         </aside>
         </template>
       );

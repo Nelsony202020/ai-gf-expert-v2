@@ -76,14 +76,18 @@
   }
 
   /* Mobile review: ratings first, hide featured gallery */
-  .review-hero-media {
-    display: flex;
-    flex-direction: column;
+  /* Legacy class kept for hash/lightbox triggers; layout lives on .rs-hero-media. */
+  .review-hero-media-open {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: zoom-in;
   }
 
-  .review-hero-gallery {
-    display: none !important;
-  }
 
   .review-hero-ratings {
     width: 100%;

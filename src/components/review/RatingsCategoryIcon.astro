@@ -1,0 +1,24 @@
+---
+interface Props {
+  categoryKey: string;
+}
+
+const { categoryKey } = Astro.props;
+
+const ICONS: Record<string, { src: string; width: number; height: number }> = {
+  characters: { src: '/icons/ratings/cat-characters.svg', width: 20, height: 20 },
+  customization: { src: '/icons/ratings/cat-customization.svg', width: 20, height: 20 },
+  chat: { src: '/icons/ratings/cat-chat.svg', width: 20, height: 20 },
+  'chat-features': { src: '/icons/ratings/cat-chat-features.svg', width: 20, height: 20 },
+  images: { src: '/icons/ratings/cat-images.svg', width: 20, height: 20 },
+  video: { src: '/icons/ratings/cat-video.svg', width: 20, height: 20 },
+  privacy: { src: '/icons/ratings/cat-privacy.svg', width: 20, height: 20 },
+  pricing: { src: '/icons/ratings/cat-pricing.svg', width: 20, height: 20 },
+};
+
+const icon = ICONS[categoryKey] ?? ICONS.characters;
+---
+
+<span class="ratings-cat-icon" aria-hidden="true">
+  <img src={icon.src} width={icon.width} height={icon.height} alt="" />
+</span>

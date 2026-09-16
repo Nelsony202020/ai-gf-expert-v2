@@ -1,18 +1,11 @@
 ---
-import type { Product, VerdictItem } from '../../../data/products';
+import type { Product } from '../../../data/products';
 import { getAuthor } from '../../../data/authors';
-import { getPublishedGlossaryTermsForTooltips } from '../../../lib/glossary/load';
-import {
-  renderReviewProseText,
-  reviewProseGlossaryContext,
-} from '../../../lib/review/renderReviewProse';
-import { getScoreVisual } from '../../../lib/scores';
-import ScoreRect from '../ScoreRect.astro';
-import InfoIcon from '../../ui/InfoIcon.astro';
-import OverallScoreTooltip from '../tooltips/OverallScoreTooltip.astro';
-import CategoryScoreTooltip from '../tooltips/CategoryScoreTooltip.astro';
-import VerdictCategoryIcon from '../VerdictCategoryIcon.astro';
+import { getOverviewHeadline, getReviewQuickFacts } from '../../../lib/review-shell';
+import { renderReviewProseText } from '../../../lib/review/renderReviewProse';
 import CharacterStoryHighlights from '../CharacterStoryHighlights.astro';
+import HermanTake from '../HermanTake.astro';
+import ReviewIcon from '../ReviewIcon.astro';
 import CmsField from '../../cms/CmsField.astro';
 
 interface Props {
@@ -20,805 +13,94 @@ interface Props {
 }
 
 const { product } = Astro.props;
-const { overview } = product;
-
-const glossaryTerms = await getPublishedGlossaryTermsForTooltips();
-const overviewGlossary = reviewProseGlossaryContext(glossaryTerms, 'review-overview');
-
-function resolveScore(verdict: VerdictItem): number | null {
-  if (verdict.score != null) return verdict.score;
-  if (verdict.id === 'overall') return product.overallScore;
-  return product.categories.find((c) => c.key === verdict.id)?.score ?? product.overallScore;
-}
-
-const verdictEntries = product.verdicts.map((v) => ({
-  ...v,
-  score: resolveScore(v),
-}));
-
-const categoryByKey = Object.fromEntries(product.categories.map((c) => [c.key, c]));
-const defaultVerdict = verdictEntries.find((v) => v.id === 'overall') ?? verdictEntries[0];
-const herman = getAuthor('herman-carter');
-const showExpertOpinion = Boolean(product.expertOpinion?.trim());
-const showBestFor = overview.bestForList.length > 0;
-const showNotIdeal = overview.notIdealList.length > 0;
-const showDecisionSidebar = showBestFor || showNotIdeal;
-const showCharacters = overview.characters.length > 0;
-function verdictCmsField(
-  verdictId: string,
-  kind: 'headline' | 'verdict' | 'pros' | 'cons',
-): string {
-  if (verdictId === 'overall') {
-    if (kind === 'headline') return 'oneLineVerdict';
-    if (kind === 'verdict') return 'ourTake';
-    if (kind === 'pros') return 'pros';
-    return 'cons';
-  }
-  if (kind === 'headline') return `categoryVerdicts.${verdictId}.headline`;
-  if (kind === 'verdict') return `categoryVerdicts.${verdictId}.verdict`;
-  if (kind === 'pros') return `categoryVerdicts.${verdictId}.pros`;
-  return `categoryVerdicts.${verdictId}.cons`;
-}
+const hermanProfile =
+  getAuthor('herman-carter') ??
+  (product.authors[0]?.slug ? getAuthor(product.authors[0].slug) : undefined);
+const facts = getReviewQuickFacts(product);
+const bestFor = product.overview.bestForList ?? [];
+const notIdeal = product.overview.notIdealList ?? [];
+const ourTakeHtml = renderReviewProseText(product.ourTake);
+const characters = product.overview.characters ?? [];
+const headline = getOverviewHeadline(product);
 ---
 
-<section class="bg-background py-12 md:py-14 pb-16 md:pb-20" data-verdict-overview>
-  <div class="section-container px-4 md:px-8">
-    <h2 class="review-tab-title mb-6 md:mb-10">Our Verdict</h2>
-
-    {/* Mobile-only: compact pill + drawer (replaces icon grid) */}
-    <div class="verdict-jump" data-verdict-jump>
-      <p class="verdict-jump__label">Jump to score</p>
-      <button
-        type="button"
-        class="verdict-jump__trigger"
-        data-verdict-jump-open
-        aria-haspopup="dialog"
-        aria-expanded="false"
-        aria-controls="verdict-jump-sheet"
-      >
-        <span class="verdict-jump__trigger-label" data-verdict-jump-label>{defaultVerdict?.label ?? 'Overall Performance'}</span>
-        <span class="material-symbols-outlined verdict-jump__trigger-chevron" aria-hidden="true">expand_more</span>
-      </button>
+<section class="section-container px-4 md:px-8 rs-overview" id="overview" aria-labelledby="overview-heading">
+  <div class="rs-overview-main">
+    <p class="rs-verdict-kicker">Our verdict</p>
+    {headline && (
+      <h2 class="rs-verdict-heading" id="overview-heading">
+        <CmsField path="tagline">{headline}</CmsField>
+      </h2>
+    )}
+    <div class="rs-verdict-copy">
+      <Fragment set:html={ourTakeHtml} />
     </div>
-
-    <div
-      class="mobile-sheet verdict-jump-sheet"
-      id="verdict-jump-sheet"
-      data-verdict-jump-sheet
-      hidden
-      aria-hidden="true"
-    >
-      <button type="button" class="mobile-sheet__backdrop" data-verdict-jump-close aria-label="Close"></button>
-      <div
-        class="mobile-sheet__panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="verdict-jump-sheet-title"
-      >
-        <div class="mobile-sheet__handle" aria-hidden="true"></div>
-        <header class="mobile-sheet__head">
-          <p id="verdict-jump-sheet-title" class="mobile-sheet__title">Jump to score</p>
-          <button type="button" class="mobile-sheet__close" data-verdict-jump-close aria-label="Close">
-            <span class="material-symbols-outlined" aria-hidden="true">close</span>
-          </button>
-        </header>
-        <div class="mobile-sheet__body verdict-jump-sheet__body">
-          <div class="verdict-jump-sheet__list" role="listbox" aria-label="Verdict categories">
-            {
-              verdictEntries.map((verdict) => {
-                const isDefault = verdict.id === defaultVerdict.id;
-                return (
-                    <button
-                      type="button"
-                      role="option"
-                      class:list={['verdict-jump-sheet__option', isDefault && 'is-active']}
-                      data-verdict-jump-option={verdict.id}
-                      aria-selected={isDefault ? 'true' : 'false'}
-                    >
-                      <span class="verdict-jump-sheet__option-icon" aria-hidden="true">
-                        <VerdictCategoryIcon id={verdict.id} class="w-5 h-5" />
-                      </span>
-                      <span class="verdict-jump-sheet__option-label">{verdict.label}</span>
-                    </button>
-                );
-              })
-            }
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
-      <!-- Desktop: vertical icon navigation -->
-      <nav class="verdict-icon-nav shrink-0" data-verdict-nav role="tablist" aria-label="Verdict categories">
-        {
-          verdictEntries.map((verdict) => {
-            const isDefault = verdict.id === defaultVerdict.id;
-            return (
-              <button
-                type="button"
-                role="tab"
-                data-verdict-nav={verdict.id}
-                aria-selected={isDefault ? 'true' : 'false'}
-                aria-label={verdict.label}
-                class:list={[
-                  'verdict-icon-nav__btn group',
-                  isDefault && 'verdict-icon-nav__btn--active',
-                ]}
-              >
-                <VerdictCategoryIcon id={verdict.id} />
-                <span class="verdict-icon-nav__tip">{verdict.label}</span>
-              </button>
-            );
-          })
-        }
-      </nav>
-
-      <!-- Main + sidebar -->
-      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-8 lg:gap-10 flex-1 min-w-0">
-        <div class="min-w-0">
-          {
-            verdictEntries.map((verdict) => {
-              const sv = getScoreVisual(verdict.score);
-              const isDefault = verdict.id === defaultVerdict.id;
-              return (
-                <div data-verdict-panel={verdict.id} class={isDefault ? '' : 'hidden'}>
-                  <div class="flex items-center gap-4 mb-4">
-                    <ScoreRect score={verdict.score} size="md" />
-                    <div class="min-w-0">
-                      <div class="flex items-center gap-1.5 flex-wrap">
-                        <p class="text-xl md:text-2xl font-bold text-on-surface m-0">{verdict.label}</p>
-                        {
-                          verdict.id === 'overall' ? (
-                            <OverallScoreTooltip product={product} instance="overview">
-                              <span class="inline-flex text-tertiary hover:text-accent shrink-0">
-                                <InfoIcon size="sm" />
-                              </span>
-                            </OverallScoreTooltip>
-                          ) : categoryByKey[verdict.id] ? (
-                            <CategoryScoreTooltip category={categoryByKey[verdict.id]} instance="overview">
-                              <span class="inline-flex text-tertiary hover:text-accent shrink-0">
-                                <InfoIcon size="sm" />
-                              </span>
-                            </CategoryScoreTooltip>
-                          ) : null
-                        }
-                      </div>
-                      {verdict.tagline && (
-                        <CmsField field={verdictCmsField(verdict.id, 'headline')} as="p" class="text-sm font-semibold text-tertiary mt-1">{verdict.tagline}</CmsField>
-                      )}
-                    </div>
-                  </div>
-
-                  {verdict.summary && (
-                    verdict.id === 'overall' ? (
-                      <p
-                        class="cms-field text-base text-on-surface-variant leading-relaxed mb-8 max-w-2xl"
-                        data-cms-field={verdictCmsField(verdict.id, 'verdict')}
-                        title={`CMS · ${verdictCmsField(verdict.id, 'verdict')}`}
-                        set:html={renderReviewProseText(verdict.summary, overviewGlossary)}
-                      />
-                    ) : (
-                      <CmsField field={verdictCmsField(verdict.id, 'verdict')} as="p" class="text-base text-on-surface-variant leading-relaxed mb-8 max-w-2xl">{verdict.summary}</CmsField>
-                    )
-                  )}
-
-                  {(verdict.pros.length > 0 || verdict.cons.length > 0) && (
-                  <div class="grid grid-cols-2 gap-x-6 gap-y-6 sm:gap-x-10" data-glossary-skip>
-                    {verdict.pros.length > 0 && (
-                    <div>
-                      <p class="font-black text-lg mb-4 text-on-surface m-0">Pros</p>
-                      <ul class="space-y-3">
-                        {
-                          verdict.pros.map((pro) => (
-                            <li class="flex items-start gap-3">
-                              <span class="material-symbols-outlined overview-icon overview-icon--pro shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">
-                                add_circle
-                              </span>
-                              <CmsField field={verdictCmsField(verdict.id, 'pros')} class="text-sm font-medium text-on-surface-variant leading-snug">{pro}</CmsField>
-                            </li>
-                          ))
-                        }
-                      </ul>
-                    </div>
-                    )}
-                    {verdict.cons.length > 0 && (
-                    <div>
-                      <p class="font-black text-lg mb-4 text-on-surface m-0">Cons</p>
-                      <ul class="space-y-3">
-                        {
-                          verdict.cons.map((con) => (
-                            <li class="flex items-start gap-3">
-                              <span class="material-symbols-outlined overview-icon overview-icon--con shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">
-                                remove_circle
-                              </span>
-                              <CmsField field={verdictCmsField(verdict.id, 'cons')} class="text-sm font-medium text-on-surface-variant leading-snug">{con}</CmsField>
-                            </li>
-                          ))
-                        }
-                      </ul>
-                    </div>
-                    )}
-                  </div>
-                  )}
-                </div>
-              );
-            })
-          }
-
-          {
-            showExpertOpinion && herman && (
-              <div class="expert-opinion-wrap">
-                <div class="expert-opinion">
-                  <div class="expert-opinion__byline">
-                    <img
-                      class="expert-opinion__avatar"
-                      src={herman.avatar}
-                      alt=""
-                      width="40"
-                      height="40"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <div class="expert-opinion__who">
-                      <p class="expert-opinion__name">{herman.name}</p>
-                      <p class="expert-opinion__role">Lead reviewer</p>
-                    </div>
-                  </div>
-                  <p
-                    class="cms-field expert-opinion__body"
-                    data-cms-field="expertOpinion"
-                    title="CMS · expertOpinion"
-                    set:html={renderReviewProseText(product.expertOpinion ?? '', overviewGlossary)}
-                  />
-                </div>
-              </div>
-            )
-          }
-        </div>
-
-        <aside class="overview-sidebar-stack lg:sticky space-y-6 self-start">
-          {
-            showDecisionSidebar && (
-          <div class="overview-sidebar-box p-5 rounded-xl border border-amber-200/80 bg-amber-50/60">
-            {showBestFor && (
-            <>
-            <div class="flex items-center gap-2 mb-3">
-              <span class="material-symbols-outlined overview-icon overview-icon--pro text-[18px]" aria-hidden="true">thumb_up</span>
-              <p class="text-sm font-extrabold text-on-surface m-0">Best for</p>
-            </div>
-            <ul class="space-y-2 mb-5">
-              {
-                overview.bestForList.map((item) => (
-                  <li class="flex items-start gap-2 text-sm text-on-surface-variant">
-                    <span class="material-symbols-outlined overview-icon overview-icon--pro text-[16px] mt-0.5 shrink-0">check_circle</span>
-                    <CmsField field="bestFor">{item}</CmsField>
+    {hermanProfile && product.expertOpinion.trim() && (
+      <HermanTake author={hermanProfile} quote={product.expertOpinion} />
+    )}
+    {(bestFor.length > 0 || notIdeal.length > 0) && (
+      <>
+        <div class="rs-overview-rule" aria-hidden="true"></div>
+        <div class="rs-lists">
+          {bestFor.length > 0 && (
+            <div>
+              <h3>Best for</h3>
+              <ul class="rs-list">
+                {bestFor.map((item) => (
+                  <li>
+                    <ReviewIcon name="circle-check" size={18} class="rs-list-icon" />
+                    <span>
+                      <CmsField path="overview.bestForList">{item}</CmsField>
+                    </span>
                   </li>
-                ))
-              }
-            </ul>
-            </>
-            )}
-            {showNotIdeal && (
-            <>
-            <div class="flex items-center gap-2 mb-3">
-              <span class="material-symbols-outlined overview-icon overview-icon--con text-[18px]" aria-hidden="true">remove_circle</span>
-              <p class="text-sm font-extrabold text-on-surface m-0">Not ideal for</p>
+                ))}
+              </ul>
             </div>
-            <ul class="space-y-2">
-              {
-                overview.notIdealList.map((item) => (
-                  <li class="flex items-start gap-2 text-sm text-on-surface-variant">
-                    <span class="material-symbols-outlined overview-icon overview-icon--con text-[16px] mt-0.5 shrink-0">horizontal_rule</span>
-                    <CmsField field="notIdealFor">{item}</CmsField>
+          )}
+          {notIdeal.length > 0 && (
+            <div>
+              <h3>Not ideal for</h3>
+              <ul class="rs-list rs-list--neutral">
+                {notIdeal.map((item) => (
+                  <li>
+                    <ReviewIcon name="circle-minus" size={18} class="rs-list-icon" />
+                    <span>
+                      <CmsField path="overview.notIdealList">{item}</CmsField>
+                    </span>
                   </li>
-                ))
-              }
-            </ul>
-            </>
-            )}
-          </div>
-            )
-          }
-
-          {
-            showCharacters && (
-              <div id="overview-characters" data-overview-characters>
-                <CharacterStoryHighlights
-                  characters={overview.characters}
-                  productName={product.name}
-                  heading="Featured characters"
-                />
-              </div>
-            )
-          }
-        </aside>
-      </div>
-    </div>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </>
+    )}
   </div>
+
+  <aside class="rs-overview-aside">
+    {facts.length > 0 && (
+      <div class="rs-facts">
+        <h3>Quick facts</h3>
+        <dl>
+          {facts.map((fact) => (
+            <div class="rs-fact">
+              <dt>{fact.label}</dt>
+              <dd>{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    )}
+    {characters.length > 0 && (
+      <CharacterStoryHighlights
+        characters={characters}
+        productName={product.name}
+        heading="Character stories"
+        lede="Tap a character to view their highlights."
+        hideHeadingIcon
+        featuredGrid
+        staticCarousel
+      />
+    )}
+  </aside>
 </section>
-
-<style is:global>
-  /* Match pricing pull-quote (avatar + role), without Best for / Watch out */
-  .expert-opinion-wrap {
-    margin-top: 2.75rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--color-surface-variant, #e5e7eb);
-  }
-
-  .expert-opinion {
-    max-width: 42rem;
-    margin: 0;
-    padding: 1.15rem 1.15rem 1.15rem 1.05rem;
-    border-left: 3px solid #db2777;
-    border-radius: 0 10px 10px 0;
-    background: #fffaf7;
-  }
-
-  .expert-opinion__byline {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    margin: 0 0 0.85rem;
-  }
-
-  .expert-opinion__avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 999px;
-    object-fit: cover;
-    flex-shrink: 0;
-    background: #f3f4f6;
-  }
-
-  .expert-opinion__who {
-    min-width: 0;
-  }
-
-  .expert-opinion__name {
-    margin: 0;
-    font-size: 0.9375rem;
-    font-weight: 800;
-    color: var(--color-on-surface);
-    line-height: 1.25;
-  }
-
-  .expert-opinion__role {
-    margin: 0.1rem 0 0;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: #6b7280;
-    line-height: 1.3;
-  }
-
-  .expert-opinion__body {
-    margin: 0;
-    max-width: 40rem;
-    font-size: 1.0625rem;
-    line-height: 1.65;
-    color: var(--color-on-surface);
-  }
-
-  [data-theme='dark'] .expert-opinion {
-    background: rgb(219 39 119 / 8%);
-    border-left-color: #f472b6;
-  }
-
-  [data-theme='dark'] .expert-opinion-wrap {
-    border-top-color: var(--dark-border-subtle, #334155);
-  }
-
-  [data-theme='dark'] .expert-opinion__role {
-    color: var(--dark-muted, #94a3b8);
-  }
-
-  /* Pros / cons icons stay green & red — never inherit score band colors */
-  .overview-icon--pro {
-    color: #16a34a;
-  }
-
-  .overview-icon--con {
-    color: #dc2626;
-  }
-
-  [data-theme='dark'] .overview-icon--pro {
-    color: #22c55e;
-  }
-
-  [data-theme='dark'] .overview-icon--con {
-    color: #f87171;
-  }
-
-  /* —— Mobile jump-to-score (compact pill + drawer) —— */
-  .verdict-jump {
-    display: none;
-  }
-
-  @media (max-width: 767px) {
-    .verdict-jump {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 0.5rem 0.65rem;
-      margin: 0 0 1.25rem;
-    }
-
-    .verdict-icon-nav {
-      display: none !important;
-    }
-  }
-
-  .verdict-jump__label {
-    margin: 0;
-    font-size: 0.6875rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-tertiary);
-  }
-
-  .verdict-jump__trigger {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    max-width: 100%;
-    min-height: 32px;
-    padding: 0.3rem 0.45rem 0.3rem 0.7rem;
-    border: 1px solid var(--color-surface-variant);
-    border-radius: 999px;
-    background: var(--color-surface-container-lowest, #fff);
-    color: var(--color-on-surface);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-
-  .verdict-jump__trigger:hover,
-  .verdict-jump__trigger:focus-visible {
-    border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-surface-variant));
-    outline: none;
-  }
-
-  .verdict-jump__trigger[aria-expanded='true'] {
-    border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-surface-variant));
-  }
-
-  .verdict-jump__trigger-label {
-    min-width: 0;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .verdict-jump__trigger-chevron {
-    flex-shrink: 0;
-    font-size: 1.125rem;
-    color: var(--color-accent);
-  }
-
-  .verdict-jump-sheet__body {
-    padding-top: 0.25rem;
-  }
-
-  .verdict-jump-sheet__list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .verdict-jump-sheet__option {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    width: 100%;
-    min-height: 48px;
-    padding: 0.55rem 0.75rem;
-    border: none;
-    border-radius: 10px;
-    background: transparent;
-    color: var(--color-on-surface);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition: background 0.12s ease;
-  }
-
-  .verdict-jump-sheet__option:hover,
-  .verdict-jump-sheet__option:focus-visible {
-    background: var(--color-surface-container-low);
-    outline: none;
-  }
-
-  .verdict-jump-sheet__option.is-active {
-    background: rgb(219 39 119 / 7%);
-  }
-
-  .verdict-jump-sheet__option-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 1.75rem;
-    height: 1.75rem;
-    color: var(--color-tertiary);
-  }
-
-  .verdict-jump-sheet__option.is-active .verdict-jump-sheet__option-icon {
-    color: var(--color-accent);
-  }
-
-  .verdict-jump-sheet__option-label {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.9375rem;
-    font-weight: 700;
-  }
-
-  .verdict-jump-sheet__option.is-active .verdict-jump-sheet__option-label {
-    color: var(--color-accent);
-  }
-
-  [data-theme='dark'] .verdict-jump__trigger {
-    background: var(--color-surface-container-lowest);
-    border-color: var(--dark-border-subtle);
-  }
-
-  [data-theme='dark'] .verdict-jump-sheet__option.is-active {
-    background: rgb(219 39 119 / 12%);
-  }
-
-  .verdict-icon-nav {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 6px;
-    overflow: visible;
-    padding-bottom: 0;
-    touch-action: manipulation;
-  }
-
-  .verdict-icon-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  @media (min-width: 640px) and (max-width: 1023px) {
-    .verdict-icon-nav {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .verdict-icon-nav {
-      display: flex;
-      flex-direction: column;
-      flex-wrap: nowrap;
-      grid-template-columns: none;
-      width: 44px;
-      gap: 4px;
-    }
-  }
-
-  .verdict-icon-nav__btn {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 44px;
-    aspect-ratio: 1;
-    justify-self: center;
-    flex-shrink: 0;
-    border: 1px solid var(--color-surface-variant);
-    border-radius: 10px;
-    background: transparent;
-    color: var(--color-on-surface);
-    cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  @media (min-width: 1024px) {
-    .verdict-icon-nav__btn {
-      width: 36px;
-      height: 36px;
-      max-width: none;
-      aspect-ratio: auto;
-    }
-  }
-
-  .verdict-icon-nav__btn:hover,
-  .verdict-icon-nav__btn--active {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-    background: rgb(219 39 119 / 6%);
-    box-shadow: 0 2px 8px rgb(219 39 119 / 10%);
-  }
-
-  .verdict-icon-nav__tip {
-    position: absolute;
-    right: calc(100% + 8px);
-    left: auto;
-    top: 50%;
-    transform: translateY(-50%);
-    padding: 5px 10px;
-    border-radius: 8px;
-    background: var(--color-surface-container-lowest);
-    color: var(--color-on-surface);
-    border: 1px solid var(--color-surface-variant);
-    box-shadow: 0 4px 14px rgb(0 0 0 / 8%);
-    font-size: 11px;
-    font-weight: 700;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
-    z-index: 20;
-  }
-
-  .verdict-icon-nav__btn:hover .verdict-icon-nav__tip,
-  .verdict-icon-nav__btn:focus-visible .verdict-icon-nav__tip {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(-50%) translateX(-2px);
-  }
-
-  @media (max-width: 1023px) {
-    .verdict-icon-nav__tip {
-      right: auto;
-      left: 50%;
-      top: calc(100% + 6px);
-      transform: translateX(-50%);
-    }
-
-    .verdict-icon-nav__btn:hover .verdict-icon-nav__tip,
-    .verdict-icon-nav__btn:focus-visible .verdict-icon-nav__tip {
-      transform: translateX(-50%) translateY(0);
-    }
-  }
-
-  [data-theme='dark'] .verdict-icon-nav__btn {
-    background: transparent;
-    border-color: var(--dark-border-subtle);
-    color: var(--color-on-surface);
-  }
-
-  [data-theme='dark'] .verdict-icon-nav__tip {
-    background: var(--dark-elevated);
-    border-color: var(--dark-border-subtle);
-    color: var(--color-on-surface);
-    box-shadow: 0 4px 14px rgb(0 0 0 / 35%);
-  }
-
-  [data-theme='dark'] .verdict-icon-nav__btn:hover,
-  [data-theme='dark'] .verdict-icon-nav__btn--active {
-    background: rgb(219 39 119 / 12%);
-  }
-</style>
-
-{/* define:vars + import is invalid (non-module IIFE) — pass data via JSON instead */}
-<script
-  type="application/json"
-  id="verdict-overview-data"
-  set:html={JSON.stringify({
-    verdictMeta: verdictEntries.map((v) => ({ id: v.id, label: v.label })),
-    defaultVerdictId: defaultVerdict.id,
-  })}
-/>
-<script>
-  import { closeSheet, openSheet } from '../../../lib/ui/bottomSheet.ts';
-
-  function readVerdictData() {
-    const el = document.getElementById('verdict-overview-data');
-    if (!el?.textContent) return { verdictMeta: [], defaultVerdictId: '' };
-    try {
-      return JSON.parse(el.textContent);
-    } catch {
-      return { verdictMeta: [], defaultVerdictId: '' };
-    }
-  }
-
-  function initVerdictOverview() {
-    const root = document.querySelector('[data-verdict-overview]');
-    if (!root || root.dataset.bound === 'true') return;
-    root.dataset.bound = 'true';
-
-    const { verdictMeta, defaultVerdictId } = readVerdictData();
-    const navBtns = Array.from(root.querySelectorAll('[data-verdict-nav]'));
-    const panels = Array.from(root.querySelectorAll('[data-verdict-panel]'));
-    const jumpOpen = root.querySelector('[data-verdict-jump-open]');
-    const jumpSheet = root.querySelector('[data-verdict-jump-sheet]');
-    const jumpPanel = jumpSheet?.querySelector('.mobile-sheet__panel');
-    const jumpLabel = root.querySelector('[data-verdict-jump-label]');
-    const jumpOptions = Array.from(root.querySelectorAll('[data-verdict-jump-option]'));
-    const metaById = Object.fromEntries(verdictMeta.map((v) => [v.id, v]));
-
-    let releaseFocus = null;
-
-    function updateJumpTrigger(id) {
-      const meta = metaById[id];
-      if (!meta) return;
-      if (jumpLabel) jumpLabel.textContent = meta.label;
-      jumpOptions.forEach((opt) => {
-        const active = opt.dataset.verdictJumpOption === id;
-        opt.classList.toggle('is-active', active);
-        opt.setAttribute('aria-selected', active ? 'true' : 'false');
-      });
-    }
-
-    function show(id) {
-      panels.forEach((panel) => {
-        panel.classList.toggle('hidden', panel.dataset.verdictPanel !== id);
-      });
-      navBtns.forEach((btn) => {
-        const active = btn.dataset.verdictNav === id;
-        btn.setAttribute('aria-selected', active ? 'true' : 'false');
-        btn.classList.toggle('verdict-icon-nav__btn--active', active);
-      });
-      updateJumpTrigger(id);
-    }
-
-    function closeJumpSheet() {
-      if (!jumpSheet) return;
-      closeSheet(jumpSheet, () => {
-        releaseFocus?.();
-        releaseFocus = null;
-      });
-      jumpOpen?.setAttribute('aria-expanded', 'false');
-    }
-
-    function openJumpSheet() {
-      if (!jumpSheet || !jumpPanel) return;
-      // Avoid transform/overflow ancestors clipping the fixed sheet.
-      if (jumpSheet.parentElement !== document.body) {
-        document.body.appendChild(jumpSheet);
-      }
-      releaseFocus?.();
-      releaseFocus = openSheet(jumpSheet, jumpPanel, {
-        focusSelector: '.verdict-jump-sheet__option.is-active',
-      });
-      jumpOpen?.setAttribute('aria-expanded', 'true');
-    }
-
-    navBtns.forEach((btn) => {
-      const id = btn.dataset.verdictNav;
-      if (!id) return;
-      const useHoverNav = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-      if (useHoverNav) {
-        btn.addEventListener('mouseenter', () => show(id));
-        btn.addEventListener('focus', () => show(id));
-      }
-      btn.addEventListener('click', () => show(id));
-    });
-
-    jumpOpen?.addEventListener('click', openJumpSheet);
-    jumpSheet?.querySelectorAll('[data-verdict-jump-close]').forEach((el) => {
-      el.addEventListener('click', closeJumpSheet);
-    });
-
-    jumpOptions.forEach((opt) => {
-      opt.addEventListener('click', () => {
-        const id = opt.dataset.verdictJumpOption;
-        if (!id) return;
-        show(id);
-        closeJumpSheet();
-        const isMobile = window.matchMedia('(max-width: 767px)').matches;
-        if (isMobile) return;
-        requestAnimationFrame(() => {
-          const panel = root.querySelector(`[data-verdict-panel="${id}"]`);
-          panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-      });
-    });
-
-    if (defaultVerdictId) show(defaultVerdictId);
-  }
-
-  initVerdictOverview();
-  document.addEventListener('astro:page-load', initVerdictOverview);
-</script>

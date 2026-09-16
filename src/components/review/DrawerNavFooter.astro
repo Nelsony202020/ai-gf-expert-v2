@@ -7,7 +7,7 @@ interface Props {
 }
 
 const { prevDrawerId, prevLabel, nextDrawerId, nextLabel } = Astro.props;
-const hasPrev = Boolean(prevDrawerId && prevLabel);
+const hasPrev = Boolean(prevLabel);
 const hasNext = Boolean(nextDrawerId && nextLabel);
 ---
 
@@ -15,27 +15,33 @@ const hasNext = Boolean(nextDrawerId && nextLabel);
   (hasPrev || hasNext) && (
     <footer
       class:list={[
-        'ratings-drawer-calc__footer',
+        'rdv-foot',
         {
-          'ratings-drawer-calc__footer--both': hasPrev && hasNext,
-          'ratings-drawer-calc__footer--prev-only': hasPrev && !hasNext,
+          'rdv-foot--both': hasPrev && hasNext,
+          'rdv-foot--prev-only': hasPrev && !hasNext,
         },
       ]}
     >
-      {hasPrev && (
-        <button
-          type="button"
-          class="ratings-drawer-calc__nav-btn ratings-drawer-calc__nav-btn--back"
-          data-ratings-open-drawer={prevDrawerId}
-          data-ratings-drawer-nav="back"
-        >
-          ← Back: {prevLabel}
-        </button>
-      )}
+      {hasPrev &&
+        (prevDrawerId ? (
+          <button
+            type="button"
+            class="rdv-foot__back"
+            data-ratings-open-drawer={prevDrawerId}
+            data-ratings-drawer-nav="back"
+          >
+            ← Back: {prevLabel}
+          </button>
+        ) : (
+          <button type="button" class="rdv-foot__back" data-ratings-close-drawer>
+            ← Back: {prevLabel}
+          </button>
+        ))}
+      <span class="rdv-foot__spacer" aria-hidden="true"></span>
       {hasNext && (
         <button
           type="button"
-          class="ratings-drawer-calc__nav-btn ratings-drawer-calc__nav-btn--next"
+          class="rdv-foot__next"
           data-ratings-open-drawer={nextDrawerId}
           data-ratings-drawer-nav="next"
         >

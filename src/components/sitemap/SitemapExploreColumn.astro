@@ -1,0 +1,53 @@
+---
+import type { HtmlSitemapExploreColumn } from "../../types/sitemap";
+import HomeIcon from "../home/desktop/HomeIcon.astro";
+
+interface Props {
+  column: HtmlSitemapExploreColumn;
+  variant: "reviews" | "roundups" | "guides" | "authors";
+}
+
+const { column, variant } = Astro.props;
+
+const iconName =
+  variant === "reviews"
+    ? "check"
+    : variant === "roundups"
+      ? "trophy"
+      : variant === "guides"
+        ? "book"
+        : "users";
+---
+
+<section
+  class="si-col"
+  data-explore-col={variant}
+  id={
+    variant === "guides"
+      ? "guides"
+      : variant === "roundups"
+        ? "rankings"
+        : undefined
+  }
+>
+  <div class="si-col-head">
+    <span class="si-col-icon" aria-hidden="true">
+      <HomeIcon name={iconName} size={14} />
+    </span>
+    <span class="si-col-title">{column.heading}</span>
+    <span class="si-col-count">{column.count}</span>
+  </div>
+  <div class="si-col-rule"></div>
+  <ul class="si-col-list">
+    {column.links.map((item) => (
+      <li>
+        <a class="si-row" href={item.href}>
+          <span>{item.label}</span>
+          <span class="si-chev" aria-hidden="true">
+            <HomeIcon name="chevron-right" size={14} />
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>

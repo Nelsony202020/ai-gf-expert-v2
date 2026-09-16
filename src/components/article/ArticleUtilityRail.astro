@@ -1,8 +1,5 @@
 ---
-import ArticleFeedbackPanel from './ArticleFeedbackPanel.astro';
 import ShareMenu from '../ui/ShareMenu.astro';
-import BrandIcon from '../ui/BrandIcon.astro';
-import { brandIcons } from '../../lib/brand-icons';
 
 interface Props {
   pageTitle: string;
@@ -22,10 +19,6 @@ const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Ast
   data-mobile-minimal={mobileMinimal ? 'true' : undefined}
   aria-label="Page utilities"
 >
-  <div class="article-util-rail__hint hidden" data-util-hint role="status">
-    Spot something?
-  </div>
-
   <div class="article-util-rail__stack">
     {
       showMobileNav && (
@@ -42,9 +35,11 @@ const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Ast
 
     <button
       type="button"
-      class="article-util-rail__btn article-util-rail__btn--top hidden"
+      class="article-util-rail__btn article-util-rail__btn--top"
       data-util-top
       aria-label="Back to top"
+      aria-hidden="true"
+      tabindex="-1"
       hidden
     >
       <svg class="article-util-rail__progress" viewBox="0 0 48 48" aria-hidden="true">
@@ -55,36 +50,11 @@ const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Ast
     </button>
 
     <ShareMenu shareTitle={pageTitle} shareUrl={pageUrl} variant="fab" />
-
-    <button
-      type="button"
-      class="article-util-rail__btn article-util-rail__btn--feedback"
-      data-util-feedback
-      aria-label="Send feedback on this article"
-      data-page-title={pageTitle}
-      data-page-url={pageUrl ?? ''}
-    >
-      <BrandIcon
-        src={brandIcons.scientist.dark}
-        srcLight={brandIcons.scientist.light}
-        width={36}
-        height={36}
-        class="article-util-rail__herman"
-        data-util-herman
-      />
-      <span class="material-symbols-outlined article-util-rail__feedback-icon" aria-hidden="true">rate_review</span>
-      <span class="article-util-rail__feedback-label">Send feedback</span>
-    </button>
   </div>
 </aside>
 
-<ArticleFeedbackPanel />
-
-<script define:vars={{ pageTitle, pageUrl }}>
-  // define:vars scripts are inlined as plain (non-module) scripts, so they
-  // cannot `import` — see the same note in OverviewTab.astro. Inlining the
-  // same requestIdleCallback pattern as src/lib/ui/deferUntilIdle.ts.
-  function deferUntilIdle(fn) {
+<script>
+  function deferUntilIdle(fn: () => void) {
     if (typeof window.requestIdleCallback === 'function') {
       window.requestIdleCallback(() => fn(), { timeout: 2000 });
     } else {
@@ -92,31 +62,66 @@ const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Ast
     }
   }
 
+  function prefersReducedMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
   function initArticleUtilityRail() {
-    const rail = document.querySelector('[data-article-util-rail]');
+    const rail = document.querySelector<HTMLElement>('[data-article-util-rail]');
     if (!rail || rail.dataset.bound === 'true') return;
     rail.dataset.bound = 'true';
 
-    const feedbackBtn = rail.querySelector('[data-util-feedback]');
-    const topBtn = rail.querySelector('[data-util-top]');
-    const hint = rail.querySelector('[data-util-hint]');
-    const herman = rail.querySelector('[data-util-herman]');
-    const progressFill = rail.querySelector('[data-util-progress-fill]');
+    const topBtn = rail.querySelector<HTMLButtonElement>('[data-util-top]');
+    const progressFill = rail.querySelector<SVGElement>('[data-util-progress-fill]');
 
     const SCROLL_TOP_THRESHOLD = rail.dataset.mobileMinimal === 'true'
-      ? window.innerHeight
-      : 800;
-    const INTRO_SCROLL_RATIO = 0.45;
-    const INTRO_KEY = 'article-feedback-intro-shown';
+      ? Math.max(window.innerHeight, 700)
+      : 700;
     const PROGRESS_RADIUS = 22;
     const PROGRESS_CIRC = 2 * Math.PI * PROGRESS_RADIUS;
-
-    const title = feedbackBtn?.dataset.pageTitle || pageTitle || document.title;
-    const url = feedbackBtn?.dataset.pageUrl || pageUrl || window.location.href;
+    let hideTimer = 0;
+    let topVisible = false;
 
     if (progressFill) {
       progressFill.style.strokeDasharray = `${PROGRESS_CIRC}`;
       progressFill.style.strokeDashoffset = `${PROGRESS_CIRC}`;
+    }
+
+    function showTopBtn() {
+      if (!topBtn || topVisible) return;
+      window.clearTimeout(hideTimer);
+      topVisible = true;
+      topBtn.hidden = false;
+      topBtn.removeAttribute('hidden');
+      topBtn.setAttribute('aria-hidden', 'false');
+      topBtn.removeAttribute('tabindex');
+      rail.classList.add('article-util-rail--scrolled');
+      if (prefersReducedMotion()) {
+        topBtn.classList.add('is-visible');
+        return;
+      }
+      requestAnimationFrame(() => {
+        topBtn.classList.add('is-visible');
+      });
+    }
+
+    function hideTopBtn() {
+      if (!topBtn || !topVisible) return;
+      topVisible = false;
+      topBtn.classList.remove('is-visible');
+      topBtn.setAttribute('aria-hidden', 'true');
+      topBtn.tabIndex = -1;
+      rail.classList.remove('article-util-rail--scrolled');
+      const finish = () => {
+        if (topVisible) return;
+        topBtn.hidden = true;
+      };
+      if (prefersReducedMotion()) {
+        finish();
+        return;
+      }
+      window.clearTimeout(hideTimer);
+      hideTimer = window.setTimeout(finish, 220);
     }
 
     function updateScrollState() {
@@ -128,53 +133,21 @@ const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Ast
         progressFill.style.strokeDashoffset = `${PROGRESS_CIRC * (1 - ratio)}`;
       }
 
-      if (y >= SCROLL_TOP_THRESHOLD) {
-        topBtn?.classList.remove('hidden');
-        topBtn?.removeAttribute('hidden');
-        rail.classList.add('article-util-rail--scrolled');
-      } else {
-        topBtn?.classList.add('hidden');
-        topBtn?.setAttribute('hidden', '');
-        rail.classList.remove('article-util-rail--scrolled');
-      }
-
-      if (docHeight <= 0) return;
-
-      if (
-        rail.dataset.mobileMinimal !== 'true' &&
-        ratio >= INTRO_SCROLL_RATIO &&
-        sessionStorage.getItem(INTRO_KEY) !== '1' &&
-        !hint?.classList.contains('is-visible')
-      ) {
-        sessionStorage.setItem(INTRO_KEY, '1');
-        hint?.classList.remove('hidden');
-        hint?.classList.add('is-visible');
-        herman?.classList.add('is-waving');
-        feedbackBtn?.classList.add('is-waving');
-        window.setTimeout(() => {
-          hint?.classList.remove('is-visible');
-          herman?.classList.remove('is-waving');
-          feedbackBtn?.classList.remove('is-waving');
-          window.setTimeout(() => hint?.classList.add('hidden'), 300);
-        }, 2800);
-      }
+      if (y >= SCROLL_TOP_THRESHOLD) showTopBtn();
+      else hideTopBtn();
     }
-
-    feedbackBtn?.addEventListener('click', () => {
-      window.dispatchEvent(
-        new CustomEvent('article-feedback:open', { detail: { title, url } }),
-      );
-    });
 
     topBtn?.addEventListener('click', () => {
       const topTarget =
         document.querySelector('#roundup-top') ??
+        document.querySelector('#review-top') ??
         document.querySelector('[id$="-top"]') ??
         document.querySelector('main');
+      const behavior = prefersReducedMotion() ? 'auto' : 'smooth';
       if (topTarget) {
-        topTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        topTarget.scrollIntoView({ behavior, block: 'start' });
       } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior });
       }
     });
 
@@ -195,7 +168,6 @@ const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Ast
     updateScrollState();
   }
 
-  // Floating rail only becomes relevant once the reader scrolls past the hero.
   deferUntilIdle(initArticleUtilityRail);
   document.addEventListener('astro:page-load', initArticleUtilityRail);
 </script>
