@@ -10,6 +10,7 @@ function trapFocus(panel: HTMLElement) {
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
+      if (document.querySelector('.image-lightbox.is-visible')) return;
       closeDrawer();
       return;
     }
@@ -56,6 +57,17 @@ function getOrCreatePanel(id: string): HTMLElement | null {
   return mount.querySelector<HTMLElement>(`[data-ratings-drawer-panel="${id}"]`);
 }
 
+function bindGalleryExpand(panel: HTMLElement) {
+  const gallery = panel.querySelector<HTMLElement>('[data-rdv-gallery]');
+  const moreBtn = panel.querySelector<HTMLButtonElement>('[data-rdv-gallery-more]');
+  if (!gallery || !moreBtn || moreBtn.dataset.bound === 'true') return;
+  moreBtn.dataset.bound = 'true';
+  moreBtn.addEventListener('click', () => {
+    gallery.dataset.galleryCollapsed = 'false';
+    moreBtn.hidden = true;
+  });
+}
+
 function bindDrawerScrollFade(panel: HTMLElement) {
   releaseScrollFade?.();
   releaseScrollFade = null;
@@ -97,6 +109,8 @@ function openDrawer(id: string, trigger?: HTMLElement) {
   const isDrawerNav =
     trigger?.dataset.ratingsDrawerNav === 'next' ||
     trigger?.dataset.ratingsDrawerNav === 'back';
+
+  bindGalleryExpand(panel);
 
   getDrawerPanels().forEach((p) => {
     if (p !== panel) {

@@ -9,3 +9,8 @@
 @import './alternatives.css';
 @import './product-logos.css';
 @import './review-shell.css';
+/* Ratings tab is lazy-loaded into /reviews/[slug]/ as a fragment. These
+   sheets must live on the review page itself — component CSS on the
+   fragment page never reaches the tab if it stays in that document's head. */
+@import '../components/review/ratings-evidence.css';
+@import '../components/review/ratings-body.css';

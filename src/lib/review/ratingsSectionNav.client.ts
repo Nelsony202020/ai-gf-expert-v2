@@ -23,9 +23,6 @@ export async function navigateToRatingsSection(
   await deps.setActiveTab('ratings', false, hash);
 
   const ratingsRoot = document.querySelector<HTMLElement>('[data-ratings-root]');
-  if (ratingsRoot && ratingsRoot.dataset.detailLevel !== 'all-in' && subscoreSlug) {
-    document.dispatchEvent(new CustomEvent('detail-level-set', { detail: { level: 'all-in' } }));
-  }
 
   if (!categoryKey) {
     if (scroll) {
