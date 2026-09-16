@@ -57,6 +57,36 @@
   width: 100%;
 }
 
+/* Header-only chrome on non-hub pages (reviews, roundups, guides index, etc.) */
+.guide-hub--site-chrome {
+  background: transparent;
+  color: inherit;
+}
+
+.guide-hub--site-chrome .guide-hub__hero {
+  margin-bottom: 0;
+}
+
+.guide-hub__hero .breadcrumbs {
+  margin-bottom: 12px;
+}
+
+.guide-hub__hero .breadcrumbs a,
+.guide-hub__hero .breadcrumbs span {
+  color: var(--hub-on-ink-muted);
+}
+
+.guide-hub__hero .breadcrumbs a:hover {
+  color: var(--hub-on-ink);
+}
+
+.guide-hub__hero-body--wide {
+  max-width: none;
+  width: 100%;
+  text-align: left;
+  align-items: stretch;
+}
+
 .guide-hub__hero-body {
   position: relative;
   z-index: 1;

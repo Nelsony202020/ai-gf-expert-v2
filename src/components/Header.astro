@@ -1,8 +1,8 @@
 ---
-/** Canonical content-page chrome: SiteInkHero + ContentPageHeader (HomeDesktopHeader hero). Homepage uses its own in-hero header. */
-import SiteInkHero from './layout/SiteInkHero.astro';
+/** Non-home pages: global header identical to /guides/ourdream-ai/ (GlobalSiteHeader). Homepage keeps its own header. */
+import GlobalSiteHeader from './layout/GlobalSiteHeader.astro';
 ---
 
-<SiteInkHero>
+<GlobalSiteHeader>
   <slot />
-</SiteInkHero>
+</GlobalSiteHeader>

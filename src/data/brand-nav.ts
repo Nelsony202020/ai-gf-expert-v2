@@ -24,8 +24,8 @@ export const BRAND_HUB_BY_SLUG: Record<string, string> = {
   'ourdream-ai': '/guides/ourdream-ai/',
 };
 
-/** Header Brands dropdown: OurDream AI guide hub only. */
-export const POPULAR_BRAND_SLUGS = ['ourdream-ai'] as const;
+/** Preferred order for the header “Popular brands” list. Hubs not in this list still appear after. */
+export const POPULAR_BRAND_SLUGS = ['candy-ai', 'ourdream-ai', 'spicychat', 'girlfriendgpt'] as const;
 
 /** Existing app directory — used as “View all brands” until a dedicated brands index exists. */
 export const BRAND_DIRECTORY_HREF = '/ai-girlfriend-apps/';

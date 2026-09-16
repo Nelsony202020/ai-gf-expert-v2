@@ -1,6 +1,6 @@
 ---
 import AffiliateLink from '../../ui/AffiliateLink.astro';
-import ContentPageHeader from '../../layout/ContentPageHeader.astro';
+import GlobalSiteHeader from '../../layout/GlobalSiteHeader.astro';
 import HomeIcon from '../../home/desktop/HomeIcon.astro';
 import type { Product } from '../../../data/products';
 import {
@@ -23,12 +23,7 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
 ---
 
 <div class="guide-hub">
-  <section class="guide-hub__hero">
-    <div class="guide-hub__glow" aria-hidden="true">
-      <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
-    </div>
-    <ContentPageHeader />
-    <div class="guide-hub__hero-body">
+  <GlobalSiteHeader wrapGuideHub={false}>
       <h1 class="guide-hub__title">{ourdreamHubMeta.title}</h1>
       <p class="guide-hub__lede">{ourdreamHubMeta.description}</p>
       <div class="guide-hub__search-wrap">
@@ -77,8 +72,7 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
           <a class="guide-hub__review-link" href={ourdreamHubMeta.reviewHref}>Read review →</a>
         </div>
       </div>
-    </div>
-  </section>
+  </GlobalSiteHeader>
 
   <div class="guide-hub__sticky-bar" data-hub-sticky-bar aria-hidden="true" role="region" aria-label="OurDream AI">
     <div class="guide-hub__sticky-bar-inner">
