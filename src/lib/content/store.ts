@@ -58,7 +58,6 @@ import { cdnAsset } from '../media/cdn';
 import { isPlaceholderImage, PUBLIC_HERO_FALLBACK } from '../media/optimize';
 import { buildGroupedContributors } from '../ratings/groupContributors';
 import type { Roundup, RoundupPick } from '../../data/roundups/ai-girlfriend';
-import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
 import { resolveRoundupPicks, enrichRoundupWithPicks, enrichPicksWithAtGlance, type RoundupEntryMeta } from './roundupPick';
 import { launchCompareDefaultIds } from './launchProducts';
 import { isDevReviewSlug } from './reviewDevProducts';
@@ -619,6 +618,7 @@ export async function getProductFeaturedIn(productSlug: string): Promise<Feature
 
 /** Same pick order as the public /best/ai-girlfriend page in this environment. */
 async function getFeaturedInFromBestAiGirlfriend(productSlug: string): Promise<FeaturedIn | null> {
+  const { fileAiGirlfriendRoundup } = await import('../../data/roundups/ai-girlfriend');
   const { roundup } = await loadRoundupForPublic('ai-girlfriend', fileAiGirlfriendRoundup);
   const idx = roundup.picks.findIndex((pick) => pick.slug === productSlug);
   if (idx < 0) return null;
