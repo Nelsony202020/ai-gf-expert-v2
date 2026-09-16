@@ -1,6 +1,7 @@
 // Authentication + role-based access control for the admin panel.
 // Permissions are enforced HERE (server-side), never only in the UI.
 
+import { createHash } from 'node:crypto';
 import { getDb, id, resetDb } from './server';
 import { env } from '../env';
 
@@ -109,9 +110,11 @@ async function withInstantRetry<T>(fn: (db: ReturnType<typeof getDb>) => Promise
  */
 const IDENTITY_CACHE_MS = 60_000;
 const identityCache = new Map<string, { identity: AdminIdentity; expiresAt: number }>();
+/** Coalesce concurrent verifyToken calls within one server instance (product workspace opens many APIs at once). */
+const identityInflight = new Map<string, Promise<AdminIdentity | null>>();
 
 function cacheKeyForToken(token: string): string {
-  return token.slice(-24);
+  return createHash('sha256').update(token).digest('hex');
 }
 
 export async function resolveIdentity(request: Request): Promise<AdminIdentity | null> {
@@ -125,7 +128,15 @@ export async function resolveIdentity(request: Request): Promise<AdminIdentity |
     return cached.identity;
   }
 
-  const identity = await resolveIdentityUncached(token);
+  let pending = identityInflight.get(cacheKey);
+  if (!pending) {
+    pending = resolveIdentityUncached(token).finally(() => {
+      identityInflight.delete(cacheKey);
+    });
+    identityInflight.set(cacheKey, pending);
+  }
+
+  const identity = await pending;
   if (identity) {
     identityCache.set(cacheKey, { identity, expiresAt: Date.now() + IDENTITY_CACHE_MS });
   }
@@ -146,21 +157,26 @@ async function resolveIdentityUncached(token: string): Promise<AdminIdentity | n
 
   let user: { id?: string; email?: string } | null = null;
   let authError: string | null = null;
-  try {
-    user = await withInstantRetry((activeDb) => activeDb.auth.verifyToken(token));
-  } catch (err) {
-    authError = err instanceof Error ? err.message : 'verifyToken failed';
-    user = null;
-  }
-  if (!user?.email) {
+  for (let attempt = 0; attempt < 3 && !user?.email; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, 120 * attempt));
+    }
     try {
-      const byRefresh = await withInstantRetry((activeDb) =>
-        activeDb.auth.getUser({ refresh_token: token }),
-      );
-      if (byRefresh?.email) user = byRefresh;
+      user = await withInstantRetry((activeDb) => activeDb.auth.verifyToken(token));
     } catch (err) {
-      authError = err instanceof Error ? err.message : authError ?? 'getUser failed';
+      authError = err instanceof Error ? err.message : 'verifyToken failed';
       user = null;
+    }
+    if (!user?.email) {
+      try {
+        const byRefresh = await withInstantRetry((activeDb) =>
+          activeDb.auth.getUser({ refresh_token: token }),
+        );
+        if (byRefresh?.email) user = byRefresh;
+      } catch (err) {
+        authError = err instanceof Error ? err.message : authError ?? 'getUser failed';
+        user = null;
+      }
     }
   }
   if (!user?.email) {

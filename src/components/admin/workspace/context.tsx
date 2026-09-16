@@ -3,7 +3,7 @@
 // Tabs consume this instead of fetching or computing progress themselves.
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { api, dataApi, linkedEntityId, type EntityRow } from '../api';
+import { api, ApiError, dataApi, linkedEntityId, type EntityRow } from '../api';
 import { normalizeListField } from '../../../lib/ai-verdict/notesSchema';
 import { sanitizeCategoryVerdictDraft } from './verdict/categoryVerdictProgress';
 import type { CategoryVerdict } from './verdict/types';
@@ -169,7 +169,18 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
   }, [links]);
 
   async function reloadProduct() {
-    const r = await dataApi.get('products', productId);
+    let r: { row: EntityRow };
+    try {
+      r = await dataApi.get('products', productId);
+    } catch (e) {
+      // Parallel workspace requests can briefly fail token verify under load; retry once.
+      if (e instanceof ApiError && e.status === 401) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        r = await dataApi.get('products', productId);
+      } else {
+        throw e;
+      }
+    }
     setOriginal(r.row);
     const nextFields = { ...r.row };
     setFields(nextFields);
@@ -184,14 +195,13 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
   async function refreshRelated() {
     setRelatedLoading(true);
     try {
-      const [authors, media, testRunsRes, allTestRuns, plans, packages, paymentProfiles, characters, affiliateLinks, reviews, categories, history, snapshots, featureCosts, promotions] =
+      const [authors, media, testRunsRes, plans, packages, paymentProfiles, characters, affiliateLinks, reviews, categories, history, snapshots, featureCosts, promotions] =
         await Promise.all([
           dataApi.list('authors'),
           dataApi.list('media'),
           api.get<{ rows: EntityRow[] }>(`/api/admin/products/${productId}/test-runs`).catch(() => ({
             rows: [] as EntityRow[],
           })),
-          dataApi.list('testRuns').catch(() => ({ rows: [] as EntityRow[] })),
           dataApi.list('subscriptionPlans'),
           dataApi.list('creditPackages'),
           dataApi.list('paymentProfiles'),
@@ -212,10 +222,7 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
         authors: authors.rows,
         mediaAll: media.rows,
         media: byProduct(media.rows),
-        testRuns:
-          testRunsRes.rows.length > 0
-            ? testRunsRes.rows
-            : allTestRuns.rows.filter((r) => linkedEntityId(r.product) === productId),
+        testRuns: testRunsRes.rows,
         plans: byProduct(plans.rows),
         packages: byProduct(packages.rows),
         paymentProfile: byProduct(paymentProfiles.rows)[0] ?? null,
