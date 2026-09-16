@@ -57,7 +57,7 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
 
         <SitemapSearchField query={requestedQuery} searching={isSearching} resultLabel={resultLabel} />
 
-        <div class="si-chips" data-search-chips hidden={isSearching}>
+        <div class="si-chips" data-si-search-chips hidden={isSearching}>
           <a class="si-chip" href="#si-explore">Reviews<span class="si-chip-dot"></span><span class="si-chip-n">{page.reviewsCount}</span></a>
           <a class="si-chip" href="#rankings">Rankings<span class="si-chip-dot"></span><span class="si-chip-n">{page.rankingsCount}</span></a>
           <a class="si-chip" href="#guides">Guides<span class="si-chip-dot"></span><span class="si-chip-n">{page.guidesCount}</span></a>
@@ -79,12 +79,12 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
 
     <div class="si-body">
       <div class="si-wrap si-body-inner">
-      <section class="si-results" data-search-results hidden={!isSearching} aria-live="polite">
+      <section class="si-results" data-si-search-results hidden={!isSearching} aria-live="polite">
         <div class="si-results-head">
-          <h2 class="si-results-title" data-search-heading hidden={!hasResults}>{hasResults ? `${initialHits.length} results for “${requestedQuery}”` : ""}</h2>
-            <button type="button" class="si-clear-link" data-search-clear-text>Clear search</button>
+          <h2 class="si-results-title" data-si-search-heading hidden={!hasResults}>{hasResults ? `${initialHits.length} results for “${requestedQuery}”` : ""}</h2>
+            <button type="button" class="si-clear-link" data-si-search-clear-text>Clear search</button>
         </div>
-        <div class="si-results-list" data-search-list>
+        <div class="si-results-list" data-si-search-list>
           {initialGroups.map((group, groupIndex) => (
             <div class="si-hit-group">
               <h3 class="si-hit-group-title">{group.group}</h3>
@@ -104,22 +104,22 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
             </div>
           ))}
         </div>
-        <div class="si-empty" data-search-empty hidden={hasResults || !isSearching}>
+        <div class="si-empty" data-si-search-empty hidden={hasResults || !isSearching}>
           <div class="si-empty-icon" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
               <circle cx="10" cy="10" r="7.3" stroke="currentColor" stroke-width="1.5" />
               <path d="M15.4 15.4L19 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
             </svg>
           </div>
-          <p class="si-empty-title" data-empty-title>
+          <p class="si-empty-title" data-si-empty-title>
             {isSearching && !hasResults ? `No results for “${requestedQuery}”` : ""}
           </p>
           <p class="si-empty-copy" data-empty-copy>Try another search term.</p>
-            <button type="button" class="si-empty-btn" data-search-clear-empty>Clear search</button>
+            <button type="button" class="si-empty-btn" data-si-search-clear-empty>Clear search</button>
         </div>
       </section>
 
-      <div class="si-directory" data-directory hidden={isSearching}>
+      <div class="si-directory" data-si-directory hidden={isSearching}>
         <div class="si-explore-wrap">
           <section class="si-explore" id="si-explore">
             <h2 class="si-h2">Explore AIGE</h2>
@@ -154,14 +154,14 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
   const inputs = Array.from(document.querySelectorAll("[data-si-search-input]"));
   const forms = Array.from(document.querySelectorAll("[data-si-search-form]"));
   const slash = document.querySelector("[data-search-slash]");
-  const chips = document.querySelector("[data-search-chips]");
+  const chips = document.querySelector("[data-si-search-chips]");
   const lede = document.querySelector(".si-lede");
-  const directory = document.querySelector("[data-directory]");
-  const results = document.querySelector("[data-search-results]");
-  const list = document.querySelector("[data-search-list]");
-  const empty = document.querySelector("[data-search-empty]");
-  const heading = document.querySelector("[data-search-heading]");
-  const emptyTitle = document.querySelector("[data-empty-title]");
+  const directory = document.querySelector("[data-si-directory]");
+  const results = document.querySelector("[data-si-search-results]");
+  const list = document.querySelector("[data-si-search-list]");
+  const empty = document.querySelector("[data-si-search-empty]");
+  const heading = document.querySelector("[data-si-search-heading]");
+  const emptyTitle = document.querySelector("[data-si-empty-title]");
   const sticky = document.querySelector("[data-si-sticky]");
   const heroSearch = document.querySelector('[data-search-surface="hero"]');
 
@@ -261,7 +261,7 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
       }
     }
     const clearLabel = window.matchMedia("(max-width: 767px)").matches ? "Clear" : "Clear search";
-    document.querySelectorAll("[data-search-clear-text]").forEach((node) => {
+    document.querySelectorAll("[data-si-search-clear-text]").forEach((node) => {
       node.textContent = clearLabel;
     });
 
@@ -311,7 +311,7 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
   forms.forEach((node) => {
     node.addEventListener("submit", (event) => event.preventDefault());
   });
-  document.querySelectorAll("[data-si-search-clear], [data-search-clear-text], [data-search-clear-empty]").forEach((node) => {
+  document.querySelectorAll("[data-si-search-clear], [data-si-search-clear-text], [data-si-search-clear-empty]").forEach((node) => {
     node.addEventListener("click", () => clearSearch());
   });
   window.addEventListener("keydown", (event) => {
