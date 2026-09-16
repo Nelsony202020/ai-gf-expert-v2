@@ -1,19 +1,19 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Footer from '../../components/Footer.astro';
-import AffiliateLink from '../../components/ui/AffiliateLink.astro';
-import HomeIcon from '../../components/home/desktop/HomeIcon.astro';
-import BrandGuideHub from '../../components/guides/hub/BrandGuideHub.astro';
-import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
-import { canonicalPublicUrl } from '../../lib/siteOrigin';
-import { isPathNoindex } from '../../lib/seo/pageOverrides';
+import BaseLayout from './BaseLayout.astro';
+import Footer from '../components/Footer.astro';
+import AffiliateLink from '../components/ui/AffiliateLink.astro';
+import HomeIcon from '../components/home/desktop/HomeIcon.astro';
+import BrandGuideHub from '../components/guides/hub/BrandGuideHub.astro';
+import { loadPublishedProductBySlug } from '../lib/content/store';
+import { canonicalPublicUrl } from '../lib/siteOrigin';
+import { isPathNoindex } from '../lib/seo/pageOverrides';
 import {
   brandGuideHubPath,
   buildBrandGuideHubView,
   getBrandGuideHubConfig,
-} from '../../lib/guides/brandGuideHub';
-import '../../styles/home-desktop.css';
-import '../../styles/guide-hub.css';
+} from '../lib/guides/brandGuideHub';
+import '../styles/home-desktop.css';
+import '../styles/guide-hub.css';
 
 interface Props {
   hubSlug: string;
@@ -25,8 +25,7 @@ if (!config) {
   return new Response(null, { status: 404, statusText: 'Not Found' });
 }
 
-const products = await loadComparisonProducts();
-const product = products.find((p) => p.slug === config.productSlug) ?? null;
+const product = await loadPublishedProductBySlug(config.productSlug);
 const view = buildBrandGuideHubView(product, config);
 const path = brandGuideHubPath(config.hubSlug);
 const canonical = canonicalPublicUrl(path, Astro.site);
