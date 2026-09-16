@@ -237,6 +237,7 @@ html[data-theme='dark'] .home-v2__header--standard .home-v2__theme .theme-toggle
 }
 
 .home-v2__icon-btn svg,
+.home-v2__theme .theme-toggle__icon-stack,
 .home-v2__theme .theme-toggle__icon {
   display: block;
   width: 20px;
@@ -246,6 +247,10 @@ html[data-theme='dark'] .home-v2__header--standard .home-v2__theme .theme-toggle
   flex-shrink: 0;
   overflow: visible;
   transform: none;
+}
+
+.home-v2__theme .theme-toggle__icon-stack {
+  --theme-icon-size: 20px;
 }
 
 .home-v2__menu-toggle {
@@ -258,14 +263,6 @@ html[data-theme='dark'] .home-v2__header--standard .home-v2__theme .theme-toggle
 
 .home-v2__theme .theme-toggle__label {
   display: none;
-}
-
-.home-v2__theme .theme-toggle__icon[data-theme-icon='moon'] {
-  transform: translate(-0.5px, 0.5px);
-}
-
-.home-v2__theme .theme-toggle__icon[hidden] {
-  display: none !important;
 }
 
 .home-v2__drop {

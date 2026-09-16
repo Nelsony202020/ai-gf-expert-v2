@@ -13,6 +13,15 @@
     if (meta) meta.setAttribute('content', dark ? colors.dark : colors.light);
   }
 
+  function syncThemeModeIcons(btn, dark) {
+    btn.querySelectorAll('.theme-toggle__icon[data-theme-icon]').forEach((el) => {
+      const kind = el.getAttribute('data-theme-icon');
+      const show = dark ? kind === 'sun' : kind === 'moon';
+      if (show) el.removeAttribute('hidden');
+      else el.setAttribute('hidden', '');
+    });
+  }
+
   function initThemeToggles() {
     const buttons = document.querySelectorAll('[data-theme-toggle]');
     if (!buttons.length) return;
@@ -34,25 +43,14 @@
       const dark = root.getAttribute('data-theme') === 'dark';
       syncThemeColor(dark);
       buttons.forEach((btn) => {
-        const icon = btn.querySelector('.theme-toggle__icon');
         const label = btn.querySelector('.theme-toggle__label');
         const isSwitch = btn.classList.contains('theme-toggle--switch');
+        syncThemeModeIcons(btn, dark);
         if (isSwitch) {
           if (label) label.textContent = 'Dark mode';
           btn.setAttribute('aria-checked', dark ? 'true' : 'false');
           btn.setAttribute('aria-label', dark ? 'Turn off dark mode' : 'Turn on dark mode');
         } else {
-          const svgIcons = btn.querySelectorAll('.theme-toggle__icon[data-theme-icon]');
-          if (svgIcons.length) {
-            svgIcons.forEach((el) => {
-              const kind = el.getAttribute('data-theme-icon');
-              const show = dark ? kind === 'sun' : kind === 'moon';
-              if (show) el.removeAttribute('hidden');
-              else el.setAttribute('hidden', '');
-            });
-          } else if (icon) {
-            icon.textContent = dark ? 'light_mode' : 'dark_mode';
-          }
           if (label) label.textContent = dark ? 'Light mode' : 'Dark mode';
           btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
           btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
