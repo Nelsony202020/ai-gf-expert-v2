@@ -33,16 +33,25 @@ export async function buildHomeProofFacts(publishedProducts: Product[]): Promise
   ];
 }
 
-export function buildHomeTesterFacts(publishedProducts: Product[]): HomeProofFact[] {
-  const reviews = publishedProducts.filter((p) => p.overallScore != null);
+/** Tester block — apps tested from hub metrics; full reviews from published scored reviews. */
+export async function buildHomeTesterFacts(publishedProducts: Product[]): Promise<HomeProofFact[]> {
+  const hubMetrics = await loadTestHubMetrics();
+  const appsTestedRaw = hubMetrics[0]?.value?.replace(/,/g, '') ?? '';
+  const appsTestedNum = Number(appsTestedRaw);
+  const appsTestedCount = Number.isFinite(appsTestedNum)
+    ? appsTestedNum
+    : publishedProducts.length;
+
+  const scoredReviews = publishedProducts.filter((p) => p.overallScore != null);
+
   return [
     {
-      value: formatExactCount(publishedProducts.length),
-      label: publishedProducts.length === 1 ? 'App tested' : 'Apps tested',
+      value: formatExactCount(appsTestedCount),
+      label: appsTestedCount === 1 ? 'App tested' : 'Apps tested',
     },
     {
-      value: formatExactCount(reviews.length),
-      label: reviews.length === 1 ? 'Full review' : 'Full reviews',
+      value: formatExactCount(scoredReviews.length),
+      label: scoredReviews.length === 1 ? 'Full review' : 'Full reviews',
     },
     { value: '0', label: 'Free press accounts' },
   ];
