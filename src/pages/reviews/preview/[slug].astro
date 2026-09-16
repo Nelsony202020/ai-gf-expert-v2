@@ -51,6 +51,7 @@ export async function getStaticPaths() {
   }
   return slugs.map((slug) => ({ params: { slug } }));
 }
+
 // Previews expose unpublished products, so production requires the editor
 // cookie issued by /api/admin/preview-session (set automatically on admin
 // sign-in). Without it the URL behaves like any unknown page.
