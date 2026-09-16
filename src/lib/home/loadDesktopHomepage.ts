@@ -10,7 +10,6 @@ import { figmaScoreTone, formatScore } from './figmaScore';
 import { publicAffiliateHref } from '../affiliate/publicHref';
 import { getTestCategories } from '../test-framework';
 import { buildHomeProofFacts, buildHomeTesterFacts, type HomeProofFact } from './homeProofMetrics';
-import { productToRoundupPick } from '../content/roundupPick';
 
 const SCORE_EXAMPLE_SLUG = 'candy-ai';
 const WINNER_CARD_KEYS = ['images', 'characters', 'chat'] as const;
