@@ -20,27 +20,27 @@
 .pt2-page {
   width: min(1200px, calc(100% - 2rem));
   margin: 0 auto;
-  padding-top: 2rem;
+  padding-top: 1.5rem;
 }
 
 @media (min-width: 1024px) {
   .pt2-page {
     width: min(1200px, calc(100% - 15rem));
-    padding-top: 3rem;
+    padding-top: 2rem;
   }
 }
 
 .pt2-page > .pt2-section + .pt2-section {
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 #pricing-plans {
-  padding-top: 2.5rem;
+  padding-top: 1.5rem;
 }
 
 @media (min-width: 1024px) {
   #pricing-plans {
-    padding-top: 3.5rem;
+    padding-top: 2rem;
   }
 }
 
@@ -80,7 +80,7 @@
 .pt2-usage-switch {
   display: inline-flex;
   gap: 0.25rem;
-  margin: 1.5rem 0 0;
+  margin: 1rem 0 0;
   padding: 0.25rem;
   border: 1px solid var(--pt2-hairline);
   border-radius: 999px;
@@ -112,7 +112,7 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.375rem;
-  margin: 1.5rem 0 0;
+  margin: 1rem 0 0;
 }
 
 .pt2-hero-price__n {
@@ -137,54 +137,22 @@
   color: var(--pt2-muted);
 }
 
-.pt2-breakdown {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1.125rem;
-  margin: 1.5rem 0 0;
-  padding: 1.25rem 1.5rem;
-  border: 1px solid var(--pt2-hairline);
-  border-radius: 14px;
-  background: #fff;
-  width: fit-content;
-  max-width: 100%;
-}
-
-.pt2-breakdown__item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 3.5rem;
-}
-
-.pt2-breakdown__n {
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.375rem;
-  color: var(--pt2-ink);
-}
-
-.pt2-breakdown__n.is-total {
-  font-family: var(--pt2-display);
-  font-size: 1.0625rem;
-  font-weight: 600;
-}
-
-.pt2-breakdown__l {
-  font-size: 0.875rem;
-  line-height: 1.375rem;
+.pt2-eq {
+  margin: 0.75rem 0 0;
+  max-width: 40rem;
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
   color: var(--pt2-muted);
 }
 
-.pt2-breakdown__op {
-  color: var(--pt2-dim);
-  font-size: 0.875rem;
+.pt2-eq strong {
+  color: var(--pt2-ink);
+  font-weight: 700;
 }
 
 .pt2-pack-note,
 .pt2-annual-note {
-  margin: 0.75rem 0 0;
+  margin: 0.5rem 0 0;
   font-size: 0.875rem;
   line-height: 1.375rem;
   color: var(--pt2-dim);
@@ -194,7 +162,7 @@
   height: 1px;
   background: var(--pt2-hairline);
   border: 0;
-  margin: 1.5rem 0;
+  margin: 1rem 0 0.75rem;
 }
 
 .pt2-bench-head {
@@ -211,7 +179,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.75rem;
-  margin: 1.25rem 0 0;
+  margin: 0.75rem 0 0;
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -300,8 +268,12 @@
 .pt2 .pt-plan-overview {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.25rem;
-  margin: 1.5rem 0 0;
+  gap: 0;
+  margin: 1rem 0 0;
+  border: 1px solid var(--pt2-hairline);
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
 }
 
 @media (min-width: 800px) {
@@ -311,50 +283,63 @@
 }
 
 .pt2 .pt-plan-overview__col {
-  background: #fff;
-  border: 1px solid var(--pt2-hairline);
-  border-radius: 14px;
-  padding: 1.125rem 1.25rem;
-  min-height: 10.5rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0.9rem 1.1rem;
+  min-height: 0;
+}
+
+@media (min-width: 800px) {
+  .pt2 .pt-plan-overview__col + .pt-plan-overview__col {
+    border-left: 1px solid var(--pt2-hairline);
+  }
+}
+
+@media (max-width: 799px) {
+  .pt2 .pt-plan-overview__col + .pt-plan-overview__col {
+    border-top: 1px solid var(--pt2-hairline);
+  }
 }
 
 .pt2 .pt-plan-overview__col.is-recommended {
-  border-color: var(--pt2-pink-border);
+  border-color: inherit;
+  box-shadow: inset 3px 0 0 var(--pt2-pink);
 }
 
 .pt2 .pt-plan-overview__name {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  line-height: 1.5rem;
+  line-height: 1.375rem;
   letter-spacing: -0.03em;
 }
 
 .pt2-plan-top {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.5rem;
 }
 
 .pt2-plan-badge {
   margin-left: auto;
-  padding: 0.1875rem 0.5rem;
+  padding: 0.125rem 0.45rem;
   border-radius: 20px;
   background: var(--pt2-pink-soft);
   color: var(--pt2-pink);
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.6875rem;
+  font-weight: 600;
   line-height: 1rem;
   white-space: nowrap;
 }
 
 .pt2 .pt-plan-overview__price {
-  margin: 0.5rem 0 0;
+  margin: 0.25rem 0 0;
   font-family: var(--pt2-display);
-  font-size: 1.3125rem;
+  font-size: 1.125rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  line-height: 1.625rem;
+  line-height: 1.375rem;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -362,23 +347,21 @@
 }
 
 .pt2 .pt-plan-overview__list {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--pt2-dim);
   text-decoration: line-through;
 }
 
 .pt2 .pt-plan-overview__credits,
 .pt2-plan-best {
-  margin: 0.25rem 0 0;
-  font-size: 0.875rem;
-  line-height: 1.375rem;
+  margin: 0.15rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
   color: var(--pt2-muted);
 }
 
 .pt2-plan-rule {
-  height: 1px;
-  background: var(--pt2-hairline);
-  margin: 0.875rem 0 0.75rem;
+  display: none;
 }
 
 /* —— Disclosures —— */
@@ -391,7 +374,7 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  padding: 1.375rem 0;
+  padding: 0.95rem 0;
   background: none;
   border: 0;
   text-align: left;
@@ -443,11 +426,42 @@
 }
 
 .pt2-disclose__panel {
-  padding: 0 0 2rem;
+  padding: 0 0 1.15rem;
 }
 
 .pt2-disclose__panel[hidden] {
   display: none;
+}
+
+.pt2-disclose--tight .pt2-disclose__sum {
+  display: none;
+}
+
+.pt2-disclose--tight .pt2-disclose__action [data-pt2-action-label] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.pt2-disclose--link {
+  border-top: 0;
+}
+
+.pt2-disclose--link .pt2-disclose__btn {
+  display: inline-flex;
+  width: auto;
+  padding: 0.5rem 0 0;
+  gap: 0.35rem;
+}
+
+.pt2-disclose--link .pt2-disclose__action {
+  font-weight: 600;
+}
+
+.pt2-disclose--link .pt2-disclose__panel {
+  padding: 0.75rem 0 0.25rem;
 }
 
 .pt2-table-kicker {
@@ -474,16 +488,16 @@
 }
 
 .pt2-tool {
-  margin-top: 1.5rem;
-  padding: 1.25rem 1.125rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
   background: var(--pt2-tool);
   border: 1px solid var(--pt2-hairline);
-  border-radius: 18px;
+  border-radius: 16px;
 }
 
 @media (min-width: 768px) {
   .pt2-tool {
-    padding: 1.75rem;
+    padding: 1.15rem 1.25rem;
   }
 }
 
@@ -554,8 +568,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
-  margin: 0 0 1.25rem;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
 }
 
 .pt2 .pt-credit-pool__field .pt-label {
@@ -582,18 +596,78 @@
 }
 
 .pt2-mix-footnote {
-  margin: 1rem 0 0;
-  font-size: 0.875rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
   line-height: 1.375rem;
   color: var(--pt2-dim);
+}
+
+.pt2-pool-buys {
+  margin: 0 0 0.85rem;
+}
+
+.pt2-pool-buys__k {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pt2-dim);
+}
+
+.pt2-pool-buys__line {
+  margin: 0.3rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.4rem;
+  color: var(--pt2-ink);
+}
+
+.pt2 .pt-credit-pool__summary,
+.pt2 .pt-mixer__budget,
+.pt2 .pt-mixer__panel-title,
+.pt2 .pt-mixer__footnote,
+.pt2 .pt-credit-pool__tool-rule {
+  display: none;
+}
+
+.pt2 .pt-mixer__layout {
+  gap: 0.85rem 1.1rem;
+}
+
+.pt2 .pt-mixer__control {
+  padding: 0.45rem 0;
+}
+
+.pt2 .pt-mixer__totals {
+  margin-top: 0.5rem;
+}
+
+.pt2 .pt-mixer__total--remain strong,
+.pt2 .pt-mixer__total:first-child strong {
+  font-size: 0.9375rem;
+}
+
+.pt2 .pt-bench {
+  max-width: 36rem;
+}
+
+.pt2 .pt-bench__chart {
+  padding-top: 2.6rem !important;
+  padding-bottom: 1.15rem !important;
+}
+
+.pt2 .pt-bench.has-typical-below .pt-bench__chart,
+.pt2 .pt-bench.is-overlap .pt-bench__chart {
+  padding-top: 2.5rem !important;
+  padding-bottom: 2.6rem !important;
 }
 
 /* —— 05 Market compact —— */
 .pt2-market-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.5rem 3rem;
-  margin-top: 1.25rem;
+  gap: 1rem 2.5rem;
+  margin-top: 0.85rem;
 }
 
 @media (min-width: 768px) {
@@ -1142,7 +1216,7 @@
 }
 
 [data-theme='dark'] .pt2-breakdown,
-[data-theme='dark'] .pt2 .pt-plan-overview__col,
+[data-theme='dark'] .pt2 .pt-plan-overview,
 [data-theme='dark'] .pt2-usage-switch button.is-active,
 [data-theme='dark'] .pt2-billing button.is-active {
   background: #121218;
