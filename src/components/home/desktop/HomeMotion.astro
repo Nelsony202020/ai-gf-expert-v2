@@ -202,12 +202,28 @@
     const fineHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     const showLabel = root.dataset.labelShow || 'Show current number one ranked app';
     const hideLabel = root.dataset.labelHide || 'Show Herman';
+    const hintKey = 'home-herman-hint-done';
+    const hint = root.querySelector<HTMLElement>('[data-home-badge-hint]');
     let nudged = false;
+
+    const dismissHint = () => {
+      hint?.setAttribute('hidden', '');
+    };
+
+    const showHintBriefly = () => {
+      if (!hint || sessionStorage.getItem(hintKey) === '1') return;
+      hint.removeAttribute('hidden');
+      window.setTimeout(dismissHint, 2800);
+    };
 
     const setOpen = (open: boolean) => {
       root.classList.toggle('is-flipped', open);
       toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
       toggle.setAttribute('aria-label', open ? hideLabel : showLabel);
+      if (open) {
+        sessionStorage.setItem(hintKey, '1');
+        dismissHint();
+      }
     };
 
     const pointerInsideCircle = (event: PointerEvent | MouseEvent) => {
@@ -328,23 +344,19 @@
     }
 
     if (prefersReducedMotion() || !coarsePointer) return;
+    if (sessionStorage.getItem(hintKey) === '1') return;
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (nudged || root.classList.contains('is-flipped')) return;
-        const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.35);
-        if (!visible) return;
-        nudged = true;
-        io.disconnect();
-        window.setTimeout(() => {
-          if (root.classList.contains('is-flipped')) return;
-          root.classList.add('is-wiggling');
-          window.setTimeout(() => root.classList.remove('is-wiggling'), 540);
-        }, 850);
-      },
-      { threshold: [0.35, 0.55] },
-    );
-    io.observe(root);
+    window.setTimeout(() => {
+      if (nudged || root.classList.contains('is-flipped')) return;
+      const box = root.getBoundingClientRect();
+      if (box.bottom < 40 || box.top > window.innerHeight - 40) return;
+      nudged = true;
+      root.classList.add('is-wiggling', 'is-hint-pulse');
+      window.setTimeout(() => {
+        root.classList.remove('is-wiggling', 'is-hint-pulse');
+        showHintBriefly();
+      }, 560);
+    }, 1500);
   }
 
   function init() {

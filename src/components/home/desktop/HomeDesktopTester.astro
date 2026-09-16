@@ -1,5 +1,4 @@
 ---
-import { homeTesterFacts } from '../../../data/home-proof';
 import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
 import HomeEyebrow from './HomeEyebrow.astro';
 import HomeIcon from './HomeIcon.astro';
@@ -28,7 +27,7 @@ const { data } = Astro.props;
     <div class="home-v2__tester-rest">
       <p class="home-v2__selector-blurb home-v2__tester-bio">{data.tester.bio}</p>
       <div class="home-v2__tester-facts">
-        {homeTesterFacts.map((fact) => (
+        {data.testerFacts.map((fact) => (
           <div class="home-v2__proof-metric">
             <p class="home-v2__proof-value">{fact.value}</p>
             <p>{fact.label}</p>

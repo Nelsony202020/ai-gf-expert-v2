@@ -390,6 +390,10 @@ function mapProduct(
     tagline: dbProduct.tagline ?? fileFallback?.tagline ?? '',
     reviewedDate: fmtDate(dbProduct.lastTestedAt) || fileFallback?.reviewedDate || '',
     modifiedDate: fmtDate(dbProduct.updatedAt) || fileFallback?.modifiedDate || '',
+    publishedAtMs:
+      dbProduct.publishedAt != null
+        ? Number(dbProduct.publishedAt)
+        : fileFallback?.publishedAtMs,
     methodology: `Methodology ${methodologyVersion}`,
     authors,
     websiteUrl: dbProduct.websiteUrl ?? fileFallback?.websiteUrl ?? '',

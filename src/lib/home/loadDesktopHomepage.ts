@@ -1,4 +1,5 @@
 import { authors } from '../../data/authors';
+import { fileProductsBaseline } from '../../data/products';
 import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
 import { publicPagePath } from '../urls';
 import { loadRoundupForPublic, loadPublishedProducts, loadProductLogoMap } from '../content/store';
@@ -6,11 +7,25 @@ import { isPlaceholderImage } from '../media/optimize';
 import { isPlaceholderLogo, resolveBrandLogo } from './brandLogos';
 import { figmaScoreTone, formatScore } from './figmaScore';
 import { publicAffiliateHref } from '../affiliate/publicHref';
+import { getTestCategories } from '../test-framework';
+import { buildHomeProofFacts, buildHomeTesterFacts, type HomeProofFact } from './homeProofMetrics';
+import { productToRoundupPick } from '../content/roundupPick';
 
+const SCORE_EXAMPLE_SLUG = 'candy-ai';
 const WINNER_CARD_KEYS = ['images', 'characters', 'chat'] as const;
 const TOP_CARD_KEYS = ['chat', 'images', 'video'] as const;
+const SCORE_CATEGORY_KEYS = [
+  'characters',
+  'customization',
+  'chat',
+  'chat-features',
+  'images',
+  'video',
+  'privacy',
+  'pricing',
+] as const;
 
-export type HomePriorityId = 'overall' | 'chat' | 'images' | 'video' | 'price';
+export type HomePriorityId = string;
 
 export interface HomeScoreChip {
   value: string;
@@ -76,6 +91,9 @@ export interface DesktopHomepageData {
   updatedLabel: string;
   updatedShort: string;
   methodologyVersion: string;
+  proofFacts: HomeProofFact[];
+  testerFacts: HomeProofFact[];
+  publishedReviewCount: number;
   top3: HomeRankedApp[];
   finalists: Array<{ name: string; logo: string; slug: string }>;
   winner: HomeRankedApp;
@@ -98,78 +116,41 @@ export interface DesktopHomepageData {
   testingVideoPoster: string;
 }
 
-const PRIORITY_META: Array<{
-  id: HomePriorityId;
-  label: string;
-  categoryKey: string | null;
-  rankParam: string | null;
-  eyebrow: string;
-  award: string;
-  metricLabel: string;
-  ctaLabel: string;
-}> = [
-  {
+function categoryWeightsMap(): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const cat of getTestCategories()) {
+    map.set(cat.key, `${cat.weight}% weight`);
+  }
+  return map;
+}
+
+function buildPriorityMeta() {
+  const overall = {
     id: 'overall',
     label: 'Overall',
-    categoryKey: null,
-    rankParam: null,
+    categoryKey: null as string | null,
+    rankParam: null as string | null,
     eyebrow: 'Best overall',
     award: 'Best overall',
     metricLabel: 'overall',
     ctaLabel: 'View overall ranking',
-  },
-  {
-    id: 'chat',
-    label: 'Chat',
-    categoryKey: 'chat',
-    rankParam: 'chat',
-    eyebrow: 'Best for chat',
-    award: 'Best chat',
-    metricLabel: 'for Chat',
-    ctaLabel: 'View chat ranking',
-  },
-  {
-    id: 'images',
-    label: 'Images',
-    categoryKey: 'images',
-    rankParam: 'images',
-    eyebrow: 'Best for images',
-    award: 'Best images',
-    metricLabel: 'for Images',
-    ctaLabel: 'View image ranking',
-  },
-  {
-    id: 'video',
-    label: 'Video',
-    categoryKey: 'video',
-    rankParam: 'video',
-    eyebrow: 'Best for video',
-    award: 'Best videos',
-    metricLabel: 'for Video',
-    ctaLabel: 'View video ranking',
-  },
-  {
-    id: 'price',
-    label: 'Price',
-    categoryKey: 'pricing',
-    rankParam: 'price',
-    eyebrow: 'Best for price',
-    award: 'Best price',
-    metricLabel: 'for Price',
-    ctaLabel: 'View price ranking',
-  },
-];
-
-const CATEGORY_WEIGHTS: Record<string, string> = {
-  characters: '10% weight',
-  customization: '15% weight',
-  chat: '20% weight',
-  'chat-features': '10% weight',
-  images: '15% weight',
-  video: '10% weight',
-  privacy: '10% weight',
-  pricing: '10% weight',
-};
+  };
+  const fromTaxonomy = getTestCategories().map((cat) => {
+    const rankParam = cat.key === 'pricing' ? 'price' : cat.key;
+    const short = cat.name;
+    return {
+      id: cat.key,
+      label: short,
+      categoryKey: cat.key,
+      rankParam,
+      eyebrow: `Best for ${short.toLowerCase()}`,
+      award: `Best ${short.toLowerCase()}`,
+      metricLabel: `for ${short}`,
+      ctaLabel: `View ${short.toLowerCase()} ranking`,
+    };
+  });
+  return [overall, ...fromTaxonomy];
+}
 
 function chip(score: number): HomeScoreChip {
   return { value: formatScore(score), tone: figmaScoreTone(score) };
@@ -178,6 +159,7 @@ function chip(score: number): HomeScoreChip {
 function barFrom(
   pick: { categoryScores: Array<{ key: string; name: string; score: number }> },
   key: string,
+  weights: Map<string, string>,
 ): HomeCategoryBar | null {
   const cat = pick.categoryScores.find((c) => c.key === key);
   if (!cat) return null;
@@ -188,7 +170,7 @@ function barFrom(
     display: formatScore(cat.score),
     tone: figmaScoreTone(cat.score),
     width: `${Math.max(0, Math.min(10, cat.score)) * 10}%`,
-    weight: CATEGORY_WEIGHTS[cat.key],
+    weight: weights.get(cat.key),
   };
 }
 
@@ -224,8 +206,9 @@ function toRanked(
   },
   rank: number,
   barKeys: readonly string[],
+  weights: Map<string, string>,
 ): HomeRankedApp {
-  const bars = barKeys.map((key) => barFrom(pick, key)).filter((b): b is HomeCategoryBar => b != null);
+  const bars = barKeys.map((key) => barFrom(pick, key, weights)).filter((b): b is HomeCategoryBar => b != null);
   return {
     slug: pick.slug,
     name: pick.name,
@@ -248,20 +231,28 @@ function parseDateMs(value: string | undefined): number {
   return Number.isNaN(t) ? 0 : t;
 }
 
-function formatMonthYear(value: string | undefined, fallbackMs?: number): string {
-  const ms = parseDateMs(value) || fallbackMs || 0;
-  if (!ms) return value ?? '';
+function publishedSortMs(product: { publishedAtMs?: number; reviewedDate?: string }): number {
+  if (product.publishedAtMs && product.publishedAtMs > 0) return product.publishedAtMs;
+  return parseDateMs(product.reviewedDate);
+}
+
+function formatMonthYearFromMs(ms: number): string {
+  if (!ms) return '';
   return new Date(ms).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
 export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
   const [{ roundup }, published, logoMap] = await Promise.all([
     loadRoundupForPublic('ai-girlfriend', fileAiGirlfriendRoundup),
-    loadPublishedProducts([]),
+    loadPublishedProducts(fileProductsBaseline),
     loadProductLogoMap(),
   ]);
+  const proofFacts = await buildHomeProofFacts(published);
 
+  const weights = categoryWeightsMap();
   const picks = roundup.picks.filter((p) => p.overallScore != null);
+  const publishedReviews = published.filter((p) => p.overallScore != null);
+
   const emptyApp: HomeRankedApp = {
     slug: '',
     name: '—',
@@ -275,15 +266,15 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     bars: [],
     summary: '',
   };
-  const top3 = picks.slice(0, 3).map((p, i) => withLogo(toRanked(p, i + 1, TOP_CARD_KEYS), logoMap));
+  const top3 = picks.slice(0, 3).map((p, i) => withLogo(toRanked(p, i + 1, TOP_CARD_KEYS, weights), logoMap));
   const winnerSource = picks[0];
   const winner = withLogo(
-    winnerSource ? toRanked(winnerSource, 1, TOP_CARD_KEYS) : top3[0] ?? emptyApp,
+    winnerSource ? toRanked(winnerSource, 1, TOP_CARD_KEYS, weights) : top3[0] ?? emptyApp,
     logoMap,
   );
-  const winnerHeroBars = WINNER_CARD_KEYS.map((key) => (winnerSource ? barFrom(winnerSource, key) : null)).filter(
-    (b): b is HomeCategoryBar => b != null,
-  );
+  const winnerHeroBars = WINNER_CARD_KEYS.map((key) =>
+    winnerSource ? barFrom(winnerSource, key, weights) : null,
+  ).filter((b): b is HomeCategoryBar => b != null);
   if (winnerSource) {
     const overallAward =
       winnerSource.awards?.find((a) => a.sortKey === 'overall')?.label ?? 'Best overall';
@@ -295,17 +286,18 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     withLogo({ name: p.name, logo: p.logo, slug: p.slug }, logoMap),
   );
 
-  const priorities: HomePriorityPanel[] = PRIORITY_META.map((meta) => {
+  const priorityMeta = buildPriorityMeta();
+  const priorities: HomePriorityPanel[] = priorityMeta.map((meta) => {
     const sorted = [...picks].sort((a, b) => scoreFor(b, meta.categoryKey) - scoreFor(a, meta.categoryKey));
     const first = sorted[0];
-    const winnerApp = withLogo(first ? toRanked(first, 1, TOP_CARD_KEYS) : winner, logoMap);
+    const winnerApp = withLogo(first ? toRanked(first, 1, TOP_CARD_KEYS, weights) : winner, logoMap);
     const metricScore = first ? scoreFor(first, meta.categoryKey) : winner.overallNumber;
     winnerApp.award = meta.award;
     winnerApp.overall = chip(metricScore);
     winnerApp.overallNumber = metricScore;
-    const catBar = first && meta.categoryKey ? barFrom(first, meta.categoryKey) : null;
-    if (catBar) {
-      winnerApp.summary = first.categoryScores.find((c) => c.key === meta.categoryKey)?.description || first.overallSummary || first.intro;
+    if (first && meta.categoryKey) {
+      const cat = first.categoryScores.find((c) => c.key === meta.categoryKey);
+      winnerApp.summary = cat?.description || first.overallSummary || first.intro;
     } else {
       winnerApp.summary = first?.overallSummary || first?.intro || winner.summary;
     }
@@ -337,28 +329,29 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     };
   });
 
-  const examplePick = winnerSource ?? picks[0];
-  const exampleBars = examplePick
-    ? [
-        'characters',
-        'customization',
-        'chat',
-        'chat-features',
-        'images',
-        'video',
-        'privacy',
-        'pricing',
-      ]
-        .map((key) => barFrom(examplePick, key))
-        .filter((b): b is HomeCategoryBar => b != null)
+  const publishedBySlug = new Map(publishedReviews.map((p) => [p.slug, p]));
+  let scoreExamplePick = picks.find((p) => p.slug === SCORE_EXAMPLE_SLUG);
+  if (!scoreExamplePick) {
+    const product = publishedBySlug.get(SCORE_EXAMPLE_SLUG);
+    const template = fileAiGirlfriendRoundup.picks.find((p) => p.slug === SCORE_EXAMPLE_SLUG);
+    if (product && template) {
+      scoreExamplePick = productToRoundupPick(template, product);
+    }
+  }
+  scoreExamplePick = scoreExamplePick ?? winnerSource ?? picks[0];
+  const scoreExampleApp = scoreExamplePick
+    ? withLogo(toRanked(scoreExamplePick, 1, TOP_CARD_KEYS, weights), logoMap)
+    : winner;
+  const exampleBars = scoreExamplePick
+    ? SCORE_CATEGORY_KEYS.map((key) => barFrom(scoreExamplePick, key, weights)).filter(
+        (b): b is HomeCategoryBar => b != null,
+      )
     : [];
 
   const latestPool: HomeLatestItem[] = [];
-  const reviewSeen = new Set<string>();
 
-  for (const product of published) {
-    if (product.overallScore == null) continue;
-    const date = product.modifiedDate || product.reviewedDate || '';
+  for (const product of publishedReviews) {
+    const dateMs = publishedSortMs(product);
     const rawImage = product.featuredImage?.full;
     const image = isPlaceholderImage(rawImage)
       ? resolveBrandLogo(product.slug, product.logo)
@@ -368,36 +361,13 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
       type: 'Review',
       title: `${product.name} Review`,
       href: publicPagePath(`/reviews/${product.slug}/`),
-      date: formatMonthYear(date),
-      dateMs: parseDateMs(date),
+      date: formatMonthYearFromMs(dateMs),
+      dateMs,
       description: product.tagline || product.overallSummary || '',
       image: image || undefined,
       result:
         product.overallScore != null
-          ? `${formatScore(product.overallScore)}/10 after 3+ months of testing`
-          : undefined,
-    });
-    reviewSeen.add(product.slug);
-  }
-
-  for (const pick of picks) {
-    if (reviewSeen.has(pick.slug)) continue;
-    const gallery = pick.gallery?.[0]?.full;
-    const image = isPlaceholderImage(gallery)
-      ? resolveBrandLogo(pick.slug, pick.logo)
-      : gallery;
-    latestPool.push({
-      id: `review-${pick.slug}`,
-      type: 'Review',
-      title: `${pick.name} Review`,
-      href: pick.reviewUrl || publicPagePath(`/reviews/${pick.slug}/`),
-      date: formatMonthYear(roundup.modifiedDate),
-      dateMs: parseDateMs(roundup.modifiedDate) - latestPool.length,
-      description: pick.overallSummary || pick.intro,
-      image: image || resolveBrandLogo(pick.slug, pick.logo) || undefined,
-      result:
-        pick.overallScore != null
-          ? `${formatScore(pick.overallScore)}/10 after 3+ months of testing`
+          ? `${formatScore(product.overallScore)}/10 overall score`
           : undefined,
     });
   }
@@ -425,19 +395,22 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
       year: 'numeric',
     }),
     methodologyVersion,
+    proofFacts,
+    testerFacts: buildHomeTesterFacts(published),
+    publishedReviewCount: publishedReviews.length,
     top3,
     finalists,
     winner,
     winnerHeroBars,
     priorities,
     scoreExample: {
-      app: winner,
+      app: scoreExampleApp,
       bars: exampleBars,
     },
     featured: featured
       ? {
           ...featured,
-          date: featured.type === 'Review' ? `Updated ${featured.date}` : featured.date,
+          date: `Published ${featured.date}`,
         }
       : null,
     latestRows,
