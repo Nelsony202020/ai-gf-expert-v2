@@ -7,9 +7,6 @@ import OurDreamGuideHub from '../../components/guides/hub/OurDreamGuideHub.astro
 import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import { ourdreamHubMeta } from '../../data/ourdream-guide-hub';
-import '../../styles/home-desktop.css';
-import '../../styles/guide-hub.css';
-
 const products = await loadComparisonProducts();
 const product = products.find((p) => p.slug === 'ourdream-ai') ?? null;
 const visitHref = ourdreamHubMeta.visitGoHref;
