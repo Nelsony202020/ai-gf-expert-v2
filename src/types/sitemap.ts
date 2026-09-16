@@ -84,7 +84,14 @@ export interface HtmlSitemapSearchHit {
   location: string;
   section?: string;
   parent?: string;
-  group?: string;
+  group: string;
+  kindLabel: string;
+  context?: string;
+}
+
+export interface HtmlSitemapSearchGroup {
+  group: string;
+  hits: HtmlSitemapSearchHit[];
 }
 
 export interface HtmlSitemapFullPage {

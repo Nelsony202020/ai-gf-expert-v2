@@ -8,7 +8,7 @@ import SitemapSearchField from "../components/sitemap/SitemapSearchField.astro";
 import SitemapTestMethodology from "../components/sitemap/SitemapTestMethodology.astro";
 import { getSiteIndexPage } from "../lib/sitemap";
 import { canonicalPublicUrl } from "../lib/siteOrigin";
-import { filterSitemapSearchHits } from "../lib/sitemap-search";
+import { filterSitemapSearchHits, groupSitemapSearchHits } from "../lib/sitemap-search";
 import { loadPublishedProducts, loadPublishedRoundupSummaries } from "../lib/content/store";
 import { getDraftedPaths } from "../lib/seo/pageOverrides";
 import { products as fileProducts } from "../data/products";
@@ -31,6 +31,7 @@ const canonicalUrl = canonicalPublicUrl("/sitemap/", Astro.site);
 const searchHitsJson = JSON.stringify(page.searchHits ?? []);
 const requestedQuery = Astro.url.searchParams.get("q")?.trim() ?? "";
 const initialHits = requestedQuery ? filterSitemapSearchHits(page.searchHits ?? [], requestedQuery) : [];
+const initialGroups = groupSitemapSearchHits(initialHits);
 const isSearching = requestedQuery.length > 0;
 const hasResults = initialHits.length > 0;
 const pageSearchClass = isSearching
@@ -84,16 +85,23 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
             <button type="button" class="si-clear-link" data-search-clear-text>Clear search</button>
         </div>
         <div class="si-results-list" data-search-list>
-          {initialHits.map((hit, index) => (
-            <a class:list={["si-hit", { "is-active": index === 0 }]} href={hit.href}>
-              <span class="si-hit-kind">{hit.kind}</span>
-              <span class="si-hit-row">
-                <span class="si-hit-title">{hit.title}</span>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M5 3L11 8L5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </span>
-            </a>
+          {initialGroups.map((group, groupIndex) => (
+            <div class="si-hit-group">
+              <h3 class="si-hit-group-title">{group.group}</h3>
+              {group.hits.map((hit, index) => (
+                <a class:list={["si-hit", { "is-active": groupIndex === 0 && index === 0 }]} href={hit.href}>
+                  <span class="si-hit-main">
+                    <span class="si-hit-title">{hit.title}</span>
+                    <span class="si-hit-kind">
+                      {hit.context ? `${hit.kindLabel} · ${hit.context}` : hit.kindLabel}
+                    </span>
+                  </span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M5 3L11 8L5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </a>
+              ))}
+            </div>
           ))}
         </div>
         <div class="si-empty" data-search-empty hidden={hasResults || !isSearching}>
@@ -104,9 +112,9 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
             </svg>
           </div>
           <p class="si-empty-title" data-empty-title>
-            {isSearching && !hasResults ? `No pages found for “${requestedQuery}”` : ""}
+            {isSearching && !hasResults ? `No results for “${requestedQuery}”` : ""}
           </p>
-          <p class="si-empty-copy">Try another word, or browse the index below.</p>
+          <p class="si-empty-copy" data-empty-copy>Try another search term.</p>
             <button type="button" class="si-empty-btn" data-search-clear-empty>Clear search</button>
         </div>
       </section>
@@ -139,6 +147,8 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
 </script>
 
 <script>
+  import { filterSitemapSearchHits, groupSitemapSearchHits } from "../lib/sitemap-search";
+
   const hits = window.__SI_HITS__ ?? [];
   const pageEl = document.querySelector(".si-page");
   const inputs = Array.from(document.querySelectorAll("[data-si-search-input]"));
@@ -179,13 +189,43 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
     lede?.toggleAttribute("hidden", on);
   }
 
+  function hitMeta(hit: { kindLabel?: string; kind: string; context?: string }) {
+    const kind = hit.kindLabel || hit.kind;
+    return hit.context ? `${kind} · ${hit.context}` : kind;
+  }
+
+  function resultsMarkup(matched: typeof hits) {
+    return groupSitemapSearchHits(matched)
+      .map(
+        (group, groupIndex) => `
+          <div class="si-hit-group">
+            <h3 class="si-hit-group-title">${escapeHtml(group.group)}</h3>
+            ${group.hits
+              .map(
+                (hit, index) => `
+            <a class="si-hit${groupIndex === 0 && index === 0 ? " is-active" : ""}" href="${escapeHtml(hit.href)}">
+              <span class="si-hit-main">
+                <span class="si-hit-title">${escapeHtml(hit.title)}</span>
+                <span class="si-hit-kind">${escapeHtml(hitMeta(hit))}</span>
+              </span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M5 3L11 8L5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>`,
+              )
+              .join("")}
+          </div>`,
+      )
+      .join("");
+  }
+
   function render(query: string) {
     const q = query.trim();
     if (!q) {
       setSearching(false);
       pageEl?.classList.remove("si-is-searching", "si-has-results", "si-no-results");
-      results?.setAttribute("hidden", "");
-      directory?.removeAttribute("hidden");
+      if (results instanceof HTMLElement) results.hidden = true;
+      if (directory instanceof HTMLElement) directory.hidden = false;
       if (list) list.innerHTML = "";
       document.querySelectorAll("[data-si-search-count]").forEach((node) => {
         if (node instanceof HTMLElement) {
@@ -193,24 +233,17 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
           node.textContent = "";
         }
       });
-      empty?.setAttribute("hidden", "");
+      if (empty instanceof HTMLElement) empty.hidden = true;
       return;
     }
 
     setSearching(true);
-    const needle = q.toLowerCase();
-    const matched = hits.filter((hit) => {
-      return [hit.title, hit.section, hit.kind, hit.parent, hit.group, hit.location]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(needle);
-    });
+    const matched = filterSitemapSearchHits(hits, q);
     pageEl?.classList.add("si-is-searching");
     pageEl?.classList.toggle("si-has-results", matched.length > 0);
     pageEl?.classList.toggle("si-no-results", matched.length === 0);
-    directory?.setAttribute("hidden", "");
-    results?.removeAttribute("hidden");
+    if (directory instanceof HTMLElement) directory.hidden = true;
+    if (results instanceof HTMLElement) results.hidden = false;
     const countText = matched.length ? `${matched.length} results` : "No results";
     document.querySelectorAll("[data-si-search-count]").forEach((node) => {
       if (node instanceof HTMLElement) {
@@ -218,7 +251,7 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
         node.textContent = countText;
       }
     });
-    if (heading) {
+    if (heading instanceof HTMLElement) {
       if (matched.length === 0) {
         heading.hidden = true;
         heading.textContent = "";
@@ -234,30 +267,15 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
 
     if (!matched.length) {
       if (list) list.innerHTML = "";
-      list?.setAttribute("hidden", "");
-      empty?.removeAttribute("hidden");
-      if (emptyTitle) emptyTitle.textContent = `No pages found for “${q}”`;
+      if (list instanceof HTMLElement) list.hidden = true;
+      if (empty instanceof HTMLElement) empty.hidden = false;
+      if (emptyTitle) emptyTitle.textContent = `No results for “${q}”`;
       return;
     }
 
-    empty?.setAttribute("hidden", "");
-    list?.removeAttribute("hidden");
-    if (list) {
-      list.innerHTML = matched
-        .map(
-          (hit, index) => `
-            <a class="si-hit${index === 0 ? " is-active" : ""}" href="${hit.href}">
-              <span class="si-hit-kind">${escapeHtml(hit.kind)}</span>
-              <span class="si-hit-row">
-                <span class="si-hit-title">${escapeHtml(hit.title)}</span>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M5 3L11 8L5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-            </a>`,
-        )
-        .join("");
-    }
+    if (empty instanceof HTMLElement) empty.hidden = true;
+    if (list instanceof HTMLElement) list.hidden = false;
+    if (list) list.innerHTML = resultsMarkup(matched);
   }
 
   function applyQuery(query: string, push: boolean, except?: HTMLInputElement) {
@@ -290,6 +308,9 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
       if (event.key === "Escape") clearSearch();
     });
   });
+  forms.forEach((node) => {
+    node.addEventListener("submit", (event) => event.preventDefault());
+  });
   document.querySelectorAll("[data-si-search-clear], [data-search-clear-text], [data-search-clear-empty]").forEach((node) => {
     node.addEventListener("click", () => clearSearch());
   });
@@ -304,6 +325,9 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
   });
 
   applyQuery(new URLSearchParams(window.location.search).get("q") ?? "", false);
+  window.addEventListener("popstate", () => {
+    applyQuery(new URLSearchParams(window.location.search).get("q") ?? "", false);
+  });
 
   if (heroSearch && sticky && "IntersectionObserver" in window) {
     const observer = new IntersectionObserver(

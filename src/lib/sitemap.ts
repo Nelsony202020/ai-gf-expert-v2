@@ -485,14 +485,41 @@ function htmlSitemapTestCategories(): HtmlSitemapTestCategory[] {
 
 function extraSearchHits(): HtmlSitemapSearchHit[] {
   return [
-    { href: '/sitemap/', title: 'Site Index', kind: 'page', location: 'PAGE' },
-    { href: '/ai-girlfriend-apps/', title: 'AI Girlfriend Apps', kind: 'page', location: 'DIRECTORY' },
-    { href: '/glossary/', title: 'AI Girlfriend Glossary', kind: 'page', location: 'RESOURCE' },
-    { href: '/about/', title: 'About Us', kind: 'page', location: 'COMPANY' },
-    { href: '/contact/', title: 'Contact Us', kind: 'page', location: 'COMPANY' },
-    { href: '/legal/', title: 'Legal', kind: 'page', location: 'LEGAL' },
+    hit('/sitemap/', 'Site Index', 'Resources', 'Page'),
+    hit('/ai-girlfriend-apps/', 'AI Girlfriend Apps', 'Resources', 'Directory'),
+    hit('/glossary/', 'AI Girlfriend Glossary', 'Resources', 'Resource'),
+    hit('/about/', 'About Us', 'Resources', 'Company'),
+    hit('/contact/', 'Contact Us', 'Resources', 'Company'),
+    hit('/legal/', 'Legal', 'Resources', 'Legal'),
   ];
 }
+
+function hit(
+  href: string,
+  title: string,
+  group: string,
+  kindLabel: string,
+  context?: string,
+): HtmlSitemapSearchHit {
+  return {
+    href,
+    title,
+    group,
+    kindLabel,
+    context,
+    kind: kindLabel,
+    location: context ? `${kindLabel} · ${context}` : kindLabel,
+    section: group,
+    parent: context,
+  };
+}
+
+const COLUMN_KIND: Record<string, string> = {
+  Reviews: 'Review',
+  Roundups: 'Roundup',
+  Guides: 'Guide',
+  Authors: 'Author',
+};
 
 /**
  * Full HTML sitemap page data — destinations come from published sitemap
@@ -599,81 +626,61 @@ export function buildSitemapPageSearchIndex(
   const hits: HtmlSitemapSearchHit[] = extraSearchHits();
 
   for (const column of [page.reviews, page.roundups, page.guides, page.authors]) {
-    hits.push({
-      href: column.links[0]?.href ?? '/',
-      title: column.heading,
-      kind: 'section',
-      location: 'SECTION',
-    });
+    const kindLabel = COLUMN_KIND[column.heading] ?? 'Page';
     for (const link of column.links) {
-      hits.push({
-        href: link.href,
-        title: link.label,
-        kind: column.heading === 'Guides' ? 'guide' : 'page',
-        location: column.heading.toUpperCase(),
-      });
+      hits.push(hit(link.href, link.label, column.heading, kindLabel));
     }
   }
 
   for (const item of page.methodology) {
-    hits.push({
-      href: item.href,
-      title: item.label,
-      kind: 'page',
-      location: 'METHODOLOGY',
-    });
+    hits.push(hit(item.href, item.label, 'Testing', 'Testing methodology'));
   }
 
   for (const category of page.testCategories) {
-    hits.push({
-      href: category.href,
-      title: category.label,
-      kind: 'test-category',
-      location: 'TEST CATEGORY',
-    });
+    hits.push(
+      hit(
+        category.href,
+        category.label,
+        'Testing',
+        'Testing category',
+        `${category.testCount} tests`,
+      ),
+    );
     for (const subcategory of category.subcategories) {
-      hits.push({
-        href: subcategory.href,
-        title: subcategory.label,
-        kind: 'test',
-        location: `TEST · ${category.label.toUpperCase()}`,
-      });
+      hits.push(hit(subcategory.href, subcategory.label, 'Testing', 'Scored test', category.label));
       for (const test of subcategory.tests) {
-        hits.push({
-          href: test.href,
-          title: test.label,
-          kind: 'test',
-          location: `TEST · ${category.label.toUpperCase()} · ${subcategory.label.toUpperCase()}`,
-        });
+        hits.push(
+          hit(test.href, test.label, 'Testing', 'Scored test', `${category.label} → ${subcategory.label}`),
+        );
       }
     }
   }
 
-  for (const link of [...page.supporting, ...page.resources.links, ...page.company.links, ...page.legal]) {
-    hits.push({
-      href: link.href,
-      title: link.label,
-      kind: 'page',
-      location: 'PAGE',
-    });
+  for (const link of page.supporting) {
+    hits.push(hit(link.href, link.label, 'Testing', 'Testing methodology'));
+  }
+  for (const link of page.resources.links) {
+    hits.push(hit(link.href, link.label, 'Resources', 'Resource'));
+  }
+  for (const link of page.company.links) {
+    hits.push(hit(link.href, link.label, 'Resources', 'Company'));
+  }
+  for (const link of page.legal) {
+    hits.push(hit(link.href, link.label, 'Resources', 'Legal'));
   }
 
   const seen = new Set<string>();
-  return hits.filter((hit) => {
-    const key = `${hit.href}::${hit.title}`;
+  return hits.filter((item) => {
+    const key = `${item.href}::${item.title}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 }
 
-export function filterHtmlSitemapSearchHits(
-  hits: HtmlSitemapSearchHit[],
-  query: string,
-): HtmlSitemapSearchHit[] {
-  const needle = query.trim().toLowerCase();
-  if (!needle) return hits;
-  return hits.filter((hit) => `${hit.title} ${hit.location} ${hit.kind}`.toLowerCase().includes(needle));
-}
-
-export const filterSitemapSearchHits = filterHtmlSitemapSearchHits;
+export {
+  SEARCH_GROUP_ORDER,
+  filterHtmlSitemapSearchHits,
+  filterSitemapSearchHits,
+  groupSitemapSearchHits,
+} from './sitemap-search';
