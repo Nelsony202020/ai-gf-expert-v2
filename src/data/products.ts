@@ -201,6 +201,8 @@ export interface Product {
   tagline: string;
   reviewedDate: string;
   modifiedDate: string;
+  /** Milliseconds when the review was published (admin `publishedAt`). */
+  publishedAtMs?: number;
   methodology: string;
   authors: Author[];
   websiteUrl: string;
