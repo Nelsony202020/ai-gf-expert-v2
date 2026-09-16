@@ -262,15 +262,17 @@ function mapProduct(
 
   const featuredMedia = dbProduct.featuredImage;
   const featuredUrl = resolveMediaUrl(featuredMedia);
+  // Product-assigned hero art is always shown when it resolves — draft gating
+  // applies to the general media library, not the explicit featuredImage link.
   const featuredImage: GalleryImage | undefined =
-    featuredUrl && isUsablePublicMediaUrl(featuredUrl) && featuredMedia?.status !== 'draft'
+    featuredUrl && isUsablePublicMediaUrl(featuredUrl)
       ? { full: featuredUrl, thumb: featuredUrl, alt: featuredMedia?.altText ?? '', mediaType: 'image' }
       : fileFallback?.featuredImage ?? fileFallback?.gallery?.[0];
 
   const popArtMedia = dbProduct.secondaryLogo;
   const popArtUrl = resolveMediaUrl(popArtMedia);
   const popArtImage: GalleryImage | undefined =
-    popArtUrl && isUsablePublicMediaUrl(popArtUrl) && popArtMedia?.status !== 'draft'
+    popArtUrl && isUsablePublicMediaUrl(popArtUrl)
       ? {
           full: popArtUrl,
           thumb: popArtUrl,

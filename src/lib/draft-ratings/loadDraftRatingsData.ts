@@ -1,5 +1,5 @@
 import { getDb, isDbConfigured } from '../db/server';
-import { resolveMediaUrl } from '../media/url';
+import { isUsablePublicMediaUrl, normalizePublicMediaUrl, resolveMediaUrl } from '../media/url';
 import type { Product } from '../../data/products';
 import { buildDraftRatingsViewModel } from './buildDraftRatingsViewModel';
 import { resolveEvidenceDisplayValue } from './resolveEvidenceDisplay';
@@ -12,8 +12,8 @@ function mapProof(media: any[]): DraftProofItem[] {
   return (media ?? [])
     .filter((m) => !m.deletedAt && m.status !== 'draft')
     .map((m) => {
-      const url = resolveMediaUrl(m);
-      if (!url) return null;
+      const url = normalizePublicMediaUrl(resolveMediaUrl(m));
+      if (!url || !isUsablePublicMediaUrl(url)) return null;
       return {
         id: String(m.id),
         thumbUrl: url,

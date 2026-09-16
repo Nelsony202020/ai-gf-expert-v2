@@ -1,7 +1,19 @@
 // Resolve a public URL for a media record (cached url or linked storage file).
 
+import { cdnAsset } from './cdn';
 import { cdnBaseUrlFromEnv } from './cdnClient';
 import { isInstantDbFileUrl, isPermanentCdnUrl } from './permanentUrl';
+
+/** Turn site-relative media paths into absolute CDN (or same-origin) URLs for public HTML. */
+export function normalizePublicMediaUrl(url: string | undefined | null): string {
+  const raw = String(url ?? '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/api/')) {
+    return cdnAsset(raw);
+  }
+  return raw;
+}
 
 function instantDbFileUrl(media: { file?: { url?: unknown } | null }): string {
   const fileUrl = media.file?.url;
@@ -34,11 +46,11 @@ export function resolveMediaUrl(
   const cached = m.url ? String(m.url) : '';
   const fileUrl = instantDbFileUrl(m);
   const resolved = resolveCachedUrl(cached, fileUrl);
-  if (resolved) return resolved;
+  if (resolved) return normalizePublicMediaUrl(resolved);
 
   const cdnBase = cdnBaseUrlFromEnv();
   if (cdnBase && cached.startsWith('/') && !cached.startsWith('//')) {
-    return `${cdnBase}${cached}`;
+    return normalizePublicMediaUrl(`${cdnBase}${cached}`);
   }
 
   return '';
@@ -46,10 +58,11 @@ export function resolveMediaUrl(
 
 /** URLs safe to embed on the public site (excludes blob/data/admin-only paths). */
 export function isUsablePublicMediaUrl(url: string): boolean {
-  const s = String(url ?? '').trim();
+  const s = normalizePublicMediaUrl(String(url ?? '').trim());
   if (!s) return false;
   if (s.startsWith('blob:') || s.startsWith('data:')) return false;
   if (s.startsWith('/api/')) return false;
+  if (s.startsWith('/') && !s.startsWith('//')) return true;
   return /^https?:\/\//i.test(s);
 }
 
