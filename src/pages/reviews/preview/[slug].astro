@@ -23,12 +23,10 @@ import ReviewMobileNavSheet from '../../../components/mobile/ReviewMobileNavShee
 import {
   getProductFeaturedIn,
   loadProductPreviewBySlug,
-  loadPublishedReviewSlugs,
 } from '../../../lib/content/store';
 import { loadDraftRatingsViewModel } from '../../../lib/draft-ratings/loadDraftRatingsData';
 import { resolveProductPageHead } from '../../../lib/seo/productPageHead';
 import {
-  DEV_REVIEW_SLUGS,
   hasAlternativesTab,
   hasPhotosVideosTab,
   hasPricingTab,
@@ -37,20 +35,10 @@ import { PREVIEW_COOKIE_NAME, verifyPreviewToken } from '../../../lib/previewSes
 import { buildReviewTabs } from '../../../lib/review-shell';
 
 /**
- * In `astro dev`, prerender known slugs so this nested route wins over the
- * catch-all. Production stays on-demand (`prerender = false`) so unpublished
- * previews are not baked into the static build.
- * Safe-view age-gate is not restored — production already removed it.
+ * Keep production's on-demand preview routing so unpublished reviews are not
+ * baked into the static build. Safe-view age-gate is not restored.
  */
-export const prerender = import.meta.env.DEV;
-
-export async function getStaticPaths() {
-  const slugs = await loadPublishedReviewSlugs();
-  for (const slug of DEV_REVIEW_SLUGS) {
-    if (!slugs.includes(slug)) slugs.push(slug);
-  }
-  return slugs.map((slug) => ({ params: { slug } }));
-}
+export const prerender = false;
 
 // Previews expose unpublished products, so production requires the editor
 // cookie issued by /api/admin/preview-session (set automatically on admin
