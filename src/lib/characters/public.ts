@@ -13,7 +13,7 @@ type MediaLike = {
   file?: { url?: unknown };
 } | null | undefined;
 
-/** Drafted media never renders publicly, wherever the row came from. */
+/** Drafted library media never renders publicly (explicit character avatar links still resolve). */
 function isDraftMedia(media: MediaLike): boolean {
   return media?.status === 'draft';
 }
@@ -47,7 +47,7 @@ function storySlideEntries(
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     .map((s) => {
       const linked = s.media?.id ? byId.get(String(s.media.id)) : undefined;
-      if (isDraftMedia(s.media) || isDraftMedia(linked)) return null;
+      if (isDraftMedia(linked)) return null;
       const fromSlide = resolveMediaUrl(s.media);
       const url = fromSlide || (linked ? resolveMediaUrl(linked) : '');
       if (!url || !isUsablePublicMediaUrl(url)) return null;
@@ -86,14 +86,14 @@ export function resolveCharacterImageUrl(
   image: MediaLike,
   productMedia?: MediaLike[] | undefined,
 ): string {
-  if (isDraftMedia(image)) return '';
   const direct = resolveMediaUrl(image);
-  if (direct) return direct;
+  if (direct && isUsablePublicMediaUrl(direct)) return direct;
   const id = image?.id ? String(image.id) : '';
   if (!id || !productMedia?.length) return '';
   const linked = mediaByIdFromList(productMedia).get(id);
   if (isDraftMedia(linked)) return '';
-  return resolveMediaUrl(linked);
+  const fromLibrary = resolveMediaUrl(linked);
+  return fromLibrary && isUsablePublicMediaUrl(fromLibrary) ? fromLibrary : '';
 }
 
 export function mapCharacterForPublic(

@@ -13,7 +13,9 @@ const hero = images[0];
 const heroIsVideo = (hero?.mediaType ?? 'image') === 'video';
 const singleImage = images.length <= 1;
 const HERO_WIDTHS = [640, 960, 1280, 1600, 1920];
-const heroImgSrc = heroIsVideo ? undefined : optimizedHeroImageUrl(hero?.full, 1280);
+const heroImgSrc = heroIsVideo
+  ? undefined
+  : optimizedHeroImageUrl(hero?.full, 1280) || hero?.full || undefined;
 const heroImgSrcSet = heroIsVideo || !hero?.full ? '' : heroImageSrcSet(hero.full, HERO_WIDTHS, 90);
 const galleryLightboxItems = JSON.stringify(
   images
