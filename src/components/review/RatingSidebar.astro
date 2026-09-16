@@ -5,6 +5,7 @@ import { getScoreBadgeColor, getScoreRingColor, getScoreRingDeg, categoryRowIcon
 import AffiliateLink from '../ui/AffiliateLink.astro';
 import OverallScoreTooltip from './tooltips/OverallScoreTooltip.astro';
 import CategoryScoreTooltip from './tooltips/CategoryScoreTooltip.astro';
+import ReviewIcon from './ReviewIcon.astro';
 
 interface Props {
   product: Product;
@@ -33,6 +34,13 @@ ICONS['credit-card'] = ICONS.credit;
 
 <div class="rs-score-card">
   <div class="rs-score-head">
+    <div class="rs-score-copy">
+      <div class="rs-score-label-row">
+        <span class="rs-score-label">Overall performance</span>
+        <OverallScoreTooltip product={product} />
+      </div>
+      {overallLabel && <p class="rs-score-summary">{overallLabel}</p>}
+    </div>
     <div
       class="rs-ring"
       style={`--ring-deg: ${ringDeg}deg; --ring-color: ${ringColor}`}
@@ -40,18 +48,13 @@ ICONS['credit-card'] = ICONS.credit;
     >
       <span class="rs-ring-num">{overall != null ? fmtScore(overall) : '—'}</span>
     </div>
-    <div class="rs-score-copy">
-      <div class="rs-score-label-row">
-        <span>Overall performance</span>
-        <OverallScoreTooltip product={product} />
-      </div>
-      {overallLabel && <p>{overallLabel}</p>}
-    </div>
   </div>
+
+  <div class="rs-score-rule" aria-hidden="true"></div>
 
   <button type="button" class="rs-score-toggle" data-score-toggle aria-expanded="false">
     <span class="rs-score-toggle-label" data-score-toggle-label>View all {catCount} category scores</span>
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3.5 6.5 9 12l5.5-5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <ReviewIcon name="chevron-down" size={18} class="rs-score-chevron" />
   </button>
 
   <div class="rs-score-rows" data-score-rows>
@@ -80,10 +83,10 @@ ICONS['credit-card'] = ICONS.credit;
   <div class="rs-cta-wrap">
     <AffiliateLink href={product.affiliateUrl} class="rs-visit" data-review-hero-cta>
       Visit {product.name}
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M5 13 13 5M7 5h6v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <ReviewIcon name="arrow-up-right" size={18} />
     </AffiliateLink>
     <p class="rs-aff-note">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M11 7.5c0 2.8-2 4.2-4.4 5-.1 0-.3 0-.4 0C3.7 11.7 2 10.3 2 7.5v-4c0-.2.1-.4.3-.5C3.5 2.7 5 2 6 1.2c.2-.2.5-.2.7 0C7.8 2 9.3 2.7 10.5 3c.2 0 .4.2.4.5v4ZM5 7l1.2 1.2L8.5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <ReviewIcon name="shield-check" size={14} />
       Affiliate link · secure site · never affects scores
     </p>
   </div>
@@ -100,9 +103,11 @@ ICONS['credit-card'] = ICONS.credit;
       btn.addEventListener('click', () => {
         const open = card?.classList.toggle('is-expanded');
         btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.classList.toggle('rs-scores-expanded', Boolean(open));
         if (label) {
           label.textContent = open ? 'Hide category scores' : `View all ${count} category scores`;
         }
+        document.dispatchEvent(new CustomEvent('rs-score-expand', { detail: { open: Boolean(open) } }));
       });
     });
   }

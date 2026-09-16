@@ -1,6 +1,7 @@
 import type { Product } from '../data/products';
 import { getTestCategories } from './test-framework';
 import { getScoreVisual } from './scores';
+import { aiGirlfriendRoundup } from '../data/roundups/ai-girlfriend';
 import type { FeaturedIn } from './content/store';
 
 export const REVIEW_TAB_IDS = {
@@ -208,6 +209,29 @@ export function authorMobileCredential(educationTitle?: string): string {
   return educationTitle.replace(/^Master’?s in /i, 'M.A. ').split(',')[0].trim();
 }
 
+export function uniqueMetaParts(parts: Array<string | undefined>): string {
+  const out: string[] = [];
+  for (const raw of parts) {
+    const part = raw?.trim();
+    if (!part) continue;
+    const normalized = part.replace(/\s+/g, ' ').toLowerCase();
+    if (out.some((existing) => {
+      const ex = existing.replace(/\s+/g, ' ').toLowerCase();
+      return ex === normalized || ex.includes(normalized) || normalized.includes(ex);
+    })) {
+      continue;
+    }
+    out.push(part);
+  }
+  return out.join(' · ');
+}
+
+export function authorRoleLabel(role?: string, profileTitle?: string): string {
+  if (profileTitle && /Lead Tester/i.test(profileTitle)) return 'Lead Tester';
+  const stripped = role?.replace(/\s*·.*$/, '').trim();
+  return stripped || 'Lead Tester';
+}
+
 export function featuredInHref(item: FeaturedIn): string {
   return `/best/${item.slug}`;
 }
@@ -233,6 +257,24 @@ export function getBestFeaturedIn(items: FeaturedIn[]): FeaturedIn | null {
     );
   }
   return items[0];
+}
+
+/** File-roundup fallback so the ranking row still renders when InstantDB is empty. */
+export function getStaticFeaturedIn(productSlug: string): FeaturedIn[] {
+  const roundup = aiGirlfriendRoundup;
+  const idx = roundup.picks.findIndex((pick) => pick.slug === productSlug);
+  if (idx < 0) return [];
+  return [
+    {
+      title: roundup.title,
+      slug: roundup.slug,
+      position: idx + 1,
+    },
+  ];
+}
+
+export function resolveFeaturedIn(productSlug: string, items: FeaturedIn[]): FeaturedIn[] {
+  return items.length ? items : getStaticFeaturedIn(productSlug);
 }
 
 export const getScoreRingSweep = getScoreRingDeg;

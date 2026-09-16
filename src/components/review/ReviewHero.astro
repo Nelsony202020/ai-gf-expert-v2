@@ -2,7 +2,18 @@
 import type { Product } from '../../data/products';
 import type { FeaturedIn } from '../../lib/content/store';
 import { getAuthor } from '../../data/authors';
-import { formatReviewedOn, getReviewProofMeta, getBestFeaturedIn, featuredInHref, featuredInDesktopLabel, featuredInMobileLabel, authorMobileCredential } from '../../lib/review-shell';
+import {
+  formatReviewedOn,
+  getReviewProofMeta,
+  getBestFeaturedIn,
+  resolveFeaturedIn,
+  featuredInHref,
+  featuredInDesktopLabel,
+  featuredInMobileLabel,
+  authorMobileCredential,
+  authorRoleLabel,
+  uniqueMetaParts,
+} from '../../lib/review-shell';
 import ShareMenu from '../ui/ShareMenu.astro';
 import Gallery from './Gallery.astro';
 import RatingSidebar from './RatingSidebar.astro';
@@ -20,11 +31,12 @@ const authorHref = authorProfile ? `/author/${authorProfile.slug}/` : author?.sl
 const published = formatReviewedOn(product.reviewedDate);
 const updated = formatReviewedOn(product.modifiedDate);
 const proof = getReviewProofMeta(product);
-const featured = getBestFeaturedIn(featuredIn);
+const featured = getBestFeaturedIn(resolveFeaturedIn(product.slug, featuredIn));
 const educationTitle = authorProfile?.education?.find((item) => /master/i.test(item.title))?.title;
 const credential = authorMobileCredential(educationTitle);
-const roleLabel = author?.role?.replace(/\s*·.*$/, '').trim() || 'Lead Tester';
-const roleLine = [roleLabel, credential].filter(Boolean).join(' · ');
+const roleLabel = authorRoleLabel(author?.role, authorProfile?.title);
+const roleLine = uniqueMetaParts([roleLabel, credential]);
+const methodTitle = product.methodology || 'Methodology v3.1';
 ---
 
 <div class="section-container px-4 md:px-8">
@@ -87,11 +99,28 @@ const roleLine = [roleLabel, credential].filter(Boolean).join(' · ');
       </>
     )}
     {product.methodology && (
-      <div class="rs-methodology">
-        <span>{product.methodology}</span>
-        <button type="button" class="rs-info-btn" data-tooltip-trigger="methodology" aria-label="About our methodology">
+      <div class="rs-methodology" data-method-tip>
+        <span>{methodTitle}</span>
+        <button
+          type="button"
+          class="rs-info-btn"
+          data-method-trigger
+          aria-label="About our methodology"
+          aria-expanded="false"
+          aria-controls="rs-method-pop"
+        >
           <ReviewIcon name="info" size={14} />
         </button>
+        <div class="rs-method-pop" id="rs-method-pop" role="tooltip" hidden data-method-panel>
+          <p class="rs-method-pop-title">{methodTitle}</p>
+          <p class="rs-method-pop-body">
+            This review uses our current testing methodology across {proof.categoryCount} scoring categories.
+          </p>
+          <a class="rs-method-pop-link" href="/test/">
+            View methodology
+            <ReviewIcon name="arrow-right" size={14} />
+          </a>
+        </div>
       </div>
     )}
     <span class="rs-meta-sep rs-share-desktop-sep" aria-hidden="true"></span>
@@ -106,35 +135,60 @@ const roleLine = [roleLabel, credential].filter(Boolean).join(' · ');
   </div>
 
   {featured && (
-    <a class="rs-rank-row" href={featuredInHref(featured)}>
-      <ReviewIcon name="trophy" size={16} />
-      <span>{featuredInMobileLabel(featured)}</span>
-      <ReviewIcon name="arrow-right" size={14} />
+    <a class="rs-featured-in" href={featuredInHref(featured)}>
+      <ReviewIcon name="trophy" size={16} class="rs-featured-in-ico" />
+      <span class="rs-featured-in-copy">
+        <span class="rs-featured-in-kicker">Also featured in</span>
+        <span class="rs-featured-in-desktop">{featuredInDesktopLabel(featured)}</span>
+        <span class="rs-featured-in-mobile">{featuredInMobileLabel(featured)}</span>
+      </span>
+      <ReviewIcon name="arrow-right" size={14} class="rs-featured-in-arrow" />
     </a>
   )}
-
-  <div class="rs-proof">
-    <div class="rs-proof-left">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 2h7M5 14V5.5h6V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <span>
-        <strong>{proof.categoryCount}</strong> categories
-        {' · '}
-        <strong>{proof.subscoreCount}</strong> subscores
-      </span>
-    </div>
-    {featured && (
-      <div class="rs-proof-right">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.3 5.3v-4h8v4a4 4 0 1 1-8 0Z" stroke="currentColor" stroke-width="1.5"/></svg>
-        <span>Also featured in</span>
-        <a href={featuredInHref(featured)} class="rs-proof-chip">
-          {featuredInDesktopLabel(featured)}
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3.5 1.5 8 6 3.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        </a>
-      </div>
-    )}
-  </div>
 </header>
 </div>
+
+<script>
+  function bindMethodologyTip() {
+    document.querySelectorAll<HTMLElement>('[data-method-tip]').forEach((wrap) => {
+      if (wrap.dataset.bound === '1') return;
+      wrap.dataset.bound = '1';
+      const trigger = wrap.querySelector<HTMLButtonElement>('[data-method-trigger]');
+      const panel = wrap.querySelector<HTMLElement>('[data-method-panel]');
+      if (!trigger || !panel) return;
+
+      const isDesktop = () => window.matchMedia('(min-width: 768px)').matches;
+
+      const setOpen = (open: boolean) => {
+        panel.hidden = !open;
+        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        wrap.classList.toggle('is-open', open);
+      };
+
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (isDesktop()) setOpen(true);
+        else setOpen(panel.hidden);
+      });
+
+      trigger.addEventListener('mouseenter', () => {
+        if (isDesktop()) setOpen(true);
+      });
+      wrap.addEventListener('mouseleave', () => {
+        if (isDesktop()) setOpen(false);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!wrap.contains(e.target as Node)) setOpen(false);
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') setOpen(false);
+      });
+    });
+  }
+  bindMethodologyTip();
+  document.addEventListener('astro:page-load', bindMethodologyTip);
+</script>
 
 <style>
   .rs-hero-title-row {
@@ -163,12 +217,11 @@ const roleLine = [roleLabel, credential].filter(Boolean).join(' · ');
     .rs-meta-sep { display: none; }
     .rs-author {
       width: 100%;
-      gap: 10px;
-      align-items: center;
+      gap: 0;
+      align-items: flex-start;
     }
     .rs-author-avatar {
-      width: 32px;
-      height: 32px;
+      display: none;
     }
     .rs-dates {
       font-size: 12px;

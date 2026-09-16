@@ -40,13 +40,18 @@ const { product } = Astro.props;
     if (!sticky) return;
 
     const desktop = window.matchMedia('(min-width: 768px)');
-    if (!heroCta || desktop.matches) {
+    const expanded = document.body.classList.contains('rs-scores-expanded');
+    if (!heroCta || desktop.matches || expanded) {
       setStickyVisible(sticky, false);
       return;
     }
 
     observer = new IntersectionObserver(
       ([entry]) => {
+        if (document.body.classList.contains('rs-scores-expanded')) {
+          setStickyVisible(sticky, false);
+          return;
+        }
         setStickyVisible(sticky, !entry?.isIntersecting);
       },
       { threshold: 0.15 },
@@ -56,5 +61,6 @@ const { product } = Astro.props;
 
   document.addEventListener('DOMContentLoaded', bindStickyCta);
   document.addEventListener('astro:page-load', bindStickyCta);
+  document.addEventListener('rs-score-expand', bindStickyCta);
   window.addEventListener('resize', bindStickyCta);
 </script>

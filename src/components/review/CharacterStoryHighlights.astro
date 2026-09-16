@@ -155,12 +155,12 @@ const headingText = heading ?? 'Featured characters';
                   {
                     hasImage ? (
                       <img
-                        src={optimizedImageUrl(thumb, { width: 64, quality: 70 })}
+                        src={optimizedImageUrl(thumb, { width: featuredGrid ? 128 : 64, quality: 70 })}
                         alt={char.name}
                         class="char-stories__avatar"
                         loading="lazy"
-                        width="64"
-                        height="64"
+                        width={featuredGrid ? 128 : 64}
+                        height={featuredGrid ? 128 : 64}
                         decoding="async"
                       />
                     ) : (
