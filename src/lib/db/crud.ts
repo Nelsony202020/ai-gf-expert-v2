@@ -3,6 +3,7 @@
 
 import { getDb, id as newId } from './server';
 import { HttpError, type AdminIdentity } from './auth';
+import { linkedRecordId } from './listTestRunsForProduct';
 import { auditTx, diffRecords } from './audit';
 import { getEntityConfig, type EntityConfig } from './registry';
 import { isPermanentCdnUrl } from '../media/permanentUrl';
@@ -67,12 +68,44 @@ function refreshRowMediaUrls(row: any, cfg: EntityConfig) {
   }
 }
 
-export async function listEntities(entity: string, includeDeleted = false) {
+export async function listEntities(
+  entity: string,
+  includeDeleted = false,
+  opts?: { productId?: string },
+) {
   const cfg = config(entity);
   const db = getDb();
-  const result = await (db.query as any)({ [cfg.namespace]: { ...readLinkIncludes(cfg) } });
-  let rows = (result as any)[cfg.namespace] as any[];
-  if (cfg.softDelete && !includeDeleted) rows = rows.filter((r) => !r.deletedAt);
+  const includes = readLinkIncludes(cfg);
+  const productId = opts?.productId?.trim();
+  let result: any = null;
+
+  if (productId && cfg.links?.product) {
+    const attempts: Record<string, unknown>[] = [
+      { [cfg.namespace]: { $: { where: { product: productId } }, ...includes } },
+      { [cfg.namespace]: { $: { where: { 'product.id': productId } }, ...includes } },
+    ];
+    for (const query of attempts) {
+      try {
+        result = await (db.query as any)(query);
+        const got = (result as any)[cfg.namespace];
+        if (Array.isArray(got) && got.length > 0) break;
+      } catch (err) {
+        console.warn(`[listEntities] ${cfg.namespace} product filter failed:`, err);
+        result = null;
+      }
+    }
+  }
+
+  if (!result) {
+    result = await (db.query as any)({ [cfg.namespace]: { ...includes } });
+  }
+
+  let rows = (result as any)[cfg.namespace];
+  if (!Array.isArray(rows)) rows = [];
+  if (productId && cfg.links?.product) {
+    rows = rows.filter((r: any) => linkedRecordId(r.product) === productId);
+  }
+  if (cfg.softDelete && !includeDeleted) rows = rows.filter((r: any) => !r.deletedAt);
   for (const row of rows) refreshRowMediaUrls(row, cfg);
   return rows;
 }

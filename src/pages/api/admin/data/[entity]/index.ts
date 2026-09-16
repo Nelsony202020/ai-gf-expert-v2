@@ -5,6 +5,7 @@ import { handler, json, readJson } from '../../../../../lib/api';
 import { requirePermission, HttpError } from '../../../../../lib/db/auth';
 import { getEntityConfig } from '../../../../../lib/db/registry';
 import { listEntities, createEntity, type WritePayload } from '../../../../../lib/db/crud';
+import { normalizeInstantId } from '../../../../../lib/db/listTestRunsForProduct';
 
 export const GET: APIRoute = handler(async ({ request, params, url }) => {
   const entity = params.entity!;
@@ -12,7 +13,9 @@ export const GET: APIRoute = handler(async ({ request, params, url }) => {
   if (!cfg) throw new HttpError(404, `Unknown entity: ${entity}`);
   await requirePermission(request, cfg.readPermission);
   const includeDeleted = url.searchParams.get('deleted') === '1';
-  const rows = await listEntities(entity, includeDeleted);
+  const productRaw = url.searchParams.get('productId');
+  const productId = productRaw ? normalizeInstantId(productRaw) : undefined;
+  const rows = await listEntities(entity, includeDeleted, { productId });
   return json({ rows });
 });
 
