@@ -2,8 +2,12 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { handler, json } from '../../../../../lib/api';
-import { requirePermission } from '../../../../../lib/db/auth';
+import { requirePermission, HttpError } from '../../../../../lib/db/auth';
 import { getDb } from '../../../../../lib/db/server';
+import {
+  linkedRecordId,
+  normalizeInstantId,
+} from '../../../../../lib/db/listTestRunsForProduct';
 
 /**
  * Score history for a product: every published (current or superseded) test
@@ -12,6 +16,9 @@ import { getDb } from '../../../../../lib/db/server';
  */
 export const GET: APIRoute = handler(async ({ request, params }) => {
   await requirePermission(request, 'content.view');
+  const productId = params.id ? normalizeInstantId(params.id) : '';
+  if (!productId) throw new HttpError(400, 'Missing product id');
+
   const db = getDb();
   const { testRuns } = await (db.query as any)({
     testRuns: {
@@ -25,7 +32,7 @@ export const GET: APIRoute = handler(async ({ request, params }) => {
   const runs = (testRuns as any[])
     .filter(
       (r) =>
-        r.product?.id === params.id &&
+        linkedRecordId(r.product) === productId &&
         (r.status === 'published' || r.status === 'superseded'),
     )
     .sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0))

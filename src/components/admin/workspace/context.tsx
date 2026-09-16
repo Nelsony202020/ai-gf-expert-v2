@@ -199,9 +199,21 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
         await Promise.all([
           dataApi.list('authors'),
           dataApi.list('media'),
-          api.get<{ rows: EntityRow[] }>(`/api/admin/products/${productId}/test-runs`).catch(() => ({
-            rows: [] as EntityRow[],
-          })),
+          api
+            .get<{ rows: EntityRow[] }>(`/api/admin/products/${productId}/test-runs`)
+            .then(async (res) => {
+              if (res.rows?.length) return res;
+              const all = await dataApi.list('testRuns').catch(() => ({ rows: [] as EntityRow[] }));
+              return {
+                rows: all.rows.filter((r) => linkedEntityId(r.product) === productId),
+              };
+            })
+            .catch(async () => {
+              const all = await dataApi.list('testRuns').catch(() => ({ rows: [] as EntityRow[] }));
+              return {
+                rows: all.rows.filter((r) => linkedEntityId(r.product) === productId),
+              };
+            }),
           dataApi.list('subscriptionPlans'),
           dataApi.list('creditPackages'),
           dataApi.list('paymentProfiles'),
