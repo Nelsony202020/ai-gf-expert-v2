@@ -9,7 +9,7 @@ import { isPlaceholderLogo, resolveBrandLogo } from './brandLogos';
 import { figmaScoreTone, formatScore } from './figmaScore';
 import { publicAffiliateHref } from '../affiliate/publicHref';
 import { getTestCategories } from '../test-framework';
-import { buildHomeProofFacts, buildHomeTesterFacts, type HomeProofFact } from './homeProofMetrics';
+import { buildHomeTesterFacts, type HomeProofFact } from './homeProofMetrics';
 
 const SCORE_EXAMPLE_SLUG = 'candy-ai';
 const WINNER_CARD_KEYS = ['images', 'characters', 'chat'] as const;
@@ -91,7 +91,6 @@ export interface DesktopHomepageData {
   updatedLabel: string;
   updatedShort: string;
   methodologyVersion: string;
-  proofFacts: HomeProofFact[];
   testerFacts: HomeProofFact[];
   publishedReviewCount: number;
   top3: HomeRankedApp[];
@@ -247,8 +246,6 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     loadPublishedProducts(fileProductsBaseline),
     loadProductLogoMap(),
   ]);
-  const proofFacts = await buildHomeProofFacts(published);
-
   const weights = categoryWeightsMap();
   const picks = roundup.picks.filter((p) => p.overallScore != null);
   const publishedReviews = published.filter((p) => p.overallScore != null);
@@ -395,7 +392,6 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
       year: 'numeric',
     }),
     methodologyVersion,
-    proofFacts,
     testerFacts: buildHomeTesterFacts(published),
     publishedReviewCount: publishedReviews.length,
     top3,

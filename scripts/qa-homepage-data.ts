@@ -12,7 +12,6 @@ async function main() {
     'Score example bars:',
     d.scoreExample.bars.map((b) => `${b.name} ${b.display} (${b.weight})`).join(' | '),
   );
-  console.log('Proof facts:', JSON.stringify(d.proofFacts, null, 2));
   console.log(
     'Priority sample (images):',
     d.priorities.find((p) => p.id === 'images')?.winner.name,
