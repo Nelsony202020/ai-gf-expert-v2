@@ -62,38 +62,14 @@ const allTabs = [...tabs, ...hiddenTabs];
     initReviewTabIndicator(tabbar);
   }
 
-  function initReviewTabbarPin() {
+  function initReviewTabbarFades() {
     const tabbar = document.querySelector('[data-tabbar].review-tabbar');
-    if (!tabbar || tabbar.dataset.pinBound === 'true') return;
-    if (document.body.dataset.mobileNavMode !== 'review') return;
-    tabbar.dataset.pinBound = 'true';
+    if (!tabbar || tabbar.dataset.fadeBound === 'true') return;
+    tabbar.dataset.fadeBound = 'true';
 
-    const header = document.querySelector('[data-site-header]');
     const list = tabbar.querySelector('[data-tabbar-list]');
     const fadeStart = tabbar.querySelector('[data-tabbar-fade="start"]');
     const fadeEnd = tabbar.querySelector('[data-tabbar-fade="end"]');
-
-    let spacer = tabbar.nextElementSibling;
-    if (!spacer?.matches('[data-tabbar-spacer]')) {
-      spacer = document.createElement('div');
-      spacer.dataset.tabbarSpacer = '';
-      spacer.setAttribute('aria-hidden', 'true');
-      tabbar.after(spacer);
-    }
-
-    let naturalTop = 0;
-
-    function measureNaturalTop() {
-      const wasPinned = tabbar.classList.contains('review-tabbar--pinned');
-      if (wasPinned) {
-        tabbar.classList.remove('review-tabbar--pinned');
-        tabbar.style.top = '';
-        header?.classList.remove('site-header--joined-tabs');
-        spacer.hidden = true;
-        spacer.style.height = '0';
-      }
-      naturalTop = tabbar.getBoundingClientRect().top + window.scrollY;
-    }
 
     function updateFades() {
       if (!list || !fadeStart || !fadeEnd) return;
@@ -121,35 +97,6 @@ const allTabs = [...tabs, ...hiddenTabs];
       window.requestAnimationFrame(updateFades);
     }
 
-    function updatePin() {
-      const headerH = header?.offsetHeight ?? 52;
-      const tabbarH = tabbar.offsetHeight;
-      const isPinned = tabbar.classList.contains('review-tabbar--pinned');
-      const pinAt = naturalTop - headerH - 1;
-      const unpinAt = naturalTop - headerH - 12;
-      const shouldPin = isPinned ? window.scrollY >= unpinAt : window.scrollY >= pinAt;
-
-      if (shouldPin) {
-        tabbar.classList.add('review-tabbar--pinned');
-        tabbar.style.top = `${headerH}px`;
-        header?.classList.add('site-header--joined-tabs');
-        spacer.style.height = `${tabbarH}px`;
-        spacer.hidden = false;
-      } else {
-        tabbar.classList.remove('review-tabbar--pinned');
-        tabbar.style.top = '';
-        header?.classList.remove('site-header--joined-tabs');
-        spacer.hidden = true;
-        spacer.style.height = '0';
-      }
-    }
-
-    function remeasureAndUpdate() {
-      measureNaturalTop();
-      updatePin();
-      updateFades();
-    }
-
     list?.addEventListener('scroll', updateFades, { passive: true });
 
     const observer = new MutationObserver(() => {
@@ -160,18 +107,16 @@ const allTabs = [...tabs, ...hiddenTabs];
       observer.observe(btn, { attributes: true, attributeFilter: ['aria-current'] });
     });
 
-    window.addEventListener('scroll', updatePin, { passive: true });
-    window.addEventListener('resize', remeasureAndUpdate, { passive: true });
-    document.addEventListener('site-header-offset-change', remeasureAndUpdate);
-    remeasureAndUpdate();
+    window.addEventListener('resize', updateFades, { passive: true });
+    updateFades();
     scrollActiveTabIntoView(false);
   }
 
   initReviewTabbarChrome();
-  initReviewTabbarPin();
+  initReviewTabbarFades();
   document.addEventListener('astro:page-load', () => {
     initReviewTabbarChrome();
-    initReviewTabbarPin();
+    initReviewTabbarFades();
   });
 </script>
 
@@ -338,9 +283,5 @@ const allTabs = [...tabs, ...hiddenTabs];
     .review-tabbar__fade {
       width: 2rem;
     }
-  }
-
-  .review-tabbar--pinned .review-tabbar__rail {
-    --review-tabbar-fade-bg: var(--color-header-surface, var(--rs-canvas));
   }
 </style>

@@ -8,11 +8,23 @@ interface Props {
   mobileMinimal?: boolean;
   /** Mobile roundup: floating nav button opens hub + TOC sheet */
   showMobileNav?: boolean;
+  /** When false, do not render back-to-top or share FABs. */
+  showFloatingActions?: boolean;
 }
 
-const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Astro.props;
+const {
+  pageTitle,
+  pageUrl,
+  mobileMinimal = false,
+  showMobileNav = false,
+  showFloatingActions = true,
+} = Astro.props;
+
+const renderRail = showMobileNav || showFloatingActions;
 ---
 
+{
+  renderRail && (
 <aside
   class:list={['article-util-rail', mobileMinimal && 'article-util-rail--mobile-minimal']}
   data-article-util-rail
@@ -33,25 +45,31 @@ const { pageTitle, pageUrl, mobileMinimal = false, showMobileNav = false } = Ast
       )
     }
 
-    <button
-      type="button"
-      class="article-util-rail__btn article-util-rail__btn--top"
-      data-util-top
-      aria-label="Back to top"
-      aria-hidden="true"
-      tabindex="-1"
-      hidden
-    >
-      <svg class="article-util-rail__progress" viewBox="0 0 48 48" aria-hidden="true">
-        <circle class="article-util-rail__progress-track" cx="24" cy="24" r="22" />
-        <circle class="article-util-rail__progress-fill" cx="24" cy="24" r="22" data-util-progress-fill />
-      </svg>
-      <span class="material-symbols-outlined article-util-rail__top-icon" aria-hidden="true">arrow_upward</span>
-    </button>
+    {
+      showFloatingActions && (
+        <button
+          type="button"
+          class="article-util-rail__btn article-util-rail__btn--top"
+          data-util-top
+          aria-label="Back to top"
+          aria-hidden="true"
+          tabindex="-1"
+          hidden
+        >
+          <svg class="article-util-rail__progress" viewBox="0 0 48 48" aria-hidden="true">
+            <circle class="article-util-rail__progress-track" cx="24" cy="24" r="22" />
+            <circle class="article-util-rail__progress-fill" cx="24" cy="24" r="22" data-util-progress-fill />
+          </svg>
+          <span class="material-symbols-outlined article-util-rail__top-icon" aria-hidden="true">arrow_upward</span>
+        </button>
+      )
+    }
 
-    <ShareMenu shareTitle={pageTitle} shareUrl={pageUrl} variant="fab" />
+    {showFloatingActions && <ShareMenu shareTitle={pageTitle} shareUrl={pageUrl} variant="fab" />}
   </div>
 </aside>
+  )
+}
 
 <script>
   function deferUntilIdle(fn: () => void) {

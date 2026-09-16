@@ -157,7 +157,7 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
     </div>
   </main>
   <Footer />
-  <ArticleUtilityRail pageTitle={head.title} pageUrl={shareUrl} />
+  <ArticleUtilityRail pageTitle={head.title} pageUrl={shareUrl} showFloatingActions={false} />
   <ReviewMobileNavSheet tabs={tabs} pageTitle={head.title} pageUrl={shareUrl} />
   <RatingsTooltipInit />
   <GlossaryTooltipInit />

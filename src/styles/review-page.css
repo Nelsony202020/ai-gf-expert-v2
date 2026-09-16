@@ -22,16 +22,13 @@
   }
 }
 
-/* Tab bar pins under the glass header — match header surface when joined */
-[data-tabbar].review-tabbar.review-tabbar--pinned {
-  position: fixed;
-  left: 0;
-  right: 0;
+/* Sticky below the global header once the user scrolls past the in-flow position. */
+[data-tabbar].review-tabbar {
+  position: sticky;
+  top: calc(var(--site-header-height) + var(--site-header-offset, 0px));
   z-index: 45;
-  background: var(--site-header-glass-bg);
-  backdrop-filter: blur(var(--site-header-glass-blur)) saturate(var(--site-header-glass-saturate));
-  -webkit-backdrop-filter: blur(var(--site-header-glass-blur)) saturate(var(--site-header-glass-saturate));
-  border-bottom: 1px solid var(--site-header-glass-border);
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-surface-variant);
   box-shadow: none;
 }
 
@@ -41,28 +38,13 @@
   border-bottom-color: transparent;
 }
 
-/* In-flow under the hero: page/hero background — not sticky. */
-[data-tabbar].review-tabbar {
-  position: relative;
-  top: auto;
-  z-index: 45;
-  background: var(--color-background);
-  border-bottom: 1px solid var(--color-surface-variant);
-  box-shadow: none;
-}
-
-[data-tabbar-spacer][hidden] {
+[data-tabbar-spacer] {
   display: none;
 }
 
 [data-theme='dark'] [data-tabbar].review-tabbar {
   background: var(--color-background);
   border-bottom-color: var(--dark-border-subtle);
-}
-
-[data-theme='dark'] [data-tabbar].review-tabbar.review-tabbar--pinned {
-  background: var(--site-header-glass-bg);
-  border-bottom-color: var(--site-header-glass-border);
 }
 
 [data-theme='dark'] .site-header.site-header--joined-tabs,

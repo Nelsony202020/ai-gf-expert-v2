@@ -17,10 +17,10 @@ function trapFocus(panel: HTMLElement) {
     if (e.key !== 'Tab' || focusable.length === 0) return;
     if (e.shiftKey && document.activeElement === first) {
       e.preventDefault();
-      last?.focus();
+      last?.focus({ preventScroll: true });
     } else if (!e.shiftKey && document.activeElement === last) {
       e.preventDefault();
-      first?.focus();
+      first?.focus({ preventScroll: true });
     }
   };
 
@@ -28,9 +28,51 @@ function trapFocus(panel: HTMLElement) {
   return () => panel.removeEventListener('keydown', onKeyDown);
 }
 
+function focusWithoutScroll(el: HTMLElement | null | undefined) {
+  el?.focus({ preventScroll: true });
+}
+
 let releaseFocus: (() => void) | null = null;
 let lastTrigger: HTMLElement | null = null;
 let releaseScrollFade: (() => void) | null = null;
+let lockedScrollY = 0;
+let backgroundScrollLocked = false;
+
+function lockBackgroundScroll() {
+  if (backgroundScrollLocked) return;
+  lockedScrollY = window.scrollY;
+  document.body.style.top = `-${lockedScrollY}px`;
+  document.documentElement.classList.add('ratings-drawer-open');
+  document.body.classList.add('ratings-drawer-open');
+  backgroundScrollLocked = true;
+}
+
+function unlockBackgroundScroll() {
+  if (!backgroundScrollLocked) return;
+  document.documentElement.classList.remove('ratings-drawer-open');
+  document.body.classList.remove('ratings-drawer-open');
+  document.body.style.top = '';
+  backgroundScrollLocked = false;
+  window.scrollTo({ top: lockedScrollY, left: 0, behavior: 'auto' });
+}
+
+function mountDrawerOnBody(root: HTMLElement) {
+  if (root.parentElement !== document.body) {
+    document.body.appendChild(root);
+  }
+  if (root.dataset.drawerRootBound === 'true') return;
+  root.dataset.drawerRootBound = 'true';
+  root.addEventListener('click', (e) => {
+    const openBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-ratings-open-drawer]');
+    if (openBtn) {
+      const id = openBtn.dataset.ratingsOpenDrawer;
+      if (id) openDrawer(id, openBtn);
+      return;
+    }
+    const closeBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-ratings-close-drawer]');
+    if (closeBtn) closeDrawer();
+  });
+}
 
 function getDrawerPanels() {
   const mount = document.querySelector<HTMLElement>('[data-ratings-drawer-mount]');
@@ -89,12 +131,12 @@ function closeDrawer() {
     panels,
     instantClass: 'ratings-drawer-panel--instant',
     onComplete: () => {
-      document.body.style.overflow = '';
+      unlockBackgroundScroll();
       releaseFocus?.();
       releaseFocus = null;
       releaseScrollFade?.();
       releaseScrollFade = null;
-      lastTrigger?.focus();
+      lastTrigger?.focus({ preventScroll: true });
       lastTrigger = null;
     },
   });
@@ -123,6 +165,8 @@ function openDrawer(id: string, trigger?: HTMLElement) {
   if (!isDrawerNav) {
     lastTrigger = trigger ?? null;
   }
+  mountDrawerOnBody(root);
+  lockBackgroundScroll();
   root.hidden = false;
   delete root.dataset.drawerClosing;
   backdrop.dataset.open = 'true';
@@ -140,11 +184,10 @@ function openDrawer(id: string, trigger?: HTMLElement) {
     });
   }
 
-  document.body.style.overflow = 'hidden';
   releaseFocus?.();
   releaseFocus = trapFocus(panel);
   bindDrawerScrollFade(panel);
-  panel.querySelector<HTMLElement>('[data-ratings-close-drawer]')?.focus();
+  focusWithoutScroll(panel.querySelector<HTMLElement>('[data-ratings-close-drawer]'));
 }
 
 function bindDrawer() {

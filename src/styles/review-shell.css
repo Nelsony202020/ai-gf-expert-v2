@@ -14,7 +14,9 @@
   --rs-orange: #e8760a;
   color: var(--rs-ink);
   background: var(--rs-canvas);
-  overflow-x: clip;
+  /* Keep overflow visible so the review tab bar can use position: sticky.
+     Clip wide media on the sections that actually overflow instead. */
+  overflow-x: visible;
 }
 
 .review-page .review-main {
@@ -26,6 +28,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 20px 0 24px;
+  overflow-x: clip;
 }
 
 .rs-crumb {
@@ -1325,10 +1328,10 @@ ul.rs-list {
 
 .review-page [data-panels] [data-tab-panel]:not(.hidden) {
   opacity: 1;
-  transform: translateY(0);
-  transition:
-    opacity 160ms ease-out,
-    transform 160ms ease-out;
+  /* Do not leave a transform on the settled panel — even translateY(0)
+     creates a containing block and makes the ratings drawer `position:fixed`
+     jump with the page when it opens. */
+  transition: opacity 160ms ease-out;
 }
 
 .review-page [data-panels] [data-tab-panel].review-tab-panel--leave,

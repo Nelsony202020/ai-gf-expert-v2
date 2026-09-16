@@ -36,6 +36,9 @@
 }
 
 .guide-hub__glow {
+  /* Homepage keeps its own .home-v2__glow. Hide this hub blob on every
+     internal page (reviews, guides, hubs, brand, best-apps, articles). */
+  display: none !important;
   position: absolute;
   left: 50%;
   top: 40px;

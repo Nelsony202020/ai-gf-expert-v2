@@ -648,6 +648,20 @@ function buildUsageTiers(
   });
 }
 
+/** Instant `has: many` links can arrive as an array or a single object. */
+function asRecordList<T extends object = Record<string, any>>(value: unknown): T[] {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.filter((row): row is T => Boolean(row && typeof row === 'object'));
+  }
+  if (typeof value === 'object') return [value as T];
+  return [];
+}
+
+function isActivePricingRow(row: { active?: boolean; deletedAt?: unknown }): boolean {
+  return row.active !== false && !row.deletedAt;
+}
+
 async function loadProductPricingBundle(slug: string): Promise<{
   tiers: PlanTierLike[];
   packages: CreditPackageLike[];
@@ -668,7 +682,7 @@ async function loadProductPricingBundle(slug: string): Promise<{
 } | null> {
   if (!isDbConfigured()) return null;
   const db = getDb();
-  const { products } = await db.query({
+  const { products } = await (db.query as any)({
     products: {
       $: { where: { slug } },
       subscriptionPlans: {},
@@ -678,18 +692,17 @@ async function loadProductPricingBundle(slug: string): Promise<{
       pricingPromotions: {},
     },
   });
-  const row = (products as any[])?.[0];
+  const row = asRecordList<Record<string, any>>(products).find((product) => !product.deletedAt);
   if (!row) return null;
 
-  const costs = ((row.featureCosts ?? []) as FeatureCostLike[]).filter(
-    (c) => c.active !== false,
-  );
+  const snapshots = asRecordList(row.pricingSnapshots).filter((s) => !s.deletedAt);
+  const costs = asRecordList<FeatureCostLike>(row.featureCosts).filter(isActivePricingRow);
 
   return {
-    tiers: ((row.subscriptionPlans ?? []) as PlanTierLike[]).filter((t) => t.active !== false),
-    packages: ((row.creditPackages ?? []) as CreditPackageLike[]).filter((p) => p.active !== false),
+    tiers: asRecordList<PlanTierLike>(row.subscriptionPlans).filter(isActivePricingRow),
+    packages: asRecordList<CreditPackageLike>(row.creditPackages).filter(isActivePricingRow),
     costs,
-    promotions: (row.pricingPromotions ?? []) as Array<{
+    promotions: asRecordList(row.pricingPromotions).filter((p) => !p.deletedAt) as Array<{
       status?: string;
       promotionType?: string;
       discountPercent?: number | null;
@@ -698,8 +711,8 @@ async function loadProductPricingBundle(slug: string): Promise<{
       appliesToPlanNames?: string[] | null;
     }>,
     snapshot:
-      ((row.pricingSnapshots ?? []) as any[]).find((s) => s.status === 'active')
-      ?? ((row.pricingSnapshots ?? []) as any[])[0]
+      snapshots.find((s) => s.status === 'active')
+      ?? snapshots[0]
       ?? null,
     minMonthlyPrice:
       row.minMonthlyPrice != null && Number.isFinite(Number(row.minMonthlyPrice))
@@ -798,10 +811,14 @@ async function loadLivePricing(product: Product): Promise<PricingTabViewModel | 
       trialWithoutCreditCard: null,
     };
   } else {
-    freeAccess = await loadFreeAccessFromTesting(product.slug);
-    // When borrowing Candy pricing for Aura, also borrow Candy free-access testing answers.
-    if (!freeAccess && borrowedFromCandy) {
-      freeAccess = await loadFreeAccessFromTesting('candy-ai');
+    try {
+      freeAccess = await loadFreeAccessFromTesting(product.slug);
+      // When borrowing Candy pricing for Aura, also borrow Candy free-access testing answers.
+      if (!freeAccess && borrowedFromCandy) {
+        freeAccess = await loadFreeAccessFromTesting('candy-ai');
+      }
+    } catch (error) {
+      console.error('[pricing-tab] free-access load failed', { slug: product.slug, error });
     }
     if (freeAccess && !plans.some((p) => p.isFree)) {
       plans = finalizePlanColumns([
@@ -838,7 +855,21 @@ async function loadLivePricing(product: Product): Promise<PricingTabViewModel | 
     (t) => t.monthlyCost != null && Number.isFinite(t.monthlyCost),
   );
 
-  const stats = await collectPricingStats();
+  const stats = await collectPricingStats().catch((error) => {
+    console.error('[pricing-tab] industry stats load failed', { slug: product.slug, error });
+    return {
+      sampleSize: 0,
+      averageMonthlyPrice: null,
+      medianMonthlyPrice: null,
+      cheapestMonthlyPrice: null,
+      mostExpensiveMonthlyPrice: null,
+      averageAnnualDiscount: null,
+      averagePer100Credits: null,
+      freePlanShare: null,
+      creditSystemShare: null,
+      products: [],
+    };
+  });
   /** Public subscription benchmark = median (typical price). Mean kept on stats for analytics. */
   const typicalMonthlyPrice = stats.medianMonthlyPrice;
   const categoryAvgMonthly =
@@ -1031,14 +1062,18 @@ async function loadLivePricing(product: Product): Promise<PricingTabViewModel | 
   let pricingEvidence = null as PricingTabViewModel['pricingEvidence'];
   // Never present another product's screenshots as this product's verified pricing.
   if (!borrowedFromCandy) {
-    pricingEvidence =
-      (await resolvePricingEvidence({
-        productName: product.name,
-        sourceUrl: productSourceUrl,
-        snapshot: evidenceSnapshot,
-        packages: evidencePackages as Array<{ evidenceMediaIds?: unknown }>,
-        plans: evidencePlans as Array<{ evidenceMediaIds?: unknown }>,
-      })) ?? null;
+    try {
+      pricingEvidence =
+        (await resolvePricingEvidence({
+          productName: product.name,
+          sourceUrl: productSourceUrl,
+          snapshot: evidenceSnapshot,
+          packages: evidencePackages as Array<{ evidenceMediaIds?: unknown }>,
+          plans: evidencePlans as Array<{ evidenceMediaIds?: unknown }>,
+        })) ?? null;
+    } catch (error) {
+      console.error('[pricing-tab] evidence load failed', { slug: product.slug, error });
+    }
     if (!pricingEvidence && draft?.pricingEvidence) {
       pricingEvidence = draft.pricingEvidence;
     }
@@ -1127,8 +1162,11 @@ export async function loadPricingTabViewModel(product: Product): Promise<Pricing
   try {
     const live = await loadLivePricing(product);
     if (live) return live;
-  } catch {
-    // Fall through to draft / empty.
+  } catch (error) {
+    console.error('[pricing-tab] live pricing load failed — using draft/empty shell', {
+      slug: product.slug,
+      error,
+    });
   }
 
   if (product.slug === 'aura-ai') {

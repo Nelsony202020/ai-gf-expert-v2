@@ -938,6 +938,19 @@
 }
 
 /* Drawer */
+html.ratings-drawer-open,
+body.ratings-drawer-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.ratings-drawer-open {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+}
+
 .ratings-drawer-backdrop {
   position: fixed;
   inset: 0;
