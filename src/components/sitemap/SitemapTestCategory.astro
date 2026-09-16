@@ -1,0 +1,65 @@
+---
+import type { HtmlSitemapTestCategory } from "../../types/sitemap";
+import { testCategoryIconName } from "../../lib/test-category-icons";
+import HomeIcon from "../home/desktop/HomeIcon.astro";
+
+interface Props {
+  category: HtmlSitemapTestCategory;
+}
+
+const { category } = Astro.props;
+---
+
+<article class="si-cat" data-category={category.slug}>
+  <button
+    class="si-cat-head"
+    type="button"
+    data-category-toggle={category.slug}
+    aria-expanded="false"
+    aria-controls={`si-cat-panel-${category.slug}`}
+  >
+    <span class="si-cat-icon" aria-hidden="true">
+      <HomeIcon name={testCategoryIconName(category.slug)} size={16} />
+    </span>
+    <span class="si-cat-name">{category.label}</span>
+    <span class="si-cat-count">{category.testCount} tests</span>
+    <span class="si-cat-chev" aria-hidden="true">
+      <HomeIcon name="chevron-down" size={16} />
+    </span>
+  </button>
+  <div class="si-cat-panel" id={`si-cat-panel-${category.slug}`} data-panel hidden>
+    {category.subcategories.map((sub, index) => (
+      <div class:list={["si-sub", { "is-open": index === 0 }]} data-subcategory={`${category.slug}-${sub.slug}`}>
+        <a class="si-sub-kicker" href={sub.href}>
+          <span class="si-sub-kicker-name">{sub.label}</span>
+          <span class="si-sub-kicker-count">{sub.testCount}</span>
+        </a>
+        <button
+          class="si-sub-head"
+          type="button"
+          data-subcategory-toggle={`${category.slug}-${sub.slug}`}
+          aria-expanded={index === 0 ? "true" : "false"}
+          aria-controls={`si-tests-${category.slug}-${sub.slug}`}
+        >
+          <span class="si-sub-name">{sub.label}</span>
+          <span class="si-sub-meta">{sub.testCount} tests</span>
+          <span class="si-sub-chev" aria-hidden="true">
+            <HomeIcon name="chevron-down" size={14} />
+          </span>
+        </button>
+        <ul class="si-tests" id={`si-tests-${category.slug}-${sub.slug}`} data-tests>
+          {sub.tests.map((test) => (
+            <li>
+              <a class="si-test-link" href={test.href}>
+                <span>{test.label}</span>
+                <span class="si-test-chev" aria-hidden="true">
+                  <HomeIcon name="chevron-right" size={14} />
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</article>

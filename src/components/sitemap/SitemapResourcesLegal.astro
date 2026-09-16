@@ -1,54 +1,87 @@
 ---
-import type { HtmlSitemapLink } from '../../types/sitemap';
+import type { HtmlSitemapFullPage } from "../../types/sitemap";
+import HomeIcon from "../home/desktop/HomeIcon.astro";
 
 interface Props {
-  count: number;
-  resources: HtmlSitemapLink[];
-  legal: HtmlSitemapLink[];
+  page: HtmlSitemapFullPage;
 }
 
-const { count, resources, legal } = Astro.props;
+const { page } = Astro.props;
 ---
 
-<section class="sitemap-card sitemap-card--resources-legal">
-  <div class="sitemap-card__head">
-    <span class="sitemap-card__icon sitemap-card__icon--purple">
-      <span class="material-symbols-outlined">shield</span>
-    </span>
-    <h2 class="sitemap-card__title">Resources &amp; Legal ({count})</h2>
-  </div>
-
-  <div class="sitemap-resources-legal">
-    <div class="sitemap-resources-legal__group">
-      <p class="sitemap-resources-legal__label">Resources</p>
-      <ul class="sitemap-card__links">
-        {
-          resources.map((link) => (
-            <li>
-              <a href={link.href} class="sitemap-card__link">
-                <span>{link.label}</span>
-                <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
-              </a>
-            </li>
-          ))
-        }
+<div class="si-resources-wrap" id="si-resources">
+<section class="si-resources">
+  <h2 class="si-h2">Resources &amp; Company</h2>
+  <div class="si-explore-grid">
+    <section class="si-col">
+      <div class="si-col-head">
+        <span class="si-col-icon" aria-hidden="true">
+          <HomeIcon name="info" size={14} />
+        </span>
+        <span class="si-col-title">{page.resources.heading}</span>
+        <span class="si-col-count">{page.resources.count}</span>
+      </div>
+      <div class="si-col-rule"></div>
+      <ul class="si-col-list">
+        {page.resources.links.map((item) => (
+          <li>
+            <a class="si-row" href={item.href}>
+              <span>{item.label}</span>
+              <span class="si-chev" aria-hidden="true">
+                <HomeIcon name="chevron-right" size={14} />
+              </span>
+            </a>
+          </li>
+        ))}
       </ul>
-    </div>
+    </section>
 
-    <div class="sitemap-resources-legal__group">
-      <p class="sitemap-resources-legal__label">Legal &amp; info</p>
-      <ul class="sitemap-card__links">
-        {
-          legal.map((link) => (
-            <li>
-              <a href={link.href} class="sitemap-card__link">
-                <span>{link.label}</span>
-                <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
-              </a>
-            </li>
-          ))
-        }
+    <section class="si-col">
+      <div class="si-col-head">
+        <span class="si-col-icon" aria-hidden="true">
+          <HomeIcon name="users" size={14} />
+        </span>
+        <span class="si-col-title">{page.company.heading}</span>
+        <span class="si-col-count">{page.company.count}</span>
+      </div>
+      <div class="si-col-rule"></div>
+      <ul class="si-col-list">
+        {page.company.links.map((item) => (
+          <li>
+            <a class="si-row" href={item.href}>
+              <span>{item.label}</span>
+              <span class="si-chev" aria-hidden="true">
+                <HomeIcon name="chevron-right" size={14} />
+              </span>
+            </a>
+          </li>
+        ))}
       </ul>
-    </div>
+    </section>
+
+    <section class="si-col">
+      <div class="si-col-head">
+        <span class="si-col-icon" aria-hidden="true">
+          <HomeIcon name="shield" size={14} />
+        </span>
+        <span class="si-col-title">Legal</span>
+        <span class="si-col-count">{page.legal.length}</span>
+      </div>
+      <div class="si-col-rule"></div>
+      <ul class="si-col-list">
+        {page.legal.map((item) => (
+          <li>
+            <a class="si-row" href={item.href}>
+              <span>{item.label}</span>
+              <span class="si-chev" aria-hidden="true">
+                <HomeIcon name="chevron-right" size={14} />
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+    <div class="si-col si-col-spacer" aria-hidden="true"></div>
   </div>
 </section>
+</div>

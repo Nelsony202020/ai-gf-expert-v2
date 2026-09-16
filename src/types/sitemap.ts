@@ -41,27 +41,87 @@ export interface SitemapEntry {
 }
 
 export interface HtmlSitemapLink {
-  label: string;
   href: string;
+  label: string;
 }
 
-export interface HtmlSitemapSection {
-  id: string;
-  title: string;
+export interface HtmlSitemapMethodologyLink extends HtmlSitemapLink {
+  description: string;
+}
+
+export interface HtmlSitemapExploreColumn {
+  heading: string;
   count: number;
-  icon: string;
-  tone: 'amber' | 'lime' | 'green' | 'blue' | 'purple';
   links: HtmlSitemapLink[];
-  viewAll: HtmlSitemapLink | null;
+}
+
+export interface HtmlSitemapTestItem {
+  href: string;
+  label: string;
+}
+
+export interface HtmlSitemapSubcategory {
+  href: string;
+  label: string;
+  slug: string;
+  testCount: number;
+  tests: HtmlSitemapTestItem[];
+}
+
+export interface HtmlSitemapTestCategory {
+  slug: string;
+  href: string;
+  label: string;
+  testCount: number;
+  subcategoryCount: number;
+  subcategories: HtmlSitemapSubcategory[];
+}
+
+export interface HtmlSitemapSearchHit {
+  href: string;
+  title: string;
+  kind: string;
+  location: string;
+  section?: string;
+  parent?: string;
+  group: string;
+  kindLabel: string;
+  context?: string;
+}
+
+export interface HtmlSitemapSearchGroup {
+  group: string;
+  hits: HtmlSitemapSearchHit[];
 }
 
 export interface HtmlSitemapFullPage {
-  reviews: HtmlSitemapLink[];
-  roundups: HtmlSitemapLink[];
-  guides: HtmlSitemapLink[];
-  authors: HtmlSitemapLink[];
-  testCount: number;
-  resourcesLegalCount: number;
-  resources: HtmlSitemapLink[];
+  reviewsCount: number;
+  rankingsCount: number;
+  roundupsCount: number;
+  guidesCount: number;
+  authorsCount: number;
+  testsCount: number;
+  reviews: HtmlSitemapExploreColumn;
+  roundups: HtmlSitemapExploreColumn;
+  guides: HtmlSitemapExploreColumn;
+  authors: HtmlSitemapExploreColumn;
+  testingPagesCount: number;
+  testingCategoriesCount: number;
+  testingSubcategoriesCount: number;
+  methodologyPagesCount: number;
+  categoryCount: number;
+  subcategoryCount: number;
+  scoredTestsCount: number;
+  mainMethodology: HtmlSitemapMethodologyLink[];
+  methodology: HtmlSitemapMethodologyLink[];
+  testCategories: HtmlSitemapTestCategory[];
+  supportingMethodology: HtmlSitemapLink[];
+  supporting: HtmlSitemapLink[];
+  resources: HtmlSitemapExploreColumn;
+  resourcesCount: number;
+  company: HtmlSitemapExploreColumn;
   legal: HtmlSitemapLink[];
+  searchHits?: HtmlSitemapSearchHit[];
+  seoTitle: string;
+  seoDescription: string;
 }

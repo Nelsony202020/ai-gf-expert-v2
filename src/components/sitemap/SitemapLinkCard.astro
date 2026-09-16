@@ -12,23 +12,28 @@ interface Props {
 const { title, count, icon, tone, links } = Astro.props;
 ---
 
-<section class="sitemap-card">
-  <div class="sitemap-card__head">
-    <span class={`sitemap-card__icon sitemap-card__icon--${tone}`}>
+<div class={`sitemap-explore__col sitemap-explore__col--${tone}`}>
+  <div class="sitemap-explore__col-head">
+    <span class={`sitemap-explore__icon sitemap-explore__icon--${tone}`} aria-hidden="true">
       <span class="material-symbols-outlined">{icon}</span>
     </span>
-    <h2 class="sitemap-card__title">{title} ({count})</h2>
+    <div class="sitemap-explore__col-titles">
+      <h2 class="sitemap-explore__col-title">{title}</h2>
+      <p class="sitemap-explore__col-count">{count} {count === 1 ? 'page' : 'pages'}</p>
+    </div>
   </div>
-  <ul class="sitemap-card__links">
+  <ul class="sitemap-explore__links">
     {
       links.map((link) => (
         <li>
-          <a href={link.href} class="sitemap-card__link">
-            <span>{link.label}</span>
-            <span class="material-symbols-outlined sitemap-card__arrow">chevron_right</span>
+          <a href={link.href} class="sitemap-explore__link">
+            <span class="sitemap-explore__link-label">{link.label}</span>
+            <span class="material-symbols-outlined sitemap-explore__link-arrow" aria-hidden="true">
+              arrow_forward
+            </span>
           </a>
         </li>
       ))
     }
   </ul>
-</section>
+</div>

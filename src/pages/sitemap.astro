@@ -1,19 +1,20 @@
 ---
-// Server-rendered so newly published reviews/roundups appear immediately,
-// without waiting for a static rebuild.
-export const prerender = false;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import SitemapExploreColumn from "../components/sitemap/SitemapExploreColumn.astro";
+import SitemapResourcesLegal from "../components/sitemap/SitemapResourcesLegal.astro";
+import SitemapSearchField from "../components/sitemap/SitemapSearchField.astro";
+import SitemapTestMethodology from "../components/sitemap/SitemapTestMethodology.astro";
+import { getSiteIndexPage } from "../lib/sitemap";
+import { canonicalPublicUrl } from "../lib/siteOrigin";
+import { filterSitemapSearchHits, groupSitemapSearchHits } from "../lib/sitemap-search";
+import { loadPublishedProducts, loadPublishedRoundupSummaries } from "../lib/content/store";
+import { getDraftedPaths } from "../lib/seo/pageOverrides";
+import { products as fileProducts } from "../data/products";
+import "../styles/sitemap.css";
 
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import SitemapLinkCard from '../components/sitemap/SitemapLinkCard.astro';
-import SitemapTestMethodology from '../components/sitemap/SitemapTestMethodology.astro';
-import SitemapResourcesLegal from '../components/sitemap/SitemapResourcesLegal.astro';
-import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
-import { buildFullHtmlSitemapPage } from '../lib/sitemap';
-import { loadPublishedProducts, loadPublishedRoundupSummaries } from '../lib/content/store';
-import { getDraftedPaths } from '../lib/seo/pageOverrides';
-import { products as fileProducts } from '../data/products';
+export const prerender = false;
 
 const [publishedProducts, publishedRoundups, draftedPaths] = await Promise.all([
   loadPublishedProducts(fileProducts),
@@ -21,81 +22,375 @@ const [publishedProducts, publishedRoundups, draftedPaths] = await Promise.all([
   getDraftedPaths(),
 ]);
 
-const page = buildFullHtmlSitemapPage({
+const page = getSiteIndexPage({
   products: publishedProducts,
   roundups: publishedRoundups,
   excludePaths: draftedPaths,
 });
-
-// Browsers always revalidate (publishes show up on refresh); CDN caches for
-// an hour and is purged on every deploy.
-Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600');
+const canonicalUrl = canonicalPublicUrl("/sitemap/", Astro.site);
+const searchHitsJson = JSON.stringify(page.searchHits ?? []);
+const requestedQuery = Astro.url.searchParams.get("q")?.trim() ?? "";
+const initialHits = requestedQuery ? filterSitemapSearchHits(page.searchHits ?? [], requestedQuery) : [];
+const initialGroups = groupSitemapSearchHits(initialHits);
+const isSearching = requestedQuery.length > 0;
+const hasResults = initialHits.length > 0;
+const pageSearchClass = isSearching
+  ? hasResults
+    ? "si-is-searching si-has-results"
+    : "si-is-searching si-no-results"
+  : "";
+const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` : "No results") : "";
 ---
 
-<BaseLayout title="HTML Sitemap" description="Complete index of all reviews, roundups, guides, testing methodology, authors, resources, and legal pages.">
+<BaseLayout
+  title={page.seoTitle}
+  description={page.seoDescription}
+  canonical={canonicalUrl}
+>
   <Header />
-  <main class="sitemap-page">
-    <div class="section-container px-4 md:px-8 py-10 md:py-14">
-      <Breadcrumbs
-        items={[
-          { label: 'Home', href: '/' },
-          { label: 'HTML Sitemap' },
-        ]}
-      />
+  <div class:list={["si-page", pageSearchClass]}>
+    <header class="si-hero">
+      <div class="si-wrap si-hero-inner">
+        <p class="si-eyebrow"><span class="si-eyebrow-mark" aria-hidden="true"></span>Site index</p>
+        <h1 class="si-title">Everything on AI Girlfriend Expert</h1>
+        <p class="si-lede">Find every review, guide, test and resource we publish.</p>
 
-      <header class="sitemap-page__header">
-        <h1 class="sitemap-page__title">HTML Sitemap</h1>
-        <p class="sitemap-page__intro">
-          Complete index of every published page. Counts and links update automatically when content changes.
-        </p>
-      </header>
+        <SitemapSearchField query={requestedQuery} searching={isSearching} resultLabel={resultLabel} />
 
-      <div class="sitemap-layout">
-        <div class="sitemap-row sitemap-row--top">
-          <SitemapLinkCard
-            title="Reviews"
-            count={page.reviews.length}
-            icon="star"
-            tone="amber"
-            links={page.reviews}
-          />
-          <SitemapLinkCard
-            title="Roundups"
-            count={page.roundups.length}
-            icon="checklist"
-            tone="lime"
-            links={page.roundups}
-          />
-          <SitemapLinkCard
-            title="Guides"
-            count={page.guides.length}
-            icon="menu_book"
-            tone="green"
-            links={page.guides}
-          />
-          <SitemapLinkCard
-            title="Authors"
-            count={page.authors.length}
-            icon="person"
-            tone="amber"
-            links={page.authors}
-          />
-        </div>
-
-        <div class="sitemap-row sitemap-row--bottom">
-          <SitemapTestMethodology count={page.testCount} />
-          <SitemapResourcesLegal
-            count={page.resourcesLegalCount}
-            resources={page.resources}
-            legal={page.legal}
-          />
+        <div class="si-chips" data-si-search-chips hidden={isSearching}>
+          <a class="si-chip" href="#si-explore">Reviews<span class="si-chip-dot"></span><span class="si-chip-n">{page.reviewsCount}</span></a>
+          <a class="si-chip" href="#rankings">Rankings<span class="si-chip-dot"></span><span class="si-chip-n">{page.rankingsCount}</span></a>
+          <a class="si-chip" href="#guides">Guides<span class="si-chip-dot"></span><span class="si-chip-n">{page.guidesCount}</span></a>
+          <a class="si-chip" href="#si-testing">Tests<span class="si-chip-dot"></span><span class="si-chip-n">{page.testsCount}</span></a>
         </div>
       </div>
+    </header>
+
+    <div class="si-sticky" data-si-sticky aria-hidden="true">
+      <div class="si-wrap si-sticky-inner">
+        <SitemapSearchField compact query={requestedQuery} searching={isSearching} resultLabel={resultLabel} />
+        <nav class="si-sticky-jumps" aria-label="Site index sections">
+          <a href="#si-explore">Explore</a>
+          <a href="#si-testing">Testing</a>
+          <a href="#si-resources">Resources</a>
+        </nav>
+      </div>
     </div>
-  </main>
+
+    <div class="si-body">
+      <div class="si-wrap si-body-inner">
+      <section class="si-results" data-si-search-results hidden={!isSearching} aria-live="polite">
+        <div class="si-results-head">
+          <h2 class="si-results-title" data-si-search-heading hidden={!hasResults}>{hasResults ? `${initialHits.length} results for “${requestedQuery}”` : ""}</h2>
+            <button type="button" class="si-clear-link" data-si-search-clear-text>Clear search</button>
+        </div>
+        <div class="si-results-list" data-si-search-list>
+          {initialGroups.map((group, groupIndex) => (
+            <div class="si-hit-group">
+              <h3 class="si-hit-group-title">{group.group}</h3>
+              {group.hits.map((hit, index) => (
+                <a class:list={["si-hit", { "is-active": groupIndex === 0 && index === 0 }]} href={hit.href}>
+                  <span class="si-hit-main">
+                    <span class="si-hit-title">{hit.title}</span>
+                    <span class="si-hit-kind">
+                      {hit.context ? `${hit.kindLabel} · ${hit.context}` : hit.kindLabel}
+                    </span>
+                  </span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M5 3L11 8L5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </a>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div class="si-empty" data-si-search-empty hidden={hasResults || !isSearching}>
+          <div class="si-empty-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="10" cy="10" r="7.3" stroke="currentColor" stroke-width="1.5" />
+              <path d="M15.4 15.4L19 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <p class="si-empty-title" data-si-empty-title>
+            {isSearching && !hasResults ? `No results for “${requestedQuery}”` : ""}
+          </p>
+          <p class="si-empty-copy" data-empty-copy>Try another search term.</p>
+            <button type="button" class="si-empty-btn" data-si-search-clear-empty>Clear search</button>
+        </div>
+      </section>
+
+      <div class="si-directory" data-si-directory hidden={isSearching}>
+        <div class="si-explore-wrap">
+          <section class="si-explore" id="si-explore">
+            <h2 class="si-h2">Explore AIGE</h2>
+          </section>
+          <div class="si-explore-grid">
+            <SitemapExploreColumn column={page.reviews} variant="reviews" />
+            <SitemapExploreColumn column={page.roundups} variant="roundups" />
+            <SitemapExploreColumn column={page.guides} variant="guides" />
+            <SitemapExploreColumn column={page.authors} variant="authors" />
+          </div>
+        </div>
+
+        <SitemapTestMethodology page={page} />
+
+      <SitemapResourcesLegal page={page} />
+      </div>
+      </div>
+    </div>
+  </div>
   <Footer />
 </BaseLayout>
 
-<style is:global>
-  @import '../styles/sitemap.css';
-</style>
+<script is:inline define:vars={{ searchHitsJson }}>
+  window.__SI_HITS__ = JSON.parse(searchHitsJson);
+</script>
+
+<script>
+  import { filterSitemapSearchHits, groupSitemapSearchHits } from "../lib/sitemap-search";
+
+  const hits = window.__SI_HITS__ ?? [];
+  const pageEl = document.querySelector(".si-page");
+  const inputs = Array.from(document.querySelectorAll("[data-si-search-input]"));
+  const forms = Array.from(document.querySelectorAll("[data-si-search-form]"));
+  const slash = document.querySelector("[data-search-slash]");
+  const chips = document.querySelector("[data-si-search-chips]");
+  const lede = document.querySelector(".si-lede");
+  const directory = document.querySelector("[data-si-directory]");
+  const results = document.querySelector("[data-si-search-results]");
+  const list = document.querySelector("[data-si-search-list]");
+  const empty = document.querySelector("[data-si-search-empty]");
+  const heading = document.querySelector("[data-si-search-heading]");
+  const emptyTitle = document.querySelector("[data-si-empty-title]");
+  const sticky = document.querySelector("[data-si-sticky]");
+  const heroSearch = document.querySelector('[data-search-surface="hero"]');
+
+  function escapeHtml(value) {
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  function syncInputs(value: string, except?: HTMLInputElement) {
+    inputs.forEach((node) => {
+      if (node instanceof HTMLInputElement && node !== except) node.value = value;
+    });
+  }
+
+  function setSearching(on: boolean) {
+    forms.forEach((node) => node.classList.toggle("is-searching", on));
+    slash?.toggleAttribute("hidden", on);
+    document.querySelectorAll("[data-si-search-clear]").forEach((node) => {
+      node.toggleAttribute("hidden", !on);
+    });
+    chips?.toggleAttribute("hidden", on);
+    lede?.toggleAttribute("hidden", on);
+  }
+
+  function hitMeta(hit: { kindLabel?: string; kind: string; context?: string }) {
+    const kind = hit.kindLabel || hit.kind;
+    return hit.context ? `${kind} · ${hit.context}` : kind;
+  }
+
+  function resultsMarkup(matched: typeof hits) {
+    return groupSitemapSearchHits(matched)
+      .map(
+        (group, groupIndex) => `
+          <div class="si-hit-group">
+            <h3 class="si-hit-group-title">${escapeHtml(group.group)}</h3>
+            ${group.hits
+              .map(
+                (hit, index) => `
+            <a class="si-hit${groupIndex === 0 && index === 0 ? " is-active" : ""}" href="${escapeHtml(hit.href)}">
+              <span class="si-hit-main">
+                <span class="si-hit-title">${escapeHtml(hit.title)}</span>
+                <span class="si-hit-kind">${escapeHtml(hitMeta(hit))}</span>
+              </span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M5 3L11 8L5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>`,
+              )
+              .join("")}
+          </div>`,
+      )
+      .join("");
+  }
+
+  function render(query: string) {
+    const q = query.trim();
+    if (!q) {
+      setSearching(false);
+      pageEl?.classList.remove("si-is-searching", "si-has-results", "si-no-results");
+      if (results instanceof HTMLElement) results.hidden = true;
+      if (directory instanceof HTMLElement) directory.hidden = false;
+      if (list) list.innerHTML = "";
+      document.querySelectorAll("[data-si-search-count]").forEach((node) => {
+        if (node instanceof HTMLElement) {
+          node.hidden = true;
+          node.textContent = "";
+        }
+      });
+      if (empty instanceof HTMLElement) empty.hidden = true;
+      return;
+    }
+
+    setSearching(true);
+    const matched = filterSitemapSearchHits(hits, q);
+    pageEl?.classList.add("si-is-searching");
+    pageEl?.classList.toggle("si-has-results", matched.length > 0);
+    pageEl?.classList.toggle("si-no-results", matched.length === 0);
+    if (directory instanceof HTMLElement) directory.hidden = true;
+    if (results instanceof HTMLElement) results.hidden = false;
+    const countText = matched.length ? `${matched.length} results` : "No results";
+    document.querySelectorAll("[data-si-search-count]").forEach((node) => {
+      if (node instanceof HTMLElement) {
+        node.hidden = false;
+        node.textContent = countText;
+      }
+    });
+    if (heading instanceof HTMLElement) {
+      if (matched.length === 0) {
+        heading.hidden = true;
+        heading.textContent = "";
+      } else {
+        heading.hidden = false;
+        heading.textContent = `${matched.length} results for “${q}”`;
+      }
+    }
+    const clearLabel = window.matchMedia("(max-width: 767px)").matches ? "Clear" : "Clear search";
+    document.querySelectorAll("[data-si-search-clear-text]").forEach((node) => {
+      node.textContent = clearLabel;
+    });
+
+    if (!matched.length) {
+      if (list) list.innerHTML = "";
+      if (list instanceof HTMLElement) list.hidden = true;
+      if (empty instanceof HTMLElement) empty.hidden = false;
+      if (emptyTitle) emptyTitle.textContent = `No results for “${q}”`;
+      return;
+    }
+
+    if (empty instanceof HTMLElement) empty.hidden = true;
+    if (list instanceof HTMLElement) list.hidden = false;
+    if (list) list.innerHTML = resultsMarkup(matched);
+  }
+
+  function applyQuery(query: string, push: boolean, except?: HTMLInputElement) {
+    syncInputs(query, except);
+    render(query);
+    if (!push) return;
+    const url = new URL(window.location.href);
+    const next = query.trim();
+    if (next) url.searchParams.set("q", next);
+    else url.searchParams.delete("q");
+    history.replaceState({}, "", url);
+  }
+
+  function stickyOn() {
+    return sticky?.classList.contains("is-on");
+  }
+
+  function clearSearch() {
+    applyQuery("", true);
+    const visible = stickyOn()
+      ? document.querySelector(".si-search--sticky [data-si-search-input]")
+      : document.querySelector(".si-search:not(.si-search--sticky) [data-si-search-input]");
+    if (visible instanceof HTMLInputElement) visible.focus();
+  }
+
+  inputs.forEach((node) => {
+    if (!(node instanceof HTMLInputElement)) return;
+    node.addEventListener("input", () => applyQuery(node.value, true, node));
+    node.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") clearSearch();
+    });
+  });
+  forms.forEach((node) => {
+    node.addEventListener("submit", (event) => event.preventDefault());
+  });
+  document.querySelectorAll("[data-si-search-clear], [data-si-search-clear-text], [data-si-search-clear-empty]").forEach((node) => {
+    node.addEventListener("click", () => clearSearch());
+  });
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "/" && !(document.activeElement instanceof HTMLInputElement) && !(document.activeElement instanceof HTMLTextAreaElement)) {
+      event.preventDefault();
+      const heroInput = document.querySelector(".si-search:not(.si-search--sticky) [data-si-search-input]");
+      const stickyInput = document.querySelector(".si-search--sticky [data-si-search-input]");
+      const target = stickyOn() ? stickyInput : heroInput;
+      if (target instanceof HTMLInputElement) target.focus();
+    }
+  });
+
+  applyQuery(new URLSearchParams(window.location.search).get("q") ?? "", false);
+  window.addEventListener("popstate", () => {
+    applyQuery(new URLSearchParams(window.location.search).get("q") ?? "", false);
+  });
+
+  if (heroSearch && sticky && "IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const show = Boolean(entry) && !entry.isIntersecting;
+        sticky.classList.toggle("is-on", show);
+        sticky.setAttribute("aria-hidden", show ? "false" : "true");
+        pageEl?.classList.toggle("si-has-sticky", show);
+      },
+      { threshold: 0 },
+    );
+    observer.observe(heroSearch);
+  }
+
+  function isDesktopCats() {
+    return window.matchMedia("(min-width: 900px)").matches;
+  }
+
+  function setSubOpen(sub: Element, open: boolean) {
+    const btn = sub.querySelector("[data-subcategory-toggle]");
+    sub.classList.toggle("is-open", open);
+    btn?.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function prepareCategory(wrap: Element) {
+    const subs = Array.from(wrap.querySelectorAll(".si-sub"));
+    const desktop = isDesktopCats();
+    subs.forEach((sub, index) => {
+      setSubOpen(sub, desktop || index === 0);
+    });
+  }
+
+  const cats = Array.from(document.querySelectorAll("[data-category-toggle]"));
+  cats.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const slug = btn.getAttribute("data-category-toggle");
+      const wrap = btn.closest(".si-cat");
+      const panel = wrap?.querySelector("[data-panel]");
+      const was = btn.getAttribute("aria-expanded") === "true";
+      cats.forEach((other) => {
+        other.setAttribute("aria-expanded", "false");
+        other.closest(".si-cat")?.classList.remove("is-open");
+        other.closest(".si-cat")?.querySelector("[data-panel]")?.setAttribute("hidden", "");
+      });
+      if (!was && slug && wrap) {
+        btn.setAttribute("aria-expanded", "true");
+        wrap.classList.add("is-open");
+        panel?.removeAttribute("hidden");
+        prepareCategory(wrap);
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-subcategory-toggle]").forEach((btn) => {
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (isDesktopCats()) return;
+      const row = btn.closest(".si-sub");
+      const cat = btn.closest(".si-cat");
+      if (!row || !cat) return;
+      const was = btn.getAttribute("aria-expanded") === "true";
+      cat.querySelectorAll(".si-sub").forEach((sub) => setSubOpen(sub, false));
+      if (!was) setSubOpen(row, true);
+    });
+  });
+</script>
