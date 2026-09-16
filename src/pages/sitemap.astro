@@ -333,8 +333,9 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
 
   function prepareCategory(wrap: Element) {
     const subs = Array.from(wrap.querySelectorAll(".si-sub"));
+    const desktop = isDesktopCats();
     subs.forEach((sub, index) => {
-      setSubOpen(sub, !isDesktopCats() && index === 0);
+      setSubOpen(sub, desktop || index === 0);
     });
   }
 

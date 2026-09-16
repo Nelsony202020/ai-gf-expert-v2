@@ -1431,6 +1431,12 @@ body:has(.si-page) .site-header {
   list-style: none;
   margin: 0;
   padding: 0 0 8px;
+  display: none;
+  flex-direction: column;
+}
+
+.si-sub.is-open .si-tests {
+  display: flex;
 }
 
 .si-tests > li {
@@ -1501,7 +1507,8 @@ body:has(.si-page) .site-header {
   }
 
   .si-tests,
-  .si-tests[hidden] {
+  .si-cat.is-open .si-tests,
+  .si-cat.is-open .si-tests[hidden] {
     display: flex !important;
     flex-direction: column;
     padding: 0;
@@ -1510,16 +1517,6 @@ body:has(.si-page) .site-header {
   .si-test-link {
     min-height: 40px;
     padding: 6px 8px;
-  }
-}
-
-.si-tests[hidden] {
-  display: none;
-}
-
-@media (min-width: 900px) {
-  .si-tests[hidden] {
-    display: flex !important;
   }
 }
 
