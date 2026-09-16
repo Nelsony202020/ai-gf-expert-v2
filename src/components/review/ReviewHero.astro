@@ -1,145 +1,247 @@
 ---
 import type { Product } from '../../data/products';
-import type { ProductPageHead } from '../../lib/seo/productMeta';
+import type { FeaturedIn } from '../../lib/content/store';
 import { getAuthor } from '../../data/authors';
+import {
+  formatReviewedOn,
+  getReviewProofMeta,
+  getBestFeaturedIn,
+  resolveFeaturedIn,
+  featuredInHref,
+  featuredInDesktopLabel,
+  featuredInMobileLabel,
+  authorMobileCredential,
+  authorRoleLabel,
+  uniqueMetaParts,
+} from '../../lib/review-shell';
+import ShareMenu from '../ui/ShareMenu.astro';
 import Gallery from './Gallery.astro';
 import RatingSidebar from './RatingSidebar.astro';
-import MethodologyTooltip from './tooltips/MethodologyTooltip.astro';
-import InfoIcon from '../ui/InfoIcon.astro';
-import AuthorBioPopover from './AuthorBioPopover.astro';
-import VerifiedCheck from '../ui/VerifiedCheck.astro';
-import ShareMenu from '../ui/ShareMenu.astro';
-import Breadcrumbs from '../ui/Breadcrumbs.astro';
+import ReviewIcon from './ReviewIcon.astro';
 
 interface Props {
   product: Product;
-  shareUrl?: string;
-  pageHead?: ProductPageHead;
-  /** When true, show draft status instead of a published date in the meta row. */
-  isDraft?: boolean;
+  featuredIn?: FeaturedIn[];
 }
 
-const { product, shareUrl, pageHead, isDraft = false } = Astro.props;
-const shareTitle = pageHead?.ogTitle ?? `${product.name} Review`;
-const breadcrumbLabel = product.seo?.breadcrumbLabel?.trim() || product.name;
-const h1IsOverride = pageHead?.h1IsOverride ?? false;
-const h1Text = pageHead?.h1 ?? `${product.name} Review`;
-const hasVideoReview = Boolean(product.videoReview?.embedUrl);
+const { product, featuredIn = [] } = Astro.props;
+const author = product.authors[0];
+const authorProfile = author?.slug ? getAuthor(author.slug) : undefined;
+const authorHref = authorProfile ? `/author/${authorProfile.slug}/` : author?.slug ? `/author/${author.slug}/` : undefined;
+const published = formatReviewedOn(product.reviewedDate);
+const updated = formatReviewedOn(product.modifiedDate);
+const proof = getReviewProofMeta(product);
+const featured = getBestFeaturedIn(resolveFeaturedIn(product.slug, featuredIn));
+const educationTitle = authorProfile?.education?.find((item) => /master/i.test(item.title))?.title;
+const credential = authorMobileCredential(educationTitle);
+const roleLabel = authorRoleLabel(author?.role, authorProfile?.title);
+const roleLine = uniqueMetaParts([roleLabel, credential]);
+const methodTitle = product.methodology || 'Methodology v3.1';
 ---
 
-<section class="section-container pt-8 md:pt-12 pb-10 px-4 md:px-8">
-  <!-- Title block -->
-  <div class="flex flex-col gap-4 mb-8">
-    <Breadcrumbs
-      items={[
-        { label: 'Home', href: '/' },
-        { label: 'Reviews', href: '/reviews/' },
-        { label: breadcrumbLabel },
-      ]}
-    />
+<div class="section-container px-4 md:px-8">
+<header class="rs-hero">
+  <nav class="rs-crumb" aria-label="Breadcrumb">
+    <a href="/">Home</a>
+    <span class="rs-crumb-sep" aria-hidden="true">
+      <svg width="5" height="9" viewBox="0 0 5 9" fill="none" aria-hidden="true"><path d="M0 7.5L3.5 4 0 0.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <a href="/reviews/">Reviews</a>
+    <span class="rs-crumb-sep" aria-hidden="true">
+      <svg width="5" height="9" viewBox="0 0 5 9" fill="none" aria-hidden="true"><path d="M0 7.5L3.5 4 0 0.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <span class="rs-crumb-current">{product.name}</span>
+  </nav>
 
-    {
-      h1IsOverride ? (
-        <h1 class="text-4xl md:text-6xl font-black text-on-surface tracking-tight">{h1Text}</h1>
-      ) : (
-        <h1 class="text-4xl md:text-6xl font-black text-on-surface tracking-tight">
-          {product.name} <span class="font-serif italic font-normal text-on-surface">Review</span>
-        </h1>
-      )
-    }
-
-    {
-      hasVideoReview && (
-        <h2 class="sr-only">{product.name} Video Review</h2>
-      )
-    }
-
-    <div class="article-meta-row mb-0">
-      {
-        isDraft ? (
-          <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">
-            Draft — not published
-          </span>
-        ) : (
-          <span>Published {product.reviewedDate}</span>
-        )
-      }
-      <span class="article-meta-row__sep" aria-hidden="true">·</span>
-      <span>Updated {product.modifiedDate}</span>
-      <span class="article-meta-row__sep" aria-hidden="true">·</span>
-      <span class="article-meta-row__methodology">
-        {product.methodology}
-        <MethodologyTooltip id={`hero-methodology-${product.slug}`}>
-          <InfoIcon size="xs" class="text-tertiary hover:text-accent" />
-        </MethodologyTooltip>
-      </span>
-      <span class="article-meta-row__sep article-meta-row__sep--before-share" aria-hidden="true">·</span>
-      <ShareMenu shareTitle={shareTitle} shareUrl={shareUrl} variant="inline" />
+  <div class="rs-hero-title-row">
+    <h1 class="rs-hero-title">{product.name} Review</h1>
+    <div class="rs-share-mobile">
+      <ShareMenu shareTitle={`${product.name} Review`} variant="title-mobile" />
     </div>
   </div>
 
-  <!-- Authors -->
-  <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-surface-variant pb-6 mb-8">
-    <div class="flex flex-wrap items-center gap-x-6 gap-y-4">
-      {
-        product.authors.map((author, i) => {
-          const profile = author.slug ? getAuthor(author.slug) : undefined;
-          return (
-            <>
-              {i > 0 && <div class="w-px h-10 bg-surface-variant hidden md:block" />}
-              <div class={`flex items-center gap-3 ${profile ? 'relative' : ''}`}>
-                <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0 bg-white">
-                  <img alt={author.name} class="w-full h-full object-contain p-0.5" src={author.avatar} />
-                </div>
-                <div class="flex flex-col">
-                  {
-                    profile ? (
-                      <button
-                        type="button"
-                        class="flex items-center gap-1.5 text-left group overflow-visible"
-                        data-author-trigger={author.slug}
-                      >
-                        <span class="text-sm font-bold group-hover:underline cursor-pointer">{author.name}</span>
-                        {author.verified && (
-                          <VerifiedCheck class="w-[18px] h-[18px] shrink-0" />
-                        )}
-                      </button>
-                    ) : (
-                      <div class="flex items-center gap-1.5 overflow-visible">
-                        <span class="text-sm font-bold">{author.name}</span>
-                        {author.verified && (
-                          <VerifiedCheck class="w-[18px] h-[18px] shrink-0" />
-                        )}
-                      </div>
-                    )
-                  }
-                  <span class="text-[11px] text-tertiary font-medium">{author.role}</span>
-                </div>
-                {profile && <AuthorBioPopover author={profile} />}
-              </div>
-            </>
-          );
-        })
-      }
+  <div class="rs-hero-meta">
+    {author && (
+      <div class="rs-author">
+        {author.avatar && (
+          authorHref ? (
+            <a href={authorHref} class="rs-author-avatar">
+              <img src={author.avatar} alt="" width="32" height="32" />
+            </a>
+          ) : (
+            <span class="rs-author-avatar">
+              <img src={author.avatar} alt="" width="32" height="32" />
+            </span>
+          )
+        )}
+        <div class="rs-author-text">
+          <div class="rs-author-name-row">
+            {authorHref ? (
+              <a href={authorHref} class="rs-author-name">{author.name}</a>
+            ) : (
+              <span class="rs-author-name">{author.name}</span>
+            )}
+            {author.verified && (
+              <ReviewIcon name="badge-check" size={14} class="rs-verified" />
+            )}
+          </div>
+          {roleLine && <p class="rs-author-role">{roleLine}</p>}
+        </div>
+      </div>
+    )}
+    {(published || updated) && (
+      <>
+        <span class="rs-meta-sep" aria-hidden="true"></span>
+        <p class="rs-dates">
+          {published && <>Published {published}</>}
+          {published && updated && updated !== published && <> · Updated {updated}</>}
+        </p>
+      </>
+    )}
+    {product.methodology && (
+      <div class="rs-methodology" data-method-tip>
+        <span>{methodTitle}</span>
+        <button
+          type="button"
+          class="rs-info-btn"
+          data-method-trigger
+          aria-label="About our methodology"
+          aria-expanded="false"
+          aria-controls="rs-method-pop"
+        >
+          <ReviewIcon name="info" size={14} />
+        </button>
+        <div class="rs-method-pop" id="rs-method-pop" role="tooltip" hidden data-method-panel>
+          <p class="rs-method-pop-title">{methodTitle}</p>
+          <p class="rs-method-pop-body">
+            This review uses our current testing methodology across {proof.categoryCount} scoring categories.
+          </p>
+          <a class="rs-method-pop-link" href="/test/">
+            View methodology
+            <ReviewIcon name="arrow-right" size={14} />
+          </a>
+        </div>
+      </div>
+    )}
+    <span class="rs-meta-sep rs-share-desktop-sep" aria-hidden="true"></span>
+    <div class="rs-share-desktop">
+      <ShareMenu shareTitle={`${product.name} Review`} variant="inline" />
     </div>
   </div>
 
-  <!-- Gallery + sticky ratings -->
-  <div class="review-hero-media flex flex-col lg:flex-row gap-8">
-    <div class="review-hero-gallery lg:w-[68%]">
-      <Gallery
-        images={
-          product.featuredImage
-            ? [product.featuredImage]
-            : product.heroGallery?.length
-              ? product.heroGallery
-              : product.gallery.slice(0, 1)
-        }
-        product={product}
-      />
-    </div>
-    <div class="review-hero-ratings lg:w-[32%]">
+  <div class="rs-hero-pair">
+    <div class="rs-hero-layout">
+      <div class="rs-hero-left">
+        <Gallery product={product} />
+        {featured && (
+          <a class="rs-featured-in rs-featured-in--under-image" href={featuredInHref(featured)}>
+            <ReviewIcon name="trophy" size={16} class="rs-featured-in-ico" />
+            <span class="rs-featured-in-copy">
+              <span class="rs-featured-in-kicker">Also featured in</span>
+              <span class="rs-featured-in-desktop">{featuredInDesktopLabel(featured)}</span>
+              <span class="rs-featured-in-mobile">{featuredInMobileLabel(featured)}</span>
+            </span>
+            <ReviewIcon name="arrow-right" size={14} class="rs-featured-in-arrow" />
+          </a>
+        )}
+      </div>
       <RatingSidebar product={product} />
     </div>
+    {featured && (
+      <a class="rs-featured-in rs-featured-in--after-module" href={featuredInHref(featured)}>
+        <ReviewIcon name="trophy" size={16} class="rs-featured-in-ico" />
+        <span class="rs-featured-in-copy">
+          <span class="rs-featured-in-kicker">Also featured in</span>
+          <span class="rs-featured-in-desktop">{featuredInDesktopLabel(featured)}</span>
+          <span class="rs-featured-in-mobile">{featuredInMobileLabel(featured)}</span>
+        </span>
+        <ReviewIcon name="arrow-right" size={14} class="rs-featured-in-arrow" />
+      </a>
+    )}
   </div>
-</section>
+</header>
+</div>
+
+<script>
+  function bindMethodologyTip() {
+    document.querySelectorAll<HTMLElement>('[data-method-tip]').forEach((wrap) => {
+      if (wrap.dataset.bound === '1') return;
+      wrap.dataset.bound = '1';
+      const trigger = wrap.querySelector<HTMLButtonElement>('[data-method-trigger]');
+      const panel = wrap.querySelector<HTMLElement>('[data-method-panel]');
+      if (!trigger || !panel) return;
+
+      const isDesktop = () => window.matchMedia('(min-width: 768px)').matches;
+
+      const setOpen = (open: boolean) => {
+        panel.hidden = !open;
+        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        wrap.classList.toggle('is-open', open);
+      };
+
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (isDesktop()) setOpen(true);
+        else setOpen(panel.hidden);
+      });
+
+      trigger.addEventListener('mouseenter', () => {
+        if (isDesktop()) setOpen(true);
+      });
+      wrap.addEventListener('mouseleave', () => {
+        if (isDesktop()) setOpen(false);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!wrap.contains(e.target as Node)) setOpen(false);
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') setOpen(false);
+      });
+    });
+  }
+  bindMethodologyTip();
+  document.addEventListener('astro:page-load', bindMethodologyTip);
+</script>
+
+<style>
+  .rs-hero-title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .rs-hero-title-row .rs-hero-title {
+    flex: 1;
+    min-width: 0;
+  }
+  .rs-share-mobile { display: none; }
+  .rs-share-desktop { display: flex; align-items: center; }
+  .rs-share-desktop-sep { display: block; }
+  .rs-author-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 999px; display: block; }
+  @media (max-width: 767px) {
+    .rs-share-mobile { display: block; flex-shrink: 0; }
+    .rs-share-desktop,
+    .rs-share-desktop-sep { display: none; }
+    .rs-hero-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .rs-meta-sep { display: none; }
+    .rs-author {
+      width: 100%;
+      gap: 0;
+      align-items: flex-start;
+    }
+    .rs-author-avatar {
+      display: none;
+    }
+    .rs-dates {
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 16px;
+      color: #8a8991;
+    }
+  }
+</style>

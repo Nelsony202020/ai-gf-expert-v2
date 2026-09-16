@@ -1,42 +1,48 @@
 ---
-export interface Tab {
-  id: string;
-  /** Short label used in the sticky jump rail */
-  label: string;
-  /** Optional longer label for the mobile “On this page” TOC */
-  tocLabel?: string;
-  /** @deprecated Use `label` — kept for older call sites */
-  mobileLabel?: string;
-}
+export type Tab = { id: string; label: string; tocLabel?: string };
 
 interface Props {
   tabs: Tab[];
-  active?: string;
+  hiddenTabs?: Tab[];
 }
 
-const { tabs, active = tabs[0]?.id } = Astro.props;
+const { tabs, hiddenTabs = [] } = Astro.props;
+const allTabs = [...tabs, ...hiddenTabs];
 ---
 
-<nav
-  class="review-tabbar z-40"
-  data-tabbar
-  aria-label="Review sections"
->
+<nav class="review-tabbar z-40" data-tabbar aria-label="Review sections">
   <div class="review-tabbar__shell section-container px-4 md:px-8">
     <div class="review-tabbar__rail" data-tabbar-rail>
       <div class="review-tabbar__fade review-tabbar__fade--start" data-tabbar-fade="start" aria-hidden="true"></div>
       <ul class="review-tabbar__list" role="tablist" data-tabbar-list>
         {
-          tabs.map((tab) => (
+          tabs.map((tab, i) => (
             <li role="presentation" class="review-tabbar__item">
               <button
                 type="button"
                 role="tab"
+                class="review-tabbar__btn"
                 data-tab={tab.id}
-                aria-current={tab.id === active ? 'true' : 'false'}
-                class="tab-btn review-tabbar__btn"
+                aria-current={i === 0 ? 'true' : 'false'}
+                aria-selected={i === 0 ? 'true' : 'false'}
               >
                 {tab.label}
+              </button>
+            </li>
+          ))
+        }
+        {
+          hiddenTabs.map((tab) => (
+            <li role="presentation" class="review-tabbar__item" hidden>
+              <button
+                type="button"
+                role="tab"
+                class="review-tabbar__btn"
+                data-tab={tab.id}
+                aria-selected="false"
+                hidden
+              >
+                {tab.tocLabel ?? tab.label}
               </button>
             </li>
           ))
@@ -48,6 +54,14 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
 </nav>
 
 <script>
+  import { initReviewTabIndicator } from '../../lib/review/reviewTabUi.client.ts';
+
+  function initReviewTabbarChrome() {
+    const tabbar = document.querySelector<HTMLElement>('[data-tabbar].review-tabbar');
+    if (!tabbar) return;
+    initReviewTabIndicator(tabbar);
+  }
+
   function initReviewTabbarPin() {
     const tabbar = document.querySelector('[data-tabbar].review-tabbar');
     if (!tabbar || tabbar.dataset.pinBound === 'true') return;
@@ -110,8 +124,6 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
     function updatePin() {
       const headerH = header?.offsetHeight ?? 52;
       const tabbarH = tabbar.offsetHeight;
-      // Slight hysteresis: unpin a bit later when scrolling up so color
-      // doesn't flicker at the attachment threshold.
       const isPinned = tabbar.classList.contains('review-tabbar--pinned');
       const pinAt = naturalTop - headerH - 1;
       const unpinAt = naturalTop - headerH - 12;
@@ -155,8 +167,12 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
     scrollActiveTabIntoView(false);
   }
 
+  initReviewTabbarChrome();
   initReviewTabbarPin();
-  document.addEventListener('astro:page-load', initReviewTabbarPin);
+  document.addEventListener('astro:page-load', () => {
+    initReviewTabbarChrome();
+    initReviewTabbarPin();
+  });
 </script>
 
 <style>
@@ -166,7 +182,7 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
   }
 
   .review-tabbar__rail {
-    --review-tabbar-fade-bg: var(--color-background);
+    --review-tabbar-fade-bg: var(--rs-canvas, var(--color-background));
     position: relative;
     width: 100%;
     min-height: 48px;
@@ -208,7 +224,7 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
     padding: 0.85rem 0 0.95rem;
     border: 0;
     background: transparent;
-    color: color-mix(in srgb, var(--color-on-surface-variant, #64748b) 82%, transparent);
+    color: var(--rs-muted, color-mix(in srgb, var(--color-on-surface-variant, #64748b) 82%, transparent));
     font: inherit;
     font-size: 0.875rem;
     font-weight: 500;
@@ -219,31 +235,40 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
   }
 
   .review-tabbar__btn:hover {
-    color: var(--color-on-surface);
+    color: var(--rs-ink, var(--color-on-surface));
   }
 
   .review-tabbar__btn:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--rs-pink, var(--color-accent));
     outline-offset: 3px;
     border-radius: 4px;
   }
 
   .review-tabbar__btn[aria-current='true'] {
-    color: var(--color-accent);
+    color: var(--rs-ink, var(--color-on-surface));
     font-weight: 600;
   }
 
-  /* Short pink underline — stronger than a dot, quieter than a pill */
-  .review-tabbar__btn[aria-current='true']::after {
-    content: '';
+  .review-tabbar__indicator {
     position: absolute;
-    left: 50%;
+    left: 0;
     bottom: 0;
-    width: 1.75rem;
-    height: 3px;
+    height: 2px;
     border-radius: 999px;
-    background: var(--color-accent);
-    transform: translateX(-50%);
+    background: var(--rs-pink, var(--color-accent));
+    pointer-events: none;
+    z-index: 3;
+    will-change: transform, width;
+    transition:
+      transform 200ms ease-out,
+      width 200ms ease-out,
+      opacity 120ms ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .review-tabbar__indicator {
+      transition: none;
+    }
   }
 
   .review-tabbar__fade {
@@ -273,25 +298,14 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
 
   @media (min-width: 768px) {
     .review-tabbar__list {
-      justify-content: center;
-      gap: 1.75rem;
+      justify-content: flex-start;
+      gap: 2rem;
       overflow: visible;
     }
 
     .review-tabbar__btn {
-      font-size: 0.875rem;
-      font-weight: 500;
+      font-size: 1rem;
       padding: 0.9rem 0 1rem;
-      color: var(--color-on-surface-variant, #64748b);
-    }
-
-    .review-tabbar__btn[aria-current='true'] {
-      font-weight: 600;
-    }
-
-    .review-tabbar__btn[aria-current='true']::after {
-      width: 1.85rem;
-      height: 3px;
     }
 
     .review-tabbar__fade {
@@ -318,18 +332,7 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
 
     .review-tabbar__btn {
       font-size: 0.8125rem;
-      font-weight: 500;
       padding: 0.7rem 0 0.8rem;
-      color: color-mix(in srgb, var(--color-on-surface-variant, #5a4136) 72%, #9ca3af);
-    }
-
-    .review-tabbar__btn[aria-current='true'] {
-      font-weight: 600;
-    }
-
-    .review-tabbar__btn[aria-current='true']::after {
-      width: 1.5rem;
-      height: 3px;
     }
 
     .review-tabbar__fade {
@@ -337,19 +340,7 @@ const { tabs, active = tabs[0]?.id } = Astro.props;
     }
   }
 
-  [data-theme='dark'] .review-tabbar__btn {
-    color: color-mix(in srgb, var(--color-on-surface) 48%, transparent);
-  }
-
-  [data-theme='dark'] .review-tabbar__btn:hover {
-    color: var(--color-on-surface);
-  }
-
-  [data-theme='dark'] .review-tabbar__btn[aria-current='true'] {
-    color: #f472b6;
-  }
-
   .review-tabbar--pinned .review-tabbar__rail {
-    --review-tabbar-fade-bg: var(--color-header-surface);
+    --review-tabbar-fade-bg: var(--color-header-surface, var(--rs-canvas));
   }
 </style>

@@ -1,125 +1,113 @@
 ---
 import type { Product } from '../../data/products';
-import { getScoreVisual, fmtScore } from '../../lib/scores';
-import { buildReviewRatingsHash } from '../../lib/review/ratingsDeepLink';
-import ScorePill from './ScorePill.astro';
+import { fmtScore } from '../../lib/scores';
+import { getScoreBadgeColor, categoryRowIcon } from '../../lib/review-shell';
+import AffiliateLink from '../ui/AffiliateLink.astro';
 import OverallScoreTooltip from './tooltips/OverallScoreTooltip.astro';
 import CategoryScoreTooltip from './tooltips/CategoryScoreTooltip.astro';
-import InfoIcon from '../ui/InfoIcon.astro';
-import CmsField from '../cms/CmsField.astro';
-import AffiliateLink from '../ui/AffiliateLink.astro';
+import ReviewIcon from './ReviewIcon.astro';
 
 interface Props {
   product: Product;
 }
 
 const { product } = Astro.props;
-const overall = getScoreVisual(product.overallScore);
+const categories = product.categories;
+const overall = product.overallScore;
+const headerColor = getScoreBadgeColor(overall);
+const overallLabel = product.tagline || product.overallSummary || '';
+const catCount = categories.length;
+
+const ICONS: Record<string, string> = {
+  users: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10.7 5.3a2.7 2.7 0 1 1-5.4 0 2.7 2.7 0 0 1 5.4 0Z" stroke="currentColor" stroke-width="1.5"/><path d="M3 13.3c.4-2 2.2-3.3 5-3.3s4.6 1.3 5 3.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  sliders: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 5h10M3 11h10M6 3v4M10 9v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  message: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.3 10.3a1.3 1.3 0 0 1-1.3 1.4H4.2L2 13.7V3.3A1.3 1.3 0 0 1 3.3 2h8.7a1.3 1.3 0 0 1 1.3 1.3v7Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  layers: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2 2 5.3 8 8.7l6-3.4L8 2ZM2 10.7 8 14l6-3.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  image: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="1.3" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="6.2" r="1.2" stroke="currentColor" stroke-width="1.5"/><path d="M14 10 11 7l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  video: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="3.5" width="9.5" height="9" rx="1.3" stroke="currentColor" stroke-width="1.5"/><path d="M11 6.5 14.5 4v8L11 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  shield: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8.3c0 3.4-2.3 5-5.1 6-.2 0-.4 0-.6-.1C4.3 13.3 2 11.7 2 8.3V3.7c0-.4.3-.7.7-.7 1.3 0 3-1.3 4.2-2.3.3-.2.8-.2 1.1 0C9.2 1.7 10.9 2.5 12.2 3c.4 0 .7.3.7.7v4.6Z" stroke="currentColor" stroke-width="1.5"/></svg>',
+  credit: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="3.5" width="13" height="9" rx="1.3" stroke="currentColor" stroke-width="1.5"/><path d="M4 9.5h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+};
+ICONS['credit-card'] = ICONS.credit;
 ---
 
-<div class="border border-surface-variant rounded-xl overflow-hidden shadow-sm sticky top-4">
-  <div class={`${overall.bg} p-5 flex items-center gap-4 min-h-[72px]`}>
-    <span class="inline-flex items-center justify-center min-w-[3.25rem] text-3xl font-black tabular-nums">{fmtScore(product.overallScore)}</span>
-    <span class="text-lg font-bold flex items-center gap-1.5">
-      Overall Performance
-      <OverallScoreTooltip product={product} instance="sidebar">
-        <span class="inline-flex text-white/90 hover:text-white">
-          <InfoIcon size="xs" />
-        </span>
+<div class="rs-score-card">
+  <div class="rs-score-banner" style={`background:${headerColor}`}>
+    <span class="rs-score-banner-num">{overall != null ? fmtScore(overall) : '—'}</span>
+    <span class="rs-score-banner-label">
+      Overall performance
+      <OverallScoreTooltip product={product}>
+        <ReviewIcon name="info" size={16} class="rs-score-banner-info" />
       </OverallScoreTooltip>
     </span>
   </div>
-  <div class="bg-surface-container-low px-4 py-2 text-[11px] font-medium border-b border-surface-variant text-on-surface-variant">
-    <CmsField field="oneLineVerdict">{product.overallSummary}</CmsField>
-  </div>
 
-  <div class="p-4 space-y-3.5">
-    {
-      product.categories.map((category) => (
-        <div class="w-full group">
-          <a
-            href={`#${buildReviewRatingsHash(category.key)}`}
-            class="flex items-center gap-2.5 text-left w-full no-underline"
-            data-goto-category={category.key}
-          >
-            <ScorePill score={category.score} size="sm" class="shrink-0" />
-            <span class="font-bold text-on-surface group-hover:text-accent transition-colors truncate">
-              {category.name}
-            </span>
-            <CategoryScoreTooltip category={category} instance="sidebar">
-              <span class="inline-flex text-tertiary/70 group-hover:text-accent shrink-0">
-                <InfoIcon size="xs" />
-              </span>
-            </CategoryScoreTooltip>
-          </a>
-        </div>
-      ))
-    }
+  <div class="rs-score-body">
+    {overallLabel && <p class="rs-score-summary">{overallLabel}</p>}
 
-    <div class="pt-4 border-t border-surface-variant"></div>
+    <button type="button" class="rs-score-toggle" data-score-toggle aria-expanded="false">
+      <span class="rs-score-toggle-label" data-score-toggle-label>View all {catCount} category scores</span>
+      <ReviewIcon name="chevron-down" size={18} class="rs-score-chevron" />
+    </button>
 
-    <div class="pt-2">
-      <AffiliateLink
-        href={product.affiliateUrl}
-        target="_blank"
-        class="block w-full bg-brand-cta text-center py-4 rounded-xl font-black text-xl hover:opacity-90 transition shadow-lg mb-2"
-      >
-        Visit {product.name}
-      </AffiliateLink>
-      <p class="rating-sidebar__cta-note">
-        <span class="rating-sidebar__cta-note-inner">
-          <span class="material-symbols-outlined rating-sidebar__cta-note-icon" aria-hidden="true">verified_user</span>
+    <div class="rs-score-rows" data-score-rows>
+      {categories.map((cat) => {
+        const score = cat.score;
+        const color = getScoreBadgeColor(score);
+        const iconKey = categoryRowIcon(cat.key);
+        return (
           <button
             type="button"
-            class="glossary-trigger rating-sidebar__affiliate-trigger"
-            data-glossary-trigger
-            aria-expanded="false"
-            data-glossary-term="Affiliate link"
-            data-glossary-definition="A special link that lets us earn a commission if you sign up or buy something through it. You don't pay anything extra."
-            data-glossary-cta="Affiliate Disclosure"
-            data-glossary-href="/legal/affiliate-disclosure/"
-            data-glossary-eyebrow="Disclosure"
-            data-glossary-category="pricing"
+            class="rs-score-row"
+            data-tab-link="ratings"
+            data-goto-category={cat.key}
           >
-            Affiliate link
+            <span class="rs-score-ico" set:html={ICONS[iconKey] || ICONS.sliders} />
+            <span class="rs-score-row-name">
+              {cat.name}
+              <CategoryScoreTooltip category={cat} />
+            </span>
+            <span class="rs-badge" style={`background:${color}`}>{score != null ? fmtScore(score) : '—'}</span>
           </button>
-          <span aria-hidden="true">·</span>
-          <span>Secure site</span>
-        </span>
+        );
+      })}
+    </div>
+
+    <div class="rs-cta-wrap">
+      <AffiliateLink href={product.affiliateUrl} class="rs-visit" data-review-hero-cta>
+        Visit {product.name}
+        <ReviewIcon name="arrow-up-right" size={18} />
+      </AffiliateLink>
+      <p class="rs-aff-note">
+        <ReviewIcon name="shield-check" size={14} />
+        Affiliate link · secure site · never affects scores
       </p>
     </div>
   </div>
 </div>
 
-<style>
-  .rating-sidebar__cta-note {
-    margin: 0;
-    text-align: center;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--color-tertiary);
+<script>
+  function bindScoreToggle() {
+    document.querySelectorAll<HTMLElement>('[data-score-toggle]').forEach((btn) => {
+      if (btn.dataset.bound === '1') return;
+      btn.dataset.bound = '1';
+      const card = btn.closest('.rs-score-card');
+      const label = btn.querySelector('[data-score-toggle-label]');
+      const count = card?.querySelectorAll('.rs-score-row').length ?? 8;
+      btn.addEventListener('click', () => {
+        const open = card?.classList.toggle('is-expanded');
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.classList.toggle('rs-scores-expanded', Boolean(open));
+        document.querySelectorAll<HTMLElement>('[data-review-sticky-cta]').forEach((el) => {
+          el.hidden = Boolean(open);
+        });
+        if (label) {
+          label.textContent = open ? 'Hide category scores' : `View all ${count} category scores`;
+        }
+        document.dispatchEvent(new CustomEvent('rs-score-expand', { detail: { open: Boolean(open) } }));
+      });
+    });
   }
-
-  .rating-sidebar__cta-note-inner {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  .rating-sidebar__cta-note-icon {
-    font-size: 12px;
-  }
-
-  .rating-sidebar__affiliate-trigger {
-    font-size: inherit;
-    font-weight: inherit;
-    letter-spacing: inherit;
-    text-transform: inherit;
-    color: inherit;
-    text-underline-offset: 3px;
-  }
-</style>
+  bindScoreToggle();
+  document.addEventListener('astro:page-load', bindScoreToggle);
+</script>

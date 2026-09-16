@@ -1,209 +1,108 @@
 ---
 import type { Product } from '../../data/products';
-import BrandIcon from '../ui/BrandIcon.astro';
-import { brandIcons } from '../../lib/brand-icons';
+import { getAuthor } from '../../data/authors';
 
 interface Props {
   product: Product;
 }
 
 const { product } = Astro.props;
-
-if (!product.videoReview?.embedUrl) {
-  return null;
-}
-
-const modalId = `video-review-${product.slug}`;
-const embedUrl = product.videoReview.embedUrl;
-const channelUrl = product.videoReview.channelUrl ?? product.videoReview.embedUrl;
-const channelLabel = product.videoReview.channelLabel ?? 'AI Girlfriend Expert on YouTube';
+const author = product.authors[0]?.slug ? getAuthor(product.authors[0].slug) : undefined;
+const video = product.videoReview;
 ---
 
-<div class="video-review-trigger-wrap">
-  <button
-    type="button"
-    class="video-review-trigger group"
-    data-video-review-open={modalId}
-    aria-label={`Watch ${product.name} video review`}
+{video?.embedUrl && (
+  <div
+    class="video-review-lightbox"
+    id="video-review-lightbox"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="video-review-title"
   >
-    <BrandIcon
-      src={brandIcons.youtube.dark}
-      srcLight={brandIcons.youtube.light}
-      width={56}
-      height={56}
-      class="video-review-trigger__avatar"
-    />
-    <span class="video-review-trigger__ribbon">
-      Watch video review
-    </span>
-  </button>
-</div>
-
-<div
-  class="video-review-modal hidden"
-  data-video-review-modal={modalId}
-  data-video-review-embed={embedUrl}
-  aria-hidden="true"
->
-  <div class="video-review-modal__backdrop" data-video-review-close />
-  <div class="video-review-modal__panel" role="dialog" aria-modal="true" aria-label="Video review">
-    <button type="button" class="video-review-modal__close" data-video-review-close aria-label="Close">
-      <span class="material-symbols-outlined">close</span>
-    </button>
-
-    <div class="video-review-modal__hero">
-      <BrandIcon
-        src={brandIcons.youtube.dark}
-        srcLight={brandIcons.youtube.light}
-        width={72}
-        height={72}
-        class="video-review-modal__icon shrink-0"
-      />
-      <div>
-        <p class="video-review-modal__title">{product.name} full video review</p>
-        <p class="video-review-modal__by">by Herman Carter</p>
+    <div class="video-review-lightbox__backdrop" data-video-review-close></div>
+    <div class="video-review-lightbox__panel">
+      <button type="button" class="video-review-lightbox__close" data-video-review-close aria-label="Close video review">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 4l8 8M12 4 4 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+        </svg>
+      </button>
+      <div class="video-review-lightbox__frame">
+        <iframe
+          data-video-review-iframe
+          title={`${product.name} video review`}
+          src="about:blank"
+          data-src={video.embedUrl}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+        ></iframe>
+      </div>
+      <div class="video-review-lightbox__meta">
+        {author && <img src={author.avatar} alt="" width="40" height="40" />}
+        <div>
+          <p id="video-review-title">{product.name} video review</p>
+          {author && <p>with {author.name}</p>}
+        </div>
+        {video.channelUrl && (
+          <a href={video.channelUrl} target="_blank" rel="noopener noreferrer">
+            {video.channelLabel || 'Watch on YouTube'}
+          </a>
+        )}
       </div>
     </div>
-
-    <p class="video-review-modal__intro">
-      My complete hands-on review of {product.name} — chat, characters, images, video, and more.
-    </p>
-
-    <div class="video-review-modal__embed">
-      <iframe
-        src=""
-        data-video-review-iframe
-        title={`${product.name} video review`}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen
-        loading="lazy"
-      />
-    </div>
-
-    <div class="video-review-modal__actions">
-      <a
-        href={channelUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="video-review-modal__link-external"
-      >
-        <span class="link-text">{channelLabel}</span>
-        <span class="material-symbols-outlined text-[16px]">open_in_new</span>
-      </a>
-      <button type="button" class="video-review-modal__link-internal" data-tab="photos">
-        <span class="link-text">View all photos &amp; videos</span>
-        <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
-      </button>
-    </div>
   </div>
-</div>
+)}
 
 <script>
-  import { playOverlayClose, playOverlayOpen } from '../../lib/ui/overlayTransition.ts';
+  function initVideoReviewLightbox() {
+    const lightbox = document.getElementById('video-review-lightbox');
+    const iframe = lightbox?.querySelector<HTMLIFrameElement>('[data-video-review-iframe]');
+    if (!lightbox || !iframe) return;
 
-  function initVideoReview() {
-    document.querySelectorAll<HTMLElement>('[data-video-review-open]').forEach((trigger) => {
-      if (trigger.dataset.bound === 'true') return;
-      const modalId = trigger.dataset.videoReviewOpen;
-      const modal = document.querySelector<HTMLElement>(`[data-video-review-modal="${modalId}"]`);
-      const iframe = modal?.querySelector<HTMLIFrameElement>('[data-video-review-iframe]');
-      const embedUrl = modal?.dataset.videoReviewEmbed;
-      if (!modalId || !modal || !iframe || !embedUrl) return;
-      trigger.dataset.bound = 'true';
+    const openers = document.querySelectorAll<HTMLElement>('[data-video-review-open]');
+    const closers = lightbox.querySelectorAll('[data-video-review-close]');
+    const src = iframe.dataset.src || '';
+    let lastFocus: HTMLElement | null = null;
 
-      let isOpen = false;
+    const close = () => {
+      lightbox.hidden = true;
+      document.body.classList.remove('is-locked');
+      iframe.src = 'about:blank';
+      lastFocus?.focus();
+    };
 
-      const open = () => {
-        if (isOpen) return;
-        isOpen = true;
-        iframe.src = embedUrl + (embedUrl.includes('?') ? '&' : '?') + 'autoplay=1';
-        modal.classList.remove('hidden', 'is-visible');
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-        playOverlayOpen(modal);
-      };
+    const open = (trigger: HTMLElement) => {
+      lastFocus = trigger;
+      lightbox.hidden = false;
+      document.body.classList.add('is-locked');
+      iframe.src = src;
+      lightbox.querySelector<HTMLElement>('[data-video-review-close]')?.focus();
+    };
 
-      const close = () => {
-        if (!isOpen) return;
-        isOpen = false;
-        modal.setAttribute('aria-hidden', 'true');
-        playOverlayClose(modal, () => {
-          iframe.src = '';
-          modal.classList.add('hidden');
-          document.body.style.overflow = '';
-        });
-      };
-
-      trigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        open();
-      });
-
-      modal.querySelectorAll('[data-video-review-close]').forEach((el) => {
-        el.addEventListener('click', close);
-      });
-
-      modal.querySelector('[data-tab="photos"]')?.addEventListener('click', () => {
-        close();
-      });
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && isOpen) close();
+    openers.forEach((button) => {
+      if (button.dataset.bound === 'true') return;
+      button.dataset.bound = 'true';
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        open(button);
       });
     });
+
+    closers.forEach((button) => {
+      if (button.dataset.bound === 'true') return;
+      button.dataset.bound = 'true';
+      button.addEventListener('click', close);
+    });
+
+    if (lightbox.dataset.escBound !== 'true') {
+      lightbox.dataset.escBound = 'true';
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !lightbox.hidden) close();
+      });
+    }
   }
 
-  initVideoReview();
-  document.addEventListener('astro:page-load', initVideoReview);
+  document.addEventListener('DOMContentLoaded', initVideoReviewLightbox);
+  document.addEventListener('astro:page-load', initVideoReviewLightbox);
 </script>
-
-<style>
-  .video-review-trigger-wrap {
-    position: absolute;
-    bottom: 14px;
-    left: 14px;
-    z-index: 5;
-    pointer-events: none;
-  }
-
-  .video-review-trigger {
-    pointer-events: auto;
-    display: flex;
-    align-items: flex-end;
-    gap: 0;
-    border: none;
-    background: none;
-    padding: 0;
-    cursor: pointer;
-    filter: drop-shadow(0 4px 12px rgb(0 0 0 / 25%));
-    transition: transform 0.2s ease, filter 0.2s ease;
-  }
-
-  .video-review-trigger:hover {
-    transform: translateY(-2px) scale(1.02);
-    filter: drop-shadow(0 6px 16px rgb(0 0 0 / 30%));
-  }
-
-  .video-review-trigger__avatar {
-    width: 56px;
-    height: 56px;
-    object-fit: contain;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 2;
-  }
-
-  .video-review-trigger__ribbon {
-    margin-left: -10px;
-    padding: 6px 14px 6px 18px;
-    background: linear-gradient(135deg, #db2777, #be185d);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    border-radius: 0 999px 999px 0;
-    white-space: nowrap;
-    align-self: center;
-    box-shadow: 0 2px 8px rgb(219 39 119 / 35%);
-  }
-</style>

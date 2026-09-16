@@ -61,7 +61,9 @@ const { productSlug } = Astro.props;
         panel.classList.toggle('hidden', panel.dataset.tabPanel !== tab);
       });
       document.querySelectorAll('[data-tabbar] [data-tab]').forEach((btn) => {
-        btn.setAttribute('aria-current', btn.dataset.tab === tab ? 'true' : 'false');
+        const on = btn.dataset.tab === tab;
+        btn.setAttribute('aria-current', on ? 'true' : 'false');
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
       });
 
       if (state.detailLevel) {
