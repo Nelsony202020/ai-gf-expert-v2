@@ -204,6 +204,7 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
   import { hydratePanelMedia } from '../../lib/review/hydratePanelMedia.client.ts';
   import { loadRatingsPanel } from '../../lib/review/loadRatingsPanel.client.ts';
   import { subscoreSlugFromLabel } from '../../lib/review/ratingsDeepLink.ts';
+  import { swapReviewTabPanel } from '../../lib/review/reviewTabUi.client.ts';
 
   const TABBAR_OFFSET = 52;
 
@@ -225,33 +226,32 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
     const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-tab-panel]'));
 
     async function setActiveTab(id: string, scroll = true, hashOverride?: string) {
-      let matched = false;
-      let activePanel: HTMLElement | null = null;
-      panels.forEach((panel) => {
-        const isMatch = panel.dataset.tabPanel === id;
-        panel.classList.toggle('hidden', !isMatch);
-        if (isMatch) {
-          matched = true;
-          activePanel = panel;
-        }
+      const hasPanel = panels.some((panel) => panel.dataset.tabPanel === id);
+      if (!hasPanel) return;
+
+      const currentId =
+        panels.find((panel) => !panel.classList.contains('hidden'))?.dataset.tabPanel ?? null;
+      const instant = currentId === id;
+
+      tabButtons.forEach((btn) => {
+        const on = btn.dataset.tab === id;
+        btn.setAttribute('aria-current', on ? 'true' : 'false');
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
       });
-      if (!matched) return;
-      if (id === 'ratings' && activePanel) {
+      document.dispatchEvent(new CustomEvent('review-tabbar:sync-indicator'));
+
+      const activePanel = await swapReviewTabPanel(panels, id, instant);
+      if (!activePanel) return;
+
+      if (id === 'ratings') {
         try {
           await loadRatingsPanel(activePanel);
         } catch {
           /* placeholder stays visible */
         }
       }
-      tabButtons.forEach((btn) => {
-        const on = btn.dataset.tab === id;
-        btn.setAttribute('aria-current', on ? 'true' : 'false');
-        btn.setAttribute('aria-selected', on ? 'true' : 'false');
-      });
       if (history.replaceState) history.replaceState(null, '', hashOverride ?? `#${id}`);
-      if (activePanel) {
-        requestAnimationFrame(() => hydratePanelMedia(activePanel));
-      }
+      requestAnimationFrame(() => hydratePanelMedia(activePanel));
       if (scroll) {
         const y = panelsWrap.getBoundingClientRect().top + window.scrollY - getScrollOffset();
         window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });

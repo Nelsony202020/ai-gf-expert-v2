@@ -54,6 +54,14 @@ const allTabs = [...tabs, ...hiddenTabs];
 </nav>
 
 <script>
+  import { initReviewTabIndicator } from '../../lib/review/reviewTabUi.client.ts';
+
+  function initReviewTabbarChrome() {
+    const tabbar = document.querySelector<HTMLElement>('[data-tabbar].review-tabbar');
+    if (!tabbar) return;
+    initReviewTabIndicator(tabbar);
+  }
+
   function initReviewTabbarPin() {
     const tabbar = document.querySelector('[data-tabbar].review-tabbar');
     if (!tabbar || tabbar.dataset.pinBound === 'true') return;
@@ -159,8 +167,12 @@ const allTabs = [...tabs, ...hiddenTabs];
     scrollActiveTabIntoView(false);
   }
 
+  initReviewTabbarChrome();
   initReviewTabbarPin();
-  document.addEventListener('astro:page-load', initReviewTabbarPin);
+  document.addEventListener('astro:page-load', () => {
+    initReviewTabbarChrome();
+    initReviewTabbarPin();
+  });
 </script>
 
 <style>
@@ -237,15 +249,26 @@ const allTabs = [...tabs, ...hiddenTabs];
     font-weight: 600;
   }
 
-  .review-tabbar__btn[aria-current='true']::after {
-    content: '';
+  .review-tabbar__indicator {
     position: absolute;
     left: 0;
-    right: 0;
     bottom: 0;
     height: 2px;
     border-radius: 999px;
     background: var(--rs-pink, var(--color-accent));
+    pointer-events: none;
+    z-index: 3;
+    will-change: transform, width;
+    transition:
+      transform 200ms ease-out,
+      width 200ms ease-out,
+      opacity 120ms ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .review-tabbar__indicator {
+      transition: none;
+    }
   }
 
   .review-tabbar__fade {
