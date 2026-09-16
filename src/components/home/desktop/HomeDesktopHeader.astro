@@ -1,6 +1,5 @@
 ---
 import ThemeToggle from '../../ui/ThemeToggle.astro';
-import { buildBrandNav } from '../../../data/brand-nav';
 import { buildSearchIndex } from '../../../data/site-search';
 import { loadComparisonProducts } from '../../../lib/content/comparisonProducts';
 import HomeIcon from './HomeIcon.astro';
@@ -15,7 +14,6 @@ interface Props {
 const { variant = 'hero', registerAsSiteHeader = true } = Astro.props;
 const publishedProducts = await loadComparisonProducts();
 const searchIndex = buildSearchIndex(publishedProducts);
-const brandNav = buildBrandNav(publishedProducts);
 const reviewLinks = publishedProducts
   .slice()
   .sort((a, b) => a.name.localeCompare(b.name))
@@ -61,12 +59,7 @@ const reviewLinks = publishedProducts
       </button>
       <div class="home-v2__drop-panel" data-home-drop-panel hidden>
         <p class="home-v2__drop-kicker">Popular brands</p>
-        {brandNav.popular.map((brand) => (
-          <a href={brand.href}>{brand.name}</a>
-        ))}
-        {brandNav.viewAll ? (
-          <a class="home-v2__drop-all" href={brandNav.viewAll.href}>{brandNav.viewAll.label} →</a>
-        ) : null}
+        <a href="/guides/ourdream-ai/">OurDream AI</a>
       </div>
     </div>
     <a href="/guides/" class="home-v2__nav-link">Guides</a>
