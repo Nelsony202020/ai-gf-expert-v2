@@ -118,6 +118,70 @@ function renderInline(
   return decorateGlossaryPlainText(text, ctx.terms, ctx.state);
 }
 
+function richNodesPlainText(nodes: InlineNode[]): string {
+  let out = '';
+  for (const node of nodes) {
+    if (node.type === 'text') out += String(node.text ?? '');
+    else if (node.content) out += richNodesPlainText(node.content);
+  }
+  return out;
+}
+
+/** Split TipTap inline content on hard breaks (legacy line-break “lists”). */
+function splitRichOnHardBreaks(nodes: InlineNode[]): InlineNode[][] | null {
+  const lines: InlineNode[][] = [];
+  let current: InlineNode[] = [];
+  for (const node of nodes) {
+    if (node.type === 'hardBreak') {
+      lines.push(current);
+      current = [];
+    } else {
+      current.push(node);
+    }
+  }
+  lines.push(current);
+  const nonEmpty = lines.filter((line) => richNodesPlainText(line).trim().length > 0);
+  return nonEmpty.length >= 2 ? nonEmpty : null;
+}
+
+/** Avoid turning prose paragraphs with accidental newlines into lists. */
+function looksLikeSimpleListLines(textLines: string[]): boolean {
+  if (textLines.length < 2 || textLines.length > 30) return false;
+  for (const line of textLines) {
+    if (line.length > 120) return false;
+    if (line.length > 72 && /[.!?]/.test(line)) return false;
+  }
+  return true;
+}
+
+function renderSimpleBulletList(textLines: string[], richLines: InlineNode[][] | null): string {
+  const lis: string[] = [];
+  for (let i = 0; i < textLines.length; i++) {
+    const rich = richLines?.[i];
+    const inner = rich ? renderRichNodes(rich, null) : escapeHtml(textLines[i]);
+    lis.push(`<li>${inner}</li>`);
+  }
+  return `<ul class="review-list">${lis.join('')}</ul>`;
+}
+
+function paragraphAsBulletListIfNeeded(data: Record<string, unknown>): string | null {
+  if (isInlineArray(data.rich)) {
+    const richLines = splitRichOnHardBreaks(data.rich);
+    if (richLines) {
+      const texts = richLines.map((line) => richNodesPlainText(line).trim());
+      if (looksLikeSimpleListLines(texts)) return renderSimpleBulletList(texts, richLines);
+    }
+  }
+  const text = String(data.text ?? '').trim();
+  if (!text.includes('\n')) return null;
+  const texts = text
+    .split(/\r?\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!looksLikeSimpleListLines(texts)) return null;
+  return renderSimpleBulletList(texts, null);
+}
+
 function headingLevel(type: string, data: Record<string, unknown>): 2 | 3 | 4 {
   if (type === 'h2') return 2;
   if (type === 'h4') return 4;
@@ -378,6 +442,11 @@ export function renderReviewBlocksHtml(
                 : '';
             parts.push(`<div class="review-image-row"${galleryAttr}>${figures.join('')}</div>`);
           }
+          break;
+        }
+        const asList = paragraphAsBulletListIfNeeded(data);
+        if (asList) {
+          parts.push(asList);
           break;
         }
         const inner = renderInline(data, glossary);

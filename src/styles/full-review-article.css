@@ -487,19 +487,29 @@
 
 .review-blocks ul.review-list,
 .review-blocks ol.review-list,
-.review-section ul {
+.review-section ul:not([class]) {
   margin: 0;
   padding: 0 0 0 27px;
   font-size: 17px;
   line-height: 28px;
   letter-spacing: -0.1px;
   color: var(--fr-ink);
+  list-style-position: outside;
+}
+
+.review-blocks ul.review-list,
+.review-section ul:not([class]) {
+  list-style-type: disc;
+}
+
+.review-blocks ol.review-list {
+  list-style-type: decimal;
 }
 
 @media (min-width: 768px) {
   .review-blocks ul.review-list,
   .review-blocks ol.review-list,
-  .review-section ul {
+  .review-section ul:not([class]) {
     font-size: 18px;
     line-height: 31px;
   }
