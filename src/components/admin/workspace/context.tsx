@@ -173,7 +173,6 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
     try {
       r = await dataApi.get('products', productId);
     } catch (e) {
-      // Parallel workspace requests can briefly fail token verify under load; retry once.
       if (e instanceof ApiError && e.status === 401) {
         await new Promise((resolve) => setTimeout(resolve, 400));
         r = await dataApi.get('products', productId);
@@ -205,19 +204,19 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
         rows.filter((r) => linkedEntityId(r.product) === productId);
       const settled = await Promise.allSettled([
         dataApi.list('authors'),
-        dataApi.list('media'),
-        dataApi.list('testRuns'),
-        dataApi.list('subscriptionPlans'),
-        dataApi.list('creditPackages'),
-        dataApi.list('paymentProfiles'),
-        dataApi.list('characters'),
-        dataApi.list('affiliateLinks'),
-        dataApi.list('reviews'),
+        dataApi.list('media', { productId }),
+        dataApi.list('testRuns', { productId }),
+        dataApi.list('subscriptionPlans', { productId }),
+        dataApi.list('creditPackages', { productId }),
+        dataApi.list('paymentProfiles', { productId }),
+        dataApi.list('characters', { productId }),
+        dataApi.list('affiliateLinks', { productId }),
+        dataApi.list('reviews', { productId }),
         dataApi.list('categories'),
         api.get<{ history: ScoreHistoryRun[] }>(`/api/admin/products/${productId}/score-history`),
-        dataApi.list('pricingSnapshots'),
-        dataApi.list('featureCosts'),
-        dataApi.list('pricingPromotions'),
+        dataApi.list('pricingSnapshots', { productId }),
+        dataApi.list('featureCosts', { productId }),
+        dataApi.list('pricingPromotions', { productId }),
       ]);
       const rows = (i: number): EntityRow[] =>
         settled[i].status === 'fulfilled'
