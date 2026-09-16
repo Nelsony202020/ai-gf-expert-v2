@@ -1,6 +1,4 @@
 import { defineMiddleware } from 'astro:middleware';
-import { isReviewSafeView } from './lib/safe-view/params';
-import { safeViewResponse } from './lib/safe-view/respond';
 import { getPageOverrides, normalizeOverridePath } from './lib/seo/pageOverrides';
 
 const NOT_FOUND_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>404 · AI Girlfriend Expert</title><meta name="robots" content="noindex"></head>
@@ -14,10 +12,6 @@ const NOT_FOUND_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-
  * never breaks a build; at runtime drafted pages 404 like any unknown URL.
  */
 export const onRequest = defineMiddleware(async (context, next) => {
-  if (isReviewSafeView(context.url)) {
-    return safeViewResponse(context.url);
-  }
-
   if (import.meta.env.PROD && context.isPrerendered) return next();
 
   const path = context.url.pathname;

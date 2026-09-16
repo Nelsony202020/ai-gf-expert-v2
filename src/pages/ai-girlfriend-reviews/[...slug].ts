@@ -4,10 +4,7 @@ import type { APIRoute } from 'astro';
 
 /**
  * Legacy WordPress review URLs still live in YouTube descriptions:
- *   /ai-girlfriend-reviews/<brand>-review  →  /reviews/<brand>/?safe=1
- *
- * The ?safe=1 param makes the review answer with the standalone 18+
- * interstitial first, which is what YouTube-referred traffic should see.
+ *   /ai-girlfriend-reviews/<brand>-review  →  /reviews/<brand>/
  */
 export const GET: APIRoute = async ({ params }) => {
   const raw = params.slug;
@@ -22,6 +19,6 @@ export const GET: APIRoute = async ({ params }) => {
   const reviewSlug = slug.replace(/-review$/, '');
   return new Response(null, {
     status: 301,
-    headers: { Location: `/reviews/${reviewSlug}/?safe=1` },
+    headers: { Location: `/reviews/${reviewSlug}/` },
   });
 };

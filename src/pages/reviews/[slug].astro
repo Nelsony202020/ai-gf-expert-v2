@@ -28,20 +28,9 @@ import {
 import { resolveProductPageHead } from '../../lib/seo/productPageHead';
 import JsonLd from '../../components/seo/JsonLd.astro';
 import { buildReviewProductSchema } from '../../lib/seo/jsonld';
-import { isReviewSafeView } from '../../lib/safe-view/params';
-import { safeViewResponse } from '../../lib/safe-view/respond';
-
-/**
- * On-demand so `?safe=1` can return a standalone interstitial without the
- * prerendered review HTML (and without requesting review media).
- */
 export const prerender = false;
 
 const { slug } = Astro.params;
-
-if (isReviewSafeView(Astro.url)) {
-  return safeViewResponse(Astro.url);
-}
 
 const pageLoad = slug ? await loadReviewPageProduct(slug) : null;
 

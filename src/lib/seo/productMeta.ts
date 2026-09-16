@@ -1,4 +1,4 @@
-import { SAFE_REVIEW_SOCIAL_IMAGE_PATH } from '../safe-view/socialImage';
+import { SAFE_REVIEW_SOCIAL_IMAGE_PATH } from './reviewSocialImage';
 import { resolveSeoTemplate, type SeoTemplateContext } from './templateTags';
 
 export interface ProductSeoFields {

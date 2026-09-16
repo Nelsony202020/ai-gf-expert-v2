@@ -1,7 +1,7 @@
 import { cdnAsset } from '../media/cdn';
 import { PRODUCTION_SITE_ORIGIN } from '../siteOrigin';
 
-/** Safe branded social card — never a gallery, character, or review screenshot. */
+/** Branded social card for review OG tags — not a gallery or character screenshot. */
 export const SAFE_REVIEW_SOCIAL_IMAGE_PATH = '/brand/herman-youtube-review.png';
 
 export function safeReviewSocialImageUrl(origin = PRODUCTION_SITE_ORIGIN): string {
