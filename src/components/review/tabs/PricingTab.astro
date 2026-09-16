@@ -398,7 +398,7 @@ const defaultSubline = (() => {
   return `${planName} subscription`;
 })();
 const estimateTitle = defaultUsage
-  ? `How we estimated ${defaultUsage.costLabel} a month`
+  ? `How we estimated ${defaultUsage.costLabel.replace(/\/mo$/, '')} a month`
   : 'How we estimated this month';
 const estimateSummary = defaultUsage?.description ?? usageIntro ?? '';
 const compactCompare = vm.compareRows.slice(0, 2);
@@ -1330,186 +1330,107 @@ const compactCompare = vm.compareRows.slice(0, 2);
           </button>
           <div class="pt2-disclose__panel" hidden>
             <span hidden data-pt-usage-calc-summary></span>
-            <div class="pt-usage-math" data-pt-usage-calc>
-                                <p class="pt-usage-math__heading" data-pt-usage-calc-heading>
-                                  {defaultCalculation.heading}
-                                </p>
-                                <p class="pt-usage-math__intro" data-pt-usage-calc-intro>
-                                  {defaultCalculation.intro}
-                                </p>
+            <div class="pt2-calc" data-pt2-calc data-pt-usage-calc>
+              <section class="pt2-calc__step">
+                <p class="pt2-calc__kicker">Step 1</p>
+                <h4 class="pt2-calc__h">What {defaultCalculation.levelName} looks like</h4>
+                <p class="pt2-calc__lead">The usage pattern we model for a typical paying reader.</p>
+                <div class="pt2-calc__cards">
+                  {defaultCalculation.features
+                    .filter((row) => row.key !== 'chat' && row.monthlyTotalLabel)
+                    .map((row) => (
+                      <article class={`pt2-calc__card is-${row.accent ?? row.key}`}>
+                        <p class="pt2-calc__card-name">
+                          <span class="pt2-calc__dot" aria-hidden="true" />
+                          {row.label}
+                        </p>
+                        {row.patternLead && <p class="pt2-calc__card-lead">{row.patternLead}</p>}
+                        <p class="pt2-calc__card-total">{row.monthlyTotalLabel}</p>
+                      </article>
+                    ))}
+                </div>
+                {defaultCalculation.chatIncludedNote && (
+                  <p class="pt2-calc__note">{defaultCalculation.chatIncludedNote}</p>
+                )}
+              </section>
 
-                                <section class="pt-usage-math__block">
-                                  <div class="pt-usage-math__step">
-                                    <span class="pt-usage-math__num" aria-hidden="true">1</span>
-                                    <div>
-                                      <p class="pt-label pt-usage-math__block-title">Usage assumptions</p>
-                                      <p class="pt-usage-math__block-lead">
-                                        This is the daily usage pattern we used for the estimate.
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <ul class="pt-usage-math__chips" data-pt-usage-calc-chips>
-                                    {
-                                      ['chat', 'images', 'videos', 'voice']
-                                        .map((key) => defaultCalculation.features.find((row) => row.key === key))
-                                        .filter(Boolean)
-                                        .map((row) => {
-                                          const parts = withUnit(row!.assumptionLabel);
-                                          return (
-                                          <li class="pt-usage-math__chip">
-                                            <span class="material-symbols-outlined" aria-hidden="true">
-                                              {row!.icon}
-                                            </span>
-                                            <span class="pt-usage-math__chip-label">{row!.label}</span>
-                                            <span class="pt-usage-math__chip-value">
-                                              {parts.main}
-                                              {parts.unit && <span class="pt-unit">{parts.unit}</span>}
-                                            </span>
-                                          </li>
-                                          );
-                                        })
-                                    }
-                                  </ul>
-                                </section>
+              <section class="pt2-calc__step">
+                <p class="pt2-calc__kicker">Step 2</p>
+                <h4 class="pt2-calc__h">How many credits that uses</h4>
+                <p class="pt2-calc__lead">These features drive the total.</p>
+                <div class="pt2-calc__eqs">
+                  {defaultCalculation.features
+                    .filter((row) => row.cost > 0 && row.qtyPhrase && row.ratePhrase)
+                    .map((row) => (
+                      <div class={`pt2-calc__eq is-${row.accent ?? row.key}`}>
+                        <p class="pt2-calc__eq-k">{row.label}</p>
+                        <p class="pt2-calc__eq-line">
+                          <span>{row.qtyPhrase}</span>
+                          <span class="pt2-calc__op">×</span>
+                          <span>{row.ratePhrase}</span>
+                          <span class="pt2-calc__op">=</span>
+                          <strong>{row.costLabel}</strong>
+                        </p>
+                      </div>
+                    ))}
+                </div>
+                <p class="pt2-calc__total-pill">
+                  <span>Total monthly usage</span>
+                  <strong data-pt-usage-calc-media>{defaultCalculation.requiredCreditsLabel}</strong>
+                </p>
+              </section>
 
-                                <section class="pt-usage-math__block">
-                                  <div class="pt-usage-math__step">
-                                    <span class="pt-usage-math__num" aria-hidden="true">2</span>
-                                    <div>
-                                      <p class="pt-label pt-usage-math__block-title">Estimated feature cost</p>
-                                      <p class="pt-usage-math__block-lead">
-                                        Monthly cost for this usage pattern.
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <table class="pt-usage-math__table">
-                                    <thead>
-                                      <tr>
-                                        <th scope="col">Feature</th>
-                                        <th scope="col">Estimated monthly cost</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody data-pt-usage-calc-features>
-                                      {
-                                        defaultCalculation.features.map((row) => (
-                                          <tr>
-                                            <th scope="row">
-                                              <span class="pt-usage-math__feat">
-                                                <span class="material-symbols-outlined" aria-hidden="true">
-                                                  {row.icon}
-                                                </span>
-                                                {row.label}
-                                              </span>
-                                            </th>
-                                            <td>
-                                              {(() => {
-                                                const parts = withUnit(row.costLabel);
-                                                return (
-                                                  <>
-                                                    {parts.main}
-                                                    {parts.unit && <span class="pt-unit">{parts.unit}</span>}
-                                                  </>
-                                                );
-                                              })()}
-                                            </td>
-                                          </tr>
-                                        ))
-                                      }
-                                      <tr class="pt-usage-math__row--subtotal">
-                                        <th scope="row">Total feature usage</th>
-                                        <td data-pt-usage-calc-media>{defaultCalculation.mediaValueLabel}</td>
-                                      </tr>
-                                    </tbody>
-                                  </table>
-
-                                  <details class="pt-usage-math__show-math">
-                                    <summary>
-                                      See calculation details
-                                      <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-                                    </summary>
-                                    <div class="pt-usage-math__details" data-pt-usage-calc-math>
-                                      {
-                                        defaultCalculation.features
-                                          .filter((row) => row.mathDetail)
-                                          .map((row) => (
-                                            <div class="pt-usage-math__detail">
-                                              <p class="pt-usage-math__detail-label">{row.label}</p>
-                                              <p class="pt-usage-math__detail-body">{row.mathDetail}</p>
-                                            </div>
-                                          ))
-                                      }
-                                    </div>
-                                  </details>
-                                </section>
-
-                                <section class="pt-usage-math__block pt-usage-math__block--final">
-                                  <div class="pt-usage-math__step">
-                                    <span class="pt-usage-math__num" aria-hidden="true">3</span>
-                                    <div>
-                                      <p class="pt-label pt-usage-math__block-title">Final monthly estimate</p>
-                                      <p class="pt-usage-math__block-lead">
-                                        From usage cost to what you’ll actually pay.
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <table class="pt-usage-math__summary">
-                                    <tbody>
-                                      <tr>
-                                        <th scope="row">Usage requires</th>
-                                        <td data-pt-usage-calc-media-2>{defaultCalculation.requiredCreditsLabel}</td>
-                                      </tr>
-                                      <tr>
-                                        <th scope="row">Included with plan</th>
-                                        <td data-pt-usage-calc-included>{defaultCalculation.includedCreditsLabel}</td>
-                                      </tr>
-                                      <tr class="pt-usage-math__row--extra">
-                                        <th scope="row">Extra credits needed</th>
-                                        <td data-pt-usage-calc-extra>{defaultCalculation.extraCreditsLabel}</td>
-                                      </tr>
-                                      {
-                                        defaultCalculation.packageLines.length > 0 && (
-                                          <>
-                                            <tr>
-                                              <th scope="row" colspan="2">Cheapest top-up combination</th>
-                                            </tr>
-                                            {
-                                              defaultCalculation.packageLines.map((line) => (
-                                                <tr>
-                                                  <th scope="row">{line.creditsLabel}</th>
-                                                  <td>{line.priceLabel}</td>
-                                                </tr>
-                                              ))
-                                            }
-                                            <tr>
-                                              <th scope="row">Credits purchased</th>
-                                              <td>{defaultCalculation.purchasedCreditsLabel}</td>
-                                            </tr>
-                                            <tr>
-                                              <th scope="row">Credits left over</th>
-                                              <td>{defaultCalculation.leftoverCreditsLabel}</td>
-                                            </tr>
-                                          </>
-                                        )
-                                      }
-                                      <tr>
-                                        <th scope="row">Top-up spend</th>
-                                        <td>{defaultCalculation.topUpCostLabel}</td>
-                                      </tr>
-                                      <tr>
-                                        <th scope="row">Monthly subscription</th>
-                                        <td data-pt-usage-calc-plan>{defaultCalculation.planCostLabel}</td>
-                                      </tr>
-                                      <tr class="pt-usage-math__row--total">
-                                        <th scope="row">Estimated monthly spend</th>
-                                        <td data-pt-usage-calc-total>{defaultCalculation.totalLabel}</td>
-                                      </tr>
-                                    </tbody>
-                                  </table>
-                                  <p class="pt-usage-math__disclaimer">
-                                    Top-up costs use the cheapest credit packs you can actually buy.
-                                  </p>
-                                </section>
-                              </div>
+              <section class="pt2-calc__step">
+                <p class="pt2-calc__kicker">Step 3</p>
+                <h4 class="pt2-calc__h">What you’ll actually pay</h4>
+                <div class="pt2-calc__pay">
+                  <div class="pt2-calc__pay-card">
+                    <p>
+                      <strong data-pt-usage-calc-media-2>{defaultCalculation.requiredCreditsLabel}</strong>
+                      <span>needed for {defaultCalculation.levelName}</span>
+                    </p>
+                    <p>
+                      <strong data-pt-usage-calc-included>
+                        {defaultCalculation.includedCredits.toLocaleString('en-US')} credits
+                      </strong>
+                      <span>included with {defaultCalculation.planName}</span>
+                    </p>
+                    <p>
+                      <strong data-pt-usage-calc-extra>{defaultCalculation.extraCreditsLabel}</strong>
+                      <span>still to buy</span>
+                    </p>
+                  </div>
+                  <div class="pt2-calc__pay-card">
+                    <p class="pt2-calc__micro">Smallest pack combination you can buy</p>
+                    <p class="pt2-calc__pack-head" data-pt-usage-calc-pack>
+                      {defaultCalculation.packHeadline ?? 'No top-up needed'}
+                    </p>
+                    {defaultCalculation.packFoot && (
+                      <p class="pt2-calc__card-lead" data-pt-usage-calc-pack-foot>{defaultCalculation.packFoot}</p>
+                    )}
+                  </div>
+                </div>
+                <div class="pt2-calc__banner">
+                  <p class="pt2-calc__micro">Estimated {defaultCalculation.levelName} cost</p>
+                  <p class="pt2-calc__banner-price">
+                    <span data-pt-usage-calc-total>{defaultCalculation.totalLabel.replace(/\/mo$/, '')}</span>
+                    <span class="pt2-calc__banner-u">/ month</span>
+                  </p>
+                  <p class="pt2-calc__banner-sub">
+                    <span data-pt-usage-calc-plan>{defaultCalculation.planCostLabel}</span>
+                    {' '}
+                    {defaultCalculation.planName}
+                    {defaultCalculation.topUpCost > 0 && (
+                      <>
+                        {' + '}
+                        <span data-pt-usage-calc-topup>{defaultCalculation.topUpCostLabel}</span>
+                        {' credit top-ups'}
+                      </>
+                    )}
+                  </p>
+                </div>
+              </section>
+            </div>
           </div>
         </div>
       )}
@@ -1527,30 +1448,41 @@ const compactCompare = vm.compareRows.slice(0, 2);
             </span>
           </button>
           <div class="pt2-disclose__panel" hidden>
-            <ul class="pt-feature-list">
-            {
-              vm.featureCosts.map((row) => {
-                const parts = withUnit(row.value);
-                return (
-                  <li class="pt-feature-row">
-                    <span class="pt-feature-row__icon" aria-hidden="true">
-                      <span class="material-symbols-outlined">{row.icon}</span>
-                    </span>
-                    <span class="pt-feature-row__label">{row.label}</span>
-                    <span class="pt-feature-row__value">
-                      <span class="pt-feature-row__amount">
-                        {parts.main}
-                        {parts.unit && <span class="pt-unit">{parts.unit}</span>}
-                      </span>
-                      {row.secondaryValue && (
-                        <span class="pt-feature-row__secondary">{row.secondaryValue}</span>
-                      )}
-                    </span>
-                  </li>
-                );
-              })
-            }
-          </ul>
+            <table class="pt2-cost-table">
+              <thead>
+                <tr>
+                  <th scope="col">Feature</th>
+                  <th scope="col">Credits</th>
+                  <th scope="col">Approx. cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  vm.featureCosts.map((row) => (
+                    <tr>
+                      <th scope="row">{row.label}</th>
+                      <td>{row.secondaryValue || '—'}</td>
+                      <td>{row.value}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+            {defaultBudget && defaultBudget.credits != null && defaultBudget.items.length > 0 && (
+              <div class="pt2-buys">
+                <p class="pt2-calc__h">
+                  What {defaultBudget.credits.toLocaleString('en-US')} credits buys, spent on one thing only
+                </p>
+                <div class="pt2-buys__row">
+                  {defaultBudget.items.map((item) => (
+                    <div class="pt2-buys__item">
+                      <p class="pt2-buys__n">{item.amount ?? item.value}</p>
+                      <p class="pt2-buys__l">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {vm.pricingEvidence?.featureCosts && (
               <p class="pt2-evidence">
                 <button
@@ -1582,18 +1514,13 @@ const compactCompare = vm.compareRows.slice(0, 2);
           </button>
           <div class="pt2-disclose__panel" hidden>
             <div class="pt-topups" data-pt-topups>
-                      <header class="pt-section-head">
-                        <p class="pt-eyebrow">Top-ups</p>
-                        <h3 class="pt-title">{vm.topUps.heading}</h3>
-                        <p class="pt-lead pt-lead--tight">{vm.topUps.intro}</p>
-                      </header>
                       <div class="pt-topups__scroll">
-                        <table class="pt-topups__table">
+                        <table class="pt-topups__table pt2-cost-table">
                           <thead>
                             <tr>
                               <th scope="col">Credits you get</th>
                               <th scope="col">Price</th>
-                              <th scope="col">{vm.topUps.valueColumnLabel || 'Value'}</th>
+                              <th scope="col">{vm.topUps.valueColumnLabel || 'Value vs the 1,000 pack'}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -6406,8 +6333,14 @@ const compactCompare = vm.compareRows.slice(0, 2);
       icon: string;
       assumptionLabel: string;
       unitCostLabel: string;
+      cost: number;
       costLabel: string;
       mathDetail: string | null;
+      patternLead?: string | null;
+      monthlyTotalLabel?: string | null;
+      qtyPhrase?: string | null;
+      ratePhrase?: string | null;
+      accent?: string;
     };
 
     type UsageCalculation = {
@@ -6421,12 +6354,20 @@ const compactCompare = vm.compareRows.slice(0, 2);
       requiredCreditsLabel?: string;
       includedCreditsLabel?: string;
       extraCreditsLabel?: string;
+      includedCredits: number;
+      extraCredits: number;
       packageLines?: Array<{ creditsLabel: string; priceLabel: string }>;
       purchasedCreditsLabel?: string;
       leftoverCreditsLabel?: string;
       planCostLabel: string;
       topUpCostLabel: string;
+      topUpCost: number;
       totalLabel: string;
+      levelName: string;
+      planName: string;
+      chatIncludedNote: string | null;
+      packHeadline: string | null;
+      packFoot: string | null;
     };
 
     type UsageDetail = {
@@ -6475,18 +6416,7 @@ const compactCompare = vm.compareRows.slice(0, 2);
     const character = root.querySelector<HTMLElement>('[data-pt-usage-detail-character]');
 
     const calcSummary = root.querySelector<HTMLElement>('[data-pt-usage-calc-summary]');
-    const calcHeading = root.querySelector<HTMLElement>('[data-pt-usage-calc-heading]');
-    const calcIntro = root.querySelector<HTMLElement>('[data-pt-usage-calc-intro]');
-    const calcChips = root.querySelector<HTMLElement>('[data-pt-usage-calc-chips]');
-    const calcFeatures = root.querySelector<HTMLElement>('[data-pt-usage-calc-features]');
-    const calcMath = root.querySelector<HTMLElement>('[data-pt-usage-calc-math]');
-    const calcMedia2 = root.querySelector<HTMLElement>('[data-pt-usage-calc-media-2]');
-    const calcIncluded = root.querySelector<HTMLElement>('[data-pt-usage-calc-included]');
-    const calcExtra = root.querySelector<HTMLElement>('[data-pt-usage-calc-extra]');
-    const calcPlan = root.querySelector<HTMLElement>('[data-pt-usage-calc-plan]');
-    const calcTotal = root.querySelector<HTMLElement>('[data-pt-usage-calc-total]');
-
-    const chipOrder = ['chat', 'images', 'videos', 'voice'];
+    const calcRoot = root.querySelector<HTMLElement>('[data-pt2-calc]');
 
     function escapeHtml(value: string): string {
       return value
@@ -6520,103 +6450,71 @@ const compactCompare = vm.compareRows.slice(0, 2);
 
     function renderCalculation(calc: UsageCalculation) {
       if (calcSummary) calcSummary.textContent = calc.summaryLabel;
-      if (calcHeading) calcHeading.textContent = calc.heading;
-      if (calcIntro) calcIntro.textContent = calc.intro;
+      if (!calcRoot) return;
+      const patternCards = calc.features
+        .filter((row) => row.key !== 'chat' && row.monthlyTotalLabel)
+        .map(
+          (row) => `<article class="pt2-calc__card is-${escapeHtml(row.accent ?? row.key)}">
+            <p class="pt2-calc__card-name"><span class="pt2-calc__dot" aria-hidden="true"></span>${escapeHtml(row.label)}</p>
+            ${row.patternLead ? `<p class="pt2-calc__card-lead">${escapeHtml(row.patternLead)}</p>` : ''}
+            <p class="pt2-calc__card-total">${escapeHtml(row.monthlyTotalLabel!)}</p>
+          </article>`,
+        )
+        .join('');
+      const eqRows = calc.features
+        .filter((row) => row.cost > 0 && row.qtyPhrase && row.ratePhrase)
+        .map(
+          (row) => `<div class="pt2-calc__eq is-${escapeHtml(row.accent ?? row.key)}">
+            <p class="pt2-calc__eq-k">${escapeHtml(row.label)}</p>
+            <p class="pt2-calc__eq-line"><span>${escapeHtml(row.qtyPhrase!)}</span><span class="pt2-calc__op">×</span><span>${escapeHtml(row.ratePhrase!)}</span><span class="pt2-calc__op">=</span><strong>${escapeHtml(row.costLabel)}</strong></p>
+          </div>`,
+        )
+        .join('');
       const reqLabel = calc.requiredCreditsLabel ?? calc.mediaValueLabel;
-      const incLabel = calc.includedCreditsLabel ?? calc.includedValueLabel;
       const extraLabel = calc.extraCreditsLabel ?? calc.extraValueLabel;
-      if (calcMedia2) calcMedia2.textContent = reqLabel;
-      if (calcIncluded) calcIncluded.textContent = incLabel;
-      if (calcExtra) calcExtra.textContent = extraLabel;
-      if (calcPlan) calcPlan.textContent = calc.planCostLabel;
-      if (calcTotal) calcTotal.textContent = calc.totalLabel;
-
-      const summaryTable = root.querySelector<HTMLTableElement>('.pt-usage-math__summary');
-      if (summaryTable) {
-        const packageRows =
-          (calc.packageLines ?? [])
-            .map(
-              (line) => `<tr>
-                <th scope="row">${escapeHtml(line.creditsLabel)}</th>
-                <td>${escapeHtml(line.priceLabel)}</td>
-              </tr>`,
-            )
-            .join('') || '';
-        const comboHeader =
-          (calc.packageLines?.length ?? 0) > 0
-            ? `<tr><th scope="row" colspan="2">Cheapest top-up combination</th></tr>`
-            : '';
-        const purchased =
-          calc.purchasedCreditsLabel != null
-            ? `<tr><th scope="row">Credits purchased</th><td>${escapeHtml(calc.purchasedCreditsLabel)}</td></tr>`
-            : '';
-        const leftover =
-          calc.leftoverCreditsLabel != null
-            ? `<tr><th scope="row">Credits left over</th><td>${escapeHtml(calc.leftoverCreditsLabel)}</td></tr>`
-            : '';
-        summaryTable.innerHTML = `<tbody>
-          <tr><th scope="row">Usage requires</th><td data-pt-usage-calc-media-2>${escapeHtml(reqLabel)}</td></tr>
-          <tr><th scope="row">Included with plan</th><td data-pt-usage-calc-included>${escapeHtml(incLabel)}</td></tr>
-          <tr class="pt-usage-math__row--extra"><th scope="row">Extra credits needed</th><td data-pt-usage-calc-extra>${escapeHtml(extraLabel)}</td></tr>
-          ${comboHeader}${packageRows}${purchased}${leftover}
-          <tr><th scope="row">Top-up spend</th><td>${escapeHtml(calc.topUpCostLabel)}</td></tr>
-          <tr><th scope="row">Monthly subscription</th><td data-pt-usage-calc-plan>${escapeHtml(calc.planCostLabel)}</td></tr>
-          <tr class="pt-usage-math__row--total"><th scope="row">Estimated monthly spend</th><td data-pt-usage-calc-total>${escapeHtml(calc.totalLabel)}</td></tr>
-        </tbody>`;
-        stampAstroScope(summaryTable, scopeAttr);
-      }
-
-      if (calcChips) {
-        const byKey = new Map(calc.features.map((row) => [row.key, row]));
-        calcChips.innerHTML = chipOrder
-          .map((key) => byKey.get(key))
-          .filter(Boolean)
-          .map(
-            (row) => `<li class="pt-usage-math__chip">
-              <span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(row!.icon)}</span>
-              <span class="pt-usage-math__chip-label">${escapeHtml(row!.label)}</span>
-              <span class="pt-usage-math__chip-value">${unitHtml(row!.assumptionLabel)}</span>
-            </li>`,
-          )
-          .join('');
-        stampAstroScope(calcChips, scopeAttr);
-      }
-
-      if (calcFeatures) {
-        const featureRows = calc.features
-          .map(
-            (row) => `<tr>
-              <th scope="row">
-                <span class="pt-usage-math__feat">
-                  <span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(row.icon)}</span>
-                  ${escapeHtml(row.label)}
-                </span>
-              </th>
-              <td>${unitHtml(row.costLabel)}</td>
-            </tr>`,
-          )
-          .join('');
-
-        calcFeatures.innerHTML = `${featureRows}
-          <tr class="pt-usage-math__row--subtotal">
-            <th scope="row">Total feature credits</th>
-            <td data-pt-usage-calc-media>${escapeHtml(reqLabel)}</td>
-          </tr>`;
-        stampAstroScope(calcFeatures, scopeAttr);
-      }
-
-      if (calcMath) {
-        calcMath.innerHTML = calc.features
-          .filter((row) => row.mathDetail)
-          .map(
-            (row) => `<div class="pt-usage-math__detail">
-              <p class="pt-usage-math__detail-label">${escapeHtml(row.label)}</p>
-              <p class="pt-usage-math__detail-body">${escapeHtml(row.mathDetail!)}</p>
-            </div>`,
-          )
-          .join('');
-        stampAstroScope(calcMath, scopeAttr);
-      }
+      const includedPlain = `${calc.includedCredits.toLocaleString('en-US')} credits`;
+      const totalDisplay = calc.totalLabel.replace(/\/mo$/, '');
+      const topUpLine =
+        calc.topUpCost > 0
+          ? ` + <span data-pt-usage-calc-topup>${escapeHtml(calc.topUpCostLabel)}</span> credit top-ups`
+          : '';
+      calcRoot.innerHTML = `
+        <section class="pt2-calc__step">
+          <p class="pt2-calc__kicker">Step 1</p>
+          <h4 class="pt2-calc__h">What ${escapeHtml(calc.levelName)} looks like</h4>
+          <p class="pt2-calc__lead">The usage pattern we model for a typical paying reader.</p>
+          <div class="pt2-calc__cards">${patternCards}</div>
+          ${calc.chatIncludedNote ? `<p class="pt2-calc__note">${escapeHtml(calc.chatIncludedNote)}</p>` : ''}
+        </section>
+        <section class="pt2-calc__step">
+          <p class="pt2-calc__kicker">Step 2</p>
+          <h4 class="pt2-calc__h">How many credits that uses</h4>
+          <p class="pt2-calc__lead">These features drive the total.</p>
+          <div class="pt2-calc__eqs">${eqRows}</div>
+          <p class="pt2-calc__total-pill"><span>Total monthly usage</span><strong>${escapeHtml(reqLabel)}</strong></p>
+        </section>
+        <section class="pt2-calc__step">
+          <p class="pt2-calc__kicker">Step 3</p>
+          <h4 class="pt2-calc__h">What you’ll actually pay</h4>
+          <div class="pt2-calc__pay">
+            <div class="pt2-calc__pay-card">
+              <p><strong>${escapeHtml(reqLabel)}</strong><span>needed for ${escapeHtml(calc.levelName)}</span></p>
+              <p><strong>${escapeHtml(includedPlain)}</strong><span>included with ${escapeHtml(calc.planName)}</span></p>
+              <p><strong>${escapeHtml(extraLabel)}</strong><span>still to buy</span></p>
+            </div>
+            <div class="pt2-calc__pay-card">
+              <p class="pt2-calc__micro">Smallest pack combination you can buy</p>
+              <p class="pt2-calc__pack-head">${escapeHtml(calc.packHeadline ?? 'No top-up needed')}</p>
+              ${calc.packFoot ? `<p class="pt2-calc__card-lead">${escapeHtml(calc.packFoot)}</p>` : ''}
+            </div>
+          </div>
+          <div class="pt2-calc__banner">
+            <p class="pt2-calc__micro">Estimated ${escapeHtml(calc.levelName)} cost</p>
+            <p class="pt2-calc__banner-price"><span>${escapeHtml(totalDisplay)}</span><span class="pt2-calc__banner-u">/ month</span></p>
+            <p class="pt2-calc__banner-sub"><span>${escapeHtml(calc.planCostLabel)}</span> ${escapeHtml(calc.planName)}${topUpLine}</p>
+          </div>
+        </section>`;
+      stampAstroScope(calcRoot, scopeAttr);
     }
 
     function selectTier(id: string) {
@@ -6650,7 +6548,9 @@ const compactCompare = vm.compareRows.slice(0, 2);
         }
       }
       const estimateTitleEl = root.querySelector<HTMLElement>('[data-pt-estimate-title]');
-      if (estimateTitleEl) estimateTitleEl.textContent = `How we estimated ${data.totalLabel} a month`;
+      if (estimateTitleEl) {
+        estimateTitleEl.textContent = `How we estimated ${data.totalLabel.replace(/\/mo$/, '')} a month`;
+      }
       setUnitText(chat, data.chat);
       setUnitText(images, data.images);
       setUnitText(videos, data.videos);

@@ -238,6 +238,12 @@ function formatPerDay(n: number, unit: string): string {
   return `~${Math.round(n * 10) / 10}/${unit}`;
 }
 
+function formatQty(n: number): string {
+  if (Number.isInteger(n)) return String(n);
+  const rounded = Math.round(n * 10) / 10;
+  return String(rounded);
+}
+
 export interface UsageCalcFeatureRow {
   key: string;
   label: string;
@@ -250,6 +256,12 @@ export interface UsageCalcFeatureRow {
   costLabel: string;
   /** Hidden-by-default formula */
   mathDetail: string | null;
+  /** Figma step-1/2 presentation (omitted for included chat). */
+  patternLead?: string | null;
+  monthlyTotalLabel?: string | null;
+  qtyPhrase?: string | null;
+  ratePhrase?: string | null;
+  accent?: 'images' | 'videos' | 'voice' | 'chat';
 }
 
 export interface UsageCalcPackageLine {
@@ -292,6 +304,12 @@ export interface UsageCalculation {
   topUpCostLabel: string;
   total: number;
   totalLabel: string;
+  /** e.g. "regular use" */
+  levelName: string;
+  planName: string;
+  chatIncludedNote: string | null;
+  packHeadline: string | null;
+  packFoot: string | null;
 }
 
 /**
@@ -339,6 +357,14 @@ export function buildUsageCalculation(
         perDay > 0 && imageCost
           ? `${formatPerDay(perDay, 'day')} × ${DAYS_PER_MONTH} days = ${qty} images × ${creditsEach} credits = ${costCredits} credits`
           : null,
+      patternLead:
+        perDay > 0
+          ? `${formatQty(perDay)} image${perDay === 1 ? '' : 's'} a day × ${DAYS_PER_MONTH} days`
+          : null,
+      monthlyTotalLabel: perDay > 0 ? `${formatQty(qty)} images a month` : null,
+      qtyPhrase: perDay > 0 ? `${formatQty(qty)} images` : null,
+      ratePhrase: imageCost ? `${creditsEach} credits per image` : null,
+      accent: 'images',
     });
   }
 
@@ -365,6 +391,16 @@ export function buildUsageCalculation(
         perDay > 0 && videoCost
           ? `${formatPerDay(perDay, 'day')} × ${DAYS_PER_MONTH} days = ${qty} videos × ${displayCredits} credits = ${costCredits} credits`
           : null,
+      patternLead:
+        perDay <= 0
+          ? null
+          : perDay < 1
+            ? `One ${seconds}-second clip every ${Math.max(1, Math.round(1 / perDay))} days`
+            : `${formatQty(perDay)} videos a day × ${DAYS_PER_MONTH} days`,
+      monthlyTotalLabel: perDay > 0 ? `${formatQty(qty)} videos a month` : null,
+      qtyPhrase: perDay > 0 ? `${formatQty(qty)} videos` : null,
+      ratePhrase: videoCost ? `${displayCredits} credits per video` : null,
+      accent: 'videos',
     });
   }
 
@@ -395,6 +431,14 @@ export function buildUsageCalculation(
         perDay > 0 && voiceCost
           ? `${assumption} × ${DAYS_PER_MONTH} = ${minutes} min × ${creditsPerMin} credits = ${costCredits} credits`
           : null,
+      patternLead:
+        perDay > 0
+          ? `${formatQty(perDay)} minutes a day × ${DAYS_PER_MONTH} days`
+          : null,
+      monthlyTotalLabel: perDay > 0 ? `${formatQty(minutes)} minutes a month` : null,
+      qtyPhrase: perDay > 0 ? `${formatQty(minutes)} minutes` : null,
+      ratePhrase: voiceCost ? `${creditsPerMin} credits per minute` : null,
+      accent: 'voice',
     });
   }
 
@@ -407,6 +451,7 @@ export function buildUsageCalculation(
     cost: 0,
     costLabel: 'Included',
     mathDetail: 'Included in subscription = 0 credits',
+    accent: 'chat',
   });
 
   const requiredCredits = billed.creditsNeeded;
@@ -428,6 +473,23 @@ export function buildUsageCalculation(
     priceLabel: money(line.lineTotal),
     quantity: line.quantity,
   }));
+
+  const packHeadline =
+    packageLines.length > 0
+      ? packageLines
+          .map((line) => (line.quantity > 1 ? `${line.creditsLabel} · ${line.priceLabel}` : `${line.creditsLabel} · ${line.priceLabel}`))
+          .join(' + ')
+      : null;
+  const packFoot =
+    packageLines.length > 0
+      ? `That buys ${result.purchasedCredits.toLocaleString('en-US')} credits${
+          result.leftoverCredits
+            ? `, so ${result.leftoverCredits.toLocaleString('en-US')} are left spare at the end of the month.`
+            : '.'
+        }`
+      : includedCredits > 0
+        ? 'Included credits cover this usage pattern.'
+        : null;
 
   return {
     heading: `How we calculated ${levelName}`,
@@ -457,5 +519,13 @@ export function buildUsageCalculation(
     topUpCostLabel: approx(topUpCost),
     total,
     totalLabel: `${approx(total)}/mo`,
+    levelName,
+    planName: result.planName ?? tier.name ?? 'Paid plan',
+    chatIncludedNote:
+      profile.messagesPerDay > 0
+        ? `Chat itself is unlimited on ${result.planName ?? 'the paid plan'} and uses no credits.`
+        : null,
+    packHeadline,
+    packFoot,
   };
 }
