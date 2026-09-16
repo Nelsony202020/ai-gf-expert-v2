@@ -195,61 +195,58 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
   async function refreshRelated() {
     setRelatedLoading(true);
     try {
-      const [authors, media, testRunsRes, plans, packages, paymentProfiles, characters, affiliateLinks, reviews, categories, history, snapshots, featureCosts, promotions] =
-        await Promise.all([
-          dataApi.list('authors'),
-          dataApi.list('media'),
-          api
-            .get<{ rows: EntityRow[] }>(`/api/admin/products/${productId}/test-runs`)
-            .then(async (res) => {
-              if (res.rows?.length) return res;
-              const all = await dataApi.list('testRuns').catch(() => ({ rows: [] as EntityRow[] }));
-              return {
-                rows: all.rows.filter((r) => linkedEntityId(r.product) === productId),
-              };
-            })
-            .catch(async () => {
-              const all = await dataApi.list('testRuns').catch(() => ({ rows: [] as EntityRow[] }));
-              return {
-                rows: all.rows.filter((r) => linkedEntityId(r.product) === productId),
-              };
-            }),
-          dataApi.list('subscriptionPlans'),
-          dataApi.list('creditPackages'),
-          dataApi.list('paymentProfiles'),
-          dataApi.list('characters'),
-          dataApi.list('affiliateLinks'),
-          dataApi.list('reviews'),
-          dataApi.list('categories'),
-          api
-            .get<{ history: ScoreHistoryRun[] }>(`/api/admin/products/${productId}/score-history`)
-            .catch(() => ({ history: [] as ScoreHistoryRun[] })),
-          dataApi.list('pricingSnapshots').catch(() => ({ rows: [] as EntityRow[] })),
-          dataApi.list('featureCosts').catch(() => ({ rows: [] as EntityRow[] })),
-          dataApi.list('pricingPromotions').catch(() => ({ rows: [] as EntityRow[] })),
-        ]);
+      const { related: bundle } = await api.get<{ related: WorkspaceRelated }>(
+        `/api/admin/products/${productId}/workspace`,
+      );
+      setRelated({ ...EMPTY_RELATED, ...bundle });
+    } catch {
+      // Last resort: isolated lists so one Instant timeout cannot blank every tab.
       const byProduct = (rows: EntityRow[]) =>
         rows.filter((r) => linkedEntityId(r.product) === productId);
+      const settled = await Promise.allSettled([
+        dataApi.list('authors'),
+        dataApi.list('media'),
+        dataApi.list('testRuns'),
+        dataApi.list('subscriptionPlans'),
+        dataApi.list('creditPackages'),
+        dataApi.list('paymentProfiles'),
+        dataApi.list('characters'),
+        dataApi.list('affiliateLinks'),
+        dataApi.list('reviews'),
+        dataApi.list('categories'),
+        api.get<{ history: ScoreHistoryRun[] }>(`/api/admin/products/${productId}/score-history`),
+        dataApi.list('pricingSnapshots'),
+        dataApi.list('featureCosts'),
+        dataApi.list('pricingPromotions'),
+      ]);
+      const rows = (i: number): EntityRow[] =>
+        settled[i].status === 'fulfilled'
+          ? (settled[i] as PromiseFulfilledResult<{ rows: EntityRow[] }>).value.rows
+          : [];
+      const history =
+        settled[10].status === 'fulfilled'
+          ? (settled[10] as PromiseFulfilledResult<{ history: ScoreHistoryRun[] }>).value.history
+          : [];
       setRelated({
-        authors: authors.rows,
-        mediaAll: media.rows,
-        media: byProduct(media.rows),
-        testRuns: testRunsRes.rows,
-        plans: byProduct(plans.rows),
-        packages: byProduct(packages.rows),
-        paymentProfile: byProduct(paymentProfiles.rows)[0] ?? null,
-        characters: byProduct(characters.rows),
-        affiliateLinks: byProduct(affiliateLinks.rows),
-        review: byProduct(reviews.rows)[0] ?? null,
-        categories: categories.rows
+        authors: rows(0),
+        mediaAll: rows(1),
+        media: byProduct(rows(1)),
+        testRuns: byProduct(rows(2)),
+        plans: byProduct(rows(3)),
+        packages: byProduct(rows(4)),
+        paymentProfile: byProduct(rows(5))[0] ?? null,
+        characters: byProduct(rows(6)),
+        affiliateLinks: byProduct(rows(7)),
+        review: byProduct(rows(8))[0] ?? null,
+        categories: rows(9)
           .filter((c) => c.active)
           .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)),
-        scoreHistory: history.history,
-        pricingSnapshots: byProduct(snapshots.rows).sort(
+        scoreHistory: history,
+        pricingSnapshots: byProduct(rows(11)).sort(
           (a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0),
         ),
-        featureCosts: byProduct(featureCosts.rows),
-        pricingPromotions: byProduct(promotions.rows),
+        featureCosts: byProduct(rows(12)),
+        pricingPromotions: byProduct(rows(13)),
       });
     } finally {
       setRelatedLoading(false);
@@ -269,15 +266,26 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
 
   async function refreshProductMedia() {
     try {
-      const media = await dataApi.list('media');
-      const byProduct = media.rows.filter((r) => linkedEntityId(r.product) === productId);
+      const { related: bundle } = await api.get<{ related: WorkspaceRelated }>(
+        `/api/admin/products/${productId}/workspace`,
+      );
       setRelated((prev) => ({
         ...prev,
-        mediaAll: media.rows,
-        media: byProduct,
+        mediaAll: bundle.mediaAll,
+        media: bundle.media,
       }));
     } catch {
-      /* optional */
+      try {
+        const media = await dataApi.list('media');
+        const byProduct = media.rows.filter((r) => linkedEntityId(r.product) === productId);
+        setRelated((prev) => ({
+          ...prev,
+          mediaAll: media.rows,
+          media: byProduct,
+        }));
+      } catch {
+        /* optional */
+      }
     }
   }
 

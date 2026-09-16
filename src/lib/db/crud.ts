@@ -71,7 +71,8 @@ export async function listEntities(entity: string, includeDeleted = false) {
   const cfg = config(entity);
   const db = getDb();
   const result = await (db.query as any)({ [cfg.namespace]: { ...readLinkIncludes(cfg) } });
-  let rows = (result as any)[cfg.namespace] as any[];
+  let rows = (result as any)[cfg.namespace];
+  if (!Array.isArray(rows)) rows = [];
   if (cfg.softDelete && !includeDeleted) rows = rows.filter((r) => !r.deletedAt);
   for (const row of rows) refreshRowMediaUrls(row, cfg);
   return rows;
