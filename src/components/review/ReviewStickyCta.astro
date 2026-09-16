@@ -9,14 +9,14 @@ interface Props {
 const { product } = Astro.props;
 ---
 
-<div class="review-sticky-cta" data-review-sticky-cta hidden>
+<div class="review-sticky-cta" data-review-sticky-cta aria-hidden="true">
   <AffiliateLink
     href={product.affiliateUrl}
     class="review-sticky-cta__btn"
     data-cta="sticky-visit"
   >
     Visit {product.name}
-    <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 12 12" fill="none" aria-hidden="true">
       <path d="M3.2 8.8 8.8 3.2M4.6 3.2h4.2V7.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
     </svg>
   </AffiliateLink>
@@ -25,24 +25,31 @@ const { product } = Astro.props;
 <script>
   let observer: IntersectionObserver | null = null;
 
+  function setStickyVisible(sticky: HTMLElement, visible: boolean) {
+    sticky.classList.toggle('is-visible', visible);
+    sticky.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  }
+
   function bindStickyCta() {
     const sticky = document.querySelector<HTMLElement>('[data-review-sticky-cta]');
-    const heroCta = document.querySelector<HTMLElement>('[data-review-hero-cta]');
+    const heroCta = document.querySelector<HTMLElement>(
+      '[data-review-hero-cta]:not([data-cta="sticky-visit"])',
+    );
     observer?.disconnect();
     observer = null;
     if (!sticky) return;
 
     const desktop = window.matchMedia('(min-width: 768px)');
     if (!heroCta || desktop.matches) {
-      sticky.hidden = true;
+      setStickyVisible(sticky, false);
       return;
     }
 
     observer = new IntersectionObserver(
       ([entry]) => {
-        sticky.hidden = Boolean(entry?.isIntersecting);
+        setStickyVisible(sticky, !entry?.isIntersecting);
       },
-      { threshold: 0.15 }
+      { threshold: 0.15 },
     );
     observer.observe(heroCta);
   }

@@ -1,7 +1,7 @@
 ---
 import type { Product } from '../../data/products';
 import { fmtScore } from '../../lib/scores';
-import { getScoreBadgeColor, getScoreRingDeg, categoryRowIcon } from '../../lib/review-shell';
+import { getScoreBadgeColor, getScoreRingColor, getScoreRingDeg, categoryRowIcon } from '../../lib/review-shell';
 import AffiliateLink from '../ui/AffiliateLink.astro';
 import OverallScoreTooltip from './tooltips/OverallScoreTooltip.astro';
 import CategoryScoreTooltip from './tooltips/CategoryScoreTooltip.astro';
@@ -14,6 +14,7 @@ const { product } = Astro.props;
 const categories = product.categories;
 const overall = product.overallScore;
 const ringDeg = getScoreRingDeg(overall);
+const ringColor = getScoreRingColor(overall);
 const overallLabel = product.tagline || product.overallSummary || '';
 const catCount = categories.length;
 
@@ -32,7 +33,11 @@ ICONS['credit-card'] = ICONS.credit;
 
 <div class="rs-score-card">
   <div class="rs-score-head">
-    <div class="rs-ring" style={`--ring-deg: ${ringDeg}deg`}>
+    <div
+      class="rs-ring"
+      style={`--ring-deg: ${ringDeg}deg; --ring-color: ${ringColor}`}
+      aria-hidden="true"
+    >
       <span class="rs-ring-num">{overall != null ? fmtScore(overall) : '—'}</span>
     </div>
     <div class="rs-score-copy">

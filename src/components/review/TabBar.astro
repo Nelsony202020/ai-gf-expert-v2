@@ -7,57 +7,317 @@ interface Props {
 }
 
 const { tabs, hiddenTabs = [] } = Astro.props;
+const allTabs = [...tabs, ...hiddenTabs];
 ---
 
-<nav class="review-tabbar" data-tabbar aria-label="Review sections">
-  <button
-    type="button"
-    class="review-tabbar__arrow"
-    data-tabbar-arrow="prev"
-    aria-label="Show previous tabs"
-    hidden
-  >
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-    </svg>
-  </button>
-  <div class="review-tabbar__fade review-tabbar__fade--start" data-tabbar-fade="start" hidden></div>
-  <div class="review-tabbar__rail" data-tabbar-rail>
-    <div class="review-tabbar__list" data-tabbar-list>
-      {tabs.map((tab, i) => (
-        <button
-          type="button"
-          class="review-tabbar__btn"
-          data-tab={tab.id}
-          aria-current={i === 0 ? 'true' : undefined}
-          aria-selected={i === 0 ? 'true' : 'false'}
-        >
-          {tab.label}
-        </button>
-      ))}
-      {hiddenTabs.map((tab) => (
-        <button
-          type="button"
-          class="review-tabbar__btn"
-          data-tab={tab.id}
-          aria-selected="false"
-          hidden
-        >
-          {tab.tocLabel ?? tab.label}
-        </button>
-      ))}
+<nav class="review-tabbar z-40" data-tabbar aria-label="Review sections">
+  <div class="review-tabbar__shell section-container px-4 md:px-8">
+    <div class="review-tabbar__rail" data-tabbar-rail>
+      <div class="review-tabbar__fade review-tabbar__fade--start" data-tabbar-fade="start" aria-hidden="true"></div>
+      <ul class="review-tabbar__list" role="tablist" data-tabbar-list>
+        {
+          tabs.map((tab, i) => (
+            <li role="presentation" class="review-tabbar__item">
+              <button
+                type="button"
+                role="tab"
+                class="review-tabbar__btn"
+                data-tab={tab.id}
+                aria-current={i === 0 ? 'true' : 'false'}
+                aria-selected={i === 0 ? 'true' : 'false'}
+              >
+                {tab.label}
+              </button>
+            </li>
+          ))
+        }
+        {
+          hiddenTabs.map((tab) => (
+            <li role="presentation" class="review-tabbar__item" hidden>
+              <button
+                type="button"
+                role="tab"
+                class="review-tabbar__btn"
+                data-tab={tab.id}
+                aria-selected="false"
+                hidden
+              >
+                {tab.tocLabel ?? tab.label}
+              </button>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="review-tabbar__fade review-tabbar__fade--end" data-tabbar-fade="end" aria-hidden="true"></div>
     </div>
   </div>
-  <div class="review-tabbar__fade review-tabbar__fade--end" data-tabbar-fade="end" hidden></div>
-  <button
-    type="button"
-    class="review-tabbar__arrow"
-    data-tabbar-arrow="next"
-    aria-label="Show next tabs"
-    hidden
-  >
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-    </svg>
-  </button>
 </nav>
+
+<script>
+  function initReviewTabbarPin() {
+    const tabbar = document.querySelector('[data-tabbar].review-tabbar');
+    if (!tabbar || tabbar.dataset.pinBound === 'true') return;
+    if (document.body.dataset.mobileNavMode !== 'review') return;
+    tabbar.dataset.pinBound = 'true';
+
+    const header = document.querySelector('[data-site-header]');
+    const list = tabbar.querySelector('[data-tabbar-list]');
+    const fadeStart = tabbar.querySelector('[data-tabbar-fade="start"]');
+    const fadeEnd = tabbar.querySelector('[data-tabbar-fade="end"]');
+
+    let spacer = tabbar.nextElementSibling;
+    if (!spacer?.matches('[data-tabbar-spacer]')) {
+      spacer = document.createElement('div');
+      spacer.dataset.tabbarSpacer = '';
+      spacer.setAttribute('aria-hidden', 'true');
+      tabbar.after(spacer);
+    }
+
+    let naturalTop = 0;
+
+    function measureNaturalTop() {
+      const wasPinned = tabbar.classList.contains('review-tabbar--pinned');
+      if (wasPinned) {
+        tabbar.classList.remove('review-tabbar--pinned');
+        tabbar.style.top = '';
+        header?.classList.remove('site-header--joined-tabs');
+        spacer.hidden = true;
+        spacer.style.height = '0';
+      }
+      naturalTop = tabbar.getBoundingClientRect().top + window.scrollY;
+    }
+
+    function updateFades() {
+      if (!list || !fadeStart || !fadeEnd) return;
+      const maxScroll = list.scrollWidth - list.clientWidth;
+      if (maxScroll <= 2) {
+        fadeStart.classList.remove('is-visible');
+        fadeEnd.classList.remove('is-visible');
+        return;
+      }
+      fadeStart.classList.toggle('is-visible', list.scrollLeft > 4);
+      fadeEnd.classList.toggle('is-visible', list.scrollLeft < maxScroll - 4);
+    }
+
+    function scrollActiveTabIntoView(smooth = true) {
+      if (!list) return;
+      const activeBtn = tabbar.querySelector('.review-tabbar__btn[aria-current="true"]');
+      if (!activeBtn) return;
+      const listRect = list.getBoundingClientRect();
+      const btnRect = activeBtn.getBoundingClientRect();
+      const offset = btnRect.left - listRect.left - (listRect.width - btnRect.width) / 2;
+      list.scrollTo({
+        left: Math.max(0, list.scrollLeft + offset),
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+      window.requestAnimationFrame(updateFades);
+    }
+
+    function updatePin() {
+      const headerH = header?.offsetHeight ?? 52;
+      const tabbarH = tabbar.offsetHeight;
+      const isPinned = tabbar.classList.contains('review-tabbar--pinned');
+      const pinAt = naturalTop - headerH - 1;
+      const unpinAt = naturalTop - headerH - 12;
+      const shouldPin = isPinned ? window.scrollY >= unpinAt : window.scrollY >= pinAt;
+
+      if (shouldPin) {
+        tabbar.classList.add('review-tabbar--pinned');
+        tabbar.style.top = `${headerH}px`;
+        header?.classList.add('site-header--joined-tabs');
+        spacer.style.height = `${tabbarH}px`;
+        spacer.hidden = false;
+      } else {
+        tabbar.classList.remove('review-tabbar--pinned');
+        tabbar.style.top = '';
+        header?.classList.remove('site-header--joined-tabs');
+        spacer.hidden = true;
+        spacer.style.height = '0';
+      }
+    }
+
+    function remeasureAndUpdate() {
+      measureNaturalTop();
+      updatePin();
+      updateFades();
+    }
+
+    list?.addEventListener('scroll', updateFades, { passive: true });
+
+    const observer = new MutationObserver(() => {
+      scrollActiveTabIntoView(true);
+      updateFades();
+    });
+    tabbar.querySelectorAll('.review-tabbar__btn').forEach((btn) => {
+      observer.observe(btn, { attributes: true, attributeFilter: ['aria-current'] });
+    });
+
+    window.addEventListener('scroll', updatePin, { passive: true });
+    window.addEventListener('resize', remeasureAndUpdate, { passive: true });
+    document.addEventListener('site-header-offset-change', remeasureAndUpdate);
+    remeasureAndUpdate();
+    scrollActiveTabIntoView(false);
+  }
+
+  initReviewTabbarPin();
+  document.addEventListener('astro:page-load', initReviewTabbarPin);
+</script>
+
+<style>
+  .review-tabbar__shell {
+    display: flex;
+    justify-content: center;
+  }
+
+  .review-tabbar__rail {
+    --review-tabbar-fade-bg: var(--rs-canvas, var(--color-background));
+    position: relative;
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .review-tabbar__list {
+    display: flex;
+    align-items: stretch;
+    gap: 1.35rem;
+    width: 100%;
+    min-height: 48px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .review-tabbar__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .review-tabbar__item {
+    flex: 0 0 auto;
+    display: flex;
+    scroll-snap-align: center;
+  }
+
+  .review-tabbar__btn {
+    appearance: none;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0.85rem 0 0.95rem;
+    border: 0;
+    background: transparent;
+    color: var(--rs-muted, color-mix(in srgb, var(--color-on-surface-variant, #64748b) 82%, transparent));
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+
+  .review-tabbar__btn:hover {
+    color: var(--rs-ink, var(--color-on-surface));
+  }
+
+  .review-tabbar__btn:focus-visible {
+    outline: 2px solid var(--rs-pink, var(--color-accent));
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .review-tabbar__btn[aria-current='true'] {
+    color: var(--rs-ink, var(--color-on-surface));
+    font-weight: 600;
+  }
+
+  .review-tabbar__btn[aria-current='true']::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--rs-pink, var(--color-accent));
+  }
+
+  .review-tabbar__fade {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1.75rem;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+
+  .review-tabbar__fade.is-visible {
+    opacity: 1;
+  }
+
+  .review-tabbar__fade--start {
+    left: 0;
+    background: linear-gradient(to right, var(--review-tabbar-fade-bg) 30%, transparent);
+  }
+
+  .review-tabbar__fade--end {
+    right: 0;
+    background: linear-gradient(to left, var(--review-tabbar-fade-bg) 30%, transparent);
+  }
+
+  @media (min-width: 768px) {
+    .review-tabbar__list {
+      justify-content: flex-start;
+      gap: 2rem;
+      overflow: visible;
+    }
+
+    .review-tabbar__btn {
+      font-size: 1rem;
+      padding: 0.9rem 0 1rem;
+    }
+
+    .review-tabbar__fade {
+      display: none;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .review-tabbar__shell {
+      padding-left: 0;
+      padding-right: 0;
+      max-width: none;
+    }
+
+    .review-tabbar__rail,
+    .review-tabbar__list {
+      min-height: 47px;
+    }
+
+    .review-tabbar__list {
+      gap: 1.25rem;
+      padding-inline: 1rem;
+    }
+
+    .review-tabbar__btn {
+      font-size: 0.8125rem;
+      padding: 0.7rem 0 0.8rem;
+    }
+
+    .review-tabbar__fade {
+      width: 2rem;
+    }
+  }
+
+  .review-tabbar--pinned .review-tabbar__rail {
+    --review-tabbar-fade-bg: var(--color-header-surface, var(--rs-canvas));
+  }
+</style>

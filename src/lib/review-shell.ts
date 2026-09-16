@@ -81,6 +81,11 @@ export function getScoreRingDeg(score: number | null | undefined): number {
   return (clamped / 10) * 360;
 }
 
+/** Figma overall score ring stroke color (green / amber / red). */
+export function getScoreRingColor(score: number | null | undefined): string {
+  return getScoreBadgeColor(score);
+}
+
 export function getScoreFillClass(score: number | null | undefined): string {
   if (typeof score !== 'number' || Number.isNaN(score)) return 'bg-gray-400';
   return getScoreVisual(score).bg;
