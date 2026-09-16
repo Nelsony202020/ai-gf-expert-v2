@@ -10,27 +10,29 @@ const { page } = Astro.props;
 ---
 
 <section class="si-testing" id="si-testing">
-  <h2 class="si-h2">Testing &amp; Methodology</h2>
-  <p class="si-lede-sm">Explore how every AIGE score is calculated.</p>
+  <div class="si-testing-intro">
+    <h2 class="si-h2">Testing &amp; Methodology</h2>
+    <p class="si-testing-copy">Explore how every AIGE score is calculated.</p>
+  </div>
   <div class="si-stats">
     <div class="si-stat">
-      <strong>{page.testingPagesCount}</strong>
-      <span>pages</span>
+      <span class="si-stat-n">{page.testingPagesCount}</span>
+      <span class="si-stat-l">pages</span>
     </div>
     <div class="si-stat-rule" aria-hidden="true"></div>
     <div class="si-stat">
-      <strong>{page.testingCategoriesCount}</strong>
-      <span>categories</span>
+      <span class="si-stat-n">{page.testingCategoriesCount}</span>
+      <span class="si-stat-l">categories</span>
     </div>
     <div class="si-stat-rule" aria-hidden="true"></div>
     <div class="si-stat">
-      <strong>{page.testingSubcategoriesCount}</strong>
-      <span>subcategories</span>
+      <span class="si-stat-n">{page.testingSubcategoriesCount}</span>
+      <span class="si-stat-l">subcategories</span>
     </div>
     <div class="si-stat-rule" aria-hidden="true"></div>
     <div class="si-stat">
-      <strong>{page.scoredTestsCount}</strong>
-      <span>scored tests</span>
+      <span class="si-stat-n">{page.scoredTestsCount}</span>
+      <span class="si-stat-l">scored tests</span>
     </div>
   </div>
 

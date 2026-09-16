@@ -31,8 +31,8 @@ const pageSearchClass = isSearching
 >
   <div class:list={["si-page", pageSearchClass]}>
     <header class="si-hero">
-      <div class="si-hero-inner">
-        <p class="si-kicker"><span class="si-kicker-dot" aria-hidden="true"></span>SITE INDEX</p>
+      <div class="si-wrap si-hero-inner">
+        <p class="si-eyebrow"><span class="si-eyebrow-mark" aria-hidden="true"></span>Site index</p>
         <h1 class="si-title">Everything on AI Girlfriend Expert</h1>
         <p class="si-lede">Find every review, guide, test and resource we publish.</p>
 
@@ -75,6 +75,7 @@ const pageSearchClass = isSearching
     </header>
 
     <div class="si-body">
+      <div class="si-wrap si-body-inner">
       <section class="si-results" data-search-results hidden={!isSearching} aria-live="polite">
         <div class="si-results-head">
           <h2 class="si-results-title" data-search-heading hidden={!hasResults}>{hasResults ? `${initialHits.length} results for “${requestedQuery}”` : ""}</h2>
@@ -111,7 +112,7 @@ const pageSearchClass = isSearching
       <div class="si-directory" data-directory hidden={isSearching}>
         <div class="si-explore-wrap">
           <section class="si-explore" id="si-explore">
-            <h2>Explore AIGE</h2>
+            <h2 class="si-h2">Explore AIGE</h2>
           </section>
           <div class="si-explore-grid">
             <SitemapExploreColumn column={page.reviews} variant="reviews" />
@@ -124,6 +125,7 @@ const pageSearchClass = isSearching
         <SitemapTestMethodology page={page} />
 
       <SitemapResourcesLegal page={page} />
+      </div>
       </div>
     </div>
   </div>
