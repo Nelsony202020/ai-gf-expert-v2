@@ -13,6 +13,9 @@ function firstTwoSentences(text: string): string {
   if (!parts) return text.trim();
   return parts.slice(0, 2).join(' ').trim();
 }
+const trimmed = quote.trim();
+if (!trimmed) return;
+const compact = firstTwoSentences(trimmed);
 const avatarSrc = author.avatar || '/brand/herman-main-icon.svg';
 ---
 
