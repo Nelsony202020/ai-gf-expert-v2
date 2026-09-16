@@ -53,12 +53,7 @@ const reviewLinks = publishedProducts
       </button>
       <div class="home-v2__drop-panel" data-home-drop-panel hidden>
         <p class="home-v2__drop-kicker">Popular brands</p>
-        {brandNav.popular.map((brand) => (
-          <a href={brand.href}>{brand.name}</a>
-        ))}
-        {brandNav.viewAll ? (
-          <a class="home-v2__drop-all" href={brandNav.viewAll.href}>{brandNav.viewAll.label} →</a>
-        ) : null}
+        <a href="/guides/ourdream-ai/">OurDream AI</a>
       </div>
     </div>
     <a href="/guides/" class="home-v2__nav-link">Guides</a>
