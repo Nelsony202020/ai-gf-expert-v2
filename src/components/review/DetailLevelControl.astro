@@ -5,19 +5,6 @@
  */
 ---
 
-<style is:global>
-  /* Visibility only. Layout for Ratings & Tests lives in ratings-body.css (.rft). */
-  [data-ratings-root][data-detail-level='skim'] [data-detail-tier='deep'],
-  [data-ratings-root][data-detail-level='skim'] [data-subscore-breakdown] {
-    display: none !important;
-  }
-
-  [data-ratings-root][data-detail-level='medium'] [data-detail-tier='deep'],
-  [data-ratings-root][data-detail-level='medium'] [data-detail-tier='calc'] {
-    display: none !important;
-  }
-</style>
-
 <script>
   type DetailLevel = 'skim' | 'medium' | 'all-in';
 

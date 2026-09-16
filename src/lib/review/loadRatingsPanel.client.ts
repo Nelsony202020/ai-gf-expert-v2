@@ -10,7 +10,12 @@ function adoptFragmentStyles(doc: Document) {
     Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).map((link) => link.href),
   );
 
-  doc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((link) => {
+  const fragmentLinks = [
+    ...Array.from(doc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')),
+    ...Array.from(doc.querySelectorAll<HTMLLinkElement>('link[rel="preload"][as="style"]')),
+  ];
+
+  fragmentLinks.forEach((link) => {
     if (!link.href || existingHrefs.has(link.href)) return;
     existingHrefs.add(link.href);
     const next = document.createElement('link');
