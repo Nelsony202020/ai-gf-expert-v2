@@ -80,11 +80,22 @@ interface ScoreTreeDto {
 
 /** Pick the run an editor is most likely working on. */
 function pickCurrentRun(runs: EntityRow[]): EntityRow | null {
+  if (runs.length === 0) return null;
   const active = runs
     .filter((r) => ['in_progress', 'ready_for_review', 'approved', 'not_started'].includes(r.status))
     .sort((a, b) => (b.startedAt ?? b.createdAt ?? 0) - (a.startedAt ?? a.createdAt ?? 0));
   if (active.length > 0) return active[0];
-  return runs.find((r) => r.isCurrentPublished) ?? null;
+  const published = runs.find((r) => r.isCurrentPublished);
+  if (published) return published;
+  const byRecency = [...runs].sort(
+    (a, b) => (b.publishedAt ?? b.updatedAt ?? b.createdAt ?? 0) - (a.publishedAt ?? a.updatedAt ?? a.createdAt ?? 0),
+  );
+  return (
+    byRecency.find((r) => r.status === 'published') ??
+    byRecency.find((r) => r.status === 'superseded') ??
+    byRecency[0] ??
+    null
+  );
 }
 
 /** One obvious primary action — secondary actions live in the ⋮ menu. */

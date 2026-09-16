@@ -184,13 +184,14 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
   async function refreshRelated() {
     setRelatedLoading(true);
     try {
-      const [authors, media, testRunsRes, plans, packages, paymentProfiles, characters, affiliateLinks, reviews, categories, history, snapshots, featureCosts, promotions] =
+      const [authors, media, testRunsRes, allTestRuns, plans, packages, paymentProfiles, characters, affiliateLinks, reviews, categories, history, snapshots, featureCosts, promotions] =
         await Promise.all([
           dataApi.list('authors'),
           dataApi.list('media'),
           api.get<{ rows: EntityRow[] }>(`/api/admin/products/${productId}/test-runs`).catch(() => ({
             rows: [] as EntityRow[],
           })),
+          dataApi.list('testRuns').catch(() => ({ rows: [] as EntityRow[] })),
           dataApi.list('subscriptionPlans'),
           dataApi.list('creditPackages'),
           dataApi.list('paymentProfiles'),
@@ -211,7 +212,10 @@ export function useProductWorkspaceState(productId: string): ProductWorkspaceSta
         authors: authors.rows,
         mediaAll: media.rows,
         media: byProduct(media.rows),
-        testRuns: testRunsRes.rows,
+        testRuns:
+          testRunsRes.rows.length > 0
+            ? testRunsRes.rows
+            : allTestRuns.rows.filter((r) => linkedEntityId(r.product) === productId),
         plans: byProduct(plans.rows),
         packages: byProduct(packages.rows),
         paymentProfile: byProduct(paymentProfiles.rows)[0] ?? null,
