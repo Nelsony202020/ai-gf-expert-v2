@@ -28,32 +28,38 @@ const { category } = Astro.props;
     </span>
   </button>
   <div class="si-cat-panel" id={`si-cat-panel-${category.slug}`} data-panel hidden>
-    {category.subcategories.map((sub) => (
-      <div class="si-sub" data-subcategory={`${category.slug}-${sub.slug}`}>
-        <div class="si-sub-row">
-          <a class="si-sub-link" href={sub.href}>
-            <span>{sub.label}</span>
-          </a>
+    {category.subcategories.map((sub, index) => (
+      <div class:list={["si-sub", { "is-open": index === 0 }]} data-subcategory={`${category.slug}-${sub.slug}`}>
+        <a class="si-sub-kicker" href={sub.href}>
+          <span class="si-sub-kicker-name">{sub.label}</span>
+          <span class="si-sub-kicker-count">{sub.testCount}</span>
+        </a>
+        <button
+          class="si-sub-head"
+          type="button"
+          data-subcategory-toggle={`${category.slug}-${sub.slug}`}
+          aria-expanded={index === 0 ? "true" : "false"}
+          aria-controls={`si-tests-${category.slug}-${sub.slug}`}
+        >
+          <span class="si-sub-name">{sub.label}</span>
           <span class="si-sub-meta">{sub.testCount} tests</span>
-          <button
-            class="si-sub-toggle"
-            type="button"
-            data-subcategory-toggle={`${category.slug}-${sub.slug}`}
-            aria-expanded="false"
-            aria-controls={`si-tests-${category.slug}-${sub.slug}`}
-            aria-label={`Show scored tests in ${sub.label}`}
-          >
-            <span class="si-sub-chev" aria-hidden="true">
-              <HomeIcon name="chevron-right" size={14} />
-            </span>
-          </button>
-        </div>
-        <ul class="si-tests" id={`si-tests-${category.slug}-${sub.slug}`} data-tests hidden>
+          <span class="si-sub-chev" aria-hidden="true">
+            <HomeIcon name="chevron-down" size={14} />
+          </span>
+        </button>
+        <ul
+          class="si-tests"
+          id={`si-tests-${category.slug}-${sub.slug}`}
+          data-tests
+          hidden={index !== 0}
+        >
           {sub.tests.map((test) => (
             <li>
               <a class="si-test-link" href={test.href}>
-                <span class="si-test-dot" aria-hidden="true"></span>
-                {test.label}
+                <span>{test.label}</span>
+                <span class="si-test-chev" aria-hidden="true">
+                  <HomeIcon name="chevron-right" size={14} />
+                </span>
               </a>
             </li>
           ))}

@@ -1,5 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
 import SitemapExploreColumn from "../components/sitemap/SitemapExploreColumn.astro";
 import SitemapResourcesLegal from "../components/sitemap/SitemapResourcesLegal.astro";
 import SitemapSearchField from "../components/sitemap/SitemapSearchField.astro";
@@ -44,6 +46,7 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
   description={page.seoDescription}
   canonical={canonicalUrl}
 >
+  <Header />
   <div class:list={["si-page", pageSearchClass]}>
     <header class="si-hero">
       <div class="si-wrap si-hero-inner">
@@ -62,7 +65,7 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
       </div>
     </header>
 
-    <div class="si-sticky" data-si-sticky hidden>
+    <div class="si-sticky" data-si-sticky aria-hidden="true">
       <div class="si-wrap si-sticky-inner">
         <SitemapSearchField compact query={requestedQuery} searching={isSearching} resultLabel={resultLabel} />
         <nav class="si-sticky-jumps" aria-label="Site index sections">
@@ -128,6 +131,7 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
       </div>
     </div>
   </div>
+  <Footer />
 </BaseLayout>
 
 <script is:inline define:vars={{ searchHitsJson }}>
@@ -137,8 +141,8 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
 <script>
   const hits = window.__SI_HITS__ ?? [];
   const pageEl = document.querySelector(".si-page");
-  const inputs = Array.from(document.querySelectorAll("[data-search-input]"));
-  const forms = Array.from(document.querySelectorAll("[data-search-form]"));
+  const inputs = Array.from(document.querySelectorAll("[data-si-search-input]"));
+  const forms = Array.from(document.querySelectorAll("[data-si-search-form]"));
   const slash = document.querySelector("[data-search-slash]");
   const chips = document.querySelector("[data-search-chips]");
   const lede = document.querySelector(".si-lede");
@@ -168,7 +172,7 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
   function setSearching(on: boolean) {
     forms.forEach((node) => node.classList.toggle("is-searching", on));
     slash?.toggleAttribute("hidden", on);
-    document.querySelectorAll("[data-search-clear]").forEach((node) => {
+    document.querySelectorAll("[data-si-search-clear]").forEach((node) => {
       node.toggleAttribute("hidden", !on);
     });
     chips?.toggleAttribute("hidden", on);
@@ -183,7 +187,7 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
       results?.setAttribute("hidden", "");
       directory?.removeAttribute("hidden");
       if (list) list.innerHTML = "";
-      document.querySelectorAll("[data-search-count]").forEach((node) => {
+      document.querySelectorAll("[data-si-search-count]").forEach((node) => {
         if (node instanceof HTMLElement) {
           node.hidden = true;
           node.textContent = "";
@@ -208,7 +212,7 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
     directory?.setAttribute("hidden", "");
     results?.removeAttribute("hidden");
     const countText = matched.length ? `${matched.length} results` : "No results";
-    document.querySelectorAll("[data-search-count]").forEach((node) => {
+    document.querySelectorAll("[data-si-search-count]").forEach((node) => {
       if (node instanceof HTMLElement) {
         node.hidden = false;
         node.textContent = countText;
@@ -267,11 +271,15 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
     history.replaceState({}, "", url);
   }
 
+  function stickyOn() {
+    return sticky?.classList.contains("is-on");
+  }
+
   function clearSearch() {
     applyQuery("", true);
-    const visible = sticky && !sticky.hasAttribute("hidden")
-      ? document.querySelector('.si-search--sticky [data-search-input]')
-      : document.querySelector('.si-search:not(.si-search--sticky) [data-search-input]');
+    const visible = stickyOn()
+      ? document.querySelector(".si-search--sticky [data-si-search-input]")
+      : document.querySelector(".si-search:not(.si-search--sticky) [data-si-search-input]");
     if (visible instanceof HTMLInputElement) visible.focus();
   }
 
@@ -282,15 +290,15 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
       if (event.key === "Escape") clearSearch();
     });
   });
-  document.querySelectorAll("[data-search-clear], [data-search-clear-text], [data-search-clear-empty]").forEach((node) => {
+  document.querySelectorAll("[data-si-search-clear], [data-search-clear-text], [data-search-clear-empty]").forEach((node) => {
     node.addEventListener("click", () => clearSearch());
   });
   window.addEventListener("keydown", (event) => {
     if (event.key === "/" && !(document.activeElement instanceof HTMLInputElement) && !(document.activeElement instanceof HTMLTextAreaElement)) {
       event.preventDefault();
-      const heroInput = document.querySelector('.si-search:not(.si-search--sticky) [data-search-input]');
-      const stickyInput = document.querySelector('.si-search--sticky [data-search-input]');
-      const target = sticky && !sticky.hasAttribute("hidden") ? stickyInput : heroInput;
+      const heroInput = document.querySelector(".si-search:not(.si-search--sticky) [data-si-search-input]");
+      const stickyInput = document.querySelector(".si-search--sticky [data-si-search-input]");
+      const target = stickyOn() ? stickyInput : heroInput;
       if (target instanceof HTMLInputElement) target.focus();
     }
   });
@@ -301,12 +309,33 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
     const observer = new IntersectionObserver(
       ([entry]) => {
         const show = Boolean(entry) && !entry.isIntersecting;
-        sticky.toggleAttribute("hidden", !show);
+        sticky.classList.toggle("is-on", show);
+        sticky.setAttribute("aria-hidden", show ? "false" : "true");
         pageEl?.classList.toggle("si-has-sticky", show);
       },
       { threshold: 0 },
     );
     observer.observe(heroSearch);
+  }
+
+  function isDesktopCats() {
+    return window.matchMedia("(min-width: 900px)").matches;
+  }
+
+  function setSubOpen(sub: Element, open: boolean) {
+    const btn = sub.querySelector("[data-subcategory-toggle]");
+    const tests = sub.querySelector("[data-tests]");
+    sub.classList.toggle("is-open", open);
+    btn?.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) tests?.removeAttribute("hidden");
+    else tests?.setAttribute("hidden", "");
+  }
+
+  function prepareCategory(wrap: Element) {
+    const subs = Array.from(wrap.querySelectorAll(".si-sub"));
+    subs.forEach((sub, index) => {
+      setSubOpen(sub, !isDesktopCats() && index === 0);
+    });
   }
 
   const cats = Array.from(document.querySelectorAll("[data-category-toggle]"));
@@ -321,10 +350,11 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
         other.closest(".si-cat")?.classList.remove("is-open");
         other.closest(".si-cat")?.querySelector("[data-panel]")?.setAttribute("hidden", "");
       });
-      if (!was && slug) {
+      if (!was && slug && wrap) {
         btn.setAttribute("aria-expanded", "true");
-        wrap?.classList.add("is-open");
+        wrap.classList.add("is-open");
         panel?.removeAttribute("hidden");
+        prepareCategory(wrap);
       }
     });
   });
@@ -332,13 +362,13 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
   document.querySelectorAll("[data-subcategory-toggle]").forEach((btn) => {
     btn.addEventListener("click", (event) => {
       event.stopPropagation();
-      const open = btn.getAttribute("aria-expanded") === "true";
+      if (isDesktopCats()) return;
       const row = btn.closest(".si-sub");
-      const tests = row?.querySelector("[data-tests]");
-      btn.setAttribute("aria-expanded", open ? "false" : "true");
-      row?.classList.toggle("is-open", !open);
-      if (open) tests?.setAttribute("hidden", "");
-      else tests?.removeAttribute("hidden");
+      const cat = btn.closest(".si-cat");
+      if (!row || !cat) return;
+      const was = btn.getAttribute("aria-expanded") === "true";
+      cat.querySelectorAll(".si-sub").forEach((sub) => setSubOpen(sub, false));
+      if (!was) setSubOpen(row, true);
     });
   });
 </script>
