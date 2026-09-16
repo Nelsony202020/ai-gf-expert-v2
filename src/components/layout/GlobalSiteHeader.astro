@@ -1,0 +1,50 @@
+---
+/**
+ * Global site header — same chrome as /guides/ourdream-ai/ (guide-hub hero + ContentPageHeader).
+ * Homepage uses HomeDesktopHeader inside HomeDesktopHero only; every other page uses this via Header.astro.
+ */
+import ContentPageHeader from './ContentPageHeader.astro';
+import homeDesktopStyles from '../../styles/home-desktop.css?url';
+import guideHubStyles from '../../styles/guide-hub.css?url';
+
+interface Props {
+  /** Set false when already inside `<div class="guide-hub">` (product hub pages). */
+  wrapGuideHub?: boolean;
+}
+
+const { wrapGuideHub = true } = Astro.props;
+const hasBodySlot = Astro.slots.has('default');
+---
+
+<link rel="stylesheet" href={homeDesktopStyles} />
+<link rel="stylesheet" href={guideHubStyles} />
+
+{
+  wrapGuideHub ? (
+    <div class="guide-hub guide-hub--site-chrome">
+      <section class="guide-hub__hero">
+        <div class="guide-hub__glow" aria-hidden="true">
+          <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
+        </div>
+        <ContentPageHeader />
+        {hasBodySlot ? (
+          <div class="guide-hub__hero-body">
+            <slot />
+          </div>
+        ) : null}
+      </section>
+    </div>
+  ) : (
+    <section class="guide-hub__hero">
+      <div class="guide-hub__glow" aria-hidden="true">
+        <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
+      </div>
+      <ContentPageHeader />
+      {hasBodySlot ? (
+        <div class="guide-hub__hero-body">
+          <slot />
+        </div>
+      ) : null}
+    </section>
+  )
+}
