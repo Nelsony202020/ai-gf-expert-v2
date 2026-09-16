@@ -135,16 +135,14 @@ function uniqueGuides(items: HubGuide[]): HubGuide[] {
 
 export function collectBrandHubGuides(product: Product | null, config: BrandGuideHubConfig): HubGuide[] {
   const name = product?.name || config.title.replace(/ Guides$/, '');
-  const items: HubGuide[] = [];
-
-  if (product) {
-    items.push({
-      title: `${product.name} Review`,
-      href: publicPagePath(`/reviews/${product.slug}/`),
-      description: product.tagline || product.overallSummary || 'Our full testing, scores, pricing and verdict.',
+  const items: HubGuide[] = [
+    {
+      title: `${name} Review`,
+      href: publicPagePath(`/reviews/${config.productSlug}/`),
+      description: product?.tagline || product?.overallSummary || 'Our full testing, scores, pricing and verdict.',
       tags: ['review', 'scores', 'pricing'],
-    });
-  }
+    },
+  ];
 
   for (const guide of sanityGuides) {
     if (guide.noindex) continue;
