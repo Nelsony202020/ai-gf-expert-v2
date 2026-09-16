@@ -111,8 +111,12 @@ export function linkedEntityId(value: unknown): string | null {
 }
 
 export const dataApi = {
-  list: (entity: string) => api.get<{ rows: EntityRow[] }>(`/api/admin/data/${entity}`),
-  get: (entity: string, id: string) => api.get<{ row: EntityRow }>(`/api/admin/data/${entity}/${id}`),
+  list: (entity: string, opts?: { productId?: string }) => {
+    const q = opts?.productId ? `?productId=${encodeURIComponent(opts.productId)}` : '';
+    return api.get<{ rows: EntityRow[] }>(`/api/admin/data/${entity}${q}`);
+  },
+  get: (entity: string, id: string) =>
+    api.get<{ row: EntityRow }>(`/api/admin/data/${entity}/${id}`),
   create: (entity: string, fields: Record<string, unknown>, links?: Record<string, string | null>) =>
     api.post<{ id: string }>(`/api/admin/data/${entity}`, { fields, links }),
   update: (entity: string, id: string, fields: Record<string, unknown>, links?: Record<string, string | null>) =>

@@ -1,13 +1,15 @@
 ---
 import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
+import { figmaScoreWord } from '../../../lib/home/figmaScore';
 import HomeEyebrow from './HomeEyebrow.astro';
 import HomeIcon from './HomeIcon.astro';
-import HomeScore from './HomeScore.astro';
 
 interface Props {
   data: DesktopHomepageData;
 }
 const { data } = Astro.props;
+const example = data.scoreExample.app;
+const interpretation = figmaScoreWord(example.overallNumber);
 
 const icons: Record<string, 'users' | 'sliders' | 'chat' | 'layers' | 'image' | 'video' | 'shield' | 'card'> = {
   characters: 'users',
@@ -33,17 +35,18 @@ const icons: Record<string, 'users' | 'sliders' | 'chat' | 'layers' | 'image' | 
       </p>
     </div>
     <div class="home-v2__score-card">
-      <div class="home-v2__score-overall">
-        <HomeScore score={data.scoreExample.app.overall} size="xl" />
-        <div>
+      <div class="home-v2__score-head">
+        <div class="home-v2__score-head-main">
           <p class="home-v2__score-app">
-            <img src={data.scoreExample.app.logo} alt="" width="20" height="20" class="home-v2__app-icon home-v2__app-icon--xs" />
-            {data.scoreExample.app.name} · overall score
+            <img src={example.logo} alt="" width="20" height="20" class="home-v2__app-icon home-v2__app-icon--xs" />
+            {example.name} · overall score
           </p>
-          <p class={`home-v2__score-word is-${data.scoreExample.app.overall.tone}`}>
-            {data.scoreExample.app.overall.tone === 'high' ? 'Strong' : data.scoreExample.app.overall.tone === 'mid' ? 'Average' : 'Weak'}
-          </p>
+          <p class={`home-v2__score-word is-${example.overall.tone}`}>{interpretation}</p>
           <p class="home-v2__muted-copy">Weighted average of the 8 category tests below.</p>
+        </div>
+        <div class="home-v2__score-head-value">
+          <span class={`home-v2__score-num is-${example.overall.tone}`}>{example.overall.value}</span>
+          <span class="home-v2__score-denom">/10</span>
         </div>
       </div>
       <div class="home-v2__bars home-v2__bars--score">

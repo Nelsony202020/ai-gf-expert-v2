@@ -3,7 +3,8 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { CHILD_SITEMAPS, buildChildXmlSitemap, type ChildSitemapKey } from '../lib/sitemap';
 import { loadPublishedProducts, loadPublishedRoundupSummaries } from '../lib/content/store';
-import { getDraftedPaths } from '../lib/seo/pageOverrides';
+import { getDraftedPaths, getNoindexPaths } from '../lib/seo/pageOverrides';
+import { defaultNoindexBrandHubPaths } from '../lib/guides/brandGuideHub';
 import { products as fileProducts } from '../data/products';
 import { publicSiteOrigin } from '../lib/siteOrigin';
 
@@ -17,16 +18,18 @@ export const GET: APIRoute = async ({ params, site }) => {
   }
 
   const origin = publicSiteOrigin(site);
-  const [publishedProducts, publishedRoundups, draftedPaths] = await Promise.all([
+  const [publishedProducts, publishedRoundups, draftedPaths, noindexPaths] = await Promise.all([
     loadPublishedProducts(fileProducts),
     loadPublishedRoundupSummaries(),
     getDraftedPaths(),
+    getNoindexPaths(defaultNoindexBrandHubPaths()),
   ]);
 
   const body = buildChildXmlSitemap(origin, key, {
     products: publishedProducts,
     roundups: publishedRoundups,
     excludePaths: draftedPaths,
+    noindexPaths,
   });
 
   return new Response(body, {

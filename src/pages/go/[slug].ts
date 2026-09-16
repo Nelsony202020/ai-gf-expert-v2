@@ -44,12 +44,15 @@ const SLUG_ALIASES: Record<string, string> = {
 
 const OURDREAM_AI_HUB = 'https://aigirlfriend.expert/guides/ourdream-ai/';
 
-/** YouTube /go slugs temporarily routed to the OurDream hub (editable in admin). */
+const BRAND_HUB_YOUTUBE_DESTINATIONS: Record<string, string> = {
+  'candy-ai-youtube': 'https://aigirlfriend.expert/guides/candy-ai/',
+  'nectar-ai-youtube': 'https://aigirlfriend.expert/guides/nectar-ai/',
+  'girlfriendgpt-youtube': 'https://aigirlfriend.expert/guides/girlfriendgpt/',
+};
+
+/** YouTube /go slugs still routed to the OurDream hub (editable in admin). */
 const OURDREAM_HUB_YOUTUBE_SLUGS = new Set([
-  'candy-ai-youtube',
-  'girlfriendgpt-youtube',
   'spicychat-ai-youtube',
-  'nectar-ai-youtube',
   'kupid-ai-2-youtube',
 ]);
 
@@ -64,21 +67,24 @@ function normalizeRedirectUrl(url: string): string {
   }
 }
 
-function resolveOurdreamHubYoutubeDestination(
+function resolveForcedYoutubeHubDestination(
   slug: string,
   link: { id: string; destinationUrl?: string | null },
   db: ReturnType<typeof getDb>,
 ): string {
   const raw = String(link.destinationUrl ?? '');
-  if (!OURDREAM_HUB_YOUTUBE_SLUGS.has(slug)) return raw;
-  if (normalizeRedirectUrl(raw) === normalizeRedirectUrl(OURDREAM_AI_HUB)) return raw;
+  const forced =
+    BRAND_HUB_YOUTUBE_DESTINATIONS[slug] ??
+    (OURDREAM_HUB_YOUTUBE_SLUGS.has(slug) ? OURDREAM_AI_HUB : null);
+  if (!forced) return raw;
+  if (normalizeRedirectUrl(raw) === normalizeRedirectUrl(forced)) return raw;
   db.transact(
     db.tx.affiliateLinks[link.id].update({
-      destinationUrl: OURDREAM_AI_HUB,
+      destinationUrl: forced,
       ageGate: false,
     }),
   ).catch(() => {});
-  return OURDREAM_AI_HUB;
+  return forced;
 }
 
 export const GET: APIRoute = async ({ params, url }) => {
@@ -109,7 +115,7 @@ export const GET: APIRoute = async ({ params, url }) => {
     return redirectTo('/');
   }
 
-  const destinationUrl = resolveOurdreamHubYoutubeDestination(slug, link, db);
+  const destinationUrl = resolveForcedYoutubeHubDestination(slug, link, db);
   if (!isSafeHttpUrl(destinationUrl)) {
     return redirectTo('/');
   }

@@ -2,24 +2,15 @@
 import AffiliateLink from '../../ui/AffiliateLink.astro';
 import ContentPageHeader from '../../layout/ContentPageHeader.astro';
 import HomeIcon from '../../home/desktop/HomeIcon.astro';
-import type { Product } from '../../../data/products';
-import {
-  ourdreamHubGuides,
-  ourdreamHubMeta,
-  ourdreamHubPopular,
-  ourdreamHubStartHere,
-  ourdreamHubTopics,
-} from '../../../data/ourdream-guide-hub';
+import type { BrandGuideHubView } from '../../../lib/guides/brandGuideHub';
 
 interface Props {
-  product?: Pick<Product, 'name' | 'logo' | 'affiliateUrl'> | null;
+  view: BrandGuideHubView;
 }
 
-const { product } = Astro.props;
-const visitHref = ourdreamHubMeta.visitGoHref;
-const appIcon = product?.logo || '/guides/hub/ourdream-app-icon.png';
-const productName = product?.name || ourdreamHubMeta.productName;
-const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
+const { view } = Astro.props;
+const hubGuidesJson = JSON.stringify(view.searchItems);
+const searchEmpty = view.config.searchEmpty;
 ---
 
 <div class="guide-hub">
@@ -29,16 +20,16 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
     </div>
     <ContentPageHeader />
     <div class="guide-hub__hero-body">
-      <h1 class="guide-hub__title">{ourdreamHubMeta.title}</h1>
-      <p class="guide-hub__lede">{ourdreamHubMeta.description}</p>
+      <h1 class="guide-hub__title">{view.config.title}</h1>
+      <p class="guide-hub__lede">{view.config.description}</p>
       <div class="guide-hub__search-wrap">
         <form class="guide-hub__guide-search" data-hub-guide-search role="search">
           <img src="/guides/hub/icon-search.svg" width="20" height="20" alt="" />
           <input
             type="search"
             name="q"
-            placeholder="Search OurDream AI guides…"
-            aria-label="Search OurDream AI guides"
+            placeholder={view.config.searchPlaceholder}
+            aria-label={view.config.searchPlaceholder.replace(/…$/, '')}
             data-hub-guide-input
             autocomplete="off"
             aria-autocomplete="list"
@@ -54,110 +45,128 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
           aria-hidden="true"
         ></div>
       </div>
-      <div class="guide-hub__popular">
-        <span class="guide-hub__popular-label">Popular:</span>
-        {
-          ourdreamHubPopular.map((chip) => (
-            <button type="button" class="guide-hub__chip" data-hub-chip data-query={chip.query}>
-              {chip.label}
-            </button>
-          ))
-        }
-      </div>
+      {
+        view.popular.length > 0 && (
+          <div class="guide-hub__popular">
+            <span class="guide-hub__popular-label">Popular:</span>
+            {view.popular.map((chip) => (
+              <button type="button" class="guide-hub__chip" data-hub-chip data-query={chip.query}>
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        )
+      }
       <div class="guide-hub__product" data-hub-product-sentinel>
         <div class="guide-hub__product-brand">
-          <img class="guide-hub__app-icon" src={appIcon} alt="" width="28" height="28" />
-          <span>{productName}</span>
+          {view.logo ? (
+            <img class="guide-hub__app-icon" src={view.logo} alt="" width="28" height="28" />
+          ) : null}
+          <span>{view.productName}</span>
         </div>
         <div class="guide-hub__product-actions">
-          <AffiliateLink class="guide-hub__visit" href={visitHref} target="_blank">
-            {ourdreamHubMeta.visitLabel}
+          <AffiliateLink class="guide-hub__visit" href={view.visitHref} target="_blank">
+            {view.visitLabel}
             <HomeIcon name="arrow-up-right" size={16} />
           </AffiliateLink>
-          <a class="guide-hub__review-link" href={ourdreamHubMeta.reviewHref}>Read review →</a>
+          {view.reviewHref && (
+            <a class="guide-hub__review-link" href={view.reviewHref}>Read review →</a>
+          )}
         </div>
       </div>
     </div>
   </section>
 
-  <div class="guide-hub__sticky-bar" data-hub-sticky-bar aria-hidden="true" role="region" aria-label="OurDream AI">
+  <div class="guide-hub__sticky-bar" data-hub-sticky-bar aria-hidden="true" role="region" aria-label={view.productName}>
     <div class="guide-hub__sticky-bar-inner">
       <div class="guide-hub__sticky-bar-brand">
-        <img class="guide-hub__app-icon" src={appIcon} alt="" width="28" height="28" />
-        <span>{productName}</span>
+        {view.logo ? (
+          <img class="guide-hub__app-icon" src={view.logo} alt="" width="28" height="28" />
+        ) : null}
+        <span>{view.productName}</span>
       </div>
       <div class="guide-hub__sticky-bar-actions">
-        <a class="guide-hub__sticky-review" href={ourdreamHubMeta.reviewHref}>Read review →</a>
-        <AffiliateLink class="guide-hub__sticky-visit" href={visitHref} target="_blank">
-          {ourdreamHubMeta.visitLabel}
+        {view.reviewHref && (
+          <a class="guide-hub__sticky-review" href={view.reviewHref}>Read review →</a>
+        )}
+        <AffiliateLink class="guide-hub__sticky-visit" href={view.visitHref} target="_blank">
+          {view.visitLabel}
           <HomeIcon name="arrow-up-right" size={16} />
         </AffiliateLink>
       </div>
     </div>
   </div>
 
+  {
+    (view.startHere.length > 0 || view.topics.length > 0) && (
   <div class="guide-hub__main">
-    <section class="guide-hub__section" aria-labelledby="hub-start">
-      <h2 class="guide-hub__section-title" id="hub-start">Start here</h2>
-      <p class="guide-hub__section-intro">The fastest path into OurDream: the review, then prompting, then images.</p>
-      {
-        ourdreamHubStartHere.map((guide, index) => (
-          <a class="guide-hub__start-row" href={guide.href}>
-            <span class="guide-hub__start-num">{String(index + 1).padStart(2, '0')}</span>
-            <span class="guide-hub__start-text">
-              <span class="guide-hub__start-title">{guide.title}</span>
-              <span class="guide-hub__start-desc">{guide.description}</span>
-            </span>
-            <span class="guide-hub__start-arrow" aria-hidden="true">
-              <HomeIcon name="arrow-right" size={16} />
-            </span>
-          </a>
-        ))
-      }
-    </section>
+    {
+      view.startHere.length > 0 && (
+        <section class="guide-hub__section" aria-labelledby="hub-start">
+          <h2 class="guide-hub__section-title" id="hub-start">Start here</h2>
+          <p class="guide-hub__section-intro">{view.config.startHereIntro}</p>
+          {view.startHere.map((guide, index) => (
+            <a class="guide-hub__start-row" href={guide.href}>
+              <span class="guide-hub__start-num">{String(index + 1).padStart(2, '0')}</span>
+              <span class="guide-hub__start-text">
+                <span class="guide-hub__start-title">{guide.title}</span>
+                <span class="guide-hub__start-desc">{guide.description}</span>
+              </span>
+              <span class="guide-hub__start-arrow" aria-hidden="true">
+                <HomeIcon name="arrow-right" size={16} />
+              </span>
+            </a>
+          ))}
+        </section>
+      )
+    }
 
-    <section class="guide-hub__section" aria-labelledby="hub-topics">
-      <h2 class="guide-hub__section-title" id="hub-topics">Browse by topic</h2>
-      <p class="guide-hub__section-intro">Jump into the OurDream guides by what you want to do.</p>
-      <div class="guide-hub__topics">
-        {
-          ourdreamHubTopics.map((topic) => (
-            <details class="guide-hub__topic" data-hub-topic>
-              <summary class="guide-hub__topic-head">
-                <span class="guide-hub__topic-icon">
-                  <img src={topic.icon} width="20" height="20" alt="" />
-                </span>
-                <span class="guide-hub__topic-copy">
-                  <span class="guide-hub__topic-title">{topic.title}</span>
-                  <span class="guide-hub__topic-desc guide-hub__topic-desc--desktop">{topic.description}</span>
-                  <span class="guide-hub__topic-count guide-hub__topic-count--mobile">
+    {
+      view.topics.length > 0 && (
+        <section class="guide-hub__section" aria-labelledby="hub-topics">
+          <h2 class="guide-hub__section-title" id="hub-topics">Browse by topic</h2>
+          <p class="guide-hub__section-intro">{view.config.topicsIntro}</p>
+          <div class="guide-hub__topics">
+            {view.topics.map((topic) => (
+              <details class="guide-hub__topic" data-hub-topic>
+                <summary class="guide-hub__topic-head">
+                  <span class="guide-hub__topic-icon">
+                    <img src={topic.icon} width="20" height="20" alt="" />
+                  </span>
+                  <span class="guide-hub__topic-copy">
+                    <span class="guide-hub__topic-title">{topic.title}</span>
+                    <span class="guide-hub__topic-desc guide-hub__topic-desc--desktop">{topic.description}</span>
+                    <span class="guide-hub__topic-count guide-hub__topic-count--mobile">
+                      {topic.guides.length} {topic.guides.length === 1 ? 'guide' : 'guides'}
+                    </span>
+                  </span>
+                  <span class="guide-hub__topic-count guide-hub__topic-count--desktop">
                     {topic.guides.length} {topic.guides.length === 1 ? 'guide' : 'guides'}
                   </span>
-                </span>
-                <span class="guide-hub__topic-count guide-hub__topic-count--desktop">
-                  {topic.guides.length} {topic.guides.length === 1 ? 'guide' : 'guides'}
-                </span>
-                <span class="guide-hub__topic-toggle" aria-hidden="true">
-                  <img src="/guides/hub/icon-chevron-down.svg" width="16" height="16" alt="" />
-                </span>
-              </summary>
-              <div class="guide-hub__article-rows">
-                {topic.guides.map((guide) => (
-                  <a class="guide-hub__article-row" href={guide.href}>
-                    <span>{guide.title}</span>
-                    <HomeIcon name="arrow-right" size={16} />
-                  </a>
-                ))}
-              </div>
-            </details>
-          ))
-        }
-      </div>
-    </section>
+                  <span class="guide-hub__topic-toggle" aria-hidden="true">
+                    <img src="/guides/hub/icon-chevron-down.svg" width="16" height="16" alt="" />
+                  </span>
+                </summary>
+                <div class="guide-hub__article-rows">
+                  {topic.guides.map((guide) => (
+                    <a class="guide-hub__article-row" href={guide.href}>
+                      <span>{guide.title}</span>
+                      <HomeIcon name="arrow-right" size={16} />
+                    </a>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+      )
+    }
   </div>
+    )
+  }
 </div>
 
-<script define:vars={{ hubGuidesJson }}>
+<script define:vars={{ hubGuidesJson, searchEmpty }}>
   const guides = JSON.parse(hubGuidesJson);
 
   function escapeHtml(value) {
@@ -192,7 +201,7 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
 
     function render() {
       if (!current.length) {
-        panel.innerHTML = '<p class="guide-hub__search-empty">No matching OurDream guides.</p>';
+        panel.innerHTML = `<p class="guide-hub__search-empty">${escapeHtml(searchEmpty)}</p>`;
         return;
       }
       const q = String(input.value || '').trim();
@@ -391,16 +400,16 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
     });
   }
 
-  function initOurDreamHubPage() {
+  function initBrandHubPage() {
     initHubSearch();
     initTopics();
     initProductStickyCtas();
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initOurDreamHubPage, { once: true });
+    document.addEventListener('DOMContentLoaded', initBrandHubPage, { once: true });
   } else {
-    initOurDreamHubPage();
+    initBrandHubPage();
   }
-  document.addEventListener('astro:page-load', initOurDreamHubPage);
+  document.addEventListener('astro:page-load', initBrandHubPage);
 </script>

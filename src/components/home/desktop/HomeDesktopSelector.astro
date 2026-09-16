@@ -8,13 +8,17 @@ interface Props {
   data: DesktopHomepageData;
 }
 const { data } = Astro.props;
-const icons = {
+const icons: Record<string, 'trophy' | 'chat' | 'image' | 'video' | 'card' | 'users' | 'sliders' | 'layers' | 'shield'> = {
   overall: 'trophy',
+  characters: 'users',
+  customization: 'sliders',
   chat: 'chat',
+  'chat-features': 'layers',
   images: 'image',
   video: 'video',
-  price: 'card',
-} as const;
+  privacy: 'shield',
+  pricing: 'card',
+};
 ---
 
 <section class="home-v2__section" id="home-choose" aria-labelledby="home-choose-title">
@@ -36,7 +40,7 @@ const icons = {
           aria-selected={index === 0}
           data-home-priority={priority.id}
         >
-          <HomeIcon name={icons[priority.id]} size={20} />
+          <HomeIcon name={icons[priority.id] ?? 'trophy'} size={20} />
           <span>{priority.label}</span>
           <HomeIcon name="chevron-right" size={16} />
         </button>

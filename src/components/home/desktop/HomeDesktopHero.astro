@@ -1,5 +1,4 @@
 ---
-import { homeProofFacts } from '../../../data/home-proof';
 import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
 import HomeDesktopHeader from './HomeDesktopHeader.astro';
 import HomeEyebrow from './HomeEyebrow.astro';
@@ -17,7 +16,7 @@ const { data } = Astro.props;
   <div class="home-v2__grid-hot" aria-hidden="true"></div>
   <div class="home-v2__cursor-glow" aria-hidden="true"></div>
   <img class="home-v2__glow" src="/home/v2/pink-glow.svg" alt="" />
-  <HomeDesktopHeader />
+  <HomeDesktopHeader registerAsSiteHeader={false} />
   <div class="home-v2__hero-body">
     <div class="home-v2__hero-main">
       <div class="home-v2__hero-copy">
@@ -71,26 +70,4 @@ const { data } = Astro.props;
     </div>
   </div>
   <div class="home-v2__hero-fill" aria-hidden="true"></div>
-</section>
-
-<section class="home-v2__proof-bridge" aria-label="Testing proof">
-  <div class="home-v2__proof">
-    {homeProofFacts.map((fact, i) => (
-      <>
-        {i > 0 && <span class="home-v2__proof-div" aria-hidden="true"></span>}
-        <div class="home-v2__proof-metric">
-          <p class="home-v2__proof-value">{fact.value}</p>
-          <p>{fact.label}</p>
-        </div>
-      </>
-    ))}
-  </div>
-  <div class="home-v2__finalists home-v2__finalists--proof">
-    <div class="home-v2__finalist-stack">
-      {data.finalists.map((app) => (
-        <img src={app.logo} alt="" width="28" height="28" class="home-v2__app-icon home-v2__app-icon--sm" />
-      ))}
-    </div>
-    <p>The {data.finalists.length} finalists in our 2026 rankings</p>
-  </div>
 </section>

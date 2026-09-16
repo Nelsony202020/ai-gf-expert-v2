@@ -684,6 +684,7 @@ function PageDetailDrawer({
   onSaved: () => Promise<void>;
 }) {
   const editable = Boolean(row.entity && row.recordId && (row.entity === 'products' || row.entity === 'roundups'));
+  const canToggleNoindex = row.view === 'search';
   const [seoTitle, setSeoTitle] = useState(row.seoTitle ?? '');
   const [seoDescription, setSeoDescription] = useState(row.seoDescription ?? '');
   const [canonicalUrl, setCanonicalUrl] = useState(row.canonicalUrl ?? '');
@@ -697,6 +698,7 @@ function PageDetailDrawer({
       seoDescription !== (row.seoDescription ?? '') ||
       canonicalUrl !== (row.canonicalUrl ?? '') ||
       noindex !== Boolean(row.noindexFlag));
+  const noindexDirty = canToggleNoindex && !editable && noindex !== Boolean(row.noindexFlag);
 
   async function save() {
     if (!row.entity || !row.recordId) return;
@@ -717,6 +719,17 @@ function PageDetailDrawer({
       await api.post('/api/admin/seo/page-status', {
         path: row.path.split('#')[0],
         status: nextStatus,
+      });
+      return true;
+    });
+    if (done) await onSaved();
+  }
+
+  async function saveSearchVisibility() {
+    const done = await run(async () => {
+      await api.post('/api/admin/seo/page-status', {
+        path: row.path.split('#')[0],
+        noindex,
       });
       return true;
     });
@@ -861,6 +874,16 @@ function PageDetailDrawer({
                   <DetailRow label="Canonical">
                     {row.canonicalUrl ?? <span className="text-slate-400">self (default)</span>}
                   </DetailRow>
+                  {canToggleNoindex && (
+                    <div className="mt-3 space-y-3">
+                      <Toggle checked={noindex} onChange={setNoindex} label="Hide from Google (noindex)" />
+                      {noindexDirty && (
+                        <Button onClick={saveSearchVisibility} disabled={busy}>
+                          {busy ? 'Saving…' : 'Save search visibility'}
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               {row.h1Override && <DetailRow label="H1 override">{row.h1Override}</DetailRow>}

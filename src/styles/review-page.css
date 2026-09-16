@@ -1,7 +1,8 @@
 /* Review page — sticky tab bar */
 
 :root {
-  --site-header-height: 3.5rem;
+  /* Matches HomeDesktopHeader (80px) — canonical content chrome */
+  --site-header-height: 5rem;
   --site-header-offset: 0px;
   --review-tabbar-height: 2.9375rem;
   --roundup-hub-nav-height: 2.625rem;
@@ -9,7 +10,7 @@
 
 @media (min-width: 768px) {
   :root {
-    --site-header-height: 4.25rem;
+    --site-header-height: 5rem;
     --review-tabbar-height: 3.25rem;
     --roundup-hub-nav-height: 2.75rem;
   }
@@ -17,7 +18,7 @@
 
 @media (min-width: 1024px) {
   :root {
-    --site-header-height: 4.25rem;
+    --site-header-height: 5rem;
   }
 }
 
@@ -35,7 +36,8 @@
 }
 
 /* Hide the header’s own bottom border while tabs are joined underneath */
-.site-header.site-header--joined-tabs {
+.site-header.site-header--joined-tabs,
+[data-site-header].site-header--joined-tabs {
   border-bottom-color: transparent;
 }
 
@@ -63,7 +65,8 @@
   border-bottom-color: var(--site-header-glass-border);
 }
 
-[data-theme='dark'] .site-header.site-header--joined-tabs {
+[data-theme='dark'] .site-header.site-header--joined-tabs,
+[data-theme='dark'] [data-site-header].site-header--joined-tabs {
   border-bottom-color: transparent !important;
 }
 

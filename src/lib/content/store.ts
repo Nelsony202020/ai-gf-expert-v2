@@ -391,6 +391,10 @@ function mapProduct(
     tagline: dbProduct.tagline ?? fileFallback?.tagline ?? '',
     reviewedDate: fmtDate(dbProduct.lastTestedAt) || fileFallback?.reviewedDate || '',
     modifiedDate: fmtDate(dbProduct.updatedAt) || fileFallback?.modifiedDate || '',
+    publishedAtMs:
+      dbProduct.publishedAt != null
+        ? Number(dbProduct.publishedAt)
+        : fileFallback?.publishedAtMs,
     methodology: `Methodology ${methodologyVersion}`,
     authors,
     websiteUrl: dbProduct.websiteUrl ?? fileFallback?.websiteUrl ?? '',
@@ -662,8 +666,12 @@ export async function loadRoundupForPublic(
   slug: string,
   fileTemplate: Roundup,
 ): Promise<RoundupPublicLoad> {
+  const { fileProductsBaseline } = await import('../../data/products');
+
   if (!isDbConfigured()) {
-    const picks = normalizeRoundupPickAffiliateUrls(fileTemplate.picks);
+    const publishedProducts = await loadPublishedProducts(fileProductsBaseline);
+    const resolvedPicks = resolveRoundupPicks(fileTemplate.picks, publishedProducts, []);
+    const picks = normalizeRoundupPickAffiliateUrls(resolvedPicks);
     return {
       roundup: {
         ...fileTemplate,
@@ -686,7 +694,7 @@ export async function loadRoundupForPublic(
     const dbRoundup = (roundups as any[])?.find((r) => !r.deletedAt);
     const isDraft = !dbRoundup || dbRoundup.status !== 'published';
 
-    const publishedProducts = await loadPublishedProducts([]);
+    const publishedProducts = await loadPublishedProducts(fileProductsBaseline);
     const productsBySlug = new Map(publishedProducts.map((p) => [p.slug, p]));
     const entryMeta = mapRoundupEntries(dbRoundup?.entries ?? []);
     const resolvedPicks = resolveRoundupPicks(fileTemplate.picks, publishedProducts, entryMeta);
@@ -714,7 +722,9 @@ export async function loadRoundupForPublic(
     return { roundup, isDraft };
   } catch (error) {
     console.error('[content] roundup public load failed — using file template', error);
-    const picks = normalizeRoundupPickAffiliateUrls(fileTemplate.picks);
+    const publishedProducts = await loadPublishedProducts(fileProductsBaseline);
+    const resolvedPicks = resolveRoundupPicks(fileTemplate.picks, publishedProducts, []);
+    const picks = normalizeRoundupPickAffiliateUrls(resolvedPicks);
     return {
       roundup: { ...fileTemplate, picks },
       isDraft: true,

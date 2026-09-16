@@ -9,7 +9,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { publicSiteOrigin } from '../siteOrigin';
 import { getAllSitemapEntries, childSitemapFor } from '../sitemap';
-import { getPageOverrides, normalizeOverridePath } from './pageOverrides';
+import { getNoindexPaths, getPageOverrides, normalizeOverridePath, resolvePathNoindex } from './pageOverrides';
+import { defaultNoindexBrandHubPaths } from '../guides/brandGuideHub';
 import { pathMatchKey, publicPagePath } from '../urls';
 import { getTestCategories } from '../test-framework';
 import { loadPublishedProducts, loadPublishedRoundupSummaries } from '../content/store';
@@ -68,6 +69,10 @@ const STATIC_PAGES: StaticPageDef[] = [
   { path: '/reviews/', title: 'All Reviews', contentType: 'hub', sourceFile: 'src/pages/reviews/index.astro' },
   { path: '/guides/', title: 'All Guides', contentType: 'hub', sourceFile: 'src/pages/guides/index.astro' },
   { path: '/guides/ourdream-ai/', title: 'OurDream AI Guides', contentType: 'hub', sourceFile: 'src/pages/guides/ourdream-ai.astro' },
+  { path: '/guides/candy-ai/', title: 'Candy AI Guides', contentType: 'hub', sourceFile: 'src/pages/guides/candy-ai.astro', notes: 'Starts noindex; toggle Search visibility in SEO → Pages' },
+  { path: '/guides/nectar-ai/', title: 'Nectar AI Guides', contentType: 'hub', sourceFile: 'src/pages/guides/nectar-ai.astro', notes: 'Starts noindex; toggle Search visibility in SEO → Pages' },
+  { path: '/guides/girlfriendgpt/', title: 'GirlfriendGPT Guides', contentType: 'hub', sourceFile: 'src/pages/guides/girlfriendgpt.astro', notes: 'Starts noindex; toggle Search visibility in SEO → Pages. Canonical product slug is girlfriendgpt.' },
+  { path: '/guides/juicychat-ai/', title: 'JuicyChat AI Guides', contentType: 'hub', sourceFile: 'src/pages/guides/juicychat-ai.astro', notes: 'Starts noindex; toggle Search visibility in SEO → Pages' },
   { path: `/guides/${buyingGuideSlug}/`, title: 'How to Choose an AI Girlfriend App', contentType: 'guide', sourceFile: 'src/pages/guides/how-to-choose-an-ai-girlfriend-app.astro' },
   { path: '/guides/ourdream-ai-comics/', title: 'OurDream AI Comics: How to Use the Comic Generator', contentType: 'guide', sourceFile: 'src/pages/guides/ourdream-ai-comics.astro' },
   { path: '/guides/how-to-use-ourdream-ai-image-generator/', title: 'How to Use OurDream AI Image Generator', contentType: 'guide', sourceFile: 'src/pages/guides/how-to-use-ourdream-ai-image-generator.astro' },
@@ -228,6 +233,10 @@ function friendlyPageType(row: Pick<RegistryUrl, 'path' | 'contentType' | 'statu
     '/reviews/': 'Reviews page',
     '/guides/': 'Guides page',
     '/guides/ourdream-ai/': 'OurDream AI Guides',
+    '/guides/candy-ai/': 'Candy AI Guides',
+    '/guides/nectar-ai/': 'Nectar AI Guides',
+    '/guides/girlfriendgpt/': 'GirlfriendGPT Guides',
+    '/guides/juicychat-ai/': 'JuicyChat AI Guides',
     '/test/': 'Testing page',
     '/test/all/': 'All Tests page',
     '/legal/': 'Legal',
@@ -693,9 +702,11 @@ export async function buildUrlRegistry(): Promise<UrlRegistry> {
   // --- Sitemap registry (fills gaps + marks sitemap membership) --------------
   const publishedProducts = await loadPublishedProducts(fileProducts);
   const publishedRoundups = await loadPublishedRoundupSummaries();
+  const noindexPaths = await getNoindexPaths(defaultNoindexBrandHubPaths());
   const sitemapEntries = getAllSitemapEntries({
     products: publishedProducts,
     roundups: publishedRoundups,
+    noindexPaths,
   });
 
   for (const entry of sitemapEntries) {
@@ -797,6 +808,7 @@ export async function buildUrlRegistry(): Promise<UrlRegistry> {
   // Apply admin page overrides (draft = served as 404, out of the sitemap)
   // ---------------------------------------------------------------------------
   const pageOverrides = await getPageOverrides(true);
+  const defaultNoindex = new Set(defaultNoindexBrandHubPaths().map(normalizeOverridePath));
   for (const row of rows) {
     if (row.view !== 'search') continue;
     const override = pageOverrides[normalizeOverridePath(row.path)];
@@ -807,6 +819,20 @@ export async function buildUrlRegistry(): Promise<UrlRegistry> {
       row.sitemapSection = undefined;
       row.notes = 'Set to draft in the admin — served as 404, excluded from sitemaps';
       row.updatedAt = override.updatedAt;
+    }
+    const hidden = resolvePathNoindex(
+      row.path,
+      pageOverrides,
+      defaultNoindex.has(normalizeOverridePath(row.path)),
+    );
+    if (hidden && row.status !== 'draft') {
+      row.noindexFlag = true;
+      row.inXmlSitemap = false;
+      row.sitemapSection = undefined;
+      if (!row.notes) {
+        row.notes = 'Hidden from Google (noindex). Change Search visibility in SEO → Pages to index later.';
+      }
+      if (override?.updatedAt) row.updatedAt = override.updatedAt;
     }
   }
 

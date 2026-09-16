@@ -1,9 +1,12 @@
 ---
-import HomeDesktopHeader from '../home/desktop/HomeDesktopHeader.astro';
+import ContentPageHeader from './ContentPageHeader.astro';
 ---
 
 <section class="site-ink-hero" data-site-ink-hero>
-  <HomeDesktopHeader variant="hero" />
+  <div class="site-ink-hero__glow" aria-hidden="true">
+    <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
+  </div>
+  <ContentPageHeader />
   <div class="site-ink-hero__body">
     <slot />
   </div>

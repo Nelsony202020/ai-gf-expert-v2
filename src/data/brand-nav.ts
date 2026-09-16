@@ -17,11 +17,15 @@ export interface BrandNav {
  * Do not point these at review URLs.
  */
 export const BRAND_HUB_BY_SLUG: Record<string, string> = {
+  'candy-ai': '/guides/candy-ai/',
+  'girlfriendgpt': '/guides/girlfriendgpt/',
+  'juicychat-ai': '/guides/juicychat-ai/',
+  'nectar-ai': '/guides/nectar-ai/',
   'ourdream-ai': '/guides/ourdream-ai/',
 };
 
-/** Preferred order for the header “Popular brands” list. Hubs not in this list still appear after. */
-export const POPULAR_BRAND_SLUGS = ['candy-ai', 'ourdream-ai', 'spicychat', 'girlfriendgpt'] as const;
+/** Header Brands dropdown: OurDream AI guide hub only. */
+export const POPULAR_BRAND_SLUGS = ['ourdream-ai'] as const;
 
 /** Existing app directory — used as “View all brands” until a dedicated brands index exists. */
 export const BRAND_DIRECTORY_HREF = '/ai-girlfriend-apps/';
@@ -53,7 +57,6 @@ export function buildBrandNav(
   };
 
   for (const slug of POPULAR_BRAND_SLUGS) pushHub(slug);
-  for (const slug of Object.keys(BRAND_HUB_BY_SLUG)) pushHub(slug);
 
   return {
     popular,
