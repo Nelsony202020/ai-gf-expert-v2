@@ -324,11 +324,8 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
 
   function setSubOpen(sub: Element, open: boolean) {
     const btn = sub.querySelector("[data-subcategory-toggle]");
-    const tests = sub.querySelector("[data-tests]");
     sub.classList.toggle("is-open", open);
     btn?.setAttribute("aria-expanded", open ? "true" : "false");
-    if (open) tests?.removeAttribute("hidden");
-    else tests?.setAttribute("hidden", "");
   }
 
   function prepareCategory(wrap: Element) {
