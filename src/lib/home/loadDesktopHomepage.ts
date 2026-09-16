@@ -3,7 +3,6 @@ import { fileProductsBaseline } from '../../data/products';
 import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
 import { publicPagePath } from '../urls';
 import { loadRoundupForPublic, loadPublishedProducts, loadProductLogoMap } from '../content/store';
-import { productToRoundupPick } from '../content/roundupPick';
 import { isPlaceholderImage } from '../media/optimize';
 import { isPlaceholderLogo, resolveBrandLogo } from './brandLogos';
 import { figmaScoreTone, formatScore } from './figmaScore';
@@ -11,7 +10,6 @@ import { publicAffiliateHref } from '../affiliate/publicHref';
 import { getTestCategories } from '../test-framework';
 import { buildHomeTesterFacts, type HomeProofFact } from './homeProofMetrics';
 
-const SCORE_EXAMPLE_SLUG = 'candy-ai';
 const WINNER_CARD_KEYS = ['images', 'characters', 'chat'] as const;
 const TOP_CARD_KEYS = ['chat', 'images', 'video'] as const;
 const SCORE_CATEGORY_KEYS = [
@@ -247,7 +245,9 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     loadProductLogoMap(),
   ]);
   const weights = categoryWeightsMap();
-  const picks = roundup.picks.filter((p) => p.overallScore != null);
+  const picks = roundup.picks
+    .filter((p) => p.overallScore != null)
+    .sort((a, b) => b.overallScore - a.overallScore);
   const publishedReviews = published.filter((p) => p.overallScore != null);
 
   const emptyApp: HomeRankedApp = {
@@ -326,16 +326,7 @@ export async function loadDesktopHomepage(): Promise<DesktopHomepageData> {
     };
   });
 
-  const publishedBySlug = new Map(publishedReviews.map((p) => [p.slug, p]));
-  let scoreExamplePick = picks.find((p) => p.slug === SCORE_EXAMPLE_SLUG);
-  if (!scoreExamplePick) {
-    const product = publishedBySlug.get(SCORE_EXAMPLE_SLUG);
-    const template = fileAiGirlfriendRoundup.picks.find((p) => p.slug === SCORE_EXAMPLE_SLUG);
-    if (product && template) {
-      scoreExamplePick = productToRoundupPick(template, product);
-    }
-  }
-  scoreExamplePick = scoreExamplePick ?? winnerSource ?? picks[0];
+  const scoreExamplePick = winnerSource ?? picks[0];
   const scoreExampleApp = scoreExamplePick
     ? withLogo(toRanked(scoreExamplePick, 1, TOP_CARD_KEYS, weights), logoMap)
     : winner;

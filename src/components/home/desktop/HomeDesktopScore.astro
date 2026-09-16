@@ -3,7 +3,6 @@ import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage'
 import { figmaScoreWord } from '../../../lib/home/figmaScore';
 import HomeEyebrow from './HomeEyebrow.astro';
 import HomeIcon from './HomeIcon.astro';
-import HomeScore from './HomeScore.astro';
 
 interface Props {
   data: DesktopHomepageData;
@@ -46,7 +45,7 @@ const icons: Record<string, 'users' | 'sliders' | 'chat' | 'layers' | 'image' | 
           <p class="home-v2__muted-copy">Weighted average of the 8 category tests below.</p>
         </div>
         <div class="home-v2__score-head-value">
-          <HomeScore score={example.overall} size="xl" />
+          <span class={`home-v2__score-num is-${example.overall.tone}`}>{example.overall.value}</span>
           <span class="home-v2__score-denom">/10</span>
         </div>
       </div>

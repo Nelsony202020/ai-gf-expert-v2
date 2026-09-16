@@ -21,7 +21,13 @@ const reviewLinks = publishedProducts
   .map((p) => ({ label: `${p.name} Review`, href: `/reviews/${p.slug}/` }));
 ---
 
-<header class={`home-v2__header home-v2__header--${variant}`} data-home-v2-header data-header-variant={variant} data-glossary-skip>
+<header
+  class={`home-v2__header home-v2__header--${variant}`}
+  data-site-header
+  data-home-v2-header
+  data-header-variant={variant}
+  data-glossary-skip
+>
   <a href="/" class="home-v2__logo-link" aria-label="Girlfriend Expert AI">
     <span class="home-v2__logo" role="img" aria-hidden="true"></span>
   </a>

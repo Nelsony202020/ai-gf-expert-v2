@@ -7,7 +7,7 @@
   --roundup-header-bg: #f8faf3;
   --roundup-intro-offset: 1.5rem;
   --roundup-sidebar-sticky-gap: 0.5rem;
-  --site-header-height: 3.5rem;
+  --site-header-height: 5rem;
 }
 
 /* Native 1024×256 card — do not stretch past source or it goes soft. */
@@ -17,7 +17,7 @@
 
 @media (min-width: 768px) {
   .roundup-page {
-    --site-header-height: 4.25rem;
+    --site-header-height: 5rem;
   }
 
   .roundup-hero-stage {
@@ -27,11 +27,12 @@
 
 /* Hub banner page: fixed header over fixed hero (glass styles are global) */
 body:has(.roundup-hero-stage) {
-  --site-header-height: 3.5rem;
+  --site-header-height: 5rem;
   --roundup-hero-height: clamp(8rem, 25vw, 16rem);
 }
 
-body:has(.roundup-hero-stage) .site-header {
+body:has(.roundup-hero-stage) .site-header,
+body:has(.roundup-hero-stage) [data-site-header] {
   position: fixed;
   top: 0;
   left: 0;
@@ -40,7 +41,7 @@ body:has(.roundup-hero-stage) .site-header {
 
 @media (min-width: 768px) {
   body:has(.roundup-hero-stage) {
-    --site-header-height: 4.25rem;
+    --site-header-height: 5rem;
     --roundup-hero-height: 16rem;
   }
 }
