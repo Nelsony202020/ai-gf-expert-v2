@@ -253,8 +253,6 @@ const sectionHash = buildReviewRatingsHash(category.key);
 
         if (scrollToBreakdown) {
           requestAnimationFrame(() => {
-            const root = document.querySelector<HTMLElement>('[data-ratings-root]');
-            if (root?.dataset.detailLevel !== 'all-in') return;
             categoryEl
               .querySelector<HTMLElement>(`[data-subscore-panel][data-subscore-index="${index}"]:not(.hidden)`)
               ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -270,14 +268,6 @@ const sectionHash = buildReviewRatingsHash(category.key);
           if ((e.target as HTMLElement).closest('.rt-tooltip-trigger')) return;
           const index = card.dataset.subscoreIndex;
           if (index === undefined) return;
-          const root = document.querySelector<HTMLElement>('[data-ratings-root]');
-          const level = root?.dataset.detailLevel ?? 'medium';
-          const isActive = card.getAttribute('aria-selected') === 'true';
-          if (isActive && level === 'all-in') {
-            clearSubscoreSelection();
-            return;
-          }
-          if (isActive && level !== 'all-in') return;
           selectSubscore(index, true);
         });
 
@@ -295,7 +285,7 @@ const sectionHash = buildReviewRatingsHash(category.key);
       const content = categoryEl.querySelector<HTMLElement>('[data-accordion-content]');
       const isOpen = content && !content.classList.contains('hidden');
       const level = root?.dataset.detailLevel ?? 'medium';
-      if ((level === 'all-in' || level === 'medium') && isOpen) {
+      if (level === 'all-in' && isOpen) {
         selectSubscore('0', false);
       } else {
         clearSubscoreSelection();
@@ -304,20 +294,16 @@ const sectionHash = buildReviewRatingsHash(category.key);
   }
 
   document.addEventListener('detail-level-change', ((e: CustomEvent) => {
-    if (e.detail?.level === 'skim') {
-      document.querySelectorAll<HTMLElement>('[data-ratings-root] [data-category]').forEach((el) => {
-        el.clearSubscoreSelection?.();
-      });
-      return;
-    }
-    if (e.detail?.level === 'medium' || e.detail?.level === 'all-in') {
-      document.querySelectorAll<HTMLElement>('[data-ratings-root] [data-category]').forEach((el) => {
-        const content = el.querySelector<HTMLElement>('[data-accordion-content]');
-        if (content && !content.classList.contains('hidden')) {
-          el.selectSubscore?.('0', false);
-        }
-      });
-    }
+    const level = e.detail?.level;
+    document.querySelectorAll<HTMLElement>('[data-ratings-root] [data-category]').forEach((el) => {
+      const content = el.querySelector<HTMLElement>('[data-accordion-content]');
+      const isOpen = content && !content.classList.contains('hidden');
+      if (level === 'all-in' && isOpen) {
+        el.selectSubscore?.('0', false);
+        return;
+      }
+      el.clearSubscoreSelection?.();
+    });
   }) as EventListener);
 
   initSubscoreSelect();

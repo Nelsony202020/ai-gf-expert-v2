@@ -99,6 +99,7 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
       categorySlug: cat.slug,
       subscoreSlug: sub.slug,
       categoryName: cat.name,
+      categoryWeight: cat.weight,
       subscoreName: sub.name,
       subscoreScore: computedScore ?? sub.score,
       scopeDescription: buildSubscoreCalcScope(product.name, sub.name, scopeSource),
@@ -106,7 +107,9 @@ const subscoreCalcs = ratingsModel.categories.flatMap((cat) =>
       keyTakeaways: approvedTakeaways.get(`${cat.slug}/${sub.slug}`) ?? '—',
       items,
       excludedNote,
-      ...nav,
+      prevLabel: cat.name,
+      nextDrawerId: nav.nextDrawerId,
+      nextLabel: nav.nextLabel,
     };
   }),
 );

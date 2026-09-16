@@ -233,17 +233,6 @@ const shareUrl = head.canonical;
       if (!content) return;
 
       const willOpen = force ?? content.classList.contains('hidden');
-
-      if (willOpen) {
-        document.querySelectorAll<HTMLElement>('[data-accordion-group] [data-category]').forEach((cat) => {
-          if (cat === wrapper) return;
-          const otherContent = cat.querySelector<HTMLElement>('[data-accordion-content]');
-          const otherToggle = cat.querySelector<HTMLElement>('[data-accordion-toggle]');
-          if (otherContent) otherContent.classList.add('hidden');
-          if (otherToggle) otherToggle.setAttribute('aria-expanded', 'false');
-        });
-      }
-
       content.classList.toggle('hidden', !willOpen);
       wrapper?.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((el) => {
         el.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
