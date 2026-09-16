@@ -2,10 +2,11 @@
 import type { Product } from '../../data/products';
 import type { FeaturedIn } from '../../lib/content/store';
 import { getAuthor } from '../../data/authors';
-import { formatReviewedOn, getReviewProofMeta, getBestFeaturedIn, featuredInHref, featuredInDesktopLabel, featuredInMobileLabel } from '../../lib/review-shell';
+import { formatReviewedOn, getReviewProofMeta, getBestFeaturedIn, featuredInHref, featuredInDesktopLabel, featuredInMobileLabel, authorMobileCredential } from '../../lib/review-shell';
 import ShareMenu from '../ui/ShareMenu.astro';
 import Gallery from './Gallery.astro';
 import RatingSidebar from './RatingSidebar.astro';
+import ReviewIcon from './ReviewIcon.astro';
 
 interface Props {
   product: Product;
@@ -20,6 +21,10 @@ const published = formatReviewedOn(product.reviewedDate);
 const updated = formatReviewedOn(product.modifiedDate);
 const proof = getReviewProofMeta(product);
 const featured = getBestFeaturedIn(featuredIn);
+const educationTitle = authorProfile?.education?.find((item) => /master/i.test(item.title))?.title;
+const credential = authorMobileCredential(educationTitle);
+const roleLabel = author?.role?.replace(/\s*·.*$/, '').trim() || 'Lead Tester';
+const roleLine = [roleLabel, credential].filter(Boolean).join(' · ');
 ---
 
 <div class="section-container px-4 md:px-8">
@@ -49,42 +54,45 @@ const featured = getBestFeaturedIn(featuredIn);
         {author.avatar && (
           authorHref ? (
             <a href={authorHref} class="rs-author-avatar">
-              <img src={author.avatar} alt="" width="28" height="28" />
+              <img src={author.avatar} alt="" width="32" height="32" />
             </a>
           ) : (
             <span class="rs-author-avatar">
-              <img src={author.avatar} alt="" width="28" height="28" />
+              <img src={author.avatar} alt="" width="32" height="32" />
             </span>
           )
         )}
-        {authorHref ? (
-          <a href={authorHref} class="rs-author-name">{author.name}</a>
-        ) : (
-          <span class="rs-author-name">{author.name}</span>
-        )}
-        {author.verified && (
-          <svg class="rs-verified" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M12.5 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0Z" stroke="#db2777" stroke-width="1.5"/>
-            <path d="M4.2 6.6 6.1 8.5 9.6 5" stroke="#db2777" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        )}
-        {author.role && <span class="rs-author-role">{author.role}</span>}
+        <div class="rs-author-text">
+          <div class="rs-author-name-row">
+            {authorHref ? (
+              <a href={authorHref} class="rs-author-name">{author.name}</a>
+            ) : (
+              <span class="rs-author-name">{author.name}</span>
+            )}
+            {author.verified && (
+              <ReviewIcon name="badge-check" size={14} class="rs-verified" />
+            )}
+          </div>
+          {roleLine && <p class="rs-author-role">{roleLine}</p>}
+        </div>
       </div>
     )}
     {(published || updated) && (
       <>
         <span class="rs-meta-sep" aria-hidden="true"></span>
-        <div class="rs-dates">
-          <span>
-            {published && <>Published {published}</>}
-            {published && updated && updated !== published && <> · Updated {updated}</>}
-            {product.methodology && <> · {product.methodology}</>}
-          </span>
-          <button type="button" class="rs-info-btn" data-tooltip-trigger="methodology" aria-label="About our methodology">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 6.2V9.5M7 4.6h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </button>
-        </div>
+        <p class="rs-dates">
+          {published && <>Published {published}</>}
+          {published && updated && updated !== published && <> · Updated {updated}</>}
+        </p>
       </>
+    )}
+    {product.methodology && (
+      <div class="rs-methodology">
+        <span>{product.methodology}</span>
+        <button type="button" class="rs-info-btn" data-tooltip-trigger="methodology" aria-label="About our methodology">
+          <ReviewIcon name="info" size={14} />
+        </button>
+      </div>
     )}
     <span class="rs-meta-sep rs-share-desktop-sep" aria-hidden="true"></span>
     <div class="rs-share-desktop">
@@ -99,9 +107,9 @@ const featured = getBestFeaturedIn(featuredIn);
 
   {featured && (
     <a class="rs-rank-row" href={featuredInHref(featured)}>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.3 5.3v-4h8v4a4 4 0 1 1-8 0Z" stroke="currentColor" stroke-width="1.5"/><path d="M3.3 6H2a2 2 0 0 1-2-2V2.3h3.3" stroke="currentColor" stroke-width="1.5"/></svg>
+      <ReviewIcon name="trophy" size={16} />
       <span>{featuredInMobileLabel(featured)}</span>
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M4 2.5 9.5 7 4 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <ReviewIcon name="arrow-right" size={14} />
     </a>
   )}
 
@@ -141,9 +149,32 @@ const featured = getBestFeaturedIn(featuredIn);
   .rs-share-mobile { display: none; }
   .rs-share-desktop { display: flex; align-items: center; }
   .rs-share-desktop-sep { display: block; }
+  .rs-author-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 999px; display: block; }
   @media (max-width: 767px) {
     .rs-share-mobile { display: block; flex-shrink: 0; }
     .rs-share-desktop,
     .rs-share-desktop-sep { display: none; }
+    .rs-hero-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .rs-meta-sep { display: none; }
+    .rs-author {
+      width: 100%;
+      gap: 10px;
+      align-items: center;
+    }
+    .rs-author-avatar {
+      width: 32px;
+      height: 32px;
+    }
+    .rs-dates {
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 16px;
+      color: #8a8991;
+    }
   }
 </style>

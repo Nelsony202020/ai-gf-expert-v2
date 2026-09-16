@@ -1,10 +1,11 @@
 ---
 import type { Product } from '../../../data/products';
 import { getAuthor } from '../../../data/authors';
-import { getReviewQuickFacts } from '../../../lib/review-shell';
+import { getOverviewHeadline, getReviewQuickFacts } from '../../../lib/review-shell';
 import { renderReviewProseText } from '../../../lib/review/renderReviewProse';
 import CharacterStoryHighlights from '../CharacterStoryHighlights.astro';
 import HermanTake from '../HermanTake.astro';
+import ReviewIcon from '../ReviewIcon.astro';
 import CmsField from '../../cms/CmsField.astro';
 
 interface Props {
@@ -20,14 +21,17 @@ const bestFor = product.overview.bestForList ?? [];
 const notIdeal = product.overview.notIdealList ?? [];
 const ourTakeHtml = renderReviewProseText(product.ourTake);
 const characters = product.overview.characters ?? [];
+const headline = getOverviewHeadline(product);
 ---
 
 <section class="section-container px-4 md:px-8 rs-overview" id="overview" aria-labelledby="overview-heading">
   <div class="rs-overview-main">
-    <p class="rs-verdict-kicker" id="overview-heading">Our verdict</p>
-    <h2 class="rs-verdict-heading">
-      <CmsField path="tagline">{product.tagline}</CmsField>
-    </h2>
+    <p class="rs-verdict-kicker">Our verdict</p>
+    {headline && (
+      <h2 class="rs-verdict-heading" id="overview-heading">
+        <CmsField path="tagline">{headline}</CmsField>
+      </h2>
+    )}
     <div class="rs-verdict-copy">
       <Fragment set:html={ourTakeHtml} />
     </div>
@@ -35,44 +39,41 @@ const characters = product.overview.characters ?? [];
       <HermanTake author={hermanProfile} quote={product.expertOpinion} />
     )}
     {(bestFor.length > 0 || notIdeal.length > 0) && (
-      <div class="rs-lists">
-        {bestFor.length > 0 && (
-          <div>
-            <h3>Best for</h3>
-            <ul class="rs-list">
-              {bestFor.map((item) => (
-                <li>
-                  <svg class="rs-list-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                    <circle cx="9" cy="9" r="7.5" stroke="#be185d" stroke-width="1.5" />
-                    <path d="M12 7.2 8.25 10.95 6.5 9.2" stroke="#be185d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  <span>
-                    <CmsField path="overview.bestForList">{item}</CmsField>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {notIdeal.length > 0 && (
-          <div>
-            <h3>Not ideal for</h3>
-            <ul class="rs-list rs-list--neutral">
-              {notIdeal.map((item) => (
-                <li>
-                  <svg class="rs-list-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                    <circle cx="9" cy="9" r="7.5" stroke="#55545b" stroke-width="1.5" />
-                    <path d="M6 9h6" stroke="#55545b" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                  <span>
-                    <CmsField path="overview.notIdealList">{item}</CmsField>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+      <>
+        <div class="rs-overview-rule" aria-hidden="true"></div>
+        <div class="rs-lists">
+          {bestFor.length > 0 && (
+            <div>
+              <h3>Best for</h3>
+              <ul class="rs-list">
+                {bestFor.map((item) => (
+                  <li>
+                    <ReviewIcon name="circle-check" size={18} class="rs-list-icon" />
+                    <span>
+                      <CmsField path="overview.bestForList">{item}</CmsField>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {notIdeal.length > 0 && (
+            <div>
+              <h3>Not ideal for</h3>
+              <ul class="rs-list rs-list--neutral">
+                {notIdeal.map((item) => (
+                  <li>
+                    <ReviewIcon name="circle-minus" size={18} class="rs-list-icon" />
+                    <span>
+                      <CmsField path="overview.notIdealList">{item}</CmsField>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </>
     )}
   </div>
 

@@ -122,32 +122,90 @@ export type ReviewQuickFact = {
   value: string;
 };
 
-export function getReviewQuickFacts(product: Product): ReviewQuickFact[] {
-  const specs = (product.featureSpecs ?? [])
-    .filter((spec) => spec.available !== false && spec.value.trim())
-    .map((spec) => ({ label: spec.name, value: spec.value }));
-  if (specs.length) return specs;
+/** Approved Overview Quick Facts rows (Figma Review / Quick Facts). */
+const QUICK_FACT_ROWS: Array<{ label: string; aliases: string[] }> = [
+  { label: 'Character library', aliases: ['character library', 'library size', 'characters'] },
+  { label: 'Community-made', aliases: ['community-made', 'community made', 'ugc'] },
+  { label: 'Video length', aliases: ['video length', 'max video', 'video duration'] },
+  { label: 'Character styles', aliases: ['character styles', 'styles'] },
+  { label: 'AI phone calls', aliases: ['ai phone calls', 'voice calls', 'phone calls'] },
+  { label: 'Voice messages', aliases: ['voice messages'] },
+  { label: 'Discreet billing', aliases: ['discreet billing', 'billing privacy'] },
+  { label: 'Free plan', aliases: ['free plan'] },
+];
 
+function specValue(product: Product, aliases: string[]): string {
+  const specs = product.featureSpecs ?? [];
+  for (const spec of specs) {
+    if (spec.available === false || !spec.value.trim()) continue;
+    const name = spec.name.trim().toLowerCase();
+    if (aliases.some((alias) => name === alias || name.includes(alias))) {
+      return spec.value.trim();
+    }
+  }
+  return '';
+}
+
+function yesNo(value: boolean | undefined): string {
+  if (value === true) return 'Yes';
+  if (value === false) return 'No';
+  return '';
+}
+
+export function getReviewQuickFacts(product: Product): ReviewQuickFact[] {
   const caps = product.capabilities;
-  if (!caps) return [];
+  const billing = product.safetyAudit.find((item) =>
+    /billing|discreet/i.test(item.label),
+  );
+
+  const styleBits: string[] = [];
+  if (caps?.realisticCharacters) styleBits.push('Realistic');
+  if (caps?.animeCharacters) styleBits.push('Anime');
+
+  const fallbacks: Record<string, string> = {
+    'AI phone calls': yesNo(caps?.voiceCalls),
+    'Voice messages': yesNo(caps?.voiceMessages),
+    'Free plan': yesNo(caps?.freePlan),
+    'Character styles':
+      styleBits.length > 1 ? String(styleBits.length) : styleBits[0] ?? '',
+    'Discreet billing':
+      billing?.status && /discreet|yes/i.test(billing.status) ? 'Yes' : billing?.status ?? '',
+  };
 
   const facts: ReviewQuickFact[] = [];
-  const yesNo = (value: boolean | undefined) => (value ? 'Yes' : value === false ? 'No' : '');
-
-  const rows: Array<[string, string]> = [
-    ['Realistic characters', yesNo(caps.realisticCharacters)],
-    ['Anime characters', yesNo(caps.animeCharacters)],
-    ['Voice calls', yesNo(caps.voiceCalls)],
-    ['Voice messages', yesNo(caps.voiceMessages)],
-    ['Token system', yesNo(caps.tokenSystem)],
-    ['Free plan', yesNo(caps.freePlan)],
-    ['Image generation', yesNo(caps.imageGeneration)],
-    ['Video generation', yesNo(caps.videoGeneration)],
-  ];
-  for (const [label, value] of rows) {
-    if (value) facts.push({ label, value });
+  const usedSpecNames = new Set<string>();
+  for (const row of QUICK_FACT_ROWS) {
+    const fromSpec = specValue(product, row.aliases);
+    const value = fromSpec || fallbacks[row.label] || '';
+    if (fromSpec) {
+      const match = (product.featureSpecs ?? []).find((spec) =>
+        row.aliases.some((alias) => spec.name.trim().toLowerCase().includes(alias)),
+      );
+      if (match) usedSpecNames.add(match.name);
+    }
+    if (value) facts.push({ label: row.label, value });
+  }
+  for (const spec of product.featureSpecs ?? []) {
+    if (facts.length >= 8) break;
+    if (spec.available === false || !spec.value.trim()) continue;
+    if (usedSpecNames.has(spec.name)) continue;
+    facts.push({ label: spec.name, value: spec.value.trim() });
   }
   return facts;
+}
+
+export function getOverviewHeadline(product: Product): string {
+  const tagline = product.tagline?.trim();
+  if (tagline) return tagline;
+  const summary = product.overallSummary?.trim();
+  if (summary) return summary;
+  return '';
+}
+
+export function authorMobileCredential(educationTitle?: string): string {
+  if (!educationTitle) return '';
+  if (/AI Ethics/i.test(educationTitle)) return 'M.A. AI Ethics & Society';
+  return educationTitle.replace(/^Master’?s in /i, 'M.A. ').split(',')[0].trim();
 }
 
 export function featuredInHref(item: FeaturedIn): string {

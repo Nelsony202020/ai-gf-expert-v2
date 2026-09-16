@@ -13,7 +13,7 @@ if (!trimmed) return;
 const avatarSrc = author.avatar || '/brand/herman-main-icon.svg';
 ---
 
-<div class="rs-herman">
+<aside class="rs-herman">
   <span class="rs-herman-bar" aria-hidden="true"></span>
   <div class="rs-herman-body">
     <div class="rs-herman-head">
@@ -25,7 +25,7 @@ const avatarSrc = author.avatar || '/brand/herman-main-icon.svg';
         height="36"
         onerror="this.onerror=null;this.src='/brand/herman-main-icon.svg'"
       />
-      <div>
+      <div class="rs-herman-id">
         <p class="rs-herman-title">Herman’s take</p>
         <p class="rs-herman-role">{author.name} · Lead reviewer</p>
       </div>
@@ -34,4 +34,4 @@ const avatarSrc = author.avatar || '/brand/herman-main-icon.svg';
       <CmsField path="expertOpinion">{trimmed}</CmsField>
     </p>
   </div>
-</div>
+</aside>

@@ -1,0 +1,29 @@
+---
+interface Props {
+  name:
+    | 'circle-check'
+    | 'circle-minus'
+    | 'badge-check'
+    | 'info'
+    | 'chevron-right'
+    | 'share'
+    | 'trophy'
+    | 'arrow-right'
+    | 'chevron-down'
+    | 'arrow-up-right'
+    | 'shield-check';
+  size?: 14 | 16 | 18 | 20 | 24;
+  class?: string;
+}
+
+const { name, size = 16, class: className = '' } = Astro.props;
+---
+
+<img
+  class:list={['rs-icon', className]}
+  src={`/icons/aige/${name}.svg`}
+  width={size}
+  height={size}
+  alt=""
+  aria-hidden="true"
+/>
