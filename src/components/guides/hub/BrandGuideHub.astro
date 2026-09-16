@@ -1,0 +1,415 @@
+---
+import AffiliateLink from '../../ui/AffiliateLink.astro';
+import ContentPageHeader from '../../layout/ContentPageHeader.astro';
+import HomeIcon from '../../home/desktop/HomeIcon.astro';
+import type { BrandGuideHubView } from '../../../lib/guides/brandGuideHub';
+
+interface Props {
+  view: BrandGuideHubView;
+}
+
+const { view } = Astro.props;
+const hubGuidesJson = JSON.stringify(view.searchItems);
+const searchEmpty = view.config.searchEmpty;
+---
+
+<div class="guide-hub">
+  <section class="guide-hub__hero">
+    <div class="guide-hub__glow" aria-hidden="true">
+      <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
+    </div>
+    <ContentPageHeader />
+    <div class="guide-hub__hero-body">
+      <h1 class="guide-hub__title">{view.config.title}</h1>
+      <p class="guide-hub__lede">{view.config.description}</p>
+      <div class="guide-hub__search-wrap">
+        <form class="guide-hub__guide-search" data-hub-guide-search role="search">
+          <img src="/guides/hub/icon-search.svg" width="20" height="20" alt="" />
+          <input
+            type="search"
+            name="q"
+            placeholder={view.config.searchPlaceholder}
+            aria-label={view.config.searchPlaceholder.replace(/…$/, '')}
+            data-hub-guide-input
+            autocomplete="off"
+            aria-autocomplete="list"
+            aria-controls="hub-guide-results"
+          />
+          <button type="submit">Search</button>
+        </form>
+        <div
+          class="guide-hub__search-panel"
+          id="hub-guide-results"
+          data-hub-guide-hits
+          role="listbox"
+          aria-hidden="true"
+        ></div>
+      </div>
+      {
+        view.popular.length > 0 && (
+          <div class="guide-hub__popular">
+            <span class="guide-hub__popular-label">Popular:</span>
+            {view.popular.map((chip) => (
+              <button type="button" class="guide-hub__chip" data-hub-chip data-query={chip.query}>
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        )
+      }
+      <div class="guide-hub__product" data-hub-product-sentinel>
+        <div class="guide-hub__product-brand">
+          {view.logo ? (
+            <img class="guide-hub__app-icon" src={view.logo} alt="" width="28" height="28" />
+          ) : null}
+          <span>{view.productName}</span>
+        </div>
+        <div class="guide-hub__product-actions">
+          <AffiliateLink class="guide-hub__visit" href={view.visitHref} target="_blank">
+            {view.visitLabel}
+            <HomeIcon name="arrow-up-right" size={16} />
+          </AffiliateLink>
+          {view.reviewHref && (
+            <a class="guide-hub__review-link" href={view.reviewHref}>Read review →</a>
+          )}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="guide-hub__sticky-bar" data-hub-sticky-bar aria-hidden="true" role="region" aria-label={view.productName}>
+    <div class="guide-hub__sticky-bar-inner">
+      <div class="guide-hub__sticky-bar-brand">
+        {view.logo ? (
+          <img class="guide-hub__app-icon" src={view.logo} alt="" width="28" height="28" />
+        ) : null}
+        <span>{view.productName}</span>
+      </div>
+      <div class="guide-hub__sticky-bar-actions">
+        {view.reviewHref && (
+          <a class="guide-hub__sticky-review" href={view.reviewHref}>Read review →</a>
+        )}
+        <AffiliateLink class="guide-hub__sticky-visit" href={view.visitHref} target="_blank">
+          {view.visitLabel}
+          <HomeIcon name="arrow-up-right" size={16} />
+        </AffiliateLink>
+      </div>
+    </div>
+  </div>
+
+  {
+    (view.startHere.length > 0 || view.topics.length > 0) && (
+  <div class="guide-hub__main">
+    {
+      view.startHere.length > 0 && (
+        <section class="guide-hub__section" aria-labelledby="hub-start">
+          <h2 class="guide-hub__section-title" id="hub-start">Start here</h2>
+          <p class="guide-hub__section-intro">{view.config.startHereIntro}</p>
+          {view.startHere.map((guide, index) => (
+            <a class="guide-hub__start-row" href={guide.href}>
+              <span class="guide-hub__start-num">{String(index + 1).padStart(2, '0')}</span>
+              <span class="guide-hub__start-text">
+                <span class="guide-hub__start-title">{guide.title}</span>
+                <span class="guide-hub__start-desc">{guide.description}</span>
+              </span>
+              <span class="guide-hub__start-arrow" aria-hidden="true">
+                <HomeIcon name="arrow-right" size={16} />
+              </span>
+            </a>
+          ))}
+        </section>
+      )
+    }
+
+    {
+      view.topics.length > 0 && (
+        <section class="guide-hub__section" aria-labelledby="hub-topics">
+          <h2 class="guide-hub__section-title" id="hub-topics">Browse by topic</h2>
+          <p class="guide-hub__section-intro">{view.config.topicsIntro}</p>
+          <div class="guide-hub__topics">
+            {view.topics.map((topic) => (
+              <details class="guide-hub__topic" data-hub-topic>
+                <summary class="guide-hub__topic-head">
+                  <span class="guide-hub__topic-icon">
+                    <img src={topic.icon} width="20" height="20" alt="" />
+                  </span>
+                  <span class="guide-hub__topic-copy">
+                    <span class="guide-hub__topic-title">{topic.title}</span>
+                    <span class="guide-hub__topic-desc guide-hub__topic-desc--desktop">{topic.description}</span>
+                    <span class="guide-hub__topic-count guide-hub__topic-count--mobile">
+                      {topic.guides.length} {topic.guides.length === 1 ? 'guide' : 'guides'}
+                    </span>
+                  </span>
+                  <span class="guide-hub__topic-count guide-hub__topic-count--desktop">
+                    {topic.guides.length} {topic.guides.length === 1 ? 'guide' : 'guides'}
+                  </span>
+                  <span class="guide-hub__topic-toggle" aria-hidden="true">
+                    <img src="/guides/hub/icon-chevron-down.svg" width="16" height="16" alt="" />
+                  </span>
+                </summary>
+                <div class="guide-hub__article-rows">
+                  {topic.guides.map((guide) => (
+                    <a class="guide-hub__article-row" href={guide.href}>
+                      <span>{guide.title}</span>
+                      <HomeIcon name="arrow-right" size={16} />
+                    </a>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+      )
+    }
+  </div>
+    )
+  }
+</div>
+
+<script define:vars={{ hubGuidesJson, searchEmpty }}>
+  const guides = JSON.parse(hubGuidesJson);
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function initHubSearch() {
+    const form = document.querySelector('[data-hub-guide-search]');
+    const wrap = form?.closest('.guide-hub__search-wrap');
+    const input = document.querySelector('[data-hub-guide-input]');
+    const panel = document.querySelector('[data-hub-guide-hits]');
+    if (!form || !wrap || !input || !panel || form.dataset.bound === 'true') return;
+    form.dataset.bound = 'true';
+
+    let activeIndex = -1;
+    let current = [];
+
+    function closePanel() {
+      panel.classList.remove('is-open');
+      panel.setAttribute('aria-hidden', 'true');
+      activeIndex = -1;
+    }
+
+    function openPanel() {
+      panel.classList.add('is-open');
+      panel.setAttribute('aria-hidden', 'false');
+    }
+
+    function render() {
+      if (!current.length) {
+        panel.innerHTML = `<p class="guide-hub__search-empty">${escapeHtml(searchEmpty)}</p>`;
+        return;
+      }
+      const q = String(input.value || '').trim();
+      const countLabel = `${current.length} result${current.length === 1 ? '' : 's'} for “${escapeHtml(q)}”`;
+      panel.innerHTML =
+        `<p class="guide-hub__search-count">${countLabel}</p>` +
+        current
+          .map(
+            (g, i) =>
+              `<a class="guide-hub__search-item${i === activeIndex ? ' is-active' : ''}" href="${escapeHtml(g.href)}" role="option">
+                <span class="guide-hub__search-item-title">${escapeHtml(g.title)}</span>
+                <span class="guide-hub__search-item-desc">${escapeHtml(g.description || '')}</span>
+              </a>`,
+          )
+          .join('');
+    }
+
+    function run(query) {
+      const q = String(query || '').trim().toLowerCase();
+      document.querySelectorAll('[data-hub-chip]').forEach((chip) => {
+        chip.classList.toggle('is-active', chip.getAttribute('data-query') === q);
+      });
+      if (!q) {
+        current = [];
+        panel.innerHTML = '';
+        closePanel();
+        return;
+      }
+      current = guides.filter((g) => {
+        const hay = `${g.title} ${g.description || ''} ${(g.tags || []).join(' ')}`.toLowerCase();
+        return hay.includes(q);
+      });
+      activeIndex = -1;
+      render();
+      openPanel();
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (activeIndex >= 0 && current[activeIndex]) {
+        window.location.href = current[activeIndex].href;
+        return;
+      }
+      run(input.value);
+    });
+    input.addEventListener('input', () => run(input.value));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        input.value = '';
+        run('');
+        input.blur();
+        return;
+      }
+      if (!panel.classList.contains('is-open')) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!current.length) return;
+        activeIndex = Math.min(activeIndex + 1, current.length - 1);
+        render();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!current.length) return;
+        activeIndex = Math.max(activeIndex - 1, 0);
+        render();
+      } else if (e.key === 'Enter' && activeIndex >= 0 && current[activeIndex]) {
+        e.preventDefault();
+        window.location.href = current[activeIndex].href;
+      }
+    });
+
+    document.querySelectorAll('[data-hub-chip]').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const q = chip.getAttribute('data-query') || '';
+        input.value = q;
+        run(q);
+        input.focus();
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(e.target)) closePanel();
+    });
+  }
+
+  function initTopics() {
+    const root = document.querySelector('.guide-hub');
+    if (!root || root.dataset.topicsBound === 'true') return;
+    root.dataset.topicsBound = 'true';
+    const topics = document.querySelectorAll('[data-hub-topic]');
+    const desktopMq = window.matchMedia('(min-width: 768px)');
+
+    function syncLayout() {
+      if (desktopMq.matches) {
+        topics.forEach((el) => {
+          el.open = true;
+        });
+        return;
+      }
+      topics.forEach((el) => {
+        el.open = false;
+      });
+    }
+
+    syncLayout();
+    desktopMq.addEventListener('change', syncLayout);
+    topics.forEach((el) => {
+      el.addEventListener('toggle', () => {
+        if (!el.open) return;
+        if (desktopMq.matches) return;
+        topics.forEach((other) => {
+          if (other !== el) other.open = false;
+        });
+      });
+    });
+  }
+
+  function initProductStickyCtas() {
+    const sentinel = document.querySelector('[data-hub-product-sentinel]');
+    if (!sentinel) return;
+
+    function getMobileDock() {
+      return document.querySelector('[data-hub-scroll-cta]');
+    }
+
+    function getDesktopBar() {
+      return document.querySelector('[data-hub-sticky-bar]');
+    }
+
+    const alreadyBound = sentinel.dataset.stickyBound === 'true';
+    if (alreadyBound) {
+      const rect = sentinel.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      const mobileMq = window.matchMedia('(max-width: 767px)');
+      const showSticky = !inView;
+      const mobileDock = getMobileDock();
+      const desktopBar = getDesktopBar();
+      if (mobileMq.matches) {
+        if (mobileDock) {
+          mobileDock.classList.toggle('is-visible', showSticky);
+          mobileDock.setAttribute('aria-hidden', showSticky ? 'false' : 'true');
+        }
+      } else if (desktopBar) {
+        desktopBar.classList.toggle('is-visible', showSticky);
+        desktopBar.setAttribute('aria-hidden', showSticky ? 'false' : 'true');
+      }
+      return;
+    }
+    sentinel.dataset.stickyBound = 'true';
+
+    const mobileMq = window.matchMedia('(max-width: 767px)');
+
+    function setMobile(show) {
+      const mobileDock = getMobileDock();
+      if (!mobileDock) return;
+      mobileDock.classList.toggle('is-visible', show);
+      mobileDock.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
+
+    function setDesktop(show) {
+      const desktopBar = getDesktopBar();
+      if (!desktopBar) return;
+      desktopBar.classList.toggle('is-visible', show);
+      desktopBar.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
+
+    function apply(showSticky) {
+      if (mobileMq.matches) {
+        setDesktop(false);
+        setMobile(showSticky);
+      } else {
+        setMobile(false);
+        setDesktop(showSticky);
+      }
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        apply(!entry.isIntersecting);
+      },
+      { root: null, threshold: 0 },
+    );
+
+    observer.observe(sentinel);
+
+    const initialRect = sentinel.getBoundingClientRect();
+    const initiallyInView = initialRect.top < window.innerHeight && initialRect.bottom > 0;
+    apply(!initiallyInView);
+
+    mobileMq.addEventListener('change', () => {
+      const rect = sentinel.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      apply(!inView);
+    });
+  }
+
+  function initBrandHubPage() {
+    initHubSearch();
+    initTopics();
+    initProductStickyCtas();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBrandHubPage, { once: true });
+  } else {
+    initBrandHubPage();
+  }
+  document.addEventListener('astro:page-load', initBrandHubPage);
+</script>

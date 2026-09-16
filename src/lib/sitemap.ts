@@ -5,6 +5,7 @@ import { guides } from '../data/guides';
 import { products } from '../data/products';
 import { getTestCategories } from './test-framework';
 import { buyingGuideSlug } from '../data/buying-guide-content';
+import { BRAND_GUIDE_HUBS, brandGuideHubPath } from './guides/brandGuideHub';
 import { testHubUrl } from './slugs';
 import { pathMatchKey, publicPagePath } from './urls';
 
@@ -27,6 +28,8 @@ export interface SitemapInputs {
   roundups?: RoundupSummary[];
   /** Normalized paths set to draft from the admin (page overrides). */
   excludePaths?: Set<string>;
+  /** Normalized paths hidden from Google (noindex) — omitted from XML sitemaps. */
+  noindexPaths?: Set<string>;
 }
 
 function entry(
@@ -131,6 +134,22 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
     sitemapSection: 'guides',
     parentCategory: 'guides',
   });
+
+  for (const hub of BRAND_GUIDE_HUBS) {
+    const url = brandGuideHubPath(hub.hubSlug);
+    const noindex = inputs.noindexPaths
+      ? inputs.noindexPaths.has(pathMatchKey(url))
+      : hub.defaultNoindex;
+    push({
+      title: hub.title,
+      url,
+      contentType: 'hub',
+      sitemapSection: 'guides',
+      parentCategory: 'guides',
+      includeInXmlSitemap: !noindex,
+      showInHtmlSitemap: !noindex,
+    });
+  }
 
   push({
     title: 'How to Choose an AI Girlfriend App',
@@ -362,6 +381,7 @@ export function getChildSitemapEntries(
     const norm = normalizePath(e.url);
     if (seen.has(norm)) continue;
     if (inputs.excludePaths?.has(norm)) continue;
+    if (inputs.noindexPaths?.has(norm)) continue;
     seen.add(norm);
     result.push(e);
   }

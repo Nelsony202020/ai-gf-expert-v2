@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Footer from '../../components/Footer.astro';
+import AffiliateLink from '../../components/ui/AffiliateLink.astro';
+import HomeIcon from '../../components/home/desktop/HomeIcon.astro';
+import BrandGuideHub from '../../components/guides/hub/BrandGuideHub.astro';
+import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
+import { canonicalPublicUrl } from '../../lib/siteOrigin';
+import { isPathNoindex } from '../../lib/seo/pageOverrides';
+import {
+  brandGuideHubPath,
+  buildBrandGuideHubView,
+  getBrandGuideHubConfig,
+} from '../../lib/guides/brandGuideHub';
+import '../../styles/home-desktop.css';
+import '../../styles/guide-hub.css';
+
+interface Props {
+  hubSlug: string;
+}
+
+const { hubSlug } = Astro.props;
+const config = getBrandGuideHubConfig(hubSlug);
+if (!config) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const products = await loadComparisonProducts();
+const product = products.find((p) => p.slug === config.productSlug) ?? null;
+const view = buildBrandGuideHubView(product, config);
+const path = brandGuideHubPath(config.hubSlug);
+const canonical = canonicalPublicUrl(path, Astro.site);
+const noindex = await isPathNoindex(path, config.defaultNoindex);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: view.config.title,
+  description: view.config.description,
+  url: canonical,
+};
+---
+
+<BaseLayout
+  title={view.config.seoTitle}
+  description={view.config.description}
+  canonical={canonical}
+  robots={noindex ? 'noindex, follow' : undefined}
+  theme="core"
+  browserThemeColor={{ light: '#141317', dark: '#141317' }}
+>
+  <div class="home-v2">
+    <BrandGuideHub view={view} />
+    <Footer />
+  </div>
+  <aside class="guide-hub__scroll-cta" data-hub-scroll-cta aria-hidden="true">
+    <div class="guide-hub__scroll-cta-inner">
+      <AffiliateLink class="guide-hub__scroll-cta-btn" href={view.visitHref} target="_blank">
+        <span class="guide-hub__scroll-cta-text">
+          <span>Visit</span>
+          <span>{view.productName}</span>
+        </span>
+        <HomeIcon name="arrow-up-right" size={18} />
+      </AffiliateLink>
+    </div>
+  </aside>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+</BaseLayout>

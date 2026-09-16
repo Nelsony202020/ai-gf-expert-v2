@@ -25,6 +25,7 @@ const IGNORED_PREFIXES = ['/api/', '/admin', '/go/', '/recommends/', '/dev/'];
 const IGNORED_ROUTES = new Set([
   '/guides/preview/', // draft preview, requires ?secret=
   '/guides/ourdream-ai-prompt-guide/', // 301 alias → /guides/ourdream-ai-prompt/
+  '/guides/girlfriend-gpt/', // 301 alias → /guides/girlfriendgpt/
   '/sitemap.xml',
 ]);
 
