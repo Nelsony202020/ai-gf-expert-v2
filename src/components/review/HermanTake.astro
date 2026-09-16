@@ -8,8 +8,11 @@ interface Props {
 }
 
 const { author, quote } = Astro.props;
-const trimmed = quote.trim();
-if (!trimmed) return;
+function firstTwoSentences(text: string): string {
+  const parts = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g);
+  if (!parts) return text.trim();
+  return parts.slice(0, 2).join(' ').trim();
+}
 const avatarSrc = author.avatar || '/brand/herman-main-icon.svg';
 ---
 
@@ -31,7 +34,7 @@ const avatarSrc = author.avatar || '/brand/herman-main-icon.svg';
       </div>
     </div>
     <p class="rs-herman-copy">
-      <CmsField path="expertOpinion">{trimmed}</CmsField>
+      <CmsField path="expertOpinion">{compact}</CmsField>
     </p>
   </div>
 </aside>
