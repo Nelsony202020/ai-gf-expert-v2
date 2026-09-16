@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const LOCALHOST_RE = /https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?[^\s"'<>]*/gi;
+/** Placeholder affiliate host — must not appear in public HTML (PR #17). */
+const EXAMPLE_COM_AFFILIATE_RE = /https?:\/\/example\.com(?:\/[^\s"'<>]*)?/gi;
 
 function walkHtml(dir, files = []) {
   if (!existsSync(dir)) return files;
@@ -17,6 +19,16 @@ function walkHtml(dir, files = []) {
     }
   }
   return files;
+}
+
+function findExampleComAffiliateUrls(html) {
+  const hits = [];
+  EXAMPLE_COM_AFFILIATE_RE.lastIndex = 0;
+  let match;
+  while ((match = EXAMPLE_COM_AFFILIATE_RE.exec(html)) !== null) {
+    hits.push(match[0].slice(0, 120));
+  }
+  return hits;
 }
 
 function findLocalhostSeoUrls(html) {
@@ -58,22 +70,24 @@ export function canonicalGuard() {
         for (const root of htmlRoots(outDir)) {
           for (const file of walkHtml(root)) {
             const html = readFileSync(file, 'utf8');
-            const hits = findLocalhostSeoUrls(html);
-            for (const hit of hits) {
-              violations.push(`${file}: ${hit}`);
+            for (const hit of findLocalhostSeoUrls(html)) {
+              violations.push(`${file}: localhost SEO → ${hit}`);
+            }
+            for (const hit of findExampleComAffiliateUrls(html)) {
+              violations.push(`${file}: example.com affiliate → ${hit}`);
             }
           }
         }
 
         if (violations.length > 0) {
           logger.error(
-            '[canonical-guard] Production HTML contains localhost SEO URLs:\n' +
+            '[canonical-guard] Production HTML failed post-build checks:\n' +
               violations.map((v) => `  - ${v}`).join('\n'),
           );
-          throw new Error('[canonical-guard] Fix canonical / og:url / JSON-LD before deploying.');
+          throw new Error('[canonical-guard] Fix SEO URLs and placeholder affiliate links before deploying.');
         }
 
-        logger.info('[canonical-guard] OK — no localhost URLs in built HTML metadata.');
+        logger.info('[canonical-guard] OK — no localhost SEO URLs or example.com affiliate links in built HTML.');
       },
     },
   };

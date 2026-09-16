@@ -1,5 +1,6 @@
 ---
-import { affiliateRel } from '../../../lib/affiliate/rel';
+import AffiliateLink from '../../ui/AffiliateLink.astro';
+import { isGoAffiliateHref } from '../../../lib/affiliate/rel';
 import type { DesktopHomepageData } from '../../../lib/home/loadDesktopHomepage';
 import HomeEyebrow from './HomeEyebrow.astro';
 import HomeIcon from './HomeIcon.astro';
@@ -54,15 +55,18 @@ const { data } = Astro.props;
           <strong>{app.priceLabel}</strong>
         </div>
         <div class="home-v2__product-ctas">
-          <a
-            class="home-v2__btn home-v2__btn--primary home-v2__btn--sm"
-            href={app.affiliateUrl}
-            target="_blank"
-            rel={affiliateRel()}
-          >
-            Visit site
-            <HomeIcon name="arrow-up-right" size={16} />
-          </a>
+          {
+            isGoAffiliateHref(app.affiliateUrl) && (
+              <AffiliateLink
+                class="home-v2__btn home-v2__btn--primary home-v2__btn--sm"
+                href={app.affiliateUrl}
+                target="_blank"
+              >
+                Visit site
+                <HomeIcon name="arrow-up-right" size={16} />
+              </AffiliateLink>
+            )
+          }
           <a class="home-v2__btn home-v2__btn--secondary home-v2__btn--sm" href={app.reviewUrl}>Read review</a>
         </div>
       </article>
