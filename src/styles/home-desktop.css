@@ -408,6 +408,10 @@ html[data-theme='dark'] .home-v2__header {
    Stretching the trigger wrapper to the full header height anchors the panel
    just below the header while keeping it left-aligned to its button.
    --------------------------------------------------------------------------- */
+[data-site-header].home-v2__header {
+  z-index: 50;
+}
+
 [data-site-header] .home-v2__drop {
   display: flex;
   align-items: center;
