@@ -104,11 +104,19 @@ const { tabs, hiddenTabs = [], product } = Astro.props;
       if (!activeBtn) return;
       const listRect = list.getBoundingClientRect();
       const btnRect = activeBtn.getBoundingClientRect();
-      const offset = btnRect.left - listRect.left - (listRect.width - btnRect.width) / 2;
-      list.scrollTo({
-        left: Math.max(0, list.scrollLeft + offset),
-        behavior: smooth ? 'smooth' : 'auto',
-      });
+      const pad = 16;
+      let delta = 0;
+      if (btnRect.left < listRect.left + pad) {
+        delta = btnRect.left - listRect.left - pad;
+      } else if (btnRect.right > listRect.right - pad) {
+        delta = btnRect.right - listRect.right + pad;
+      }
+      if (delta !== 0) {
+        list.scrollTo({
+          left: Math.max(0, list.scrollLeft + delta),
+          behavior: smooth ? 'smooth' : 'auto',
+        });
+      }
       window.requestAnimationFrame(updateFades);
     }
 
@@ -325,7 +333,17 @@ const { tabs, hiddenTabs = [], product } = Astro.props;
 
     .review-tabbar__list {
       gap: 1.25rem;
-      padding-inline: 16px 4px;
+      padding-inline: 0;
+    }
+
+    .review-tabbar__list::before,
+    .review-tabbar__list::after {
+      content: '';
+      flex: 0 0 16px;
+    }
+
+    .review-tabbar__list::after {
+      flex-basis: 8px;
     }
 
     .review-tabbar__btn {
