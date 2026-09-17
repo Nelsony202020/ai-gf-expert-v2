@@ -3,7 +3,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
-import { guides } from '../../data/guides';
 import {
   buyingGuideFeaturedImage,
   buyingGuideFeaturedImageAlt,
@@ -67,8 +66,7 @@ const staticGuides = [
   },
 ];
 
-const staticSlugs = new Set(staticGuides.map((g) => g.slug));
-const allGuides = [...staticGuides, ...guides.filter((g) => !staticSlugs.has(g.slug) && !g.noindex)];
+const allGuides = staticGuides;
 ---
 
 <BaseLayout title={title} description={description}>
