@@ -26,10 +26,15 @@ import '@fontsource-variable/inter/standard.css';
 import '@fontsource-variable/jetbrains-mono/wght.css';
 import '@fontsource/instrument-serif/400.css';
 import '@fontsource/instrument-serif/400-italic.css';
-// The LCP element on review pages is the <h1>, which renders in --font-display.
+// The LCP element on most pages is the <h1>, which renders in --font-display (Hanken).
+// Guide articles set their own display face (Bricolage Grotesque, per the Figma article
+// system), so those routes pass displayFont="bricolage" and preload that file instead —
+// preloading the wrong face costs a swap flash on the largest text on the page.
 import headingFontUrl from '@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2?url';
+import bricolageFontUrl from '@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-standard-normal.woff2?url';
 
 export type PageTheme = 'core' | 'home' | 'review' | 'roundup' | 'directory' | 'full';
+export type DisplayFont = 'hanken' | 'bricolage';
 
 interface Props {
   title?: string;
@@ -46,6 +51,11 @@ interface Props {
    * Default `full` keeps existing pages styled until they opt into a slimmer bundle.
    */
   theme?: PageTheme;
+  /**
+   * Which display face this page's headings actually render in, so the right woff2 is
+   * preloaded. `hanken` is the site default; `bricolage` is for /guides/* article routes.
+   */
+  displayFont?: DisplayFont;
   /** Safari / mobile browser chrome (`theme-color`). Defaults match site light/dark surfaces. */
   browserThemeColor?: { light: string; dark: string };
 }
@@ -60,8 +70,11 @@ const {
   ogTitle,
   ogDescription,
   theme = 'full',
+  displayFont = 'hanken',
   browserThemeColor,
 } = Astro.props;
+
+const headingPreloadUrl = displayFont === 'bricolage' ? bricolageFontUrl : headingFontUrl;
 
 const browserThemeColorLight = browserThemeColor?.light ?? '#f9f9f9';
 const browserThemeColorDark = browserThemeColor?.dark ?? '#020617';
@@ -143,7 +156,7 @@ const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
     {image && <meta name="twitter:image" content={image} />}
 
     <!-- Text fonts are self-hosted; only the icon font still comes from Google. -->
-    <link rel="preload" as="font" type="font/woff2" href={headingFontUrl} crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href={headingPreloadUrl} crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href={ICON_FONTS_HREF} media="print" onload="this.media='all'" />

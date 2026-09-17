@@ -8,7 +8,11 @@ import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import { cdnAsset } from '../../lib/media/cdn';
 import bodyHtml from '../../content/guides/ourdream-ai-image-generator.html?raw';
 import '../../styles/roundup.css';
+import '../../styles/glossary-tooltips.css';
 import '../../styles/ourdream-article.css';
+// Geist Mono is the Figma `Article/Code` face. Imported per article route rather than in
+// BaseLayout so its @font-face block is not inlined into every page on the site.
+import '@fontsource-variable/geist-mono/wght.css';
 
 const h1 = 'How to Use OurDream AI Image Generator';
 const title = 'How to Use OurDream AI Image Generator: Beginner Guide';
@@ -32,7 +36,7 @@ const jsonLd: Record<string, unknown>[] = [
 ];
 ---
 
-<BaseLayout title={title} description={description} image={heroImage} canonical={canonical}>
+<BaseLayout theme="core" displayFont="bricolage" title={title} description={description} image={heroImage} canonical={canonical}>
   <Header />
   <main>
     <OurDreamArticlePage

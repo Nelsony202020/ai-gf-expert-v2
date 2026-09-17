@@ -13,8 +13,29 @@
   --od-orange-ink: #e8760a;
   --od-page: #f9f9f9;
   --od-white: #fff;
+  --od-sunken: #efefed;
+  --od-on-ink: #f7f7f6;
+
+  /* Score palette — same bands as src/lib/ratings/figmaScoreTone.ts (>=8 high, >=5 mid). */
+  --od-green-ink: #16a34a;
+  --od-green-soft: #dcfce7;
+  --od-red-ink: #dc2626;
+  --od-red-soft: #fee2e2;
+
+  /* Figma Elevation/Card and Elevation/Float. */
+  --od-shadow-card: 0 1px 2px rgb(59 42 30 / 6%), 0 8px 24px -4px rgb(59 42 30 / 6%);
+  --od-shadow-float: 0 4px 8px rgb(21 17 26 / 10%), 0 24px 48px -8px rgb(21 17 26 / 16%);
+
+  /* Type. Bricolage Grotesque is the Figma display face for every article heading.
+     It was previously only a fallback behind --font-display, so headings rendered in
+     Hanken Grotesk. Declared here so the article scope owns its own faces. */
+  --od-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --od-body: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+  --od-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
   --od-sidebar: 15rem;
   --od-content: 46.25rem;
+  --od-breakout: 60rem;
   --od-layout-gap: 5rem;
   background: var(--od-page);
   color: var(--od-ink);
@@ -108,7 +129,7 @@
 
 .ourdream-article-hero__title {
   margin: 0;
-  font-family: var(--font-display, 'Bricolage Grotesque', system-ui, sans-serif);
+  font-family: var(--od-display);
   font-size: 1.75rem;
   font-weight: 700;
   line-height: 2rem;
@@ -343,7 +364,7 @@
 
 .ourdream-article-related__title {
   margin: 0;
-  font-family: var(--font-display, 'Bricolage Grotesque', system-ui, sans-serif);
+  font-family: var(--od-display);
   font-size: 1.0625rem;
   font-weight: 600;
   line-height: 1.375rem;
@@ -451,7 +472,7 @@
 .ourdream-article-prose h2 {
   margin-top: 2.25rem;
   margin-bottom: 0;
-  font-family: var(--font-display, 'Bricolage Grotesque', system-ui, sans-serif);
+  font-family: var(--od-display);
   font-size: 1.625rem;
   font-weight: 700;
   line-height: 2rem;
@@ -472,7 +493,7 @@
 .ourdream-article-prose h3 {
   margin-top: 1.75rem;
   margin-bottom: 0;
-  font-family: var(--font-display, 'Bricolage Grotesque', system-ui, sans-serif);
+  font-family: var(--od-display);
   font-size: 1.1875rem;
   font-weight: 600;
   line-height: 1.625rem;
@@ -558,7 +579,10 @@
   height: auto;
   border-radius: 0.75rem;
   border: 1px solid var(--od-hairline);
-  background: #efefed;
+  /* Tokenised so it inverts in dark mode. Per decision C1/C2 this placeholder fill is
+     removed entirely when the figure block is rebuilt in step 4 — images keep their real
+     aspect ratio with no grey canvas behind them. */
+  background: var(--od-sunken);
 }
 
 .ourdream-article-prose figcaption {
@@ -591,7 +615,7 @@
   grid-template-columns: 2rem minmax(0, 1fr);
   column-gap: 1.25rem;
   position: relative;
-  font-family: var(--font-display, 'Bricolage Grotesque', system-ui, sans-serif);
+  font-family: var(--od-display);
   font-size: 1.125rem;
   font-weight: 600;
   line-height: 1.5rem;
@@ -616,7 +640,7 @@
   border-radius: 1rem;
   background: var(--od-pink-soft);
   color: var(--od-pink-ink);
-  font-family: Inter, system-ui, sans-serif;
+  font-family: var(--od-body);
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.25rem;
@@ -654,7 +678,7 @@
 .od-steps__body {
   grid-column: 2;
   padding-bottom: 1.75rem;
-  font-family: Inter, system-ui, sans-serif;
+  font-family: var(--od-body);
   font-size: 1.0625rem;
   font-weight: 400;
   line-height: 1.75rem;
@@ -716,7 +740,7 @@
 
 .od-block__title {
   margin: 0;
-  font-family: var(--font-display, 'Bricolage Grotesque', system-ui, sans-serif);
+  font-family: var(--od-display);
   font-size: 1.125rem;
   font-weight: 600;
   line-height: 1.5rem;
@@ -780,12 +804,12 @@
 .od-block--important {
   background: var(--od-orange-soft);
   border: none;
-  color: #141317;
+  color: var(--od-ink);
 }
 
 .od-block--important .od-block__kicker,
 .od-block--important .od-block__body {
-  color: #141317;
+  color: var(--od-ink);
 }
 
 .od-block--important .od-block__kicker::before {
@@ -868,7 +892,7 @@
 .od-block--aige-test {
   border-radius: 1.5rem;
   padding: 1.5rem 1.25rem;
-  box-shadow: 0 8px 24px rgba(59, 42, 30, 0.06), 0 1px 2px rgba(59, 42, 30, 0.06);
+  box-shadow: var(--od-shadow-card);
 }
 
 @media (min-width: 1100px) {
@@ -1203,7 +1227,7 @@
   border: 1px solid var(--od-hairline);
   border-radius: 0.625rem;
   background: var(--od-white);
-  font-family: var(--font-mono, ui-monospace, 'JetBrains Mono', monospace);
+  font-family: var(--od-mono);
   font-size: 0.875rem;
   line-height: 1.4375rem;
   color: var(--od-ink);
@@ -1227,7 +1251,7 @@
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.625rem;
-  font-family: Inter, system-ui, sans-serif;
+  font-family: var(--od-body);
 }
 
 .od-prompt__label {
@@ -1288,7 +1312,7 @@
   border: 1.5px solid var(--od-ink);
   border-radius: 999px;
   background: var(--od-white);
-  font-family: Inter, system-ui, sans-serif;
+  font-family: var(--od-body);
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.006rem;
@@ -1312,7 +1336,7 @@
   border-radius: 0.625rem;
   background: var(--od-white);
   font-style: normal;
-  font-family: var(--font-mono, ui-monospace, 'JetBrains Mono', monospace);
+  font-family: var(--od-mono);
   font-size: 0.875rem;
   line-height: 1.4375rem;
   color: var(--od-ink);
@@ -1358,7 +1382,7 @@
   justify-content: space-between;
   gap: 1rem;
   margin: 0;
-  font-family: var(--font-display, 'Bricolage Grotesque', system-ui, sans-serif);
+  font-family: var(--od-display);
   font-size: 1.0625rem;
   font-weight: 600;
   line-height: 1.375rem;
@@ -1396,6 +1420,22 @@
   --od-rail: #4a4950;
   --od-page: #0f0f12;
   --od-white: #141317;
+  --od-sunken: #17161a;
+  --od-on-ink: #f7f7f6;
+
+  /* Dark values derived from the existing --od-* dark precedent above: tinted surfaces
+     stay dark and low-chroma, ink colours lift to stay legible on them. */
+  --od-pink-soft: rgb(219 39 119 / 16%);
+  --od-pink-ink: #f472b6;
+  --od-orange-soft: rgb(232 118 10 / 18%);
+  --od-orange-ink: #fbbf24;
+  --od-green-soft: rgb(22 163 74 / 18%);
+  --od-green-ink: #4ade80;
+  --od-red-soft: rgb(220 38 38 / 18%);
+  --od-red-ink: #f87171;
+
+  --od-shadow-card: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px -4px rgb(0 0 0 / 45%);
+  --od-shadow-float: 0 4px 8px rgb(0 0 0 / 45%), 0 24px 48px -8px rgb(0 0 0 / 55%);
 }
 
 [data-theme='dark'] .od-prompt--collapsed::after {
