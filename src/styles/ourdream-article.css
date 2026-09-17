@@ -512,6 +512,9 @@
     .od-setup,
     .od-faq,
     .od-compare-grid,
+    .od-cheat,
+    .od-examples,
+    .od-figure-grid,
     blockquote,
     pre
   ) {
@@ -550,6 +553,27 @@
     line-height: 2.5rem;
     letter-spacing: -0.031rem;
   }
+}
+
+/* H4 — Heading/XS, Bricolage SemiBold 17/22 at -0.085px on both viewports
+   (Figma 318:4961 children 15/17/19, mobile 320:6822 children 16/18/20). It sits
+   on the base sibling gap with no extra spacer above or below, unlike H2 and H3.
+   Added for the Comics Examples section, which Figma demotes from H3 to H4. */
+.ourdream-article-prose h4 {
+  margin-top: 1.25rem;
+  margin-bottom: 0;
+  font-family: var(--od-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+  letter-spacing: -0.0053rem;
+  font-variation-settings: 'opsz' 14, 'wdth' 100;
+  color: var(--od-ink);
+  scroll-margin-top: 5.5rem;
+}
+
+.ourdream-article-prose > h4 + * {
+  margin-top: 1.25rem;
 }
 
 .ourdream-article-prose h3 {
@@ -635,27 +659,46 @@
   font-weight: 600;
 }
 
-.ourdream-article-prose figure {
+/* ---------------------------------------------------------------------------
+   Article / Image + Caption          Figma 154:2491 desktop / 154:2494 mobile
+   Root is a column, gap 8. The image carries radius 12 and a 1px hairline over a
+   surface/sunken backdrop (Figma paints #efefed behind the image fill, so a
+   non-filling asset reads as intentional rather than as a gap). The caption is
+   Label/Sans S 12/16 in text/muted.
+
+   The image keeps its real aspect ratio — there is no fixed canvas. Width is
+   chosen per instance from the ladder measured on the Comics and Prompt Guide
+   frames: 308 / 350 mobile; 380 portrait, 440 supporting, 480 square, 688 inset
+   (media under a workflow step), 740 full column, 960 breakout.
+   --------------------------------------------------------------------------- */
+.ourdream-article-prose figure,
+.od-figure {
   margin: 1.25rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
 }
 
-.ourdream-article-prose img {
+.ourdream-article-prose img,
+.od-figure > img {
   display: block;
   width: 100%;
   height: auto;
   border-radius: 0.75rem;
   border: 1px solid var(--od-hairline);
-  /* Tokenised so it inverts in dark mode. Per decision C1/C2 this placeholder fill is
-     removed entirely when the figure block is rebuilt in step 4 — images keep their real
-     aspect ratio with no grey canvas behind them. */
+  /* Tokenised so it inverts in dark mode — Figma's #efefed image backdrop. */
   background: var(--od-sunken);
 }
 
-.ourdream-article-prose figcaption {
-  margin-top: 0.5rem;
+.ourdream-article-prose figcaption,
+.od-figure__caption {
+  margin: 0;
+  font-family: var(--od-body);
   font-size: 0.75rem;
   font-weight: 500;
   line-height: 1rem;
+  letter-spacing: 0;
   color: var(--od-dim);
 }
 
@@ -663,8 +706,67 @@
   font-weight: 500;
 }
 
+/* Width ladder. Every constrained figure centres in the reading column — Figma
+   centres the portrait and square cases and nothing is drawn flush left. */
+.od-figure--portrait,
 .od-media--portrait {
   max-width: 23.75rem;
+  margin-inline: auto;
+}
+
+.od-figure--supporting {
+  max-width: 27.5rem;
+  margin-inline: auto;
+}
+
+.od-figure--square {
+  max-width: 30rem;
+  margin-inline: auto;
+}
+
+.od-figure--inset {
+  max-width: 43rem;
+  margin-inline: auto;
+}
+
+/* Breakout: 960 centred on the 740 column, i.e. -110 each side (the same offset
+   Figma uses for the Horizontal Process at x=-110). Below the rail breakpoint the
+   column is already narrower than 960, so the breakout collapses to full width. */
+.od-figure--breakout {
+  max-width: none;
+}
+
+@media (min-width: 1100px) {
+  .od-figure--breakout {
+    width: var(--od-breakout);
+    max-width: none;
+    margin-inline: calc((var(--od-content) - var(--od-breakout)) / 2);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Image grid — two figures side by side       Figma 318:5090 / mobile 320:6883
+   Stays 2-up on both viewports: 740 with a 16 gap desktop, 350 with a 12 gap
+   mobile. Row gap 20 when a third figure wraps.
+   --------------------------------------------------------------------------- */
+.od-figure-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 0.75rem;
+  row-gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .od-figure-grid {
+    column-gap: 1rem;
+  }
+}
+
+.od-figure-grid > figure,
+.od-figure-grid > .od-figure {
+  margin: 0;
+  max-width: none;
 }
 
 /* Steps */
@@ -1794,4 +1896,252 @@
 [data-theme='dark'] .od-prompt--collapsed::after {
   /* Matches the light rule: the fade resolves to the card it sits on, not the page. */
   background: linear-gradient(180deg, rgb(20 19 23 / 0%) 0%, var(--od-white) 70%);
+}
+
+/* ---------------------------------------------------------------------------
+   Article / Reference Cheat Sheet     Figma 309:4842 desktop / 309:4866 mobile
+   Article / Cheat Sheet Group         Figma 309:4639
+
+   Typography and hairlines only: no card, no fill, no bullets. A head row (real
+   Icon/library asset + a per-instance label) over a group stack. Desktop wraps
+   the groups two-up at a fixed 354 (354 + 32 + 354 = 740); mobile is one column
+   with a 16 gap. Each group is separated by a 1px hairline on its top edge.
+
+   Measured on the Comics frame instance 318:5062 / 320:6882, not on the library
+   defaults: the head icon strokes action/pink there, not text/secondary, and the
+   head label is instance copy ("Comic style cheat sheet"), not a fixed string.
+   --------------------------------------------------------------------------- */
+.od-cheat {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.od-cheat__head {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  overflow: clip;
+}
+
+.od-cheat__head::before {
+  content: '';
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  background: var(--od-pink);
+  -webkit-mask: url('/icons/aige/library.svg') center / contain no-repeat;
+  mask: url('/icons/aige/library.svg') center / contain no-repeat;
+}
+
+.od-cheat__label {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0;
+  color: var(--od-muted);
+}
+
+.od-cheat__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+@media (min-width: 1100px) {
+  .od-cheat__groups {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    column-gap: 2rem;
+    row-gap: 1.25rem;
+  }
+
+  .od-cheat__groups > .od-cheat-group {
+    width: 22.125rem;
+  }
+}
+
+.od-cheat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--od-hairline);
+  word-break: break-word;
+}
+
+.od-cheat-group__title {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-ink);
+}
+
+/* Terms stay a real list for assistive tech; the design shows no markers, so the
+   prose bullet, indent and item rhythm are all reset here. */
+.ourdream-article-prose .od-cheat-group__terms,
+.od-cheat-group__terms {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ourdream-article-prose .od-cheat-group__terms > li,
+.od-cheat-group__terms > li {
+  position: static;
+  margin-top: 0;
+  padding-left: 0;
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.75rem;
+  letter-spacing: -0.003rem;
+  color: var(--od-muted);
+}
+
+.ourdream-article-prose .od-cheat-group__terms > li::before {
+  content: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Article / External Example Link     Figma 348:4279 desktop / 348:4287 mobile
+   Example cards grid                  Figma 318:5022 / mobile 320:6842
+
+   Links out to an example without ever printing a naked URL. The whole card is
+   the link. Desktop: two-up, card 362 wide, row 14/16 with the text block
+   filling and the action pinned right. Mobile: one column, card stacks.
+
+   Card fill is surface/page #f9f9f9 on both viewports. The mobile frame draws it
+   #ffffff, which contradicts both the component definition and the desktop
+   frame — treated as drift and recorded in docs/article-system/parts/82.
+   --------------------------------------------------------------------------- */
+.od-examples {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 1100px) {
+  .od-examples {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.od-example {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--od-page);
+  border: 1px solid var(--od-hairline);
+  border-radius: 0.75rem;
+  overflow: clip;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+@media (min-width: 1100px) {
+  .od-example {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+/* The card is an <a>, so the prose link treatment has to be undone on the card
+   itself and re-applied to the action line only. */
+.ourdream-article-prose a.od-example {
+  color: inherit;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.ourdream-article-prose a.od-example:hover {
+  color: inherit;
+}
+
+.od-example:hover {
+  border-color: var(--od-rail);
+}
+
+.od-example:active {
+  background: var(--od-sunken);
+}
+
+.od-example:focus-visible {
+  outline: 2px solid var(--od-pink);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.od-example__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.od-example__category {
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0;
+  color: var(--od-dim);
+}
+
+.od-example__title {
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  letter-spacing: -0.003rem;
+  color: var(--od-ink);
+}
+
+.od-example__desc {
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-muted);
+}
+
+.od-example__action {
+  flex: none;
+  white-space: nowrap;
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-pink);
+  transition: color 120ms ease;
+}
+
+.od-example:hover .od-example__action {
+  color: var(--od-pink-ink);
+}
+
+/* Optional 56x40 thumbnail. Off by default — the asset is always local, never
+   scraped from the linked page. */
+.od-example__thumb {
+  flex: none;
+  width: 3.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--od-hairline);
+  background: var(--od-sunken);
+  object-fit: cover;
 }
