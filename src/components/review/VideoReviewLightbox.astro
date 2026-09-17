@@ -1,14 +1,16 @@
 ---
 import type { Product } from '../../data/products';
 import { getAuthor } from '../../data/authors';
+import SocialIcon from '../ui/SocialIcon.astro';
 
 interface Props {
   product: Product;
 }
 
 const { product } = Astro.props;
-const author = product.authors[0]?.slug ? getAuthor(product.authors[0].slug) : undefined;
+const herman = getAuthor('herman-carter');
 const video = product.videoReview;
+const hermanAvatar = herman?.avatar || '/brand/herman-main-icon.webp';
 ---
 
 {video?.embedUrl && (
@@ -38,14 +40,24 @@ const video = product.videoReview;
         ></iframe>
       </div>
       <div class="video-review-lightbox__meta">
-        {author && <img src={author.avatar} alt="" width="40" height="40" />}
-        <div>
+        <img
+          class="video-review-lightbox__avatar"
+          src={hermanAvatar}
+          alt=""
+          width="40"
+          height="40"
+        />
+        <div class="video-review-lightbox__copy">
           <p id="video-review-title">{product.name} video review</p>
-          {author && <p>with {author.name}</p>}
+          <p class="video-review-lightbox__by">with {herman?.name || 'Herman Carter'}</p>
         </div>
         {video.channelUrl && (
-          <a href={video.channelUrl} target="_blank" rel="noopener noreferrer">
-            {video.channelLabel || 'Watch on YouTube'}
+          <a class="video-review-lightbox__yt" href={video.channelUrl} target="_blank" rel="noopener noreferrer">
+            <SocialIcon platform="youtube" class="video-review-lightbox__yt-icon" />
+            <span>{video.channelLabel || 'Watch on YouTube'}</span>
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M4.5 11.5 11.5 4.5M7 4.5h4.5V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
           </a>
         )}
       </div>
@@ -54,6 +66,8 @@ const video = product.videoReview;
 )}
 
 <script>
+  import { lockBodyScroll, unlockBodyScroll } from '../../lib/ui/bodyScrollLock.ts';
+
   function initVideoReviewLightbox() {
     const lightbox = document.getElementById('video-review-lightbox');
     const iframe = lightbox?.querySelector<HTMLIFrameElement>('[data-video-review-iframe]');
@@ -65,18 +79,22 @@ const video = product.videoReview;
     let lastFocus: HTMLElement | null = null;
 
     const close = () => {
+      if (lightbox.hidden) return;
       lightbox.hidden = true;
-      document.body.classList.remove('is-locked');
       iframe.src = 'about:blank';
-      lastFocus?.focus();
+      unlockBodyScroll();
+      lastFocus?.focus({ preventScroll: true });
     };
 
     const open = (trigger: HTMLElement) => {
       lastFocus = trigger;
+      if (lightbox.parentElement !== document.body) {
+        document.body.appendChild(lightbox);
+      }
+      lockBodyScroll();
       lightbox.hidden = false;
-      document.body.classList.add('is-locked');
       iframe.src = src;
-      lightbox.querySelector<HTMLElement>('[data-video-review-close]')?.focus();
+      lightbox.querySelector<HTMLElement>('[data-video-review-close]')?.focus({ preventScroll: true });
     };
 
     openers.forEach((button) => {

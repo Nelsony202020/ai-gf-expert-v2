@@ -133,22 +133,11 @@ const methodTitle = product.methodology || 'Methodology v3.1';
     <div class="rs-hero-layout">
       <div class="rs-hero-left">
         <Gallery product={product} />
-        {featured && (
-          <a class="rs-featured-in rs-featured-in--under-image" href={featuredInHref(featured)}>
-            <ReviewIcon name="trophy" size={16} class="rs-featured-in-ico" />
-            <span class="rs-featured-in-copy">
-              <span class="rs-featured-in-kicker">Also featured in</span>
-              <span class="rs-featured-in-desktop">{featuredInDesktopLabel(featured)}</span>
-              <span class="rs-featured-in-mobile">{featuredInMobileLabel(featured)}</span>
-            </span>
-            <ReviewIcon name="arrow-right" size={14} class="rs-featured-in-arrow" />
-          </a>
-        )}
       </div>
       <RatingSidebar product={product} />
     </div>
     {featured && (
-      <a class="rs-featured-in rs-featured-in--after-module" href={featuredInHref(featured)}>
+      <a class="rs-featured-in" href={featuredInHref(featured)}>
         <ReviewIcon name="trophy" size={16} class="rs-featured-in-ico" />
         <span class="rs-featured-in-copy">
           <span class="rs-featured-in-kicker">Also featured in</span>

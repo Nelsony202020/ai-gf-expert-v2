@@ -937,18 +937,15 @@
   outline: none;
 }
 
-/* Drawer */
-html.ratings-drawer-open,
-body.ratings-drawer-open {
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
-body.ratings-drawer-open {
+/* Drawer / lightbox background lock.
+   Do not set overflow:hidden on <html> — Chrome resets scrollY to 0. */
+body.body-scroll-locked {
   position: fixed;
   left: 0;
   right: 0;
   width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .ratings-drawer-backdrop {
@@ -1479,7 +1476,7 @@ body.ratings-drawer-open {
 .ratings-drawer-context__icon {
   flex-shrink: 0;
   font-size: 1.125rem;
-  color: #2563eb;
+  color: var(--rs-pink, #db2777);
 }
 
 .ratings-drawer-context__label {

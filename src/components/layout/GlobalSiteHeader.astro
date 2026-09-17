@@ -14,6 +14,8 @@ interface Props {
 
 const { wrapGuideHub = true } = Astro.props;
 const hasBodySlot = Astro.slots.has('default');
+/** Centered hub glow is exclusive to Brand Guide Hub pages (wrapGuideHub=false). */
+const showHubGlow = !wrapGuideHub;
 ---
 
 <link rel="stylesheet" href={homeDesktopStyles} />
@@ -23,9 +25,6 @@ const hasBodySlot = Astro.slots.has('default');
   wrapGuideHub ? (
     <div class="guide-hub guide-hub--site-chrome">
       <section class="guide-hub__hero">
-        <div class="guide-hub__glow" aria-hidden="true">
-          <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
-        </div>
         <ContentPageHeader />
         {hasBodySlot ? (
           <div class="guide-hub__hero-body">
@@ -36,9 +35,11 @@ const hasBodySlot = Astro.slots.has('default');
     </div>
   ) : (
     <section class="guide-hub__hero">
-      <div class="guide-hub__glow" aria-hidden="true">
-        <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
-      </div>
+      {showHubGlow ? (
+        <div class="guide-hub__glow" aria-hidden="true">
+          <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
+        </div>
+      ) : null}
       <ContentPageHeader />
       {hasBodySlot ? (
         <div class="guide-hub__hero-body">

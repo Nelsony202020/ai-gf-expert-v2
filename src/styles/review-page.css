@@ -22,13 +22,14 @@
   }
 }
 
-/* Sticky below the global header once the user scrolls past the in-flow position. */
+/* Header is not sticky on review pages. Tabs attach to the viewport top. */
 [data-tabbar].review-tabbar {
   position: sticky;
-  top: calc(var(--site-header-height) + var(--site-header-offset, 0px));
+  top: 0;
   z-index: 45;
-  background: var(--color-background);
-  border-bottom: 1px solid var(--color-surface-variant);
+  width: 100%;
+  background: var(--rs-canvas, var(--color-background));
+  border-bottom: 1px solid var(--rs-line, var(--color-surface-variant));
   box-shadow: none;
 }
 
@@ -43,8 +44,8 @@
 }
 
 [data-theme='dark'] [data-tabbar].review-tabbar {
-  background: var(--color-background);
-  border-bottom-color: var(--dark-border-subtle);
+  background: var(--rs-canvas, var(--color-background));
+  border-bottom-color: var(--rs-line, var(--dark-border-subtle));
 }
 
 [data-theme='dark'] .site-header.site-header--joined-tabs,
@@ -78,8 +79,8 @@
 
 @media (min-width: 1024px) {
   .overview-sidebar-stack {
-    /* Subtle gap under sticky header + tab bar */
-    top: calc(var(--site-header-height) + var(--review-tabbar-height) + 0.625rem);
+    /* Sit just below the sticky tab bar (header has scrolled away). */
+    top: calc(var(--review-tabbar-height) + 0.625rem);
   }
 }
 

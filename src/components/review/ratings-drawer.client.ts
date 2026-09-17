@@ -1,4 +1,5 @@
 import { closeAnimatedDrawer } from '../../lib/drawer/animate';
+import { lockBodyScroll, unlockBodyScroll } from '../../lib/ui/bodyScrollLock';
 import { bindScrollFade } from '../../lib/ui/scrollFade';
 
 function trapFocus(panel: HTMLElement) {
@@ -35,26 +36,6 @@ function focusWithoutScroll(el: HTMLElement | null | undefined) {
 let releaseFocus: (() => void) | null = null;
 let lastTrigger: HTMLElement | null = null;
 let releaseScrollFade: (() => void) | null = null;
-let lockedScrollY = 0;
-let backgroundScrollLocked = false;
-
-function lockBackgroundScroll() {
-  if (backgroundScrollLocked) return;
-  lockedScrollY = window.scrollY;
-  document.body.style.top = `-${lockedScrollY}px`;
-  document.documentElement.classList.add('ratings-drawer-open');
-  document.body.classList.add('ratings-drawer-open');
-  backgroundScrollLocked = true;
-}
-
-function unlockBackgroundScroll() {
-  if (!backgroundScrollLocked) return;
-  document.documentElement.classList.remove('ratings-drawer-open');
-  document.body.classList.remove('ratings-drawer-open');
-  document.body.style.top = '';
-  backgroundScrollLocked = false;
-  window.scrollTo({ top: lockedScrollY, left: 0, behavior: 'auto' });
-}
 
 function mountDrawerOnBody(root: HTMLElement) {
   if (root.parentElement !== document.body) {
@@ -131,7 +112,7 @@ function closeDrawer() {
     panels,
     instantClass: 'ratings-drawer-panel--instant',
     onComplete: () => {
-      unlockBackgroundScroll();
+      unlockBodyScroll();
       releaseFocus?.();
       releaseFocus = null;
       releaseScrollFade?.();
@@ -166,7 +147,7 @@ function openDrawer(id: string, trigger?: HTMLElement) {
     lastTrigger = trigger ?? null;
   }
   mountDrawerOnBody(root);
-  lockBackgroundScroll();
+  lockBodyScroll();
   root.hidden = false;
   delete root.dataset.drawerClosing;
   backdrop.dataset.open = 'true';

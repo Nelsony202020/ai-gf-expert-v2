@@ -36,17 +36,16 @@
 }
 
 .guide-hub__glow {
-  /* Homepage keeps its own .home-v2__glow. Hide this hub blob on every
-     internal page (reviews, guides, hubs, brand, best-apps, articles). */
-  display: none !important;
+  /* Brand Guide Hub only — reviews / articles / sitemap never render this node. */
   position: absolute;
   left: 50%;
   top: 40px;
-  width: min(520px, 140%);
+  width: min(520px, 92%);
   height: 360px;
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 0;
+  overflow: hidden;
 }
 
 .guide-hub__glow img {
@@ -60,14 +59,63 @@
   width: 100%;
 }
 
+@media (max-width: 1023px) {
+  /* Compact content-header on mobile. Homepage `.home-v2__hero` keeps 80px. */
+  .guide-hub__hero .home-v2__header {
+    height: 64px;
+  }
+
+  .guide-hub__hero .home-v2__logo {
+    width: 80px;
+    height: 44px;
+  }
+}
+
 /* Header-only chrome on non-hub pages (reviews, roundups, guides index, etc.) */
 .guide-hub--site-chrome {
   background: transparent;
   color: inherit;
+  overflow: visible;
 }
 
 .guide-hub--site-chrome .guide-hub__hero {
   margin-bottom: 0;
+  /* Dropdowns must overlay page content, not expand this 80px band. */
+  overflow: visible;
+  z-index: 60;
+}
+
+.guide-hub--site-chrome .guide-hub__glow {
+  display: none;
+}
+
+/* Opaque ink dropdowns on the dark content header (homepage header is untouched). */
+.guide-hub__hero .home-v2__drop-panel,
+.guide-hub__hero .home-v2__search-dropdown {
+  background: #212026;
+  border: 1px solid rgb(255 255 255 / 10%);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 48%);
+  color: #f7f7f6;
+  z-index: 80;
+}
+
+.guide-hub__hero .home-v2__drop-panel a,
+.guide-hub__hero .home-v2__search-item,
+.guide-hub__hero .home-v2__search-dropdown a {
+  color: #f7f7f6;
+}
+
+.guide-hub__hero .home-v2__drop-panel a:hover,
+.guide-hub__hero .home-v2__search-item:hover,
+.guide-hub__hero .home-v2__search-dropdown a:hover {
+  background: rgb(219 39 119 / 12%);
+  color: #f472b6;
+}
+
+.guide-hub__hero .home-v2__drop-kicker,
+.guide-hub__hero .home-v2__search-empty,
+.guide-hub__hero .home-v2__search-item small {
+  color: #a4a3aa;
 }
 
 .guide-hub__hero .breadcrumbs {

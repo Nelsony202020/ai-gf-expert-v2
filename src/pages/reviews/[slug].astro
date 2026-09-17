@@ -178,11 +178,8 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
   const TABBAR_OFFSET = 52;
 
   function getScrollOffset() {
-    const header = document.querySelector<HTMLElement>('[data-site-header]');
     const tabbar = document.querySelector<HTMLElement>('[data-tabbar]');
-    const headerH = header?.offsetHeight ?? TABBAR_OFFSET;
-    const tabbarH = tabbar?.offsetHeight ?? 0;
-    return headerH + tabbarH;
+    return tabbar?.offsetHeight ?? TABBAR_OFFSET;
   }
 
   function initReview() {

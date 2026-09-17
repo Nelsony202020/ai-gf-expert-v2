@@ -13,9 +13,8 @@ const images = heroGalleryImages(product);
 const cover = featuredHeroImage(product);
 const coverSrc = cover?.full ? optimizedHeroImageUrl(cover.full, 792) || cover.full : undefined;
 const videoUrl = product.videoReview?.embedUrl;
-const videoAuthor =
-  getAuthor(product.authors[0]?.slug || 'herman-carter') ?? getAuthor('herman-carter');
-const videoAuthorAvatar = videoAuthor?.avatar || '/brand/herman-main-icon.svg';
+const herman = getAuthor('herman-carter');
+const videoAuthorAvatar = herman?.avatar || '/brand/herman-main-icon.webp';
 ---
 
 {cover && (
@@ -62,7 +61,7 @@ const videoAuthorAvatar = videoAuthor?.avatar || '/brand/herman-main-icon.svg';
               alt=""
               width="42"
               height="42"
-              onerror="this.onerror=null;this.src='/brand/herman-main-icon.svg'"
+              onerror="this.onerror=null;this.src='/brand/herman-main-icon.webp'"
             />
             <span class="video-review-trigger__play" aria-hidden="true">
               <svg width="9" height="10" viewBox="0 0 9 10" fill="none">
