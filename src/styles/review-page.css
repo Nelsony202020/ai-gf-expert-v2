@@ -4,14 +4,14 @@
   /* Matches HomeDesktopHeader (80px) — canonical content chrome */
   --site-header-height: 5rem;
   --site-header-offset: 0px;
-  --review-tabbar-height: 2.9375rem;
+  --review-tabbar-height: 3.5rem;
   --roundup-hub-nav-height: 2.625rem;
 }
 
 @media (min-width: 768px) {
   :root {
     --site-header-height: 5rem;
-    --review-tabbar-height: 3.25rem;
+    --review-tabbar-height: 3.5rem;
     --roundup-hub-nav-height: 2.75rem;
   }
 }
@@ -22,14 +22,16 @@
   }
 }
 
-/* Sticky below the global header once the user scrolls past the in-flow position. */
+/* Header is not sticky on review pages. Tabs attach to the viewport top. */
 [data-tabbar].review-tabbar {
   position: sticky;
-  top: calc(var(--site-header-height) + var(--site-header-offset, 0px));
+  top: 0;
   z-index: 45;
-  background: var(--color-background);
-  border-bottom: 1px solid var(--color-surface-variant);
-  box-shadow: none;
+  width: 100%;
+  height: var(--review-tabbar-height);
+  background: var(--rs-canvas, var(--color-background));
+  border-bottom: 1px solid var(--rs-line, var(--color-surface-variant));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--rs-line, #e6e6e3) 80%, transparent);
 }
 
 /* Hide the header’s own bottom border while tabs are joined underneath */
@@ -43,8 +45,8 @@
 }
 
 [data-theme='dark'] [data-tabbar].review-tabbar {
-  background: var(--color-background);
-  border-bottom-color: var(--dark-border-subtle);
+  background: var(--rs-canvas, var(--color-background));
+  border-bottom-color: var(--rs-line, var(--dark-border-subtle));
 }
 
 [data-theme='dark'] .site-header.site-header--joined-tabs,
@@ -78,8 +80,8 @@
 
 @media (min-width: 1024px) {
   .overview-sidebar-stack {
-    /* Subtle gap under sticky header + tab bar */
-    top: calc(var(--site-header-height) + var(--review-tabbar-height) + 0.625rem);
+    /* Sit just below the sticky tab bar (header has scrolled away). */
+    top: calc(var(--review-tabbar-height) + 0.625rem);
   }
 }
 

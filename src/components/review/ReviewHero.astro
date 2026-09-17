@@ -98,31 +98,29 @@ const methodTitle = product.methodology || 'Methodology v3.1';
         </p>
       </>
     )}
-    {product.methodology && (
-      <div class="rs-methodology" data-method-tip>
-        <span>{methodTitle}</span>
-        <button
-          type="button"
-          class="rs-info-btn"
-          data-method-trigger
-          aria-label="About our methodology"
-          aria-expanded="false"
-          aria-controls="rs-method-pop"
-        >
-          <ReviewIcon name="info" size={14} />
-        </button>
-        <div class="rs-method-pop" id="rs-method-pop" role="tooltip" hidden data-method-panel>
-          <p class="rs-method-pop-title">{methodTitle}</p>
-          <p class="rs-method-pop-body">
-            This review uses our current testing methodology across {proof.categoryCount} scoring categories.
-          </p>
-          <a class="rs-method-pop-link" href="/test/">
-            View methodology
-            <ReviewIcon name="arrow-right" size={14} />
-          </a>
-        </div>
+    <div class="rs-methodology" data-method-tip>
+      <span>{methodTitle}</span>
+      <button
+        type="button"
+        class="rs-info-btn"
+        data-method-trigger
+        aria-label="About our methodology"
+        aria-expanded="false"
+        aria-controls="rs-method-pop"
+      >
+        <ReviewIcon name="info" size={14} />
+      </button>
+      <div class="rs-method-pop" id="rs-method-pop" role="tooltip" hidden data-method-panel>
+        <p class="rs-method-pop-title">{methodTitle}</p>
+        <p class="rs-method-pop-body">
+          This review uses our current testing methodology across {proof.categoryCount} scoring categories.
+        </p>
+        <a class="rs-method-pop-link" href="/test/">
+          View methodology
+          <ReviewIcon name="arrow-right" size={14} />
+        </a>
       </div>
-    )}
+    </div>
     <span class="rs-meta-sep rs-share-desktop-sep" aria-hidden="true"></span>
     <div class="rs-share-desktop">
       <ShareMenu shareTitle={`${product.name} Review`} variant="inline" />
@@ -133,22 +131,11 @@ const methodTitle = product.methodology || 'Methodology v3.1';
     <div class="rs-hero-layout">
       <div class="rs-hero-left">
         <Gallery product={product} />
-        {featured && (
-          <a class="rs-featured-in rs-featured-in--under-image" href={featuredInHref(featured)}>
-            <ReviewIcon name="trophy" size={16} class="rs-featured-in-ico" />
-            <span class="rs-featured-in-copy">
-              <span class="rs-featured-in-kicker">Also featured in</span>
-              <span class="rs-featured-in-desktop">{featuredInDesktopLabel(featured)}</span>
-              <span class="rs-featured-in-mobile">{featuredInMobileLabel(featured)}</span>
-            </span>
-            <ReviewIcon name="arrow-right" size={14} class="rs-featured-in-arrow" />
-          </a>
-        )}
       </div>
       <RatingSidebar product={product} />
     </div>
     {featured && (
-      <a class="rs-featured-in rs-featured-in--after-module" href={featuredInHref(featured)}>
+      <a class="rs-featured-in" href={featuredInHref(featured)}>
         <ReviewIcon name="trophy" size={16} class="rs-featured-in-ico" />
         <span class="rs-featured-in-copy">
           <span class="rs-featured-in-kicker">Also featured in</span>
@@ -181,15 +168,20 @@ const methodTitle = product.methodology || 'Methodology v3.1';
 
       trigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (isDesktop()) setOpen(true);
-        else setOpen(panel.hidden);
+        setOpen(panel.hidden);
       });
 
       trigger.addEventListener('mouseenter', () => {
         if (isDesktop()) setOpen(true);
       });
+      trigger.addEventListener('focus', () => {
+        if (isDesktop()) setOpen(true);
+      });
       wrap.addEventListener('mouseleave', () => {
         if (isDesktop()) setOpen(false);
+      });
+      wrap.addEventListener('focusout', (e) => {
+        if (!wrap.contains((e as FocusEvent).relatedTarget as Node)) setOpen(false);
       });
 
       document.addEventListener('click', (e) => {

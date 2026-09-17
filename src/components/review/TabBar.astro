@@ -1,13 +1,17 @@
 ---
+import type { Product } from '../../data/products';
+import AffiliateLink from '../ui/AffiliateLink.astro';
+import ReviewIcon from './ReviewIcon.astro';
+
 export type Tab = { id: string; label: string; tocLabel?: string };
 
 interface Props {
   tabs: Tab[];
   hiddenTabs?: Tab[];
+  product: Product;
 }
 
-const { tabs, hiddenTabs = [] } = Astro.props;
-const allTabs = [...tabs, ...hiddenTabs];
+const { tabs, hiddenTabs = [], product } = Astro.props;
 ---
 
 <nav class="review-tabbar z-40" data-tabbar aria-label="Review sections">
@@ -50,6 +54,17 @@ const allTabs = [...tabs, ...hiddenTabs];
       </ul>
       <div class="review-tabbar__fade review-tabbar__fade--end" data-tabbar-fade="end" aria-hidden="true"></div>
     </div>
+    <AffiliateLink
+      href={product.affiliateUrl}
+      class="review-tabbar__cta"
+      data-cta="tabbar-visit"
+      target="_blank"
+      aria-label={`Visit ${product.name} (opens in a new tab)`}
+    >
+      <span class="review-tabbar__cta-full">Visit {product.name}</span>
+      <span class="review-tabbar__cta-short">Visit</span>
+      <ReviewIcon name="arrow-up-right" size={14} class="review-tabbar__cta-icon" />
+    </AffiliateLink>
   </div>
 </nav>
 
@@ -89,11 +104,19 @@ const allTabs = [...tabs, ...hiddenTabs];
       if (!activeBtn) return;
       const listRect = list.getBoundingClientRect();
       const btnRect = activeBtn.getBoundingClientRect();
-      const offset = btnRect.left - listRect.left - (listRect.width - btnRect.width) / 2;
-      list.scrollTo({
-        left: Math.max(0, list.scrollLeft + offset),
-        behavior: smooth ? 'smooth' : 'auto',
-      });
+      const pad = 16;
+      let delta = 0;
+      if (btnRect.left < listRect.left + pad) {
+        delta = btnRect.left - listRect.left - pad;
+      } else if (btnRect.right > listRect.right - pad) {
+        delta = btnRect.right - listRect.right + pad;
+      }
+      if (delta !== 0) {
+        list.scrollTo({
+          left: Math.max(0, list.scrollLeft + delta),
+          behavior: smooth ? 'smooth' : 'auto',
+        });
+      }
       window.requestAnimationFrame(updateFades);
     }
 
@@ -123,14 +146,18 @@ const allTabs = [...tabs, ...hiddenTabs];
 <style>
   .review-tabbar__shell {
     display: flex;
-    justify-content: center;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 56px;
   }
 
   .review-tabbar__rail {
     --review-tabbar-fade-bg: var(--rs-canvas, var(--color-background));
     position: relative;
-    width: 100%;
-    min-height: 48px;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 56px;
   }
 
   .review-tabbar__list {
@@ -138,7 +165,7 @@ const allTabs = [...tabs, ...hiddenTabs];
     align-items: stretch;
     gap: 1.35rem;
     width: 100%;
-    min-height: 48px;
+    height: 56px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -156,7 +183,7 @@ const allTabs = [...tabs, ...hiddenTabs];
   .review-tabbar__item {
     flex: 0 0 auto;
     display: flex;
-    scroll-snap-align: center;
+    scroll-snap-align: start;
   }
 
   .review-tabbar__btn {
@@ -166,7 +193,7 @@ const allTabs = [...tabs, ...hiddenTabs];
     align-items: center;
     justify-content: center;
     margin: 0;
-    padding: 0.85rem 0 0.95rem;
+    padding: 0;
     border: 0;
     background: transparent;
     color: var(--rs-muted, color-mix(in srgb, var(--color-on-surface-variant, #64748b) 82%, transparent));
@@ -205,8 +232,8 @@ const allTabs = [...tabs, ...hiddenTabs];
     z-index: 3;
     will-change: transform, width;
     transition:
-      transform 200ms ease-out,
-      width 200ms ease-out,
+      transform 180ms ease-out,
+      width 180ms ease-out,
       opacity 120ms ease-out;
   }
 
@@ -241,6 +268,40 @@ const allTabs = [...tabs, ...hiddenTabs];
     background: linear-gradient(to left, var(--review-tabbar-fade-bg) 30%, transparent);
   }
 
+  .review-tabbar__cta {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: var(--rs-pink, #db2777);
+    color: #f7f7f6;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .review-tabbar__cta:hover {
+    background: var(--rs-pink-deep, #be185d);
+    color: #f7f7f6;
+  }
+
+  .review-tabbar__cta-short {
+    display: none;
+  }
+
+  .review-tabbar__cta-icon {
+    width: 14px;
+    height: 14px;
+    filter: brightness(0) invert(1);
+  }
+
   @media (min-width: 768px) {
     .review-tabbar__list {
       justify-content: flex-start;
@@ -250,7 +311,6 @@ const allTabs = [...tabs, ...hiddenTabs];
 
     .review-tabbar__btn {
       font-size: 1rem;
-      padding: 0.9rem 0 1rem;
     }
 
     .review-tabbar__fade {
@@ -260,28 +320,46 @@ const allTabs = [...tabs, ...hiddenTabs];
 
   @media (max-width: 767px) {
     .review-tabbar__shell {
-      padding-left: 0;
-      padding-right: 0;
+      gap: 8px;
+      padding-left: 16px;
+      padding-right: 16px;
       max-width: none;
     }
 
     .review-tabbar__rail,
     .review-tabbar__list {
-      min-height: 47px;
+      height: 56px;
     }
 
     .review-tabbar__list {
       gap: 1.25rem;
-      padding-inline: 1rem;
+      padding-inline: 0;
+      scroll-snap-type: none;
+    }
+
+    .review-tabbar__item {
+      scroll-snap-align: none;
     }
 
     .review-tabbar__btn {
       font-size: 0.8125rem;
-      padding: 0.7rem 0 0.8rem;
     }
 
     .review-tabbar__fade {
-      width: 2rem;
+      width: 1.75rem;
+    }
+
+    .review-tabbar__cta {
+      width: 90px;
+      padding: 0 10px;
+    }
+
+    .review-tabbar__cta-full {
+      display: none;
+    }
+
+    .review-tabbar__cta-short {
+      display: inline;
     }
   }
 </style>

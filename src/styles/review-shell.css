@@ -28,7 +28,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 20px 0 24px;
-  overflow-x: clip;
+  overflow: visible;
 }
 
 .rs-crumb {
@@ -261,11 +261,7 @@
   min-width: 0;
 }
 
-.rs-featured-in--under-image {
-  display: none;
-}
-
-.rs-featured-in--after-module {
+.rs-featured-in {
   display: inline-flex;
 }
 
@@ -357,6 +353,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex: 0 1 auto;
   min-width: 0;
   font-size: 15px;
   font-weight: 700;
@@ -371,6 +368,7 @@
   width: 32px;
   height: 32px;
   margin: -6px 0;
+  margin-left: 0;
   color: #fff;
   flex-shrink: 0;
 }
@@ -493,7 +491,7 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
-  padding-top: 12px;
+  padding-top: 16px;
 }
 
 .rs-visit {
@@ -874,25 +872,6 @@ ul.rs-list {
   color: var(--rs-ink);
 }
 
-.rs-sticky-cta {
-  position: fixed;
-  left: 16px;
-  right: 16px;
-  bottom: max(12px, env(safe-area-inset-bottom, 0px));
-  z-index: 45;
-  pointer-events: none;
-  background: transparent;
-}
-
-.rs-sticky-cta[hidden] {
-  display: none !important;
-}
-
-.rs-sticky-cta .rs-visit {
-  pointer-events: auto;
-  box-shadow: 0 8px 24px rgba(20, 19, 23, 0.18);
-}
-
 .rs-info {
   display: inline-flex;
   width: 20px;
@@ -932,31 +911,26 @@ ul.rs-list {
   }
 
   .rs-hero-pair {
-    gap: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 384px;
+    column-gap: 24px;
+    row-gap: 14px;
+    align-items: start;
   }
 
   .rs-hero-layout {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 24px;
-    border: 0;
-    border-radius: 0;
-    overflow: visible;
-    background: transparent;
+    display: contents;
   }
 
   .rs-hero-left {
-    flex: 1 1 0;
+    grid-column: 1;
     min-width: 0;
-    gap: 14px;
   }
 
-  .rs-featured-in--under-image {
-    display: inline-flex;
-  }
-
-  .rs-featured-in--after-module {
-    display: none;
+  .rs-hero-pair > .rs-featured-in {
+    grid-column: 1;
+    min-height: 32px;
+    padding: 0;
   }
 
   .rs-gallery {
@@ -976,7 +950,9 @@ ul.rs-list {
     display: inline;
   }
 
-  .rs-hero-layout > .rs-score-card {
+  .rs-hero-pair > .rs-score-card {
+    grid-column: 2;
+    grid-row: 1 / span 2;
     width: 384px;
     flex-shrink: 0;
     border: 1px solid var(--rs-line);
@@ -1019,6 +995,7 @@ ul.rs-list {
 
   .rs-cta-wrap {
     margin-top: auto;
+    padding-top: 18px;
   }
 
   .rs-score-toggle {
@@ -1027,12 +1004,13 @@ ul.rs-list {
 
   .rs-score-rows {
     display: flex;
-    gap: 10px;
+    gap: 12px;
   }
 
   .rs-score-row {
-    height: 25px;
-    padding: 0;
+    min-height: 32px;
+    height: auto;
+    padding: 6px 0;
     border-bottom: 0;
   }
 
@@ -1042,11 +1020,6 @@ ul.rs-list {
 
   .rs-badge {
     width: 40px;
-  }
-
-  .rs-featured-in--under-image {
-    min-height: 32px;
-    padding: 0;
   }
 
   .rs-featured-in-kicker,
@@ -1122,15 +1095,6 @@ ul.rs-list {
   .rs-herman-avatar {
     width: 36px;
     height: 36px;
-  }
-
-  .rs-herman-avatar {
-    width: 36px;
-    height: 36px;
-  }
-
-  .rs-sticky-cta {
-    display: none !important;
   }
 }
 
@@ -1274,11 +1238,48 @@ ul.rs-list {
 
 .rs-gallery .video-review-trigger__yt {
   display: block;
+  flex-shrink: 0;
 }
 
 .rs-gallery .video-review-trigger__mascot,
 .rs-gallery .video-review-trigger__arrow {
   display: none;
+}
+
+.rs-gallery .video-review-trigger__mascot {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+}
+
+.rs-gallery .video-review-trigger__mascot img {
+  display: block;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1.5px solid #141317;
+}
+
+.rs-gallery .video-review-trigger__play {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 16px;
+  height: 16px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #ff0000;
+  border: 1.5px solid rgb(14 14 18 / 82%);
+  color: #fff;
+}
+
+.rs-gallery .video-review-trigger__play svg {
+  width: 8px;
+  height: 8px;
 }
 
 @media (min-width: 768px) {
@@ -1300,6 +1301,10 @@ ul.rs-list {
   .rs-gallery .video-review-trigger__mascot,
   .rs-gallery .video-review-trigger__arrow {
     display: inline-flex;
+  }
+
+  .rs-gallery .video-review-trigger__play {
+    display: flex;
   }
 }
 
@@ -1409,72 +1414,6 @@ ul.rs-list {
 .rs-visit-cta svg {
   width: 18px;
   height: 18px;
-}
-
-.review-sticky-cta {
-  position: fixed;
-  left: 16px;
-  right: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  z-index: 40;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(10px);
-  transition:
-    opacity 0.28s ease,
-    transform 0.28s ease,
-    visibility 0.28s ease;
-}
-
-.review-sticky-cta.is-visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  pointer-events: none;
-}
-
-body.rs-scores-expanded .review-sticky-cta,
-body.rs-scores-expanded .review-sticky-cta.is-visible {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-.review-sticky-cta__btn {
-  pointer-events: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  height: 52px;
-  padding: 0 24px;
-  border-radius: 999px;
-  background: var(--rs-pink);
-  color: var(--rs-canvas);
-  font-family: var(--font-body);
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  text-decoration: none;
-  box-shadow: 0 10px 28px rgba(20, 19, 23, 0.22);
-}
-
-.review-sticky-cta__btn svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-@media (max-width: 767px) {
-  body[data-mobile-nav-mode='review'][data-mobile-bottom-nav='true'] .review-sticky-cta {
-    bottom: calc(
-      var(--mobile-nav-bar-height) + var(--mobile-nav-fab-lift) + var(--mobile-nav-float-bottom) +
-        var(--mobile-nav-page-gap) + env(safe-area-inset-bottom, 0px)
-    );
-  }
 }
 
 .rs-lists h3 {
@@ -1634,9 +1573,60 @@ body.rs-scores-expanded .review-sticky-cta.is-visible {
   .rs-score-rows {
     display: flex;
   }
+}
 
-  .review-sticky-cta,
-  .rs-sticky-cta {
-    display: none !important;
-  }
+/* Review dark mode — charcoal tokens shared with glossary / hubs / footer.
+   Scoped to html.review-page so homepage and other routes keep their theme. */
+html.review-page[data-theme='dark'] {
+  --rs-ink: #f7f7f6;
+  --rs-muted: #a4a3aa;
+  --rs-subtle: #8a8991;
+  --rs-line: #333239;
+  --rs-canvas: #141317;
+  --rs-card: #1c1b1f;
+  --color-background: #141317;
+  --color-header-surface: #141317;
+  --color-on-background: #f7f7f6;
+  --color-surface: #141317;
+  --color-surface-variant: #333239;
+  --color-surface-container-lowest: #1c1b1f;
+  --color-surface-container-low: #1c1b1f;
+  --color-surface-container: #212026;
+  --color-surface-container-high: #333239;
+  --color-on-surface: #f7f7f6;
+  --color-on-surface-variant: #a4a3aa;
+  --color-tertiary: #a4a3aa;
+  --dark-elevated: #1c1b1f;
+  --dark-raised: #212026;
+  --dark-border: #333239;
+  --dark-border-subtle: #333239;
+  --dark-muted: #a4a3aa;
+}
+
+html.review-page[data-theme='dark'] body {
+  background-color: #141317 !important;
+  color: #f7f7f6;
+}
+
+html.review-page[data-theme='dark'] .review-page,
+html.review-page[data-theme='dark'] .review-main {
+  background: var(--rs-canvas);
+  color: var(--rs-ink);
+}
+
+html.review-page[data-theme='dark'] .bg-white {
+  background-color: #1c1b1f !important;
+}
+
+html.review-page[data-theme='dark'] .review-toc__toggle,
+html.review-page[data-theme='dark'] .review-toc__panel {
+  background: #1c1b1f;
+  border-color: #333239;
+  color: #f7f7f6;
+}
+
+html.review-page[data-theme='dark'] .rs-method-pop {
+  background: #1c1b1f;
+  border-color: #333239;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
 }

@@ -103,12 +103,12 @@ const reviewLinks = publishedProducts
       aria-controls="site-mobile-menu"
       aria-label="Open menu"
     >
-      <svg class="site-header__menu-icon--bars" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M3 6h18v2H3V6Zm0 5h18v2H3v-2Zm0 5h18v2H3v-2Z" />
-      </svg>
-      <svg class="site-header__menu-icon--close hidden" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4Z" />
-      </svg>
+      <span class="site-header__menu-icon--bars">
+        <HomeIcon name="menu" size={22} />
+      </span>
+      <span class="site-header__menu-icon--close hidden">
+        <HomeIcon name="x" size={22} />
+      </span>
     </button>
   </div>
 </header>
@@ -140,6 +140,17 @@ const reviewLinks = publishedProducts
       });
     }
 
+    function placePanel(drop) {
+      const btn = drop.querySelector('[data-home-drop-btn]');
+      const panel = drop.querySelector('[data-home-drop-panel]');
+      if (!btn || !panel) return;
+      const rect = btn.getBoundingClientRect();
+      panel.style.position = 'fixed';
+      panel.style.top = `${Math.round(rect.bottom + 8)}px`;
+      panel.style.left = `${Math.round(rect.left)}px`;
+      panel.style.right = 'auto';
+    }
+
     function openDrop(drop) {
       if (dropCloseTimer) {
         clearTimeout(dropCloseTimer);
@@ -153,6 +164,7 @@ const reviewLinks = publishedProducts
         const panel = other.querySelector('[data-home-drop-panel]');
         if (panel) panel.hidden = !open;
       });
+      placePanel(drop);
     }
 
     function scheduleDropClose() {
@@ -271,6 +283,10 @@ const reviewLinks = publishedProducts
         closeSearch();
       }
     });
+    window.addEventListener('resize', () => {
+      header.querySelectorAll('[data-home-drop].is-open').forEach((drop) => placePanel(drop));
+    }, { passive: true });
+    window.addEventListener('scroll', closeDrops, { passive: true });
   }
   initHomeHeader();
   document.addEventListener('astro:page-load', initHomeHeader);

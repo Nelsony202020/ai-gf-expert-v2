@@ -24,14 +24,23 @@ export const BRAND_HUB_BY_SLUG: Record<string, string> = {
   'ourdream-ai': '/guides/ourdream-ai/',
 };
 
-/** Preferred order for the header “Popular brands” list. Hubs not in this list still appear after. */
-export const POPULAR_BRAND_SLUGS = ['candy-ai', 'ourdream-ai', 'spicychat', 'girlfriendgpt'] as const;
+/**
+ * Brands shown in the header dropdown. Other hubs stay in BRAND_HUB_BY_SLUG
+ * (and on the site) — they are just not listed in this menu yet.
+ */
+export const POPULAR_BRAND_SLUGS = ['ourdream-ai'] as const;
 
-/** Existing app directory — used as “View all brands” until a dedicated brands index exists. */
-export const BRAND_DIRECTORY_HREF = '/ai-girlfriend-apps/';
+const BRAND_MENU_NAMES: Record<string, string> = {
+  'ourdream-ai': 'OurDream AI',
+  'candy-ai': 'Candy AI',
+  'nectar-ai': 'Nectar AI',
+  'girlfriendgpt': 'GirlfriendGPT',
+  'juicychat-ai': 'JuicyChat AI',
+};
 
 function displayName(slug: string, productName?: string) {
   if (productName) return productName;
+  if (BRAND_MENU_NAMES[slug]) return BRAND_MENU_NAMES[slug];
   return slug
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))

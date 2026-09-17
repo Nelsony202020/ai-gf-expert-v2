@@ -283,8 +283,16 @@ html[data-theme='dark'] .home-v2__header--standard .home-v2__theme .theme-toggle
   background: var(--home-card);
   border: 1px solid var(--home-hairline);
   box-shadow: 0 16px 40px rgb(21 17 26 / 14%);
-  z-index: 20;
+  z-index: 80;
   opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity var(--home-ease-move), transform var(--home-ease-move);
+}
+
+.home-v2__drop-panel[hidden] {
+  display: none !important;
+}
   transform: translateY(-6px);
   pointer-events: none;
   transition: opacity var(--home-ease-move), transform var(--home-ease-move);

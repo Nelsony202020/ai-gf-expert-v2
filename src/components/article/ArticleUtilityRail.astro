@@ -10,6 +10,8 @@ interface Props {
   showMobileNav?: boolean;
   /** When false, do not render back-to-top or share FABs. */
   showFloatingActions?: boolean;
+  /** When false, hide the share FAB but keep back-to-top. */
+  showShareFab?: boolean;
 }
 
 const {
@@ -18,6 +20,7 @@ const {
   mobileMinimal = false,
   showMobileNav = false,
   showFloatingActions = true,
+  showShareFab = true,
 } = Astro.props;
 
 const renderRail = showMobileNav || showFloatingActions;
@@ -65,7 +68,7 @@ const renderRail = showMobileNav || showFloatingActions;
       )
     }
 
-    {showFloatingActions && <ShareMenu shareTitle={pageTitle} shareUrl={pageUrl} variant="fab" />}
+    {showFloatingActions && showShareFab && <ShareMenu shareTitle={pageTitle} shareUrl={pageUrl} variant="fab" />}
   </div>
 </aside>
   )

@@ -1,4 +1,226 @@
-/* Video review lightbox — global (unscoped) so dark mode applies correctly */
+/* Figma 01K / 01L — Review / Video Review Modal (.video-review-lightbox) */
+
+.video-review-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.video-review-lightbox[hidden] {
+  display: none;
+}
+
+body.body-scroll-locked {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.video-review-lightbox__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(20 19 23 / 62%);
+}
+
+.video-review-lightbox__panel {
+  position: relative;
+  z-index: 1;
+  width: min(880px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  padding: 20px 20px 22px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 22%);
+  color: #141317;
+}
+
+.video-review-lightbox__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #f9f9f9;
+  color: #141317;
+  cursor: pointer;
+}
+
+.video-review-lightbox__close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.video-review-lightbox__close:hover {
+  background: #efefed;
+}
+
+.video-review-lightbox__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0e0e12;
+}
+
+.video-review-lightbox__frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-review-lightbox__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding-right: 8px;
+}
+
+.video-review-lightbox__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1.5px solid #141317;
+  flex-shrink: 0;
+}
+
+.video-review-lightbox__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 160px;
+}
+
+.video-review-lightbox__copy p {
+  margin: 0;
+}
+
+#video-review-title,
+.video-review-lightbox__copy p:first-child {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -0.02em;
+  color: #141317;
+}
+
+.video-review-lightbox__by {
+  font-size: 14px;
+  line-height: 22px;
+  color: #8a8991;
+}
+
+.video-review-lightbox__yt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: #db2777;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.video-review-lightbox__yt:hover {
+  color: #be185d;
+}
+
+.video-review-lightbox__yt-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.video-review-lightbox__yt svg:last-child {
+  width: 13px;
+  height: 13px;
+}
+
+@media (min-width: 768px) {
+  .video-review-lightbox {
+    padding: 24px;
+  }
+
+  .video-review-lightbox__panel {
+    padding: 28px;
+  }
+
+  .video-review-lightbox__close {
+    top: 20px;
+    right: 20px;
+  }
+
+  #video-review-title,
+  .video-review-lightbox__copy p:first-child {
+    font-size: 28px;
+    line-height: 32px;
+    letter-spacing: -0.42px;
+  }
+}
+
+@media (max-width: 767px) {
+  .video-review-lightbox__yt {
+    margin-left: 52px;
+    width: 100%;
+  }
+}
+
+html[data-theme='dark'] .video-review-lightbox__panel {
+  background: #1c1b1f;
+  color: #f7f7f6;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 55%);
+}
+
+html[data-theme='dark'] .video-review-lightbox__close {
+  background: #2a292e;
+  color: #f7f7f6;
+}
+
+html[data-theme='dark'] .video-review-lightbox__close:hover {
+  background: #333239;
+}
+
+html[data-theme='dark'] .video-review-lightbox__avatar {
+  border-color: #f7f7f6;
+}
+
+html[data-theme='dark'] #video-review-title,
+html[data-theme='dark'] .video-review-lightbox__copy p:first-child {
+  color: #f7f7f6;
+}
+
+html[data-theme='dark'] .video-review-lightbox__by {
+  color: #a4a3aa;
+}
+
+html[data-theme='dark'] .video-review-lightbox__yt {
+  color: #f472b6;
+}
+
+/* Legacy class names kept so older markup still has a surface. */
 
 .video-review-modal {
   position: fixed;
