@@ -412,10 +412,14 @@ html[data-theme='dark'] .home-v2__header {
   z-index: 50;
 }
 
+[data-site-header] .home-v2__nav,
+[data-site-header] .home-v2__drop {
+  align-self: stretch;
+}
+
 [data-site-header] .home-v2__drop {
   display: flex;
   align-items: center;
-  align-self: stretch;
 }
 
 [data-site-header] .home-v2__drop-panel {
