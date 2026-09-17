@@ -21,12 +21,7 @@ const video = product.videoReview;
     aria-labelledby="video-review-title"
   >
     <div class="video-review-lightbox__backdrop" data-video-review-close></div>
-    <div class="video-review-lightbox__panel">
-      <button type="button" class="video-review-lightbox__close" data-video-review-close aria-label="Close video review">
-        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M4 4l8 8M12 4 4 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-        </svg>
-      </button>
+    <div class="video-review-lightbox__panel" role="document">
       <div class="video-review-lightbox__frame">
         <iframe
           data-video-review-iframe
@@ -37,23 +32,83 @@ const video = product.videoReview;
           allowfullscreen
         ></iframe>
       </div>
+
       <div class="video-review-lightbox__meta">
-        {author && <img src={author.avatar} alt="" width="40" height="40" />}
-        <div>
-          <p id="video-review-title">{product.name} video review</p>
-          {author && <p>with {author.name}</p>}
+        <div class="video-review-lightbox__identity">
+          {author && (
+            <img
+              class="video-review-lightbox__avatar"
+              src={author.avatar}
+              alt=""
+              width="40"
+              height="40"
+              loading="lazy"
+            />
+          )}
+          <div class="video-review-lightbox__text">
+            <p class="video-review-lightbox__title" id="video-review-title">
+              {product.name} video review
+            </p>
+            {author && <p class="video-review-lightbox__by">with {author.name}</p>}
+          </div>
         </div>
+
         {video.channelUrl && (
-          <a href={video.channelUrl} target="_blank" rel="noopener noreferrer">
-            {video.channelLabel || 'Watch on YouTube'}
+          <a
+            class="video-review-lightbox__watch"
+            href={video.channelUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M21.6 7.2a2.8 2.8 0 0 0-1.97-1.97C17.88 4.75 12 4.75 12 4.75s-5.88 0-7.63.48A2.8 2.8 0 0 0 2.4 7.2 29 29 0 0 0 1.95 12c0 1.62.15 3.23.45 4.8a2.8 2.8 0 0 0 1.97 1.97c1.75.48 7.63.48 7.63.48s5.88 0 7.63-.48a2.8 2.8 0 0 0 1.97-1.97c.3-1.57.45-3.18.45-4.8s-.15-3.23-.45-4.8Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+              <path
+                d="m10.1 14.9 4.9-2.9-4.9-2.9v5.8Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
+            <span>Watch on YouTube</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M7 17 17 7M9 7h8v8"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
           </a>
         )}
       </div>
+
+      <button
+        type="button"
+        class="video-review-lightbox__close"
+        data-video-review-close
+        aria-label="Close video review"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M6 6l12 12M18 6 6 18"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+      </button>
     </div>
   </div>
 )}
 
 <script>
+  import { lockBackgroundScroll, unlockBackgroundScroll } from '../../lib/ui/scrollLock';
+
   function initVideoReviewLightbox() {
     const lightbox = document.getElementById('video-review-lightbox');
     const iframe = lightbox?.querySelector<HTMLIFrameElement>('[data-video-review-iframe]');
@@ -63,20 +118,36 @@ const video = product.videoReview;
     const closers = lightbox.querySelectorAll('[data-video-review-close]');
     const src = iframe.dataset.src || '';
     let lastFocus: HTMLElement | null = null;
+    let isOpen = false;
 
     const close = () => {
-      lightbox.hidden = true;
-      document.body.classList.remove('is-locked');
-      iframe.src = 'about:blank';
-      lastFocus?.focus();
+      if (!isOpen) return;
+      isOpen = false;
+      lightbox.classList.remove('is-visible');
+      window.setTimeout(() => {
+        if (isOpen) return;
+        lightbox.hidden = true;
+        iframe.src = 'about:blank';
+      }, 220);
+      // Release the freeze; the page is already exactly where it was.
+      unlockBackgroundScroll();
+      // preventScroll matters: without it the browser scrolls the trigger back
+      // into view and the page visibly jumps on close.
+      lastFocus?.focus({ preventScroll: true });
+      lastFocus = null;
     };
 
     const open = (trigger: HTMLElement) => {
+      if (isOpen) return;
+      isOpen = true;
       lastFocus = trigger;
       lightbox.hidden = false;
-      document.body.classList.add('is-locked');
+      lockBackgroundScroll();
       iframe.src = src;
-      lightbox.querySelector<HTMLElement>('[data-video-review-close]')?.focus();
+      requestAnimationFrame(() => lightbox.classList.add('is-visible'));
+      lightbox
+        .querySelector<HTMLElement>('[data-video-review-close]')
+        ?.focus({ preventScroll: true });
     };
 
     openers.forEach((button) => {
@@ -99,6 +170,21 @@ const video = product.videoReview;
       lightbox.dataset.escBound = 'true';
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && !lightbox.hidden) close();
+        if (event.key !== 'Tab' || lightbox.hidden) return;
+        // Keep focus inside the dialog.
+        const focusable = lightbox.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus({ preventScroll: true });
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus({ preventScroll: true });
+        }
       });
     }
   }

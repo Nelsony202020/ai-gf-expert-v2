@@ -1,4 +1,5 @@
 import { closeAnimatedDrawer } from '../../lib/drawer/animate';
+import { lockBackgroundScroll, unlockBackgroundScroll } from '../../lib/ui/scrollLock';
 import { bindScrollFade } from '../../lib/ui/scrollFade';
 
 function trapFocus(panel: HTMLElement) {
@@ -35,25 +36,28 @@ function focusWithoutScroll(el: HTMLElement | null | undefined) {
 let releaseFocus: (() => void) | null = null;
 let lastTrigger: HTMLElement | null = null;
 let releaseScrollFade: (() => void) | null = null;
-let lockedScrollY = 0;
 let backgroundScrollLocked = false;
 
-function lockBackgroundScroll() {
+/**
+ * Background freeze. Delegated to the shared lock so the drawer, the video
+ * review lightbox and the media lightbox all behave identically: the page keeps
+ * its exact scroll position on open and on close, with no restore step that
+ * could be seen.
+ */
+function lockDrawerBackground() {
   if (backgroundScrollLocked) return;
-  lockedScrollY = window.scrollY;
-  document.body.style.top = `-${lockedScrollY}px`;
+  backgroundScrollLocked = true;
+  lockBackgroundScroll();
   document.documentElement.classList.add('ratings-drawer-open');
   document.body.classList.add('ratings-drawer-open');
-  backgroundScrollLocked = true;
 }
 
-function unlockBackgroundScroll() {
+function unlockDrawerBackground() {
   if (!backgroundScrollLocked) return;
+  backgroundScrollLocked = false;
   document.documentElement.classList.remove('ratings-drawer-open');
   document.body.classList.remove('ratings-drawer-open');
-  document.body.style.top = '';
-  backgroundScrollLocked = false;
-  window.scrollTo({ top: lockedScrollY, left: 0, behavior: 'auto' });
+  unlockBackgroundScroll();
 }
 
 function mountDrawerOnBody(root: HTMLElement) {
@@ -131,7 +135,7 @@ function closeDrawer() {
     panels,
     instantClass: 'ratings-drawer-panel--instant',
     onComplete: () => {
-      unlockBackgroundScroll();
+      unlockDrawerBackground();
       releaseFocus?.();
       releaseFocus = null;
       releaseScrollFade?.();
@@ -166,7 +170,7 @@ function openDrawer(id: string, trigger?: HTMLElement) {
     lastTrigger = trigger ?? null;
   }
   mountDrawerOnBody(root);
-  lockBackgroundScroll();
+  lockDrawerBackground();
   root.hidden = false;
   delete root.dataset.drawerClosing;
   backdrop.dataset.open = 'true';

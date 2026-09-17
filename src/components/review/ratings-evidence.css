@@ -937,19 +937,14 @@
   outline: none;
 }
 
-/* Drawer */
-html.ratings-drawer-open,
-body.ratings-drawer-open {
-  overflow: hidden;
-  overscroll-behavior: none;
-}
+/* Drawer.
 
-body.ratings-drawer-open {
-  position: fixed;
-  left: 0;
-  right: 0;
-  width: 100%;
-}
+   The background freeze itself lives in global.css behind
+   `html[data-overlay-scroll-lock]` (see src/lib/ui/scrollLock.ts) and is shared
+   with the lightboxes. Do NOT reintroduce `position: fixed` on <body> here: it
+   takes the document out of flow, which unpins every `position: sticky` element
+   and forces a scroll restore on close — the visible jump this replaced.
+   These classes remain purely as a styling hook for drawer-open state. */
 
 .ratings-drawer-backdrop {
   position: fixed;

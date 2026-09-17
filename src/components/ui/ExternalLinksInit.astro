@@ -59,6 +59,68 @@
     });
   }
 
+  /**
+   * Central enforcement of the site-wide rule: every external URL opens in a new
+   * tab with safe rel attributes; internal links, anchors, mailto/tel and any
+   * link that explicitly opts out with target="_self" are left alone.
+   *
+   * A one-off sweep at load is not enough — large parts of the review page are
+   * injected after load (the lazily fetched ratings panel, evidence drawer
+   * panels cloned from <template>, lightbox content), and links inside them
+   * used to keep opening in the same tab. Observing the document means any
+   * markup added later automatically follows the rule, so future links never
+   * have to be patched one by one.
+   */
+  let queued = false;
+  const pending = new Set<ParentNode>();
+
+  function flush() {
+    queued = false;
+    const roots = [...pending];
+    pending.clear();
+    for (const root of roots) externalizeLinks(root);
+  }
+
+  function schedule(root: ParentNode) {
+    pending.add(root);
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(flush);
+  }
+
+  function watchForNewLinks() {
+    if (document.documentElement.dataset.externalLinksObserved === 'true') return;
+    document.documentElement.dataset.externalLinksObserved = 'true';
+
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.type === 'attributes') {
+          const target = record.target as HTMLElement;
+          if (target instanceof HTMLAnchorElement) schedule(target.parentNode ?? document);
+          continue;
+        }
+        record.addedNodes.forEach((node) => {
+          if (node.nodeType !== 1) return;
+          const el = node as HTMLElement;
+          if (el instanceof HTMLAnchorElement || el.querySelector?.('a[href]')) {
+            schedule(el.parentNode ?? document);
+          }
+        });
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['href'],
+    });
+  }
+
   externalizeLinks();
-  document.addEventListener('astro:page-load', () => externalizeLinks());
+  watchForNewLinks();
+  document.addEventListener('astro:page-load', () => {
+    externalizeLinks();
+    watchForNewLinks();
+  });
 </script>

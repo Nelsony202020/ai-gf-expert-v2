@@ -2,26 +2,51 @@
 
 /* --site-header-height / --site-header-offset live in global.css (single source). */
 :root {
-  --review-tabbar-height: 2.9375rem;
+  /* Figma Review / Tab Bar: 56 tall at every viewport. */
+  --review-tabbar-height: 3.5rem;
   --roundup-hub-nav-height: 2.625rem;
 }
 
 @media (min-width: 768px) {
   :root {
-    --review-tabbar-height: 3.25rem;
     --roundup-hub-nav-height: 2.75rem;
   }
 }
 
-/* The content header is not sticky (same as the Brand Guide Hub), so the tab bar
-   sticks to the top of the viewport — no header offset to leave room for. */
+/* One sticky navigation system on the review page: this bar and nothing else.
+   It sits in normal flow under the hero, then pins directly below the global
+   header once it reaches it (--site-header-offset is the header's own height,
+   owned by global.css). `position: sticky` means the page itself never moves —
+   there is no fixed-positioning swap and no scroll compensation. */
 [data-tabbar].review-tabbar {
   position: sticky;
   top: var(--site-header-offset, 0px);
   z-index: 45;
-  background: var(--color-background);
-  border-bottom: 1px solid var(--color-surface-variant);
+  background: var(--rs-canvas, var(--color-background));
+  border-top: 1px solid var(--rs-line, var(--color-surface-variant));
+  border-bottom: 1px solid var(--rs-line, var(--color-surface-variant));
   box-shadow: none;
+  transition: box-shadow 200ms ease-out;
+}
+
+/* Stuck: keep the Figma bar exactly as it is, just lift it off the content
+   with a very soft shadow. No resize, no colour change, no movement. */
+[data-tabbar].review-tabbar[data-stuck='true'] {
+  box-shadow: 0 1px 3px rgb(20 19 23 / 6%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tabbar].review-tabbar {
+    transition: none;
+  }
+}
+
+/* The sentinel is a zero-height marker used to detect the stuck state. */
+[data-tabbar-sentinel] {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  scroll-margin-top: var(--site-header-offset, 0px);
 }
 
 /* Hide the header’s own bottom border while tabs are joined underneath */
@@ -36,7 +61,23 @@
 
 [data-theme='dark'] [data-tabbar].review-tabbar {
   background: var(--color-background);
+  border-top-color: var(--dark-border-subtle);
   border-bottom-color: var(--dark-border-subtle);
+}
+
+[data-theme='dark'] [data-tabbar].review-tabbar[data-stuck='true'] {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+}
+
+/* The Figma tab colours are light-theme ink/secondary; dark mode needs the
+   inverse or the active tab reads as the dimmest one. */
+[data-theme='dark'] [data-tabbar].review-tabbar .review-tabbar__btn {
+  color: var(--dark-muted, #9ca3af);
+}
+
+[data-theme='dark'] [data-tabbar].review-tabbar .review-tabbar__btn:hover,
+[data-theme='dark'] [data-tabbar].review-tabbar .review-tabbar__btn[aria-current='true'] {
+  color: var(--color-on-surface);
 }
 
 [data-theme='dark'] .site-header.site-header--joined-tabs,

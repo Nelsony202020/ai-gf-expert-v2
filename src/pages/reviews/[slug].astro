@@ -95,7 +95,13 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
     <ReviewHero product={product} featuredIn={featuredIn} />
     <ReviewStickyCta product={product} />
     <VideoReviewLightbox product={product} />
-    <TabBar tabs={tabs} hiddenTabs={hiddenTabs} />
+    <TabBar
+      tabs={tabs}
+      hiddenTabs={hiddenTabs}
+      ctaLabel={`Visit ${product.name}`}
+      ctaShortLabel="Visit"
+      ctaHref={product.affiliateUrl}
+    />
 
     <div data-panels>
       <div data-tab-panel="overview">

@@ -165,13 +165,9 @@
     0 24px 48px -8px rgba(21, 17, 26, 0.16);
 }
 
-@media (max-width: 1099px) {
-  .review-jump {
-    position: sticky;
-    top: calc(6.75rem + env(safe-area-inset-top, 0px));
-    z-index: 18;
-  }
-}
+/* Deliberately NOT sticky. The review tab bar is the page's only sticky
+   navigation; a second pinned control competing with it was the bug. This
+   stays in the article and scrolls away like any other block. */
 
 @media (min-width: 1100px) {
   .review-jump {
@@ -270,7 +266,11 @@
     width: 240px;
     padding-top: 8px;
     position: sticky;
-    top: calc(7.5rem + env(safe-area-inset-top, 0px));
+    /* Clear the global header + the sticky review tab bar. */
+    top: calc(
+      var(--site-header-offset, 3.5rem) + var(--review-tabbar-height, 3.5rem) + 1rem +
+        env(safe-area-inset-top, 0px)
+    );
     align-self: start;
   }
 }

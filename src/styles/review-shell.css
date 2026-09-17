@@ -1434,8 +1434,13 @@ ul.rs-list {
   pointer-events: none;
 }
 
+/* Hidden while the scores are expanded, and while the review tab bar is stuck:
+   the stuck bar carries the Visit CTA itself, so this floating one would be a
+   duplicate. Figma: one primary CTA per viewport, no floating CTA. */
 body.rs-scores-expanded .review-sticky-cta,
-body.rs-scores-expanded .review-sticky-cta.is-visible {
+body.rs-scores-expanded .review-sticky-cta.is-visible,
+body.review-tabbar-stuck .review-sticky-cta,
+body.review-tabbar-stuck .review-sticky-cta.is-visible {
   display: none !important;
   opacity: 0 !important;
   visibility: hidden !important;
@@ -1498,6 +1503,7 @@ body.rs-scores-expanded .review-sticky-cta.is-visible {
 
 .review-page [data-tabbar].review-tabbar {
   background: var(--rs-canvas);
+  border-top: 1px solid var(--rs-line);
   border-bottom: 1px solid var(--rs-line);
 }
 

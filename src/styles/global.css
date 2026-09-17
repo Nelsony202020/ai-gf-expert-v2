@@ -732,3 +732,48 @@ button.glossary-trigger,
   mix-blend-mode: normal;
   object-fit: contain;
 }
+
+/* ---------------------------------------------------------------------------
+   Overlay background scroll lock (shared by the ratings evidence drawer, the
+   video review lightbox and the media lightbox — see src/lib/ui/scrollLock.ts).
+
+   Locking only flips `overflow` on the scrolling element. The document keeps
+   its scroll offset, nothing is repositioned and nothing is restored, so
+   opening and closing an overlay cannot move the page. `position: sticky`
+   elements (global header, review tab bar) keep working because <body> stays
+   in normal flow.
+
+   `scrollbar-gutter: stable` keeps the scrollbar's width reserved at all times
+   so that hiding the scrollbar does not reflow the page by its width. Browsers
+   without it fall back to padding compensation measured at lock time.
+   --------------------------------------------------------------------------- */
+@supports (scrollbar-gutter: stable) {
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  /* Touch devices use overlay scrollbars, so there is no width to reserve and
+     a permanent gutter would just eat 8px of a phone screen. */
+  @media (hover: none) and (pointer: coarse) {
+    html {
+      scrollbar-gutter: auto;
+    }
+  }
+}
+
+html[data-overlay-scroll-lock] {
+  overflow: hidden;
+  /* Neutralise `scroll-behavior: smooth` so nothing can animate while locked. */
+  scroll-behavior: auto;
+}
+
+html[data-overlay-scroll-lock] body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+@supports not (scrollbar-gutter: stable) {
+  html[data-overlay-scroll-lock] body {
+    padding-right: var(--overlay-scrollbar-gutter, 0px);
+  }
+}

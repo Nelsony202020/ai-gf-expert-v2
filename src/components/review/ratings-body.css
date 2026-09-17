@@ -179,19 +179,37 @@
   }
 }
 
-.rft-cat__toggle:hover,
-.rft-cat__toggle:focus-visible {
-  background: var(--rft-page);
-  outline: none;
+/* Hover is a hint, not a state. The full page-surface swap used to make a
+   hovered row look exactly like an expanded one, which read as "aggressive";
+   this is a fraction of that tint plus a hairline that just barely darkens. */
+.rft-cat__toggle {
+  transition:
+    background-color 0.16s ease-out,
+    border-color 0.16s ease-out;
+}
+
+@media (hover: hover) {
+  .rft-cat__toggle:hover:not([aria-expanded='true']) {
+    background: color-mix(in srgb, var(--rft-page) 55%, var(--rft-card));
+  }
 }
 
 .rft-cat__toggle:focus-visible {
+  outline: none;
   box-shadow: inset 0 0 0 2px var(--rft-pink);
 }
 
+/* Expanded is the only loud-ish state, and it is straight from Figma:
+   page surface behind the row, white icon box, soft-pink toggle. */
 .rft-cat__toggle[aria-expanded='true'] {
   background: var(--rft-page);
   border-bottom-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rft-cat__toggle {
+    transition: none;
+  }
 }
 
 .rft-cat:last-child .rft-cat__toggle[aria-expanded='false'] {
@@ -455,13 +473,20 @@
   appearance: none;
   font: inherit;
   text-align: left;
-  transition: border-color 0.16s ease-out, background 0.16s ease-out;
+  transition:
+    border-color 0.16s ease-out,
+    background-color 0.16s ease-out,
+    box-shadow 0.16s ease-out;
 }
 
+/* Hover: a barely-there border darkening plus a very soft shadow. Pink is
+   reserved for the selected state, so hover can never be mistaken for it, and
+   nothing moves or scales. */
 @media (hover: hover) {
   .rft-subscore:hover:not(.rft-subscore--selected):not([aria-expanded='true']) {
-    border-color: color-mix(in srgb, var(--rft-pink) 32%, var(--rft-hairline));
+    border-color: color-mix(in srgb, var(--rft-text, #141317) 14%, var(--rft-hairline));
     background: var(--rft-card);
+    box-shadow: 0 1px 2px rgb(20 19 23 / 5%);
   }
 }
 
@@ -471,10 +496,14 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--rft-pink) 35%, transparent);
 }
 
+/* Selected — Figma Review / Subscore Card, state=Selected: nothing but a
+   1.5px brand border and a chevron that turns down. No fill, no tint, no
+   shadow, no scale. */
 .rft-subscore--selected,
 .rft-subscore[aria-expanded='true'] {
   border: 1.5px solid var(--rft-pink);
   background: var(--rft-card);
+  box-shadow: none;
 }
 
 .rft-subscore__top {

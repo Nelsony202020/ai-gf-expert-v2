@@ -1,16 +1,31 @@
 ---
+import AffiliateLink from '../ui/AffiliateLink.astro';
+
 export type Tab = { id: string; label: string; tocLabel?: string };
 
 interface Props {
   tabs: Tab[];
   hiddenTabs?: Tab[];
+  /** Product whose affiliate CTA rides along in the sticky state. */
+  ctaLabel?: string;
+  ctaShortLabel?: string;
+  ctaHref?: string;
 }
 
-const { tabs, hiddenTabs = [] } = Astro.props;
-const allTabs = [...tabs, ...hiddenTabs];
+const { tabs, hiddenTabs = [], ctaLabel, ctaShortLabel, ctaHref } = Astro.props;
+const showCta = Boolean(ctaHref && ctaLabel);
 ---
 
-<nav class="review-tabbar z-40" data-tabbar aria-label="Review sections">
+{/* Sentinel: sits in flow directly above the bar so we can tell when the bar
+    has actually stuck, without listening to scroll. */}
+<div data-tabbar-sentinel aria-hidden="true"></div>
+
+<nav
+  class="review-tabbar z-40"
+  data-tabbar
+  data-tabbar-has-cta={showCta ? 'true' : 'false'}
+  aria-label="Review sections"
+>
   <div class="review-tabbar__shell section-container px-4 md:px-8">
     <div class="review-tabbar__rail" data-tabbar-rail>
       <div class="review-tabbar__fade review-tabbar__fade--start" data-tabbar-fade="start" aria-hidden="true"></div>
@@ -48,8 +63,33 @@ const allTabs = [...tabs, ...hiddenTabs];
           ))
         }
       </ul>
+      {/* Rendered here rather than created in JS so the scoped styles below
+          actually apply to it. */}
+      <div class="review-tabbar__indicator" data-tab-indicator aria-hidden="true"></div>
       <div class="review-tabbar__fade review-tabbar__fade--end" data-tabbar-fade="end" aria-hidden="true"></div>
     </div>
+
+    {
+      showCta && (
+        <div class="review-tabbar__cta" data-tabbar-cta aria-hidden="true">
+          <span class="review-tabbar__cta-divider" aria-hidden="true" />
+          <AffiliateLink href={ctaHref!} class="review-tabbar__cta-btn" data-cta="tabbar-visit" tabindex="-1">
+            <span class="review-tabbar__cta-label">{ctaLabel}</span>
+            <span class="review-tabbar__cta-label review-tabbar__cta-label--short">
+              {ctaShortLabel ?? 'Visit'}
+            </span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M7 17 17 7M9 7h8v8"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
+          </AffiliateLink>
+        </div>
+      )
+    }
   </div>
 </nav>
 
@@ -60,6 +100,52 @@ const allTabs = [...tabs, ...hiddenTabs];
     const tabbar = document.querySelector<HTMLElement>('[data-tabbar].review-tabbar');
     if (!tabbar) return;
     initReviewTabIndicator(tabbar);
+  }
+
+  /**
+   * Sticky state. The bar is `position: sticky` and therefore never moves the
+   * page; all we do is notice when it has reached its offset so the affiliate
+   * CTA can fade in. A sentinel + IntersectionObserver does that without a
+   * scroll listener, so there is nothing to jitter.
+   */
+  function initReviewTabbarSticky() {
+    const tabbar = document.querySelector<HTMLElement>('[data-tabbar].review-tabbar');
+    const sentinel = document.querySelector<HTMLElement>('[data-tabbar-sentinel]');
+    if (!tabbar || !sentinel || tabbar.dataset.stickyBound === 'true') return;
+    tabbar.dataset.stickyBound = 'true';
+
+    const cta = tabbar.querySelector<HTMLElement>('[data-tabbar-cta]');
+    const ctaLink = cta?.querySelector<HTMLAnchorElement>('a');
+
+    const setStuck = (stuck: boolean) => {
+      if ((tabbar.dataset.stuck === 'true') === stuck) return;
+      tabbar.dataset.stuck = stuck ? 'true' : 'false';
+      document.body.classList.toggle('review-tabbar-stuck', stuck);
+      if (cta) {
+        cta.setAttribute('aria-hidden', stuck ? 'false' : 'true');
+        // Keep the CTA out of the tab order until it is actually on screen.
+        if (ctaLink) ctaLink.tabIndex = stuck ? 0 : -1;
+      }
+    };
+
+    let observer: IntersectionObserver | null = null;
+
+    const observe = () => {
+      observer?.disconnect();
+      const offset = Math.round(
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--site-header-offset'),
+        ) || 0,
+      );
+      observer = new IntersectionObserver(
+        ([entry]) => setStuck(!entry?.isIntersecting),
+        { rootMargin: `-${offset + 1}px 0px 0px 0px`, threshold: 0 },
+      );
+      observer.observe(sentinel);
+    };
+
+    observe();
+    window.addEventListener('resize', observe, { passive: true });
   }
 
   function initReviewTabbarFades() {
@@ -113,32 +199,41 @@ const allTabs = [...tabs, ...hiddenTabs];
   }
 
   initReviewTabbarChrome();
+  initReviewTabbarSticky();
   initReviewTabbarFades();
   document.addEventListener('astro:page-load', () => {
     initReviewTabbarChrome();
+    initReviewTabbarSticky();
     initReviewTabbarFades();
   });
 </script>
 
 <style>
+  /* Figma — Review / Tab Bar (196:1023).
+     Desktop: 56 tall, tabs left on the review container, 32px gap, compact
+     Visit CTA right. Mobile: 56 tall, scrollable tab viewport with edge fade,
+     divider, then a pinned compact Visit pill. */
+
   .review-tabbar__shell {
     display: flex;
-    justify-content: center;
+    align-items: center;
+    gap: 12px;
   }
 
   .review-tabbar__rail {
     --review-tabbar-fade-bg: var(--rs-canvas, var(--color-background));
     position: relative;
-    width: 100%;
-    min-height: 48px;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 56px;
   }
 
   .review-tabbar__list {
     display: flex;
     align-items: stretch;
-    gap: 1.35rem;
+    gap: 2rem;
     width: 100%;
-    min-height: 48px;
+    min-height: 56px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -165,15 +260,17 @@ const allTabs = [...tabs, ...hiddenTabs];
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    height: 56px;
     margin: 0;
-    padding: 0.85rem 0 0.95rem;
+    padding: 0 2px;
     border: 0;
     background: transparent;
-    color: var(--rs-muted, color-mix(in srgb, var(--color-on-surface-variant, #64748b) 82%, transparent));
+    color: var(--rs-muted, #55545b);
     font: inherit;
-    font-size: 0.875rem;
-    font-weight: 500;
-    line-height: 1.2;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    letter-spacing: -0.048px;
     white-space: nowrap;
     cursor: pointer;
     transition: color 0.15s ease;
@@ -185,21 +282,22 @@ const allTabs = [...tabs, ...hiddenTabs];
 
   .review-tabbar__btn:focus-visible {
     outline: 2px solid var(--rs-pink, var(--color-accent));
-    outline-offset: 3px;
+    outline-offset: -2px;
     border-radius: 4px;
   }
 
   .review-tabbar__btn[aria-current='true'] {
     color: var(--rs-ink, var(--color-on-surface));
-    font-weight: 600;
   }
 
+  /* Brand-pink active underline — Figma Review / Tab active indicator. */
   .review-tabbar__indicator {
     position: absolute;
     left: 0;
     bottom: 0;
+    width: 0;
     height: 2px;
-    border-radius: 999px;
+    border-radius: 1px;
     background: var(--rs-pink, var(--color-accent));
     pointer-events: none;
     z-index: 3;
@@ -214,6 +312,87 @@ const allTabs = [...tabs, ...hiddenTabs];
     .review-tabbar__indicator {
       transition: none;
     }
+  }
+
+  /* Affiliate CTA — only once the bar has stuck under the global header. */
+  .review-tabbar__cta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+    opacity: 0;
+    transform: translateX(8px);
+    pointer-events: none;
+    visibility: hidden;
+    transition:
+      opacity 180ms ease-out,
+      transform 180ms ease-out,
+      visibility 0s linear 180ms;
+  }
+
+  [data-tabbar][data-stuck='true'] .review-tabbar__cta {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+    visibility: visible;
+    transition:
+      opacity 180ms ease-out,
+      transform 180ms ease-out,
+      visibility 0s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .review-tabbar__cta {
+      transition: opacity 120ms linear;
+      transform: none;
+    }
+
+    [data-tabbar][data-stuck='true'] .review-tabbar__cta {
+      transform: none;
+    }
+  }
+
+  .review-tabbar__cta-divider {
+    display: none;
+    width: 1px;
+    height: 24px;
+    background: var(--rs-line, #e6e6e3);
+  }
+
+  .review-tabbar__cta-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: var(--rs-pink, var(--color-accent));
+    color: #f7f7f6;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 18px;
+    letter-spacing: -0.14px;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+  }
+
+  .review-tabbar__cta-btn:hover {
+    background: var(--rs-pink-deep, #be185d);
+  }
+
+  .review-tabbar__cta-btn:focus-visible {
+    outline: 2px solid var(--rs-pink, var(--color-accent));
+    outline-offset: 2px;
+  }
+
+  .review-tabbar__cta-btn svg {
+    flex-shrink: 0;
+  }
+
+  .review-tabbar__cta-label--short {
+    display: none;
   }
 
   .review-tabbar__fade {
@@ -244,13 +423,7 @@ const allTabs = [...tabs, ...hiddenTabs];
   @media (min-width: 768px) {
     .review-tabbar__list {
       justify-content: flex-start;
-      gap: 2rem;
       overflow: visible;
-    }
-
-    .review-tabbar__btn {
-      font-size: 1rem;
-      padding: 0.9rem 0 1rem;
     }
 
     .review-tabbar__fade {
@@ -261,27 +434,50 @@ const allTabs = [...tabs, ...hiddenTabs];
   @media (max-width: 767px) {
     .review-tabbar__shell {
       padding-left: 0;
-      padding-right: 0;
+      padding-right: 1rem;
       max-width: none;
+      gap: 0;
     }
 
     .review-tabbar__rail,
     .review-tabbar__list {
-      min-height: 47px;
+      min-height: 56px;
     }
 
     .review-tabbar__list {
-      gap: 1.25rem;
+      gap: 1.5rem;
       padding-inline: 1rem;
     }
 
     .review-tabbar__btn {
-      font-size: 0.8125rem;
-      padding: 0.7rem 0 0.8rem;
+      height: 56px;
+      font-size: 15px;
     }
 
     .review-tabbar__fade {
       width: 2rem;
+    }
+
+    /* The mobile CTA is pinned beside the scrolling tab viewport (Figma 226:1384). */
+    .review-tabbar__cta {
+      gap: 12px;
+      padding-left: 0;
+    }
+
+    .review-tabbar__cta-divider {
+      display: block;
+    }
+
+    .review-tabbar__cta-label {
+      display: none;
+    }
+
+    .review-tabbar__cta-label--short {
+      display: inline;
+    }
+
+    .review-tabbar__cta-btn {
+      padding: 0 16px;
     }
   }
 </style>

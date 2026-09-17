@@ -253,6 +253,7 @@
 <script>
   import { playOverlayClose, playOverlayOpen } from '../../lib/ui/overlayTransition.ts';
   import { deferUntilIdle } from '../../lib/ui/deferUntilIdle';
+  import { lockBackgroundScroll, unlockBackgroundScroll } from '../../lib/ui/scrollLock';
 
   interface LightboxItem {
     src: string;
@@ -352,7 +353,9 @@
       lightbox.classList.remove('hidden', 'is-visible');
       lightbox.classList.add('flex');
       lightbox.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
+      // Shared overlay freeze — same primitive as the ratings drawer and the
+      // video review lightbox, so the page never moves on open or close.
+      lockBackgroundScroll();
       renderItem('none');
       updateNavUi();
       playOverlayOpen(lightbox);
@@ -362,6 +365,7 @@
       if (!isOpen) return;
       isOpen = false;
       lightbox.setAttribute('aria-hidden', 'true');
+      unlockBackgroundScroll();
       playOverlayClose(lightbox, () => {
         lightbox.classList.add('hidden');
         lightbox.classList.remove('flex');
@@ -369,7 +373,6 @@
         img.classList.remove('hidden', 'is-changing', 'from-left', 'from-right');
         items = [];
         index = 0;
-        document.body.style.overflow = '';
         updateNavUi();
       });
     }
