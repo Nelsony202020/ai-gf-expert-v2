@@ -1,7 +1,5 @@
 import type { Product } from '../../data/products';
 import type { HubGuide } from '../../data/ourdream-guide-hub';
-import { ourdreamHubGuides } from '../../data/ourdream-guide-hub';
-import { guides as sanityGuides } from '../../data/guides';
 import { publicAffiliateHref } from '../affiliate/publicHref';
 import { resolveBrandLogo } from '../home/brandLogos';
 import { publicPagePath } from '../urls';
@@ -101,8 +99,6 @@ export const BRAND_GUIDE_HUBS: BrandGuideHubConfig[] = [
   },
 ];
 
-const OURDREAM_HREFS = new Set(ourdreamHubGuides.map((g) => g.href));
-
 export function getBrandGuideHubConfig(hubSlug: string): BrandGuideHubConfig | undefined {
   return BRAND_GUIDE_HUBS.find((hub) => hub.hubSlug === hubSlug);
 }
@@ -113,13 +109,6 @@ export function brandGuideHubPath(hubSlug: string): string {
 
 export function defaultNoindexBrandHubPaths(): string[] {
   return BRAND_GUIDE_HUBS.filter((hub) => hub.defaultNoindex).map((hub) => brandGuideHubPath(hub.hubSlug));
-}
-
-function matchesBrand(value: string, productSlug: string, productName: string): boolean {
-  const hay = value.toLowerCase();
-  const slug = productSlug.toLowerCase();
-  const name = productName.toLowerCase();
-  return hay.includes(slug) || (name.length > 2 && hay.includes(name));
 }
 
 function uniqueGuides(items: HubGuide[]): HubGuide[] {
@@ -143,20 +132,6 @@ export function collectBrandHubGuides(product: Product | null, config: BrandGuid
       tags: ['review', 'scores', 'pricing'],
     },
   ];
-
-  for (const guide of sanityGuides) {
-    if (guide.noindex) continue;
-    const href = publicPagePath(`/guides/${guide.slug}/`);
-    if (OURDREAM_HREFS.has(href)) continue;
-    const blob = `${guide.slug} ${guide.title} ${guide.excerpt ?? ''}`;
-    if (!matchesBrand(blob, config.productSlug, name)) continue;
-    items.push({
-      title: guide.title,
-      href,
-      description: guide.excerpt ?? '',
-      tags: [guide.slug],
-    });
-  }
 
   return uniqueGuides(items);
 }

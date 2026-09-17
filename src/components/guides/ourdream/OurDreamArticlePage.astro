@@ -9,6 +9,12 @@ import { extractOurDreamGuideToc, estimateGuideReadMinutes } from '../../../lib/
 
 interface Props {
   title: string;
+  /**
+   * One-sentence standfirst between the H1 and the byline — the `Description` slot of
+   * Figma Article / Header (158:2532). Optional: no article populates it yet, because
+   * that is a content decision, not a shell one.
+   */
+  dek?: string;
   breadcrumbLabel: string;
   bodyHtml: string;
   author: AuthorProfile | undefined;
@@ -22,6 +28,7 @@ interface Props {
 
 const {
   title,
+  dek,
   breadcrumbLabel,
   bodyHtml,
   author,
@@ -56,6 +63,7 @@ const dateShort = publishedShort ?? published;
           ]}
         />
         <h1 class="ourdream-article-hero__title">{title}</h1>
+        {dek && <p class="ourdream-article-hero__dek">{dek}</p>}
         <div class="ourdream-article-hero__meta">
           {
             avatarUrl && (

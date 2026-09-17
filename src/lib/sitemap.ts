@@ -9,7 +9,6 @@ import type {
 } from '../types/sitemap';
 import type { Product } from '../data/products';
 import { getAllAuthors } from '../data/authors';
-import { guides } from '../data/guides';
 import { products } from '../data/products';
 import { getTestCategories } from './test-framework';
 import { buyingGuideSlug } from '../data/buying-guide-content';
@@ -198,28 +197,6 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
     sitemapSection: 'guides',
     parentCategory: 'guides',
   });
-
-  const hardcodedGuideSlugs = new Set([
-    buyingGuideSlug,
-    'ourdream-ai-comics',
-    'how-to-use-ourdream-ai-image-generator',
-    'ourdream-ai-image-prompt',
-    'ourdream-ai-prompt',
-  ]);
-
-  // Guides from Sanity (empty until the CMS has published guides)
-  for (const guide of guides) {
-    if (hardcodedGuideSlugs.has(guide.slug)) continue;
-    push({
-      title: guide.title,
-      url: `/guides/${guide.slug}`,
-      contentType: 'guide',
-      sitemapSection: 'guides',
-      parentCategory: 'guides',
-      includeInXmlSitemap: !guide.noindex,
-      showInHtmlSitemap: !guide.noindex,
-    });
-  }
 
   push({
     title: 'How We Test AI Girlfriend Apps',
