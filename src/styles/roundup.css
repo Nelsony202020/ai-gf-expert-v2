@@ -7,7 +7,6 @@
   --roundup-header-bg: #f8faf3;
   --roundup-intro-offset: 1.5rem;
   --roundup-sidebar-sticky-gap: 0.5rem;
-  --site-header-height: 5rem;
 }
 
 /* Native 1024×256 card — do not stretch past source or it goes soft. */
@@ -16,10 +15,6 @@
 }
 
 @media (min-width: 768px) {
-  .roundup-page {
-    --site-header-height: 5rem;
-  }
-
   .roundup-hero-stage {
     --roundup-hero-height: 16rem;
   }
@@ -27,25 +22,7 @@
 
 /* Hub banner page: fixed header over fixed hero (glass styles are global) */
 body:has(.roundup-hero-stage) {
-  --site-header-height: 5rem;
   --roundup-hero-height: clamp(8rem, 25vw, 16rem);
-}
-
-/* Legacy glass header over fixed scroll-under hero (pre–global guide-hub chrome) */
-body:has(.roundup-hero-stage):not(:has(.guide-hub--site-chrome)) .site-header,
-body:has(.roundup-hero-stage):not(:has(.guide-hub--site-chrome)) [data-site-header] {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-/* Global header: nav stays in the guide-hub hero band */
-body:has(.roundup-hero-stage):has(.guide-hub--site-chrome) .guide-hub__hero [data-site-header] {
-  position: relative;
-  top: auto;
-  left: auto;
-  right: auto;
 }
 
 body:has(.roundup-hero-stage):has(.guide-hub--site-chrome) .roundup-hero-stage {
@@ -54,7 +31,6 @@ body:has(.roundup-hero-stage):has(.guide-hub--site-chrome) .roundup-hero-stage {
 
 @media (min-width: 768px) {
   body:has(.roundup-hero-stage) {
-    --site-header-height: 5rem;
     --roundup-hero-height: 16rem;
   }
 }

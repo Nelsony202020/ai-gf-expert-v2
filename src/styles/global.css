@@ -1,9 +1,38 @@
 @import 'tailwindcss';
 @source not "../components/admin";
 @source not "../pages/admin";
-@import './header.css';
 @import './footer.css';
 @import './article-utilities.css';
+
+/* ---------------------------------------------------------------------------
+   Site header chrome tokens — the ONLY definition.
+   The canonical header (HomeDesktopHeader) is 80px tall, so --site-header-height
+   is 5rem everywhere. It previously had three conflicting definitions
+   (header.css 3.5rem/4.25rem, review-page.css 5rem, roundup.css 5rem) and which
+   one won depended on stylesheet <link> order.
+   --------------------------------------------------------------------------- */
+:root {
+  --site-header-height: 5rem;
+  --site-header-offset: 0px;
+  --site-header-glass-bg: rgb(248 250 243 / 78%);
+  --site-header-glass-border: rgb(26 36 24 / 8%);
+  --site-header-glass-blur: 10px;
+  --site-header-glass-saturate: 140%;
+  --mobile-nav-sheet-glass-bg: rgb(248 250 243 / 88%);
+  --mobile-nav-sheet-glass-border: rgb(26 36 24 / 10%);
+  /* Bottom nav pill only — matches site header frost */
+  --mobile-nav-pill-glass-bg: rgb(248 250 243 / 82%);
+  --mobile-nav-pill-glass-border: rgb(26 36 24 / 10%);
+}
+
+[data-theme='dark'] {
+  --site-header-glass-bg: rgb(15 23 42 / 82%);
+  --site-header-glass-border: rgb(255 255 255 / 8%);
+  --mobile-nav-sheet-glass-bg: rgb(15 23 42 / 88%);
+  --mobile-nav-sheet-glass-border: rgb(255 255 255 / 10%);
+  --mobile-nav-pill-glass-bg: rgb(15 23 42 / 86%);
+  --mobile-nav-pill-glass-border: rgb(255 255 255 / 10%);
+}
 
 /* ThemeModeIcons — site-wide (core pages skip page-full.css) */
 .theme-toggle__icon-stack {

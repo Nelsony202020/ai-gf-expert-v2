@@ -60,6 +60,12 @@
   width: 100%;
 }
 
+/* z-index map: header chrome 50 (so its popovers clear the review tab bar at 45),
+   decorative glow 0 + pointer-events:none, page content 1. */
+.guide-hub--site-chrome .guide-hub__hero {
+  z-index: 50;
+}
+
 /* Header-only chrome on non-hub pages (reviews, roundups, guides index, etc.) */
 .guide-hub--site-chrome {
   background: transparent;

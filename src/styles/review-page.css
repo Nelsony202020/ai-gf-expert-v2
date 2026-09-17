@@ -1,31 +1,23 @@
 /* Review page — sticky tab bar */
 
+/* --site-header-height / --site-header-offset live in global.css (single source). */
 :root {
-  /* Matches HomeDesktopHeader (80px) — canonical content chrome */
-  --site-header-height: 5rem;
-  --site-header-offset: 0px;
   --review-tabbar-height: 2.9375rem;
   --roundup-hub-nav-height: 2.625rem;
 }
 
 @media (min-width: 768px) {
   :root {
-    --site-header-height: 5rem;
     --review-tabbar-height: 3.25rem;
     --roundup-hub-nav-height: 2.75rem;
   }
 }
 
-@media (min-width: 1024px) {
-  :root {
-    --site-header-height: 5rem;
-  }
-}
-
-/* Sticky below the global header once the user scrolls past the in-flow position. */
+/* The content header is not sticky (same as the Brand Guide Hub), so the tab bar
+   sticks to the top of the viewport — no header offset to leave room for. */
 [data-tabbar].review-tabbar {
   position: sticky;
-  top: calc(var(--site-header-height) + var(--site-header-offset, 0px));
+  top: var(--site-header-offset, 0px);
   z-index: 45;
   background: var(--color-background);
   border-bottom: 1px solid var(--color-surface-variant);
@@ -78,8 +70,8 @@
 
 @media (min-width: 1024px) {
   .overview-sidebar-stack {
-    /* Subtle gap under sticky header + tab bar */
-    top: calc(var(--site-header-height) + var(--review-tabbar-height) + 0.625rem);
+    /* Subtle gap under the sticky tab bar */
+    top: calc(var(--review-tabbar-height) + 0.625rem);
   }
 }
 

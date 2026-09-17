@@ -167,6 +167,50 @@
   flex-shrink: 0;
 }
 
+/* ---------------------------------------------------------------------------
+   Canonical content header — self-contained tokens.
+
+   Every --home-* custom property is declared on `.home-v2`, which only the
+   homepage and the two guide-hub pages wrap their content in. On every other
+   page the header has no `.home-v2` ancestor, so `var(--home-card)` and friends
+   were invalid at computed-value time: dropdown panels rendered transparent,
+   their border fell back to currentColor, and `padding-inline` collapsed to 0
+   so the header ignored the 1120px content grid.
+
+   Values are identical to the `.home-v2` block above, so the homepage header is
+   byte-for-byte unchanged; this only gives the header its own scope.
+   --------------------------------------------------------------------------- */
+.home-v2__header {
+  --home-ink: #101014;
+  --home-ink-raised: #1c1c22;
+  --home-ink-border: rgb(255 255 255 / 8%);
+  --home-page: #f7f7f6;
+  --home-card: #ffffff;
+  --home-sunken: #efefed;
+  --home-hairline: #e6e6e3;
+  --home-text: #141317;
+  --home-secondary: #55545b;
+  --home-muted: #8a8991;
+  --home-on-ink: #f7f7f6;
+  --home-on-ink-muted: #a4a3aa;
+  --home-pink: #db2777;
+  --home-gutter: 32px;
+  --home-max: 1120px;
+  --home-ease: 180ms ease;
+  --home-ease-move: 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-theme='dark'] .home-v2__header {
+  --home-ink-border: rgb(255 255 255 / 8%);
+  --home-page: #121214;
+  --home-card: #1b1b1f;
+  --home-sunken: #161619;
+  --home-hairline: #2a2a30;
+  --home-text: #f5f5f5;
+  --home-secondary: #c5c5cc;
+  --home-muted: #a6a6af;
+}
+
 .home-v2__header {
   position: relative;
   z-index: 4;
@@ -339,8 +383,8 @@
   min-width: 228px;
   padding: 8px;
   border-radius: 14px;
-  background: var(--home-card);
-  border: 1px solid var(--home-hairline);
+  background: var(--home-card, #ffffff);
+  border: 1px solid var(--home-hairline, #e6e6e3);
   box-shadow: 0 16px 40px rgb(21 17 26 / 14%);
   z-index: 20;
   opacity: 0;
@@ -353,6 +397,40 @@
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Content header popovers (scoped to [data-site-header] — the homepage header
+   sets registerAsSiteHeader={false} and is deliberately untouched).
+
+   The trigger is only ~32px tall and vertically centred, so `top: 100% + 8px`
+   opened the panel at y=64 — overlapping the header's own 80px bottom edge.
+   Stretching the trigger wrapper to the full header height anchors the panel
+   just below the header while keeping it left-aligned to its button.
+   --------------------------------------------------------------------------- */
+[data-site-header].home-v2__header {
+  z-index: 50;
+}
+
+[data-site-header] .home-v2__nav,
+[data-site-header] .home-v2__drop {
+  align-self: stretch;
+}
+
+[data-site-header] .home-v2__drop {
+  display: flex;
+  align-items: center;
+}
+
+[data-site-header] .home-v2__drop-panel {
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgb(16 16 20 / 18%);
+  z-index: 60;
+}
+
+html[data-theme='dark'] [data-site-header] .home-v2__drop-panel,
+html[data-theme='dark'] [data-site-header] .home-v2__search-dropdown {
+  box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
 }
 
 .home-v2__drop-panel a {
@@ -457,8 +535,8 @@
   width: min(360px, calc(100vw - 2rem));
   max-height: min(60vh, 420px);
   overflow-y: auto;
-  background: var(--home-card);
-  border: 1px solid var(--home-hairline);
+  background: var(--home-card, #ffffff);
+  border: 1px solid var(--home-hairline, #e6e6e3);
   border-radius: 16px;
   box-shadow: 0 16px 40px rgb(20 20 20 / 16%);
   z-index: 30;
