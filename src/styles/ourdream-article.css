@@ -499,6 +499,31 @@
   margin-top: 1.25rem;
 }
 
+.ourdream-article-prose
+  > *
+  + :is(
+    .od-block,
+    .od-ab,
+    .od-prompt,
+    .od-prompt-compare,
+    .od-prompt-compare__note,
+    .od-structure,
+    .od-steps,
+    .od-setup,
+    .od-faq,
+    .od-compare-grid,
+    blockquote,
+    pre
+  ) {
+  /* Pattern blocks carry their own top margin so they space correctly when nested
+     (a What I learned inside an AIGE test, say). As direct children of the prose
+     stack that margin used to win on source order at equal specificity, which is why
+     every .od-* block sat 4px from its neighbour instead of 20px. This rule is
+     (0,2,0), so it beats the component rules without reaching the headings — they
+     keep their 68px and 48px spacer-derived margins. */
+  margin-top: 1.25rem;
+}
+
 .ourdream-article-prose > h2 + *,
 .ourdream-article-prose > h3 + * {
   margin-top: 1.25rem;
@@ -752,12 +777,39 @@
 }
 
 /* Pattern blocks */
+/* ---------------------------------------------------------------------------
+   Callouts — Figma page 02 · Article Components, measured in
+   docs/article-system/parts/10-callouts.md.
+
+   The family, lightest to heaviest:
+     1 Tip            white card + hairline, neutral label, Body/M
+     2 Important      score/mid-soft tint, NO border, orange icon, Body/M
+     3 Quick answer   action/pink-soft tint, NO border, pink label, Body/L
+     4 What I learned white card + hairline, 32px ringed avatar, Body/L
+     5 Key takeaway   white card + hairline, 4px inset pink accent, Heading/S
+     — My take        off-ladder: no card, hairline top+bottom only, 36px avatar
+
+   Invariants worth keeping true (parts/10-callouts.md "Verification checks"):
+   exactly two callouts have no border (both tinted); exactly one has an accent
+   bar; exactly one sets its body in the display face; exactly two have a pink
+   label; exactly two carry an avatar instead of an icon; exactly one is not a
+   card. No callout has any interaction state — none is interactive.
+   --------------------------------------------------------------------------- */
+
 .od-block {
+  /* Top margin only matters when a block is nested (e.g. inside an AIGE test).
+     As a direct child of the prose stack the 20px column gap wins. */
   margin: 0.25rem 0 0;
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.25rem;
   border-radius: 1rem;
   border: 1px solid var(--od-hairline);
   background: var(--od-white);
+}
+
+@media (min-width: 1100px) {
+  .od-block {
+    padding: 1.25rem 1.5rem;
+  }
 }
 
 .od-block__kicker {
@@ -768,6 +820,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.25rem;
+  letter-spacing: -0.00175rem;
   color: var(--od-ink);
 }
 
@@ -779,13 +832,15 @@
   background: currentColor;
 }
 
+/* Key takeaway's body. The only callout body set in the display face. */
 .od-block__title {
   margin: 0;
   font-family: var(--od-display);
-  font-size: 1.125rem;
+  font-size: 1.0625rem;
   font-weight: 600;
-  line-height: 1.5rem;
-  letter-spacing: -0.006rem;
+  line-height: 1.375rem;
+  letter-spacing: -0.0053125rem;
+  font-variation-settings: 'opsz' 14, 'wdth' 100;
   color: var(--od-ink);
 }
 
@@ -793,54 +848,47 @@
   .od-block__title {
     font-size: 1.3125rem;
     line-height: 1.625rem;
-    letter-spacing: -0.0125rem;
+    letter-spacing: -0.013125rem;
   }
 }
 
+/* Body/M — the running-body size. Tip and Important keep it on both viewports;
+   the heavier callouts step up (see the per-variant rules below). */
 .od-block__body {
   margin: 0.5rem 0 0;
   font-size: 1rem;
   line-height: 1.625rem;
+  letter-spacing: -0.003rem;
   font-weight: 400;
   color: var(--od-ink);
 }
 
-.od-block--key-takeaway {
-  display: grid;
-  grid-template-columns: 4px minmax(0, 1fr);
-  column-gap: 1rem;
-  row-gap: 0.5rem;
+/* Attribution line under (What I learned) or beside (My take) the label. */
+.od-block__role {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-muted);
+}
+
+/* --- 1 · Tip ------------------------------------------------------------- */
+
+.od-block--tip {
   background: var(--od-white);
-  border: 1px solid var(--od-hairline);
-  border-radius: 1rem;
 }
 
-.od-block--key-takeaway::before {
-  content: '';
-  grid-column: 1;
-  grid-row: 1 / span 8;
-  width: 4px;
-  background: var(--od-pink);
-  border-radius: 2px;
-}
-
-.od-block--key-takeaway > * {
-  grid-column: 2;
-}
-
-.od-block--key-takeaway .od-block__kicker {
-  margin: 0;
-}
-
-.od-block--key-takeaway .od-block__kicker::before {
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18' fill='none'%3E%3Cpath d='M1.4 5.2a4.7 4.7 0 0 1 3.6-3.8 4.7 4.7 0 0 1 4.5 1.1 4.7 4.7 0 0 1 1.1 4.5 4.7 4.7 0 0 1 3.8 3.6 4.7 4.7 0 0 1-1.1 4.5 4.7 4.7 0 0 1-4.5 1.1 4.7 4.7 0 0 1-3.6 3.8 4.7 4.7 0 0 1-4.5-1.1 4.7 4.7 0 0 1-1.1-4.5 4.7 4.7 0 0 1-3.8-3.6 4.7 4.7 0 0 1 1.1-4.5A4.7 4.7 0 0 1 5.2 1.4ZM10.5 5.25 6.38 9.37 4.5 7.5' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+.od-block--tip .od-block__kicker::before {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5'/%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3C/svg%3E")
     center / contain no-repeat;
-  background: var(--od-pink);
+  background: var(--od-muted);
 }
 
-.od-block--key-takeaway .od-block__title {
+.od-block--tip .od-block__body {
   margin: 0;
 }
+
+/* --- 2 · Important ------------------------------------------------------- */
 
 .od-block--important {
   background: var(--od-orange-soft);
@@ -854,7 +902,7 @@
 }
 
 .od-block--important .od-block__kicker::before {
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 16' fill='none'%3E%3Cpath d='M15.3 12.1 8.8 1.6a2.2 2.2 0 0 0-3.8 0L.2 12.1a2.2 2.2 0 0 0 1.9 3.3h13.3a2.2 2.2 0 0 0 1.9-3.3ZM7.5 11h.02' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E")
     center / contain no-repeat;
   background: var(--od-orange-ink);
 }
@@ -863,71 +911,240 @@
   margin: 0;
 }
 
-.od-block--tip {
-  background: var(--od-white);
+/* --- 3 · Quick answer ---------------------------------------------------- */
+/* Mobile padding is 20px on all four sides — the one callout that does not use
+   the family's 16/20. Figma open question: deliberate weight signal for rung 3,
+   or drift. Built as drawn. */
+
+.od-block--quick-answer {
+  background: var(--od-pink-soft);
+  border: none;
+  padding: 1.25rem;
 }
 
-.od-block--tip .od-block__kicker::before {
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18' fill='none'%3E%3Cpath d='M9 1.5A5.25 5.25 0 0 0 3.75 6.75c0 2.1 1.2 3.3 2.25 4.5h6c1.05-1.2 2.25-2.4 2.25-4.5A5.25 5.25 0 0 0 9 1.5ZM7.5 15h3' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+@media (min-width: 1100px) {
+  .od-block--quick-answer {
+    padding: 1.5rem 1.75rem;
+  }
+}
+
+.od-block--quick-answer .od-block__kicker {
+  color: var(--od-pink-ink);
+}
+
+/* Sparkle geometry is approximated on the 18px grid — Figma node 53:46 could not
+   be read this pass. Confirm before sign-off, as with the other three strokes. */
+.od-block--quick-answer .od-block__kicker::before {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.5 2.4 13.1 8.5a2 2 0 0 0 1.4 1.4l6.1 1.6-6.1 1.6a2 2 0 0 0-1.4 1.4l-1.6 6.1-1.6-6.1a2 2 0 0 0-1.4-1.4L2.4 11.5l6.1-1.6a2 2 0 0 0 1.4-1.4Z'/%3E%3Cpath d='M20 3v4'/%3E%3Cpath d='M22 5h-4'/%3E%3Cpath d='M4 17v2'/%3E%3Cpath d='M5 18H3'/%3E%3C/svg%3E")
     center / contain no-repeat;
-  background: var(--od-muted);
+  background: var(--od-pink);
 }
 
-.od-block--tip .od-block__body {
+.od-block--quick-answer .od-block__body {
   margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.75rem;
+  letter-spacing: -0.0031875rem;
 }
+
+@media (min-width: 1100px) {
+  .od-block--quick-answer .od-block__body {
+    font-size: 1.1875rem;
+    line-height: 1.875rem;
+    letter-spacing: -0.0059375rem;
+  }
+}
+
+/* --- 4 · What I learned -------------------------------------------------- */
+/* A white card like Tip, not the hairline rule it used to be — the rule
+   treatment belongs to My take. Weight here is bought with attribution:
+   a 32px ringed avatar in place of the icon, a two-line identity stack,
+   and gaps stepped 8 → 12. */
 
 .od-block--what-i-learned {
   display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
+  grid-template-columns: 2rem minmax(0, 1fr);
   column-gap: 0.75rem;
-  row-gap: 0.125rem;
+  row-gap: 0.75rem;
   align-items: start;
-  border: none;
-  border-top: 1px solid var(--od-hairline);
-  border-radius: 0;
-  padding: 1.25rem 0 0;
-  background: transparent;
-}
-
-.od-block--what-i-learned .od-block__kicker {
-  margin: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.125rem;
-}
-
-.od-block--what-i-learned .od-block__kicker::before {
-  display: none;
 }
 
 .od-block--what-i-learned::before {
   content: '';
   grid-column: 1;
-  grid-row: 1 / span 4;
-  width: 1.75rem;
-  height: 1.75rem;
+  grid-row: 1;
+  width: 2rem;
+  height: 2rem;
   border-radius: 999px;
   border: 1.5px solid var(--od-ink);
-  background: var(--od-author-avatar, #ccc) center / cover no-repeat;
+  background: var(--od-author-avatar, var(--od-sunken)) center / cover no-repeat;
 }
 
 .od-block--what-i-learned > * {
   grid-column: 2;
 }
 
-.od-block--what-i-learned .od-block__role {
-  font-size: 0.875rem;
-  font-weight: 400;
-  line-height: 1.375rem;
-  color: var(--od-muted);
+/* The identity stack has no gap of its own — the 20px and 22px line-heights
+   do the spacing. */
+.od-block--what-i-learned .od-block__kicker {
+  margin: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.od-block--what-i-learned .od-block__kicker::before {
+  display: none;
 }
 
 .od-block--what-i-learned .od-block__body {
-  margin: 0.125rem 0 0;
-  font-size: 1rem;
-  line-height: 1.625rem;
-  color: var(--od-muted);
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.75rem;
+  letter-spacing: -0.0031875rem;
+  color: var(--od-ink);
+}
+
+@media (min-width: 1100px) {
+  .od-block--what-i-learned .od-block__body {
+    font-size: 1.1875rem;
+    line-height: 1.875rem;
+    letter-spacing: -0.0059375rem;
+  }
+}
+
+/* --- 5 · Key takeaway ---------------------------------------------------- */
+/* The accent bar sits inside the card padding, not flush to the edge, and
+   stretches to the content height rather than the card height. */
+
+.od-block--key-takeaway {
+  position: relative;
+  background: var(--od-white);
+  border: 1px solid var(--od-hairline);
+  border-radius: 1rem;
+  /* left padding = card padding + 4px accent + 16px root gap */
+  padding-left: 2.5rem;
+}
+
+@media (min-width: 1100px) {
+  .od-block--key-takeaway {
+    padding-left: 2.75rem;
+  }
+}
+
+/* The accent is inset inside the card padding, not flush to the edge, and its
+   height is the content box — Figma's `align-self: stretch` on a padded row.
+   Absolute rather than a grid track so it does not depend on how many rows the
+   content happens to have. */
+.od-block--key-takeaway::before {
+  content: '';
+  position: absolute;
+  left: 1.25rem;
+  top: 1rem;
+  bottom: 1rem;
+  width: 4px;
+  background: var(--od-pink);
+  border-radius: 2px;
+}
+
+@media (min-width: 1100px) {
+  .od-block--key-takeaway::before {
+    left: 1.5rem;
+    top: 1.25rem;
+    bottom: 1.25rem;
+  }
+}
+
+.od-block--key-takeaway .od-block__kicker {
+  /* 8px content gap — the base .od-block__kicker value. Kept explicit so it is
+     obvious the accent bar no longer supplies it via a grid row-gap. */
+  margin: 0 0 0.5rem;
+}
+
+/* Stroke is ambiguous in Figma — every colour variable the node returns is
+   already consumed by a visible fill. Built pink to match the accent bar. */
+.od-block--key-takeaway .od-block__kicker::before {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  background: var(--od-pink);
+}
+
+.od-block--key-takeaway .od-block__title {
+  margin: 0;
+}
+
+/* --- My take (off-ladder) ------------------------------------------------ */
+/* Not a card: hairline rules top and bottom, no fill, no radius, and vertical
+   padding that does not shrink on mobile. The label and attribution sit side by
+   side here, where What I learned stacks them. */
+
+.od-block--my-take {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  column-gap: 0.875rem;
+  row-gap: 0.375rem;
+  align-items: start;
+  padding: 1.125rem 0;
+  border: none;
+  border-top: 1px solid var(--od-hairline);
+  border-bottom: 1px solid var(--od-hairline);
+  border-radius: 0;
+  background: transparent;
+}
+
+@media (min-width: 1100px) {
+  .od-block--my-take {
+    padding: 1.125rem 0;
+  }
+}
+
+.od-block--my-take::before {
+  content: '';
+  grid-column: 1;
+  grid-row: 1;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--od-ink);
+  background: var(--od-author-avatar, var(--od-sunken)) center / cover no-repeat;
+}
+
+.od-block--my-take > * {
+  grid-column: 2;
+}
+
+.od-block--my-take .od-block__kicker {
+  margin: 0;
+  gap: 0.5rem;
+  color: var(--od-pink-ink);
+}
+
+.od-block--my-take .od-block__kicker::before {
+  display: none;
+}
+
+/* Figma gives this line 12/16 Medium text/muted, against What I learned's
+   14/22 Regular text/secondary for the same string — and text/muted is the
+   "third grey" the family rules say not to invent. Built as drawn; flagged. */
+.od-block--my-take .od-block__role {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0;
+  color: var(--od-dim);
+}
+
+.od-block--my-take .od-block__body {
+  margin: 0;
+  color: var(--od-ink);
+}
+
+@media (min-width: 1100px) {
+  .od-block--my-take .od-block__body {
+    font-size: 1.1875rem;
+    line-height: 1.875rem;
+    letter-spacing: -0.0059375rem;
+  }
 }
 
 .od-block--aige-test {
@@ -943,7 +1160,7 @@
   }
 }
 
-.od-block--aige-test .od-block__kicker {
+.od-block--aige-test > .od-block__kicker {
   display: inline-flex;
   width: fit-content;
   margin: 0 0 0.625rem;
@@ -953,15 +1170,15 @@
   color: var(--od-pink-ink);
 }
 
-.od-block--aige-test .od-block__kicker::before {
+.od-block--aige-test > .od-block__kicker::before {
   width: 0.875rem;
   height: 0.875rem;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M1.1 3.9A4.1 4.1 0 0 1 5.8 1.1a4.1 4.1 0 0 1 1.1 3.9 4.1 4.1 0 0 1 3.9 1.1 4.1 4.1 0 0 1-1.1 3.9 4.1 4.1 0 0 1-3.9 1.1 4.1 4.1 0 0 1-1.1 3.9 4.1 4.1 0 0 1-3.9-1.1 4.1 4.1 0 0 1 1.1-3.9 4.1 4.1 0 0 1-3.9-1.1 4.1 4.1 0 0 1 1.1-3.9A4.1 4.1 0 0 1 3.9 1.1ZM8.2 4.1 5 7.3 3.5 5.8' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E")
     center / contain no-repeat;
   background: var(--od-pink-ink);
 }
 
-.od-block--aige-test .od-block__title {
+.od-block--aige-test > .od-block__title {
   font-size: 1.625rem;
   font-weight: 700;
   line-height: 2rem;
@@ -969,14 +1186,14 @@
 }
 
 @media (min-width: 1100px) {
-  .od-block--aige-test .od-block__title {
+  .od-block--aige-test > .od-block__title {
     font-size: 1.75rem;
     line-height: 2rem;
     letter-spacing: -0.025rem;
   }
 }
 
-.od-block--aige-test .od-block__subtitle {
+.od-block--aige-test > .od-block__subtitle {
   margin: 0.625rem 0 0;
   font-size: 1rem;
   line-height: 1.625rem;
