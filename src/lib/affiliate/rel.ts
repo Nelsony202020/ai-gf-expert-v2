@@ -68,8 +68,10 @@ function walkHast(node: {
     const props = (node.properties ??= {});
     const href = String(props.href ?? '');
     if (isGoAffiliateHref(href)) {
-      const target = String(props.target ?? '');
-      props.rel = goAffiliateRel({ newTab: target === '_blank' });
+      // Affiliate links always open in a new tab; target="_self" opts out.
+      const newTab = String(props.target ?? '') !== '_self';
+      if (newTab) props.target = '_blank';
+      props.rel = goAffiliateRel({ newTab });
     }
   }
   if (Array.isArray(node.children)) {

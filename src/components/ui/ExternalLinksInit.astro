@@ -1,5 +1,6 @@
 <script>
-  function isGoAffiliateHref(href) {
+  /** True when href points at a cloaked /go/ affiliate redirect. */
+  function isGoAffiliateHref(href: string | null): boolean {
     if (!href) return false;
     const raw = String(href).trim();
     if (!raw || raw.startsWith('#') || raw.startsWith('mailto:') || raw.startsWith('tel:')) return false;
@@ -11,17 +12,28 @@
     }
   }
 
-  function goAffiliateRel(newTab) {
+  /**
+   * rel for a /go/ link. Never noreferrer: it strips the referrer and can
+   * break affiliate attribution. Mirrors goAffiliateRel in lib/affiliate/rel.ts.
+   */
+  function goAffiliateRel(newTab: boolean): string {
     return newTab ? 'sponsored nofollow noopener' : 'sponsored nofollow';
   }
 
-  function externalizeLinks(root = document) {
-    root.querySelectorAll('a[href]').forEach((anchor) => {
+  function externalizeLinks(root: ParentNode = document) {
+    root.querySelectorAll('a[href]').forEach((node) => {
+      const anchor = node as HTMLAnchorElement;
       const href = anchor.getAttribute('href');
       if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
 
+      // Explicit opt-out for the rare link that must stay in this tab.
+      if (anchor.getAttribute('target') === '_self') return;
+
+      // Cloaked affiliate redirects (/go/...) are same-origin paths, so they
+      // never reach the external check below — they must be handled first.
       if (isGoAffiliateHref(href)) {
-        anchor.rel = goAffiliateRel(anchor.target === '_blank');
+        anchor.target = '_blank';
+        anchor.rel = goAffiliateRel(true);
         return;
       }
 
@@ -36,11 +48,13 @@
         }
       }
       if (!external) return;
+
       anchor.target = '_blank';
       const rel = anchor.getAttribute('rel') ?? '';
       const parts = new Set(rel.split(/\s+/).filter(Boolean));
       parts.add('noopener');
       parts.add('noreferrer');
+      parts.delete('');
       anchor.rel = [...parts].join(' ');
     });
   }
