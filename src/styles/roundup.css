@@ -25,23 +25,6 @@ body:has(.roundup-hero-stage) {
   --roundup-hero-height: clamp(8rem, 25vw, 16rem);
 }
 
-/* Legacy glass header over fixed scroll-under hero (pre–global guide-hub chrome) */
-body:has(.roundup-hero-stage):not(:has(.guide-hub--site-chrome)) .site-header,
-body:has(.roundup-hero-stage):not(:has(.guide-hub--site-chrome)) [data-site-header] {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-/* Global header: nav stays in the guide-hub hero band */
-body:has(.roundup-hero-stage):has(.guide-hub--site-chrome) .guide-hub__hero [data-site-header] {
-  position: relative;
-  top: auto;
-  left: auto;
-  right: auto;
-}
-
 body:has(.roundup-hero-stage):has(.guide-hub--site-chrome) .roundup-hero-stage {
   top: var(--site-header-height, 5rem);
 }
