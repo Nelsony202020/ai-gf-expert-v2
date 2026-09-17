@@ -4,7 +4,6 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import ReviewHero from '../../components/review/ReviewHero.astro';
 import TabBar from '../../components/review/TabBar.astro';
-import ReviewStickyCta from '../../components/review/ReviewStickyCta.astro';
 import VideoReviewLightbox from '../../components/review/VideoReviewLightbox.astro';
 import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
 import ReviewArticleTab from '../../components/review/tabs/ReviewArticleTab.astro';
@@ -93,9 +92,8 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
   }
   <main id="review-top" class="review-main">
     <ReviewHero product={product} featuredIn={featuredIn} />
-    <ReviewStickyCta product={product} />
     <VideoReviewLightbox product={product} />
-    <TabBar tabs={tabs} hiddenTabs={hiddenTabs} />
+    <TabBar tabs={tabs} hiddenTabs={hiddenTabs} product={product} />
 
     <div data-panels>
       <div data-tab-panel="overview">
@@ -152,12 +150,20 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
         )
       }
       <div data-tab-panel="alternatives" class="hidden">
-        {showAlternativesTab && <AlternativesTab product={product} />}
+        {showAlternativesTab ? (
+          <AlternativesTab product={product} />
+        ) : (
+          <PlaceholderTab
+            title="Alternatives"
+            icon="compare_arrows"
+            description="A side-by-side look at the closest alternatives from our testing will be published here soon."
+          />
+        )}
       </div>
     </div>
   </main>
   <Footer />
-  <ArticleUtilityRail pageTitle={head.title} pageUrl={shareUrl} showFloatingActions={false} />
+  <ArticleUtilityRail pageTitle={head.title} pageUrl={shareUrl} showShareFab={false} />
   <ReviewMobileNavSheet tabs={tabs} pageTitle={head.title} pageUrl={shareUrl} />
   <RatingsTooltipInit />
   <GlossaryTooltipInit />
@@ -175,7 +181,7 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
   import { subscoreSlugFromLabel } from '../../lib/review/ratingsDeepLink.ts';
   import { swapReviewTabPanel } from '../../lib/review/reviewTabUi.client.ts';
 
-  const TABBAR_OFFSET = 52;
+  const TABBAR_OFFSET = 56;
 
   function getScrollOffset() {
     const tabbar = document.querySelector<HTMLElement>('[data-tabbar]');

@@ -34,11 +34,11 @@ export const VISIBLE_REVIEW_TABS: ReviewTabDef[] = [
   { id: REVIEW_TAB_IDS.ratings, label: 'Ratings & Tests', tocLabel: 'Ratings' },
   { id: REVIEW_TAB_IDS.review, label: 'Full Review', tocLabel: 'Review' },
   { id: REVIEW_TAB_IDS.pricing, label: 'Pricing' },
+  { id: REVIEW_TAB_IDS.alternatives, label: 'Alternatives' },
 ];
 
 export const HIDDEN_REVIEW_TABS: ReviewTabDef[] = [
   { id: HIDDEN_REVIEW_TAB_IDS.photos, label: 'Media', tocLabel: 'Photos' },
-  { id: REVIEW_TAB_IDS.alternatives, label: 'Alternatives' },
   { id: HIDDEN_REVIEW_TAB_IDS.marketData, label: 'Market Data' },
 ];
 

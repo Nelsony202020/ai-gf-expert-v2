@@ -24,5 +24,7 @@ export function unlockBodyScroll() {
   locked = false;
   document.body.classList.remove(BODY_CLASS);
   document.body.style.top = '';
-  window.scrollTo(y, 0);
+  document.documentElement.scrollTop = y;
+  document.body.scrollTop = y;
+  window.scrollTo({ top: y, left: 0, behavior: 'auto' });
 }

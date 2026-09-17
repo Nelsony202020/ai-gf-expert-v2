@@ -366,6 +366,10 @@
   transition: opacity var(--home-ease-move), transform var(--home-ease-move);
 }
 
+.home-v2__drop-panel[hidden] {
+  display: none !important;
+}
+
 .home-v2__drop.is-open .home-v2__drop-panel {
   opacity: 1;
   transform: translateY(0);
