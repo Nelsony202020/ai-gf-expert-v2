@@ -74,7 +74,7 @@ const hermanAvatar = herman?.avatar || '/brand/herman-main-icon.webp';
     if (!lightbox || !iframe) return;
 
     const openers = document.querySelectorAll<HTMLElement>('[data-video-review-open]');
-    const closers = lightbox.querySelectorAll('[data-video-review-close]');
+    const closers = lightbox.querySelectorAll<HTMLElement>('[data-video-review-close]');
     const src = iframe.dataset.src || '';
     let lastFocus: HTMLElement | null = null;
 
