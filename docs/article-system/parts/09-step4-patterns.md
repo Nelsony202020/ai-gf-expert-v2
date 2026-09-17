@@ -76,3 +76,37 @@ Every label is `Body/S Strong` 14/20 600 at `-0.028px`; Quick answer's and My ta
 - My take's attribution is 12/16 Medium `text/muted` `#8a8991` where What I learned's is 14/22 Regular `text/secondary` for the identical string — and `text/muted` is the "third grey" the family rules say not to invent.
 - Quick answer's mobile padding is 20/20 where the rest of the family is 16/20.
 - My take's avatar is 36px, off the documented 32/40/48/64 avatar scale.
+
+---
+
+## Prompts
+
+Built against `parts/20-prompts.md`. Measured on the built page:
+
+| | Width D / M | Padding | Radius | Border | Background | Type |
+|---|---|---|---|---|---|---|
+| Prompt, Kind=Code | 740 / 350 | 10/16/14/16 | 10 | 1px hairline | `#ffffff` | Geist Mono 14/23 |
+| Prompt, Kind=Text | 740 / 350 | 12/16/14/16 | 10 | 1px hairline | `#ffffff` | **Inter 16/26** |
+| Comparison side A | 352 / full | 12/16/14/16 | 10 | 1px hairline | **`#f9f9f9`** | Inter 16/26, `text/secondary` |
+| Comparison side B | 352 / full | 12/16/14/16 | 10 | **1px `#db2777`** | `#ffffff` | Inter 16/26, `text/primary` |
+| Prompt Structure | 740 / 350 | 14/16/16/16 | 12 | 1px hairline | `#ffffff` | chips Inter 14/20 600, pill |
+| Copy button | — | 4/6 | 6 | none | transparent | Inter 12/16 500, 32px min height |
+
+**What changed:**
+
+- **Kind=Text prompts were monospace.** A bare `<blockquote>` in the guide source is a natural-language prompt, and `parts/20-prompts.md` allows monospace only in `Kind=Code`. They are now `Body/M` Inter 16/26. They still have no label row and no Copy button — the typed-block model supplies both in step 5.
+- **The prompt card leaked `white-space: pre-wrap`.** The rule was shared between `.od-prompt` and bare `<pre>`, so the card preserved the source indentation between its opening tag and its header row — about 70px of dead space above the label on every code prompt. `pre-wrap` now belongs to the code, and the card is `white-space: normal`.
+- **Comparison side A was `surface/card`.** Figma puts the "before" prompt on `surface/page` so it reads as recessed. Corrected — and worth noting Figma's own open question 4: on a `#f9f9f9` page that leaves the hairline doing all the work.
+- **The comparison arrow was hidden below 800px**, so the stacked mobile pair had nothing marking before → after. It is now present on both viewports, rotated 90° on mobile as drawn.
+- **Copy button (Q11).** One box everywhere: 6/4 padding, radius 6, 32px minimum hit box, with the `Icon / copy` 13×13 mask that Figma specifies and the code never had. Hover and focus-visible follow the Q10 family rule. The 1600ms "Copied" swap now also flips the icon to a check, keyed off a `data-copied` attribute so the pseudo-element survives the label swap.
+- **Collapse (Q12).** 320px desktop / 240px mobile, 80px fade, with a reserved strip so the expand control sits below the fade instead of across the text.
+- **The fade faded to the wrong colour and in the wrong place.** It resolved to `surface/page`, which put a grey wash over a white card, and it was anchored with `bottom`, which on a scroll container holding ~7,000px of clipped code resolves against the scrollable area rather than the visible box — the last clipped line painted below the fade and stayed fully legible. It is now anchored `top: calc(100% - 5rem)` and fades to `surface/card`. The nested `<pre>` also inherited `position: relative` from the shared rule, which made it a positioned element painting over the fade; it is `static` now.
+- **Icons.** `Icon / list` was a single horizontal stroke and the chip separator a clipped chevron. Both are real Lucide geometry now (`list`, `arrow-right`) on the 24 grid.
+
+**Verified bottom-up:** a pixel profile of the collapsed card's last 100px shows the fade doing its job — the final visible code line greys from 48 to 76 across the fade, and the bottom 12px are clean.
+
+**Kept as-is, deliberately:**
+
+- **Comparison labels stay uppercase with tracking.** Figma draws them sentence case with none — contradiction C4 — and the spec's standing rule is that the stated rule beats the drawn pixel on C4. The authored content is already uppercase.
+- **The expand control stays a pill.** `parts/20-prompts.md` proposes a plain text button in `Label/Sans S`, but that is its own unconfirmed contract, and the pill is the only 40px touch target in the family. Flagged rather than restyled.
+- **Every card is 2px taller than its Figma node.** Figma draws the hairline inside the frame, so a 78px Prompt is 78px including its stroke; in CSS the 1px border adds to the padding box. Left alone rather than shaving a pixel off each side's padding — it is systematic across every card in the system.

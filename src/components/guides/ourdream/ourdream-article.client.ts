@@ -36,8 +36,12 @@ function bindCopyButtons(root: HTMLElement) {
         await navigator.clipboard.writeText(text);
         const original = button.textContent;
         button.textContent = 'Copied';
+        // The icon is a ::before mask keyed off this attribute, so it follows the
+        // label rather than being clobbered by the textContent swap.
+        button.dataset.copied = 'true';
         window.setTimeout(() => {
           button.textContent = original;
+          delete button.dataset.copied;
         }, 1600);
       } catch {
         /* ignore */

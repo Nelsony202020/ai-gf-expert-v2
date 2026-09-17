@@ -1358,7 +1358,7 @@
   width: 0.8125rem;
   height: 0.8125rem;
   background: var(--od-pink);
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 11' fill='none'%3E%3Cpath d='M3 10h9' stroke='black' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12h.01'/%3E%3Cpath d='M3 18h.01'/%3E%3Cpath d='M3 6h.01'/%3E%3Cpath d='M8 12h13'/%3E%3Cpath d='M8 18h13'/%3E%3Cpath d='M8 6h13'/%3E%3C/svg%3E")
     center / contain no-repeat;
 }
 
@@ -1393,7 +1393,7 @@
   width: 0.8125rem;
   height: 0.8125rem;
   background: var(--od-dim);
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M3.8 0 7.6 3.8 3.8 7.6' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m12 5 7 7-7 7'/%3E%3C/svg%3E")
     center / contain no-repeat;
 }
 
@@ -1414,12 +1414,16 @@
 .od-prompt-card {
   border: 1px solid var(--od-hairline);
   border-radius: 0.625rem;
-  background: var(--od-white);
+  /* Side A is surface/page, not surface/card — the "before" prompt is meant to
+     read as a recessed panel. Figma open question 4 notes it is then the same
+     fill as the page and is distinguished only by its hairline. */
+  background: var(--od-page);
   padding: 0.75rem 1rem 0.875rem;
 }
 
 .od-prompt-card--yes {
   border-color: var(--od-pink);
+  background: var(--od-white);
 }
 
 .od-prompt-card__bar {
@@ -1450,6 +1454,7 @@
   margin: 0;
   font-size: 1rem;
   line-height: 1.625rem;
+  letter-spacing: -0.003rem;
   color: var(--od-muted);
 }
 
@@ -1457,15 +1462,20 @@
   color: var(--od-ink);
 }
 
+/* The arrow is present on both viewports — rotated 90 degrees on mobile, where
+   the pair stacks. It used to be hidden below 800px, which left the stacked
+   sides with nothing marking the before → after direction. */
 .od-prompt-compare__arrow {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--od-dim);
+  transform: rotate(90deg);
 }
 
 @media (min-width: 800px) {
   .od-prompt-compare__arrow {
-    display: flex;
-    align-items: center;
-    color: var(--od-dim);
+    transform: none;
   }
 }
 
@@ -1473,6 +1483,7 @@
   margin: 0.625rem 0 0;
   font-size: 0.875rem;
   line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
   color: var(--od-muted);
 }
 
@@ -1489,12 +1500,31 @@
   font-size: 0.875rem;
   line-height: 1.4375rem;
   color: var(--od-ink);
-  white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* pre-wrap belongs to the code itself, never to the card. On the card it also
+   preserved the source indentation between .od-prompt and its header row, which
+   is where the ~70px of dead space above the label came from. */
+.ourdream-article-prose pre {
+  white-space: pre-wrap;
+}
+
+.od-prompt {
+  white-space: normal;
+}
+
+.od-prompt > pre,
+.od-prompt [data-od-copy-text] {
+  white-space: pre-wrap;
 }
 
 .od-prompt pre,
 .ourdream-article-prose .od-prompt pre {
+  /* static, not relative: the shared .od-prompt/pre rule above sets position:
+     relative, which made the nested code a positioned element and painted it
+     over the collapse fade — the last clipped line stayed fully legible. */
+  position: static;
   margin: 0;
   padding: 0;
   border: 0;
@@ -1521,46 +1551,106 @@
   color: var(--od-muted);
 }
 
+/* Decision Q11: one Copy box in every prompt context — 6/4 padding, radius 6,
+   and a 32px minimum hit box. Figma draws the Prompt Comparison one with no
+   padding and a ~16px target; that is treated as drift, same call as C9. */
 .od-copy {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  min-height: 2rem;
   padding: 0.25rem 0.375rem;
   border: 0;
   border-radius: 0.375rem;
   background: transparent;
+  font-family: var(--od-body);
   font-size: 0.75rem;
   font-weight: 500;
+  line-height: 1rem;
   color: var(--od-muted);
   cursor: pointer;
 }
 
-.od-copy:hover,
-.od-copy:focus-visible {
-  color: var(--od-ink);
+.od-copy::before {
+  content: '';
+  width: 0.8125rem;
+  height: 0.8125rem;
+  flex-shrink: 0;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 2H9a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1'/%3E%3Cpath d='M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2'/%3E%3C/svg%3E")
+    center / contain no-repeat;
 }
 
+/* Decision Q10, applied to the family. */
+.od-copy:hover {
+  color: var(--od-pink-ink);
+}
+
+.od-copy:focus-visible {
+  outline: 2px solid var(--od-pink);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+  color: var(--od-pink-ink);
+}
+
+/* The repo already swaps the label to "Copied" for 1600ms; the icon follows it.
+   Figma has no copied state in any of the four prompt contexts. */
+.od-copy[data-copied='true'] {
+  color: var(--od-pink-ink);
+}
+
+.od-copy[data-copied='true']::before {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+/* Decision Q12: 320px desktop / 240px mobile with an 80px fade — roughly 10 and
+   7 lines of Geist Mono 14/23. Figma's prose says ~520px but draws no clamp, no
+   fade and no expand row in any variant, so none of it could be measured.
+   The fade resolves to surface/card, the colour it actually sits on; it used to
+   fade to surface/page, which left a grey wash over a white card. */
 .od-prompt--collapsed {
-  max-height: 32.5rem;
+  max-height: 15rem;
+  /* The expand control sits below the fade rather than on top of the text, so the
+     collapsed box reserves a strip for it inside the clamp. */
+  padding-bottom: 3.5rem;
   overflow: hidden;
+}
+
+@media (min-width: 1100px) {
+  .od-prompt--collapsed {
+    max-height: 20rem;
+  }
+}
+
+.od-prompt.is-expanded {
+  padding-bottom: 0.875rem;
 }
 
 .od-prompt--collapsed::after {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 10rem;
-  background: linear-gradient(180deg, rgba(249, 249, 249, 0) 0%, var(--od-page) 60%);
+  z-index: 1;
+  left: 1px;
+  right: 1px;
+  /* Anchored from the top, not the bottom. The card is a scroll container with
+     ~7000px of clipped code in it, and `bottom` on an absolutely positioned child
+     of one resolves against the scrollable area rather than the visible box — the
+     fade landed short and the last clipped line painted below it. `100%` is the
+     padding box, which the max-height clamps, so this is always the visible
+     bottom 80px. */
+  top: calc(100% - 5rem);
+  height: 5rem;
+  border-radius: 0 0 0.5625rem 0.5625rem;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0%) 0%, var(--od-white) 70%);
   pointer-events: none;
 }
 
 .od-prompt__expand {
   position: absolute;
   left: 50%;
-  bottom: 1rem;
-  z-index: 1;
+  bottom: 0.75rem;
+  z-index: 2;
   transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
@@ -1587,6 +1677,10 @@
   display: none;
 }
 
+/* A bare blockquote is an Article / Prompt with Kind=Text — a natural-language
+   prompt the reader copies by hand. Monospace is allowed only in Kind=Code, so
+   this is Body/M Inter 16/26, not the mono 14/23 it used to inherit. It has no
+   label row and no Copy button; the typed-block model supplies both in step 5. */
 .ourdream-article-prose blockquote {
   margin: 0.25rem 0 0;
   padding: 0.75rem 1rem 0.875rem;
@@ -1594,9 +1688,10 @@
   border-radius: 0.625rem;
   background: var(--od-white);
   font-style: normal;
-  font-family: var(--od-mono);
-  font-size: 0.875rem;
-  line-height: 1.4375rem;
+  font-family: var(--od-body);
+  font-size: 1rem;
+  line-height: 1.625rem;
+  letter-spacing: -0.003rem;
   color: var(--od-ink);
 }
 
@@ -1697,5 +1792,6 @@
 }
 
 [data-theme='dark'] .od-prompt--collapsed::after {
-  background: linear-gradient(180deg, rgba(15, 15, 18, 0) 0%, var(--od-page) 60%);
+  /* Matches the light rule: the fade resolves to the card it sits on, not the page. */
+  background: linear-gradient(180deg, rgb(20 19 23 / 0%) 0%, var(--od-white) 70%);
 }
