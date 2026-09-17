@@ -1,8 +1,24 @@
 ---
-/** Non-home pages: global header identical to /guides/ourdream-ai/ (GlobalSiteHeader). Homepage keeps its own header. */
+/**
+ * Non-home pages: global header identical to /guides/ourdream-ai/ (GlobalSiteHeader).
+ * Homepage keeps its own header.
+ *
+ * Only forward the slot when the page actually passes hero content. Passing an
+ * always-present `<slot />` made `Astro.slots.has('default')` true inside
+ * GlobalSiteHeader on every page, which rendered an EMPTY `.guide-hub__hero-body`
+ * (88px desktop / 64px mobile of blank dark band) under the header everywhere.
+ */
 import GlobalSiteHeader from './layout/GlobalSiteHeader.astro';
+
+const hasHeroBody = Astro.slots.has('default');
 ---
 
-<GlobalSiteHeader>
-  <slot />
-</GlobalSiteHeader>
+{
+  hasHeroBody ? (
+    <GlobalSiteHeader>
+      <slot />
+    </GlobalSiteHeader>
+  ) : (
+    <GlobalSiteHeader />
+  )
+}
