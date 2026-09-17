@@ -4,10 +4,17 @@ import { affiliateHrefRel } from '../../lib/affiliate/rel';
 type Props = astroHTML.JSX.AnchorHTMLAttributes & { href: string };
 
 const { href, target, rel: storedRel, ...rest } = Astro.props;
+
+/**
+ * Affiliate CTAs always open in a new tab. Callers no longer have to remember
+ * target="_blank" — pass target="_self" (or target={null}) to opt a link out.
+ */
+const resolvedTarget = target === undefined ? '_blank' : (target ?? undefined);
+
 const rel = affiliateHrefRel(href, {
-  newTab: target === '_blank',
+  newTab: resolvedTarget === '_blank',
   stored: typeof storedRel === 'string' ? storedRel : undefined,
 });
 ---
 
-<a href={href} target={target} rel={rel} {...rest}><slot /></a>
+<a href={href} target={resolvedTarget} rel={rel} {...rest}><slot /></a>

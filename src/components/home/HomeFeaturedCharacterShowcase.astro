@@ -13,6 +13,11 @@ const { characters } = Astro.props;
 const carouselChars = characters.slice(0, 6);
 /** Spotlight card uses the first admin featured character (position 1). */
 const spotlight: HomeFeaturedCharacter | null = characters[0] ?? null;
+/** Profile links can point off-site (or at a cloaked /go/ redirect) — those open in a new tab. */
+const outboundSpotlightProfile = Boolean(
+  spotlight?.profileUrl &&
+    (/^https?:\/\//i.test(spotlight.profileUrl) || isGoAffiliateHref(spotlight.profileUrl)),
+);
 const portrait = spotlight
   ? pickCharacterDisplayImage(
       spotlight.avatar,
@@ -78,7 +83,12 @@ const portrait = spotlight
       <a
         class="home-featured-spotlight__cta"
         href={spotlight.profileUrl}
-        rel={isGoAffiliateHref(spotlight.profileUrl) ? affiliateHrefRel(spotlight.profileUrl) : undefined}
+        target={outboundSpotlightProfile ? '_blank' : undefined}
+        rel={isGoAffiliateHref(spotlight.profileUrl)
+          ? affiliateHrefRel(spotlight.profileUrl, { newTab: true })
+          : outboundSpotlightProfile
+            ? 'noopener noreferrer'
+            : undefined}
       >
         <span class="material-symbols-outlined text-[18px]" aria-hidden="true">person</span>
         View profile
