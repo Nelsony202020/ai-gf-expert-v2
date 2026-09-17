@@ -938,18 +938,14 @@
 }
 
 /* Drawer */
-html.ratings-drawer-open,
-body.ratings-drawer-open {
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
-body.ratings-drawer-open {
-  position: fixed;
-  left: 0;
-  right: 0;
-  width: 100%;
-}
+/*
+ * The page freeze itself lives in lib/ui/scrollLock.ts, which sets
+ * `overflow: hidden` on <html> inline. It must NOT be done with
+ * `position: fixed` on <body>: that collapses the document scroll to 0, drops
+ * the sticky review tab bar out of its sticky context, and forces a
+ * scroll restore on close — which is the visible jump this replaced.
+ * These classes remain as styling hooks only.
+ */
 
 .ratings-drawer-backdrop {
   position: fixed;
