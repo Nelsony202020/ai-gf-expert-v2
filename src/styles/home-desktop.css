@@ -383,8 +383,8 @@ html[data-theme='dark'] .home-v2__header {
   min-width: 228px;
   padding: 8px;
   border-radius: 14px;
-  background: var(--home-card);
-  border: 1px solid var(--home-hairline);
+  background: var(--home-card, #ffffff);
+  border: 1px solid var(--home-hairline, #e6e6e3);
   box-shadow: 0 16px 40px rgb(21 17 26 / 14%);
   z-index: 20;
   opacity: 0;
@@ -397,6 +397,32 @@ html[data-theme='dark'] .home-v2__header {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Content header popovers (scoped to [data-site-header] — the homepage header
+   sets registerAsSiteHeader={false} and is deliberately untouched).
+
+   The trigger is only ~32px tall and vertically centred, so `top: 100% + 8px`
+   opened the panel at y=64 — overlapping the header's own 80px bottom edge.
+   Stretching the trigger wrapper to the full header height anchors the panel
+   just below the header while keeping it left-aligned to its button.
+   --------------------------------------------------------------------------- */
+[data-site-header] .home-v2__drop {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+}
+
+[data-site-header] .home-v2__drop-panel {
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgb(16 16 20 / 18%);
+  z-index: 60;
+}
+
+html[data-theme='dark'] [data-site-header] .home-v2__drop-panel,
+html[data-theme='dark'] [data-site-header] .home-v2__search-dropdown {
+  box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
 }
 
 .home-v2__drop-panel a {
@@ -501,8 +527,8 @@ html[data-theme='dark'] .home-v2__header {
   width: min(360px, calc(100vw - 2rem));
   max-height: min(60vh, 420px);
   overflow-y: auto;
-  background: var(--home-card);
-  border: 1px solid var(--home-hairline);
+  background: var(--home-card, #ffffff);
+  border: 1px solid var(--home-hairline, #e6e6e3);
   border-radius: 16px;
   box-shadow: 0 16px 40px rgb(20 20 20 / 16%);
   z-index: 30;
