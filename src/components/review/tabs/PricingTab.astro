@@ -174,6 +174,23 @@ const usageCostsIdentical =
 const flatUsageCost = usageCostsIdentical ? usageCosts[0] : null;
 
 const defaultUsage = vm.usageTiers.find((t) => t.id === 'regular') ?? vm.usageTiers[0] ?? null;
+const recommendedPlan = vm.plans.find((p) => p.isRecommended && !p.isFree) ?? vm.plans.find((p) => !p.isFree) ?? null;
+
+function packNoteForTier(tier: (typeof vm.usageTiers)[number]): string | null {
+  const lines = tier.calculation?.packageLines ?? [];
+  if (lines.length === 0) return null;
+  const combo = lines
+    .map((line) =>
+      line.quantity > 1
+        ? `${line.quantity} × ${line.creditsLabel} at ${line.priceLabel}`
+        : `${line.creditsLabel} at ${line.priceLabel}`,
+    )
+    .join(' · ');
+  const leftover = tier.calculation?.leftoverCredits
+    ? ` · ${tier.calculation.leftoverCreditsLabel} spare`
+    : '';
+  return combo + leftover;
+}
 
 function topUpLabel(topUp: number | null | undefined): string {
   if (topUp == null) return '—';
@@ -206,6 +223,10 @@ const usagePayload = JSON.stringify(
           videos: tier.assumptions.videos,
           voice: tier.assumptions.voice,
           character: tier.assumptions.character,
+          packNote: packNoteForTier(tier),
+          subline:
+            (recommendedPlan?.displayName ?? 'Paid plan')
+            + (topUp != null && topUp > 0 ? ' subscription + credit top-ups' : ' subscription'),
           calculation: tier.calculation,
         },
       ];
@@ -348,275 +369,392 @@ const plansPayload = JSON.stringify({
 function withUnit(value: string) {
   return splitUnitSuffix(value);
 }
+
+function usageSwitchLabel(id: string) {
+  if (id === 'casual') return 'Light use';
+  if (id === 'power') return 'Heavy use';
+  return 'Regular use';
+}
+
+const yearlyOpt = recommendedPlan?.billing?.yearly;
+const annualNote =
+  yearlyOpt?.monthlyPriceLabel && recommendedPlan
+    ? `Annual billing drops ${recommendedPlan.displayName} to ${yearlyOpt.monthlyPriceLabel}/mo — the cheapest way to use it.`
+    : null;
+const yearlySavePct = vm.billingToggle.maxYearlySavingsPercent;
+
+function planBestFor(plan: (typeof vm.plans)[number]): string {
+  if (plan.isRecommended) return 'Best for most people';
+  if (plan.isFree) return 'Best for trying the app';
+  const highlight = vm.creditPool?.byPlan?.[plan.key]?.highlights?.[0];
+  return highlight || 'Best for heavier use';
+}
+
+const defaultPackNote = defaultUsage ? packNoteForTier(defaultUsage) : null;
+const defaultSubline = (() => {
+  const planName = recommendedPlan?.displayName ?? 'Paid plan';
+  const topUp = defaultUsage?.topUpCost;
+  if (topUp != null && topUp > 0) return `${planName} subscription + credit top-ups`;
+  return `${planName} subscription`;
+})();
+const estimateTitle = defaultUsage
+  ? `How we estimated ${defaultUsage.costLabel.replace(/\/mo$/, '')} a month`
+  : 'How we estimated this month';
+const estimateSummary = defaultUsage?.description ?? usageIntro ?? '';
+const compactCompare = vm.compareRows.slice(0, 2);
 ---
 
-<section class="py-12 md:py-14 bg-background dark-section pricing-tab">
-  <div class="section-container px-4 md:px-8">
-    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-8 lg:gap-10 min-w-0">
-      <div class="min-w-0">
-        <header class="pt-intro mb-10" id="pricing-intro">
-          <p class="pt-eyebrow">Page intro</p>
-          <h2 class="pt-title">{vm.productName} pricing</h2>
-          {pageIntro && (
-            <p
-              class="pt-lead"
-              set:html={renderReviewProseText(pageIntro, pricingGlossary)}
-            />
-          )}
-          {
-            introMeta && (
-              <p class="pt-page-meta">{introMeta}</p>
-            )
-          }
-          {
-            vm.pricingEvidence?.main && (
-              <p class="pt-evidence">
-                <VerifiedCheck class="w-[14px] h-[14px]" />
-                <span>{vm.pricingEvidence.verifiedLabel}</span>
-                <span class="pt-evidence__sep" aria-hidden="true">·</span>
-                <button
-                  type="button"
-                  class="pt-evidence__view"
-                  data-lightbox-open={vm.pricingEvidence.main.src}
-                  data-lightbox-alt={vm.pricingEvidence.main.alt}
-                  data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
-                >
-                  View pricing screenshot ↗
-                </button>
-              </p>
-            )
-          }
-        </header>
+<section
+  class="pricing-tab pt2"
+  data-pt-plans
+  data-pt-billing={vm.billingToggle.defaultInterval}
+  data-pt-selected-plan={defaultPlanKey}
+  data-pt-plan-count={vm.plans.length}
+  data-pt-plans-payload={plansPayload}
+  data-pt-usage
+  data-pt-usage-payload={usagePayload}
+  data-pt-usage-flat={usageCostsIdentical ? 'true' : 'false'}
+>
+  <div class="pt2-page">
+    <section class="pt2-section" id="pricing-intro" aria-labelledby="pt-snapshot-title">
+      <h2 class="pt2-h2" id="pt-snapshot-title">What {vm.productName} really costs</h2>
+      {pageIntro && (
+        <p class="pt2-lead" set:html={renderReviewProseText(pageIntro, pricingGlossary)} />
+      )}
 
-        <!-- Is [Product] expensive? -->
-        <section class="pt-block" id="pricing-benchmark" aria-labelledby="pt-market-title">
-          <header class="pt-section-head">
-            <p class="pt-eyebrow">Market position</p>
-            <h3 id="pt-market-title" class="pt-title">Is {vm.productName} expensive?</h3>
-          </header>
+      {vm.usageTiers.length > 0 && !usageCostsIdentical && (
+        <div class="pt2-usage-switch" role="tablist" aria-label="Usage level">
+          {vm.usageTiers.map((tier) => (
+            <button
+              type="button"
+              role="tab"
+              class:list={[tier.id === defaultUsage?.id && 'is-active']}
+              data-pt-usage-option={tier.id}
+              aria-selected={tier.id === defaultUsage?.id ? 'true' : 'false'}
+            >
+              {usageSwitchLabel(tier.id)}
+            </button>
+          ))}
+        </div>
+      )}
 
-          {
-            marketIntro ? (
-              <p class="pt-prose__body">{marketIntro}</p>
-            ) : marketTakeawayTone && marketTakeawayTone !== 'neutral' && marketTakeaway ? (
-              <p class="pt-prose__body">
-                {
-                  cheaperIsGood ? (
-                    <>
-                      {vm.productName} is <span class="pt-market__pct">{cheaperPctAbs}%</span> cheaper
-                      than most AI girlfriend apps we tested.
-                    </>
-                  ) : (
-                    <>
-                      {vm.productName} is <span class="pt-market__pct pt-market__pct--bad">{cheaperPctAbs}%</span> more
-                      expensive than most AI girlfriend apps we tested.
-                    </>
-                  )
-                }
-              </p>
-            ) : null
-          }
-
-          {
-            productBarPct != null && (
-              <div
-                class:list={[
-                  'pt-bench',
-                  typicalBarPct != null && 'has-typical-below',
-                  benchOverlapSSR && 'is-overlap',
-                  benchStackedSSR && 'is-stacked',
-                ]}
-                data-pt-bench
-                data-pt-product-pct={productBarPct}
-                data-pt-avg-pct={typicalBarPct ?? ''}
-                aria-label="Starting price market position"
-              >
-                <div class="pt-bench__chart" data-pt-bench-chart>
-                  {
-                    typicalBarPct != null && (
-                      <div
-                        class="pt-bench__marker pt-bench__marker--avg"
-                        style={`left: ${typicalBarPct}%`}
-                        data-pt-bench-marker="avg"
-                        aria-label={`Typical monthly price ${marketTypicalLabel}`}
-                      >
-                        <span
-                          class="pt-bench__float pt-bench__float--avg pt-bench__float--below"
-                          data-pt-bench-float="avg"
-                        >
-                          <span class="pt-bench__float-name">Typical monthly price</span>
-                          <span class="pt-bench__float-price">{marketTypicalLabel}</span>
-                        </span>
-                        <span class="pt-bench__leader pt-bench__leader--avg" aria-hidden="true" />
-                        <span class="pt-bench__dot pt-bench__dot--avg" />
-                      </div>
-                    )
-                  }
-                  <div
-                    class="pt-bench__marker pt-bench__marker--product"
-                    style={`left: ${productBarPct}%`}
-                    data-pt-bench-marker="product"
-                    aria-label={`${vm.productName} ${advertisedShort}`}
-                  >
-                    <span class="pt-bench__float pt-bench__float--product">
-                      <span class="pt-bench__float-name">{vm.productName}</span>
-                      <span class="pt-bench__float-price">{advertisedShort}</span>
-                    </span>
-                    <span class="pt-bench__leader pt-bench__leader--product" aria-hidden="true" />
-                    <span class="pt-bench__dot pt-bench__dot--product" />
-                  </div>
-
-                  <div class="pt-bench__track" />
-
-                  <div class="pt-bench__axis">
-                    {
-                      axisTicks.map((tick) => (
-                        <span
-                          class:list={[
-                            'pt-bench__tick',
-                            tick.pct === 0 && 'pt-bench__tick--start',
-                            tick.pct === 100 && 'pt-bench__tick--end',
-                          ]}
-                          style={`left: ${tick.pct}%`}
-                        >
-                          <span class="pt-bench__tick-label">{tick.label}</span>
-                        </span>
-                      ))
-                    }
-                  </div>
-                </div>
-                {
-                  marketTakeaway && (
-                    <p
-                      class:list={[
-                        'pt-bench__takeaway',
-                        marketTakeawayTone === 'neutral' && 'pt-bench__takeaway--neutral',
-                        marketTakeawayTone === 'good' && 'pt-bench__takeaway--good',
-                        marketTakeawayTone === 'bad' && 'pt-bench__takeaway--bad',
-                      ]}
-                    >
-                      {marketTakeaway}
+      {defaultUsage && (
+        <>
+          <p class="pt2-hero-price">
+            <span class="pt2-hero-price__n" data-pt-usage-detail-total>{defaultUsage.costLabel}</span>
+            <span class="pt2-hero-price__u">/ month</span>
+          </p>
+          <p class="pt2-hero-sub" data-pt-usage-subline>{defaultSubline}</p>
+          <p class="pt2-eq" aria-label="Cost breakdown">
+            <span data-pt-usage-detail-plan>{defaultPlanLabel}</span>
+            {' '}
+            {recommendedPlan?.displayName ?? 'Plan'}
+            {' + '}
+            <span data-pt-usage-detail-topup>{defaultTopUpLabel}</span>
+            {' top-ups = '}
+            <strong data-pt-usage-detail-total-row>{defaultUsage.costLabel.replace(/\/mo$/, '')}</strong>
+            /month
+          </p>
+          {defaultCalculation && (
+            <div class="pt2-disclose pt2-disclose--link" data-pt2-disclose>
+              <button type="button" class="pt2-disclose__btn" aria-expanded="false">
+                <span class="pt2-disclose__action" data-closed="See how we calculated this" data-open="Hide calculation">
+                  <span data-pt2-action-label>See how we calculated this</span>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+              </button>
+              <div class="pt2-disclose__panel" hidden>
+                <p class="pt2-pack-note" data-pt-usage-pack-note hidden={!defaultPackNote}>{defaultPackNote}</p>
+                <span hidden data-pt-usage-calc-summary></span>
+                <div class="pt2-calc" data-pt2-calc data-pt-usage-calc>
+                  <section class="pt2-calc__step">
+                    <p class="pt2-calc__kicker">Step 1</p>
+                    <h4 class="pt2-calc__h">What {defaultCalculation.levelName} looks like</h4>
+                    <p class="pt2-calc__lead">The usage pattern we model for a typical paying reader.</p>
+                    <div class="pt2-calc__cards">
+                      {defaultCalculation.features
+                        .filter((row) => row.key !== 'chat' && row.monthlyTotalLabel)
+                        .map((row) => (
+                          <article class={`pt2-calc__card is-${row.accent ?? row.key}`}>
+                            <p class="pt2-calc__card-name">
+                              <span class="pt2-calc__dot" aria-hidden="true" />
+                              {row.label}
+                            </p>
+                            {row.patternLead && <p class="pt2-calc__card-lead">{row.patternLead}</p>}
+                            <p class="pt2-calc__card-total">{row.monthlyTotalLabel}</p>
+                          </article>
+                        ))}
+                    </div>
+                    {defaultCalculation.chatIncludedNote && (
+                      <p class="pt2-calc__note">{defaultCalculation.chatIncludedNote}</p>
+                    )}
+                  </section>
+                  <section class="pt2-calc__step">
+                    <p class="pt2-calc__kicker">Step 2</p>
+                    <h4 class="pt2-calc__h">How many credits that uses</h4>
+                    <p class="pt2-calc__lead">These features drive the total.</p>
+                    <div class="pt2-calc__eqs">
+                      {defaultCalculation.features
+                        .filter((row) => row.cost > 0 && row.qtyPhrase && row.ratePhrase)
+                        .map((row) => (
+                          <div class={`pt2-calc__eq is-${row.accent ?? row.key}`}>
+                            <p class="pt2-calc__eq-k">{row.label}</p>
+                            <p class="pt2-calc__eq-line">
+                              <span>{row.qtyPhrase}</span>
+                              <span class="pt2-calc__op">×</span>
+                              <span>{row.ratePhrase}</span>
+                              <span class="pt2-calc__op">=</span>
+                              <strong>{row.costLabel}</strong>
+                            </p>
+                          </div>
+                        ))}
+                    </div>
+                    <p class="pt2-calc__total-pill">
+                      <span>Total monthly usage</span>
+                      <strong data-pt-usage-calc-media>{defaultCalculation.requiredCreditsLabel}</strong>
                     </p>
-                  )
-                }
-              </div>
-            )
-          }
-        </section>
-
-        <!-- Plans -->
-        <section
-          class="pt-block"
-          id="pricing-plans"
-          aria-labelledby="pt-plans-title"
-          data-pt-plans
-          data-pt-billing={vm.billingToggle.defaultInterval}
-          data-pt-selected-plan={defaultPlanKey}
-          data-pt-plan-count={vm.plans.length}
-          data-pt-plans-payload={plansPayload}
-        >
-          {
-            vm.plans.length > 0 ? (
-              <div class="pt-plans-wrap">
-                <header class="pt-section-head">
-                  <p class="pt-eyebrow">Plans</p>
-                  <h3 id="pt-plans-title" class="pt-title">Plans & what you get</h3>
-                  {plansIntro && <p class="pt-lead pt-lead--tight">{plansIntro}</p>}
-                </header>
-
-                {
-                  showPlansBilling && (
-                    <div class="pt-billing" data-pt-plans-billing>
-                      <span class="pt-billing__label" id="pt-plans-billing-label">Billing</span>
-                      <div
-                        class="pt-billing__switch"
-                        role="group"
-                        aria-labelledby="pt-plans-billing-label"
-                      >
-                        {
-                          billingIntervals.map((interval) => (
-                            <button
-                              type="button"
-                              class:list={[
-                                'pt-billing__btn',
-                                defaultBilling === interval.key && 'is-active',
-                              ]}
-                              data-pt-plans-billing-select={interval.key}
-                              aria-pressed={defaultBilling === interval.key ? 'true' : 'false'}
-                            >
-                              {interval.label}
-                            </button>
-                          ))
-                        }
+                  </section>
+                  <section class="pt2-calc__step">
+                    <p class="pt2-calc__kicker">Step 3</p>
+                    <h4 class="pt2-calc__h">What you’ll actually pay</h4>
+                    <div class="pt2-calc__pay">
+                      <div class="pt2-calc__pay-card">
+                        <p>
+                          <strong data-pt-usage-calc-media-2>{defaultCalculation.requiredCreditsLabel}</strong>
+                          <span>needed for {defaultCalculation.levelName}</span>
+                        </p>
+                        <p>
+                          <strong data-pt-usage-calc-included>
+                            {defaultCalculation.includedCredits.toLocaleString('en-US')} credits
+                          </strong>
+                          <span>included with {defaultCalculation.planName}</span>
+                        </p>
+                        <p>
+                          <strong data-pt-usage-calc-extra>{defaultCalculation.extraCreditsLabel}</strong>
+                          <span>still to buy</span>
+                        </p>
+                      </div>
+                      <div class="pt2-calc__pay-card">
+                        <p class="pt2-calc__micro">Smallest pack combination you can buy</p>
+                        <p class="pt2-calc__pack-head" data-pt-usage-calc-pack>
+                          {defaultCalculation.packHeadline ?? 'No top-up needed'}
+                        </p>
+                        {defaultCalculation.packFoot && (
+                          <p class="pt2-calc__card-lead" data-pt-usage-calc-pack-foot>{defaultCalculation.packFoot}</p>
+                        )}
                       </div>
                     </div>
-                  )
-                }
-
-                <div
-                  class="pt-plan-overview"
-                  style={`--pt-plan-cols: ${Math.max(vm.plans.length, 1)}`}
-                  aria-label="Plan comparison"
-                  data-pt-plan-overview
-                >
-                  {
-                    vm.plans.map((plan) => {
-                      const monthly = plan.billing?.monthly;
-                      const opt = monthly ?? plan.billing?.yearly ?? plan.billing?.quarterly;
-                      const sale = opt?.sale ?? null;
-                      const price = plan.isFree
-                        ? plan.priceLabel
-                        : monthly?.monthlyPriceLabel ?? plan.priceLabel;
-                      return (
-                        <div class="pt-plan-overview__col" data-pt-overview-plan={plan.key}>
-                          <p class="pt-plan-overview__name">{plan.displayName}</p>
-                          <div class="pt-plan-overview__pricing" data-pt-overview-pricing>
-                            <p class="pt-plan-overview__price" data-pt-overview-price>
-                              {
-                                sale?.listPriceLabel ? (
-                                  <span class="pt-plan-overview__list" data-pt-overview-list>
-                                    {sale.listPriceLabel}
-                                    {!plan.isFree && <span class="pt-unit">/mo</span>}
-                                  </span>
-                                ) : (
-                                  <span class="pt-plan-overview__list" data-pt-overview-list hidden />
-                                )
-                              }
-                              <span data-pt-overview-price-main>
-                                {price}
-                                {!plan.isFree && <span class="pt-unit">/mo</span>}
-                              </span>
-                              {
-                                sale?.badge ? (
-                                  <span class="pt-plan-overview__badge" data-pt-overview-badge>
-                                    {sale.badge}
-                                  </span>
-                                ) : (
-                                  <span class="pt-plan-overview__badge" data-pt-overview-badge hidden />
-                                )
-                              }
-                            </p>
-                            <p class="pt-plan-overview__billed" data-pt-overview-billed hidden />
-                            <p class="pt-plan-overview__save" data-pt-overview-save hidden />
-                            <p
-                              class="pt-plan-overview__unavailable"
-                              data-pt-overview-unavailable
-                              hidden
-                            />
-                          </div>
-                          <p class="pt-plan-overview__credits" data-pt-overview-credits>
-                            {plan.summaryLine}
-                          </p>
-                        </div>
-                      );
-                    })
-                  }
+                    <div class="pt2-calc__banner">
+                      <p class="pt2-calc__micro">Estimated {defaultCalculation.levelName} cost</p>
+                      <p class="pt2-calc__banner-price">
+                        <span data-pt-usage-calc-total>{defaultCalculation.totalLabel.replace(/\/mo$/, '')}</span>
+                        <span class="pt2-calc__banner-u">/ month</span>
+                      </p>
+                      <p class="pt2-calc__banner-sub">
+                        <span data-pt-usage-calc-plan>{defaultCalculation.planCostLabel}</span>
+                        {' '}
+                        {defaultCalculation.planName}
+                        {defaultCalculation.topUpCost > 0 && (
+                          <>
+                            {' + '}
+                            <span data-pt-usage-calc-topup>{defaultCalculation.topUpCostLabel}</span>
+                            {' credit top-ups'}
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </section>
                 </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
+      {annualNote && <p class="pt2-annual-note">{annualNote}</p>}
 
-                {
-                  vm.limitRows.length > 0 && (
-                    <div class="pt-other-limits" data-pt-limits>
+      {(vm.advertisedMonthly != null || marketTypicalAmount != null) && (
+        <>
+          <hr class="pt2-rule" />
+          <p class="pt2-bench-head">Starting price vs category</p>
+          <div
+            class:list={[
+              'pt-bench',
+              benchOverlapSSR && 'is-overlap',
+              benchStackedSSR && 'is-stacked',
+              'has-typical-below',
+            ]}
+            data-pt-bench
+            data-pt-product-pct={productBarPct}
+            data-pt-avg-pct={typicalBarPct ?? ''}
+          >
+            <div class="pt-bench__chart" data-pt-bench-chart>
+              {typicalBarPct != null && (
+                <div class="pt-bench__marker pt-bench__marker--avg" style={`left:${typicalBarPct}%`} data-pt-bench-marker="avg">
+                  <span class="pt-bench__float pt-bench__float--avg pt-bench__float--below" data-pt-bench-float="avg">
+                    <span class="pt-bench__float-name">Typical comparison app</span>
+                    <span class="pt-bench__float-price">{marketTypicalLabel}</span>
+                  </span>
+                  <span class="pt-bench__leader pt-bench__leader--avg" aria-hidden="true" />
+                  <span class="pt-bench__dot pt-bench__dot--avg" />
+                </div>
+              )}
+              {productBarPct != null && (
+                <div class="pt-bench__marker pt-bench__marker--product" style={`left:${productBarPct}%`} data-pt-bench-marker="product">
+                  <span class="pt-bench__float pt-bench__float--product">
+                    <span class="pt-bench__float-name">{vm.productName}</span>
+                    <span class="pt-bench__float-price">{advertisedLabel}</span>
+                  </span>
+                  <span class="pt-bench__leader pt-bench__leader--product" aria-hidden="true" />
+                  <span class="pt-bench__dot pt-bench__dot--product" />
+                </div>
+              )}
+              <div class="pt-bench__track" />
+              <div class="pt-bench__axis">
+                {axisTicks.map((tick) => (
+                  <span class="pt-bench__tick" style={`left:${tick.pct}%`}>
+                    <span class="pt-bench__tick-label">{tick.label}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          {marketTakeaway && cheaperPctAbs != null && (
+            <p class:list={['pt2-market-pct', marketTakeawayTone === 'bad' && 'is-bad', marketTakeawayTone === 'good' && 'is-good']}>
+              {cheaperPctAbs}% {marketCompare.cheaperPct != null && marketCompare.cheaperPct > 3 ? 'lower' : marketCompare.cheaperPct != null && marketCompare.cheaperPct < -3 ? 'higher' : ''} starting price
+            </p>
+          )}
+        </>
+      )}
+
+      {vm.pricingEvidence?.main && (
+        <p class="pt2-evidence">
+          <VerifiedCheck class="w-[14px] h-[14px]" />
+          <span>{vm.pricingEvidence.verifiedLabel}</span>
+          <span class="pt2-dot" aria-hidden="true" />
+          <button
+            type="button"
+            class="pt-evidence__view"
+            data-lightbox-open={vm.pricingEvidence.main.src}
+            data-lightbox-alt={vm.pricingEvidence.main.alt}
+            data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
+          >
+            View pricing screenshot ↗
+          </button>
+        </p>
+      )}
+
+      <span hidden data-pt-estimate-title></span>
+      <span hidden data-pt-usage-detail-title></span>
+      <span hidden data-pt-usage-detail-icon></span>
+      <span hidden data-pt-usage-detail-desc></span>
+      <span hidden data-pt-usage-detail-chat></span>
+      <span hidden data-pt-usage-detail-images></span>
+      <span hidden data-pt-usage-detail-videos></span>
+      <span hidden data-pt-usage-detail-voice></span>
+      <span hidden data-pt-usage-detail-character></span>
+    </section>
+
+    <section class="pt2-section" id="pricing-plans" aria-labelledby="pt-plans-title">
+      {vm.plans.length > 0 ? (
+        <div class="pt-plans-wrap">
+          <div class="pt2-plans-head">
+            <div>
+              <h3 id="pt-plans-title" class="pt2-h2">Plans and what you get</h3>
+              {plansIntro && <p class="pt2-lead">{plansIntro}</p>}
+            </div>
+            {showPlansBilling && (
+              <div class="pt2-billing" data-pt-plans-billing role="group" aria-label="Billing">
+                {billingIntervals.map((interval) => (
+                  <button
+                    type="button"
+                    class:list={[defaultBilling === interval.key && 'is-active']}
+                    data-pt-plans-billing-select={interval.key}
+                    aria-pressed={defaultBilling === interval.key ? 'true' : 'false'}
+                  >
+                    {interval.key === 'yearly' ? 'Annual' : interval.label}
+                    {interval.key === 'yearly' && yearlySavePct != null && yearlySavePct > 0 && (
+                      <span class="pt2-billing__save">Save {yearlySavePct}%</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div
+            class="pt-plan-overview pt2-plan-strip"
+            style={`--pt-plan-cols: ${Math.max(vm.plans.length, 1)}`}
+            aria-label="Plan comparison"
+            data-pt-plan-overview
+          >
+            {vm.plans.map((plan) => {
+              const monthly = plan.billing?.monthly;
+              const opt = monthly ?? plan.billing?.yearly ?? plan.billing?.quarterly;
+              const sale = opt?.sale ?? null;
+              const price = plan.isFree
+                ? plan.priceLabel
+                : monthly?.monthlyPriceLabel ?? plan.priceLabel;
+              return (
+                <div
+                  class:list={['pt-plan-overview__col', plan.isRecommended && 'is-recommended']}
+                  data-pt-overview-plan={plan.key}
+                >
+                  <div class="pt2-plan-top">
+                    <p class="pt-plan-overview__name">{plan.displayName}</p>
+                    {plan.isRecommended && <span class="pt2-plan-badge">Best for most people</span>}
+                  </div>
+                  <div class="pt-plan-overview__pricing" data-pt-overview-pricing>
+                    <p class="pt-plan-overview__price" data-pt-overview-price>
+                      {sale?.listPriceLabel ? (
+                        <span class="pt-plan-overview__list" data-pt-overview-list>
+                          {sale.listPriceLabel}
+                          {!plan.isFree && <span class="pt-unit">/mo</span>}
+                        </span>
+                      ) : (
+                        <span class="pt-plan-overview__list" data-pt-overview-list hidden />
+                      )}
+                      <span data-pt-overview-price-main>
+                        {price}
+                        {!plan.isFree && <span class="pt-unit">/mo</span>}
+                      </span>
+                      {sale?.badge ? (
+                        <span class="pt-plan-overview__badge" data-pt-overview-badge>
+                          {sale.badge}
+                        </span>
+                      ) : (
+                        <span class="pt-plan-overview__badge" data-pt-overview-badge hidden />
+                      )}
+                    </p>
+                    <p class="pt-plan-overview__billed" data-pt-overview-billed hidden />
+                    <p class="pt-plan-overview__save" data-pt-overview-save hidden />
+                    <p class="pt-plan-overview__unavailable" data-pt-overview-unavailable hidden />
+                  </div>
+                  <p class="pt-plan-overview__credits" data-pt-overview-credits>
+                    {plan.summaryLine}
+                  </p>
+                  <div class="pt2-plan-rule" />
+                  <p class="pt2-plan-best">{planBestFor(plan)}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {vm.limitRows.length > 0 && (
+            <div class="pt2-disclose pt2-disclose--tight" data-pt2-disclose>
+              <button type="button" class="pt2-disclose__btn" aria-expanded="false">
+                <span class="pt2-disclose__copy">
+                  <span class="pt2-disclose__title">Compare all plan features</span>
+                  <span class="pt2-disclose__sum">{freeVsPaidIntro || 'See what you get with each plan.'}</span>
+                </span>
+                <span class="pt2-disclose__action" data-closed="Compare all plan features" data-open="Hide plan features">
+                  <span data-pt2-action-label>Compare all plan features</span>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+              </button>
+              <div class="pt2-disclose__panel" hidden>
+                <p class="pt2-table-kicker">{defaultLimitsHeading}</p>
+                <div class="pt-other-limits" data-pt-limits>
                       <header class="pt-other-limits__head">
                         <h4 class="pt-subhead" data-pt-limits-title>
                           {defaultLimitsHeading}
@@ -673,12 +811,23 @@ function withUnit(value: string) {
                         </table>
                       </div>
                     </div>
-                  )
-                }
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <p class="pt-empty">Plan details are still being verified.</p>
+      )}
+    </section>
 
-                {
-                  vm.creditPool && (
-                    <div
+    {vm.creditPool && (
+      <section class="pt2-section pt2-mix-head" id="pricing-credits" aria-labelledby="pt-credits-title">
+        <h3 class="pt2-h2 pt2-h2-desktop" id="pt-credits-title">Build your credit mix</h3>
+        <h3 class="pt2-h2 pt2-h2-mobile">Estimate your own monthly cost</h3>
+        <p class="pt2-lead">
+          {poolReady ? poolIntroReady : poolIntroAwaiting}
+        </p>
+        <div
                       class="pt-credit-pool"
                       data-pt-credit-pool
                       data-pt-credit-mixer={poolReady && defaultBudget?.mixer ? 'true' : 'false'}
@@ -691,16 +840,16 @@ function withUnit(value: string) {
                       data-pt-pool-plan={poolPlanKey}
                       data-pt-pool-ready={poolReady ? 'true' : 'false'}
                     >
-                      <header class="pt-section-head">
-                        <p class="pt-eyebrow">Credit value</p>
-                        <h3 class="pt-title">What your credits can buy</h3>
-                      </header>
-
-                      <p class="pt-credit-pool__intro" data-pt-pool-intro>
+                      <p class="pt-credit-pool__intro" data-pt-pool-intro hidden>
                         {poolReady ? poolIntroReady : poolIntroAwaiting}
                       </p>
-
-                      <div class="pt-credit-pool__config">
+                      <div class="pt2-tool" data-pt2-mixer-tool>
+                        <div class="pt2-mixer-entry">
+                          <p class="pt2-mixer-entry__label">Estimate your monthly cost</p>
+                          <button type="button" class="pt2-mixer-entry__btn" data-pt2-mixer-open>Estimate your monthly cost →</button>
+                        </div>
+                        <div class="pt2-tool__body">
+<div class="pt-credit-pool__config">
                         <div
                           class="pt-credit-pool__field"
                           data-pt-tool-plan-select
@@ -781,6 +930,52 @@ function withUnit(value: string) {
                         </div>
                       </div>
 
+                      {(defaultBudget?.items?.length || defaultBudget?.mixer) && (
+                        <div class="pt2-pool-buys" data-pt-pool-equiv>
+                          <p class="pt2-pool-buys__k">
+                            What <span data-pt-pool-credit-n>{(defaultBudget?.credits ?? 0).toLocaleString('en-US')}</span> credits buys
+                          </p>
+                          <p class="pt2-pool-buys__line" data-pt-pool-skim-compact>
+                            {(defaultBudget?.items ?? [])
+                              .map((item) => `${item.amount ?? item.value.replace(/\/mo$/, '')} ${item.label}`)
+                              .join(' · ')}
+                          </p>
+                          <div class="pt2-disclose pt2-disclose--link" data-pt2-disclose>
+                            <button type="button" class="pt2-disclose__btn" aria-expanded="false">
+                              <span class="pt2-disclose__action" data-closed="View breakdown" data-open="Hide breakdown">
+                                <span data-pt2-action-label>View breakdown</span>
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                              </span>
+                            </button>
+                            <div class="pt2-disclose__panel" hidden>
+                              <p class="pt-credit-pool__lead" data-pt-pool-lead hidden={!defaultBudget?.mixer}>
+                                If you spent all <span data-pt-pool-credit-n>{(defaultBudget?.credits ?? 0).toLocaleString('en-US')}</span> credits on one feature:
+                              </p>
+                              <p class="pt-credit-pool__note" data-pt-pool-note hidden={Boolean(defaultBudget?.mixer)}>
+                                {defaultBudget?.isFree
+                                  ? 'This plan uses hard daily limits instead of a shared credit pool.'
+                                  : 'This plan does not use a shared credit pool.'}
+                              </p>
+                              <div class="pt-credit-pool__skim" aria-label="Maximum equivalents" data-pt-pool-skim>
+                                {
+                                  (defaultBudget?.items ?? []).map((item) => (
+                                    <div class="pt-credit-pool__skim-stat">
+                                      <span class="pt-credit-pool__skim-amount">
+                                        {item.amount ?? item.value.replace(/\/mo$/, '')}
+                                      </span>
+                                      <span class="pt-credit-pool__skim-label">{item.label}</span>
+                                    </div>
+                                  ))
+                                }
+                              </div>
+                              <p class="pt-credit-pool__or" data-pt-pool-or hidden={!defaultBudget?.mixer}>
+                                These are one-feature examples. You can split your credits below.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div
                         class="pt-credit-pool__await"
                         data-pt-pool-await
@@ -860,34 +1055,6 @@ function withUnit(value: string) {
                             {defaultSale?.note}
                           </p>
                         </div>
-
-                        <div class="pt-credit-pool__equiv" data-pt-pool-equiv hidden={!defaultBudget?.mixer && !(defaultBudget?.items?.length)}>
-                          <p class="pt-credit-pool__lead" data-pt-pool-lead hidden={!defaultBudget?.mixer}>
-                            If you spent all <span data-pt-pool-credit-n>{(defaultBudget?.credits ?? 0).toLocaleString('en-US')}</span> credits on one feature:
-                          </p>
-                          <p class="pt-credit-pool__note" data-pt-pool-note hidden={Boolean(defaultBudget?.mixer)}>
-                            {defaultBudget?.isFree
-                              ? 'This plan uses hard daily limits instead of a shared credit pool.'
-                              : 'This plan does not use a shared credit pool.'}
-                          </p>
-
-                          <div class="pt-credit-pool__skim" aria-label="Maximum equivalents" data-pt-pool-skim>
-                            {
-                              (defaultBudget?.items ?? []).map((item) => (
-                                <div class="pt-credit-pool__skim-stat">
-                                  <span class="pt-credit-pool__skim-amount">
-                                    {item.amount ?? item.value.replace(/\/mo$/, '')}
-                                  </span>
-                                  <span class="pt-credit-pool__skim-label">{item.label}</span>
-                                </div>
-                              ))
-                            }
-                          </div>
-                          <p class="pt-credit-pool__or" data-pt-pool-or hidden={!defaultBudget?.mixer}>
-                            These are one-feature examples. You can split your credits below.
-                          </p>
-                        </div>
-                        <hr class="pt-credit-pool__tool-rule" data-pt-pool-tool-rule hidden={!defaultBudget?.mixer} />
                         <div class="pt-mixer-host" data-pt-mixer-host>
                           {
                             defaultBudget?.mixer ? (
@@ -1265,26 +1432,86 @@ function withUnit(value: string) {
                       </div>
                         </div>
                       </div>
+                        <button type="button" class="pt2-hide-calc" data-pt2-mixer-close>Hide calculator</button>
+                        </div>
+                      </div>
                     </div>
-                  )
-                }
 
+      </section>
+    )}
 
+    <section class="pt2-section" id="pricing-detail">
+      {vm.featureCosts.length > 0 && (
+        <div class="pt2-disclose pt2-disclose--tight" data-pt2-disclose>
+          <button type="button" class="pt2-disclose__btn" aria-expanded="false">
+            <span class="pt2-disclose__copy">
+              <span class="pt2-disclose__title">What each feature costs</span>
+              <span class="pt2-disclose__sum">{featureCostsIntro || 'See how credits translate into real money.'}</span>
+            </span>
+            <span class="pt2-disclose__action" data-closed="View breakdown" data-open="Hide breakdown">
+              <span data-pt2-action-label>View breakdown</span>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+          <div class="pt2-disclose__panel" hidden>
+            <table class="pt2-cost-table">
+              <thead>
+                <tr>
+                  <th scope="col">Feature</th>
+                  <th scope="col">Credits</th>
+                  <th scope="col">Approx. cost</th>
+                </tr>
+              </thead>
+              <tbody>
                 {
-                  vm.topUps && (
-                    <div class="pt-topups" data-pt-topups>
-                      <header class="pt-section-head">
-                        <p class="pt-eyebrow">Top-ups</p>
-                        <h3 class="pt-title">{vm.topUps.heading}</h3>
-                        <p class="pt-lead pt-lead--tight">{vm.topUps.intro}</p>
-                      </header>
+                  vm.featureCosts.map((row) => (
+                    <tr>
+                      <th scope="row">{row.label}</th>
+                      <td>{row.secondaryValue || '—'}</td>
+                      <td>{row.value}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+            {vm.pricingEvidence?.featureCosts && (
+              <p class="pt2-evidence">
+                <button
+                  type="button"
+                  class="pt-evidence__view"
+                  data-lightbox-open={vm.pricingEvidence.featureCosts.src}
+                  data-lightbox-alt={vm.pricingEvidence.featureCosts.alt}
+                  data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
+                >
+                  View feature costs screenshot ↗
+                </button>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {vm.topUps && (
+        <div class="pt2-disclose pt2-disclose--tight" data-pt2-disclose>
+          <button type="button" class="pt2-disclose__btn" aria-expanded="false">
+            <span class="pt2-disclose__copy">
+              <span class="pt2-disclose__title">Dreamcoin top-up prices</span>
+              <span class="pt2-disclose__sum">{vm.topUps.intro}</span>
+            </span>
+            <span class="pt2-disclose__action" data-closed="View prices" data-open="Hide prices">
+              <span data-pt2-action-label>View prices</span>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+          <div class="pt2-disclose__panel" hidden>
+            <div class="pt-topups" data-pt-topups>
                       <div class="pt-topups__scroll">
-                        <table class="pt-topups__table">
+                        <table class="pt-topups__table pt2-cost-table">
                           <thead>
                             <tr>
                               <th scope="col">Credits you get</th>
                               <th scope="col">Price</th>
-                              <th scope="col">{vm.topUps.valueColumnLabel || 'Value'}</th>
+                              <th scope="col">{vm.topUps.valueColumnLabel || 'Value vs the 1,000 pack'}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1356,457 +1583,51 @@ function withUnit(value: string) {
                         )
                       }
                     </div>
-                  )
-                }
-              </div>
-            ) : (
-              <>
-                <h3 id="pt-plans-title" class="pt-title">Plans & what you get</h3>
-                {plansIntro && <p class="pt-lead">{plansIntro}</p>}
-                <p class="pt-empty">Plan details are still being verified.</p>
-              </>
-            )
-          }
-        </section>
+          </div>
+        </div>
+      )}
+    </section>
 
-        <!-- What you'll actually pay -->
-        <section
-          class="pt-block"
-          id="pricing-real-world-cost"
-          aria-labelledby="pt-usage-title"
-          data-pt-usage
-          data-pt-usage-payload={usagePayload}
-          data-pt-usage-flat={usageCostsIdentical ? 'true' : 'false'}
-        >
-          {
-            !vm.usageEstimatesAvailable ? (
-              <>
-                <header class="pt-section-head">
-                  <p class="pt-eyebrow">Real-world cost</p>
-                  <h3 id="pt-usage-title" class="pt-title">What you'll actually pay</h3>
-                  {usageIntro && <p class="pt-lead">{usageIntro}</p>}
-                </header>
-                <p class="pt-empty">Not enough data to estimate</p>
-              </>
-            ) : usageCostsIdentical && flatUsageCost != null ? (
-              <>
-                <header class="pt-section-head">
-                  <p class="pt-eyebrow">Real-world cost</p>
-                  <h3 id="pt-usage-title" class="pt-title">What you'll actually pay</h3>
-                  {usageIntro && <p class="pt-lead">{usageIntro}</p>}
-                </header>
-                <div class="pt-usage-flat">
-                  <p class="pt-usage-flat__price">
-                    {fmtMoney(flatUsageCost, vm.currency)}/mo at all usage levels
-                  </p>
-                  <p class="pt-usage-flat__copy">
-                    This plan includes enough usage that our light, regular, and heavy scenarios do not
-                    require additional purchases.
-                  </p>
+    <section class="pt2-section" id="pricing-comparison" aria-labelledby="pt-compare-title">
+      <h3 class="pt2-h2" id="pt-compare-title">How it compares to the market</h3>
+      {vm.compareIntro && <p class="pt2-lead">{vm.compareIntro}</p>}
+      {compactCompare.length > 0 && (
+        <div class="pt2-market-grid">
+          {compactCompare.map((row) => (
+            <div>
+              <p class="pt2-market-pair__label">{row.metric}</p>
+              <dl>
+                <div class="pt2-market-row">
+                  <dt>{vm.productName}</dt>
+                  <dd>{row.productValue}</dd>
                 </div>
-              </>
-            ) : (
-              <>
-                <header class="pt-section-head">
-                  <p class="pt-eyebrow">Real-world cost</p>
-                  <h3 id="pt-usage-title" class="pt-title">What you'll actually pay</h3>
-                  <p class="pt-lead">
-                    {usageIntro}
-                  </p>
-                </header>
-
-                <div class="pt-menu-select pt-menu-select--inline" data-pt-usage-select>
-                  <span class="pt-label" id="pt-usage-level-label">Usage level</span>
-                  <div class="pt-menu-select__wrap">
-                    <button
-                      type="button"
-                      class="pt-menu-select__trigger"
-                      data-pt-usage-open
-                      aria-haspopup="listbox"
-                      aria-expanded="false"
-                      aria-labelledby="pt-usage-level-label"
-                    >
-                      <span class="pt-menu-select__value" data-pt-usage-label>
-                        {
-                          defaultUsage?.id === 'casual'
-                            ? 'Light'
-                            : defaultUsage?.id === 'power'
-                              ? 'Heavy'
-                              : 'Regular (most users)'
-                        }
-                      </span>
-                      <span class="material-symbols-outlined pt-menu-select__chevron" aria-hidden="true">expand_more</span>
-                    </button>
-                    <div class="pt-menu-select__menu" data-pt-usage-menu role="listbox" hidden>
-                      {
-                        vm.usageTiers.map((tier) => {
-                          const label =
-                            tier.id === 'casual'
-                              ? 'Light'
-                              : tier.id === 'power'
-                                ? 'Heavy'
-                                : 'Regular (most users)';
-                          const selected = tier.id === (defaultUsage?.id ?? 'regular');
-                          return (
-                            <button
-                              type="button"
-                              role="option"
-                              class:list={['pt-menu-select__option', selected && 'is-active']}
-                              data-pt-usage-option={tier.id}
-                              aria-selected={selected ? 'true' : 'false'}
-                            >
-                              {label}
-                            </button>
-                          );
-                        })
-                      }
-                    </div>
-                  </div>
+                <div class="pt2-market-row">
+                  <dt>Typical comparison app</dt>
+                  <dd>{row.typicalValue}</dd>
                 </div>
-
-                {
-                  defaultUsage && (
-                    <>
-                      <div class="pt-usage-detail" data-pt-usage-detail>
-                        <div class="pt-usage-detail__main">
-                          <div class="pt-usage-detail__summary">
-                            <span class="pt-usage-detail__icon" aria-hidden="true">
-                              <span class="material-symbols-outlined" data-pt-usage-detail-icon>
-                                {defaultUsage.icon}
-                              </span>
-                            </span>
-                            <div class="pt-usage-detail__copy">
-                              <p class="pt-usage-detail__name" data-pt-usage-detail-title>
-                                {defaultUsage.title}
-                              </p>
-                              <p class="pt-usage-detail__price" data-pt-usage-detail-total>
-                                {defaultUsage.costLabel}
-                              </p>
-                              <p class="pt-usage-detail__price-sub">Estimated monthly cost</p>
-                              <p class="pt-usage-detail__lead" data-pt-usage-detail-desc>
-                                {defaultUsage.description}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div class="pt-usage-detail__calc">
-                            <p class="pt-label pt-usage-detail__col-label">Cost breakdown</p>
-                            <dl class="pt-usage-calc">
-                              <div class="pt-usage-calc__row">
-                                <dt>Subscription</dt>
-                                <dd data-pt-usage-detail-plan>{defaultPlanLabel}</dd>
-                              </div>
-                              <div class="pt-usage-calc__row">
-                                <dt>Extra credits</dt>
-                                <dd data-pt-usage-detail-topup>{defaultTopUpLabel}</dd>
-                              </div>
-                              <div class="pt-usage-calc__row pt-usage-calc__row--total">
-                                <dt>Total</dt>
-                                <dd data-pt-usage-detail-total-row>{defaultUsage.costLabel}</dd>
-                              </div>
-                            </dl>
-                          </div>
-                        </div>
-
-                        <div class="pt-usage-detail__includes">
-                          <p class="pt-label pt-usage-detail__col-label">Included in this estimate</p>
-                          <dl class="pt-usage-includes">
-                            {
-                              (
-                                [
-                                  ['chat_bubble', 'Chat', 'data-pt-usage-detail-chat', defaultUsage.assumptions.chat],
-                                  ['image', 'Images', 'data-pt-usage-detail-images', defaultUsage.assumptions.images],
-                                  ['videocam', 'Video', 'data-pt-usage-detail-videos', defaultUsage.assumptions.videos],
-                                  ['mic', 'Voice', 'data-pt-usage-detail-voice', defaultUsage.assumptions.voice],
-                                  [
-                                    'person_edit',
-                                    'Custom character',
-                                    'data-pt-usage-detail-character',
-                                    defaultUsage.assumptions.character,
-                                  ],
-                                ] as const
-                              ).map(([icon, label, attr, value]) => {
-                                const parts = withUnit(value);
-                                return (
-                                  <div class="pt-usage-includes__item">
-                                    <span
-                                      class="material-symbols-outlined pt-usage-includes__icon"
-                                      aria-hidden="true"
-                                    >
-                                      {icon}
-                                    </span>
-                                    <dt>{label}</dt>
-                                    <dd {...{ [attr]: true }}>
-                                      {parts.main}
-                                      {parts.unit && <span class="pt-unit">{parts.unit}</span>}
-                                    </dd>
-                                  </div>
-                                );
-                              })
-                            }
-                          </dl>
-                        </div>
-                      </div>
-
-                      <div class="pt-usage-links">
-                        {
-                          defaultCalculation ? (
-                            <details class="pt-usage-calc-details" data-pt-usage-calc-details>
-                              <summary class="pt-usage-links__btn" data-pt-usage-calc-summary>
-                                {defaultCalculation.summaryLabel}
-                              </summary>
-                              <div class="pt-usage-math" data-pt-usage-calc>
-                                <p class="pt-usage-math__heading" data-pt-usage-calc-heading>
-                                  {defaultCalculation.heading}
-                                </p>
-                                <p class="pt-usage-math__intro" data-pt-usage-calc-intro>
-                                  {defaultCalculation.intro}
-                                </p>
-
-                                <section class="pt-usage-math__block">
-                                  <div class="pt-usage-math__step">
-                                    <span class="pt-usage-math__num" aria-hidden="true">1</span>
-                                    <div>
-                                      <p class="pt-label pt-usage-math__block-title">Usage assumptions</p>
-                                      <p class="pt-usage-math__block-lead">
-                                        This is the daily usage pattern we used for the estimate.
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <ul class="pt-usage-math__chips" data-pt-usage-calc-chips>
-                                    {
-                                      ['chat', 'images', 'videos', 'voice']
-                                        .map((key) => defaultCalculation.features.find((row) => row.key === key))
-                                        .filter(Boolean)
-                                        .map((row) => {
-                                          const parts = withUnit(row!.assumptionLabel);
-                                          return (
-                                          <li class="pt-usage-math__chip">
-                                            <span class="material-symbols-outlined" aria-hidden="true">
-                                              {row!.icon}
-                                            </span>
-                                            <span class="pt-usage-math__chip-label">{row!.label}</span>
-                                            <span class="pt-usage-math__chip-value">
-                                              {parts.main}
-                                              {parts.unit && <span class="pt-unit">{parts.unit}</span>}
-                                            </span>
-                                          </li>
-                                          );
-                                        })
-                                    }
-                                  </ul>
-                                </section>
-
-                                <section class="pt-usage-math__block">
-                                  <div class="pt-usage-math__step">
-                                    <span class="pt-usage-math__num" aria-hidden="true">2</span>
-                                    <div>
-                                      <p class="pt-label pt-usage-math__block-title">Estimated feature cost</p>
-                                      <p class="pt-usage-math__block-lead">
-                                        Monthly cost for this usage pattern.
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <table class="pt-usage-math__table">
-                                    <thead>
-                                      <tr>
-                                        <th scope="col">Feature</th>
-                                        <th scope="col">Estimated monthly cost</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody data-pt-usage-calc-features>
-                                      {
-                                        defaultCalculation.features.map((row) => (
-                                          <tr>
-                                            <th scope="row">
-                                              <span class="pt-usage-math__feat">
-                                                <span class="material-symbols-outlined" aria-hidden="true">
-                                                  {row.icon}
-                                                </span>
-                                                {row.label}
-                                              </span>
-                                            </th>
-                                            <td>
-                                              {(() => {
-                                                const parts = withUnit(row.costLabel);
-                                                return (
-                                                  <>
-                                                    {parts.main}
-                                                    {parts.unit && <span class="pt-unit">{parts.unit}</span>}
-                                                  </>
-                                                );
-                                              })()}
-                                            </td>
-                                          </tr>
-                                        ))
-                                      }
-                                      <tr class="pt-usage-math__row--subtotal">
-                                        <th scope="row">Total feature usage</th>
-                                        <td data-pt-usage-calc-media>{defaultCalculation.mediaValueLabel}</td>
-                                      </tr>
-                                    </tbody>
-                                  </table>
-
-                                  <details class="pt-usage-math__show-math">
-                                    <summary>
-                                      See calculation details
-                                      <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-                                    </summary>
-                                    <div class="pt-usage-math__details" data-pt-usage-calc-math>
-                                      {
-                                        defaultCalculation.features
-                                          .filter((row) => row.mathDetail)
-                                          .map((row) => (
-                                            <div class="pt-usage-math__detail">
-                                              <p class="pt-usage-math__detail-label">{row.label}</p>
-                                              <p class="pt-usage-math__detail-body">{row.mathDetail}</p>
-                                            </div>
-                                          ))
-                                      }
-                                    </div>
-                                  </details>
-                                </section>
-
-                                <section class="pt-usage-math__block pt-usage-math__block--final">
-                                  <div class="pt-usage-math__step">
-                                    <span class="pt-usage-math__num" aria-hidden="true">3</span>
-                                    <div>
-                                      <p class="pt-label pt-usage-math__block-title">Final monthly estimate</p>
-                                      <p class="pt-usage-math__block-lead">
-                                        From usage cost to what you’ll actually pay.
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <table class="pt-usage-math__summary">
-                                    <tbody>
-                                      <tr>
-                                        <th scope="row">Usage requires</th>
-                                        <td data-pt-usage-calc-media-2>{defaultCalculation.requiredCreditsLabel}</td>
-                                      </tr>
-                                      <tr>
-                                        <th scope="row">Included with plan</th>
-                                        <td data-pt-usage-calc-included>{defaultCalculation.includedCreditsLabel}</td>
-                                      </tr>
-                                      <tr class="pt-usage-math__row--extra">
-                                        <th scope="row">Extra credits needed</th>
-                                        <td data-pt-usage-calc-extra>{defaultCalculation.extraCreditsLabel}</td>
-                                      </tr>
-                                      {
-                                        defaultCalculation.packageLines.length > 0 && (
-                                          <>
-                                            <tr>
-                                              <th scope="row" colspan="2">Cheapest top-up combination</th>
-                                            </tr>
-                                            {
-                                              defaultCalculation.packageLines.map((line) => (
-                                                <tr>
-                                                  <th scope="row">{line.creditsLabel}</th>
-                                                  <td>{line.priceLabel}</td>
-                                                </tr>
-                                              ))
-                                            }
-                                            <tr>
-                                              <th scope="row">Credits purchased</th>
-                                              <td>{defaultCalculation.purchasedCreditsLabel}</td>
-                                            </tr>
-                                            <tr>
-                                              <th scope="row">Credits left over</th>
-                                              <td>{defaultCalculation.leftoverCreditsLabel}</td>
-                                            </tr>
-                                          </>
-                                        )
-                                      }
-                                      <tr>
-                                        <th scope="row">Top-up spend</th>
-                                        <td>{defaultCalculation.topUpCostLabel}</td>
-                                      </tr>
-                                      <tr>
-                                        <th scope="row">Monthly subscription</th>
-                                        <td data-pt-usage-calc-plan>{defaultCalculation.planCostLabel}</td>
-                                      </tr>
-                                      <tr class="pt-usage-math__row--total">
-                                        <th scope="row">Estimated monthly spend</th>
-                                        <td data-pt-usage-calc-total>{defaultCalculation.totalLabel}</td>
-                                      </tr>
-                                    </tbody>
-                                  </table>
-                                  <p class="pt-usage-math__disclaimer">
-                                    Top-up costs use the cheapest credit packs you can actually buy.
-                                  </p>
-                                </section>
-                              </div>
-                            </details>
-                          ) : null
-                        }
-                      </div>
-                    </>
-                  )
-                }
-              </>
-            )
-          }
-        </section>
-
-        <!-- What each feature costs -->
-        <section class="pt-block" id="pricing-feature-costs" aria-labelledby="pt-feature-title">
-          <header class="pt-section-head">
-            <p class="pt-eyebrow">Feature costs</p>
-            <h3 id="pt-feature-title" class="pt-title">What each feature costs</h3>
-            {featureCostsIntro && <p class="pt-lead">{featureCostsIntro}</p>}
-            {
-              vm.pricingEvidence?.featureCosts && (
-                <p class="pt-evidence pt-evidence--inline">
-                  <button
-                    type="button"
-                    class="pt-evidence__view"
-                    data-lightbox-open={vm.pricingEvidence.featureCosts.src}
-                    data-lightbox-alt={vm.pricingEvidence.featureCosts.alt}
-                    data-lightbox-caption={`${vm.pricingEvidence.verifiedLabel}. ${vm.pricingEvidence.capturedLabel}`}
-                  >
-                    <span class="material-symbols-outlined" aria-hidden="true">image</span>
-                    View feature costs screenshot
-                  </button>
-                </p>
-              )
-            }
-          </header>
-          <ul class="pt-feature-list">
-            {
-              vm.featureCosts.map((row) => {
-                const parts = withUnit(row.value);
-                return (
-                  <li class="pt-feature-row">
-                    <span class="pt-feature-row__icon" aria-hidden="true">
-                      <span class="material-symbols-outlined">{row.icon}</span>
-                    </span>
-                    <span class="pt-feature-row__label">{row.label}</span>
-                    <span class="pt-feature-row__value">
-                      <span class="pt-feature-row__amount">
-                        {parts.main}
-                        {parts.unit && <span class="pt-unit">{parts.unit}</span>}
-                      </span>
-                      {row.secondaryValue && (
-                        <span class="pt-feature-row__secondary">{row.secondaryValue}</span>
-                      )}
-                    </span>
-                  </li>
-                );
-              })
-            }
-          </ul>
-        </section>
-
-        <!-- How [Product] pricing compares -->
-        <section class="pt-block" id="pricing-comparison" aria-labelledby="pt-compare-title">
-          <header class="pt-section-head">
-            <p class="pt-eyebrow">Market comparison</p>
-            <h3 id="pt-compare-title" class="pt-title">
-              How {vm.productName} pricing compares
-            </h3>
-          </header>
+              </dl>
+              <p class:list={['pt2-market-pct', row.diffTone === 'worse' && 'is-bad', row.diffTone === 'better' && 'is-good']}>
+                {row.diffLabel}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+      <div class="pt2-disclose pt2-disclose--tight" data-pt2-disclose>
+        <button type="button" class="pt2-disclose__btn" aria-expanded="false">
+          <span class="pt2-disclose__copy">
+            <span class="pt2-disclose__title">See full market comparison</span>
+            <span class="pt2-disclose__sum">Every metric we compare, including rows where the category has insufficient data.</span>
+          </span>
+          <span class="pt2-disclose__action" data-closed="View comparison" data-open="Hide comparison">
+            <span data-pt2-action-label>View comparison</span>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </button>
+        <div class="pt2-disclose__panel" hidden>
           {
             vm.compareRows.length > 0 ? (
-              <div class="pt-compare-wrap">
+          <div class="pt-compare-wrap">
                 <table class="pt-compare">
                   <thead>
                     <tr>
@@ -1851,75 +1672,41 @@ function withUnit(value: string) {
               <p class="pt-compare-note">{comparisonNote}</p>
             )
           }
-        </section>
-
-        {
-          vm.hermanTake && (
-            <section class="pt-block" id="pricing-verdict" aria-labelledby="pt-verdict-title">
-              <header class="pt-section-head">
-                <p class="pt-eyebrow">Expert opinion</p>
-                <h3 class="pt-title" id="pt-verdict-title">
-                  Our take on {vm.productName}'s pricing
-                </h3>
-              </header>
-              <div class="pt-opinion">
-                {
-                  herman && (
-                    <div class="pt-opinion__byline">
-                      <img
-                        class="pt-opinion__avatar"
-                        src={herman.avatar}
-                        alt=""
-                        width="40"
-                        height="40"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <div class="pt-opinion__who">
-                        <p class="pt-opinion__name">{herman.name}</p>
-                        <p class="pt-opinion__role">Lead reviewer</p>
-                      </div>
-                    </div>
-                  )
-                }
-                <p
-                  class="pt-opinion__body"
-                  set:html={renderReviewProseText(vm.hermanTake, pricingGlossary)}
-                />
-                <AffiliateLink
-                  href={product.affiliateUrl}
-                  target="_blank"
-                  class="pt-opinion__cta"
-                >
-                  Visit {vm.productName} ↗
-                </AffiliateLink>
-              </div>
-            </section>
-          )
-        }
+        </div>
       </div>
+    </section>
 
-      <aside class="overview-sidebar-stack order-first lg:order-none lg:sticky self-start" aria-label="Pricing summary">
-        <div class="pt-sum">
-          <p class="pt-label pt-sum__eyebrow">Pricing</p>
-          {
-            vm.pricingScore != null && (
-              <p class="pt-sum__score">
-                <span class:list={['pt-sum__score-num', scoreVisual.text]}>{fmtScore(vm.pricingScore)}</span>
-                <span class="pt-sum__score-of">/10</span>
+    {(vm.hermanTake || vm.pricingScore != null) && (
+      <section class="pt2-section" id="pricing-verdict" aria-labelledby="pt-verdict-title">
+        <div class="pt2-verdict">
+          <div>
+            <p class="pt2-verdict__score-label">Pricing score</p>
+            {vm.pricingScore != null && (
+              <p class="pt2-verdict__score">
+                <span class="pt2-verdict__n">{fmtScore(vm.pricingScore)}</span>
+                <span class="pt2-verdict__of">/10</span>
               </p>
-            )
-          }
-          <AffiliateLink
-            href={product.affiliateUrl}
-            target="_blank"
-            class="pt-sum__link"
-          >
+            )}
+          </div>
+          <div>
+            <h3 class="pt2-verdict__title" id="pt-verdict-title">{vm.scoreInsight || `Our take on ${vm.productName}'s pricing`}</h3>
+            {vm.hermanTake && (
+              <p class="pt2-verdict__body" set:html={renderReviewProseText(vm.hermanTake, pricingGlossary)} />
+            )}
+            {herman && (
+              <p class="pt2-verdict__byline">
+                <strong>{herman.name}</strong>
+                {' · '}
+                Lead reviewer
+              </p>
+            )}
+          </div>
+          <AffiliateLink href={product.affiliateUrl} target="_blank" class="pt2-verdict__cta">
             Visit {vm.productName} ↗
           </AffiliateLink>
         </div>
-      </aside>
-    </div>
+      </section>
+    )}
   </div>
 </section>
 
@@ -6377,20 +6164,31 @@ function withUnit(value: string) {
 
       const poolLead = root.querySelector<HTMLElement>('[data-pt-pool-lead]');
       const poolNote = root.querySelector<HTMLElement>('[data-pt-pool-note]');
-      const poolCreditN = root.querySelector<HTMLElement>('[data-pt-pool-credit-n]');
+      const poolCreditNs = root.querySelectorAll<HTMLElement>('[data-pt-pool-credit-n]');
       const mixerHelpN = root.querySelector<HTMLElement>('[data-pt-mixer-help-n]');
       const toolRule = root.querySelector<HTMLElement>('[data-pt-pool-tool-rule]');
+      if (budget?.credits) {
+        const nextCredits = budget.credits.toLocaleString('en-US');
+        poolCreditNs.forEach((el) => {
+          if (el.textContent !== nextCredits) {
+            el.textContent = nextCredits;
+            flashNum(el);
+          }
+        });
+      }
       if (poolLead) {
         if (budget?.mixer && budget.credits) {
           poolLead.hidden = false;
-          if (poolCreditN) {
-            const next = budget.credits.toLocaleString('en-US');
-            if (poolCreditN.textContent !== next) {
-              poolCreditN.textContent = next;
-              flashNum(poolCreditN);
-            }
+          const next = budget.credits.toLocaleString('en-US');
+          if (poolCreditNs.length > 0) {
+            poolCreditNs.forEach((el) => {
+              if (el.textContent !== next) {
+                el.textContent = next;
+                flashNum(el);
+              }
+            });
           } else {
-            poolLead.innerHTML = `If you spent all <span data-pt-pool-credit-n>${budget.credits.toLocaleString('en-US')}</span> credits on one feature:`;
+            poolLead.innerHTML = `If you spent all <span data-pt-pool-credit-n>${next}</span> credits on one feature:`;
             stampAstroScope(poolLead, scopeAttr);
           }
         } else {
@@ -6431,6 +6229,12 @@ function withUnit(value: string) {
             .join('');
           stampAstroScope(poolSkim, scopeAttr);
           flashNum(poolSkim);
+          const compact = root.querySelector<HTMLElement>('[data-pt-pool-skim-compact]');
+          if (compact) {
+            compact.textContent = items
+              .map((item) => `${item.amount ?? item.value.replace(/\/mo$/, '')} ${item.label ?? item.value}`)
+              .join(' · ');
+          }
         } else {
           if (equivWrap && !budget?.mixer) equivWrap.hidden = true;
           poolSkim.hidden = true;
@@ -6537,8 +6341,14 @@ function withUnit(value: string) {
       icon: string;
       assumptionLabel: string;
       unitCostLabel: string;
+      cost: number;
       costLabel: string;
       mathDetail: string | null;
+      patternLead?: string | null;
+      monthlyTotalLabel?: string | null;
+      qtyPhrase?: string | null;
+      ratePhrase?: string | null;
+      accent?: string;
     };
 
     type UsageCalculation = {
@@ -6552,12 +6362,20 @@ function withUnit(value: string) {
       requiredCreditsLabel?: string;
       includedCreditsLabel?: string;
       extraCreditsLabel?: string;
+      includedCredits: number;
+      extraCredits: number;
       packageLines?: Array<{ creditsLabel: string; priceLabel: string }>;
       purchasedCreditsLabel?: string;
       leftoverCreditsLabel?: string;
       planCostLabel: string;
       topUpCostLabel: string;
+      topUpCost: number;
       totalLabel: string;
+      levelName: string;
+      planName: string;
+      chatIncludedNote: string | null;
+      packHeadline: string | null;
+      packFoot: string | null;
     };
 
     type UsageDetail = {
@@ -6573,6 +6391,8 @@ function withUnit(value: string) {
       videos: string;
       voice: string;
       character: string;
+      packNote?: string | null;
+      subline?: string | null;
       calculation: UsageCalculation | null;
     };
 
@@ -6604,18 +6424,7 @@ function withUnit(value: string) {
     const character = root.querySelector<HTMLElement>('[data-pt-usage-detail-character]');
 
     const calcSummary = root.querySelector<HTMLElement>('[data-pt-usage-calc-summary]');
-    const calcHeading = root.querySelector<HTMLElement>('[data-pt-usage-calc-heading]');
-    const calcIntro = root.querySelector<HTMLElement>('[data-pt-usage-calc-intro]');
-    const calcChips = root.querySelector<HTMLElement>('[data-pt-usage-calc-chips]');
-    const calcFeatures = root.querySelector<HTMLElement>('[data-pt-usage-calc-features]');
-    const calcMath = root.querySelector<HTMLElement>('[data-pt-usage-calc-math]');
-    const calcMedia2 = root.querySelector<HTMLElement>('[data-pt-usage-calc-media-2]');
-    const calcIncluded = root.querySelector<HTMLElement>('[data-pt-usage-calc-included]');
-    const calcExtra = root.querySelector<HTMLElement>('[data-pt-usage-calc-extra]');
-    const calcPlan = root.querySelector<HTMLElement>('[data-pt-usage-calc-plan]');
-    const calcTotal = root.querySelector<HTMLElement>('[data-pt-usage-calc-total]');
-
-    const chipOrder = ['chat', 'images', 'videos', 'voice'];
+    const calcRoot = root.querySelector<HTMLElement>('[data-pt2-calc]');
 
     function escapeHtml(value: string): string {
       return value
@@ -6649,103 +6458,71 @@ function withUnit(value: string) {
 
     function renderCalculation(calc: UsageCalculation) {
       if (calcSummary) calcSummary.textContent = calc.summaryLabel;
-      if (calcHeading) calcHeading.textContent = calc.heading;
-      if (calcIntro) calcIntro.textContent = calc.intro;
+      if (!calcRoot) return;
+      const patternCards = calc.features
+        .filter((row) => row.key !== 'chat' && row.monthlyTotalLabel)
+        .map(
+          (row) => `<article class="pt2-calc__card is-${escapeHtml(row.accent ?? row.key)}">
+            <p class="pt2-calc__card-name"><span class="pt2-calc__dot" aria-hidden="true"></span>${escapeHtml(row.label)}</p>
+            ${row.patternLead ? `<p class="pt2-calc__card-lead">${escapeHtml(row.patternLead)}</p>` : ''}
+            <p class="pt2-calc__card-total">${escapeHtml(row.monthlyTotalLabel!)}</p>
+          </article>`,
+        )
+        .join('');
+      const eqRows = calc.features
+        .filter((row) => row.cost > 0 && row.qtyPhrase && row.ratePhrase)
+        .map(
+          (row) => `<div class="pt2-calc__eq is-${escapeHtml(row.accent ?? row.key)}">
+            <p class="pt2-calc__eq-k">${escapeHtml(row.label)}</p>
+            <p class="pt2-calc__eq-line"><span>${escapeHtml(row.qtyPhrase!)}</span><span class="pt2-calc__op">×</span><span>${escapeHtml(row.ratePhrase!)}</span><span class="pt2-calc__op">=</span><strong>${escapeHtml(row.costLabel)}</strong></p>
+          </div>`,
+        )
+        .join('');
       const reqLabel = calc.requiredCreditsLabel ?? calc.mediaValueLabel;
-      const incLabel = calc.includedCreditsLabel ?? calc.includedValueLabel;
       const extraLabel = calc.extraCreditsLabel ?? calc.extraValueLabel;
-      if (calcMedia2) calcMedia2.textContent = reqLabel;
-      if (calcIncluded) calcIncluded.textContent = incLabel;
-      if (calcExtra) calcExtra.textContent = extraLabel;
-      if (calcPlan) calcPlan.textContent = calc.planCostLabel;
-      if (calcTotal) calcTotal.textContent = calc.totalLabel;
-
-      const summaryTable = root.querySelector<HTMLTableElement>('.pt-usage-math__summary');
-      if (summaryTable) {
-        const packageRows =
-          (calc.packageLines ?? [])
-            .map(
-              (line) => `<tr>
-                <th scope="row">${escapeHtml(line.creditsLabel)}</th>
-                <td>${escapeHtml(line.priceLabel)}</td>
-              </tr>`,
-            )
-            .join('') || '';
-        const comboHeader =
-          (calc.packageLines?.length ?? 0) > 0
-            ? `<tr><th scope="row" colspan="2">Cheapest top-up combination</th></tr>`
-            : '';
-        const purchased =
-          calc.purchasedCreditsLabel != null
-            ? `<tr><th scope="row">Credits purchased</th><td>${escapeHtml(calc.purchasedCreditsLabel)}</td></tr>`
-            : '';
-        const leftover =
-          calc.leftoverCreditsLabel != null
-            ? `<tr><th scope="row">Credits left over</th><td>${escapeHtml(calc.leftoverCreditsLabel)}</td></tr>`
-            : '';
-        summaryTable.innerHTML = `<tbody>
-          <tr><th scope="row">Usage requires</th><td data-pt-usage-calc-media-2>${escapeHtml(reqLabel)}</td></tr>
-          <tr><th scope="row">Included with plan</th><td data-pt-usage-calc-included>${escapeHtml(incLabel)}</td></tr>
-          <tr class="pt-usage-math__row--extra"><th scope="row">Extra credits needed</th><td data-pt-usage-calc-extra>${escapeHtml(extraLabel)}</td></tr>
-          ${comboHeader}${packageRows}${purchased}${leftover}
-          <tr><th scope="row">Top-up spend</th><td>${escapeHtml(calc.topUpCostLabel)}</td></tr>
-          <tr><th scope="row">Monthly subscription</th><td data-pt-usage-calc-plan>${escapeHtml(calc.planCostLabel)}</td></tr>
-          <tr class="pt-usage-math__row--total"><th scope="row">Estimated monthly spend</th><td data-pt-usage-calc-total>${escapeHtml(calc.totalLabel)}</td></tr>
-        </tbody>`;
-        stampAstroScope(summaryTable, scopeAttr);
-      }
-
-      if (calcChips) {
-        const byKey = new Map(calc.features.map((row) => [row.key, row]));
-        calcChips.innerHTML = chipOrder
-          .map((key) => byKey.get(key))
-          .filter(Boolean)
-          .map(
-            (row) => `<li class="pt-usage-math__chip">
-              <span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(row!.icon)}</span>
-              <span class="pt-usage-math__chip-label">${escapeHtml(row!.label)}</span>
-              <span class="pt-usage-math__chip-value">${unitHtml(row!.assumptionLabel)}</span>
-            </li>`,
-          )
-          .join('');
-        stampAstroScope(calcChips, scopeAttr);
-      }
-
-      if (calcFeatures) {
-        const featureRows = calc.features
-          .map(
-            (row) => `<tr>
-              <th scope="row">
-                <span class="pt-usage-math__feat">
-                  <span class="material-symbols-outlined" aria-hidden="true">${escapeHtml(row.icon)}</span>
-                  ${escapeHtml(row.label)}
-                </span>
-              </th>
-              <td>${unitHtml(row.costLabel)}</td>
-            </tr>`,
-          )
-          .join('');
-
-        calcFeatures.innerHTML = `${featureRows}
-          <tr class="pt-usage-math__row--subtotal">
-            <th scope="row">Total feature credits</th>
-            <td data-pt-usage-calc-media>${escapeHtml(reqLabel)}</td>
-          </tr>`;
-        stampAstroScope(calcFeatures, scopeAttr);
-      }
-
-      if (calcMath) {
-        calcMath.innerHTML = calc.features
-          .filter((row) => row.mathDetail)
-          .map(
-            (row) => `<div class="pt-usage-math__detail">
-              <p class="pt-usage-math__detail-label">${escapeHtml(row.label)}</p>
-              <p class="pt-usage-math__detail-body">${escapeHtml(row.mathDetail!)}</p>
-            </div>`,
-          )
-          .join('');
-        stampAstroScope(calcMath, scopeAttr);
-      }
+      const includedPlain = `${calc.includedCredits.toLocaleString('en-US')} credits`;
+      const totalDisplay = calc.totalLabel.replace(/\/mo$/, '');
+      const topUpLine =
+        calc.topUpCost > 0
+          ? ` + <span data-pt-usage-calc-topup>${escapeHtml(calc.topUpCostLabel)}</span> credit top-ups`
+          : '';
+      calcRoot.innerHTML = `
+        <section class="pt2-calc__step">
+          <p class="pt2-calc__kicker">Step 1</p>
+          <h4 class="pt2-calc__h">What ${escapeHtml(calc.levelName)} looks like</h4>
+          <p class="pt2-calc__lead">The usage pattern we model for a typical paying reader.</p>
+          <div class="pt2-calc__cards">${patternCards}</div>
+          ${calc.chatIncludedNote ? `<p class="pt2-calc__note">${escapeHtml(calc.chatIncludedNote)}</p>` : ''}
+        </section>
+        <section class="pt2-calc__step">
+          <p class="pt2-calc__kicker">Step 2</p>
+          <h4 class="pt2-calc__h">How many credits that uses</h4>
+          <p class="pt2-calc__lead">These features drive the total.</p>
+          <div class="pt2-calc__eqs">${eqRows}</div>
+          <p class="pt2-calc__total-pill"><span>Total monthly usage</span><strong>${escapeHtml(reqLabel)}</strong></p>
+        </section>
+        <section class="pt2-calc__step">
+          <p class="pt2-calc__kicker">Step 3</p>
+          <h4 class="pt2-calc__h">What you’ll actually pay</h4>
+          <div class="pt2-calc__pay">
+            <div class="pt2-calc__pay-card">
+              <p><strong>${escapeHtml(reqLabel)}</strong><span>needed for ${escapeHtml(calc.levelName)}</span></p>
+              <p><strong>${escapeHtml(includedPlain)}</strong><span>included with ${escapeHtml(calc.planName)}</span></p>
+              <p><strong>${escapeHtml(extraLabel)}</strong><span>still to buy</span></p>
+            </div>
+            <div class="pt2-calc__pay-card">
+              <p class="pt2-calc__micro">Smallest pack combination you can buy</p>
+              <p class="pt2-calc__pack-head">${escapeHtml(calc.packHeadline ?? 'No top-up needed')}</p>
+              ${calc.packFoot ? `<p class="pt2-calc__card-lead">${escapeHtml(calc.packFoot)}</p>` : ''}
+            </div>
+          </div>
+          <div class="pt2-calc__banner">
+            <p class="pt2-calc__micro">Estimated ${escapeHtml(calc.levelName)} cost</p>
+            <p class="pt2-calc__banner-price"><span>${escapeHtml(totalDisplay)}</span><span class="pt2-calc__banner-u">/ month</span></p>
+            <p class="pt2-calc__banner-sub"><span>${escapeHtml(calc.planCostLabel)}</span> ${escapeHtml(calc.planName)}${topUpLine}</p>
+          </div>
+        </section>`;
+      stampAstroScope(calcRoot, scopeAttr);
     }
 
     function selectTier(id: string) {
@@ -6766,6 +6543,22 @@ function withUnit(value: string) {
       if (desc) desc.textContent = data.description;
       if (plan) plan.textContent = data.planLabel;
       if (topup) topup.textContent = data.topUpLabel;
+      const subline = root.querySelector<HTMLElement>('[data-pt-usage-subline]');
+      if (subline && data.subline) subline.textContent = data.subline;
+      const packNote = root.querySelector<HTMLElement>('[data-pt-usage-pack-note]');
+      if (packNote) {
+        if (data.packNote) {
+          packNote.textContent = data.packNote;
+          packNote.hidden = false;
+        } else {
+          packNote.textContent = '';
+          packNote.hidden = true;
+        }
+      }
+      const estimateTitleEl = root.querySelector<HTMLElement>('[data-pt-estimate-title]');
+      if (estimateTitleEl) {
+        estimateTitleEl.textContent = `How we estimated ${data.totalLabel.replace(/\/mo$/, '')} a month`;
+      }
       setUnitText(chat, data.chat);
       setUnitText(images, data.images);
       setUnitText(videos, data.videos);
@@ -6830,6 +6623,36 @@ function withUnit(value: string) {
       avgFloat?.classList.add('pt-bench__float--below');
     });
   }
+
+  document.querySelectorAll<HTMLElement>('[data-pt2-disclose]').forEach((block) => {
+    const btn = block.querySelector<HTMLButtonElement>('.pt2-disclose__btn');
+    const panel = block.querySelector<HTMLElement>('.pt2-disclose__panel');
+    const action = block.querySelector<HTMLElement>('.pt2-disclose__action');
+    if (!btn || !panel) return;
+    const label = action?.querySelector<HTMLElement>('[data-pt2-action-label]');
+    const closed = (action?.dataset.closed || label?.textContent || 'View').replace(/\s+/g, ' ').trim();
+    const opened = (action?.dataset.open || 'Hide').trim();
+    const setLabel = (open: boolean) => {
+      if (label) label.textContent = open ? opened : closed;
+    };
+    setLabel(false);
+    btn.addEventListener('click', () => {
+      const open = !block.classList.contains('is-open');
+      block.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      panel.hidden = !open;
+      setLabel(open);
+    });
+  });
+
+  document.querySelectorAll<HTMLElement>('[data-pt2-mixer-tool]').forEach((tool) => {
+    tool.querySelector('[data-pt2-mixer-open]')?.addEventListener('click', () => {
+      tool.classList.add('is-open');
+    });
+    tool.querySelector('[data-pt2-mixer-close]')?.addEventListener('click', () => {
+      tool.classList.remove('is-open');
+    });
+  });
 
   syncBenchCollision();
   window.addEventListener('resize', () => syncBenchCollision());
