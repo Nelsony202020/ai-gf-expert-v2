@@ -1,155 +1,513 @@
 ---
 /**
  * OurDream AI Character Prompt Vault — /guides/ourdream-ai-character-prompts/
+ * Figma iaUwrRvpkEq7RrBpPLxA6j, page 245:4 (desktop 252:159, mobile 257:3251).
  *
- * PRERENDERED. The prompts are read from InstantDB once, at build time
- * (loadPromptVault). No visitor request ever hits the database.
+ * PRERENDERED. Prompts are read from InstantDB once, at build time (loadPromptVault);
+ * no visitor request ever reads the database.
  *
- * ONE indexable URL. ?category= and ?q= are client-side UI state: the HTML
- * below is byte-identical for every query string, and the canonical is always
- * the clean vault URL, so no filter, category, search or prompt can become its
- * own (thin) indexable page. An unknown category or an empty search changes
- * only what the client shows — the document is always the full vault.
- *
- * Stage 1 (data + routing): unstyled, full-content skeleton. Visual build from
- * Figma page 245:4 follows in stages 2–5.
+ * ONE indexable URL. ?category= and ?q= are client-side UI state: this HTML is the same
+ * for every query string and the canonical is always the clean vault URL, so no filter,
+ * category, search or prompt can become its own (thin) indexable page. Every prompt is
+ * in the HTML as real text; the preview rows only hide the extra cards visually.
  */
 export const prerender = true;
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import FilterChip from '../../components/ui/FilterChip.astro';
+import SearchField from '../../components/ui/SearchField.astro';
+import VaultPromptCard from '../../components/guides/prompt-vault/VaultPromptCard.astro';
+import VaultModelTag from '../../components/guides/prompt-vault/VaultModelTag.astro';
+import VaultAffiliateCta from '../../components/guides/prompt-vault/VaultAffiliateCta.astro';
+import VaultPromptDetail from '../../components/guides/prompt-vault/VaultPromptDetail.astro';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
-import { guideBySlug, guideSeoTitle } from '../../data/guides';
+import { guideBySlug, guideSeoTitle, guideHref } from '../../data/guides';
 import { loadPromptVault } from '../../lib/prompt-vault/load';
-import { VAULT_GENERATOR_LABELS, VAULT_PATH } from '../../lib/prompt-vault/types';
+import { VAULT_PATH } from '../../lib/prompt-vault/types';
+import { OURDREAM_CREATOR_URL, OURDREAM_LINK_REL } from '../../lib/prompt-vault/links';
+import { detailImages, generatorLabel, modelMeta, searchHaystack, weightNote } from '../../lib/prompt-vault/view';
+import { loadPublishedProductBySlug } from '../../lib/content/store';
+import { resolveBrandLogo } from '../../lib/home/brandLogos';
+import '../../styles/od-tokens.css';
+import '../../styles/prompt-vault.css';
+import '@fontsource-variable/geist-mono/wght.css';
 
 const guide = guideBySlug('ourdream-ai-character-prompts');
 const h1 = guide.title;
 const title = guideSeoTitle(guide.slug);
-// Figma 252:195 hero intro, verbatim.
+// Figma 252:214 (desktop hero supporting copy), verbatim.
 const description =
   'Browse tested OurDream AI character prompts with real generated examples. Find the look you want, copy the prompt, and use it on your own character.';
 const canonical = canonicalPublicUrl(VAULT_PATH, Astro.site);
 
 const vault = await loadPromptVault();
+const product = await loadPublishedProductBySlug('ourdream-ai');
+const logo = resolveBrandLogo('ourdream-ai', product?.logo);
 
-// Client payload: just what filtering needs. Text stays in the HTML.
+const filterByKey = new Map(vault.filters.map((f) => [f.key, f]));
+const categoryByKey = new Map(vault.categories.map((c) => [c.key, c]));
+const promptByKey = new Map(vault.prompts.map((p) => [p.key, p]));
+const vivid3Results = vault.prompts
+  .filter((p) => p.generator === 'vivid-3')
+  .reduce((n, p) => n + p.results.length, 0);
+
+// Hero "Straight from the vault" examples — Figma DOC 261:5243 #04 names these three.
+const HERO_EXAMPLE_KEYS = ['p008', 'p010', 'p061'];
+const heroExamples = HERO_EXAMPLE_KEYS.map((k) => promptByKey.get(k)).filter((p) => p !== undefined);
+
+// Desktop previews 3 per category (brief); mobile shelves show the Figma shelf picks.
+const PREVIEW_DESKTOP = 3;
+const viewAllDesktop = (n: number) => n > PREVIEW_DESKTOP;
+const viewAllMobile = (n: number) => n >= 3;
+
+// Everything the client needs that is not already in the card markup.
 const clientData = {
-  filters: vault.filters.map((f) => ({ key: f.key, categoryKeys: f.categoryKeys })),
-  categoryKeys: vault.categories.map((c) => c.key),
+  filters: vault.filters.map((f) => ({ key: f.key, label: f.label, categoryKeys: f.categoryKeys, count: f.count })),
+  categories: vault.categories.map((c) => ({
+    key: c.key,
+    title: c.title,
+    shortTitle: c.shortTitle ?? c.title,
+    description: c.description,
+    filterKey: c.filterKey,
+    count: c.prompts.length,
+  })),
+  prompts: Object.fromEntries(
+    vault.prompts.map((p) => [
+      p.key,
+      {
+        title: p.title,
+        text: p.promptText,
+        category: p.categoryKey,
+        model: generatorLabel(p),
+        generator: p.generator,
+        meta: modelMeta(p),
+        weight: weightNote(p.promptText),
+        images: detailImages(p),
+      },
+    ]),
+  ),
+  total: vault.totals.prompts,
 };
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: h1,
+    description,
+    url: canonical,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: vault.totals.prompts,
+      itemListElement: vault.prompts.map((p, i) => ({ '@type': 'ListItem', position: i + 1, name: p.title })),
+    },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: canonicalPublicUrl('/', Astro.site) },
+      { '@type': 'ListItem', position: 2, name: 'Guides', item: canonicalPublicUrl('/guides/', Astro.site) },
+      { '@type': 'ListItem', position: 3, name: 'OurDream AI', item: canonicalPublicUrl('/guides/ourdream-ai/', Astro.site) },
+      { '@type': 'ListItem', position: 4, name: 'Character Prompts', item: canonical },
+    ],
+  },
+];
+
+const related = [
+  {
+    title: 'OurDream AI Image Prompt Guide',
+    meta: 'Poses, outfits, scenes and camera prompts',
+    metaMobile: 'Poses, outfits, scenes and camera',
+    href: guideHref('ourdream-ai-image-prompt'),
+  },
+  {
+    title: 'How to Use the OurDream AI Image Generator',
+    meta: 'Step by step, from character to finished image',
+    metaMobile: 'From character to finished image',
+    href: guideHref('how-to-use-ourdream-ai-image-generator'),
+  },
+  {
+    title: 'OurDream AI Prompt Guide',
+    meta: 'How prompting works, prompt types and common mistakes',
+    metaMobile: 'Prompt types and common mistakes',
+    href: guideHref('ourdream-ai-prompt'),
+  },
+  {
+    title: 'OurDream AI Review',
+    meta: '8.8/10 after 3+ months of testing',
+    metaMobile: '8.8/10 after 3+ months of testing',
+    href: '/reviews/ourdream-ai/',
+  },
+];
 ---
 
 <BaseLayout theme="core" title={title} description={description} canonical={canonical}>
   <Header />
-  <main class="prompt-vault" data-prompt-vault data-source={vault.source}>
-    <h1>{h1}</h1>
-    <p>{description}</p>
-    <p>
-      <span data-vault-total>{vault.totals.prompts} prompts</span> · {vault.totals.results} example images
-    </p>
-    <p data-vault-status hidden aria-live="polite"></p>
+  <main class="prompt-vault-page" data-prompt-vault data-mode="browse" data-source={vault.source}>
+    <!-- Sticky toolbar (Figma 250:190): shows once the hero search leaves the screen, and always in category view. -->
+    <div class="pv-sticky" data-pv-sticky aria-hidden="true" inert>
+      <div class="pv-sticky__inner">
+        <p class="pv-sticky__label"><span class="pv-icon pv-icon--library" aria-hidden="true"></span>Prompt Vault</p>
+        <SearchField
+          id="pv-search-sticky"
+          label="Search character prompts"
+          placeholder="Search character prompts…"
+          size="compact"
+          class="pv-sticky__search"
+          data-pv-search
+        />
+        <div class="pv-chips pv-chips--compact" role="group" aria-label="Filter prompts by category" data-pv-chip-row>
+          <FilterChip label="All" count={vault.totals.prompts} size="compact" active data-pv-chip="" />
+          {vault.filters.map((f) => <FilterChip label={f.label} count={f.count} size="compact" data-pv-chip={f.key} />)}
+        </div>
+      </div>
+    </div>
 
-    {
-      vault.groups.map((group) => (
-        <section data-vault-group={group.title}>
-          <h2>{group.title}</h2>
-          {group.categories.map((category) => (
-            <section data-vault-category={category.key} data-vault-filter={category.filterKey}>
-              <h3>{category.title}</h3>
-              <p>
-                {category.prompts.length} · {category.description}
-              </p>
-              <ul>
-                {category.prompts.map((prompt) => (
-                  <li data-vault-prompt={prompt.key}>
-                    <strong data-vault-title>{prompt.title}</strong>{' '}
-                    <code data-vault-text>{prompt.promptText}</code>{' '}
-                    <span>Tested with {VAULT_GENERATOR_LABELS[prompt.generator]}</span>
-                    {prompt.results.length > 1 && <span> · {prompt.results.length} results</span>}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </section>
-      ))
-    }
+    <!-- Hero (Figma 252:194 / mobile 257:3263) -->
+    <header class="pv-hero" data-pv-hero>
+      <div class="pv-wrap">
+        <div class="pv-hero__row">
+          <div class="pv-hero__intro">
+            <Breadcrumbs
+              class="pv-crumbs"
+              items={[
+                { label: 'Home', href: '/' },
+                { label: 'Guides', href: '/guides/' },
+                { label: 'OurDream AI', href: '/guides/ourdream-ai/' },
+                { label: guide.breadcrumbLabel ?? 'Character Prompts' },
+              ]}
+            />
+            <p class="pv-hero__label"><span class="pv-icon pv-icon--library" aria-hidden="true"></span>The character prompt vault</p>
+            <h1 class="pv-hero__title">{h1}</h1>
+            <p class="pv-hero__lede">
+              <span class="pv-only-d">{description}</span><span class="pv-only-m">Tested prompts with real results. Copy one and use it on your character.</span>
+            </p>
+            <div class="pv-hero__facts">
+              <span class="pv-hero__fact pv-only-d">{vault.totals.prompts} prompts</span>
+              <span class="pv-hero__fact pv-only-d">{vault.totals.results} example images</span>
+              <span class="pv-hero__fact pv-only-m">{vault.totals.prompts} tested prompts</span>
+              <VaultModelTag generator="dreamy" class="pv-tag--labeled" />
+            </div>
+            <p class="pv-hero__footnote pv-only-d">
+              Every prompt was tested on Dreamy, OurDream's realistic default generator. They also work on Vivid 1, 2 and 3 — the look will differ.
+            </p>
+            <a class="pv-button pv-button--primary pv-button--l pv-hero__cta pv-only-d" href={OURDREAM_CREATOR_URL} target="_blank" rel={OURDREAM_LINK_REL}>
+              Open the character creator
+              <span class="pv-icon pv-icon--arrow-right" aria-hidden="true"></span>
+            </a>
+          </div>
+          <div class="pv-hero__examples pv-only-wide">
+            <p class="pv-hero__examples-label">Straight from the vault</p>
+            <div class="pv-hero__cards">
+              {
+                heroExamples.map((p) => {
+                  const cat = categoryByKey.get(p.categoryKey)!;
+                  return (
+                    <VaultPromptCard prompt={p} categoryKey={cat.key} filterKey={cat.filterKey} variant="hero" eager headingLevel="p" />
+                  );
+                })
+              }
+            </div>
+          </div>
+        </div>
+
+        <SearchField
+          id="pv-search"
+          label="Search character prompts"
+          placeholder="Search character prompts…"
+          hint="Try: freckles, afro, red eyes, horns, makeup"
+          size="large"
+          class="pv-hero__search"
+          data-pv-search
+          data-pv-search-main
+        />
+      </div>
+
+      <div class="pv-hero__filters">
+        <div class="pv-chips pv-chips--hero" role="group" aria-label="Filter prompts by category" data-pv-chip-row>
+          <FilterChip label="All" count={vault.totals.prompts} active data-pv-chip="" />
+          {vault.filters.map((f) => <FilterChip label={f.label} count={f.count} data-pv-chip={f.key} />)}
+        </div>
+        <p class="pv-hero__guide">
+          <span class="pv-hero__guide-q pv-only-d">Looking for poses, outfits, scenes or camera prompts?</span>
+          <span class="pv-hero__guide-q pv-only-m">Poses, outfits or scenes?</span>
+          <a class="pv-link" href={guideHref('ourdream-ai-image-prompt')}>
+            <span class="pv-only-d">View the OurDream AI Image Prompt Guide</span><span class="pv-only-m">Image Prompt Guide</span>
+            <span class="pv-icon pv-icon--arrow-right" aria-hidden="true"></span>
+          </a>
+        </p>
+      </div>
+    </header>
+
+    <!-- Collection: every prompt, grouped. Browse mode previews each category; View all / chips / search reuse the same cards. -->
+    <section class="pv-collection" aria-label="Character prompts" data-pv-collection>
+      <div class="pv-wrap">
+        <!-- Category view head (Figma 488:52175) — filled by the client. -->
+        <div class="pv-focus-head" data-pv-focus-head hidden>
+          <button type="button" class="pv-back" data-pv-back>
+            <span class="pv-icon pv-icon--arrow-left" aria-hidden="true"></span>All character prompts
+          </button>
+          <div class="pv-focus-head__row">
+            <div class="pv-focus-head__text">
+              <div class="pv-focus-head__title-row">
+                <h2 class="pv-focus-head__title" data-pv-focus-title></h2>
+                <p class="pv-focus-head__count" data-pv-focus-count></p>
+              </div>
+              <p class="pv-focus-head__desc" data-pv-focus-desc></p>
+            </div>
+            <button type="button" class="pv-pill pv-pill--quiet" data-pv-clear-category>
+              <span class="pv-icon pv-icon--x" aria-hidden="true"></span>Clear category
+            </button>
+          </div>
+          <hr class="pv-divider" />
+        </div>
+
+        <!-- Search head (Figma 256:1340) — filled by the client. -->
+        <div class="pv-search-head" data-pv-search-head hidden>
+          <div class="pv-search-head__text">
+            <h2 class="pv-search-head__title" data-pv-search-title></h2>
+            <p class="pv-search-head__summary" data-pv-search-summary></p>
+          </div>
+          <button type="button" class="pv-pill" data-pv-clear-search>
+            <span class="pv-icon pv-icon--x" aria-hidden="true"></span>Clear search
+          </button>
+        </div>
+
+        <!-- Vault / No Results (Figma 249:106) -->
+        <div class="pv-empty" data-pv-empty hidden>
+          <span class="pv-empty__icon" aria-hidden="true"><span class="pv-icon pv-icon--search"></span></span>
+          <h2 class="pv-empty__title" data-pv-empty-title></h2>
+          <p class="pv-empty__body">The vault only lists prompts with a tested result. Try a shorter word, or browse a category.</p>
+          <button type="button" class="pv-textbutton" data-pv-clear-search>
+            Clear search<span class="pv-icon pv-icon--arrow-right" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="pv-groups">
+          {
+            vault.groups.map((group, gi) => (
+              <section class="pv-group" data-pv-group>
+                <div class="pv-group__head">
+                  <p class="pv-group__title">{group.title}</p>
+                  <span class="pv-group__rule" aria-hidden="true" />
+                  <p class="pv-group__meta">
+                    <span class="pv-only-d">
+                      {group.categories.length} {group.categories.length === 1 ? 'category' : 'categories'} ·{' '}
+                    </span>
+                    {group.promptCount} prompts
+                  </p>
+                </div>
+                {group.categories.map((cat) => {
+                  const filter = filterByKey.get(cat.filterKey)!;
+                  const n = cat.prompts.length;
+                  return (
+                    <section class="pv-cat" data-pv-cat={cat.key} data-filter={cat.filterKey} aria-labelledby={`pv-cat-${cat.key}`}>
+                      <div class="pv-cat__head">
+                        <div class="pv-cat__text">
+                          <div class="pv-cat__title-row">
+                            <h2 class="pv-cat__title" id={`pv-cat-${cat.key}`}>
+                              <span class="pv-cat__title-full">{cat.title}</span>
+                              <span class="pv-cat__title-short">{cat.shortTitle ?? cat.title}</span>
+                            </h2>
+                            <p class="pv-cat__count" data-pv-cat-count data-total={n}>
+                              {n}
+                            </p>
+                          </div>
+                          <p class="pv-cat__desc">{cat.description}</p>
+                        </div>
+                        <button
+                          type="button"
+                          class:list={[
+                            'pv-viewall',
+                            !viewAllDesktop(n) && 'pv-viewall--no-d',
+                            !viewAllMobile(n) && 'pv-viewall--no-m',
+                          ]}
+                          data-pv-view-all={cat.key}
+                        >
+                          View all {n}
+                          <span class="pv-icon pv-icon--arrow-right" aria-hidden="true" />
+                        </button>
+                      </div>
+                      <div class="pv-grid">
+                        {cat.prompts.map((p) => (
+                          <VaultPromptCard
+                            prompt={p}
+                            categoryKey={cat.key}
+                            filterKey={cat.filterKey}
+                            haystack={searchHaystack(p, cat, filter.label)}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
+                {gi === 0 && <VaultAffiliateCta logo={logo} class="pv-cta--browse" />}
+              </section>
+            ))
+          }
+        </div>
+
+        <p class="pv-search-more" data-pv-search-more hidden>
+          <span>Want a hairstyle for one image only, like wind-blown or wet hair in a scene?</span>
+          <a class="pv-link pv-link--m" href={guideHref('ourdream-ai-image-prompt')}>
+            Use the OurDream AI Image Prompt Guide<span class="pv-icon pv-icon--arrow-right" aria-hidden="true"></span>
+          </a>
+        </p>
+
+        <VaultAffiliateCta logo={logo} class="pv-cta--focus" />
+      </div>
+    </section>
+
+    <!-- How OurDream AI character prompts work (Figma 254:1230 / mobile 259:4157) -->
+    <section class="pv-explainer" aria-labelledby="pv-explainer-title">
+      <div class="pv-wrap">
+        <div class="pv-explainer__head">
+          <h2 class="pv-explainer__title" id="pv-explainer-title">How OurDream AI Character Prompts Work</h2>
+          <p class="pv-explainer__lede">
+            <span class="pv-only-d">A character prompt describes what your character is and looks like. Everything else about a single picture belongs in an image prompt.</span><span class="pv-only-m">A character prompt describes what your character is and looks like. Everything about a single picture belongs in an image prompt.</span>
+          </p>
+        </div>
+        <div class="pv-explainer__compare">
+          <div class="pv-explainer__card">
+            <h3 class="pv-explainer__card-title">Character prompt — this page</h3>
+            <p class="pv-explainer__card-body">
+              <span class="pv-only-d">What the character is: face, eyes, hair, skin, accessories and non-human features. It stays with the character, so every image starts from it.</span><span class="pv-only-m">What the character is: face, eyes, hair, skin, accessories and non-human features. It stays with the character.</span>
+            </p>
+            <p class="pv-explainer__example-label">
+              <span class="pv-only-d">Example built from vault prompts</span><span class="pv-only-m">Built from vault prompts</span>
+            </p>
+            <div class="pv-explainer__example"><code>(freckles), (hime cut hair), (cat_ears:1.2)</code></div>
+          </div>
+          <div class="pv-explainer__card">
+            <h3 class="pv-explainer__card-title">Image prompt — a different guide</h3>
+            <p class="pv-explainer__card-body">
+              <span class="pv-only-d">What happens in one image: pose, framing, outfit for the scene, background and camera. It changes from image to image.</span><span class="pv-only-m">What happens in one image: pose, framing, scene and camera. It changes from image to image.</span>
+            </p>
+            <p class="pv-explainer__example-label">
+              <span class="pv-only-d">The temporary prompt used for every vault result</span><span class="pv-only-m">Temporary prompt used for every vault result</span>
+            </p>
+            <div class="pv-explainer__example"><code>(solo, standing, facing viewer, looking at viewer, front view)</code></div>
+            <a class="pv-link" href={guideHref('ourdream-ai-image-prompt')}>
+              <span class="pv-only-d">OurDream AI Image Prompt Guide</span><span class="pv-only-m">Image Prompt Guide</span>
+              <span class="pv-icon pv-icon--arrow-right" aria-hidden="true"></span>
+            </a>
+          </div>
+        </div>
+
+        <div class="pv-basics">
+          <div class="pv-basics__block">
+            <p class="pv-basics__label pv-only-d">USING A PROMPT</p>
+            <ol class="pv-basics__row pv-basics__row--steps">
+              <li class="pv-basics__item">
+                <span class="pv-basics__num pv-only-d">01</span>
+                <h3 class="pv-basics__title">Where to paste it</h3>
+                <p class="pv-basics__body">
+                  <span class="pv-only-d">Put the prompt into both Custom Physical Details and Custom Face Details on your character, the same way every result here was made.</span><span class="pv-only-m">Put the prompt into both Custom Physical Details and Custom Face Details on your character.</span>
+                </p>
+              </li>
+              <li class="pv-basics__item">
+                <span class="pv-basics__num pv-only-d">02</span>
+                <h3 class="pv-basics__title">Combine traits</h3>
+                <p class="pv-basics__body">
+                  <span class="pv-only-d">Stack prompts with commas, like (freckles), (hime cut hair). Each one adds a trait. Start with a few and add more once they work.</span><span class="pv-only-m">Stack prompts with commas, like (freckles), (hime cut hair).</span>
+                </p>
+              </li>
+              <li class="pv-basics__item">
+                <span class="pv-basics__num pv-only-d">03</span>
+                <h3 class="pv-basics__title">Keep the weights</h3>
+                <p class="pv-basics__body">
+                  <span class="pv-only-d">A number like :1.2 or :1.3 sets how strongly a trait is applied. Copy prompts exactly, weights and underscores included.</span><span class="pv-only-m">A number like :1.2 sets how strongly a trait is applied. Copy prompts exactly.</span>
+                </p>
+              </li>
+            </ol>
+          </div>
+          <div class="pv-basics__block">
+            <p class="pv-basics__label pv-only-d">GOOD TO KNOW</p>
+            <ul class="pv-basics__row pv-basics__row--notes">
+              <li class="pv-basics__item">
+                <h3 class="pv-basics__title">The generator matters</h3>
+                <p class="pv-basics__body">
+                  <span class="pv-only-d">Almost every result was made with Dreamy (Realistic Default). Vivid 1, Vivid 2 and Vivid 3 are different generators, so each result shows the one it was made with.</span><span class="pv-only-m">Almost every result was made with Dreamy (Realistic Default). Vivid 1, 2 and 3 are different generators.</span>
+                </p>
+              </li>
+              <li class="pv-basics__item">
+                <h3 class="pv-basics__title">Results can vary</h3>
+                <p class="pv-basics__body">
+                  <span class="pv-only-d">AI image generation is not fully repeatable. Expect the same trait, not the identical image, and give a prompt a few tries.</span><span class="pv-only-m">AI generation is not fully repeatable. Expect the same trait, not the identical image.</span>
+                </p>
+              </li>
+              <li class="pv-basics__item">
+                <h3 class="pv-basics__title">How these were tested</h3>
+                <p class="pv-basics__body">
+                  <span class="pv-only-d">Every result comes from the Realistic Album by carefulCrafter: similar settings, empty personality fields and the same temporary prompt.</span><span class="pv-only-m">From the Realistic Album by carefulCrafter: similar settings, empty personality fields, same temporary prompt.</span>
+                </p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Related guides + About this vault (Figma 254:1270) -->
+    <section class="pv-related" aria-label="Related guides and sources">
+      <div class="pv-wrap pv-related__wrap">
+        <div class="pv-related__guides">
+          <h2 class="pv-related__title">Related guides</h2>
+          <ul class="pv-related__list">
+            {
+              related.map((r) => (
+                <li>
+                  <a class="pv-related__row" href={r.href}>
+                    <span class="pv-related__text">
+                      <span class="pv-related__row-title">{r.title}</span>
+                      <span class="pv-related__row-meta">
+                        <span class="pv-only-d">{r.meta}</span>
+                        <span class="pv-only-m">{r.metaMobile}</span>
+                      </span>
+                    </span>
+                    <span class="pv-icon pv-icon--arrow-right pv-related__arrow" aria-hidden="true" />
+                  </a>
+                </li>
+              ))
+            }
+            <li>
+              <div class="pv-related__row pv-related__row--soon" aria-disabled="true">
+                <span class="pv-related__text">
+                  <span class="pv-related__row-title">How to Create a Character in OurDream AI</span>
+                  <span class="pv-related__row-meta">Planned guide</span>
+                </span>
+                <span class="pv-related__soon">Coming soon</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <aside class="pv-about" aria-labelledby="pv-about-title">
+          <h2 class="pv-about__title" id="pv-about-title">About this vault</h2>
+          <dl class="pv-about__list">
+            <div><dt>Source</dt><dd>Realistic Album by carefulCrafter (OurDream community guide)</dd></div>
+            <div><dt>Prompts</dt><dd>{vault.totals.prompts} prompts · {vault.totals.results} tested results</dd></div>
+            <div>
+              <dt>Models</dt>
+              <dd>Dreamy (Realistic Default){vivid3Results > 0 && ` · ${vivid3Results} Vivid 3 results`}</dd>
+            </div>
+            <div class="pv-only-d"><dt>Test setup</dt><dd>Empty personality fields, same temporary prompt</dd></div>
+          </dl>
+        </aside>
+      </div>
+    </section>
+
+    <VaultPromptDetail />
   </main>
   <Footer />
   <script type="application/json" id="prompt-vault-data" set:html={JSON.stringify(clientData)} />
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>
 
 <script>
-  import {
-    normaliseForSearch,
-    parseVaultState,
-    sameVaultState,
-    serializeVaultState,
-    type VaultUrlState,
-  } from '../../lib/prompt-vault/url-state';
-
-  type ClientData = { filters: { key: string; categoryKeys: string[] }[]; categoryKeys: string[] };
-
-  const root = document.querySelector<HTMLElement>('[data-prompt-vault]');
-  const dataEl = document.getElementById('prompt-vault-data');
-  if (root && dataEl) {
-    const data = JSON.parse(dataEl.textContent || '{}') as ClientData;
-    const filterCats = new Map(data.filters.map((f) => [f.key, new Set(f.categoryKeys)]));
-    const known = new Set<string>([...filterCats.keys(), ...data.categoryKeys]);
-    const status = root.querySelector<HTMLElement>('[data-vault-status]')!;
-
-    const categoryAllowed = (state: VaultUrlState, categoryKey: string) => {
-      if (!state.category) return true;
-      const viaFilter = filterCats.get(state.category);
-      return viaFilter ? viaFilter.has(categoryKey) : state.category === categoryKey;
-    };
-
-    const render = (state: VaultUrlState) => {
-      const q = normaliseForSearch(state.q);
-      let shown = 0;
-      root.querySelectorAll<HTMLElement>('[data-vault-category]').forEach((section) => {
-        const inCategory = categoryAllowed(state, section.dataset.vaultCategory!);
-        let visibleInSection = 0;
-        section.querySelectorAll<HTMLElement>('[data-vault-prompt]').forEach((item) => {
-          const hay = normaliseForSearch(
-            `${item.querySelector('[data-vault-title]')?.textContent ?? ''} ${item.querySelector('[data-vault-text]')?.textContent ?? ''}`,
-          );
-          const match = inCategory && (!q || hay.includes(q));
-          item.hidden = !match;
-          if (match) visibleInSection += 1;
-        });
-        section.hidden = visibleInSection === 0;
-        shown += visibleInSection;
-      });
-      root.querySelectorAll<HTMLElement>('[data-vault-group]').forEach((group) => {
-        group.hidden = !group.querySelector('[data-vault-category]:not([hidden])');
-      });
-      const filtered = Boolean(state.category || state.q);
-      status.hidden = !filtered;
-      status.textContent = !filtered
-        ? ''
-        : shown === 0
-          ? `No prompts match${state.q ? ` “${state.q}”` : ''}.`
-          : `${shown} ${shown === 1 ? 'prompt' : 'prompts'} shown`;
-    };
-
-    let current = parseVaultState(location.search, known);
-    // Normalise the address bar (drop unknown category / empty q) without adding history.
-    const normalised = serializeVaultState(current, location.search);
-    if (normalised !== location.search) {
-      history.replaceState(history.state, '', `${location.pathname}${normalised}${location.hash}`);
-    }
-    render(current);
-
-    // Back / forward restore the previous state.
-    window.addEventListener('popstate', () => {
-      const next = parseVaultState(location.search, known);
-      if (!sameVaultState(next, current)) {
-        current = next;
-        render(current);
-      }
-    });
-  }
+  import { initPromptVault } from '../../components/guides/prompt-vault/prompt-vault.client';
+  initPromptVault();
 </script>

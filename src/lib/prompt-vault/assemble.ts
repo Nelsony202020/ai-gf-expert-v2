@@ -60,6 +60,8 @@ export function assembleVault(rows: VaultRawRows, source: VaultData['source']): 
       generator: p.generator as VaultGenerator,
       categoryKey: p.category,
       sortOrder: p.sortOrder,
+      previewDesktop: p.previewDesktop ?? null,
+      previewMobile: p.previewMobile ?? null,
       results: p.results
         .map((r) => ({
           key: r.key,

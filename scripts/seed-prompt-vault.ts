@@ -86,6 +86,8 @@ async function main() {
           promptText: p.promptText,
           generator: p.generator,
           sortOrder: p.sortOrder,
+          previewDesktop: (p as { previewDesktop?: number }).previewDesktop ?? null,
+          previewMobile: (p as { previewMobile?: number }).previewMobile ?? null,
           updatedAt: now,
           ...(prev ? {} : { status: 'published', createdAt: now }),
         })

@@ -1,3 +1,5 @@
+import { bindCopyButtons } from '../../../lib/ui/copyButtons';
+
 function wrapCompareFigures(root: HTMLElement) {
   if (root.dataset.compareBound === 'true') return;
   const prose = root.querySelector<HTMLElement>('[data-ourdream-prose]');
@@ -19,35 +21,6 @@ function wrapCompareFigures(root: HTMLElement) {
     children.splice(i + 1, 1);
     i++;
   }
-}
-
-function bindCopyButtons(root: HTMLElement) {
-  root.querySelectorAll<HTMLButtonElement>('[data-od-copy]').forEach((button) => {
-    if (button.dataset.bound === 'true') return;
-    button.dataset.bound = 'true';
-    button.addEventListener('click', async () => {
-      const target = button.closest('[data-od-copy-root]') ?? button.parentElement;
-      const source =
-        target?.querySelector<HTMLElement>('[data-od-copy-text]') ??
-        target?.querySelector('pre, .od-prompt-card__text, .od-prompt__body');
-      const text = source?.textContent?.trim();
-      if (!text) return;
-      try {
-        await navigator.clipboard.writeText(text);
-        const original = button.textContent;
-        button.textContent = 'Copied';
-        // The icon is a ::before mask keyed off this attribute, so it follows the
-        // label rather than being clobbered by the textContent swap.
-        button.dataset.copied = 'true';
-        window.setTimeout(() => {
-          button.textContent = original;
-          delete button.dataset.copied;
-        }, 1600);
-      } catch {
-        /* ignore */
-      }
-    });
-  });
 }
 
 function bindPromptExpand(root: HTMLElement) {

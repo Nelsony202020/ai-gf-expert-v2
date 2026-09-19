@@ -1,0 +1,43 @@
+---
+/**
+ * Search Field — the site's one search field (Figma "Search Field", 247:19497).
+ * Size Large = the main search on a page (r16, shows the hint and the "/" key),
+ * Compact = inside a sticky toolbar (r12), Mobile = 390 screens.
+ * State Filled (a query is typed) shows the result count and the clear (×) control;
+ * the page drives that by toggling `is-filled` and filling [data-search-field-count].
+ */
+import '../../styles/search-field.css';
+
+interface Props {
+  id: string;
+  label: string;
+  placeholder: string;
+  size?: 'large' | 'compact' | 'mobile';
+  hint?: string;
+  class?: string;
+  [key: string]: unknown;
+}
+
+const { id, label, placeholder, size = 'large', hint, class: className, ...rest } = Astro.props;
+---
+
+<div class:list={['search-field', `search-field--${size}`, className]} data-search-field>
+  <span class="search-field__icon" aria-hidden="true"></span>
+  <label class="sr-only" for={id}>{label}</label>
+  <input
+    id={id}
+    class="search-field__input"
+    type="search"
+    placeholder={placeholder}
+    autocomplete="off"
+    spellcheck="false"
+    enterkeyhint="search"
+    {...rest}
+  />
+  {size === 'large' && hint && <span class="search-field__hint" aria-hidden="true">{hint}</span>}
+  {size === 'large' && <kbd class="search-field__kbd" aria-hidden="true">/</kbd>}
+  <span class="search-field__count" data-search-field-count aria-live="polite"></span>
+  <button type="button" class="search-field__clear" data-search-field-clear aria-label="Clear search">
+    <span class="search-field__clear-icon" aria-hidden="true"></span>
+  </button>
+</div>

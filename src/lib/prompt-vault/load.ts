@@ -72,6 +72,8 @@ async function loadDbRows(): Promise<VaultRawRows> {
         generator: str(p.generator),
         status: str(p.status) || 'draft',
         sortOrder: num(p.sortOrder),
+        previewDesktop: optNum(p.previewDesktop),
+        previewMobile: optNum(p.previewMobile),
         category: cat ? str(cat.key) : null,
         results: ((p.results as Row[]) ?? []).map((r) => ({
           key: str(r.key),

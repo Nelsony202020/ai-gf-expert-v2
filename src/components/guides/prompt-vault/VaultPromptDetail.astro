@@ -1,0 +1,92 @@
+---
+/**
+ * Vault / Prompt Detail (Figma 251:229) — one <dialog>, filled by the client script
+ * from the card that opened it. Desktop: centred two-column panel over a scrim.
+ * Mobile: bottom sheet with the Copy / Try buttons pinned. The URL never changes:
+ * a prompt or a result never gets its own page.
+ */
+import { OURDREAM_CREATOR_URL, OURDREAM_LINK_REL } from '../../../lib/prompt-vault/links';
+---
+
+<dialog class="pv-detail" data-pv-detail aria-labelledby="pv-detail-title">
+  <div class="pv-detail__panel" data-pv-detail-panel>
+    <div class="pv-detail__sheet-head" data-pv-detail-drag>
+      <span class="pv-detail__grabber" aria-hidden="true"></span>
+      <div class="pv-detail__sheet-row">
+        <p class="pv-detail__category" data-pv-detail-category></p>
+        <button type="button" class="pv-round pv-round--l" data-pv-detail-close aria-label="Close">
+          <span class="pv-icon pv-icon--x" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="pv-detail__media">
+      <div class="pv-detail__image" data-pv-detail-image></div>
+      <div class="pv-detail__switcher" data-pv-detail-switcher hidden>
+        <div class="pv-detail__thumbs" data-pv-detail-thumbs role="group" aria-label="Tested results"></div>
+        <p class="pv-detail__result-label" data-pv-detail-result-label aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="pv-detail__body">
+      <div class="pv-detail__topbar">
+        <p class="pv-detail__category" data-pv-detail-category></p>
+        <span class="pv-detail__spacer" aria-hidden="true"></span>
+        <button type="button" class="pv-round" data-pv-detail-prev aria-label="Previous prompt">
+          <span class="pv-icon pv-icon--chevron-left" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="pv-round" data-pv-detail-next aria-label="Next prompt">
+          <span class="pv-icon pv-icon--chevron-right" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="pv-round" data-pv-detail-close aria-label="Close">
+          <span class="pv-icon pv-icon--x" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <h2 class="pv-detail__title" id="pv-detail-title" data-pv-detail-title></h2>
+
+      <div class="pv-detail__exact">
+        <p class="pv-detail__label">Exact prompt</p>
+        <div class="pv-detail__prompt"><code data-pv-detail-text></code></div>
+        <p class="pv-detail__weight" data-pv-detail-weight hidden>
+          <span class="pv-icon pv-icon--info" aria-hidden="true"></span>
+          <span data-pv-detail-weight-text></span>
+        </p>
+      </div>
+
+      <div class="pv-detail__tested">
+        <span class="pv-tag" data-pv-detail-tag>
+          <span class="pv-tag__label">Tested with</span>
+          <span class="pv-tag__dot" aria-hidden="true"></span>
+          <span class="pv-tag__model" data-pv-detail-model></span>
+        </span>
+        <span class="pv-detail__meta" data-pv-detail-meta></span>
+      </div>
+
+      <p class="pv-detail__paste-note">Paste it into both Custom Physical Details and Custom Face Details on your character.</p>
+
+      <div class="pv-detail__actions">
+        <button type="button" class="pv-copy pv-copy--l" data-pv-detail-copy>
+          <span class="pv-icon pv-icon--copy" aria-hidden="true"></span>
+          <span class="pv-copy__label" data-pv-copy-label>Copy prompt</span>
+        </button>
+        <a class="pv-button pv-button--primary pv-button--l" href={OURDREAM_CREATOR_URL} target="_blank" rel={OURDREAM_LINK_REL}>
+          Try in OurDream
+          <span class="pv-icon pv-icon--arrow-up-right" aria-hidden="true"></span>
+        </a>
+      </div>
+
+      <div class="pv-detail__howto">
+        <p class="pv-detail__howto-title">How to use it</p>
+        <p class="pv-detail__howto-body">
+          Paste the prompt into both Custom Physical Details and Custom Face Details when you create or edit your
+          character.
+        </p>
+        <p class="pv-detail__howto-source">
+          Result from the Realistic Album by carefulCrafter. Test setup: empty personality fields, temporary prompt
+          (solo, standing, facing viewer, looking at viewer, front view).
+        </p>
+      </div>
+    </div>
+  </div>
+</dialog>

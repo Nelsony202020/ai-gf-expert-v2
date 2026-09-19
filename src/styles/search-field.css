@@ -1,0 +1,202 @@
+/* Search Field — Figma 247:19497. One search field for the whole site.
+   Surfaces read the OurDream tokens where the page has them (--od-*), and the site
+   palette everywhere else. */
+
+.search-field {
+  --sf-bg: var(--od-white, var(--color-surface-container-lowest));
+  --sf-line: var(--od-rail, var(--color-surface-variant));
+  --sf-ink: var(--od-ink, var(--color-on-surface));
+  --sf-dim: var(--od-dim, var(--color-tertiary));
+  --sf-muted: var(--od-muted, var(--color-tertiary));
+  --sf-sunken: var(--od-sunken, var(--color-surface-container));
+  --sf-filled-line: var(--od-border-ink, var(--color-on-surface));
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  background: var(--sf-bg);
+  border: 1px solid var(--sf-line);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.search-field__icon {
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  background: var(--sf-ink);
+  -webkit-mask: url('/icons/aige/search.svg') center / contain no-repeat;
+  mask: url('/icons/aige/search.svg') center / contain no-repeat;
+}
+
+.search-field__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--sf-ink);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.625rem;
+  letter-spacing: -0.003em;
+  outline: none;
+}
+
+.search-field__input::placeholder {
+  color: var(--sf-dim);
+  opacity: 1;
+}
+
+/* Native clear control would duplicate ours. */
+.search-field__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-field__hint,
+.search-field__count {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  color: var(--sf-dim);
+  white-space: nowrap;
+}
+
+.search-field__kbd {
+  flex-shrink: 0;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 0.375rem;
+  background: var(--sf-sunken);
+  color: var(--sf-muted);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.125rem;
+}
+
+.search-field__clear {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sf-sunken);
+  color: var(--sf-ink);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.search-field__clear-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  background: currentColor;
+  -webkit-mask: url('/icons/aige/x.svg') center / 56.25% no-repeat;
+  mask: url('/icons/aige/x.svg') center / 56.25% no-repeat;
+}
+
+.search-field__clear:hover {
+  background: var(--sf-line);
+}
+
+.search-field__clear:active {
+  transform: translateY(1px);
+}
+
+.search-field__clear:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.search-field__count:empty {
+  display: none;
+}
+
+.search-field:hover {
+  border-color: var(--sf-muted);
+}
+
+.search-field:focus-within {
+  border-color: var(--sf-filled-line);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.search-field.is-filled {
+  border: 1.5px solid var(--sf-filled-line);
+}
+
+.search-field.is-filled .search-field__clear {
+  display: inline-flex;
+}
+
+.search-field.is-filled .search-field__hint,
+.search-field.is-filled .search-field__kbd {
+  display: none;
+}
+
+/* Large — Figma h64, r16, 22px icon, 19px text, Elevation/Card-lite drop shadow. */
+.search-field--large {
+  height: 4rem;
+  gap: 0.875rem;
+  padding: 0 1.125rem 0 1.375rem;
+  border-radius: 1rem;
+  box-shadow:
+    0 8px 12px rgb(59 42 30 / 6%),
+    0 1px 1px rgb(59 42 30 / 6%);
+}
+
+.search-field--large .search-field__icon {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.search-field--large .search-field__input {
+  font-size: 1.1875rem;
+  line-height: 1.875rem;
+  letter-spacing: -0.005em;
+}
+
+/* Compact — sticky toolbars: h44, r12, page-coloured fill. */
+.search-field--compact {
+  height: 2.75rem;
+  padding: 0 0.5rem 0 0.875rem;
+  border-radius: 0.75rem;
+  background: var(--od-page, var(--sf-bg));
+}
+
+/* Mobile — h52 on 390 screens. */
+.search-field--mobile {
+  height: 3.25rem;
+  padding: 0 0.5rem 0 0.875rem;
+  border-radius: 0.875rem;
+}
+
+@media (max-width: 767px) {
+  .search-field--large {
+    height: 3.25rem;
+    padding: 0 0.5rem 0 0.875rem;
+    border-radius: 0.875rem;
+    box-shadow: none;
+  }
+
+  .search-field--large .search-field__icon {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  .search-field--large .search-field__input {
+    font-size: 1rem;
+    line-height: 1.625rem;
+  }
+
+  .search-field--large .search-field__hint,
+  .search-field--large .search-field__kbd {
+    display: none;
+  }
+}

@@ -847,6 +847,9 @@ const _schema = i.schema({
       generator: i.string().indexed(),
       status: i.string().indexed(), // draft | published
       sortOrder: i.number(),
+      // Position in the category's preview row (1 = first). Empty = not previewed.
+      previewDesktop: i.number().optional(), // desktop shows 3
+      previewMobile: i.number().optional(), // mobile shelf shows up to 4
       createdAt: i.date(),
       updatedAt: i.date(),
     }),

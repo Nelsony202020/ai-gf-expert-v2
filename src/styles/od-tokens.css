@@ -1,0 +1,81 @@
+/* OurDream design tokens (Figma "Expert Lab / Colour"), shared by the OurDream guide
+   articles and the Character Prompt Vault. Moved out of ourdream-article.css unchanged
+   so both pages read one source; ourdream-article.css @imports this file. */
+
+.ourdream-article-page,
+.prompt-vault-page {
+  --od-ink: #141317;
+  --od-muted: #55545b;
+  --od-dim: #8a8991;
+  --od-hairline: #e6e6e3;
+  --od-rail: #d2d2ce;
+  --od-pink: #db2777;
+  --od-pink-soft: #fce7f3;
+  --od-pink-ink: #be185d;
+  --od-orange-soft: #ffedd5;
+  --od-orange-ink: #e8760a;
+  --od-page: #f9f9f9;
+  --od-white: #fff;
+  --od-sunken: #efefed;
+  --od-on-ink: #f7f7f6;
+
+  /* Score palette — same bands as src/lib/ratings/figmaScoreTone.ts (>=8 high, >=5 mid). */
+  --od-green-ink: #16a34a;
+  --od-green-soft: #dcfce7;
+  --od-red-ink: #dc2626;
+  --od-red-soft: #fee2e2;
+
+  /* Figma Elevation/Card and Elevation/Float. */
+  --od-shadow-card: 0 1px 2px rgb(59 42 30 / 6%), 0 8px 24px -4px rgb(59 42 30 / 6%);
+  --od-shadow-float: 0 4px 8px rgb(21 17 26 / 10%), 0 24px 48px -8px rgb(21 17 26 / 16%);
+
+  /* Type. The article scope keeps its own token names, but the display face is now
+     the one site face (--font-display); only the body and mono faces differ here. */
+  --od-display: var(--font-display);
+  --od-body: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+  --od-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Figma Expert Lab variables the article system did not need until the Prompt Vault:
+     action/pink-line, action/pink-tint, border/ink, surface/ink-raised and the fun/*
+     generator dots. Values are the Figma variable values; see
+     docs/prompt-vault/02-build.md (tokens added). */
+  --od-pink-line: #f9a8d4;
+  --od-pink-tint: #fdf2f8;
+  --od-border-ink: #333239;
+  --od-ink-raised: #212026;
+  --od-fun-lilac: #c9b8ff;
+  --od-fun-sky: #bfe1ff;
+  --od-fun-butter: #ffe07a;
+}
+
+[data-theme='dark'] .ourdream-article-page,
+[data-theme='dark'] .prompt-vault-page {
+  --od-ink: #f7f7f6;
+  --od-muted: #a8a7ae;
+  --od-dim: #8a8991;
+  --od-hairline: #333239;
+  --od-rail: #4a4950;
+  --od-page: #0f0f12;
+  --od-white: #141317;
+  --od-sunken: #17161a;
+  --od-on-ink: #f7f7f6;
+
+  /* Dark values derived from the existing --od-* dark precedent above: tinted surfaces
+     stay dark and low-chroma, ink colours lift to stay legible on them. */
+  --od-pink-soft: rgb(219 39 119 / 16%);
+  --od-pink-ink: #f472b6;
+  --od-orange-soft: rgb(232 118 10 / 18%);
+  --od-orange-ink: #fbbf24;
+  --od-green-soft: rgb(22 163 74 / 18%);
+  --od-green-ink: #4ade80;
+  --od-red-soft: rgb(220 38 38 / 18%);
+  --od-red-ink: #f87171;
+
+  --od-shadow-card: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px -4px rgb(0 0 0 / 45%);
+  --od-shadow-float: 0 4px 8px rgb(0 0 0 / 45%), 0 24px 48px -8px rgb(0 0 0 / 55%);
+
+  --od-pink-line: rgb(244 114 182 / 45%);
+  --od-pink-tint: rgb(219 39 119 / 10%);
+  --od-border-ink: #d2d2ce;
+  --od-ink-raised: #f7f7f6;
+}

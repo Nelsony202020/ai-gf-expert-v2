@@ -39,6 +39,9 @@ export interface VaultPrompt {
   generator: VaultGenerator;
   categoryKey: string;
   sortOrder: number;
+  /** Position in the category preview row; null = only in View all / search. */
+  previewDesktop: number | null;
+  previewMobile: number | null;
   results: VaultResult[];
 }
 
@@ -100,6 +103,8 @@ export interface VaultRawRows {
     generator: string;
     status?: string;
     sortOrder: number;
+    previewDesktop?: number | null;
+    previewMobile?: number | null;
     category: string | null;
     results: Array<{
       key: string;

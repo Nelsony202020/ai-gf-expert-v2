@@ -2,6 +2,7 @@
 /** Load published terms from InstantDB at request time (preview builds often lack DB at build time). */
 export const prerender = false;
 
+import FilterChip from '../components/ui/FilterChip.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
@@ -155,13 +156,9 @@ const jsonLdGraph = buildWebPageSchema({
               </div>
 
               <div class="glossary-chips" role="group" aria-label="Filter by category" data-glossary-chip-row>
-                <button type="button" class="glossary-chip is-active" data-glossary-category="all">
-                  All <span class="glossary-chip__count">{entries.length}</span>
-                </button>
+                <FilterChip label="All" count={entries.length} active data-glossary-category="all" />
                 {usedCategories.map((cat) => (
-                  <button type="button" class="glossary-chip" data-glossary-category={cat}>
-                    {cat} <span class="glossary-chip__count">{categoryCounts[cat]}</span>
-                  </button>
+                  <FilterChip label={cat} count={categoryCounts[cat]} data-glossary-category={cat} />
                 ))}
               </div>
 
@@ -302,13 +299,9 @@ const jsonLdGraph = buildWebPageSchema({
                 </div>
                 <p class="glossary-filters-sheet__kicker">Categories</p>
                 <div class="glossary-filters-sheet__categories" role="group" aria-label="Filter by category">
-                  <button type="button" class="glossary-chip is-active" data-glossary-category="all">
-                    All <span class="glossary-chip__count">{entries.length}</span>
-                  </button>
+                  <FilterChip label="All" count={entries.length} active data-glossary-category="all" />
                   {usedCategories.map((cat) => (
-                    <button type="button" class="glossary-chip" data-glossary-category={cat}>
-                      {cat} <span class="glossary-chip__count">{categoryCounts[cat]}</span>
-                    </button>
+                    <FilterChip label={cat} count={categoryCounts[cat]} data-glossary-category={cat} />
                   ))}
                 </div>
                 <p class="glossary-filters-sheet__kicker">Jump to letter</p>
@@ -560,7 +553,9 @@ const jsonLdGraph = buildWebPageSchema({
     function setCategory(next: string) {
       category = next;
       for (const chip of chips) {
-        chip.classList.toggle('is-active', (chip.dataset.glossaryCategory ?? 'all') === category);
+        const on = (chip.dataset.glossaryCategory ?? 'all') === category;
+        chip.classList.toggle('is-active', on);
+        if (chip.hasAttribute('aria-pressed')) chip.setAttribute('aria-pressed', String(on));
       }
       for (const label of categoryLabels) {
         label.textContent = categoryLabel(category);

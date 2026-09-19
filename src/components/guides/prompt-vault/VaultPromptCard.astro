@@ -1,0 +1,90 @@
+---
+/**
+ * Vault / Prompt Card (Figma 248:95).
+ *
+ * Image = opens the prompt detail. Anywhere else on the card = copy (the Copy button is
+ * the visible affordance and the keyboard target). Copied state (~2s): pale-pink prompt
+ * box, pink "Copied" button, and the model tag swaps for the "Paste it in OurDream →"
+ * link — the page's main conversion point.
+ *
+ * `variant="hero"` is the compact 171px card used in the hero examples; every card is
+ * compact below 768px.
+ */
+import VaultModelTag from './VaultModelTag.astro';
+import { OURDREAM_CREATOR_URL, OURDREAM_LINK_REL } from '../../../lib/prompt-vault/links';
+import { CARD_SIZES, resultImage } from '../../../lib/prompt-vault/view';
+import type { VaultPrompt } from '../../../lib/prompt-vault/types';
+
+interface Props {
+  prompt: VaultPrompt;
+  categoryKey: string;
+  filterKey: string;
+  haystack?: string;
+  variant?: 'grid' | 'hero';
+  eager?: boolean;
+  headingLevel?: 'h3' | 'p';
+}
+
+const { prompt, categoryKey, filterKey, haystack, variant = 'grid', eager = false, headingLevel = 'h3' } =
+  Astro.props;
+const image = prompt.results[0] ? resultImage(prompt.results[0], prompt) : null;
+const extra = prompt.results.length;
+const Name = headingLevel;
+---
+
+<article
+  class:list={['pv-card', variant === 'hero' && 'pv-card--hero']}
+  data-pv-card
+  data-key={prompt.key}
+  data-category={categoryKey}
+  data-filter={filterKey}
+  data-preview-d={variant === 'grid' && prompt.previewDesktop ? String(prompt.previewDesktop) : undefined}
+  data-preview-m={variant === 'grid' && prompt.previewMobile ? String(prompt.previewMobile) : undefined}
+  data-search={haystack}
+>
+  <button type="button" class="pv-card__media" data-pv-open aria-label={`See the tested result for ${prompt.title}`}>
+    {
+      image ? (
+        <img
+          class="pv-card__img"
+          src={image.src}
+          srcset={image.srcset}
+          sizes={variant === 'hero' ? '171px' : CARD_SIZES}
+          width={image.width}
+          height={image.height}
+          alt={image.alt}
+          loading={eager ? 'eager' : 'lazy'}
+          decoding="async"
+        />
+      ) : (
+        <span class="pv-card__placeholder" aria-hidden="true" />
+      )
+    }
+    {
+      extra > 1 && (
+        <span class="pv-card__more">
+          <span class="pv-icon pv-icon--images" aria-hidden="true" />
+          {extra} results
+        </span>
+      )
+    }
+  </button>
+  <div class="pv-card__text">
+    <Name class="pv-card__name">{prompt.title}</Name>
+    <div class="pv-card__prompt">
+      <code class="pv-card__code" data-pv-text>{prompt.promptText}</code>
+    </div>
+  </div>
+  <div class="pv-card__footer">
+    <VaultModelTag generator={prompt.generator} class="pv-card__tag" />
+    <a class="pv-card__paste" href={OURDREAM_CREATOR_URL} target="_blank" rel={OURDREAM_LINK_REL} tabindex="-1">
+      <span class="pv-card__paste-d">Paste it in OurDream</span><span class="pv-card__paste-m">Open OurDream</span>
+      <span class="pv-icon pv-icon--arrow-right" aria-hidden="true" />
+    </a>
+    <span class="pv-card__spacer" aria-hidden="true"></span>
+    <button type="button" class="pv-copy pv-copy--s" data-pv-copy aria-label={`Copy prompt: ${prompt.title}`}>
+      <span class="pv-icon pv-icon--copy" aria-hidden="true" />
+      <span class="pv-copy__label" data-pv-copy-label>Copy prompt</span>
+    </button>
+  </div>
+</article>
