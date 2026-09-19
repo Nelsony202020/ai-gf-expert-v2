@@ -1,6 +1,6 @@
 /* Video review lightbox — global (unscoped) so dark mode applies correctly */
 
-.video-review-modal {
+.media-video-lightbox {
   position: fixed;
   inset: 0;
   z-index: 250;
@@ -13,16 +13,16 @@
   transition: opacity 0.34s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.video-review-modal.hidden {
+.media-video-lightbox.hidden {
   display: none;
 }
 
-.video-review-modal.is-visible {
+.media-video-lightbox.is-visible {
   opacity: 1;
   pointer-events: auto;
 }
 
-.video-review-modal__backdrop {
+.media-video-lightbox__backdrop {
   position: absolute;
   inset: 0;
   background: rgb(0 0 0 / 72%);
@@ -30,11 +30,11 @@
   transition: opacity 0.34s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.video-review-modal.is-visible .video-review-modal__backdrop {
+.media-video-lightbox.is-visible .media-video-lightbox__backdrop {
   opacity: 1;
 }
 
-.video-review-modal__panel {
+.media-video-lightbox__panel {
   position: relative;
   z-index: 1;
   width: min(720px, 100%);
@@ -53,21 +53,21 @@
     transform 0.38s cubic-bezier(0.34, 1.12, 0.64, 1);
 }
 
-.video-review-modal.is-visible .video-review-modal__panel {
+.media-video-lightbox.is-visible .media-video-lightbox__panel {
   opacity: 1;
   transform: scale(1) translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .video-review-modal,
-  .video-review-modal__backdrop,
-  .video-review-modal__panel {
+  .media-video-lightbox,
+  .media-video-lightbox__backdrop,
+  .media-video-lightbox__panel {
     transition: none !important;
     transform: none !important;
   }
 }
 
-.video-review-modal__close {
+.media-video-lightbox__close {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -83,7 +83,7 @@
   justify-content: center;
 }
 
-.video-review-modal__hero {
+.media-video-lightbox__hero {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -91,32 +91,32 @@
   padding-right: 36px;
 }
 
-.video-review-modal__icon {
+.media-video-lightbox__icon {
   flex-shrink: 0;
 }
 
-.video-review-modal__title {
+.media-video-lightbox__title {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 800;
   color: var(--color-on-surface);
 }
 
-.video-review-modal__by {
+.media-video-lightbox__by {
   margin: 2px 0 0;
   font-size: 13px;
   font-weight: 600;
   color: var(--color-tertiary);
 }
 
-.video-review-modal__intro {
+.media-video-lightbox__intro {
   margin: 0 0 16px;
   font-size: 14px;
   line-height: 1.5;
   color: var(--color-on-surface-variant);
 }
 
-.video-review-modal__embed {
+.media-video-lightbox__embed {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -126,7 +126,7 @@
   margin-bottom: 16px;
 }
 
-.video-review-modal__embed iframe {
+.media-video-lightbox__embed iframe {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -134,7 +134,7 @@
   border: none;
 }
 
-.video-review-modal__actions {
+.media-video-lightbox__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -142,7 +142,7 @@
   gap: 12px;
 }
 
-.video-review-modal__link-external {
+.media-video-lightbox__link-external {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -152,11 +152,11 @@
   text-decoration: none;
 }
 
-.video-review-modal__link-external:hover {
+.media-video-lightbox__link-external:hover {
   color: var(--color-accent);
 }
 
-.video-review-modal__link-internal {
+.media-video-lightbox__link-internal {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -171,39 +171,39 @@
   transition: opacity 0.15s ease;
 }
 
-.video-review-modal__link-internal:hover {
+.media-video-lightbox__link-internal:hover {
   opacity: 0.9;
 }
 
-[data-theme='dark'] .video-review-modal__panel {
+[data-theme='dark'] .media-video-lightbox__panel {
   background: var(--dark-elevated);
   border-color: var(--dark-border-subtle);
   color: var(--color-on-surface);
   box-shadow: 0 24px 64px rgb(0 0 0 / 55%);
 }
 
-[data-theme='dark'] .video-review-modal__title {
+[data-theme='dark'] .media-video-lightbox__title {
   color: var(--color-on-surface);
 }
 
-[data-theme='dark'] .video-review-modal__by,
-[data-theme='dark'] .video-review-modal__intro {
+[data-theme='dark'] .media-video-lightbox__by,
+[data-theme='dark'] .media-video-lightbox__intro {
   color: var(--dark-muted);
 }
 
-[data-theme='dark'] .video-review-modal__link-external {
+[data-theme='dark'] .media-video-lightbox__link-external {
   color: var(--dark-muted);
 }
 
-[data-theme='dark'] .video-review-modal__link-external:hover {
+[data-theme='dark'] .media-video-lightbox__link-external:hover {
   color: #f472b6;
 }
 
-[data-theme='dark'] .video-review-modal__close {
+[data-theme='dark'] .media-video-lightbox__close {
   background: rgb(255 255 255 / 10%);
   color: #ececec;
 }
 
-[data-theme='dark'] .video-review-modal__close:hover {
+[data-theme='dark'] .media-video-lightbox__close:hover {
   background: rgb(255 255 255 / 16%);
 }
