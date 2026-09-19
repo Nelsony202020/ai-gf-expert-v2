@@ -2,6 +2,12 @@
 /**
  * Global site header — same chrome as /guides/ourdream-ai/ (guide-hub hero + ContentPageHeader).
  * Homepage uses HomeDesktopHeader inside HomeDesktopHero only; every other page uses this via Header.astro.
+ *
+ * This header deliberately renders NO hero glow. It used to, and because it is
+ * on every non-homepage page the glow had to be killed with
+ * `display: none !important` in guide-hub.css. The glow is now a pseudo-element
+ * that only exists under `.guide-hub--brand`, which only the two brand hub
+ * components set — so it is structurally incapable of leaking from here.
  */
 import ContentPageHeader from './ContentPageHeader.astro';
 import homeDesktopStyles from '../../styles/home-desktop.css?url';
@@ -23,9 +29,6 @@ const hasBodySlot = Astro.slots.has('default');
   wrapGuideHub ? (
     <div class="guide-hub guide-hub--site-chrome">
       <section class="guide-hub__hero">
-        <div class="guide-hub__glow" aria-hidden="true">
-          <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
-        </div>
         <ContentPageHeader />
         {hasBodySlot ? (
           <div class="guide-hub__hero-body">
@@ -36,9 +39,6 @@ const hasBodySlot = Astro.slots.has('default');
     </div>
   ) : (
     <section class="guide-hub__hero">
-      <div class="guide-hub__glow" aria-hidden="true">
-        <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
-      </div>
       <ContentPageHeader />
       {hasBodySlot ? (
         <div class="guide-hub__hero-body">

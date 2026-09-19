@@ -14,6 +14,12 @@ export const ourdreamHubMeta = {
   visitLabel: 'Visit OurDream AI',
   /** Cloaked affiliate slug for hub Visit CTAs (manage destination in Admin → Affiliate links). */
   visitGoHref: '/go/ourdream-ai-yt',
+  /**
+   * Hero glow hue — outer bloom only; it resolves into Expert pink at the core.
+   * Logo samples at 330, which is Expert pink itself, so it is pushed to violet
+   * to give the bloom something to resolve FROM. Biggest deviation of the five.
+   */
+  glowHue: 290,
 };
 
 export const ourdreamHubGuides: HubGuide[] = [

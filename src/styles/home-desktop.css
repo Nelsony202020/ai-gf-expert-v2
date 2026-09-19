@@ -137,7 +137,7 @@
   background:
     radial-gradient(
       circle 340px at var(--mx) var(--my),
-      rgb(219 39 119 / 13%) 0%,
+      rgb(219 39 119 / 18%) 0%,
       rgb(124 28 72 / 8%) 28%,
       rgb(76 16 48 / 4%) 48%,
       transparent 72%
@@ -2141,7 +2141,7 @@ html[data-theme='dark'] [data-site-header] .home-v2__search-dropdown {
   background:
     radial-gradient(
       circle 340px at var(--mx) var(--my),
-      rgb(219 39 119 / 5%) 0%,
+      rgb(219 39 119 / 9%) 0%,
       rgb(124 28 72 / 3%) 32%,
       transparent 70%
     );
@@ -2152,11 +2152,43 @@ html[data-theme='dark'] [data-site-header] .home-v2__search-dropdown {
 }
 
 .home-v2__cta.is-glowing .home-v2__grid-hot {
-  opacity: 0.32;
+  opacity: 0.55;
 }
 
 .home-v2__cta.is-glowing .home-v2__cursor-glow {
-  opacity: 0.38;
+  opacity: 0.7;
+}
+
+/*
+ * Static blob for the closing CTA. Unlike the hero's 620px SVG this is a CSS
+ * radial-gradient (no image request) and it sits behind the pink button on the
+ * RIGHT, so it haloes the thing we want clicked instead of mirroring the
+ * hero's composition.
+ */
+.home-v2__cta-glow {
+  position: absolute;
+  right: -80px;
+  top: 50%;
+  width: 520px;
+  height: 520px;
+  z-index: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgb(219 39 119 / 16%) 0%,
+    rgb(219 39 119 / 8%) 32%,
+    rgb(124 28 72 / 4%) 54%,
+    transparent 72%
+  );
+}
+
+@media (max-width: 767px) {
+  .home-v2__cta-glow {
+    right: -160px;
+    width: 380px;
+    height: 380px;
+  }
 }
 
 .home-v2__cta .home-v2__btn--primary:hover {

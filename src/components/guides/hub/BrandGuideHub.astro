@@ -13,7 +13,7 @@ const hubGuidesJson = JSON.stringify(view.searchItems);
 const searchEmpty = view.config.searchEmpty;
 ---
 
-<div class="guide-hub">
+<div class="guide-hub guide-hub--brand" style={`--hub-glow-hue: ${view.config.glowHue}`}>
   <GlobalSiteHeader wrapGuideHub={false}>
       <h1 class="guide-hub__title">{view.config.title}</h1>
       <p class="guide-hub__lede">{view.config.description}</p>
