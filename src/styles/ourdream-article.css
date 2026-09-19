@@ -33,6 +33,12 @@
   --od-body: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
   --od-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
+  /* Base sibling gap in the reading column. Figma measures a uniform 20px on the
+     1440 frame (651/651 children) and a uniform 16px on the 390 frame (653/653).
+     Every rule that expresses "one step of flow" reads this, so the two viewports
+     stay in step instead of drifting rule by rule. */
+  --od-flow: 1rem;
+
   --od-sidebar: 15rem;
   --od-content: 46.25rem;
   --od-breakout: 60rem;
@@ -52,13 +58,25 @@
 }
 
 @media (min-width: 1100px) {
+  .ourdream-article-page {
+    --od-flow: 1.25rem;
+  }
+
   .ourdream-article-layout {
     display: grid;
-    grid-template-columns: minmax(0, var(--od-content)) var(--od-sidebar);
+    /* Track 1 is FIXED at 740, not minmax(0, 740). Figma's reading measure is the
+       thing that must not move: every pattern in the system is drawn against it
+       (the cheat sheet's two 354 columns sum to exactly 740 + 32). A flexible
+       track let the column shrink whenever anything reserved horizontal space —
+       `scrollbar-gutter: stable` on <html> costs ~10px on classic-scrollbar
+       platforms, which silently collapsed the cheat sheet to one column.
+       The side margin absorbs that instead: 190 at 1440, 185 at 1430. */
+    grid-template-columns: var(--od-content) var(--od-sidebar);
     column-gap: var(--od-layout-gap);
     justify-content: center;
     align-items: start;
-    padding: 3.5rem clamp(1.25rem, 13.2vw, 11.875rem) 6rem;
+    padding-block: 3.5rem 6rem;
+    padding-inline: max(1.25rem, calc((100% - 66.25rem) / 2));
   }
 }
 
@@ -481,22 +499,24 @@
   color: var(--od-ink);
   font-size: 1.0625rem;
   line-height: 1.75rem;
-  letter-spacing: -0.006rem;
+  /* Article/Body Mobile: -0.3% of 17px. */
+  letter-spacing: -0.0032rem;
 }
 
 @media (min-width: 1100px) {
   .ourdream-article-prose {
     font-size: 1.125rem;
     line-height: 1.9375rem;
-    letter-spacing: -0.006rem;
+    /* Article/Body Desktop: -0.4% of 18px. */
+    letter-spacing: -0.0045rem;
   }
 }
 
 .ourdream-article-prose > * + * {
-  /* Figma 318:4936: the reading column is one auto-layout stack with a uniform 20px
-     gap (651 of 651 children measured). Extra separation before a heading comes from
-     explicit spacer frames, expressed here as heading margin-top. */
-  margin-top: 1.25rem;
+  /* Figma 318:4936 / 320:6822: the reading column is one auto-layout stack with a
+     uniform gap — 20 desktop, 16 mobile. Extra separation before a heading comes
+     from explicit spacer frames, expressed here as heading margin-top. */
+  margin-top: var(--od-flow);
 }
 
 .ourdream-article-prose
@@ -523,24 +543,24 @@
      stack that margin used to win on source order at equal specificity, which is why
      every .od-* block sat 4px from its neighbour instead of 20px. This rule is
      (0,2,0), so it beats the component rules without reaching the headings — they
-     keep their 68px and 48px spacer-derived margins. */
-  margin-top: 1.25rem;
+     keep their spacer-derived margins. */
+  margin-top: var(--od-flow);
 }
 
 .ourdream-article-prose > h2 + *,
 .ourdream-article-prose > h3 + * {
-  margin-top: 1.25rem;
+  margin-top: var(--od-flow);
 }
 
 .ourdream-article-prose h2 {
-  /* Mobile value is inferred — the 390 frame's rhythm was not measured in Figma. */
-  margin-top: 3rem;
+  /* 16 base + 28 spacer + 16 = 60 (measured, Figma 320:6822). */
+  margin-top: 3.75rem;
   margin-bottom: 0;
   font-family: var(--od-display);
   font-size: 1.625rem;
   font-weight: 700;
   line-height: 2rem;
-  letter-spacing: -0.019rem;
+  letter-spacing: -0.01625rem;
   color: var(--od-ink);
   scroll-margin-top: 5.5rem;
 }
@@ -551,7 +571,7 @@
     margin-top: 4.25rem;
     font-size: 2rem;
     line-height: 2.5rem;
-    letter-spacing: -0.031rem;
+    letter-spacing: -0.03rem;
   }
 }
 
@@ -560,7 +580,7 @@
    on the base sibling gap with no extra spacer above or below, unlike H2 and H3.
    Added for the Comics Examples section, which Figma demotes from H3 to H4. */
 .ourdream-article-prose h4 {
-  margin-top: 1.25rem;
+  margin-top: var(--od-flow);
   margin-bottom: 0;
   font-family: var(--od-display);
   font-size: 1.0625rem;
@@ -573,18 +593,18 @@
 }
 
 .ourdream-article-prose > h4 + * {
-  margin-top: 1.25rem;
+  margin-top: var(--od-flow);
 }
 
 .ourdream-article-prose h3 {
-  /* Mobile value is inferred. */
-  margin-top: 2.25rem;
+  /* 16 base + 8 spacer + 16 = 40 (measured, Figma 320:6822). */
+  margin-top: 2.5rem;
   margin-bottom: 0;
   font-family: var(--od-display);
   font-size: 1.1875rem;
   font-weight: 600;
   line-height: 1.625rem;
-  letter-spacing: -0.006rem;
+  letter-spacing: -0.0059rem;
   color: var(--od-ink);
   scroll-margin-top: 5.5rem;
 }
@@ -595,7 +615,7 @@
     margin-top: 3rem;
     font-size: 1.375rem;
     line-height: 1.875rem;
-    letter-spacing: -0.006rem;
+    letter-spacing: -0.00688rem;
   }
 }
 
@@ -614,8 +634,8 @@
 
 .ourdream-article-prose ul,
 .ourdream-article-prose ol {
-  /* 20px, same as every other sibling in the reading column. */
-  margin: 1.25rem 0 0;
+  /* Same single step of flow as every other sibling in the reading column. */
+  margin: var(--od-flow) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -673,7 +693,7 @@
    --------------------------------------------------------------------------- */
 .ourdream-article-prose figure,
 .od-figure {
-  margin: 1.25rem 0 0;
+  margin: var(--od-flow) 0 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1962,7 +1982,9 @@
   }
 
   .od-cheat__groups > .od-cheat-group {
-    width: 22.125rem;
+    /* 354 at a 740 column (740 - 32 gap) / 2. Derived rather than hardcoded so a
+       narrower column degrades to two narrower columns instead of wrapping to one. */
+    width: calc((100% - 2rem) / 2);
   }
 }
 
