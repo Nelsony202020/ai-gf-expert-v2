@@ -24,9 +24,19 @@
   margin: 0 0 0.75rem;
 }
 
+/* Both children stay inline inside the wrapper, and the <h1> inherits the
+   wrapper's type, so moving the eyebrow out of the heading changes nothing
+   visually. Tailwind preflight already zeroes the h1's own font and margin. */
 .test-methodology-title__main,
 .test-methodology-title__sub {
   display: inline;
+}
+
+h1.test-methodology-title__main {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  margin: 0;
 }
 
 .test-methodology-title__sub {

@@ -118,7 +118,12 @@ const totalGuides = GUIDES.length;
     {/* Results replace the three browse sections in place, so the only thing
         that moves is directly under the search field. */}
     <section class="listing__section listing__results" data-guides-results hidden aria-labelledby="guides-results">
-      <h2 class="listing__section-title" id="guides-results" data-guides-count aria-live="polite" role="status"></h2>
+      {/*
+        A status line, not a heading — it is empty until a search runs, and an
+        empty <h2> shipped on every load. It has to stay in the DOM for the live
+        region to announce, and it still names the section via aria-labelledby.
+      */}
+      <p class="listing__section-title" id="guides-results" data-guides-count aria-live="polite" role="status"></p>
       <ul class="listing__rows" data-guides-list></ul>
       <p class="listing__no-match" data-guides-empty hidden>
         Nothing matches that. Try an app name, or a word like prompts, images or pricing.

@@ -48,7 +48,11 @@ body:has(.roundup-hero-stage):has(.guide-hub--site-chrome) .roundup-hero-stage {
   pointer-events: none;
 }
 
-.roundup-page--covers-hero {
+/* The roundup hub, /test/ and the buying guide all open the same way: fixed
+   banner behind, page body riding over it. Keeping one rule for all three is
+   what stops the layout shifting when you click from one to the next. */
+.roundup-page--covers-hero,
+.standard-content-page--covers-hero {
   position: relative;
   z-index: 2;
   margin-top: calc(var(--site-header-height, 3.5rem) + var(--roundup-hero-height) - 0.75rem);
@@ -57,8 +61,20 @@ body:has(.roundup-hero-stage):has(.guide-hub--site-chrome) .roundup-hero-stage {
   box-shadow: 0 -10px 40px rgb(0 0 0 / 8%);
 }
 
-[data-theme='dark'] .roundup-page--covers-hero {
+[data-theme='dark'] .roundup-page--covers-hero,
+[data-theme='dark'] .standard-content-page--covers-hero {
   box-shadow: 0 -10px 40px rgb(0 0 0 / 35%);
+}
+
+/* The covering body needs breathing room above the breadcrumbs, the same
+   1.5rem the roundup hub already uses. Without it the crumbs sat flush under
+   the header on /test/. */
+.standard-content-page--covers-hero {
+  --roundup-intro-offset: 1.5rem;
+}
+
+.standard-content-page--covers-hero .standard-content-grid {
+  padding-top: var(--roundup-intro-offset);
 }
 
 [data-theme='dark'] .roundup-page {
@@ -268,9 +284,21 @@ body:has(.roundup-hero-stage):has(.guide-hub--site-chrome) .roundup-hero-stage {
   }
 }
 
+.roundup-hero-intro__title-sep {
+  display: none;
+}
+
 @media (min-width: 768px) {
-  .roundup-hero-intro__title-date::before {
-    content: ' ';
+  /* Replaces the old `.roundup-hero-intro__title-date::before { content: ' ' }`.
+     Now real text a crawler can read, rather than generated content. */
+  .roundup-hero-intro__title-sep {
+    display: inline;
+  }
+
+  /* The separator makes the title long enough to wrap; keep the month and year
+     together so it breaks after the dash instead of between the two words. */
+  .roundup-hero-intro__title-date {
+    white-space: nowrap;
   }
 }
 
@@ -1069,6 +1097,10 @@ body.roundup-sheet-open {
 }
 
 .roundup-nav-sheet__toc-title {
+  /* Pinned because this element is no longer a heading: global.css gives
+     h1-h6 var(--font-display), so dropping the tag would have silently
+     switched this to the body face. */
+  font-family: var(--font-display);
   margin: 0 0 0.5rem;
   font-size: 0.6875rem;
   font-weight: 800;

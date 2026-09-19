@@ -39,7 +39,11 @@ function countLabel(count: number, singular: string, plural: string) {
   <p class="test-hub__eyebrow">Subscore</p>
 
   <div class="test-category-hero__top">
-    <TestMethodologyTitle main={subscore.name} />
+    {/*
+      The leaf name alone is not unique — "Quality" was the H1 on three pages and
+      "Experience" on two. The parent category is what the <title> already carries.
+    */}
+    <TestMethodologyTitle main={`${category.name}: ${subscore.name}`} />
 
     {
       subscoreWeight != null && (

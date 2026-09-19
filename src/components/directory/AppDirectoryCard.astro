@@ -83,10 +83,16 @@ const secondaryAwards = getSecondaryAwards(app.awards ?? []);
     <div class="home-app-card__top">
       <div class="home-app-card__brand">
         <img class="home-app-card__logo" src={optimizedLogoUrl(app.logo, 48)} alt="" width="48" height="48" loading="lazy" decoding="async" />
-        <h3 class="home-app-card__name">
+        {/*
+          The card layout ships alongside the row layout for the list/cards
+          switch, but starts hidden (data-view="list"). Two headings per product
+          made 10 <h3>s for 5 products, so the heading lives on the row and this
+          one is a plain label. The product name is still a link either way.
+        */}
+        <p class="home-app-card__name">
           <a href={reviewHref}>{app.name}</a>
           <AppBrandTooltip app={app} />
-        </h3>
+        </p>
       </div>
       <div class="home-app-card__overall">
         <div class={`home-app-card__overall-score ${overallVisual.bg}`}>{fmtScore(app.overallScore)}</div>

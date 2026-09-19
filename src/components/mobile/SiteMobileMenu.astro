@@ -48,7 +48,7 @@ const isCurrent = (href: string) => (href.replace(/\/+$/, '') || '/') === here;
       {groups.map((group) => (
         <section class:list={['site-mobile-menu__group', `site-mobile-menu__group--${group.tier}`]}>
           {group.showTitle && group.title ? (
-            <h2 class="site-mobile-menu__kicker">{group.title}</h2>
+            <p class="site-mobile-menu__kicker">{group.title}</p>
           ) : null}
           <ul class="site-mobile-menu__rows">
             {group.links.map((link) => (

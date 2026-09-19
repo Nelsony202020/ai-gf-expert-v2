@@ -4,6 +4,9 @@ import StandardContentLayout from '../../layouts/StandardContentLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import TestHubHeroIntro from '../../components/test/TestHubHeroIntro.astro';
+import TestCategoryHero from '../../components/test/TestCategoryHero.astro';
+import { fileAiGirlfriendRoundup } from '../../data/roundups/ai-girlfriend';
+import { loadRoundupForPublic } from '../../lib/content/store';
 import TestHubSidebar from '../../components/test/TestHubSidebar.astro';
 import TestHubMobileNavSheet from '../../components/test/TestHubMobileNavSheet.astro';
 import ArticleUtilityRail from '../../components/article/ArticleUtilityRail.astro';
@@ -36,6 +39,9 @@ import '../../styles/ratings-tooltips.css';
 
 const categories = getTestCategories();
 const trustMetrics = await loadTestHubMetrics();
+/* One banner across /best/ai-girlfriend/, /test/ and the buying guide, read from
+   the same source the roundup hub uses so the three never drift apart. */
+const { roundup: bannerRoundup } = await loadRoundupForPublic('ai-girlfriend', fileAiGirlfriendRoundup);
 const chatCategory = categories.find((c) => c.key === 'chat');
 const tocSections = buildTestHubTocSections(categories);
 const testFaqItems = testHubFaq;
@@ -55,6 +61,7 @@ const jsonLdGraph = buildWebPageSchema({
 ---
 
 <BaseLayout
+  hasPageNavSheet
   title={pageTitle}
   description={pageDescription}
   canonical={canonical}
@@ -76,7 +83,14 @@ const jsonLdGraph = buildWebPageSchema({
     picks up the grid's --roundup-content-max measure for free.
   */}
   <Header />
-  <StandardContentLayout pageClass="test-hub-page">
+  <div class="roundup-hero-stage">
+    <TestCategoryHero
+      image={bannerRoundup.featuredImage}
+      alt={bannerRoundup.featuredImageAlt}
+      variant="scroll-under"
+    />
+  </div>
+  <StandardContentLayout pageClass="test-hub-page standard-content-page--covers-hero">
     <div id="test-hub-top" slot="hero">
       <TestHubHeroIntro meta={testMethodologyPageMeta} metrics={trustMetrics} shareUrl={canonical} />
     </div>

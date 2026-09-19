@@ -3,9 +3,11 @@ import DefaultMobileNavSheet from './DefaultMobileNavSheet.astro';
 
 interface Props {
   pathname: string;
+  /** True when the page already renders its own data-nav-sheet="page" sheet. */
+  hasPageNavSheet?: boolean;
 }
 
-const { pathname: _pathname } = Astro.props;
+const { pathname: _pathname, hasPageNavSheet = false } = Astro.props;
 ---
 
 <script>
@@ -15,5 +17,5 @@ const { pathname: _pathname } = Astro.props;
   document.addEventListener('astro:page-load', () => bindDrawerScrollFades());
 </script>
 
-{/* Page/guide TOC sheets still open from the article utility rail. */}
-<DefaultMobileNavSheet />
+{/* Fallback sheet only — a page that ships its own TOC sheet must not get both. */}
+{!hasPageNavSheet && <DefaultMobileNavSheet />}

@@ -8,7 +8,13 @@ interface Props {
 const { main, sub = 'Testing methodology', class: className } = Astro.props;
 ---
 
-<h1 class:list={['test-methodology-title test-hub__title', className]}>
-  <span class="test-methodology-title__main">{main}</span>
+{/*
+  The sub-line is a decorative eyebrow, not part of the page's title. It used to
+  live inside the <h1>, so a crawler read "QualityTesting methodology" as the
+  heading. The wrapper now carries the type and layout classes the <h1> used to
+  carry, and both children stay inline, so nothing moves on screen.
+*/}
+<div class:list={['test-methodology-title test-hub__title', className]}>
+  <h1 class="test-methodology-title__main">{main}</h1>
   <span class="test-methodology-title__sub font-serif italic font-normal">{sub}</span>
-</h1>
+</div>

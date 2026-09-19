@@ -64,8 +64,13 @@ function formatReviewCount(count: number): string {
         </div>
       </div>
     )}
+    {/*
+      hidePageHead means the host page already renders the page's H1, so this is
+      only here to name the section via aria-labelledby. It kept the id and the
+      sr-only class; it just stops being a second H1.
+    */}
     {hidePageHead && (
-      <h1 id="app-directory-title" class="sr-only">{title}</h1>
+      <p id="app-directory-title" class="sr-only">{title}</p>
     )}
 
     <div class="dir-notice" data-home-prefs-notice hidden>
