@@ -165,13 +165,6 @@
   color: var(--hub-on-ink);
 }
 
-.guide-hub__hero-body--wide {
-  max-width: none;
-  width: 100%;
-  text-align: left;
-  align-items: stretch;
-}
-
 .guide-hub__hero-body {
   position: relative;
   z-index: 1;
@@ -863,19 +856,34 @@
 }
 
 /*
- * REMOVED: html:has(.guide-hub), body:has(.guide-hub) { background-color: #141317 }
+ * Dark canvas for the BRAND hubs only.
  *
- * guide-hub.css is injected by the global header, and that header wraps every
- * non-homepage page in `.guide-hub.guide-hub--site-chrome`. So this :has()
- * repainted html and body dark on EVERY page while the text tokens stayed at
- * their light values — #1b1b1b text on #141317, about 1.05:1. The H1, the lede
- * and every card title on /guides/ and /reviews/ were invisible.
+ * Two passes fixed the same bug and reached it differently, so this block
+ * carries both pieces of reasoning.
  *
- * Nothing replaces it: `.guide-hub` already sets `background: var(--hub-page)`,
- * which is themed (#f7f7f6 light, #141317 under [data-theme='dark']), and the
- * hub's dark band is painted by `.guide-hub__hero` via --hub-ink. The page
- * background is left to --color-background, where it belongs.
+ * The bug (both passes agreed): guide-hub.css is injected by the global header,
+ * and that header wraps every non-homepage page in
+ * `.guide-hub.guide-hub--site-chrome`. So `html:has(.guide-hub)` repainted html
+ * and body #141317 on EVERY page while the text tokens stayed light —
+ * rgb(27,27,27) on rgb(20,19,23), about 1.05:1. The H1, the lede and every card
+ * title on /guides/ and /reviews/ were invisible.
+ *
+ * The first pass deleted the rule outright, on the reasoning that `.guide-hub`
+ * already sets `background: var(--hub-page)`. That is true but not sufficient:
+ * --hub-page is #f7f7f6 by default and only becomes #141317 under
+ * [data-theme='dark'], so deleting the rule turns the five real brand hubs into
+ * LIGHT pages in light mode — a visible change to pages that are dark by design.
+ *
+ * So the rule stays, narrowed instead of deleted. `:not(.guide-hub--site-chrome)`
+ * excludes the shared header wrapper, which is the only thing that was ever
+ * wrong, and keeps the canvas for BrandGuideHub and OurDreamGuideHub, which
+ * render `.guide-hub` with no modifier. Every other page is left to
+ * --color-background, where it belongs.
  */
+html:has(.guide-hub:not(.guide-hub--site-chrome)),
+body:has(.guide-hub:not(.guide-hub--site-chrome)) {
+  background-color: #141317;
+}
 
 .home-v2:has(.guide-hub) .site-footer {
   position: relative;

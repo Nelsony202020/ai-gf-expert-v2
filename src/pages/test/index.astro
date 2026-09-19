@@ -60,12 +60,26 @@ const jsonLdGraph = buildWebPageSchema({
   canonical={canonical}
 >
   <JsonLd slot="head" graph={jsonLdGraph} />
-  <Header>
-    <div id="test-hub-top" class="guide-hub__hero-body--wide">
+  {/*
+    The hero intro belongs in the page body, not in the header slot.
+
+    TestHubHeroIntro is written against the global tokens (text-on-surface,
+    text-on-surface-variant, border-white) exactly like its two siblings,
+    RoundupHeroIntro on /best/* and BuyingGuideHeroIntro on the buying guide —
+    and both of those render on the light page background. This page was the
+    only one passing its intro into <Header>, which dropped it inside the dark
+    .guide-hub__hero band: in light mode the h1 came out rgb(27,27,27) on
+    rgb(20,19,23), about 1.05:1.
+
+    Moving it into StandardContentLayout's own `hero` slot matches
+    /test/<category>/, which is why that page has always looked right, and it
+    picks up the grid's --roundup-content-max measure for free.
+  */}
+  <Header />
+  <StandardContentLayout pageClass="test-hub-page">
+    <div id="test-hub-top" slot="hero">
       <TestHubHeroIntro meta={testMethodologyPageMeta} metrics={trustMetrics} shareUrl={canonical} />
     </div>
-  </Header>
-  <StandardContentLayout pageClass="test-hub-page">
     <TestHubSidebar
       slot="sidebar"
       categories={categories}
