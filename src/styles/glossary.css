@@ -59,8 +59,8 @@ html[data-theme='dark']:has(.glossary-page) body {
 .glossary-page__title {
   font-family: var(--font-display);
   font-size: clamp(1.875rem, 4vw, 2.75rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: var(--wt-display);
+  letter-spacing: var(--ls-display);
   line-height: 1.12;
   color: var(--color-on-surface);
   margin: 0 0 0.75rem;
@@ -635,7 +635,8 @@ html[data-theme='dark']:has(.glossary-page) body {
   margin: 0;
   font-family: var(--font-display);
   font-size: 1.125rem;
-  font-weight: 700;
+  font-weight: var(--wt-display-sub);
+  letter-spacing: var(--ls-display);
 }
 
 .glossary-filters-sheet__close {
@@ -688,8 +689,8 @@ body.glossary-filters-open {
   margin: 0 0 1rem;
   font-family: var(--font-display);
   font-size: 1.3125rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-weight: var(--wt-display-sub);
+  letter-spacing: var(--ls-display);
   color: var(--color-on-surface);
 }
 
@@ -723,7 +724,7 @@ body.glossary-filters-open {
 .glossary-result__term {
   font-family: var(--font-display);
   font-size: 1.0625rem;
-  font-weight: 600;
+  font-weight: var(--wt-display-min);
   grid-column: 1;
 }
 
@@ -774,8 +775,8 @@ body.glossary-filters-open {
   gap: 1rem;
   font-family: var(--font-display);
   font-size: clamp(1.75rem, 4vw, 2rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: var(--wt-display);
+  letter-spacing: var(--ls-display);
   color: var(--color-on-surface);
   margin: 0 0 1.5rem;
   scroll-margin-top: 1.5rem;
@@ -823,8 +824,8 @@ body.glossary-toolbar-stuck .glossary-letter__heading {
 .glossary-term__title {
   font-family: var(--font-display);
   font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: var(--wt-display-sub);
+  letter-spacing: var(--ls-display);
   color: var(--color-on-surface);
   margin: 0;
   line-height: 1.25;
@@ -1163,7 +1164,8 @@ body.glossary-toolbar-stuck .glossary-letter__heading {
   margin: 0 0 0.5rem;
   font-family: var(--font-display);
   font-size: 1.3125rem;
-  font-weight: 700;
+  font-weight: var(--wt-display-sub);
+  letter-spacing: var(--ls-display);
   color: var(--color-on-surface);
 }
 

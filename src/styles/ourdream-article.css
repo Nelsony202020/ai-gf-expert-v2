@@ -26,10 +26,9 @@
   --od-shadow-card: 0 1px 2px rgb(59 42 30 / 6%), 0 8px 24px -4px rgb(59 42 30 / 6%);
   --od-shadow-float: 0 4px 8px rgb(21 17 26 / 10%), 0 24px 48px -8px rgb(21 17 26 / 16%);
 
-  /* Type. Bricolage Grotesque is the Figma display face for every article heading.
-     It was previously only a fallback behind --font-display, so headings rendered in
-     Hanken Grotesk. Declared here so the article scope owns its own faces. */
-  --od-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  /* Type. The article scope keeps its own token names, but the display face is now
+     the one site face (--font-display); only the body and mono faces differ here. */
+  --od-display: var(--font-display);
   --od-body: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
   --od-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
@@ -131,9 +130,9 @@
   margin: 0;
   font-family: var(--od-display);
   font-size: 1.75rem;
-  font-weight: 700;
+  font-weight: var(--wt-display);
   line-height: 2rem;
-  letter-spacing: -0.025rem;
+  letter-spacing: var(--ls-display);
   color: var(--od-ink);
 }
 
@@ -141,7 +140,7 @@
   .ourdream-article-hero__title {
     font-size: 2.5rem;
     line-height: 2.75rem;
-    letter-spacing: -0.05rem;
+    letter-spacing: var(--ls-display);
   }
 }
 
@@ -398,7 +397,7 @@
   margin: 0;
   font-family: var(--od-display);
   font-size: 1.0625rem;
-  font-weight: 600;
+  font-weight: var(--wt-display-min);
   line-height: 1.375rem;
   letter-spacing: -0.006rem;
   color: var(--od-ink);
@@ -408,7 +407,7 @@
   .ourdream-article-related__title {
     font-size: 1.3125rem;
     line-height: 1.625rem;
-    letter-spacing: -0.0125rem;
+    letter-spacing: var(--ls-display);
   }
 }
 
@@ -535,9 +534,9 @@
   margin-bottom: 0;
   font-family: var(--od-display);
   font-size: 1.625rem;
-  font-weight: 700;
+  font-weight: var(--wt-display);
   line-height: 2rem;
-  letter-spacing: -0.019rem;
+  letter-spacing: var(--ls-display);
   color: var(--od-ink);
   scroll-margin-top: 5.5rem;
 }
@@ -548,7 +547,7 @@
     margin-top: 4.25rem;
     font-size: 2rem;
     line-height: 2.5rem;
-    letter-spacing: -0.031rem;
+    letter-spacing: var(--ls-display);
   }
 }
 
@@ -558,9 +557,9 @@
   margin-bottom: 0;
   font-family: var(--od-display);
   font-size: 1.1875rem;
-  font-weight: 600;
+  font-weight: var(--wt-display-sub);
   line-height: 1.625rem;
-  letter-spacing: -0.006rem;
+  letter-spacing: var(--ls-display);
   color: var(--od-ink);
   scroll-margin-top: 5.5rem;
 }
@@ -571,7 +570,7 @@
     margin-top: 3rem;
     font-size: 1.375rem;
     line-height: 1.875rem;
-    letter-spacing: -0.006rem;
+    letter-spacing: var(--ls-display);
   }
 }
 
@@ -683,9 +682,9 @@
   position: relative;
   font-family: var(--od-display);
   font-size: 1.125rem;
-  font-weight: 600;
+  font-weight: var(--wt-display-sub);
   line-height: 1.5rem;
-  letter-spacing: -0.006rem;
+  letter-spacing: var(--ls-display);
   color: var(--od-ink);
 }
 
@@ -693,7 +692,7 @@
   .od-steps > li {
     font-size: 1.3125rem;
     line-height: 1.625rem;
-    letter-spacing: -0.0125rem;
+    letter-spacing: var(--ls-display);
   }
 }
 
@@ -837,7 +836,7 @@
   margin: 0;
   font-family: var(--od-display);
   font-size: 1.0625rem;
-  font-weight: 600;
+  font-weight: var(--wt-display-min);
   line-height: 1.375rem;
   letter-spacing: -0.0053125rem;
   font-variation-settings: 'opsz' 14, 'wdth' 100;
@@ -1737,7 +1736,7 @@
   margin: 0;
   font-family: var(--od-display);
   font-size: 1.0625rem;
-  font-weight: 600;
+  font-weight: var(--wt-display-min);
   line-height: 1.375rem;
   letter-spacing: -0.006rem;
   color: var(--od-ink);

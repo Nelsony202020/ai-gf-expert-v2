@@ -113,9 +113,9 @@
   color: var(--hub-on-ink);
   font-family: var(--font-display);
   font-size: 34px;
-  font-weight: 700;
+  font-weight: var(--wt-display);
   line-height: 40px;
-  letter-spacing: -0.68px;
+  letter-spacing: var(--ls-display);
 }
 
 .guide-hub__lede {
@@ -414,8 +414,8 @@
   margin: 0 0 8px;
   font-family: var(--font-display);
   font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
+  font-weight: var(--wt-display);
+  letter-spacing: var(--ls-display);
   line-height: 34px;
 }
 
@@ -475,7 +475,7 @@
   color: var(--hub-primary);
   font-family: var(--font-display);
   font-size: 17px;
-  font-weight: 600;
+  font-weight: var(--wt-display-min);
   line-height: 22px;
   letter-spacing: -0.085px;
 }
@@ -540,7 +540,7 @@
 .guide-hub__topic-title {
   margin: 0;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: var(--wt-display-min);
   line-height: 24px;
   letter-spacing: -0.048px;
 }
@@ -985,7 +985,7 @@ body:has(.guide-hub) {
   .guide-hub__title {
     font-size: 56px;
     line-height: 58px;
-    letter-spacing: -1.4px;
+    letter-spacing: var(--ls-display);
   }
 
   .guide-hub__lede {
@@ -1070,9 +1070,9 @@ body:has(.guide-hub) {
   .guide-hub__topic-title {
     font-family: var(--font-display);
     font-size: 21px;
-    font-weight: 600;
+    font-weight: var(--wt-display-sub);
     line-height: 26px;
-    letter-spacing: -0.21px;
+    letter-spacing: var(--ls-display);
   }
 
   .guide-hub__topic-desc--mobile {
