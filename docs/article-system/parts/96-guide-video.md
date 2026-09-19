@@ -35,23 +35,39 @@ unchanged on this branch and render exactly as before.
 derivable `duration` are all present, and the page spreads the result into its
 JSON-LD array only when it is non-null.
 
-**It is switched off right now, on purpose.** The comics video is real
-(`jt2DvEU3KZU`, "this AI girlfriend app Now Makes UNFILTERED comics", AI
-Girlfriend Expert), but YouTube rate-limited the fetch for its runtime and
-publish date, so `durationSeconds` and `uploadDate` are unset in the registry.
-Emitting a VideoObject without them would be exactly the placeholder schema the
-brief forbids. Filling in those two values turns it on; nothing else changes.
+It stayed off through most of this build: YouTube rate-limited every scripted
+fetch for the video's runtime and publish date, and emitting a VideoObject
+without them would have been exactly the placeholder schema the brief forbids.
+Both values were finally read off the video itself in a real browser — runtime
+**5:36**, published **16 Sept 2026** — so the registry now carries
+`durationSeconds: 336` and `uploadDate: '2026-09-16'` and the schema is live.
 
-The built page confirms it: `VideoObject` appears zero times, `Article` and
-`FAQPage` as before.
+The built page emits, once:
+
+```json
+{ "@type": "VideoObject", "name": "Watch: How to use OurDream AI Comics",
+  "description": "…", "thumbnailUrl": ["…/maxresdefault.jpg"],
+  "uploadDate": "2026-09-16", "duration": "PT5M36S",
+  "embedUrl": "https://www.youtube-nocookie.com/embed/jt2DvEU3KZU?…",
+  "contentUrl": "…", "url": "https://aigirlfriend.expert/guides/ourdream-ai-comics/" }
+```
+
+`name` is the on-page title line, not the YouTube title ("this AI girlfriend app
+Now Makes UNFILTERED comics") — the schema describes the video as this page
+presents it. Worth a second opinion if that ever matters for rich results.
+
+The three guides without a video emit zero VideoObject, zero lightbox markup and
+zero block markup; the only `.od-video` string on those pages is the unused CSS
+rule in the shared stylesheet.
 
 ## The two triggers
 
 **A — header link.** A real `<button>` under the author/date row, pink, inline,
 no border or background. It opens the dialog, so it is a button rather than a
-link. Hover underlines, focus-visible draws a pink ring, active dims. The copy
-reads "Prefer to watch? Video guide" today and becomes "4-min video guide" the
-moment `durationSeconds` is set — the length is derived, never typed twice.
+link. Hover underlines, focus-visible draws a pink ring, active dims. The copy reads
+"Prefer to watch? 6-min video guide" — the length is derived from
+`durationSeconds`, never typed twice, and falls back to "Video guide" when a
+guide's runtime is unknown rather than leaving a gap.
 
 **B — the block.** The brief says: after the opening paragraph, before the first
 H2, and explicitly not at the very top. On the comics guide those three cannot

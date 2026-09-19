@@ -136,8 +136,9 @@ export const GUIDES: Guide[] = [
       title: 'Watch: How to use OurDream AI Comics',
       description:
         'A walkthrough of the OurDream AI Comic Studio — characters, model sheets, page layouts, prompting, editing and turning a finished page into video.',
-      // durationSeconds and uploadDate are deliberately unset until the real
-      // values are confirmed. VideoObject stays off until both are present.
+      // Read off the video itself: runtime 5:36, published 16 Sept 2026.
+      durationSeconds: 336,
+      uploadDate: '2026-09-16',
     },
   },
 ];
