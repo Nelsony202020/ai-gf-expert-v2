@@ -1,0 +1,71 @@
+---
+/**
+ * Global / Footer — Figma "Global / Footer" (Viewport=Desktop / Mobile).
+ * One canonical footer: brand + channels & community + four link columns +
+ * the "Tested, not hyped." sign-off.
+ */
+import { icon } from './icons';
+import { footer } from './data';
+---
+
+<footer class="hv3-footer">
+  <div class="hv3__container">
+    <div class="hv3-footer__top">
+      <div class="hv3-footer__brand">
+        <img class="hv3-footer__logo" src={footer.logo} alt="AI Girlfriend Expert" width="128" height="71" />
+        <p class="hv3-footer__tagline">{footer.tagline}</p>
+
+        <div class="hv3-footer__channels">
+          <p class="hv3-footer__section-label">{footer.channelsLabel}</p>
+          <div class="hv3-footer__channel-rows">
+            {footer.channels.map((c) => {
+              const muted = !c.href;
+              const Label = (
+                <>
+                  <span class={`hv3-footer__channel-label${muted ? ' hv3-footer__channel-label--muted' : ''}`}>
+                    {c.label}
+                    {!muted && <span set:html={icon('arrow-up-right', 14)} />}
+                  </span>
+                  {c.desc && <span class="hv3-footer__channel-desc">{c.desc}</span>}
+                </>
+              );
+              return (
+                <div class="hv3-footer__channel">
+                  <span class={`hv3-footer__channel-icon${muted ? ' hv3-footer__channel-icon--muted' : ''}`} set:html={icon(c.icon, 20, 1.4)} />
+                  <span style="display:flex;flex-direction:column">
+                    {muted ? Label : <a href={c.href} rel="noopener" target="_blank" style="display:flex;flex-direction:column">{Label}</a>}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div class="hv3-footer__columns">
+        {footer.columns.map((col) => (
+          <div class="hv3-footer__col">
+            <p class="hv3-footer__section-label">{col.title}</p>
+            {col.links.map(([label, href]) => (
+              <a class="hv3-footer__link" href={href}>{label}</a>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div class="hv3-footer__divider" aria-hidden="true"></div>
+
+    <p class="hv3-footer__signoff"><span>Tested,</span><span>not hyped.</span></p>
+
+    <div class="hv3-footer__bottom">
+      <span class="hv3-footer__muted">{footer.copyright}</span>
+      <div class="hv3-footer__legal">
+        {footer.legal.map(([label, href]) => (
+          <a class="hv3-footer__muted" href={href}>{label}</a>
+        ))}
+        <button class="hv3-footer__muted" type="button">Dark mode</button>
+      </div>
+    </div>
+  </div>
+</footer>

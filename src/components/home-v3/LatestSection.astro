@@ -1,0 +1,61 @@
+---
+/**
+ * 07 Latest testing & guides — Figma "Module / Featured Article" (Media=Image)
+ * plus four "Module / Latest Article Row"s. Real published content only.
+ */
+import { icon } from './icons';
+import { latest } from './data';
+---
+
+<section class="hv3-section hv3-section--white">
+  <div class="hv3__container">
+    <div class="hv3-section__head">
+      <div class="hv3-section__heading">
+        <p class="hv3-eyebrow">{latest.eyebrow}</p>
+        <h2 class="hv3-h2">{latest.h2}</h2>
+      </div>
+      <a class="hv3-btn hv3-btn--ghost hv3-only-desktop" href={latest.cta.href}>
+        {latest.cta.label}<span set:html={icon('arrow-right', 16)} />
+      </a>
+    </div>
+
+    <div class="hv3-latest">
+      <article class="hv3-featured">
+        <img
+          class="hv3-featured__image"
+          src={latest.featured.image}
+          alt="OurDream AI Review — featured image"
+          width="560"
+          height="303"
+          loading="lazy"
+        />
+        <div class="hv3-featured__meta">
+          <span class="hv3-featured__type">{latest.featured.type}</span>
+          <span class="hv3-featured__date">{latest.featured.date}</span>
+        </div>
+        <h3 class="hv3-featured__title">{latest.featured.title}</h3>
+        <p class="hv3-featured__result">{latest.featured.result}</p>
+        <p class="hv3-featured__desc">{latest.featured.desc}</p>
+        <a class="hv3-link" href={latest.featured.href}>
+          {latest.featured.link}<span set:html={icon('arrow-right', 16)} />
+        </a>
+      </article>
+
+      <div class="hv3-rows">
+        {latest.rows.map((row) => (
+          <a class="hv3-row" href={row.href}>
+            <span class="hv3-row__text">
+              <span class="hv3-row__meta">
+                <span class="hv3-featured__type">{row.type}</span>
+                <span class="hv3-featured__date">{row.date}</span>
+              </span>
+              <span class="hv3-row__title">{row.title}</span>
+              <span class="hv3-row__desc">{row.desc}</span>
+            </span>
+            <span set:html={icon('arrow-right', 20)} />
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

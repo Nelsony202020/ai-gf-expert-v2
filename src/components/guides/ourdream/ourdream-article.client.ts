@@ -54,8 +54,18 @@ function bindPromptExpand(root: HTMLElement) {
   root.querySelectorAll<HTMLButtonElement>('[data-od-expand]').forEach((button) => {
     if (button.dataset.bound === 'true') return;
     button.dataset.bound = 'true';
+    const opened = button.dataset.odExpandOpen ?? 'Show less';
+    const closed = button.textContent?.trim() ?? 'Show full prompt';
+    button.setAttribute('aria-expanded', 'false');
     button.addEventListener('click', () => {
-      button.closest('.od-prompt')?.classList.add('is-expanded');
+      const card = button.closest('.od-prompt');
+      if (!card) return;
+      // A one-way expand left a 7,000px wall of prompt with no way back, so the
+      // control toggles and the label follows it.
+      const isOpen = card.classList.toggle('is-expanded');
+      button.textContent = isOpen ? opened : closed;
+      button.setAttribute('aria-expanded', String(isOpen));
+      if (!isOpen) card.scrollIntoView({ block: 'nearest' });
     });
   });
 }
@@ -98,7 +108,7 @@ function bindImageLightbox(root: HTMLElement) {
   root.dataset.lightboxBound = 'true';
 
   const figures = root.querySelectorAll<HTMLElement>(
-    'figure > img, .od-steps__media > img, .od-figure-grid figure > img',
+    'figure > img, .od-steps__media > img, .od-figure-grid figure > img, .od-prompt-result__media > img',
   );
 
   figures.forEach((img) => {

@@ -1,0 +1,73 @@
+---
+/**
+ * Global / Header — Figma "Global Header / Desktop" + "Global Header / Mobile"
+ * (01 · Components → 02 · Global layout & brand context).
+ * Ink theme, as used on the homepage hero.
+ */
+import { icon } from './icons';
+
+const links = [
+  { label: 'Best apps', href: '/best/', dropdown: true },
+  { label: 'Reviews', href: '/ai-girlfriend-reviews/', dropdown: true },
+  { label: 'Guides', href: '/guides/', dropdown: false },
+  { label: 'How we test', href: '/test/how-we-test/', dropdown: false },
+];
+---
+
+<header class="hv3-header">
+  <div class="hv3-header__inner hv3__container">
+    <div class="hv3-header__left">
+      <a href="/" aria-label="AI Girlfriend Expert — home">
+        <img
+          class="hv3-header__logo"
+          src="/brand/girlfriend-expert-logo-white.webp"
+          alt="AI Girlfriend Expert"
+          width="92"
+          height="51"
+        />
+      </a>
+      <nav class="hv3-header__links" aria-label="Primary">
+        {links.map((l) => (
+          <a class="hv3-header__link" href={l.href}>
+            {l.label}
+            {l.dropdown && <span set:html={icon('chevron-down', 14)} />}
+          </a>
+        ))}
+      </nav>
+    </div>
+
+    <div class="hv3-header__right">
+      <button class="hv3-header__icon-btn" type="button" aria-label="Search">
+        <span style="color:#f7f7f6" set:html={icon('search', 20)} />
+      </button>
+      <button class="hv3-header__icon-btn hv3-only-desktop" type="button" aria-label="Switch to dark mode">
+        <span style="color:#a4a3aa" set:html={icon('moon', 20)} />
+      </button>
+      <button
+        class="hv3-header__icon-btn hv3-header__toggle"
+        type="button"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="hv3-nav-sheet"
+        data-hv3-nav-toggle
+      >
+        <span style="color:#f7f7f6" set:html={icon('menu', 22)} />
+      </button>
+    </div>
+  </div>
+
+  <nav class="hv3-header__nav-sheet hv3__container" id="hv3-nav-sheet" aria-label="Mobile">
+    {links.map((l) => <a class="hv3-header__link" href={l.href}>{l.label}</a>)}
+  </nav>
+</header>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('[data-hv3-nav-toggle]');
+  const sheet = document.getElementById('hv3-nav-sheet');
+  toggle?.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!open));
+    toggle.setAttribute('aria-label', open ? 'Open menu' : 'Close menu');
+    sheet?.classList.toggle('is-open', !open);
+  });
+</script>

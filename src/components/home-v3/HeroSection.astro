@@ -1,0 +1,119 @@
+---
+/**
+ * 01 Hero — Figma "01 Hero — we test" (desktop) and the simplified mobile hero.
+ * Desktop: copy + Herman with the leaderboard and the OurDream winner card.
+ * Mobile: copy + centred Herman (170px) + ONE compact winner strip + one CTA.
+ */
+import { icon } from './icons';
+import { hero, leaderboard, winnerCard, winnerStrip, icons } from './data';
+import GlobalHeader from './GlobalHeader.astro';
+---
+
+<section class="hv3-hero">
+  <div class="hv3-hero__grid" aria-hidden="true"></div>
+  <div class="hv3-hero__glow" aria-hidden="true"></div>
+
+  <GlobalHeader />
+
+  <div class="hv3-hero__body hv3__container">
+    <div class="hv3-hero__copy">
+      <p class="hv3-eyebrow hv3-hero__eyebrow">
+        <span class="hv3-only-desktop">{hero.eyebrow}</span>
+        <span class="hv3-only-mobile">{hero.eyebrowMobile}</span>
+      </p>
+
+      <h1 class="hv3-h1 hv3-hero__h1">
+        <span class="hv3-only-desktop">
+          {hero.h1Lines[0]}<br />{hero.h1Lines[1]}<br />{hero.h1Lines[2]}<span class="hv3-accent">{hero.h1Accent}</span>
+        </span>
+        <span class="hv3-only-mobile">
+          {hero.h1Mobile}<span class="hv3-accent">{hero.h1Accent}</span>
+        </span>
+      </h1>
+
+      <p class="hv3-hero__sub">{hero.sub}</p>
+
+      <!-- mobile only: Herman + compact winner strip sit between the copy and the CTA -->
+      <div class="hv3-hero__mobile-herman hv3-only-mobile">
+        <img src={hero.herman} alt="Herman Carter, AIGE lead reviewer" width="170" height="170" />
+      </div>
+
+      <div class="hv3-strip hv3-only-mobile">
+        <span class="hv3-strip__rank">{winnerStrip.rank}</span>
+        <img class="hv3-strip__icon" src={icons[winnerStrip.icon]} alt="" width="36" height="36" />
+        <span class="hv3-strip__identity">
+          <span class="hv3-strip__name">{winnerStrip.name}</span>
+          <span class="hv3-strip__award">{winnerStrip.award}</span>
+          <span class="hv3-strip__detail">{winnerStrip.detail}</span>
+        </span>
+        <span class="hv3-score-tag hv3-score-tag--high">{winnerStrip.score}</span>
+      </div>
+
+      <div class="hv3-hero__ctas">
+        <a class="hv3-btn hv3-btn--lg hv3-btn--pink" href={hero.primary.href}>
+          {hero.primary.label}<span set:html={icon('arrow-right', 18)} />
+        </a>
+        <a class="hv3-btn hv3-btn--lg hv3-btn--paper" href={hero.secondary.href}>
+          {hero.secondary.label}<span set:html={icon('arrow-right', 18)} />
+        </a>
+        <a class="hv3-hero__text-link hv3-only-mobile" href={hero.secondary.href}>
+          {hero.secondary.label}<span set:html={icon('arrow-right', 16)} />
+        </a>
+      </div>
+
+      <div class="hv3-hero__proof">
+        <span class="hv3-hero__stack">
+          {hero.stack.map((k) => <img src={icons[k]} alt="" width="28" height="28" />)}
+        </span>
+        <span class="hv3-hero__proof-text">{hero.proofText}</span>
+      </div>
+    </div>
+
+    <div class="hv3-hero__composition">
+      <img class="hv3-hero__herman" src={hero.herman} alt="Herman Carter, AIGE lead reviewer" width="360" height="360" />
+
+      <div class="hv3-card hv3-leaderboard">
+        <div class="hv3-leaderboard__head">
+          <span class="hv3-leaderboard__title">{leaderboard.title}</span>
+          <span class="hv3-leaderboard__updated">{leaderboard.updated}</span>
+        </div>
+        {leaderboard.rows.map((r) => (
+          <div class="hv3-leaderboard__row">
+            <span class="hv3-leaderboard__rank">{r.rank}</span>
+            <img class="hv3-leaderboard__icon" src={icons[r.icon]} alt="" width="28" height="28" />
+            <span class="hv3-leaderboard__name">{r.name}</span>
+            <span class={`hv3-chip hv3-chip--${r.tone}`}>
+              <span class="hv3-chip__score">{r.score}</span><span class="hv3-chip__of">/10</span>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div class="hv3-card hv3-winner-card">
+        <div class="hv3-winner-card__head">
+          <img class="hv3-winner-card__icon" src={icons[winnerCard.icon]} alt="" width="40" height="40" />
+          <span class="hv3-winner-card__identity">
+            <span class="hv3-winner-card__name">{winnerCard.name}</span>
+            <span class="hv3-award" style="color:#141317">
+              <span style="color:#db2777" set:html={icon('crown', 16)} />{winnerCard.award}
+            </span>
+          </span>
+          <span class="hv3-chip hv3-chip--high">
+            <span class="hv3-chip__score">{winnerCard.score}</span><span class="hv3-chip__of">/10</span>
+          </span>
+        </div>
+        <div class="hv3-winner-card__bars">
+          {winnerCard.bars.map((b) => (
+            <div class="hv3-bar">
+              <span class="hv3-bar__label">{b.label}</span>
+              <span class="hv3-bar__track">
+                <span class="hv3-bar__fill" style={`width:${Number(b.value) * 10}%`}></span>
+              </span>
+              <span class="hv3-bar__value">{b.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

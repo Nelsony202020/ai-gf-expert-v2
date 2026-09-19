@@ -1,0 +1,51 @@
+---
+/**
+ * 08 Meet the tester — Figma "Module / Tester Profile".
+ * No card and no quote (Figma note); links are quiet ghost buttons on desktop
+ * and a stacked list on mobile.
+ */
+import { icon } from './icons';
+import { tester } from './data';
+---
+
+<section class="hv3-section hv3-section--tester">
+  <div class="hv3__container">
+    <div class="hv3-tester">
+      <img class="hv3-tester__avatar hv3-only-desktop" src={tester.avatar} alt="Herman Carter" width="220" height="220" />
+
+      <div class="hv3-tester__profile">
+        <p class="hv3-eyebrow">{tester.eyebrow}</p>
+
+        <div class="hv3-tester__identity">
+          <img class="hv3-tester__avatar hv3-only-mobile" src={tester.avatar} alt="Herman Carter" width="88" height="88" />
+          <div>
+            <div class="hv3-tester__name-row">
+              <span class="hv3-tester__name">{tester.name}</span>
+              <span class="hv3-tester__verified" aria-label="Verified"><span set:html={icon('check', 13)} /></span>
+            </div>
+            <p class="hv3-tester__role">{tester.role}</p>
+          </div>
+        </div>
+
+        <p class="hv3-tester__bio">{tester.bio}</p>
+
+        <div class="hv3-tester__metrics">
+          {tester.metrics.map((m) => (
+            <div class="hv3-metric">
+              <span class="hv3-metric__value">{m.value}</span>
+              <span class="hv3-metric__label">{m.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <div class="hv3-tester__links">
+          {tester.links.map((l) => (
+            <a class="hv3-btn hv3-btn--ghost" href={l.href}>
+              {l.label}<span set:html={icon('arrow-right', 16)} />
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -3,7 +3,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import ImageLightbox from '../../components/ui/ImageLightbox.astro';
+import GlossaryTooltipInit from '../../components/review/tooltips/GlossaryTooltipInit.astro';
 import OurDreamArticlePage from '../../components/guides/ourdream/OurDreamArticlePage.astro';
+import { getPublishedGlossaryTermsForTooltips } from '../../lib/glossary/load';
 import { getAuthor } from '../../data/authors';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import { cdnAsset } from '../../lib/media/cdn';
@@ -16,6 +18,8 @@ import '../../styles/ourdream-article.css';
 // BaseLayout so its @font-face block is not inlined into every page on the site.
 import '@fontsource-variable/geist-mono/wght.css';
 
+
+const glossaryTerms = await getPublishedGlossaryTermsForTooltips();
 const h1 = 'OurDream AI Comics: How to Use the Comic Generator';
 const title = h1;
 const description =
@@ -62,6 +66,7 @@ const jsonLd: Record<string, unknown>[] = [
     />
   </main>
   <ImageLightbox />
+  <GlossaryTooltipInit terms={glossaryTerms} autoDecorate />
   <Footer />
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>

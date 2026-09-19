@@ -1950,15 +1950,18 @@
   gap: 0.375rem;
 }
 
+/* Stretch, not centre: a one-line chip beside a two-line one was rendering as a
+   visibly shorter pill in the middle of the row. */
 .od-chip-wrap {
   display: inline-flex;
-  align-items: center;
+  align-items: stretch;
   gap: 0.375rem;
 }
 
 .od-chip {
   flex: 1 1 auto;
   min-width: 0;
+  justify-content: center;
   text-align: center;
   text-wrap: balance;
   display: inline-flex;
@@ -1973,15 +1976,21 @@
   color: var(--od-ink);
 }
 
-.od-chip-wrap:last-child .od-chip-arrow {
+.od-chip-wrap:first-child .od-chip-arrow {
   display: none;
 }
 
+/* Stretch, not centre: a one-line chip beside a two-line one rendered as a
+   visibly shorter pill in the middle of the row. The arrow stays centred. */
 .od-chip-wrap {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 0.375rem;
   min-width: 0;
+}
+
+.od-chip-wrap .od-chip-arrow {
+  align-self: center;
 }
 
 .od-chip-wrap .od-chip-arrow {
@@ -1989,15 +1998,30 @@
 }
 
 @media (min-width: 1100px) {
+  /* Figma wraps this row rather than cramming it: six chips, then the arrow and
+     the seventh start a new line (316:3665). `min-width: min-content` is what
+     lets one rule serve both cases — a chip shrinks only as far as its longest
+     word, so a row of long phrases (the comics guide) compresses onto one line
+     with the text wrapping inside each pill, while a row of short single words
+     runs out of room and wraps the row instead of squeezing the pills. */
   .od-structure__chips {
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: stretch;
     gap: 0.375rem;
   }
 
+  /* The flex basis is the wrap point. At 740 a basis of 6rem lets six chips
+     share a row inside the card’s padding and pushes a seventh onto the next one, which is exactly where
+     Figma breaks each of the four articles' rows: 4 and 5 chips stay on one
+     line and grow to fill it, 6 fit, 7 wraps. Growing rather than hugging is
+     what keeps a row of long phrases even instead of ragged. */
   .od-structure__chips > .od-chip-wrap {
-    flex: 1 1 0;
+    flex: 1 1 6rem;
+    min-width: 0;
+    /* Without a ceiling a single chip left on a wrapped row stretches the full
+       width of the card. Figma hugs it. */
+    max-width: 15rem;
   }
 
   .od-chip-wrap .od-chip-arrow {
@@ -2285,6 +2309,8 @@
   }
 }
 
+/* Superseded for collapsed cards by the rule further down, which keeps the
+   strip the toggle sits in. */
 .od-prompt.is-expanded {
   padding-bottom: 0.875rem;
 }
@@ -2334,9 +2360,18 @@
   max-height: none;
 }
 
-.od-prompt.is-expanded::after,
-.od-prompt.is-expanded .od-prompt__expand {
+/* Expanding drops the fade but keeps the control, which now reads "Show less" —
+   a one-way expand left no way back out of a very long prompt. */
+.od-prompt.is-expanded::after {
   display: none;
+}
+
+.od-prompt--collapsed.is-expanded {
+  padding-bottom: 3.5rem;
+}
+
+.od-prompt.is-expanded .od-prompt__expand-icon {
+  transform: rotate(180deg);
 }
 
 /* A bare blockquote is an Article / Prompt with Kind=Text — a natural-language
@@ -2804,6 +2839,16 @@
     align-items: start;
   }
 
+  /* A 4:5 screenshot at the drawn 300px runs ~530 tall against a three-line
+     prompt card, which left a column of dead space beside it. Capping the
+     thumbnail keeps the pair compact; the full image is one click away in the
+     lightbox. */
+  .od-prompt-result--side .od-prompt-result__media > img {
+    max-height: 21rem;
+    width: auto;
+    max-width: 100%;
+  }
+
   .od-prompt-result-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2902,36 +2947,68 @@
 
 .od-tile-letter {
   position: absolute;
-  inset-block-start: 0.5rem;
-  inset-inline-start: 0.5rem;
+  inset-block-start: 0.625rem;
+  inset-inline-start: 0.625rem;
   z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding-inline: 0.375rem;
+  width: 1.625rem;
+  height: 1.625rem;
   border-radius: 999px;
-  background: var(--od-ink);
-  color: var(--od-on-ink);
+  border: 1px solid var(--od-hairline);
+  background: var(--od-white);
+  color: var(--od-ink);
   font-family: var(--od-body);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1;
 }
 
+/* The winner rides on the image, top right, in brand pink — not under it. */
 .od-tile-badge {
+  position: absolute;
+  inset-block-start: 0.625rem;
+  inset-inline-end: 0.625rem;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  margin-inline-end: 0.375rem;
-  padding: 0.125rem 0.5rem;
+  padding: 0.25rem 0.625rem;
   border-radius: 999px;
-  background: var(--od-green-soft);
-  color: var(--od-green-ink);
+  background: var(--od-pink);
+  color: var(--od-on-ink);
   font-family: var(--od-body);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   line-height: 1rem;
-  letter-spacing: 0;
+}
+
+.od-tile-badge::before {
+  content: '';
+  width: 0.8125rem;
+  height: 0.8125rem;
+  flex: none;
+  background: currentColor;
+  -webkit-mask: url('/icons/aige/check.svg') center / contain no-repeat;
+  mask: url('/icons/aige/check.svg') center / contain no-repeat;
+}
+
+/* Figma sets the tile caption in the body face at full strength, not the muted
+   figcaption grey the prose uses elsewhere. */
+.od-block--aige-test .od-compare-grid figcaption {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+  color: var(--od-ink);
+}
+
+/* A tall standalone screenshot is capped rather than blown up to the full
+   reading column — pick-character is 572 x 848 and filled a whole viewport. */
+.od-media--portrait > img,
+.od-figure--portrait > img {
+  max-height: 34rem;
+  width: auto;
+  max-width: 100%;
+  margin-inline: auto;
 }

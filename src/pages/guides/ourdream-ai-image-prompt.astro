@@ -2,7 +2,10 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
+import ImageLightbox from '../../components/ui/ImageLightbox.astro';
+import GlossaryTooltipInit from '../../components/review/tooltips/GlossaryTooltipInit.astro';
 import OurDreamArticlePage from '../../components/guides/ourdream/OurDreamArticlePage.astro';
+import { getPublishedGlossaryTermsForTooltips } from '../../lib/glossary/load';
 import { getAuthor } from '../../data/authors';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import { cdnAsset } from '../../lib/media/cdn';
@@ -14,6 +17,8 @@ import '../../styles/ourdream-article.css';
 // BaseLayout so its @font-face block is not inlined into every page on the site.
 import '@fontsource-variable/geist-mono/wght.css';
 
+
+const glossaryTerms = await getPublishedGlossaryTermsForTooltips();
 const h1 = 'OurDream AI Image Prompt Guide';
 const title = 'OurDream AI Image Prompt Guide: Tags, Weights, and Examples';
 const description =
@@ -50,6 +55,8 @@ const jsonLd: Record<string, unknown>[] = [
       currentHref="/guides/ourdream-ai-image-prompt/"
     />
   </main>
+  <ImageLightbox />
+  <GlossaryTooltipInit terms={glossaryTerms} autoDecorate />
   <Footer />
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>

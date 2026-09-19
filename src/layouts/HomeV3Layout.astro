@@ -1,0 +1,41 @@
+---
+/**
+ * Minimal layout for the Homepage v3 implementation test.
+ *
+ * It deliberately does NOT extend BaseLayout: the v3 design has its own token
+ * set (Bricolage display type, pink CTA, ink/paper surfaces) and BaseLayout
+ * loads the current production tokens. Keeping them apart means this route
+ * cannot affect any production page, and the production homepage cannot
+ * affect this one.
+ */
+import '@fontsource-variable/bricolage-grotesque/opsz.css';
+import '@fontsource-variable/inter/standard.css';
+import '@fontsource/instrument-serif/400-italic.css';
+import '../styles/home-v3.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'AI Girlfriend Expert — Independent AI Companion Reviews',
+  description = 'We buy, test, score and compare AI companion apps — so you can choose with confidence, not marketing hype.',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <!-- development preview only: never index this route -->
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="hv3">
+    <slot />
+  </body>
+</html>

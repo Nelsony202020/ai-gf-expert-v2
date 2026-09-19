@@ -1,0 +1,25 @@
+---
+/**
+ * 09 Closing CTA — Figma "Module / Closing CTA". One button only, label matches the hero.
+ */
+import { icon } from './icons';
+import { closing } from './data';
+---
+
+<section class="hv3-closing">
+  <div class="hv3-closing__inner hv3__container">
+    <div class="hv3-closing__copy">
+      <h2 class="hv3-closing__h2">
+        {closing.h2Line1}<br />{closing.h2Line2}<span class="hv3-accent">{closing.h2Accent}</span>
+      </h2>
+      <p class="hv3-datalabel">
+        <span set:html={icon('trophy', 14)} />
+        <span class="hv3-only-desktop">{closing.note}</span>
+        <span class="hv3-only-mobile">{closing.noteMobile}</span>
+      </p>
+    </div>
+    <a class="hv3-btn hv3-btn--lg hv3-btn--pink" href={closing.cta.href}>
+      {closing.cta.label}<span set:html={icon('arrow-right', 18)} />
+    </a>
+  </div>
+</section>

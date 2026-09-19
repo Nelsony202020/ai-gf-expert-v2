@@ -1,0 +1,48 @@
+---
+/**
+ * 02 Proof — Figma "Module / Proof Bar".
+ * Desktop: one floating white bar bridging the dark hero into the page.
+ * Mobile: the same five metrics as a 3 + 2 grid with no container (Figma rule).
+ */
+import { proofMetrics } from './data';
+---
+
+<section class="hv3-proof">
+  <div class="hv3__container">
+    <div class="hv3-proof__bar">
+      <!-- desktop: single row with dividers -->
+      <div class="hv3-only-desktop" style="display:contents">
+        {proofMetrics.map((m, i) => (
+          <>
+            {i > 0 && <span class="hv3-proof__divider" aria-hidden="true"></span>}
+            <div class="hv3-metric">
+              <span class="hv3-metric__value">{m.value}</span>
+              <span class="hv3-metric__label">{m.label}</span>
+            </div>
+          </>
+        ))}
+      </div>
+
+      <!-- mobile: 3 + 2 grid, hairline between the rows -->
+      <div class="hv3-only-mobile">
+        <div class="hv3-proof__row hv3-proof__row--3">
+          {proofMetrics.slice(0, 3).map((m) => (
+            <div class="hv3-metric">
+              <span class="hv3-metric__value">{m.value}</span>
+              <span class="hv3-metric__label">{m.labelMobile}</span>
+            </div>
+          ))}
+        </div>
+        <div class="hv3-proof__rule" aria-hidden="true"></div>
+        <div class="hv3-proof__row hv3-proof__row--2">
+          {proofMetrics.slice(3).map((m) => (
+            <div class="hv3-metric">
+              <span class="hv3-metric__value">{m.value}</span>
+              <span class="hv3-metric__label">{m.labelMobile}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

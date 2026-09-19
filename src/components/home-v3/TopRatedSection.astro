@@ -1,0 +1,100 @@
+---
+/**
+ * 03 Our highest-rated apps — Figma "Roundup / Product Result Card" ×3.
+ * Mobile: horizontal swipe carousel with a peeking next card + position dots.
+ */
+import { icon } from './icons';
+import { topRated, icons, tone } from './data';
+
+const DIAL = 64;
+const STROKE = 5.12;
+const R = (DIAL - STROKE) / 2;
+const C = 2 * Math.PI * R;
+---
+
+<section class="hv3-section hv3-section--rank">
+  <div class="hv3__container">
+    <div class="hv3-section__head">
+      <div class="hv3-section__heading">
+        <p class="hv3-eyebrow">
+          <span class="hv3-only-desktop">{topRated.eyebrow}</span>
+          <span class="hv3-only-mobile">{topRated.eyebrowMobile}</span>
+        </p>
+        <h2 class="hv3-h2">{topRated.h2}</h2>
+        <p class="hv3-intro">{topRated.intro}</p>
+      </div>
+      <a class="hv3-btn hv3-btn--ghost hv3-only-desktop" href={topRated.cta.href}>
+        {topRated.cta.label}<span set:html={icon('arrow-right', 16)} />
+      </a>
+    </div>
+
+    <div class="hv3-cards">
+      {topRated.cards.map((card) => {
+        const t = tone(card.score);
+        const colour = t === 'high' ? '#16a34a' : t === 'mid' ? '#e8760a' : '#dc2626';
+        const dash = (card.score / 10) * C;
+        return (
+          <article class="hv3-product">
+            <div class="hv3-product__head">
+              <span class="hv3-product__rank">{card.rank}</span>
+              <img class="hv3-product__icon" src={icons[card.icon]} alt="" width="48" height="48" />
+              <span class="hv3-product__identity">
+                <span class="hv3-product__name">{card.name}</span>
+                {card.award && (
+                  <span class="hv3-award">
+                    <span style="color:#db2777" set:html={icon('crown', 16)} />{card.award}
+                  </span>
+                )}
+              </span>
+              <span class="hv3-dial" style={`width:${DIAL}px;height:${DIAL}px`}>
+                <svg width={DIAL} height={DIAL} viewBox={`0 0 ${DIAL} ${DIAL}`}>
+                  <circle cx={DIAL / 2} cy={DIAL / 2} r={R} fill="none" stroke="#e7e7e4" stroke-width={STROKE} />
+                  <circle
+                    cx={DIAL / 2} cy={DIAL / 2} r={R} fill="none" stroke={colour} stroke-width={STROKE}
+                    stroke-dasharray={`${dash} ${C}`} stroke-linecap="butt"
+                  />
+                </svg>
+                <span class="hv3-dial__value">
+                  <span class="hv3-product__dial-score">{card.score.toFixed(1)}</span>
+                </span>
+              </span>
+            </div>
+
+            <div class="hv3-product__scores">
+              {card.scores.map((s) => {
+                const st = tone(s.value);
+                return (
+                  <div class="hv3-bar">
+                    <span class="hv3-bar__label">{s.label}</span>
+                    <span class="hv3-bar__track">
+                      <span class={`hv3-bar__fill${st === 'high' ? '' : ' hv3-bar__fill--mid'}`} style={`width:${s.value * 10}%`}></span>
+                    </span>
+                    <span class={`hv3-bar__value${st === 'high' ? '' : ' hv3-bar__value--mid'}`}>{s.value.toFixed(1)}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div class="hv3-product__price">
+              <span class="hv3-product__price-label">Starting price</span>
+              <span class="hv3-product__price-value">{card.price}</span>
+            </div>
+
+            <div class="hv3-product__ctas">
+              <a class="hv3-btn hv3-btn--sm hv3-btn--pink" href={card.visit} rel="sponsored nofollow">
+                Visit site<span set:html={icon('arrow-up-right', 16)} />
+              </a>
+              <a class="hv3-btn hv3-btn--sm hv3-btn--outline" href={card.review}>Read review</a>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+
+    <div class="hv3-dots hv3-only-mobile" aria-hidden="true"><span></span><span></span><span></span></div>
+
+    <a class="hv3-btn hv3-btn--ghost hv3-only-mobile" href={topRated.cta.href}>
+      {topRated.cta.label}<span set:html={icon('arrow-right', 16)} />
+    </a>
+  </div>
+</section>

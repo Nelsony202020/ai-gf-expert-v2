@@ -1,0 +1,118 @@
+---
+/**
+ * 04 Pick what matters — Figma "Roundup / Ranking Selector".
+ * Desktop: left priority list (names only) + result panel.
+ * Mobile: horizontal chips + result card.
+ * Every CTA deep-links into the same roundup with that ranking active.
+ */
+import { icon } from './icons';
+import { selector, icons } from './data';
+---
+
+<section class="hv3-section hv3-section--pick">
+  <div class="hv3__container">
+    <div class="hv3-section__head">
+      <div class="hv3-section__heading">
+        <p class="hv3-eyebrow">{selector.eyebrow}</p>
+        <h2 class="hv3-h2">
+          {selector.h2Before}<span class="hv3-accent">{selector.h2Accent}</span>{selector.h2After}
+        </h2>
+        <p class="hv3-intro hv3-section__intro">{selector.intro}</p>
+      </div>
+    </div>
+
+    <div class="hv3-selector" data-hv3-selector>
+      <div class="hv3-selector__options" role="tablist" aria-label="Pick what matters most">
+        <p class="hv3-selector__list-label">{selector.listLabel}</p>
+        {selector.options.map((o) => (
+          <button
+            class="hv3-selector__option"
+            type="button"
+            role="tab"
+            id={`hv3-tab-${o.key}`}
+            aria-controls={`hv3-panel-${o.key}`}
+            aria-selected={o.key === selector.defaultKey ? 'true' : 'false'}
+            data-hv3-option={o.key}
+          >
+            <span set:html={icon(o.icon, 20)} />
+            <span class="hv3-selector__option-label">{o.label}</span>
+            <span class="hv3-chevron" set:html={icon('chevron-right', 16)} />
+          </button>
+        ))}
+      </div>
+
+      {selector.options.map((o) => {
+        const r = selector.results[o.key];
+        return (
+          <div
+            class="hv3-selector__result"
+            role="tabpanel"
+            id={`hv3-panel-${o.key}`}
+            aria-labelledby={`hv3-tab-${o.key}`}
+            data-hv3-panel={o.key}
+            hidden={o.key !== selector.defaultKey}
+          >
+            <p class="hv3-eyebrow">{r.eyebrow}</p>
+
+            <div class="hv3-selector__winner">
+              <img class="hv3-selector__winner-icon" src={icons[r.icon]} alt="" width="72" height="72" />
+              <span class="hv3-selector__winner-name">
+                <span class="hv3-selector__app-name">{r.name}</span>
+                <span class="hv3-award">
+                  <span style="color:#db2777" set:html={icon('crown', 16)} />{r.award}
+                </span>
+              </span>
+              <span class="hv3-selector__metric">
+                <span class="hv3-selector__metric-row">
+                  <span class="hv3-selector__metric-value">{r.value}</span>
+                  <span class="hv3-selector__metric-of">/10</span>
+                </span>
+                <span class="hv3-selector__metric-label">{r.metricLabel}</span>
+              </span>
+            </div>
+
+            <p class="hv3-selector__reason">{r.reason}</p>
+
+            <div>
+              <p class="hv3-selector__next-label">Next best</p>
+              {r.runners.map((run: any) => (
+                <div class="hv3-selector__runner">
+                  <span class="hv3-selector__runner-rank">{run.rank}</span>
+                  <img class="hv3-selector__runner-icon" src={icons[run.icon]} alt="" width="28" height="28" />
+                  <span class="hv3-selector__runner-name">{run.name}</span>
+                  <span class="hv3-score-tag hv3-score-tag--high">{run.score}</span>
+                </div>
+              ))}
+            </div>
+
+            <div class="hv3-selector__actions">
+              <a class="hv3-btn hv3-btn--lg hv3-btn--pink" href={r.href}>
+                {r.cta}<span set:html={icon('arrow-right', 18)} />
+              </a>
+              <a class="hv3-btn hv3-btn--ghost" href={selector.reviewCta.href}>
+                {selector.reviewCta.label}<span set:html={icon('arrow-right', 16)} />
+              </a>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</section>
+
+<script>
+  const root = document.querySelector('[data-hv3-selector]');
+  if (root) {
+    const options = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-hv3-option]'));
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-hv3-panel]'));
+    options.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.hv3Option;
+        options.forEach((o) => o.setAttribute('aria-selected', String(o === btn)));
+        panels.forEach((p) => {
+          p.hidden = p.dataset.hv3Panel !== key;
+        });
+      });
+    });
+  }
+</script>

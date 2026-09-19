@@ -1,0 +1,41 @@
+---
+/**
+ * /dev/home-v3/ — implementation of the approved Figma homepage.
+ *
+ * Local preview only. The production homepage (`/`) is untouched.
+ * Figma: AIGF-EX → 10 · Homepage → "Homepage — Desktop 1440" / "Homepage — Mobile 390".
+ *
+ * PHASE 1 = visual fidelity. All content comes from src/components/home-v3/data.ts
+ * (the exact values shown in Figma); no live data sources are wired up yet.
+ *
+ * Assets: the product logos and the review featured image were exported from
+ * Figma into /public/brand/home-v3/. Everything else uses existing repo assets
+ * (Herman scientist, logo, testing video, author photo).
+ */
+import HomeV3Layout from '../../layouts/HomeV3Layout.astro';
+import HeroSection from '../../components/home-v3/HeroSection.astro';
+import ProofMetrics from '../../components/home-v3/ProofMetrics.astro';
+import TopRatedSection from '../../components/home-v3/TopRatedSection.astro';
+import RankingSelector from '../../components/home-v3/RankingSelector.astro';
+import MethodologySection from '../../components/home-v3/MethodologySection.astro';
+import ScoreSection from '../../components/home-v3/ScoreSection.astro';
+import LatestSection from '../../components/home-v3/LatestSection.astro';
+import TesterSection from '../../components/home-v3/TesterSection.astro';
+import ClosingCta from '../../components/home-v3/ClosingCta.astro';
+import GlobalFooter from '../../components/home-v3/GlobalFooter.astro';
+---
+
+<HomeV3Layout>
+  <main>
+    <HeroSection />
+    <ProofMetrics />
+    <TopRatedSection />
+    <RankingSelector />
+    <MethodologySection />
+    <ScoreSection />
+    <LatestSection />
+    <TesterSection />
+    <ClosingCta />
+  </main>
+  <GlobalFooter />
+</HomeV3Layout>

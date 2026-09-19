@@ -1,0 +1,104 @@
+---
+/**
+ * 06 One number. Eight tests. — Figma "Module / AIGE Score Summary".
+ * The bottom link points at /test/tooltips/ (Figma note 18) and stays a quiet text link.
+ */
+import { icon } from './icons';
+import { score, tone } from './data';
+
+const DIAL = 148;
+const STROKE = 10.36;
+const R = (DIAL - STROKE) / 2;
+const C = 2 * Math.PI * R;
+const DASH = (Number(score.overall.value) / 10) * C;
+
+const MDIAL = 76;
+const MSTROKE = 5.5;
+const MR = (MDIAL - MSTROKE) / 2;
+const MC = 2 * Math.PI * MR;
+const MDASH = (Number(score.overall.value) / 10) * MC;
+---
+
+<section class="hv3-section hv3-section--score">
+  <div class="hv3__container">
+    <div class="hv3-score">
+      <div class="hv3-score__explainer">
+        <p class="hv3-eyebrow">{score.eyebrow}</p>
+        <h2 class="hv3-h2">
+          {score.h2Before}<br /><span class="hv3-accent">{score.h2Accent}</span>
+        </h2>
+        <p class="hv3-intro">{score.intro}</p>
+
+        <div class="hv3-score__legend">
+          {score.bands.map((b) => (
+            <div class="hv3-score__band">
+              <span class={`hv3-score-tag hv3-score-tag--${b.tone}`}>{b.chip}</span>
+              <span class="hv3-score__band-label">
+                <span class="hv3-only-desktop">{b.label}</span>
+                <span class="hv3-only-mobile">{b.labelMobile}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <a class="hv3-btn hv3-btn--ghost" href={score.cta.href}>
+          {score.cta.label}<span set:html={icon('arrow-right', 16)} />
+        </a>
+      </div>
+
+      <div class="hv3-score__summary">
+        <div class="hv3-score__overall">
+          <span class="hv3-dial hv3-only-desktop" style={`width:${DIAL}px;height:${DIAL}px;flex:none`}>
+            <svg width={DIAL} height={DIAL} viewBox={`0 0 ${DIAL} ${DIAL}`}>
+              <circle cx={DIAL / 2} cy={DIAL / 2} r={R} fill="none" stroke="#e7e7e4" stroke-width={STROKE} />
+              <circle cx={DIAL / 2} cy={DIAL / 2} r={R} fill="none" stroke="#16a34a" stroke-width={STROKE}
+                stroke-dasharray={`${DASH} ${C}`} stroke-linecap="butt" />
+            </svg>
+            <span class="hv3-dial__value">
+              <span class="hv3-score__dial-value">{score.overall.value}</span>
+              <span class="hv3-score__dial-of">/ 10</span>
+            </span>
+          </span>
+
+          <span class="hv3-dial hv3-only-mobile" style={`width:${MDIAL}px;height:${MDIAL}px;flex:none`}>
+            <svg width={MDIAL} height={MDIAL} viewBox={`0 0 ${MDIAL} ${MDIAL}`}>
+              <circle cx={MDIAL / 2} cy={MDIAL / 2} r={MR} fill="none" stroke="#e7e7e4" stroke-width={MSTROKE} />
+              <circle cx={MDIAL / 2} cy={MDIAL / 2} r={MR} fill="none" stroke="#16a34a" stroke-width={MSTROKE}
+                stroke-dasharray={`${MDASH} ${MC}`} stroke-linecap="butt" />
+            </svg>
+            <span class="hv3-dial__value">
+              <span class="hv3-score__dial-value">{score.overall.value}</span>
+            </span>
+          </span>
+
+          <div>
+            <span class="hv3-score__app">
+              <span class="hv3-score__app-label">{score.overall.app}</span>
+            </span>
+            <p class="hv3-score__band-title">{score.overall.band}</p>
+            <p class="hv3-score__explain">{score.overall.explain}</p>
+          </div>
+        </div>
+
+        <div class="hv3-score__rows">
+          {score.rows.map((r) => {
+            const t = tone(r.value);
+            return (
+              <div class={`hv3-score__row${t === 'high' ? '' : ' hv3-score__row--mid'}`}>
+                <span class="hv3-score__icon-box"><span set:html={icon(r.icon, 20)} /></span>
+                <span class="hv3-score__row-label">
+                  <span class="hv3-score__row-name">{r.name}</span>
+                  <span class="hv3-score__row-weight">{r.weight}</span>
+                </span>
+                <span class="hv3-score__row-track">
+                  <span class="hv3-score__row-fill" style={`width:${r.value * 10}%`}></span>
+                </span>
+                <span class="hv3-score__row-value">{r.value.toFixed(1)}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

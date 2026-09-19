@@ -1,0 +1,67 @@
+---
+/**
+ * 05 Nothing gets a score for free — Figma "05 … our evidence".
+ * One evidence video only (Figma note 10). Mobile puts the video first.
+ */
+import { icon } from './icons';
+import { methodology } from './data';
+---
+
+<section class="hv3-section hv3-section--dark hv3-section--method">
+  <div class="hv3__container">
+    <div class="hv3-method">
+      <div class="hv3-method__copy">
+        <p class="hv3-eyebrow hv3-eyebrow--on-dark">{methodology.eyebrow}</p>
+        <h2 class="hv3-h2 hv3-method__h2">
+          {methodology.h2Before}<span class="hv3-accent">{methodology.h2Accent}</span>
+        </h2>
+
+        <div class="hv3-method__steps">
+          {methodology.steps.map((s) => (
+            <div class="hv3-step">
+              <span class="hv3-step__num">{s.num}</span>
+              <div>
+                <p class="hv3-step__title">{s.title}</p>
+                <p class="hv3-step__desc">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <a class="hv3-btn hv3-btn--sm hv3-btn--paper" href={methodology.cta.href}>
+          {methodology.cta.label}<span set:html={icon('arrow-right', 16)} />
+        </a>
+      </div>
+
+      <div class="hv3-method__video">
+        <div class="hv3-video">
+          <video poster={methodology.poster} preload="none" playsinline muted data-hv3-video>
+            <source src={methodology.video} type="video/mp4" />
+          </video>
+          <span class="hv3-video__shade" aria-hidden="true"></span>
+          <span class="hv3-video__play" aria-hidden="true">
+            <span style="color:#141317" set:html={icon('play', 24)} />
+          </span>
+          <span class="hv3-video__chapter">{methodology.chapter}</span>
+        </div>
+        <p class="hv3-datalabel">
+          <span set:html={icon('video', 14)} />{methodology.caption}
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Figma shows a single custom play button; native controls appear after the first play.
+  document.querySelectorAll<HTMLElement>('.hv3-video').forEach((box) => {
+    box.addEventListener('click', () => {
+      const v = box.querySelector('video');
+      if (!v) return;
+      v.setAttribute('controls', '');
+      box.querySelector('.hv3-video__play')?.remove();
+      box.querySelector('.hv3-video__shade')?.remove();
+      v.play();
+    });
+  });
+</script>
