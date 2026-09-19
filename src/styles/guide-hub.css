@@ -89,13 +89,6 @@
   color: var(--hub-on-ink);
 }
 
-.guide-hub__hero-body--wide {
-  max-width: none;
-  width: 100%;
-  text-align: left;
-  align-items: stretch;
-}
-
 .guide-hub__hero-body {
   position: relative;
   z-index: 1;
@@ -106,6 +99,15 @@
   width: 100%;
   padding: 28px 20px 36px;
   text-align: center;
+}
+
+/* Modifier sits AFTER the base block on purpose: same specificity, so it has to
+   come later to win on text-align, align-items and max-width. */
+.guide-hub__hero-body--wide {
+  max-width: none;
+  width: 100%;
+  text-align: left;
+  align-items: stretch;
 }
 
 .guide-hub__title {
@@ -786,8 +788,19 @@
   background: var(--hub-page);
 }
 
-html:has(.guide-hub),
-body:has(.guide-hub) {
+/*
+ * Dark canvas for the BRAND hubs only.
+ *
+ * This used to be `:has(.guide-hub)`, which matched every page on the site:
+ * GlobalSiteHeader renders `<div class="guide-hub guide-hub--site-chrome">` as
+ * the shared header wrapper, so html and body were painted #141317 in light
+ * mode while body text stayed near-black — about 1.05:1 on seven of the eight
+ * pages measured. The real brand hubs (BrandGuideHub, OurDreamGuideHub) render
+ * `.guide-hub` with no --site-chrome modifier and are dark by design, so the
+ * rule stays; it is only narrowed to them.
+ */
+html:has(.guide-hub:not(.guide-hub--site-chrome)),
+body:has(.guide-hub:not(.guide-hub--site-chrome)) {
   background-color: #141317;
 }
 
