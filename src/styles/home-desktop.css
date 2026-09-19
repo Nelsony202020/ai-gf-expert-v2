@@ -376,6 +376,28 @@ html[data-theme='dark'] .home-v2__header {
   position: relative;
 }
 
+/*
+ * The 8px below the trigger is a visual gap, not a dead zone.
+ *
+ * `mouseleave` fires on .home-v2__drop the moment the pointer crosses that gap,
+ * and the close timer then hides the panel before the pointer lands on it — so
+ * aiming at "Candy AI Review" made the menu vanish under the cursor. Once the
+ * panel is `hidden` there is nothing left to re-enter, so it never came back.
+ *
+ * This ::before bridges the gap with an invisible strip that belongs to the
+ * panel, which is inside .home-v2__drop — so the pointer never actually leaves
+ * the trigger's subtree on the way down. It exists only while the panel is
+ * open, because the closed panel is `pointer-events: none` and `hidden`.
+ */
+.home-v2__drop-panel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 10px;
+}
+
 .home-v2__drop-panel {
   position: absolute;
   top: calc(100% + 8px);

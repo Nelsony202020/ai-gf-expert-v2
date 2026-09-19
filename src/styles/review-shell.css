@@ -647,11 +647,20 @@
   border-bottom-color: var(--rs-pink);
 }
 
+/*
+ * Block padding only — the side gutter belongs to the utilities.
+ *
+ * The element is `<section class="section-container px-4 md:px-8 rs-overview">`,
+ * and the `padding` SHORTHAND here reset padding-left/right to 0, cancelling
+ * px-4. Overview was the only tab that did this — Ratings and Full Review set
+ * their own 24px side padding — so on mobile its heading and body copy ran
+ * edge to edge and the text was clipped at both sides.
+ */
 .rs-overview {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  padding: 32px 0 56px;
+  padding-block: 32px 56px;
 }
 
 .rs-overview-main {
@@ -1082,7 +1091,8 @@ ul.rs-list {
     display: grid;
     grid-template-columns: minmax(0, 840px) 320px;
     gap: 40px;
-    padding: 48px 0 96px;
+    /* Same reason as the base block: md:px-8 supplies the side gutter. */
+    padding-block: 48px 96px;
     align-items: start;
   }
 
@@ -1565,6 +1575,7 @@ body.rs-scores-expanded .review-sticky-cta.is-visible {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
+  min-width: 0;
   overflow: visible;
 }
 
@@ -1583,6 +1594,15 @@ body.rs-scores-expanded .review-sticky-cta.is-visible {
   display: flex;
   flex-wrap: nowrap;
   gap: 16px;
+  /* The base rule sets width: max-content for the auto-scrolling marquee. Left
+     in place here it defeats overflow-x — the track just grows to its content
+     and spills out of the Overview panel, which is what pushed the page wider
+     than the viewport on mobile. min-width: 0 is needed too: this track is a
+     flex child, and flex children refuse to shrink below their content without
+     it. */
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding-block: 4px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
