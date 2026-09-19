@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
+import ImageLightbox from '../../components/ui/ImageLightbox.astro';
 import OurDreamArticlePage from '../../components/guides/ourdream/OurDreamArticlePage.astro';
 import { getAuthor } from '../../data/authors';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
@@ -60,6 +61,7 @@ const jsonLd: Record<string, unknown>[] = [
       currentHref="/guides/ourdream-ai-comics/"
     />
   </main>
+  <ImageLightbox />
   <Footer />
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>

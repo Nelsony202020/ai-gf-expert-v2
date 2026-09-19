@@ -44,6 +44,7 @@ const toc = extractOurDreamGuideToc(bodyHtml);
 const readMinutes = estimateGuideReadMinutes(bodyHtml);
 const avatarUrl = author?.avatar ? cdnAsset(author.avatar) : undefined;
 const dateShort = publishedShort ?? published;
+const authorHref = author?.profileUrl ?? (author?.slug ? `/author/${author.slug}/` : undefined);
 ---
 
 <div
@@ -66,7 +67,20 @@ const dateShort = publishedShort ?? published;
         {dek && <p class="ourdream-article-hero__dek">{dek}</p>}
         <div class="ourdream-article-hero__meta">
           {
-            avatarUrl && (
+            avatarUrl &&
+            (authorHref ? (
+              <a href={authorHref} class="ourdream-article-hero__avatar-link">
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  class="ourdream-article-hero__avatar"
+                  width="28"
+                  height="28"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </a>
+            ) : (
               <img
                 src={avatarUrl}
                 alt=""
@@ -76,10 +90,17 @@ const dateShort = publishedShort ?? published;
                 loading="lazy"
                 decoding="async"
               />
-            )
+            ))
           }
           <div class="ourdream-article-hero__meta-copy">
-            {author && <span class="ourdream-article-hero__author">{author.name}</span>}
+            {author &&
+              (authorHref ? (
+                <a href={authorHref} class="ourdream-article-hero__author">
+                  {author.name}
+                </a>
+              ) : (
+                <span class="ourdream-article-hero__author">{author.name}</span>
+              ))}
             <span class="ourdream-article-hero__byline">
               <span class="ourdream-article-hero__read--desktop">· {published}</span>
               <span class="ourdream-article-hero__read--mobile">
