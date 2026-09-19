@@ -6042,3 +6042,23 @@
   border-color: rgb(255 255 255 / 10%);
 }
 
+
+/* Hero title — the methodology sub-line is its own line on every viewport.
+   TestHubHeroIntro reuses RoundupHeroIntro's markup, but roundup.css only
+   stacks these two spans below 768px and buying-guide.css only inside
+   .buying-guide-page, so on /test/ the serif sub-line ran into the heading
+   on desktop. Layout only: the face and weight stay whatever the spans
+   already carry. */
+.test-hub-page .roundup-hero-intro__title-main,
+.test-hub-page .roundup-hero-intro__title-date {
+  display: block;
+}
+
+.test-hub-page .roundup-hero-intro__title-date {
+  margin-top: 0.125rem;
+}
+
+/* Cancel the inline space roundup.css inserts between the spans at >=768px. */
+.test-hub-page .roundup-hero-intro__title-date::before {
+  content: none;
+}
