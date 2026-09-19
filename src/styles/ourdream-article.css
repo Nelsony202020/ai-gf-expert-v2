@@ -789,113 +789,184 @@
   max-width: none;
 }
 
-/* Steps */
+/* ---------------------------------------------------------------------------
+   Article / Step-by-Step Workflow + Workflow Step    Figma 318:5164 / mobile
+   A numbered rail joined by a connector, with each step's content beside it.
+   Measured on the Comics frame: the connector is 2px (not 1.5), the step
+   separation is the content block's own padding-bottom (28 desktop / 24 mobile)
+   so the connector stays unbroken, and the rail column is 32 / 28.
+   --------------------------------------------------------------------------- */
 .od-steps {
+  --od-rail-w: 1.75rem;
+  --od-rail-gap: 0.875rem;
+  --od-step-pad: 1.5rem;
   list-style: none;
-  margin: 0.25rem 0 0;
+  margin: var(--od-flow) 0 0;
   padding: 0;
   counter-reset: od-step;
 }
 
-.od-steps > li {
+@media (min-width: 1100px) {
+  .od-steps {
+    --od-rail-w: 2rem;
+    --od-rail-gap: 1.25rem;
+    --od-step-pad: 1.75rem;
+  }
+}
+
+.ourdream-article-prose .od-steps > li {
   counter-increment: od-step;
-  display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr);
-  column-gap: 1.25rem;
   position: relative;
-  font-family: var(--od-display);
-  font-size: 1.125rem;
+  display: block;
+  margin: 0;
+  padding: 0 0 var(--od-step-pad) calc(var(--od-rail-w) + var(--od-rail-gap));
+}
+
+.ourdream-article-prose .od-steps > li::before {
+  content: counter(od-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--od-rail-w);
+  height: var(--od-rail-w);
+  margin: 0;
+  border-radius: 999px;
+  background: var(--od-pink-soft);
+  color: var(--od-pink-ink);
+  font-family: var(--od-body);
+  font-size: 0.8125rem;
   font-weight: 600;
-  line-height: 1.5rem;
-  letter-spacing: -0.006rem;
+  line-height: 1.125rem;
+  letter-spacing: -0.0018rem;
+}
+
+@media (min-width: 1100px) {
+  .ourdream-article-prose .od-steps > li::before {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+/* Connector — starts 4px below the marker, stops 4px short of the next one. */
+.od-steps > li::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--od-rail-w) / 2 - 1px);
+  top: calc(var(--od-rail-w) + 0.25rem);
+  bottom: 0.25rem;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--od-rail);
+}
+
+.od-steps > li:last-child::after {
+  display: none;
+}
+
+.od-steps__title {
+  margin: 0.1875rem 0 0;
+  font-family: var(--od-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+  letter-spacing: -0.0053rem;
+  font-variation-settings: 'opsz' 14, 'wdth' 100;
   color: var(--od-ink);
 }
 
 @media (min-width: 1100px) {
-  .od-steps > li {
+  .od-steps__title {
     font-size: 1.3125rem;
     line-height: 1.625rem;
-    letter-spacing: -0.0125rem;
+    letter-spacing: -0.013rem;
   }
 }
 
-.od-steps > li::before {
-  content: counter(od-step);
-  grid-column: 1;
-  grid-row: 1;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 1rem;
+.od-steps__body {
+  margin-top: 0.375rem;
+}
+
+@media (min-width: 1100px) {
+  .od-steps__body {
+    margin-top: 0.5rem;
+  }
+}
+
+.ourdream-article-prose .od-steps__body > p,
+.ourdream-article-prose .od-steps__body > ul > li {
+  font-size: 1.0625rem;
+  line-height: 1.75rem;
+  letter-spacing: -0.0032rem;
+  color: var(--od-muted);
+}
+
+@media (min-width: 1100px) {
+  .ourdream-article-prose .od-steps__body > p,
+  .ourdream-article-prose .od-steps__body > ul > li {
+    font-size: 1.125rem;
+    line-height: 1.9375rem;
+    letter-spacing: -0.0045rem;
+  }
+}
+
+.ourdream-article-prose .od-steps__body > * + * {
+  margin-top: 0.375rem;
+}
+
+@media (min-width: 1100px) {
+  .ourdream-article-prose .od-steps__body > * + * {
+    margin-top: 0.5rem;
+  }
+}
+
+/* Media under a step: full step width, caption inset to the step text. */
+.od-steps__media {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.od-steps__media > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--od-hairline);
+  background: var(--od-sunken);
+}
+
+.od-steps__media > figcaption {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  color: var(--od-dim);
+}
+
+/* Placeholder for a screenshot that is designed in Figma but not yet in the
+   repo. Deliberately unmistakable — dashed pink edge and a label saying what
+   belongs here — so it can never be mistaken for finished work. Swap the
+   element for an <img> and the slot keeps its geometry. */
+.od-steps__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 688 / 440;
+  padding: 1rem;
+  border: 2px dashed var(--od-pink);
+  border-radius: 0.75rem;
   background: var(--od-pink-soft);
   color: var(--od-pink-ink);
   font-family: var(--od-body);
   font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  letter-spacing: 0;
-}
-
-.od-steps > li:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: 0.9375rem;
-  top: 2.25rem;
-  bottom: 0.25rem;
-  width: 1.5px;
-  background: var(--od-rail);
-  border-radius: 1px;
-}
-
-.od-steps__title {
-  grid-column: 2;
-  padding: 0.1875rem 0 1.75rem;
-}
-
-.od-steps > li > .od-steps__body,
-.od-steps > li:has(.od-steps__body) .od-steps__title {
-  padding-bottom: 0;
-}
-
-.od-steps > li:has(.od-steps__body) .od-steps__title {
-  padding-bottom: 0.5rem;
-}
-
-.od-steps__body {
-  grid-column: 2;
-  padding-bottom: 1.75rem;
-  font-family: var(--od-body);
-  font-size: 1.0625rem;
-  font-weight: 400;
-  line-height: 1.75rem;
-  letter-spacing: -0.006rem;
-  color: var(--od-muted);
-}
-
-@media (min-width: 1100px) {
-  .od-steps__body {
-    font-size: 1.125rem;
-    line-height: 1.9375rem;
-  }
-}
-
-.od-steps__body p + p {
-  margin-top: 0.75rem;
-}
-
-.od-steps > li:last-child .od-steps__title,
-.od-steps > li:last-child .od-steps__body {
-  padding-bottom: 2rem;
-}
-
-.od-steps > li:not(:has(.od-steps__title)):not(:has(.od-steps__body)) {
-  padding: 0.1875rem 0 1.75rem;
-}
-
-.od-steps > li:last-child:not(:has(.od-steps__title)):not(:has(.od-steps__body)) {
-  padding-bottom: 2rem;
+  line-height: 1.375rem;
+  text-align: center;
 }
 
 /* Pattern blocks */
@@ -2161,19 +2232,25 @@
 }
 
 /* FAQ */
+/* ---------------------------------------------------------------------------
+   Article / FAQ Item                    Figma 320:6597, item 320:6598
+   A stack of disclosures separated by a hairline on each item's TOP edge, so
+   there is no rule after the last one. Items open by default, which is how the
+   frame draws them (every instance shows the minus glyph). The glyph swaps
+   plus <-> minus; it is not a rotated plus.
+   --------------------------------------------------------------------------- */
 .od-faq {
   margin-top: 0.25rem;
-  border-top: 1px solid var(--od-hairline);
 }
 
 .od-faq__item {
-  border-bottom: 1px solid var(--od-hairline);
   padding: 1.25rem 0;
+  border-top: 1px solid var(--od-hairline);
 }
 
 .od-faq__q {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin: 0;
@@ -2181,30 +2258,62 @@
   font-size: 1.0625rem;
   font-weight: 600;
   line-height: 1.375rem;
-  letter-spacing: -0.006rem;
+  letter-spacing: -0.0053rem;
+  font-variation-settings: 'opsz' 14, 'wdth' 100;
   color: var(--od-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.od-faq__q::-webkit-details-marker {
+  display: none;
 }
 
 .od-faq__q::after {
   content: '';
+  flex: none;
   width: 1.125rem;
   height: 1.125rem;
-  flex-shrink: 0;
-  margin-top: 0.125rem;
   background: var(--od-ink);
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 2' fill='none'%3E%3Cpath d='M0 1h14' stroke='black' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")
-    center / 14px 2px no-repeat;
+  -webkit-mask: url('/icons/aige/minus.svg') center / 0.96875rem auto no-repeat;
+  mask: url('/icons/aige/minus.svg') center / 0.96875rem auto no-repeat;
+}
+
+.od-faq__item:not([open]) > .od-faq__q::after {
+  -webkit-mask: url('/icons/aige/plus.svg') center / 0.96875rem auto no-repeat;
+  mask: url('/icons/aige/plus.svg') center / 0.96875rem auto no-repeat;
+}
+
+.od-faq__q:hover {
+  color: var(--od-pink-ink);
+}
+
+.od-faq__q:hover::after {
+  background: var(--od-pink-ink);
+}
+
+.od-faq__q:focus-visible {
+  outline: 2px solid var(--od-pink);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
 
 .od-faq__a {
   margin-top: 0.625rem;
+}
+
+.ourdream-article-prose .od-faq__a > p {
+  margin: 0;
+  font-family: var(--od-body);
   font-size: 1rem;
+  font-weight: 400;
   line-height: 1.625rem;
+  letter-spacing: -0.003rem;
   color: var(--od-muted);
 }
 
-.od-faq__a p + p {
-  margin-top: 0.75rem;
+.ourdream-article-prose .od-faq__a > p + p {
+  margin-top: 0.625rem;
 }
 
 [data-theme='dark'] .ourdream-article-page {
