@@ -1634,8 +1634,20 @@ h1.test-methodology-title__main {
 }
 
 [data-theme='dark'] .test-category-calc-chip {
-  border-color: color-mix(in srgb, var(--color-accent) 50%, rgb(255 255 255 / 14%));
-  background: rgb(255 255 255 / 4%);
+  border-color: var(--dk-line-strong);
+  background: var(--dk-raise);
+}
+
+[data-theme='dark'] .test-category-calc-flow__op {
+  color: var(--dk-faint);
+}
+
+[data-theme='dark'] .test-category-calc-chip__name {
+  color: var(--dk-ink);
+}
+
+[data-theme='dark'] .test-category-calc-chip__weight {
+  color: var(--dk-pink-ink);
 }
 
 [data-theme='dark'] .test-category-split {
@@ -5913,8 +5925,17 @@ h1.test-methodology-title__main {
 }
 
 [data-theme='dark'] .test-across__tooltips {
-  background: rgb(219 39 119 / 4%);
-  border-color: rgb(219 39 119 / 14%);
+  background: var(--dk-card);
+  border-color: var(--dk-line);
+}
+
+[data-theme='dark'] .test-across__tooltips-icon {
+  background: var(--dk-raise);
+  color: var(--dk-pink-ink);
+}
+
+[data-theme='dark'] .test-across__tooltips-link {
+  color: var(--dk-pink-ink);
 }
 
 .test-hub__tooltips-note {

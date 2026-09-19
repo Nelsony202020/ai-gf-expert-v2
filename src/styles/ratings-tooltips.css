@@ -1585,6 +1585,11 @@ a.rt-inline-test-link.rt-comp-name {
   font-variation-settings: 'FILL' 0, 'wght' 500;
 }
 
+/* :where keeps this at base specificity so --past / --here green still wins */
+:where([data-theme='dark']) .rt-pipeline__node-icon {
+  color: var(--dk-dim);
+}
+
 .rt-pipeline__connector {
   position: relative;
   width: 2px;
@@ -1663,6 +1668,11 @@ a.rt-inline-test-link.rt-comp-name {
 
 .rt-pipeline__step--here .rt-pipeline__label {
   color: #14532d;
+}
+
+[data-theme='dark'] .rt-pipeline__step--here .rt-pipeline__label,
+[data-theme='dark'] .rt-pipeline__step--here .rt-pipeline__sub {
+  color: var(--dk-ink);
 }
 
 .rt-pipeline__step--here .rt-pipeline__sub {
