@@ -364,7 +364,7 @@ Raw tag census: 998 `<p>`, 243 `<li>`, 168 `<strong>`, 164 `<h3>`, 61 `<div>`, 5
 
 ### What a typical prerendered `/guides/*` page loads, in order
 1. `src/styles/global.css` (link, but inlined by `inlineStylesheets: 'always'`) — which itself `@import`s: `tailwindcss`, `header.css`, `footer.css`, **`article-utilities.css`**, `coming-soon.css`, `mobile-nav.css`, `site-mobile-menu.css`, `nav-sheet.css`, `scroll-fade.css`, `breadcrumbs.css`, `cms-fields.css`, `dark-mode.css`.
-2. `src/styles/page-full.css` (theme default `full`) — `@import`s `homepage.css`, `review-page.css`, **`roundup.css` (91 KB)**, **`directory.css` (36 KB)**, **`ratings-tooltips.css` (46 KB)**, `glossary-tooltips.css`, `pricing-tab.css`, `video-review-modal.css`, `article-utilities.css`, `market-data.css`, **`alternatives.css` (35 KB)**, `product-logos.css`.
+2. `src/styles/page-full.css` (theme default `full`) — `@import`s `homepage.css`, `review-page.css`, **`roundup.css` (91 KB)**, **`directory.css` (36 KB)**, **`ratings-tooltips.css` (46 KB)**, `glossary-tooltips.css`, `pricing-tab.css`, `media-video-lightbox.css`, `article-utilities.css`, `market-data.css`, **`alternatives.css` (35 KB)**, `product-logos.css`.
 3. From `Header.astro` → `GlobalSiteHeader.astro`: two extra `<link rel="stylesheet">` tags for **`home-desktop.css` (58 KB)** and **`guide-hub.css` (22 KB)**.
 4. Page-level `import '…css'` in frontmatter — e.g. `roundup.css` + `ourdream-article.css` (29 KB) for the OurDream articles; `test-hub.css` (127 KB) + `buying-guide.css` (32 KB) for the buying guide.
 
