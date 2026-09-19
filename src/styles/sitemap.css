@@ -20,7 +20,7 @@
   --si-search-line: #d2d2ce;
   --si-search-active: #333239;
   --si-kbd-bg: #efefed;
-  --si-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --si-display: var(--font-display);
   --si-sans: Inter, system-ui, sans-serif;
   --si-gutter: 1rem;
   --si-max: 75rem;
@@ -207,9 +207,9 @@
   max-width: 18ch;
   font-family: var(--si-display);
   font-size: 34px;
-  font-weight: 700;
+  font-weight: var(--wt-display);
   line-height: 40px;
-  letter-spacing: -0.7px;
+  letter-spacing: var(--ls-display);
   color: #f7f7f6;
 }
 
@@ -219,7 +219,7 @@
     max-width: none;
     font-size: 52px;
     line-height: 58px;
-    letter-spacing: -1.3px;
+    letter-spacing: var(--ls-display);
   }
 }
 
@@ -526,7 +526,7 @@
   margin: 0;
   font-family: var(--si-display);
   font-size: 17px;
-  font-weight: 600;
+  font-weight: var(--wt-display-min);
   line-height: 22px;
   letter-spacing: -0.1px;
 }
@@ -539,7 +539,7 @@
   .si-results-title {
     font-size: 21px;
     line-height: 26px;
-    letter-spacing: -0.2px;
+    letter-spacing: var(--ls-display);
   }
 }
 
@@ -686,9 +686,9 @@
   margin: 0;
   font-family: var(--si-display);
   font-size: 21px;
-  font-weight: 600;
+  font-weight: var(--wt-display-sub);
   line-height: 26px;
-  letter-spacing: -0.2px;
+  letter-spacing: var(--ls-display);
 }
 
 .si-empty-copy {
@@ -752,9 +752,9 @@
   margin: 0;
   font-family: var(--si-display);
   font-size: 26px;
-  font-weight: 700;
+  font-weight: var(--wt-display);
   line-height: 32px;
-  letter-spacing: -0.3px;
+  letter-spacing: var(--ls-display);
   color: var(--si-ink);
 }
 
@@ -1072,7 +1072,8 @@
 .si-stat-n {
   font-family: var(--si-display);
   font-size: 18px;
-  font-weight: 600;
+  font-weight: var(--wt-display-sub);
+  letter-spacing: var(--ls-display);
   line-height: 24px;
   color: var(--si-ink);
 }
@@ -1311,7 +1312,7 @@
   min-width: 0;
   font-family: var(--si-display);
   font-size: 17px;
-  font-weight: 600;
+  font-weight: var(--wt-display-min);
   line-height: 22px;
   letter-spacing: -0.1px;
   color: var(--si-ink);

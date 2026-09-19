@@ -236,11 +236,11 @@ button.site-footer__link {
   margin: 3rem 0 0;
   padding-top: 2.5rem;
   border-top: 1px solid rgb(255 255 255 / 10%);
-  font-family: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', var(--font-display, inherit);
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-weight: var(--wt-display);
   font-size: clamp(2.5rem, 7vw, 5rem);
   line-height: 0.95;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--ls-display);
   color: #f7f7f6;
 }
 
@@ -352,7 +352,7 @@ button.site-footer__link {
     padding-top: 1.25rem;
     font-size: clamp(1.35rem, 5vw, 1.75rem);
     line-height: 1.05;
-    letter-spacing: -0.03em;
+    letter-spacing: var(--ls-display);
   }
 
   .site-footer__bottom {
