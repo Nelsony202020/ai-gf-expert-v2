@@ -19,11 +19,13 @@ const ctaHref = product?.affiliateUrl;
  * page and never swapped: frame 01E is literally "Top of page (tabs + CTA in
  * normal position)" and 01F is the same row stuck to the top.
  *
- * The written brief asked for the CTA to appear only once the row sticks. To
- * switch to that behaviour, change this to 'stuck' — the row then reveals the
- * CTA on stick with the subtle fade/slide described in the brief.
+ * Set to 'stuck' on Nelson's call: while the hero is still on screen the score
+ * card already shows a "Visit <product>" button, and two live CTAs at once is
+ * one too many. The row still never changes size or swaps anything out — the
+ * CTA is the same element throughout, it just fades and slides 6px into place
+ * once the bar pins. Set this back to 'always' for the pure Figma behaviour.
  */
-const ctaMode: 'always' | 'stuck' = 'always';
+const ctaMode: 'always' | 'stuck' = 'stuck';
 ---
 
 {/* Sits immediately before the bar: when it leaves the viewport, the bar is stuck. */}

@@ -261,11 +261,14 @@
   min-width: 0;
 }
 
-.rs-featured-in--under-image {
+/* Mobile: only the copy below the score card. These need two classes — the
+   base .rs-featured-in rule later in this file sets display and would
+   otherwise win on source order, which is why both used to show. */
+.rs-featured-in.rs-featured-in--under-image {
   display: none;
 }
 
-.rs-featured-in--after-module {
+.rs-featured-in.rs-featured-in--after-module {
   display: inline-flex;
 }
 
@@ -951,11 +954,12 @@ ul.rs-list {
     gap: 14px;
   }
 
-  .rs-featured-in--under-image {
+  /* Desktop: only the copy under the image. Two classes, to beat the base rule. */
+  .rs-featured-in.rs-featured-in--under-image {
     display: inline-flex;
   }
 
-  .rs-featured-in--after-module {
+  .rs-featured-in.rs-featured-in--after-module {
     display: none;
   }
 
@@ -1279,6 +1283,44 @@ ul.rs-list {
 .rs-gallery .video-review-trigger__mascot,
 .rs-gallery .video-review-trigger__arrow {
   display: none;
+}
+
+/* Figma "Brand / Avatar Herman YouTube" — 42px frame, 38.5px round avatar with
+   the YouTube badge pinned at its lower right. These had no styles at all, so
+   the avatar rendered square and the play badge floated loose. */
+.review-hero .video-review-trigger__mascot,
+.rs-gallery .video-review-trigger__mascot {
+  position: relative;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+}
+
+.review-hero .video-review-trigger__mascot img,
+.rs-gallery .video-review-trigger__mascot img {
+  width: 38.5px;
+  height: 38.5px;
+  border-radius: 999px;
+  object-fit: cover;
+  background: #0e0e12;
+}
+
+.review-hero .video-review-trigger__play,
+.rs-gallery .video-review-trigger__play {
+  position: absolute;
+  left: 23.625px;
+  top: 21.875px;
+  display: block;
+  width: 15.75px;
+  height: 15.75px;
+  pointer-events: none;
+}
+
+.review-hero .video-review-trigger__play svg,
+.rs-gallery .video-review-trigger__play svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 @media (min-width: 768px) {
