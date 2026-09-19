@@ -1209,17 +1209,34 @@
    and gaps stepped 8 → 12. */
 
 .od-block--what-i-learned {
+  /* One source of truth: the padding and the avatar's offset are the same pair,
+     so the avatar can be lifted out of the grid without the two drifting. */
+  --od-avatar-block: 1rem;
+  --od-avatar-inline: 1.25rem;
+  position: relative;
   display: grid;
   grid-template-columns: 2rem minmax(0, 1fr);
   column-gap: 0.75rem;
   row-gap: 0.75rem;
   align-items: start;
+  padding: var(--od-avatar-block) var(--od-avatar-inline);
 }
 
+@media (min-width: 1100px) {
+  .od-block--what-i-learned {
+    --od-avatar-block: 1.25rem;
+    --od-avatar-inline: 1.5rem;
+  }
+}
+
+/* Out of the grid, not spanning it. A row span opened one row gap per spanned
+   row under the last real child; pinned to row 1 the 32px avatar sized a 20px
+   label row. Absolute does neither. */
 .od-block--what-i-learned::before {
   content: '';
-  grid-column: 1;
-  grid-row: 1 / span 20;
+  position: absolute;
+  inset-block-start: var(--od-avatar-block);
+  inset-inline-start: var(--od-avatar-inline);
   width: 2rem;
   height: 2rem;
   border-radius: 999px;
@@ -1331,7 +1348,9 @@
   column-gap: 0.875rem;
   row-gap: 0.25rem;
   align-items: start;
-  padding: 1.125rem 0;
+  --od-avatar-block: 1.125rem;
+  position: relative;
+  padding: var(--od-avatar-block) 0;
   border: none;
   border-top: 1px solid var(--od-hairline);
   border-bottom: 1px solid var(--od-hairline);
@@ -1339,18 +1358,14 @@
   background: transparent;
 }
 
-@media (min-width: 1100px) {
-  .od-block--my-take {
-    padding: 1.125rem 0;
-  }
-}
 
-/* The avatar spans the whole block. Pinned to row 1 it made that row as tall as
-   itself (36px) against a 20px label, which opened a gap before the sentence. */
+
+/* Out of the grid, not spanning it — see What I learned. */
 .od-block--my-take::before {
   content: '';
-  grid-column: 1;
-  grid-row: 1 / span 20;
+  position: absolute;
+  inset-block-start: var(--od-avatar-block);
+  inset-inline-start: 0;
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 999px;
