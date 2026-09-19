@@ -18,7 +18,7 @@ import { isDbConfigured, getDb } from '../db/server';
 import { isSanityConfigured, sanityQuery } from '../sanity/client';
 import { authors } from '../../data/authors';
 import { products as fileProducts } from '../../data/products';
-import { buyingGuideSlug } from '../../data/buying-guide-content';
+import { GUIDES, guideHref } from '../../data/guides';
 import type {
   RegistryIssue,
   RegistryUrl,
@@ -73,11 +73,13 @@ const STATIC_PAGES: StaticPageDef[] = [
   { path: '/guides/nectar-ai/', title: 'Nectar AI Guides', contentType: 'hub', sourceFile: 'src/pages/guides/nectar-ai.astro', notes: 'Starts noindex; toggle Search visibility in SEO → Pages' },
   { path: '/guides/girlfriendgpt/', title: 'GirlfriendGPT Guides', contentType: 'hub', sourceFile: 'src/pages/guides/girlfriendgpt.astro', notes: 'Starts noindex; toggle Search visibility in SEO → Pages. Canonical product slug is girlfriendgpt.' },
   { path: '/guides/juicychat-ai/', title: 'JuicyChat AI Guides', contentType: 'hub', sourceFile: 'src/pages/guides/juicychat-ai.astro', notes: 'Starts noindex; toggle Search visibility in SEO → Pages' },
-  { path: `/guides/${buyingGuideSlug}/`, title: 'How to Choose an AI Girlfriend App', contentType: 'guide', sourceFile: 'src/pages/guides/how-to-choose-an-ai-girlfriend-app.astro' },
-  { path: '/guides/ourdream-ai-comics/', title: 'OurDream AI Comics: How to Use the Comic Generator', contentType: 'guide', sourceFile: 'src/pages/guides/ourdream-ai-comics.astro' },
-  { path: '/guides/how-to-use-ourdream-ai-image-generator/', title: 'How to Use OurDream AI Image Generator', contentType: 'guide', sourceFile: 'src/pages/guides/how-to-use-ourdream-ai-image-generator.astro' },
-  { path: '/guides/ourdream-ai-image-prompt/', title: 'OurDream AI Image Prompt Guide', contentType: 'guide', sourceFile: 'src/pages/guides/ourdream-ai-image-prompt.astro' },
-  { path: '/guides/ourdream-ai-prompt/', title: 'OurDream AI Prompt Guide', contentType: 'guide', sourceFile: 'src/pages/guides/ourdream-ai-prompt.astro' },
+  // Guide articles are generated from the registry (src/data/guides.ts).
+  ...GUIDES.map((guide) => ({
+    path: guideHref(guide.slug),
+    title: guide.title,
+    contentType: 'guide' as const,
+    sourceFile: `src/pages/guides/${guide.slug}.astro`,
+  })),
   { path: '/legal/', title: 'Legal Pages', contentType: 'hub', sourceFile: 'src/pages/legal/index.astro' },
   { path: '/legal/privacy/', title: 'Privacy Policy', contentType: 'legal', sourceFile: 'src/pages/legal/privacy.astro' },
   { path: '/legal/terms/', title: 'Terms of Service', contentType: 'legal', sourceFile: 'src/pages/legal/terms.astro' },

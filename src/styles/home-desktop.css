@@ -137,7 +137,7 @@
   background:
     radial-gradient(
       circle 340px at var(--mx) var(--my),
-      rgb(219 39 119 / 13%) 0%,
+      rgb(219 39 119 / 18%) 0%,
       rgb(124 28 72 / 8%) 28%,
       rgb(76 16 48 / 4%) 48%,
       transparent 72%
@@ -374,6 +374,28 @@ html[data-theme='dark'] .home-v2__header {
 
 .home-v2__drop {
   position: relative;
+}
+
+/*
+ * The 8px below the trigger is a visual gap, not a dead zone.
+ *
+ * `mouseleave` fires on .home-v2__drop the moment the pointer crosses that gap,
+ * and the close timer then hides the panel before the pointer lands on it — so
+ * aiming at "Candy AI Review" made the menu vanish under the cursor. Once the
+ * panel is `hidden` there is nothing left to re-enter, so it never came back.
+ *
+ * This ::before bridges the gap with an invisible strip that belongs to the
+ * panel, which is inside .home-v2__drop — so the pointer never actually leaves
+ * the trigger's subtree on the way down. It exists only while the panel is
+ * open, because the closed panel is `pointer-events: none` and `hidden`.
+ */
+.home-v2__drop-panel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 10px;
 }
 
 .home-v2__drop-panel {
@@ -2141,7 +2163,7 @@ html[data-theme='dark'] [data-site-header] .home-v2__search-dropdown {
   background:
     radial-gradient(
       circle 340px at var(--mx) var(--my),
-      rgb(219 39 119 / 5%) 0%,
+      rgb(219 39 119 / 9%) 0%,
       rgb(124 28 72 / 3%) 32%,
       transparent 70%
     );
@@ -2152,11 +2174,43 @@ html[data-theme='dark'] [data-site-header] .home-v2__search-dropdown {
 }
 
 .home-v2__cta.is-glowing .home-v2__grid-hot {
-  opacity: 0.32;
+  opacity: 0.55;
 }
 
 .home-v2__cta.is-glowing .home-v2__cursor-glow {
-  opacity: 0.38;
+  opacity: 0.7;
+}
+
+/*
+ * Static blob for the closing CTA. Unlike the hero's 620px SVG this is a CSS
+ * radial-gradient (no image request) and it sits behind the pink button on the
+ * RIGHT, so it haloes the thing we want clicked instead of mirroring the
+ * hero's composition.
+ */
+.home-v2__cta-glow {
+  position: absolute;
+  right: -80px;
+  top: 50%;
+  width: 520px;
+  height: 520px;
+  z-index: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgb(219 39 119 / 16%) 0%,
+    rgb(219 39 119 / 8%) 32%,
+    rgb(124 28 72 / 4%) 54%,
+    transparent 72%
+  );
+}
+
+@media (max-width: 767px) {
+  .home-v2__cta-glow {
+    right: -160px;
+    width: 380px;
+    height: 380px;
+  }
 }
 
 .home-v2__cta .home-v2__btn--primary:hover {

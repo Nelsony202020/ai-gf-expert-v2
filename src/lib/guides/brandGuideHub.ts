@@ -28,6 +28,16 @@ export interface BrandGuideHubConfig {
   defaultNoindex: boolean;
   /** Cloaked Visit CTA when the product record has no live /go link. */
   visitGoFallback: string;
+  /**
+   * Hero glow hue, 0-360. Sampled from the brand's real logo, then spread
+   * apart so the five hubs are actually distinguishable — four of the five
+   * logos sit in the same pink/magenta band. This is the OUTER bloom only;
+   * it always resolves into Expert pink at the core (see guide-hub.css), so
+   * the brand colour never appears as a flat field.
+   *
+   * Kept in data, not CSS, so nothing global can pick it up.
+   */
+  glowHue: number;
 }
 
 export interface BrandGuideHubView {
@@ -57,6 +67,8 @@ export const BRAND_GUIDE_HUBS: BrandGuideHubConfig[] = [
     topicsIntro: 'Jump into Candy AI guides by what you want to do.',
     defaultNoindex: true,
     visitGoFallback: '/go/candy-ai',
+    /** logo 348 crimson-pink */
+    glowHue: 352,
   },
   {
     productSlug: 'nectar-ai',
@@ -70,6 +82,8 @@ export const BRAND_GUIDE_HUBS: BrandGuideHubConfig[] = [
     topicsIntro: 'Jump into Nectar AI guides by what you want to do.',
     defaultNoindex: true,
     visitGoFallback: '/go/nectar-ai',
+    /** logo 0 red; pushed to amber so it never reads as a low score */
+    glowHue: 20,
   },
   {
     productSlug: 'girlfriendgpt',
@@ -83,6 +97,8 @@ export const BRAND_GUIDE_HUBS: BrandGuideHubConfig[] = [
     topicsIntro: 'Jump into GirlfriendGPT guides by what you want to do.',
     defaultNoindex: true,
     visitGoFallback: '/go/girlfriendgpt',
+    /** logo 240 indigo, the only naturally distinct one */
+    glowHue: 250,
   },
   {
     productSlug: 'juicychat-ai',
@@ -96,6 +112,8 @@ export const BRAND_GUIDE_HUBS: BrandGuideHubConfig[] = [
     topicsIntro: 'Jump into JuicyChat AI guides by what you want to do.',
     defaultNoindex: true,
     visitGoFallback: '/go/juicychat-ai',
+    /** logo 318 magenta, unchanged */
+    glowHue: 318,
   },
 ];
 

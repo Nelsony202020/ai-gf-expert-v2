@@ -1,0 +1,533 @@
+/*
+ * Shared listing rows for /reviews/ and /guides/.
+ *
+ * Not a new visual language: this is the guide-hub row pattern (hairline rules,
+ * no containers, arrow on the right) rebuilt on the GLOBAL themed tokens rather
+ * than --hub-*, because both pages render in <main>, outside the .guide-hub
+ * wrapper the header provides. Using the global tokens is also what keeps these
+ * pages correct in both themes — the bug this replaced came from a component
+ * stylesheet painting the page instead of itself.
+ */
+
+.listing {
+  --ls-ink: var(--color-on-surface);
+  --ls-muted: var(--color-on-surface-variant);
+  --ls-hairline: var(--color-surface-variant);
+  --ls-pink: var(--color-accent);
+  --ls-raised: var(--color-surface-container-low);
+}
+
+.listing__section {
+  margin-bottom: 44px;
+}
+
+.listing__section-title {
+  margin: 0 0 4px;
+  font-family: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ls-ink);
+}
+
+.listing__section-intro {
+  margin: 0 0 14px;
+  font: 400 15px/1.5 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+/* ---- Generic row ------------------------------------------------------ */
+
+.listing__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.listing__rows > li + li {
+  margin-top: -1px;
+}
+
+.listing__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+  padding: 16px 4px;
+  border-block: 1px solid var(--ls-hairline);
+  color: var(--ls-ink);
+  text-decoration: none;
+  transition: background-color 140ms ease-out;
+}
+
+.listing__row:hover {
+  background: var(--ls-raised);
+}
+
+.listing__row:active {
+  background: color-mix(in srgb, var(--ls-pink) 7%, transparent);
+}
+
+.listing__row:focus-visible {
+  outline: 2px solid var(--ls-pink);
+  outline-offset: -2px;
+}
+
+.listing__row-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.listing__row-title {
+  display: block;
+  margin: 0;
+  font: 600 17px/1.35 var(--font-sans);
+  letter-spacing: -0.01em;
+  color: var(--ls-ink);
+}
+
+.listing__row-desc {
+  display: block;
+  margin: 3px 0 0;
+  font: 400 14.5px/1.5 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+.listing__row-arrow {
+  flex-shrink: 0;
+  color: var(--ls-muted);
+}
+
+.listing__row:hover .listing__row-arrow {
+  color: var(--ls-pink);
+}
+
+.listing__logo {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--ls-raised);
+}
+
+.listing__num {
+  flex-shrink: 0;
+  width: 28px;
+  font: 600 14px/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ls-muted);
+}
+
+/* ---- Review comparison row -------------------------------------------- */
+
+/*
+ * Four tracks, not three: logo | score | identity+verdict | actions.
+ *
+ * The score used to live inside .listing__review-identity, right after the
+ * name, so its x-position tracked the length of the app name and the column
+ * could not be read down. Its own fixed track is the whole point of this page.
+ */
+.listing__review-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px 64px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'logo score identity actions'
+    'logo score verdict  actions'
+    'logo score best     actions';
+  align-items: center;
+  gap: 2px 14px;
+  padding: 18px 4px;
+  border-block: 1px solid var(--ls-hairline);
+  transition: background-color 140ms ease-out;
+}
+
+.listing__review-row:hover {
+  background: var(--ls-raised);
+}
+
+.listing__review-row:has(:focus-visible) {
+  outline: 2px solid var(--ls-pink);
+  outline-offset: -2px;
+}
+
+.listing__review-rows > li + li {
+  margin-top: -1px;
+}
+
+.listing__review-row .listing__logo {
+  grid-area: logo;
+  width: 48px;
+  height: 48px;
+}
+
+.listing__review-identity {
+  grid-area: identity;
+  min-width: 0;
+}
+
+.listing__review-name {
+  margin: 0;
+  font-family: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ls-ink);
+}
+
+.listing__review-name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/*
+ * One link per row. The second "Read review" link pointed at the same URL as
+ * the title, so it was deleted; this ::after gives the row back its whole-row
+ * click target without adding an <a>. .listing__visit sits above it via
+ * z-index, so the pink pill still wins its own hit area.
+ */
+.listing__review-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.listing__review-link:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--ls-pink);
+  text-underline-offset: 3px;
+}
+
+.listing__review-name a:focus-visible {
+  outline: 2px solid var(--ls-pink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* The overall score is the point of this page — give it presence.
+   Colour still comes from the shared chip (green/orange/red = score only).
+   Left-aligned in its own track so all five read as one column. */
+.listing__review-row > .listing__score {
+  grid-area: score;
+  justify-self: start;
+  min-width: 3rem;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.listing__review-verdict {
+  grid-area: verdict;
+  min-width: 0;
+}
+
+.listing__review-line {
+  margin: 0;
+  font: 400 14.5px/1.5 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+/* "Best at" is its own grid row with a fixed-width label, so the category
+   name starts at the same x on every row instead of trailing inline text. */
+.listing__best-at {
+  grid-area: best;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+  margin-top: 6px;
+  font: 500 13px/1 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+.listing__best-at-label {
+  flex: 0 0 auto;
+  width: 46px;
+  color: var(--ls-muted);
+}
+
+.listing__best-at strong {
+  font-weight: 600;
+  color: var(--ls-ink);
+}
+
+.listing__review-actions {
+  position: relative;
+  z-index: 1;
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.listing__visit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--ls-pink);
+  color: #f7f7f6;
+  font: 600 14px/1 var(--font-sans);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 140ms ease-out;
+}
+
+.listing__visit:hover {
+  background: color-mix(in srgb, var(--ls-pink) 84%, #000);
+}
+
+.listing__visit:focus-visible {
+  outline: 2px solid var(--ls-pink);
+  outline-offset: 2px;
+}
+
+.listing__disclosure {
+  margin: 14px 0 0;
+  font: 400 12.5px/1.5 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+/* One roundup link, inline at the end of the list — not its own section. */
+.listing__inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 10px;
+  font: 600 15px/1 var(--font-sans);
+  color: var(--ls-pink);
+  text-decoration: none;
+}
+
+.listing__inline-link:hover {
+  text-decoration: underline;
+}
+
+.listing__inline-link:focus-visible {
+  outline: 2px solid var(--ls-pink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (max-width: 767px) {
+  .listing__review-row {
+    grid-template-columns: 44px auto minmax(0, 1fr);
+    grid-template-areas:
+      'logo score identity'
+      'verdict verdict verdict'
+      'best best best'
+      'actions actions actions';
+    gap: 8px 12px;
+  }
+
+  .listing__review-row > .listing__score {
+    font-size: 14px;
+    padding: 4px 8px;
+  }
+
+  .listing__review-row .listing__logo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .listing__review-actions {
+    justify-content: flex-start;
+    margin-top: 2px;
+  }
+
+  .listing__review-name {
+    font-size: 17px;
+  }
+
+  .listing__section-title {
+    font-size: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listing__row,
+  .listing__review-row,
+  .listing__visit {
+    transition: none;
+  }
+}
+
+
+/* ---- Hero search (client-side filter; the site has no /search/ route) --- */
+
+.listing__no-match {
+  padding: 18px 4px;
+  font: 400 15px/1.5 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+.listing__row[hidden] {
+  display: none;
+}
+
+/* ---- Brand cards (/guides/ "Browse by brand") -------------------------- */
+
+/*
+ * This is the highest-value navigation on /guides/ and it used to be the
+ * lowest-weight element on the page — five hairline rows identical to the
+ * guide rows below them. Cards give the five hubs the visual weight their
+ * click-through deserves, and room for the score and a positioning line.
+ *
+ * 3+2 at desktop, 2-up tablet, 1-up mobile.
+ */
+.listing__brand-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.listing__brand-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  padding: 16px;
+  border: 1px solid var(--ls-hairline);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--ls-ink);
+  text-decoration: none;
+  transition:
+    border-color 140ms ease-out,
+    background-color 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.listing__brand-card:hover {
+  border-color: color-mix(in srgb, var(--ls-pink) 45%, var(--ls-hairline));
+  background: var(--ls-raised);
+  transform: translateY(-1px);
+}
+
+.listing__brand-card:focus-visible {
+  outline: 2px solid var(--ls-pink);
+  outline-offset: 2px;
+}
+
+.listing__brand-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.listing__brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--ls-raised);
+}
+
+.listing__brand-card .listing__brand-score {
+  min-width: 2.6rem;
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.listing__brand-name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.listing__brand-line {
+  flex: 1 1 auto;
+  font: 400 13.5px/1.45 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+.listing__brand-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font: 600 13px/1 var(--font-sans);
+  color: var(--ls-pink);
+}
+
+@media (max-width: 1023px) {
+  .listing__brand-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 599px) {
+  .listing__brand-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---- Grouped "All guides" --------------------------------------------- */
+
+/*
+ * Grouped, never paginated. A hub's job is to link everything it owns; at ten
+ * per page, forty of fifty guides would sit behind a lower-authority URL, and
+ * a JS "load more" would hide them from crawlers entirely. Revisit past ~60.
+ */
+.listing__group + .listing__group {
+  margin-top: 26px;
+}
+
+.listing__group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font: 600 13px/1 var(--font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ls-muted);
+}
+
+.listing__group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--ls-raised);
+  font: 600 11.5px/1 var(--font-sans);
+  letter-spacing: 0;
+  color: var(--ls-muted);
+}
+
+/* ---- Hero search results ---------------------------------------------- */
+
+/*
+ * Results replace the three browse sections in place, directly under the search
+ * field. The old filter only ever hid guide rows further down the page, so on a
+ * query the visible box did nothing and the reader saw a dead field.
+ */
+.listing__results {
+  scroll-margin-top: 96px;
+}
+
+.listing__results .listing__section-title {
+  margin-bottom: 10px;
+}

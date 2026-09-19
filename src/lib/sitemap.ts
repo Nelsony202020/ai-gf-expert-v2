@@ -11,10 +11,10 @@ import type { Product } from '../data/products';
 import { getAllAuthors } from '../data/authors';
 import { products } from '../data/products';
 import { getTestCategories } from './test-framework';
-import { buyingGuideSlug } from '../data/buying-guide-content';
 import { BRAND_GUIDE_HUBS, brandGuideHubPath } from './guides/brandGuideHub';
 import { testHubUrl } from './slugs';
 import { pathMatchKey, publicPagePath } from './urls';
+import { GUIDES } from '../data/guides';
 
 export interface RoundupSummary {
   title: string;
@@ -158,45 +158,16 @@ export function getAllSitemapEntries(inputs: SitemapInputs = {}): SitemapEntry[]
     });
   }
 
-  push({
-    title: 'How to Choose an AI Girlfriend App',
-    url: `/guides/${buyingGuideSlug}`,
-    contentType: 'guide',
-    sitemapSection: 'guides',
-    parentCategory: 'guides',
-  });
-
-  push({
-    title: 'OurDream AI Comics: How to Use the Comic Generator',
-    url: '/guides/ourdream-ai-comics',
-    contentType: 'guide',
-    sitemapSection: 'guides',
-    parentCategory: 'guides',
-  });
-
-  push({
-    title: 'How to Use OurDream AI Image Generator',
-    url: '/guides/how-to-use-ourdream-ai-image-generator',
-    contentType: 'guide',
-    sitemapSection: 'guides',
-    parentCategory: 'guides',
-  });
-
-  push({
-    title: 'OurDream AI Image Prompt Guide',
-    url: '/guides/ourdream-ai-image-prompt',
-    contentType: 'guide',
-    sitemapSection: 'guides',
-    parentCategory: 'guides',
-  });
-
-  push({
-    title: 'OurDream AI Prompt Guide',
-    url: '/guides/ourdream-ai-prompt',
-    contentType: 'guide',
-    sitemapSection: 'guides',
-    parentCategory: 'guides',
-  });
+  // Guide articles come from the registry (src/data/guides.ts), never a copy.
+  for (const guide of GUIDES) {
+    push({
+      title: guide.title,
+      url: `/guides/${guide.slug}`,
+      contentType: 'guide',
+      sitemapSection: 'guides',
+      parentCategory: 'guides',
+    });
+  }
 
   push({
     title: 'How We Test AI Girlfriend Apps',

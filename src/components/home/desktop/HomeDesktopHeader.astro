@@ -151,15 +151,28 @@ const reviewLinks = publishedProducts
       });
     }
 
+    /*
+     * 120ms was not enough time to travel from the trigger to a link in the
+     * panel — the menu closed under the cursor mid-move. The CSS bridge over
+     * the 8px gap does most of the work; this gives a diagonal move to the far
+     * side of the panel room to land, and still closes promptly on a real exit.
+     */
+    const DROP_CLOSE_DELAY_MS = 260;
+
     function scheduleDropClose() {
       if (dropCloseTimer) clearTimeout(dropCloseTimer);
-      dropCloseTimer = setTimeout(closeDrops, 120);
+      dropCloseTimer = setTimeout(closeDrops, DROP_CLOSE_DELAY_MS);
     }
 
     header.querySelectorAll('[data-home-drop]').forEach((drop) => {
       const btn = drop.querySelector('[data-home-drop-btn]');
       drop.addEventListener('mouseenter', () => openDrop(drop));
       drop.addEventListener('mouseleave', scheduleDropClose);
+      // Belt and braces: if the pointer does reach the panel, cancel any close
+      // already scheduled, whatever route it took to get there.
+      const panel = drop.querySelector('[data-home-drop-panel]');
+      panel?.addEventListener('mouseenter', () => openDrop(drop));
+      panel?.addEventListener('mouseleave', scheduleDropClose);
       btn?.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();

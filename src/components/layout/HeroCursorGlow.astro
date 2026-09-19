@@ -1,0 +1,74 @@
+---
+/**
+ * Expert-pink hero glow for the two index hubs (/guides/ and /reviews/).
+ *
+ * No new glow system: this renders the homepage's own two elements — the static
+ * `pink-glow.svg` blob behind `.home-v2__glow` and `.home-v2__cursor-glow` — and
+ * home-desktop.css (already linked by GlobalSiteHeader) paints both. The only
+ * added CSS is the opt-in `.guide-hub--expert-glow` block in guide-hub.css, which
+ * keys `.is-glowing` onto the guide-hub hero instead of the homepage hero.
+ *
+ * These are not brand pages, so there is no per-brand hue here — the blob and
+ * the cursor gradient are Expert pink (#db2777) as shipped.
+ *
+ * The cursor layer is mouse-only and motion-sensitive: home-desktop.css already
+ * hides `.home-v2__cursor-glow` under `(hover: none)`, `(pointer: coarse)` and
+ * `prefers-reduced-motion: reduce`, so mobile gets the static blob alone.
+ */
+---
+
+<img class="home-v2__glow" src="/home/v2/pink-glow.svg" alt="" aria-hidden="true" />
+<span class="home-v2__cursor-glow" aria-hidden="true"></span>
+
+<script>
+  function bindHeroGlow(root: HTMLElement) {
+    if (root.dataset.glowBound === 'true') return;
+    root.dataset.glowBound = 'true';
+    if (
+      !window.matchMedia('(hover: hover) and (pointer: fine)').matches ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      return;
+    }
+
+    let tx = 0.68;
+    let ty = 0.36;
+    let cx = tx;
+    let cy = ty;
+    let visible = false;
+    let raf = 0;
+
+    const tick = () => {
+      cx += (tx - cx) * 0.1;
+      cy += (ty - cy) * 0.1;
+      root.style.setProperty('--mx', `${(cx * 100).toFixed(2)}%`);
+      root.style.setProperty('--my', `${(cy * 100).toFixed(2)}%`);
+      const settled = Math.abs(tx - cx) < 0.0008 && Math.abs(ty - cy) < 0.0008;
+      raf = !settled || visible ? requestAnimationFrame(tick) : 0;
+    };
+
+    root.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const r = root.getBoundingClientRect();
+      tx = (e.clientX - r.left) / r.width;
+      ty = (e.clientY - r.top) / r.height;
+      if (!visible) {
+        visible = true;
+        root.classList.add('is-glowing');
+      }
+      if (!raf) raf = requestAnimationFrame(tick);
+    });
+
+    root.addEventListener('pointerleave', () => {
+      visible = false;
+      root.classList.remove('is-glowing');
+    });
+  }
+
+  function initHeroGlows() {
+    document.querySelectorAll<HTMLElement>('[data-hero-glow]').forEach(bindHeroGlow);
+  }
+
+  initHeroGlows();
+  document.addEventListener('astro:page-load', initHeroGlows);
+</script>

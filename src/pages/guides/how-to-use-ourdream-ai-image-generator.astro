@@ -13,9 +13,12 @@ import '../../styles/ourdream-article.css';
 // Geist Mono is the Figma `Article/Code` face. Imported per article route rather than in
 // BaseLayout so its @font-face block is not inlined into every page on the site.
 import '@fontsource-variable/geist-mono/wght.css';
+import { guideBySlug, guideBreadcrumbLabel, guideSeoTitle } from '../../data/guides';
 
-const h1 = 'How to Use OurDream AI Image Generator';
-const title = 'How to Use OurDream AI Image Generator: Beginner Guide';
+// Title, <title> and breadcrumb all come from the guide registry.
+const guide = guideBySlug('how-to-use-ourdream-ai-image-generator');
+const h1 = guide.title;
+const title = guideSeoTitle(guide.slug);
 const description =
   'Learn how to use the OurDream AI image generator, including Dreamy, Vivid, Vivid 2, Free Play, presets, Remix, image editing, and chat image generation.';
 const canonical = canonicalPublicUrl('/guides/how-to-use-ourdream-ai-image-generator', Astro.site);
@@ -41,7 +44,7 @@ const jsonLd: Record<string, unknown>[] = [
   <main>
     <OurDreamArticlePage
       title={h1}
-      breadcrumbLabel="OurDream AI Image Generator"
+      breadcrumbLabel={guideBreadcrumbLabel(guide.slug)}
       bodyHtml={bodyHtml}
       author={author}
       published={published}
