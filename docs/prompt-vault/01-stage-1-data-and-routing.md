@@ -38,7 +38,7 @@ Failure policy: on Vercel, a missing/failing/empty DB or any invalid row (duplic
 
 - Schema pushed to the production InstantDB app, **additive only**: I pulled the live schema, added just the 4 `promptVault*` namespaces and 2 links, verified the diff had zero removals, and pushed that file. Nothing else changed.
 - Note: `instant.schema.ts` on main differs from the live DB in 3 unrelated places (`products.productType`, index on `media.status`, `affiliateLinks.ageGate` exist in the repo but not live). Not pushed — outside this job. A plain `db:push` from main would apply them.
-- Seeded 82 prompts / 85 results / 15 categories / 7 filters. Read back through the build loader: `source=instantdb`, 0 mismatches against seed.json.
+- Seeded 94 prompts / 97 results / 15 categories / 7 filters (82 first, the 12 from frame 842:7946 after). Read back through the build loader: `source=instantdb`, 0 mismatches against seed.json.
 - To add a prompt later: add a `promptVaultPrompts` row (status `published`) linked to its category, plus ≥1 `promptVaultResults` row linked to it, in the Instant dashboard — then redeploy. No code change. An admin screen for this can come later if you want one.
 
 ## URL / SEO
@@ -53,7 +53,7 @@ Failure policy: on Vercel, a missing/failing/empty DB or any invalid row (duplic
 
 ## Open issues found in stage 1
 
-1. **Only 82 of the 94 prompts exist in Figma.** No card carries these 12 (category is known from the album numbering): p014, p015, p016, p017 (Face) · p023, p024 (Eyes) · p076, p078 (Skin) · p087 (Neck & upper body) · p101, p103 (Ears — the header says dog and bear) · p118 (Art style — header says black and white). I need title + exact prompt text for each. Until then the page and chip counts say 82, not 94 (Face 8/12, Eyes 6/8, Skin 4/6, Clothing 6/7, Fantasy 13/15, Styles & effects 6/7).
+1. ~~Only 82 of the 94 prompts exist in Figma.~~ **Resolved:** the 12 missing cards (p014–p017, p023, p024, p076, p078, p087, p101, p103, p118) were added in Figma frame 842:7946 "Missing prompt cards — for dev" and read from there verbatim. All 94 are now in seed.json and the database. Count check against Figma (all OK): every category header (15), every group meta line (5), every chip (7 + All = 94), hero "97 example images".
 2. **Chips vs categories.** Figma chips are 7 buckets (Hair = 39 = styles 18 + colors 14 + accessories 7), while "View all" opens one of 15 categories. Both are supported by `?category=`. The DOC example `?category=hair` on the Hair-style results frame is ambiguous — I treat `hair` as the chip (39) and `hair-style-prompts` as View all (18).
 3. **Search scope.** Brief: title + prompt text. Figma DOC 261:5355 #04: "hair" matches 39 — that needs category names too (Tiara, Choker … have no "hair" in title/text). Title+text gives 32. Which one?
 4. **Grid columns.** Brief: 3 per row / previews of 3. DOC 261:5243 #06 and 488:56195 #05 still say "one row of 4" / "four columns" — the frames show 3. Following the brief; DOC text looks stale.
