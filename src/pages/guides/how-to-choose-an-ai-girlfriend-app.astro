@@ -25,8 +25,9 @@ import { enrichBuyingGuideUserTypes } from '../../lib/buying-guide-apps';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import '../../styles/test-hub.css';
 import '../../styles/buying-guide.css';
+import { guideSeoTitle } from '../../data/guides';
 
-const pageTitle = 'How to Choose an AI Girlfriend App — Buying Guide';
+const pageTitle = guideSeoTitle(buyingGuideSlug);
 const description =
   'There are thousands of AI girlfriend apps online. This is a zero-bs guide to finding the right one, based on buying and reviewing dozens.';
 const canonical = canonicalPublicUrl(`/guides/${buyingGuideSlug}`, Astro.site);

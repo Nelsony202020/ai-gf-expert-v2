@@ -1,3 +1,5 @@
+import { guideHref, guidesForBrand } from './guides';
+
 export interface HubGuide {
   title: string;
   href: string;
@@ -14,46 +16,44 @@ export const ourdreamHubMeta = {
   visitLabel: 'Visit OurDream AI',
   /** Cloaked affiliate slug for hub Visit CTAs (manage destination in Admin → Affiliate links). */
   visitGoHref: '/go/ourdream-ai-yt',
+  /**
+   * Hero glow hue — outer bloom only; it resolves into Expert pink at the core.
+   * Logo samples at 330, which is Expert pink itself, so it is pushed to violet
+   * to give the bloom something to resolve FROM. Biggest deviation of the five.
+   */
+  glowHue: 290,
 };
 
+/*
+ * Hub rows are DERIVED from the guide registry (src/data/guides.ts) — the only
+ * place a guide title, slug or blurb lives. Row 0 is the review, which is not a
+ * guide, so it is composed from the hub meta instead.
+ */
 export const ourdreamHubGuides: HubGuide[] = [
   {
-    title: 'OurDream AI Review',
-    href: '/reviews/ourdream-ai/',
+    title: `${ourdreamHubMeta.productName} Review`,
+    href: ourdreamHubMeta.reviewHref,
     description: 'Our full testing, scores, pricing and verdict.',
     tags: ['review', 'scores', 'pricing'],
   },
-  {
-    title: 'OurDream AI Prompt Guide',
-    href: '/guides/ourdream-ai-prompt/',
-    description: 'How to write better prompts for characters, images, videos, and roleplay.',
-    tags: ['prompts', 'characters', 'video'],
-  },
-  {
-    title: 'How to Use OurDream AI Image Generator',
-    href: '/guides/how-to-use-ourdream-ai-image-generator/',
-    description: 'Dreamy vs Vivid, Free Play, presets, Remix, editing, and in-chat images.',
-    tags: ['images', 'generator'],
-  },
-  {
-    title: 'OurDream AI Image Prompt Guide',
-    href: '/guides/ourdream-ai-image-prompt/',
-    description: 'Tags, weights, camera terms, negative prompts, and tested examples.',
-    tags: ['prompts', 'images'],
-  },
-  {
-    title: 'OurDream AI Comics',
-    href: '/guides/ourdream-ai-comics/',
-    description: 'Comic Studio characters, layouts, prompting, editing, video, and cost.',
-    tags: ['comics', 'images', 'video'],
-  },
+  ...guidesForBrand('ourdream-ai').map((guide) => ({
+    title: guide.hubTitle ?? guide.title,
+    href: guideHref(guide.slug),
+    description: guide.hubDescription ?? guide.description,
+    tags: guide.tags ?? [],
+  })),
 ];
 
-export const ourdreamHubStartHere = [
-  ourdreamHubGuides[0],
-  ourdreamHubGuides[1],
-  ourdreamHubGuides[2],
-];
+/** Look a hub row up by its registry slug, so topic lists never index by position. */
+export function ourdreamHubGuide(slug: string): HubGuide {
+  const href = guideHref(slug);
+  const found = ourdreamHubGuides.find((g) => g.href === href);
+  if (!found) throw new Error(`[ourdream-guide-hub] no guide in GUIDES for slug "${slug}"`);
+  return found;
+}
+
+/** The review, then the first two guides in registry reading order. */
+export const ourdreamHubStartHere = ourdreamHubGuides.slice(0, 3);
 
 export const ourdreamHubPopular = [
   { label: 'Prompts', query: 'prompts' },
@@ -96,7 +96,10 @@ export const ourdreamHubTopics = [
     description: 'Writing prompts, character setup, and prompt control in OurDream.',
     mobileDescription: 'Prompts and characters',
     icon: '/guides/hub/icon-sliders.svg',
-    guides: [ourdreamHubGuides[1], ourdreamHubGuides[3]],
+    guides: [
+      ourdreamHubGuide('ourdream-ai-prompt'),
+      ourdreamHubGuide('ourdream-ai-image-prompt'),
+    ],
   },
   {
     id: 'images-video-comics',
@@ -104,6 +107,9 @@ export const ourdreamHubTopics = [
     description: 'Image generation, comics, and video inside OurDream.',
     mobileDescription: 'Images, video, and comics',
     icon: '/guides/hub/icon-images.svg',
-    guides: [ourdreamHubGuides[2], ourdreamHubGuides[4]],
+    guides: [
+      ourdreamHubGuide('how-to-use-ourdream-ai-image-generator'),
+      ourdreamHubGuide('ourdream-ai-comics'),
+    ],
   },
 ];

@@ -13,7 +13,7 @@ const hubGuidesJson = JSON.stringify(view.searchItems);
 const searchEmpty = view.config.searchEmpty;
 ---
 
-<div class="guide-hub">
+<div class="guide-hub guide-hub--brand" style={`--hub-glow-hue: ${view.config.glowHue}`}>
   <GlobalSiteHeader wrapGuideHub={false}>
       <h1 class="guide-hub__title">{view.config.title}</h1>
       <p class="guide-hub__lede">{view.config.description}</p>
@@ -65,7 +65,7 @@ const searchEmpty = view.config.searchEmpty;
             <HomeIcon name="arrow-up-right" size={16} />
           </AffiliateLink>
           {view.reviewHref && (
-            <a class="guide-hub__review-link" href={view.reviewHref}>Read review →</a>
+            <a class="guide-hub__review-link" href={view.reviewHref}>{view.productName} Review →</a>
           )}
         </div>
       </div>
@@ -81,7 +81,7 @@ const searchEmpty = view.config.searchEmpty;
       </div>
       <div class="guide-hub__sticky-bar-actions">
         {view.reviewHref && (
-          <a class="guide-hub__sticky-review" href={view.reviewHref}>Read review →</a>
+          <a class="guide-hub__sticky-review" href={view.reviewHref}>{view.productName} Review →</a>
         )}
         <AffiliateLink class="guide-hub__sticky-visit" href={view.visitHref} target="_blank">
           {view.visitLabel}

@@ -355,7 +355,6 @@ function withUnit(value: string) {
     <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-8 lg:gap-10 min-w-0">
       <div class="min-w-0">
         <header class="pt-intro mb-10" id="pricing-intro">
-          <p class="pt-eyebrow">Page intro</p>
           <h2 class="pt-title">{vm.productName} pricing</h2>
           {pageIntro && (
             <p
@@ -391,7 +390,6 @@ function withUnit(value: string) {
         <!-- Is [Product] expensive? -->
         <section class="pt-block" id="pricing-benchmark" aria-labelledby="pt-market-title">
           <header class="pt-section-head">
-            <p class="pt-eyebrow">Market position</p>
             <h3 id="pt-market-title" class="pt-title">Is {vm.productName} expensive?</h3>
           </header>
 
@@ -519,7 +517,6 @@ function withUnit(value: string) {
             vm.plans.length > 0 ? (
               <div class="pt-plans-wrap">
                 <header class="pt-section-head">
-                  <p class="pt-eyebrow">Plans</p>
                   <h3 id="pt-plans-title" class="pt-title">Plans & what you get</h3>
                   {plansIntro && <p class="pt-lead pt-lead--tight">{plansIntro}</p>}
                 </header>
@@ -692,7 +689,6 @@ function withUnit(value: string) {
                       data-pt-pool-ready={poolReady ? 'true' : 'false'}
                     >
                       <header class="pt-section-head">
-                        <p class="pt-eyebrow">Credit value</p>
                         <h3 class="pt-title">What your credits can buy</h3>
                       </header>
 
@@ -1274,7 +1270,6 @@ function withUnit(value: string) {
                   vm.topUps && (
                     <div class="pt-topups" data-pt-topups>
                       <header class="pt-section-head">
-                        <p class="pt-eyebrow">Top-ups</p>
                         <h3 class="pt-title">{vm.topUps.heading}</h3>
                         <p class="pt-lead pt-lead--tight">{vm.topUps.intro}</p>
                       </header>
@@ -1382,7 +1377,6 @@ function withUnit(value: string) {
             !vm.usageEstimatesAvailable ? (
               <>
                 <header class="pt-section-head">
-                  <p class="pt-eyebrow">Real-world cost</p>
                   <h3 id="pt-usage-title" class="pt-title">What you'll actually pay</h3>
                   {usageIntro && <p class="pt-lead">{usageIntro}</p>}
                 </header>
@@ -1391,7 +1385,6 @@ function withUnit(value: string) {
             ) : usageCostsIdentical && flatUsageCost != null ? (
               <>
                 <header class="pt-section-head">
-                  <p class="pt-eyebrow">Real-world cost</p>
                   <h3 id="pt-usage-title" class="pt-title">What you'll actually pay</h3>
                   {usageIntro && <p class="pt-lead">{usageIntro}</p>}
                 </header>
@@ -1408,7 +1401,6 @@ function withUnit(value: string) {
             ) : (
               <>
                 <header class="pt-section-head">
-                  <p class="pt-eyebrow">Real-world cost</p>
                   <h3 id="pt-usage-title" class="pt-title">What you'll actually pay</h3>
                   <p class="pt-lead">
                     {usageIntro}
@@ -1750,7 +1742,6 @@ function withUnit(value: string) {
         <!-- What each feature costs -->
         <section class="pt-block" id="pricing-feature-costs" aria-labelledby="pt-feature-title">
           <header class="pt-section-head">
-            <p class="pt-eyebrow">Feature costs</p>
             <h3 id="pt-feature-title" class="pt-title">What each feature costs</h3>
             {featureCostsIntro && <p class="pt-lead">{featureCostsIntro}</p>}
             {
@@ -1799,7 +1790,6 @@ function withUnit(value: string) {
         <!-- How [Product] pricing compares -->
         <section class="pt-block" id="pricing-comparison" aria-labelledby="pt-compare-title">
           <header class="pt-section-head">
-            <p class="pt-eyebrow">Market comparison</p>
             <h3 id="pt-compare-title" class="pt-title">
               How {vm.productName} pricing compares
             </h3>
@@ -1857,7 +1847,6 @@ function withUnit(value: string) {
           vm.hermanTake && (
             <section class="pt-block" id="pricing-verdict" aria-labelledby="pt-verdict-title">
               <header class="pt-section-head">
-                <p class="pt-eyebrow">Expert opinion</p>
                 <h3 class="pt-title" id="pt-verdict-title">
                   Our take on {vm.productName}'s pricing
                 </h3>
@@ -1966,16 +1955,6 @@ function withUnit(value: string) {
 
   .pt-section-head {
     margin: 0 0 1.35rem;
-  }
-
-  .pt-eyebrow {
-    margin: 0 0 0.5rem;
-    font-family: var(--font-sans);
-    font-size: 0.6875rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--color-accent);
   }
 
   .pt-title {

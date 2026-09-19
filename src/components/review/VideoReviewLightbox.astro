@@ -21,12 +21,18 @@ const video = product.videoReview;
     aria-labelledby="video-review-title"
   >
     <div class="video-review-lightbox__backdrop" data-video-review-close></div>
-    <div class="video-review-lightbox__panel">
-      <button type="button" class="video-review-lightbox__close" data-video-review-close aria-label="Close video review">
+    <div class="video-review-lightbox__panel" role="document">
+      <button
+        type="button"
+        class="video-review-lightbox__close"
+        data-video-review-close
+        aria-label="Close video review"
+      >
         <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <path d="M4 4l8 8M12 4 4 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
         </svg>
       </button>
+
       <div class="video-review-lightbox__frame">
         <iframe
           data-video-review-iframe
@@ -37,15 +43,38 @@ const video = product.videoReview;
           allowfullscreen
         ></iframe>
       </div>
+
       <div class="video-review-lightbox__meta">
-        {author && <img src={author.avatar} alt="" width="40" height="40" />}
-        <div>
-          <p id="video-review-title">{product.name} video review</p>
-          {author && <p>with {author.name}</p>}
+        {author && (
+          <img
+            class="video-review-lightbox__avatar"
+            src={author.avatar}
+            alt=""
+            width="40"
+            height="40"
+            loading="lazy"
+            decoding="async"
+          />
+        )}
+        <div class="video-review-lightbox__titles">
+          <p class="video-review-lightbox__title" id="video-review-title">{product.name} video review</p>
+          {author && <p class="video-review-lightbox__byline">with {author.name}</p>}
         </div>
         {video.channelUrl && (
-          <a href={video.channelUrl} target="_blank" rel="noopener noreferrer">
-            {video.channelLabel || 'Watch on YouTube'}
+          <a
+            class="video-review-lightbox__youtube"
+            href={video.channelUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg class="video-review-lightbox__youtube-icon" viewBox="0 0 20 14" fill="none" aria-hidden="true">
+              <rect x="0.75" y="0.75" width="18.5" height="12.5" rx="3.5" stroke="currentColor" stroke-width="1.5" />
+              <path d="M8.2 4.4v5.2L12.4 7 8.2 4.4Z" fill="currentColor" />
+            </svg>
+            <span>{video.channelLabel || 'Watch on YouTube'}</span>
+            <svg class="video-review-lightbox__arrow" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M3.2 8.8 8.8 3.2M4.6 3.2h4.2V7.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
           </a>
         )}
       </div>
@@ -54,6 +83,8 @@ const video = product.videoReview;
 )}
 
 <script>
+  import { lockScroll, unlockScroll } from '../../lib/ui/scrollLock';
+
   function initVideoReviewLightbox() {
     const lightbox = document.getElementById('video-review-lightbox');
     const iframe = lightbox?.querySelector<HTMLIFrameElement>('[data-video-review-iframe]');
@@ -63,20 +94,37 @@ const video = product.videoReview;
     const closers = lightbox.querySelectorAll('[data-video-review-close]');
     const src = iframe.dataset.src || '';
     let lastFocus: HTMLElement | null = null;
+    let isOpen = false;
+
+    function focusables() {
+      return Array.from(
+        lightbox!.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'),
+      ).filter((el) => el.offsetParent !== null);
+    }
 
     const close = () => {
+      if (!isOpen) return;
+      isOpen = false;
       lightbox.hidden = true;
-      document.body.classList.remove('is-locked');
+      // Stop playback. Clearing src is what actually kills the audio.
       iframe.src = 'about:blank';
-      lastFocus?.focus();
+      unlockScroll();
+      // preventScroll: without it the browser scrolls the trigger into view and
+      // the reader lands somewhere other than where they opened the video.
+      lastFocus?.focus({ preventScroll: true });
+      lastFocus = null;
     };
 
     const open = (trigger: HTMLElement) => {
+      if (isOpen) return;
+      isOpen = true;
       lastFocus = trigger;
+      lockScroll();
       lightbox.hidden = false;
-      document.body.classList.add('is-locked');
       iframe.src = src;
-      lightbox.querySelector<HTMLElement>('[data-video-review-close]')?.focus();
+      lightbox
+        .querySelector<HTMLElement>('[data-video-review-close]')
+        ?.focus({ preventScroll: true });
     };
 
     openers.forEach((button) => {
@@ -90,15 +138,31 @@ const video = product.videoReview;
     });
 
     closers.forEach((button) => {
-      if (button.dataset.bound === 'true') return;
-      button.dataset.bound = 'true';
+      if ((button as HTMLElement).dataset.bound === 'true') return;
+      (button as HTMLElement).dataset.bound = 'true';
       button.addEventListener('click', close);
     });
 
-    if (lightbox.dataset.escBound !== 'true') {
-      lightbox.dataset.escBound = 'true';
+    if (lightbox.dataset.keyBound !== 'true') {
+      lightbox.dataset.keyBound = 'true';
       document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !lightbox.hidden) close();
+        if (!isOpen) return;
+        if (event.key === 'Escape') {
+          close();
+          return;
+        }
+        if (event.key !== 'Tab') return;
+        const items = focusables();
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus({ preventScroll: true });
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus({ preventScroll: true });
+        }
       });
     }
   }
@@ -106,3 +170,219 @@ const video = product.videoReview;
   document.addEventListener('DOMContentLoaded', initVideoReviewLightbox);
   document.addEventListener('astro:page-load', initVideoReviewLightbox);
 </script>
+
+<style>
+  /*
+   * Figma 01K (desktop) / 01L (mobile). This component previously shipped with
+   * no CSS at all: the only stylesheet for a video modal targets the unrelated
+   * .video-review-modal root used by the Photos & Videos tab, so every rule
+   * here was missing and the dialog rendered as raw unstyled markup.
+   */
+  .video-review-lightbox[hidden] {
+    display: none;
+  }
+
+  .video-review-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 260; /* above the sticky tab bar (45) and the evidence drawer */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .video-review-lightbox__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(12, 11, 15, 0.62);
+    border: 0;
+    cursor: pointer;
+    animation: video-review-fade 160ms ease-out;
+  }
+
+  .video-review-lightbox__panel {
+    position: relative;
+    width: min(880px, 100%);
+    max-height: calc(100dvh - 48px);
+    overflow-y: auto;
+    padding: 28px;
+    border-radius: 24px;
+    background: var(--color-surface, #ffffff);
+    box-shadow: 0 24px 64px rgba(12, 11, 15, 0.28);
+    animation: video-review-rise 180ms ease-out;
+  }
+
+  .video-review-lightbox__close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-surface, #ffffff);
+    color: var(--color-on-surface, #141317);
+    box-shadow: 0 2px 10px rgba(12, 11, 15, 0.22);
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+
+  .video-review-lightbox__close svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .video-review-lightbox__close:hover {
+    background: var(--color-surface-variant, #ececea);
+  }
+
+  .video-review-lightbox__close:focus-visible {
+    outline: 2px solid var(--rs-pink, var(--color-accent));
+    outline-offset: 2px;
+  }
+
+  .video-review-lightbox__frame {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #0c0b0f;
+  }
+
+  .video-review-lightbox__frame iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  .video-review-lightbox__meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .video-review-lightbox__avatar {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    object-fit: cover;
+  }
+
+  .video-review-lightbox__titles {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .video-review-lightbox__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--color-on-surface, #141317);
+  }
+
+  .video-review-lightbox__byline {
+    margin: 2px 0 0;
+    font-size: 0.875rem;
+    line-height: 1.3;
+    color: var(--color-on-surface-variant, #55545b);
+  }
+
+  .video-review-lightbox__youtube {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--rs-pink, var(--color-accent));
+    text-decoration: none;
+    border-radius: 6px;
+  }
+
+  .video-review-lightbox__youtube:hover {
+    text-decoration: underline;
+  }
+
+  .video-review-lightbox__youtube:focus-visible {
+    outline: 2px solid var(--rs-pink, var(--color-accent));
+    outline-offset: 3px;
+  }
+
+  .video-review-lightbox__youtube-icon {
+    width: 20px;
+    height: 14px;
+  }
+
+  .video-review-lightbox__arrow {
+    width: 12px;
+    height: 12px;
+  }
+
+  @keyframes video-review-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes video-review-rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .video-review-lightbox__backdrop,
+    .video-review-lightbox__panel {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .video-review-lightbox {
+      padding: 16px;
+    }
+
+    .video-review-lightbox__panel {
+      padding: 16px;
+      border-radius: 18px;
+      max-height: calc(100dvh - 32px);
+    }
+
+    .video-review-lightbox__close {
+      top: 10px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+    }
+
+    .video-review-lightbox__frame {
+      border-radius: 12px;
+    }
+
+    .video-review-lightbox__meta {
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .video-review-lightbox__title {
+      font-size: 1.0625rem;
+    }
+
+    .video-review-lightbox__youtube {
+      flex-basis: 100%;
+      margin-top: 4px;
+      padding-left: 52px;
+    }
+  }
+</style>

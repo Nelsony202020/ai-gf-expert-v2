@@ -86,12 +86,48 @@ function bindTocFollow(root: HTMLElement) {
   reveal();
 }
 
+
+/**
+ * Evidence images open in the shared site lightbox (decision Q14). Article
+ * figures, step media and the two-up image grid qualify; the small external
+ * example thumbnails do not. Decorating at runtime rather than in the authored
+ * HTML keeps every guide in step without touching four content files.
+ */
+function bindImageLightbox(root: HTMLElement) {
+  if (root.dataset.lightboxBound === 'true') return;
+  root.dataset.lightboxBound = 'true';
+
+  const figures = root.querySelectorAll<HTMLElement>(
+    'figure > img, .od-steps__media > img, .od-figure-grid figure > img',
+  );
+
+  figures.forEach((img) => {
+    const src = img.getAttribute('src');
+    if (!src) return;
+    const caption = img.parentElement?.querySelector('figcaption')?.textContent?.trim() ?? '';
+    // The shared lightbox reads the source from the VALUE of data-lightbox-open
+    // (trigger.dataset.lightboxOpen), not from a separate attribute.
+    img.setAttribute('data-lightbox-open', src);
+    img.setAttribute('data-lightbox-alt', img.getAttribute('alt') ?? '');
+    if (caption) img.setAttribute('data-lightbox-caption', caption);
+    img.setAttribute('role', 'button');
+    img.setAttribute('tabindex', '0');
+    img.setAttribute('aria-label', caption ? `Enlarge image: ${caption}` : 'Enlarge image');
+    img.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      img.click();
+    });
+  });
+}
+
 function initOurDreamArticlePage() {
   document.querySelectorAll<HTMLElement>('[data-ourdream-article]').forEach((root) => {
     wrapCompareFigures(root);
     bindCopyButtons(root);
     bindPromptExpand(root);
     bindTocFollow(root);
+    bindImageLightbox(root);
   });
 
   document.querySelectorAll<HTMLDetailsElement>('[data-ourdream-jump]').forEach((details) => {

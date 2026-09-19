@@ -32,6 +32,12 @@
   --od-body: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
   --od-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
+  /* Base sibling gap in the reading column. Figma measures a uniform 20px on the
+     1440 frame (651/651 children) and a uniform 16px on the 390 frame (653/653).
+     Every rule that expresses "one step of flow" reads this, so the two viewports
+     stay in step instead of drifting rule by rule. */
+  --od-flow: 1rem;
+
   --od-sidebar: 15rem;
   --od-content: 46.25rem;
   --od-breakout: 60rem;
@@ -51,13 +57,25 @@
 }
 
 @media (min-width: 1100px) {
+  .ourdream-article-page {
+    --od-flow: 1.25rem;
+  }
+
   .ourdream-article-layout {
     display: grid;
-    grid-template-columns: minmax(0, var(--od-content)) var(--od-sidebar);
+    /* Track 1 is FIXED at 740, not minmax(0, 740). Figma's reading measure is the
+       thing that must not move: every pattern in the system is drawn against it
+       (the cheat sheet's two 354 columns sum to exactly 740 + 32). A flexible
+       track let the column shrink whenever anything reserved horizontal space —
+       `scrollbar-gutter: stable` on <html> costs ~10px on classic-scrollbar
+       platforms, which silently collapsed the cheat sheet to one column.
+       The side margin absorbs that instead: 190 at 1440, 185 at 1430. */
+    grid-template-columns: var(--od-content) var(--od-sidebar);
     column-gap: var(--od-layout-gap);
     justify-content: center;
     align-items: start;
-    padding: 3.5rem clamp(1.25rem, 13.2vw, 11.875rem) 6rem;
+    padding-block: 3.5rem 6rem;
+    padding-inline: max(1.25rem, calc((100% - 66.25rem) / 2));
   }
 }
 
@@ -480,22 +498,31 @@
   color: var(--od-ink);
   font-size: 1.0625rem;
   line-height: 1.75rem;
-  letter-spacing: -0.006rem;
+  /* Article/Body Mobile: -0.3% of 17px. */
+  letter-spacing: -0.0032rem;
 }
 
 @media (min-width: 1100px) {
   .ourdream-article-prose {
     font-size: 1.125rem;
     line-height: 1.9375rem;
-    letter-spacing: -0.006rem;
+    /* Article/Body Desktop: -0.4% of 18px. */
+    letter-spacing: -0.0045rem;
   }
 }
 
+.ourdream-article-prose > :first-child {
+  /* Figma puts the first block 20px under the header (318:4961 child 0 -> 1).
+     Without this the opening H2 also claims its 68px section spacer and the
+     article starts with a large hole under the byline. */
+  margin-top: 0;
+}
+
 .ourdream-article-prose > * + * {
-  /* Figma 318:4936: the reading column is one auto-layout stack with a uniform 20px
-     gap (651 of 651 children measured). Extra separation before a heading comes from
-     explicit spacer frames, expressed here as heading margin-top. */
-  margin-top: 1.25rem;
+  /* Figma 318:4936 / 320:6822: the reading column is one auto-layout stack with a
+     uniform gap — 20 desktop, 16 mobile. Extra separation before a heading comes
+     from explicit spacer frames, expressed here as heading margin-top. */
+  margin-top: var(--od-flow);
 }
 
 .ourdream-article-prose
@@ -511,6 +538,9 @@
     .od-setup,
     .od-faq,
     .od-compare-grid,
+    .od-cheat,
+    .od-examples,
+    .od-figure-grid,
     blockquote,
     pre
   ) {
@@ -519,24 +549,24 @@
      stack that margin used to win on source order at equal specificity, which is why
      every .od-* block sat 4px from its neighbour instead of 20px. This rule is
      (0,2,0), so it beats the component rules without reaching the headings — they
-     keep their 68px and 48px spacer-derived margins. */
-  margin-top: 1.25rem;
+     keep their spacer-derived margins. */
+  margin-top: var(--od-flow);
 }
 
 .ourdream-article-prose > h2 + *,
 .ourdream-article-prose > h3 + * {
-  margin-top: 1.25rem;
+  margin-top: var(--od-flow);
 }
 
 .ourdream-article-prose h2 {
-  /* Mobile value is inferred — the 390 frame's rhythm was not measured in Figma. */
-  margin-top: 3rem;
+  /* 16 base + 28 spacer + 16 = 60 (measured, Figma 320:6822). */
+  margin-top: 3.75rem;
   margin-bottom: 0;
   font-family: var(--od-display);
   font-size: 1.625rem;
   font-weight: var(--wt-display);
   line-height: 2rem;
-  letter-spacing: var(--ls-display);
+  letter-spacing: -0.01625rem;
   color: var(--od-ink);
   scroll-margin-top: 5.5rem;
 }
@@ -547,19 +577,41 @@
     margin-top: 4.25rem;
     font-size: 2rem;
     line-height: 2.5rem;
-    letter-spacing: var(--ls-display);
+    letter-spacing: -0.03rem;
   }
 }
 
+/* H4 — Heading/XS, 17/22 at -0.085px on both viewports (Figma source face was
+   Bricolage SemiBold; the site now renders one display face, var(--font-display))
+   (Figma 318:4961 children 15/17/19, mobile 320:6822 children 16/18/20). It sits
+   on the base sibling gap with no extra spacer above or below, unlike H2 and H3.
+   Added for the Comics Examples section, which Figma demotes from H3 to H4. */
+.ourdream-article-prose h4 {
+  margin-top: var(--od-flow);
+  margin-bottom: 0;
+  font-family: var(--od-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+  letter-spacing: -0.0053rem;
+  font-variation-settings: 'opsz' 14, 'wdth' 100;
+  color: var(--od-ink);
+  scroll-margin-top: 5.5rem;
+}
+
+.ourdream-article-prose > h4 + * {
+  margin-top: var(--od-flow);
+}
+
 .ourdream-article-prose h3 {
-  /* Mobile value is inferred. */
-  margin-top: 2.25rem;
+  /* 16 base + 8 spacer + 16 = 40 (measured, Figma 320:6822). */
+  margin-top: 2.5rem;
   margin-bottom: 0;
   font-family: var(--od-display);
   font-size: 1.1875rem;
   font-weight: var(--wt-display-sub);
   line-height: 1.625rem;
-  letter-spacing: var(--ls-display);
+  letter-spacing: -0.0059rem;
   color: var(--od-ink);
   scroll-margin-top: 5.5rem;
 }
@@ -570,7 +622,7 @@
     margin-top: 3rem;
     font-size: 1.375rem;
     line-height: 1.875rem;
-    letter-spacing: var(--ls-display);
+    letter-spacing: -0.00688rem;
   }
 }
 
@@ -589,8 +641,8 @@
 
 .ourdream-article-prose ul,
 .ourdream-article-prose ol {
-  /* 20px, same as every other sibling in the reading column. */
-  margin: 1.25rem 0 0;
+  /* Same single step of flow as every other sibling in the reading column. */
+  margin: var(--od-flow) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -598,7 +650,9 @@
 .ourdream-article-prose ul > li {
   position: relative;
   padding-left: 1.25rem;
-  margin-top: 0.75rem;
+  /* Figma's list gap is 12; at our line-height that reads as separate
+     paragraphs rather than one list, so the items sit closer. */
+  margin-top: 0.375rem;
 }
 
 .ourdream-article-prose ul > li::before {
@@ -619,7 +673,7 @@
 .ourdream-article-prose ol:not(.od-steps) > li {
   counter-increment: od-ol;
   padding-left: 1.5rem;
-  margin-top: 0.5rem;
+  margin-top: 0.375rem;
 }
 
 .ourdream-article-prose ol:not(.od-steps) > li::before {
@@ -634,27 +688,58 @@
   font-weight: 600;
 }
 
-.ourdream-article-prose figure {
-  margin: 1.25rem 0 0;
+/* ---------------------------------------------------------------------------
+   Article / Image + Caption          Figma 154:2491 desktop / 154:2494 mobile
+   Root is a column, gap 8. The image carries radius 12 and a 1px hairline over a
+   surface/sunken backdrop (Figma paints #efefed behind the image fill, so a
+   non-filling asset reads as intentional rather than as a gap). The caption is
+   Label/Sans S 12/16 in text/muted.
+
+   The image keeps its real aspect ratio — there is no fixed canvas. Width is
+   chosen per instance from the ladder measured on the Comics and Prompt Guide
+   frames: 308 / 350 mobile; 380 portrait, 440 supporting, 480 square, 688 inset
+   (media under a workflow step), 740 full column, 960 breakout.
+   --------------------------------------------------------------------------- */
+.ourdream-article-prose figure,
+.od-figure {
+  margin: var(--od-flow) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
 }
 
-.ourdream-article-prose img {
+/* Evidence images are enlargeable — the pointer and focus ring say so. */
+.ourdream-article-prose figure > img,
+.od-steps__media > img {
+  cursor: zoom-in;
+}
+
+.ourdream-article-prose figure > img:focus-visible,
+.od-steps__media > img:focus-visible {
+  outline: 2px solid var(--od-pink);
+  outline-offset: 2px;
+}
+
+.ourdream-article-prose img,
+.od-figure > img {
   display: block;
   width: 100%;
   height: auto;
   border-radius: 0.75rem;
   border: 1px solid var(--od-hairline);
-  /* Tokenised so it inverts in dark mode. Per decision C1/C2 this placeholder fill is
-     removed entirely when the figure block is rebuilt in step 4 — images keep their real
-     aspect ratio with no grey canvas behind them. */
+  /* Tokenised so it inverts in dark mode — Figma's #efefed image backdrop. */
   background: var(--od-sunken);
 }
 
-.ourdream-article-prose figcaption {
-  margin-top: 0.5rem;
+.ourdream-article-prose figcaption,
+.od-figure__caption {
+  margin: 0;
+  font-family: var(--od-body);
   font-size: 0.75rem;
   font-weight: 500;
   line-height: 1rem;
+  letter-spacing: 0;
   color: var(--od-dim);
 }
 
@@ -662,117 +747,250 @@
   font-weight: 500;
 }
 
+/* Width ladder. Every constrained figure centres in the reading column — Figma
+   centres the portrait and square cases and nothing is drawn flush left. */
+.od-figure--portrait,
 .od-media--portrait {
   max-width: 23.75rem;
+  margin-inline: auto;
 }
 
-/* Steps */
+.od-figure--supporting {
+  max-width: 27.5rem;
+  margin-inline: auto;
+}
+
+.od-figure--square {
+  max-width: 30rem;
+  margin-inline: auto;
+}
+
+.od-figure--inset {
+  max-width: 43rem;
+  margin-inline: auto;
+}
+
+/* Breakout: 960 centred on the 740 column, i.e. -110 each side (the same offset
+   Figma uses for the Horizontal Process at x=-110). Below the rail breakpoint the
+   column is already narrower than 960, so the breakout collapses to full width. */
+.od-figure--breakout {
+  max-width: none;
+}
+
+@media (min-width: 1100px) {
+  .od-figure--breakout {
+    width: var(--od-breakout);
+    max-width: none;
+    margin-inline: calc((var(--od-content) - var(--od-breakout)) / 2);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Image grid — two figures side by side       Figma 318:5090 / mobile 320:6883
+   Stays 2-up on both viewports: 740 with a 16 gap desktop, 350 with a 12 gap
+   mobile. Row gap 20 when a third figure wraps.
+   --------------------------------------------------------------------------- */
+.od-figure-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 0.75rem;
+  row-gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .od-figure-grid {
+    column-gap: 1rem;
+  }
+}
+
+.od-figure-grid > figure,
+.od-figure-grid > .od-figure {
+  margin: 0;
+  max-width: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Article / Step-by-Step Workflow + Workflow Step    Figma 318:5164 / mobile
+   A numbered rail joined by a connector, with each step's content beside it.
+   Measured on the Comics frame: the connector is 2px (not 1.5), the step
+   separation is the content block's own padding-bottom (28 desktop / 24 mobile)
+   so the connector stays unbroken, and the rail column is 32 / 28.
+   --------------------------------------------------------------------------- */
 .od-steps {
+  --od-rail-w: 1.75rem;
+  --od-rail-gap: 0.875rem;
+  --od-step-pad: 1.5rem;
   list-style: none;
-  margin: 0.25rem 0 0;
+  margin: var(--od-flow) 0 0;
   padding: 0;
   counter-reset: od-step;
 }
 
-.od-steps > li {
+@media (min-width: 1100px) {
+  .od-steps {
+    --od-rail-w: 2rem;
+    --od-rail-gap: 1.25rem;
+    --od-step-pad: 1.75rem;
+  }
+}
+
+.ourdream-article-prose .od-steps > li {
   counter-increment: od-step;
-  display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr);
-  column-gap: 1.25rem;
   position: relative;
+  display: block;
+  margin: 0;
+  padding: 0 0 var(--od-step-pad) calc(var(--od-rail-w) + var(--od-rail-gap));
+}
+
+.ourdream-article-prose .od-steps > li::before {
+  content: counter(od-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--od-rail-w);
+  height: var(--od-rail-w);
+  margin: 0;
+  border-radius: 999px;
+  background: var(--od-pink-soft);
+  color: var(--od-pink-ink);
+  font-family: var(--od-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.125rem;
+  letter-spacing: -0.0018rem;
+}
+
+@media (min-width: 1100px) {
+  .ourdream-article-prose .od-steps > li::before {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+/* Connector — starts 4px below the marker, stops 4px short of the next one. */
+.od-steps > li::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--od-rail-w) / 2 - 1px);
+  top: calc(var(--od-rail-w) + 0.25rem);
+  bottom: 0.25rem;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--od-rail);
+}
+
+.od-steps > li:last-child::after {
+  display: none;
+}
+
+.od-steps__title {
+  margin: 0.1875rem 0 0;
   font-family: var(--od-display);
-  font-size: 1.125rem;
+  font-size: 1.0625rem;
+  /* Weight ladder (#59): this rule inherited the typography that used to live on
+     `.od-steps > li`, where #59 set --wt-display-sub. Tracking stays at main's
+     Figma-measured value. */
   font-weight: var(--wt-display-sub);
-  line-height: 1.5rem;
-  letter-spacing: var(--ls-display);
+  line-height: 1.375rem;
+  letter-spacing: -0.0053rem;
+  font-variation-settings: 'opsz' 14, 'wdth' 100;
   color: var(--od-ink);
 }
 
 @media (min-width: 1100px) {
-  .od-steps > li {
+  .od-steps__title {
     font-size: 1.3125rem;
     line-height: 1.625rem;
-    letter-spacing: var(--ls-display);
+    letter-spacing: -0.013rem;
   }
 }
 
-.od-steps > li::before {
-  content: counter(od-step);
-  grid-column: 1;
-  grid-row: 1;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 1rem;
+.od-steps__body {
+  margin-top: 0.375rem;
+}
+
+@media (min-width: 1100px) {
+  .od-steps__body {
+    margin-top: 0.5rem;
+  }
+}
+
+.ourdream-article-prose .od-steps__body > p,
+.ourdream-article-prose .od-steps__body > ul > li {
+  font-size: 1.0625rem;
+  line-height: 1.75rem;
+  letter-spacing: -0.0032rem;
+  color: var(--od-muted);
+}
+
+@media (min-width: 1100px) {
+  .ourdream-article-prose .od-steps__body > p,
+  .ourdream-article-prose .od-steps__body > ul > li {
+    font-size: 1.125rem;
+    line-height: 1.9375rem;
+    letter-spacing: -0.0045rem;
+  }
+}
+
+.ourdream-article-prose .od-steps__body > * + * {
+  margin-top: 0.375rem;
+}
+
+@media (min-width: 1100px) {
+  .ourdream-article-prose .od-steps__body > * + * {
+    margin-top: 0.5rem;
+  }
+}
+
+/* Media under a step: full step width, caption inset to the step text. */
+.od-steps__media {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.od-steps__media > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--od-hairline);
+  background: var(--od-sunken);
+}
+
+.od-steps__media > figcaption {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  color: var(--od-dim);
+}
+
+/* Placeholder for a screenshot that is designed in Figma but not yet in the
+   repo. Deliberately unmistakable — dashed pink edge and a label saying what
+   belongs here — so it can never be mistaken for finished work. Swap the
+   element for an <img> and the slot keeps its geometry. */
+.od-steps__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 688 / 440;
+  padding: 1rem;
+  border: 2px dashed var(--od-pink);
+  border-radius: 0.75rem;
   background: var(--od-pink-soft);
   color: var(--od-pink-ink);
   font-family: var(--od-body);
   font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  letter-spacing: 0;
-}
-
-.od-steps > li:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: 0.9375rem;
-  top: 2.25rem;
-  bottom: 0.25rem;
-  width: 1.5px;
-  background: var(--od-rail);
-  border-radius: 1px;
-}
-
-.od-steps__title {
-  grid-column: 2;
-  padding: 0.1875rem 0 1.75rem;
-}
-
-.od-steps > li > .od-steps__body,
-.od-steps > li:has(.od-steps__body) .od-steps__title {
-  padding-bottom: 0;
-}
-
-.od-steps > li:has(.od-steps__body) .od-steps__title {
-  padding-bottom: 0.5rem;
-}
-
-.od-steps__body {
-  grid-column: 2;
-  padding-bottom: 1.75rem;
-  font-family: var(--od-body);
-  font-size: 1.0625rem;
-  font-weight: 400;
-  line-height: 1.75rem;
-  letter-spacing: -0.006rem;
-  color: var(--od-muted);
-}
-
-@media (min-width: 1100px) {
-  .od-steps__body {
-    font-size: 1.125rem;
-    line-height: 1.9375rem;
-  }
-}
-
-.od-steps__body p + p {
-  margin-top: 0.75rem;
-}
-
-.od-steps > li:last-child .od-steps__title,
-.od-steps > li:last-child .od-steps__body {
-  padding-bottom: 2rem;
-}
-
-.od-steps > li:not(:has(.od-steps__title)):not(:has(.od-steps__body)) {
-  padding: 0.1875rem 0 1.75rem;
-}
-
-.od-steps > li:last-child:not(:has(.od-steps__title)):not(:has(.od-steps__body)) {
-  padding-bottom: 2rem;
+  line-height: 1.375rem;
+  text-align: center;
 }
 
 /* Pattern blocks */
@@ -860,6 +1078,39 @@
   letter-spacing: -0.003rem;
   font-weight: 400;
   color: var(--od-ink);
+}
+
+/* A bulleted run inside a callout. In Figma this is not a list at all — it is one
+   text node at Body/M with literal "•" characters, so there is no marker column,
+   no hanging indent and no extra space between items (318:5116). Kept as a real
+   <ul> for assistive tech, with the prose list treatment fully reset. */
+.ourdream-article-prose .od-block__list,
+.od-block__list {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ourdream-article-prose .od-block__list > li,
+.od-block__list > li {
+  position: static;
+  margin: 0;
+  padding-left: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.625rem;
+  letter-spacing: -0.003rem;
+  color: inherit;
+}
+
+.ourdream-article-prose .od-block__list > li::before {
+  content: '\2022\00a0';
+  position: static;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  color: currentColor;
 }
 
 /* Attribution line under (What I learned) or beside (My take) the label. */
@@ -961,17 +1212,34 @@
    and gaps stepped 8 → 12. */
 
 .od-block--what-i-learned {
+  /* One source of truth: the padding and the avatar's offset are the same pair,
+     so the avatar can be lifted out of the grid without the two drifting. */
+  --od-avatar-block: 1rem;
+  --od-avatar-inline: 1.25rem;
+  position: relative;
   display: grid;
   grid-template-columns: 2rem minmax(0, 1fr);
   column-gap: 0.75rem;
   row-gap: 0.75rem;
   align-items: start;
+  padding: var(--od-avatar-block) var(--od-avatar-inline);
 }
 
+@media (min-width: 1100px) {
+  .od-block--what-i-learned {
+    --od-avatar-block: 1.25rem;
+    --od-avatar-inline: 1.5rem;
+  }
+}
+
+/* Out of the grid, not spanning it. A row span opened one row gap per spanned
+   row under the last real child; pinned to row 1 the 32px avatar sized a 20px
+   label row. Absolute does neither. */
 .od-block--what-i-learned::before {
   content: '';
-  grid-column: 1;
-  grid-row: 1;
+  position: absolute;
+  inset-block-start: var(--od-avatar-block);
+  inset-inline-start: var(--od-avatar-inline);
   width: 2rem;
   height: 2rem;
   border-radius: 999px;
@@ -1081,9 +1349,11 @@
   display: grid;
   grid-template-columns: 2.25rem minmax(0, 1fr);
   column-gap: 0.875rem;
-  row-gap: 0.375rem;
+  row-gap: 0.25rem;
   align-items: start;
-  padding: 1.125rem 0;
+  --od-avatar-block: 1.125rem;
+  position: relative;
+  padding: var(--od-avatar-block) 0;
   border: none;
   border-top: 1px solid var(--od-hairline);
   border-bottom: 1px solid var(--od-hairline);
@@ -1091,16 +1361,14 @@
   background: transparent;
 }
 
-@media (min-width: 1100px) {
-  .od-block--my-take {
-    padding: 1.125rem 0;
-  }
-}
 
+
+/* Out of the grid, not spanning it — see What I learned. */
 .od-block--my-take::before {
   content: '';
-  grid-column: 1;
-  grid-row: 1;
+  position: absolute;
+  inset-block-start: var(--od-avatar-block);
+  inset-inline-start: 0;
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 999px;
@@ -1110,6 +1378,18 @@
 
 .od-block--my-take > * {
   grid-column: 2;
+}
+
+/* The body's own 8px top margin stacked on the grid row gap, which read as a
+   hole between the label and the sentence, and again under it. */
+.od-block--my-take .od-block__body,
+.od-block--what-i-learned .od-block__body {
+  margin-top: 0;
+}
+
+.od-block--my-take .od-block__body + .od-block__body,
+.od-block--what-i-learned .od-block__body + .od-block__body {
+  margin-top: 0.375rem;
 }
 
 .od-block--my-take .od-block__kicker {
@@ -1269,47 +1549,68 @@
 }
 
 /* A/B cards */
+/* ---------------------------------------------------------------------------
+   Article / Comparison A/B            Figma 318:4999 desktop · mobile on 320:6822
+   An outer card holding a row of two lettered option panels, with an optional
+   verdict underneath. Measured on the Comics frame, which corrects two things
+   parts/40-evidence.md had backwards: the option panels are #ffffff WITH a
+   hairline (not surface/page without one), and there is no card title or
+   "Best for" line in any instance on this page.
+   --------------------------------------------------------------------------- */
 .od-ab {
-  display: grid;
-  gap: 0.75rem;
-  margin-top: 0.25rem;
-}
-
-@media (min-width: 720px) {
-  .od-ab {
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-}
-
-.od-ab--framed {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem 1rem;
   border: 1px solid var(--od-hairline);
   border-radius: 1.25rem;
   background: var(--od-white);
-  padding: 1.25rem 1rem;
 }
 
 @media (min-width: 1100px) {
-  .od-ab--framed {
+  .od-ab {
     padding: 1.5rem;
   }
 }
 
+.od-ab__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 1100px) {
+  .od-ab__options {
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .od-ab__options > .od-ab__card {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
 .od-ab__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
   border: 1px solid var(--od-hairline);
   border-radius: 1rem;
   background: var(--od-white);
-  padding: 1rem;
 }
 
 .od-ab__head {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  margin: 0 0 0.5rem;
+  margin: 0;
+  font-family: var(--od-body);
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.5rem;
+  letter-spacing: -0.003rem;
   color: var(--od-ink);
 }
 
@@ -1317,6 +1618,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: none;
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 999px;
@@ -1324,13 +1626,292 @@
   color: var(--od-pink-ink);
   font-size: 0.875rem;
   font-weight: 600;
+  line-height: 1.25rem;
 }
 
 .od-ab__body {
   margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-muted);
+}
+
+/* A bullet run inside an option panel — same treatment as .od-block__list. */
+.ourdream-article-prose .od-ab__body-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ourdream-article-prose .od-ab__body-list > li {
+  position: static;
+  margin: 0;
+  padding-left: 0;
   font-size: 0.875rem;
   line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
   color: var(--od-muted);
+}
+
+.ourdream-article-prose .od-ab__body-list > li::before {
+  content: '\2022\00a0';
+  position: static;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  color: currentColor;
+}
+
+.od-ab__verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.od-ab__verdict-label {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-pink-ink);
+}
+
+.od-ab__verdict-text {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.625rem;
+  letter-spacing: -0.003rem;
+  color: var(--od-ink);
+}
+
+/* ---------------------------------------------------------------------------
+   Calculation                                     Figma 320:5998 / 320:6049
+   A short arithmetic run set apart from the prose by a 2px pink rule on the
+   left. Not a card: no fill, no radius, no border except that edge.
+   --------------------------------------------------------------------------- */
+.od-calc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.25rem 0 0.25rem 1.125rem;
+  border-left: 2px solid var(--od-pink);
+}
+
+.od-calc > p {
+  margin: 0;
+  font-family: var(--od-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+  letter-spacing: -0.0053rem;
+  font-variation-settings: 'opsz' 14, 'wdth' 100;
+  color: var(--od-ink);
+}
+
+/* ---------------------------------------------------------------------------
+   Article / Horizontal Process                    Figma 349:15056, in 349:15055
+   Figma draws this 900 wide against a 740 column, which overhangs the measure on
+   both sides and reads as a mistake rather than an intentional breakout. Built
+   inside the column instead, as an evenly divided run of numbered steps that
+   wraps to two rows on narrow screens.
+   --------------------------------------------------------------------------- */
+.od-process {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.125rem 1.125rem;
+  border: 1px solid var(--od-hairline);
+  border-radius: 1rem;
+  background: var(--od-white);
+}
+
+.od-process__label {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0.065rem;
+  text-transform: uppercase;
+  color: var(--od-pink-ink);
+}
+
+.od-process__steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: od-process;
+}
+
+.ourdream-article-prose .od-process .od-process__steps > li {
+  counter-increment: od-process;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0.625rem 0 0;
+  border-top: 2px solid var(--od-pink-soft);
+}
+
+.ourdream-article-prose .od-process .od-process__steps > li::before {
+  content: none;
+}
+
+.od-process__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: var(--od-pink-soft);
+  color: var(--od-pink-ink);
+  font-family: var(--od-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.od-process__text {
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-ink);
+}
+
+/* Footnote marker. Figma sets it as a SemiBold run in the paragraph's own size
+   rather than a raised superscript (318:4961 child 78). */
+.ourdream-article-prose a.od-cite {
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--od-pink-ink);
+  padding-inline: 0.0625rem;
+}
+
+.ourdream-article-prose a.od-cite:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.od-cite:focus-visible {
+  outline: 2px solid var(--od-pink);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Article / Sources + Source Row                  Figma 361:7619 / 358:4288
+   Closes the article. The heading is a real H2 so it behaves like every other
+   section heading; rows are separated by a hairline, numbered in action/pink.
+   --------------------------------------------------------------------------- */
+.od-sources__intro {
+  margin: 0.5rem 0 0;
+  font-family: var(--od-body);
+  font-size: 1.0625rem;
+  font-weight: 400;
+  line-height: 1.75rem;
+  letter-spacing: -0.0032rem;
+  color: var(--od-muted);
+}
+
+@media (min-width: 1100px) {
+  .od-sources__intro {
+    font-size: 1.125rem;
+    line-height: 1.9375rem;
+    letter-spacing: -0.0045rem;
+  }
+}
+
+.od-sources__rows {
+  margin: 0.625rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ourdream-article-prose .od-sources .od-sources__rows > li,
+.ourdream-article-prose ol.od-sources__rows > li {
+  position: static;
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  column-gap: 1.25rem;
+  margin: 0;
+  padding: 1.125rem 0;
+  border-top: 1px solid var(--od-hairline);
+}
+
+.ourdream-article-prose .od-sources .od-sources__rows > li::before,
+.ourdream-article-prose ol.od-sources__rows > li::before {
+  content: none;
+}
+
+.od-sources__num {
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  letter-spacing: -0.003rem;
+  color: var(--od-pink);
+}
+
+.od-sources__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.od-sources__title {
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  letter-spacing: -0.003rem;
+  color: var(--od-ink);
+}
+
+.ourdream-article-prose a.od-sources__title {
+  color: var(--od-ink);
+  text-decoration: none;
+}
+
+.ourdream-article-prose a.od-sources__title:hover {
+  color: var(--od-pink-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.od-sources__title:focus-visible {
+  outline: 2px solid var(--od-pink);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.od-sources__meta,
+.od-sources__domain {
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-muted);
+}
+
+.od-sources__domain {
+  color: var(--od-dim);
 }
 
 /* Prompt structure chips */
@@ -1361,11 +1942,15 @@
     center / contain no-repeat;
 }
 
+/* A chip sequence reads as one run, so it must not half-wrap. Desktop keeps a
+   single row and lets the chips share the width — long labels wrap inside their
+   own pill. Mobile turns the run vertical with the arrow rotated, which is a
+   deliberate shape rather than a broken row. */
 .od-structure__chips {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.375rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.375rem;
 }
 
 .od-chip-wrap {
@@ -1375,6 +1960,10 @@
 }
 
 .od-chip {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  text-wrap: balance;
   display: inline-flex;
   align-items: center;
   padding: 0.3125rem 0.625rem;
@@ -1385,6 +1974,38 @@
   font-weight: 600;
   line-height: 1.25rem;
   color: var(--od-ink);
+}
+
+.od-chip-wrap:last-child .od-chip-arrow {
+  display: none;
+}
+
+.od-chip-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.od-chip-wrap .od-chip-arrow {
+  transform: rotate(90deg);
+}
+
+@media (min-width: 1100px) {
+  .od-structure__chips {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.375rem;
+  }
+
+  .od-structure__chips > .od-chip-wrap {
+    flex: 1 1 0;
+  }
+
+  .od-chip-wrap .od-chip-arrow {
+    transform: none;
+  }
 }
 
 .od-chip-arrow {
@@ -1433,7 +2054,26 @@
   margin-bottom: 0.375rem;
 }
 
+.od-prompt-card__label::before {
+  content: '';
+  width: 0.8125rem;
+  height: 0.8125rem;
+  flex: none;
+  background: var(--od-dim);
+  -webkit-mask: url('/icons/aige/x.svg') center / contain no-repeat;
+  mask: url('/icons/aige/x.svg') center / contain no-repeat;
+}
+
+.od-prompt-card--yes .od-prompt-card__label::before {
+  background: var(--od-pink-ink);
+  -webkit-mask: url('/icons/aige/check.svg') center / contain no-repeat;
+  mask: url('/icons/aige/check.svg') center / contain no-repeat;
+}
+
 .od-prompt-card__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -1468,8 +2108,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: none;
+  align-self: center;
+  width: 1rem;
+  height: 1rem;
   color: var(--od-dim);
   transform: rotate(90deg);
+}
+
+.od-prompt-compare__arrow::before {
+  content: '';
+  width: 1rem;
+  height: 1rem;
+  background: currentColor;
+  -webkit-mask: url('/icons/aige/arrow-right.svg') center / contain no-repeat;
+  mask: url('/icons/aige/arrow-right.svg') center / contain no-repeat;
 }
 
 @media (min-width: 800px) {
@@ -1541,7 +2194,20 @@
   font-family: var(--od-body);
 }
 
+.od-prompt__label::before {
+  content: '';
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: none;
+  background: var(--od-pink);
+  -webkit-mask: url('/icons/aige/wand.svg') center / contain no-repeat;
+  mask: url('/icons/aige/wand.svg') center / contain no-repeat;
+}
+
 .od-prompt__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -1718,19 +2384,25 @@
 }
 
 /* FAQ */
+/* ---------------------------------------------------------------------------
+   Article / FAQ Item                    Figma 320:6597, item 320:6598
+   A stack of disclosures separated by a hairline on each item's TOP edge, so
+   there is no rule after the last one. Items open by default, which is how the
+   frame draws them (every instance shows the minus glyph). The glyph swaps
+   plus <-> minus; it is not a rotated plus.
+   --------------------------------------------------------------------------- */
 .od-faq {
   margin-top: 0.25rem;
-  border-top: 1px solid var(--od-hairline);
 }
 
 .od-faq__item {
-  border-bottom: 1px solid var(--od-hairline);
   padding: 1.25rem 0;
+  border-top: 1px solid var(--od-hairline);
 }
 
 .od-faq__q {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin: 0;
@@ -1738,30 +2410,62 @@
   font-size: 1.0625rem;
   font-weight: var(--wt-display-min);
   line-height: 1.375rem;
-  letter-spacing: -0.006rem;
+  letter-spacing: -0.0053rem;
+  font-variation-settings: 'opsz' 14, 'wdth' 100;
   color: var(--od-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.od-faq__q::-webkit-details-marker {
+  display: none;
 }
 
 .od-faq__q::after {
   content: '';
+  flex: none;
   width: 1.125rem;
   height: 1.125rem;
-  flex-shrink: 0;
-  margin-top: 0.125rem;
   background: var(--od-ink);
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 2' fill='none'%3E%3Cpath d='M0 1h14' stroke='black' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")
-    center / 14px 2px no-repeat;
+  -webkit-mask: url('/icons/aige/minus.svg') center / 0.96875rem auto no-repeat;
+  mask: url('/icons/aige/minus.svg') center / 0.96875rem auto no-repeat;
+}
+
+.od-faq__item:not([open]) > .od-faq__q::after {
+  -webkit-mask: url('/icons/aige/plus.svg') center / 0.96875rem auto no-repeat;
+  mask: url('/icons/aige/plus.svg') center / 0.96875rem auto no-repeat;
+}
+
+.od-faq__q:hover {
+  color: var(--od-pink-ink);
+}
+
+.od-faq__q:hover::after {
+  background: var(--od-pink-ink);
+}
+
+.od-faq__q:focus-visible {
+  outline: 2px solid var(--od-pink);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
 
 .od-faq__a {
   margin-top: 0.625rem;
+}
+
+.ourdream-article-prose .od-faq__a > p {
+  margin: 0;
+  font-family: var(--od-body);
   font-size: 1rem;
+  font-weight: 400;
   line-height: 1.625rem;
+  letter-spacing: -0.003rem;
   color: var(--od-muted);
 }
 
-.od-faq__a p + p {
-  margin-top: 0.75rem;
+.ourdream-article-prose .od-faq__a > p + p {
+  margin-top: 0.625rem;
 }
 
 [data-theme='dark'] .ourdream-article-page {
@@ -1793,4 +2497,254 @@
 [data-theme='dark'] .od-prompt--collapsed::after {
   /* Matches the light rule: the fade resolves to the card it sits on, not the page. */
   background: linear-gradient(180deg, rgb(20 19 23 / 0%) 0%, var(--od-white) 70%);
+}
+
+/* ---------------------------------------------------------------------------
+   Article / Reference Cheat Sheet     Figma 309:4842 desktop / 309:4866 mobile
+   Article / Cheat Sheet Group         Figma 309:4639
+
+   Typography and hairlines only: no card, no fill, no bullets. A head row (real
+   Icon/library asset + a per-instance label) over a group stack. Desktop wraps
+   the groups two-up at a fixed 354 (354 + 32 + 354 = 740); mobile is one column
+   with a 16 gap. Each group is separated by a 1px hairline on its top edge.
+
+   Measured on the Comics frame instance 318:5062 / 320:6882, not on the library
+   defaults: the head icon strokes action/pink there, not text/secondary, and the
+   head label is instance copy ("Comic style cheat sheet"), not a fixed string.
+   --------------------------------------------------------------------------- */
+.od-cheat {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.od-cheat__head {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  overflow: clip;
+}
+
+.od-cheat__head::before {
+  content: '';
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  background: var(--od-pink);
+  -webkit-mask: url('/icons/aige/library.svg') center / contain no-repeat;
+  mask: url('/icons/aige/library.svg') center / contain no-repeat;
+}
+
+.od-cheat__label {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0;
+  color: var(--od-muted);
+}
+
+.od-cheat__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+@media (min-width: 1100px) {
+  .od-cheat__groups {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    column-gap: 2rem;
+    row-gap: 1.25rem;
+  }
+
+  .od-cheat__groups > .od-cheat-group {
+    /* 354 at a 740 column (740 - 32 gap) / 2. Derived rather than hardcoded so a
+       narrower column degrades to two narrower columns instead of wrapping to one. */
+    width: calc((100% - 2rem) / 2);
+  }
+}
+
+.od-cheat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--od-hairline);
+  word-break: break-word;
+}
+
+.od-cheat-group__title {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-ink);
+}
+
+/* Terms stay a real list for assistive tech; the design shows no markers, so the
+   prose bullet, indent and item rhythm are all reset here. */
+.ourdream-article-prose .od-cheat-group__terms,
+.od-cheat-group__terms {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ourdream-article-prose .od-cheat-group__terms > li,
+.od-cheat-group__terms > li {
+  position: static;
+  margin-top: 0;
+  padding-left: 0;
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.75rem;
+  letter-spacing: -0.003rem;
+  color: var(--od-muted);
+}
+
+.ourdream-article-prose .od-cheat-group__terms > li::before {
+  content: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Article / External Example Link     Figma 348:4279 desktop / 348:4287 mobile
+   Example cards grid                  Figma 318:5022 / mobile 320:6842
+
+   Links out to an example without ever printing a naked URL. The whole card is
+   the link. Desktop: two-up, card 362 wide, row 14/16 with the text block
+   filling and the action pinned right. Mobile: one column, card stacks.
+
+   Card fill is surface/page #f9f9f9 on both viewports. The mobile frame draws it
+   #ffffff, which contradicts both the component definition and the desktop
+   frame — treated as drift and recorded in docs/article-system/parts/82.
+   --------------------------------------------------------------------------- */
+.od-examples {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 1100px) {
+  .od-examples {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.od-example {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--od-page);
+  border: 1px solid var(--od-hairline);
+  border-radius: 0.75rem;
+  overflow: clip;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+@media (min-width: 1100px) {
+  .od-example {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+/* The card is an <a>, so the prose link treatment has to be undone on the card
+   itself and re-applied to the action line only. */
+.ourdream-article-prose a.od-example {
+  color: inherit;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.ourdream-article-prose a.od-example:hover {
+  color: inherit;
+}
+
+.od-example:hover {
+  border-color: var(--od-rail);
+}
+
+.od-example:active {
+  background: var(--od-sunken);
+}
+
+.od-example:focus-visible {
+  outline: 2px solid var(--od-pink);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.od-example__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.od-example__category {
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0;
+  color: var(--od-dim);
+}
+
+.od-example__title {
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  letter-spacing: -0.003rem;
+  color: var(--od-ink);
+}
+
+.od-example__desc {
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-muted);
+}
+
+.od-example__action {
+  flex: none;
+  white-space: nowrap;
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-pink);
+  transition: color 120ms ease;
+}
+
+.od-example:hover .od-example__action {
+  color: var(--od-pink-ink);
+}
+
+/* Optional 56x40 thumbnail. Off by default — the asset is always local, never
+   scraped from the linked page. */
+.od-example__thumb {
+  flex: none;
+  width: 3.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--od-hairline);
+  background: var(--od-sunken);
+  object-fit: cover;
 }

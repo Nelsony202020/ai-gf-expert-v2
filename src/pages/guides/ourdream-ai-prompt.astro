@@ -14,9 +14,12 @@ import '../../styles/ourdream-article.css';
 // Geist Mono is the Figma `Article/Code` face. Imported per article route rather than in
 // BaseLayout so its @font-face block is not inlined into every page on the site.
 import '@fontsource-variable/geist-mono/wght.css';
+import { guideBySlug, guideBreadcrumbLabel, guideSeoTitle } from '../../data/guides';
 
-const h1 = 'OurDream AI Prompt Guide';
-const title = 'OurDream AI Prompt Guide: How to Write GOOD Prompts';
+// Title, <title> and breadcrumb all come from the guide registry.
+const guide = guideBySlug('ourdream-ai-prompt');
+const h1 = guide.title;
+const title = guideSeoTitle(guide.slug);
 const description =
   'Learn how to write better OurDream AI prompts for characters, images, videos, and roleplay, with examples, JSON prompts, common mistakes, and tested tips.';
 const canonical = canonicalPublicUrl('/guides/ourdream-ai-prompt', Astro.site);
@@ -51,7 +54,7 @@ const jsonLd: Record<string, unknown>[] = [
   <main>
     <OurDreamArticlePage
       title={h1}
-      breadcrumbLabel="OurDream AI Prompt Guide"
+      breadcrumbLabel={guideBreadcrumbLabel(guide.slug)}
       bodyHtml={bodyHtml}
       author={author}
       published={published}

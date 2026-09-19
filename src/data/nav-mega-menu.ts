@@ -1,8 +1,13 @@
 /** Explore mega menu — review links are filled from published DB products at render time. */
 
 import { publicPagePath } from '../lib/urls';
-import { buyingGuideSlug } from './buying-guide-content';
 import type { Product } from './products';
+import {
+  GUIDE_BRAND_NAMES,
+  GUIDE_BRAND_ORDER,
+  crossBrandGuides,
+  guidesForBrand,
+} from './guides';
 
 export interface MegaMenuLink {
   label: string;
@@ -16,6 +21,35 @@ export interface MegaMenuColumn {
   description: string;
   links: MegaMenuLink[];
   viewAll: { label: string; href: string };
+}
+
+/*
+ * The Guides column is derived, never hardcoded — src/data/guides.ts is the one
+ * place a guide title lives. Shape is unchanged: the cross-brand guides first,
+ * then each brand hub that actually has guides, then that brand's articles in
+ * reading order, capped so the column keeps its current height.
+ */
+const MEGA_MENU_GUIDE_LINK_CAP = 4;
+
+function buildGuideColumnLinks(): MegaMenuLink[] {
+  const links: MegaMenuLink[] = crossBrandGuides().map((guide) => ({
+    label: guide.title,
+    href: publicPagePath(`/guides/${guide.slug}`),
+  }));
+
+  for (const brand of GUIDE_BRAND_ORDER) {
+    const guides = guidesForBrand(brand);
+    if (!guides.length) continue;
+    links.push({
+      label: `${GUIDE_BRAND_NAMES[brand]} Guides`,
+      href: publicPagePath(`/guides/${brand}`),
+    });
+    for (const guide of guides) {
+      links.push({ label: guide.title, href: publicPagePath(`/guides/${guide.slug}`) });
+    }
+  }
+
+  return links.slice(0, MEGA_MENU_GUIDE_LINK_CAP);
 }
 
 export const megaMenuColumns: MegaMenuColumn[] = [
@@ -42,24 +76,7 @@ export const megaMenuColumns: MegaMenuColumn[] = [
     title: 'Guides',
     icon: 'menu_book',
     description: 'Practical guides to choosing and using AI girlfriend apps.',
-    links: [
-      {
-        label: 'How to Choose an AI Girlfriend App',
-        href: publicPagePath(`/guides/${buyingGuideSlug}`),
-      },
-      {
-        label: 'OurDream AI Guides',
-        href: publicPagePath('/guides/ourdream-ai'),
-      },
-      {
-        label: 'How to Use OurDream AI Image Generator',
-        href: publicPagePath('/guides/how-to-use-ourdream-ai-image-generator'),
-      },
-      {
-        label: 'OurDream AI Image Prompt Guide',
-        href: publicPagePath('/guides/ourdream-ai-image-prompt'),
-      },
-    ],
+    links: buildGuideColumnLinks(),
     viewAll: { label: 'View all guides', href: '/guides/' },
   },
 ];

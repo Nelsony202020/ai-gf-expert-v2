@@ -4,7 +4,6 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import ReviewHero from '../../components/review/ReviewHero.astro';
 import TabBar from '../../components/review/TabBar.astro';
-import ReviewStickyCta from '../../components/review/ReviewStickyCta.astro';
 import VideoReviewLightbox from '../../components/review/VideoReviewLightbox.astro';
 import OverviewTab from '../../components/review/tabs/OverviewTab.astro';
 import ReviewArticleTab from '../../components/review/tabs/ReviewArticleTab.astro';
@@ -93,9 +92,10 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
   }
   <main id="review-top" class="review-main">
     <ReviewHero product={product} featuredIn={featuredIn} />
-    <ReviewStickyCta product={product} />
     <VideoReviewLightbox product={product} />
-    <TabBar tabs={tabs} hiddenTabs={hiddenTabs} />
+    {/* One sticky nav, one CTA. Figma 530:24242 retires the separate floating
+        product CTA on review pages; the CTA now lives in this row. */}
+    <TabBar tabs={tabs} hiddenTabs={hiddenTabs} product={product} />
 
     <div data-panels>
       <div data-tab-panel="overview">
@@ -175,14 +175,21 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
   import { subscoreSlugFromLabel } from '../../lib/review/ratingsDeepLink.ts';
   import { swapReviewTabPanel } from '../../lib/review/reviewTabUi.client.ts';
 
-  const TABBAR_OFFSET = 52;
+  const TABBAR_OFFSET = 56;
 
+  /**
+   * How much of the viewport is covered by sticky chrome. The global header is
+   * NOT sticky (see --site-header-offset in global.css), so its 80px must not
+   * be counted here — doing so overshot every in-page jump by a header's worth.
+   * Only the tab bar actually pins.
+   */
   function getScrollOffset() {
-    const header = document.querySelector<HTMLElement>('[data-site-header]');
     const tabbar = document.querySelector<HTMLElement>('[data-tabbar]');
-    const headerH = header?.offsetHeight ?? TABBAR_OFFSET;
-    const tabbarH = tabbar?.offsetHeight ?? 0;
-    return headerH + tabbarH;
+    const stickyHeader =
+      parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--site-header-offset'),
+      ) || 0;
+    return stickyHeader + (tabbar?.offsetHeight ?? TABBAR_OFFSET);
   }
 
   function initReview() {
@@ -279,11 +286,17 @@ const jsonLdGraph = !isDraft ? buildReviewProductSchema(product) : [];
         const contributor = viewBtn.dataset.contributor;
         if (!categoryKey) return;
 
+        // When this click ends in a drawer, the page behind it must not move at
+        // all (Figma: "the page behind does not shift and keeps its scroll
+        // position"). Scrolling here also raced the drawer's own scroll
+        // snapshot, so the reader landed somewhere they had never been.
+        const opensDrawer = Boolean(contributor);
+
         navigateToRatingsSection(
           {
             categoryKey,
             subscoreSlug: subscoreName ? subscoreSlugFromLabel(subscoreName) : undefined,
-            scroll: true,
+            scroll: !opensDrawer,
           },
           navDeps,
         );

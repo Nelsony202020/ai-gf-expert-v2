@@ -665,6 +665,7 @@ const overviewGroups = overviewSections.map((section) => {
 
 <script>
   import { deferUntilIdle } from '../../../lib/ui/deferUntilIdle';
+  import { lockScroll, unlockScroll } from '../../../lib/ui/scrollLock';
 
   const NSFW_STORAGE_KEY = 'lr-nsfw-preference';
   const NSFW_COOKIE_KEY = 'lr_nsfw_preference';
@@ -735,7 +736,7 @@ const overviewGroups = overviewSections.map((section) => {
       if (!gate) return;
       gate.classList.add('hidden');
       gate.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
+      unlockScroll();
     }
 
     gateAge?.addEventListener('change', () => {
@@ -1012,8 +1013,8 @@ const overviewGroups = overviewSections.map((section) => {
       resetGateForm();
       gate.classList.remove('hidden');
       gate.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
-      gateConfirm?.focus();
+      lockScroll();
+      gateConfirm?.focus({ preventScroll: true });
     }
 
     initNsfwGateOnce(

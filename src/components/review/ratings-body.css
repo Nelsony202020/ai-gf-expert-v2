@@ -141,7 +141,8 @@
     flex: 0 0 384px;
     width: 384px;
     position: sticky;
-    top: calc(var(--site-header-height, 4.25rem) + var(--review-tabbar-height, 3.25rem) + 12px);
+    /* Only the tab bar pins; the global header scrolls away (--site-header-offset). */
+    top: calc(var(--site-header-offset, 0px) + var(--review-tabbar-height, 3.5rem) + 12px);
   }
 }
 
@@ -153,7 +154,7 @@
 }
 
 .rft-cat {
-  scroll-margin-top: calc(var(--site-header-height, 3.5rem) + var(--review-tabbar-height, 3rem) + 1rem);
+  scroll-margin-top: calc(var(--site-header-offset, 0px) + var(--review-tabbar-height, 3.5rem) + 1rem);
 }
 
 .rft-cat__toggle {
@@ -455,13 +456,23 @@
   appearance: none;
   font: inherit;
   text-align: left;
-  transition: border-color 0.16s ease-out, background 0.16s ease-out;
+  transition:
+    border-color 160ms ease-out,
+    background-color 160ms ease-out,
+    box-shadow 160ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rft-subscore {
+    transition: none;
+  }
 }
 
 @media (hover: hover) {
   .rft-subscore:hover:not(.rft-subscore--selected):not([aria-expanded='true']) {
-    border-color: color-mix(in srgb, var(--rft-pink) 32%, var(--rft-hairline));
+    border-color: color-mix(in srgb, var(--rft-pink) 26%, var(--rft-hairline));
     background: var(--rft-card);
+    box-shadow: 0 1px 3px rgba(20, 19, 23, 0.06);
   }
 }
 
@@ -471,10 +482,17 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--rft-pink) 35%, transparent);
 }
 
+/*
+ * Selected: a brand border plus the faintest brand tint — and NOT a thicker
+ * border. Going 1px -> 1.5px reflowed the card by half a pixel on every click,
+ * which is what made selection feel jumpy. The second pixel is drawn with an
+ * inset shadow instead, which costs no layout.
+ */
 .rft-subscore--selected,
 .rft-subscore[aria-expanded='true'] {
-  border: 1.5px solid var(--rft-pink);
-  background: var(--rft-card);
+  border-color: var(--rft-pink);
+  background: color-mix(in srgb, var(--rft-pink) 4%, var(--rft-card));
+  box-shadow: inset 0 0 0 1px var(--rft-pink);
 }
 
 .rft-subscore__top {
