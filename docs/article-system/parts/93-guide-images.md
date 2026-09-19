@@ -103,6 +103,50 @@ a bare `<figure>` with explicit `width`/`height`, `loading="lazy"`,
 
 ---
 
+## PROMPT GUIDE — the workflow section
+
+`src/content/guides/ourdream-ai-prompt-guide.html`, section **My OurDream AI
+Prompting Workflow**.
+
+Three images, not six. Steps 1, 5 and 6 get nothing on purpose — 1 and 5 would
+be more pictures of a chat window, and 6 has nothing to photograph.
+
+### At the very top of the section, before Step 1
+
+```html
+<figure><img src="/guides/ourdream-ai-prompt-guide/prompt-workflow-loop.webp" alt="A diagram of the six step OurDream prompting workflow, with an arrow looping from step five back to step four" width="820" height="601" loading="lazy" decoding="async" /><figcaption>The whole workflow. Steps 4 and 5 repeat until the result is right.</figcaption></figure>
+```
+
+This one carries the section. The text describes six steps in a line; the real
+shape is a loop between 4 and 5, and only a diagram can show that.
+
+### Inside Step 2 — "I Ask ChatGPT to Turn It Into a Prompt"
+
+This one sits **inside** the step, so it needs the step wrapper:
+
+```html
+<figure class="od-steps__media"><img src="/guides/ourdream-ai-prompt-guide/workflow-chatgpt-prompt.webp" alt="A ChatGPT conversation turning a plain description into an image prompt for OurDream AI, with an optional negative prompt" width="820" height="469" loading="lazy" decoding="async" /><figcaption>The description goes in, a ready prompt comes out — plus a negative prompt.</figcaption></figure>
+```
+
+### Inside Step 4 — "I Test the Prompt in OurDream"
+
+Also inside a step:
+
+```html
+<figure class="od-steps__media"><img src="/guides/ourdream-ai-prompt-guide/workflow-ourdream-result.webp" alt="The ChatGPT written prompt pasted into the OurDream image generator, and the two images it produced" width="820" height="505" loading="lazy" decoding="async" /><figcaption>The same prompt pasted into OurDream, and what it gave back.</figcaption></figure>
+```
+
+**Note on these two:** unlike every other image in this document, these two sit
+inside `.od-steps` list items, so they use `class="od-steps__media"`. Check
+`92-block-markup-contract.md` for where exactly inside the `<li>` it goes — the
+comics guide has working examples.
+
+These were shot in a real ChatGPT session and a real OurDream generation, using
+the same cafe description throughout, so the three images tell one continuous
+story.
+
+---
+
 ## Two facts to add to the copy
 
 Both read off the live OurDream interface. Neither is in the guides today.
