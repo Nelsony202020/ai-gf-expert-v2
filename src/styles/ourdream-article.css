@@ -2745,3 +2745,193 @@
   background: var(--od-sunken);
   object-fit: cover;
 }
+
+/* --- Prompt + Result ------------------------------------------------------
+   Figma `Prompt + Result` (313:1261 side, 313:1456 tiled). Two arrangements of
+   the same three parts — the generated image, the Article / Prompt card that
+   made it, and a caption naming what the prompt did.
+
+   S (side): 740 = 300 image + 28 gap + 412 content, content top-aligned.
+   T (tiled): inside `Prompt + Result grid`, 3 x 236 with a 16 gap, stacked
+   image over prompt. Figma tops-aligns the columns and lets each run its own
+   height, so this is a grid with `align-items: start`, not equal-height cards.
+   Below the layout breakpoint both collapse to one stacked column, which is
+   what the 350 mobile frames draw. */
+
+.od-prompt-result {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.od-prompt-result__media {
+  margin: 0;
+  min-width: 0;
+}
+
+.od-prompt-result__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* The prompt card carries its own top margin as a prose sibling; inside this
+   block the gap above is the grid's, so it must not stack with it. */
+.od-prompt-result .od-prompt {
+  margin: 0;
+}
+
+.od-prompt-result__meta {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0;
+  color: var(--od-dim);
+}
+
+.od-prompt-result-grid {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .od-prompt-result--side {
+    grid-template-columns: 18.75rem minmax(0, 1fr);
+    column-gap: 1.75rem;
+    align-items: start;
+  }
+
+  .od-prompt-result-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* --- Additions for the prompt, image-prompt and image-generator guides ----
+   Three gaps the Comics guide never exercised, plus one specificity fix. */
+
+/* A cheat-sheet group title may be a real heading. The article keeps its H3s
+   for the outline even where Figma folds them into the component, so the
+   class has to beat `.ourdream-article-prose h3` (0,1,1) — hence the
+   doubled class rather than !important. */
+.od-cheat-group .od-cheat-group__title.od-cheat-group__title,
+.ourdream-article-prose .od-cheat-group__title {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-ink);
+}
+
+/* Image grid, 3-up. Figma draws the model comparison as 236 x 3 with a 16 gap
+   across the 740 column (image-generator 315:2685); the 2-up base is unchanged. */
+@media (min-width: 1100px) {
+  .od-figure-grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* A Step's `Example` slot (Figma 316:3962). A sunken panel, not a card: no
+   border, no copy affordance, sentence-case label, and a sans body — the
+   component reserves mono for Kind=Code prompts, which this is not. */
+.od-steps__example {
+  margin: 0;
+  border-radius: 0.5rem;
+  background: var(--od-sunken);
+  padding: 0.625rem 0.875rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.od-steps__example-label {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0;
+  color: var(--od-dim);
+}
+
+.od-steps__example-text {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.625rem;
+  letter-spacing: -0.01875rem;
+  color: var(--od-ink);
+}
+
+/* Article / Prompt, Kind = Text. The component reserves monospace for
+   Kind=Code (JSON and structured prompts); a normal prompt is Body/M —
+   Inter 16/26, tracking -0.3px. Figma 154:2306. */
+.od-prompt--text,
+.od-prompt--text > pre,
+.od-prompt--text [data-od-copy-text] {
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.625rem;
+  letter-spacing: -0.01875rem;
+}
+
+/* A neutral prompt-comparison card. `.od-prompt-card__label::before` paints the
+   ✗ unconditionally and `--yes` swaps it for ✓, so a pairing that is not
+   better-and-worse — the prompt guide sets an IMAGE prompt beside a VIDEO
+   prompt — had no shape to use. This one carries no verdict glyph. */
+.od-prompt-card--neutral .od-prompt-card__label::before {
+  display: none;
+}
+
+.od-prompt-card--neutral .od-prompt-card__label {
+  color: var(--od-dim);
+}
+
+/* An AIGE test letters its result tiles and may mark one as the better one.
+   Figma 316:3878 / 316:4019. The tile is a figure inside the compare grid, so
+   the letter rides on the figure and the badge sits beside the caption. */
+.od-block--aige-test .od-compare-grid figure {
+  position: relative;
+}
+
+.od-tile-letter {
+  position: absolute;
+  inset-block-start: 0.5rem;
+  inset-inline-start: 0.5rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding-inline: 0.375rem;
+  border-radius: 999px;
+  background: var(--od-ink);
+  color: var(--od-on-ink);
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.od-tile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-end: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--od-green-soft);
+  color: var(--od-green-ink);
+  font-family: var(--od-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1rem;
+  letter-spacing: 0;
+}

@@ -4,10 +4,10 @@
 <h2 id="how-prompting-works-in-ourdream-ai">How Prompting Works in OurDream AI</h2>
 <p>It doesn’t matter whether you are generating an AI character, generating a video, or an in-chat image — all prompts work the same.</p>
 <ol class="od-steps">
-<li>You tell OurDream what you want</li>
-<li>The AI reads your prompt</li>
-<li>It creates the result based on your instructions</li>
-<li>If the result is wrong, you change the prompt and try again</li>
+<li><p class="od-steps__title">You tell OurDream what you want</p></li>
+<li><p class="od-steps__title">The AI reads your prompt</p></li>
+<li><p class="od-steps__title">It creates the result based on your instructions</p></li>
+<li><p class="od-steps__title">If the result is wrong, you change the prompt and try again</p></li>
 </ol>
 <p>If you type a prompt and don’t get what you want, then 9 out of 10 times it is because the prompt is too vague or unnecessarily complicated. OurDream AI specifically says that long complicated prompts are not automatically better.</p>
 <p>OurDream’s own help docs make the same point: <a href="https://help.ourdream.ai/en/articles/8747009" rel="noopener" target="_blank">prompt quality is about clarity, not stuffing in extra keywords</a>.</p>
@@ -29,13 +29,8 @@
 </div>
 <div class="od-ab">
 <div class="od-ab__options">
-<div class="od-ab__card">
-<p class="od-ab__head"><span class="od-ab__badge">A</span> Temporary detail</p>
-<p class="od-ab__body">For example, if you add “wearing a hospital uniform” to the character prompt, OurDream may keep trying to generate that outfit later, even when you want your character to wear something different.</p></div>
-</div>
-<div class="od-ab__card">
-<p class="od-ab__head"><span class="od-ab__badge">B</span> Permanent feature</p>
-<p class="od-ab__body">Something like “big blue eyes” makes much more sense because that is a feature you normally want the character to keep.</p>
+<div class="od-ab__card"><p class="od-ab__head"><span class="od-ab__badge">A</span>Temporary detail</p><p class="od-ab__body">For example, if you add “wearing a hospital uniform” to the character prompt, OurDream may keep trying to generate that outfit later, even when you want your character to wear something different.</p></div>
+<div class="od-ab__card"><p class="od-ab__head"><span class="od-ab__badge">B</span>Permanent feature</p><p class="od-ab__body">Something like “big blue eyes” makes much more sense because that is a feature you normally want the character to keep.</p></div>
 </div>
 </div>
 
@@ -61,9 +56,7 @@
 <p class="od-prompt-card__label">NO STRUCTURE</p>
 <p class="od-prompt-card__text">A woman at the beach at sunset wearing a black dress, cinematic, sitting down, beautiful lighting, realistic photo.</p>
 </div>
-<div class="od-prompt-compare__arrow" aria-hidden="true">
-<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-</div>
+<div class="od-prompt-compare__arrow" aria-hidden="true"></div>
 <div class="od-prompt-card od-prompt-card--yes">
 <div class="od-prompt-card__bar">
 <p class="od-prompt-card__label">WITH STRUCTURE</p>
@@ -105,7 +98,13 @@
 <li>correct something the AI misunderstood</li>
 </ul>
 <p>For example:</p>
-<blockquote><p>(OOC: Keep your replies short and playful.)</p></blockquote>
+<div class="od-prompt od-prompt--text" data-od-copy-root>
+<div class="od-prompt__bar">
+<span class="od-prompt__label">OOC command</span>
+<button type="button" class="od-copy" data-od-copy>Copy</button>
+</div>
+<pre data-od-copy-text>(OOC: Keep your replies short and playful.)</pre>
+</div>
 <p>The AI then uses that instruction to guide its next replies without making it part of the actual roleplay.</p>
 <p>OurDream AI gives you plenty of chat customization options like reply length and writing style, so these commands are rarely needed. That said, they can be helpful sometimes.</p>
 <figure>
@@ -462,10 +461,12 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
 </div>
 <div class="od-compare-grid">
 <figure>
+  <span class="od-tile-letter" aria-hidden="true">A</span>
   <img src="/guides/ourdream-ai-prompt-guide/casino-json-prompt.webp" alt="OurDream AI result from a detailed JSON prompt, recreating the casino pose with a sequined dress" width="768" height="1360" loading="lazy" decoding="async" />
-  <figcaption>Result from the JSON prompt</figcaption>
+  <figcaption><span class="od-tile-badge">Better result</span>Result from the JSON prompt</figcaption>
 </figure>
 <figure>
+  <span class="od-tile-letter" aria-hidden="true">B</span>
   <img src="/guides/ourdream-ai-prompt-guide/casino-paragraph-prompt.webp" alt="OurDream AI result from a paragraph prompt, with a similar casino look but less accurate pose details" width="768" height="1360" loading="lazy" decoding="async" />
   <figcaption>Result from the paragraph prompt</figcaption>
 </figure>
@@ -484,37 +485,43 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
 <p>That makes sense. If you ask for something simple like “woman drinking coffee in Paris,” there are only a few important things the AI needs to understand.</p>
 <p>Prompt structure becomes much more useful when you want specific details to be correct.</p>
 
-<h3 id="1-basic">1. Basic</h3>
-<blockquote><p>woman with blonde hair in sundress</p></blockquote>
+<ol class="od-steps">
+<li><p class="od-steps__title">Basic</p><div class="od-steps__body"><div class="od-steps__example"><p class="od-steps__example-label">Example</p><p class="od-steps__example-text">woman with blonde hair in sundress</p></div></div></li>
+<li><p class="od-steps__title">Specific</p><div class="od-steps__body"><div class="od-steps__example"><p class="od-steps__example-label">Example</p><p class="od-steps__example-text">woman with blonde hair in sundress sitting at a cafe in paris and sipping a coffee</p></div></div></li>
+<li><p class="od-steps__title">Structured</p><div class="od-steps__body"><div class="od-steps__example"><p class="od-steps__example-label">Example</p><p class="od-steps__example-text">woman with blonde hair in sundress sitting at a cafe in paris and sipping a sparkling water, while golden hour, man on motorcycle driving by, muscular black man sitting next to her, menu on table</p></div></div></li>
+<li><p class="od-steps__title">Very Long</p><div class="od-steps__body"><div class="od-steps__example"><p class="od-steps__example-label">Example</p><p class="od-steps__example-text">woman with blonde hair in a sundress, sitting at an outdoor cafe in Paris, sipping sparkling water from a glass in her left hand, right hand resting on the table, muscular black man sitting beside her, menu lying on the table, man riding a motorcycle past the cafe in the background, warm golden hour sunlight, medium shot, eye-level camera, realistic photography</p></div></div></li>
+</ol>
+<div class="od-block od-block--aige-test">
+<p class="od-block__kicker od-block__kicker--aige">AIGE test</p>
+<p class="od-block__title">Prompt detail test</p>
+<div class="od-compare-grid">
 <figure>
+  <span class="od-tile-letter" aria-hidden="true">A</span>
   <img src="/guides/ourdream-ai-prompt-guide/prompt-basic-sundress.webp" alt="OurDream AI image of a blonde woman in a floral sundress standing in a field" width="768" height="1360" loading="lazy" decoding="async" />
   <figcaption>Basic prompt result</figcaption>
 </figure>
-
-<h3 id="2-specific">2. Specific</h3>
-<blockquote><p>woman with blonde hair in sundress sitting at a cafe in paris and sipping a coffee</p></blockquote>
 <figure>
+  <span class="od-tile-letter" aria-hidden="true">B</span>
   <img src="/guides/ourdream-ai-prompt-guide/prompt-specific-paris-coffee.webp" alt="OurDream AI image of a blonde woman in a sundress sitting at a Paris cafe sipping coffee" width="768" height="1360" loading="lazy" decoding="async" />
   <figcaption>Specific prompt result</figcaption>
 </figure>
-
-<h3 id="3-structured">3. Structured</h3>
-<blockquote><p>woman with blonde hair in sundress sitting at a cafe in paris and sipping a sparkling water, while golden hour, man on motorcycle driving by, muscular black man sitting next to her, menu on table</p></blockquote>
 <figure>
+  <span class="od-tile-letter" aria-hidden="true">C</span>
   <img src="/guides/ourdream-ai-prompt-guide/prompt-structured-cafe.webp" alt="OurDream AI image of a blonde woman at a Paris cafe sipping sparkling water, with a man beside her and a motorcycle in the background" width="768" height="1360" loading="lazy" decoding="async" />
   <figcaption>Structured prompt result</figcaption>
 </figure>
-
-<h3 id="4-very-long">4. Very Long</h3>
-<blockquote><p>woman with blonde hair in a sundress, sitting at an outdoor cafe in Paris, sipping sparkling water from a glass in her left hand, right hand resting on the table, muscular black man sitting beside her, menu lying on the table, man riding a motorcycle past the cafe in the background, warm golden hour sunlight, medium shot, eye-level camera, realistic photography</p></blockquote>
 <figure>
+  <span class="od-tile-letter" aria-hidden="true">D</span>
   <img src="/guides/ourdream-ai-prompt-guide/prompt-detailed-cafe.webp" alt="OurDream AI image of a blonde woman in a green dress sipping water at a cafe, with a motorcycle and man in the background" width="768" height="1360" loading="lazy" decoding="async" />
   <figcaption>Very long prompt result</figcaption>
 </figure>
+</div>
+<p class="od-result-label">Result</p>
 <p>OurDream is better at understanding simple prompts than I expected. You don’t need to make every prompt extremely detailed.</p>
-<div class="od-block od-block--key-takeaway">
-<p class="od-block__kicker">Key takeaway</p>
-<p class="od-block__title">More detail gives you more control, but it also gives the AI more things to get wrong.</p>
+<div class="od-block od-block--what-i-learned">
+<p class="od-block__kicker">What I learned</p>
+<p class="od-block__body">More detail gives you more control, but it also gives the AI more things to get wrong.</p>
+</div>
 </div>
 <p>That is a much more useful takeaway than trying to prove that “structured prompts are always better.”</p>
 
@@ -524,14 +531,23 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
 <h3 id="making-your-prompt-too-vague">Making Your Prompt Too Vague</h3>
 <p>The AI cannot know what you have in your head.</p>
 <p>If you simply write:</p>
-<blockquote><p>woman at the beach</p></blockquote>
+<div class="od-prompt od-prompt--text" data-od-copy-root>
+<div class="od-prompt__bar">
+<span class="od-prompt__label">Too vague</span>
+<button type="button" class="od-copy" data-od-copy>Copy</button>
+</div>
+<pre data-od-copy-text>woman at the beach</pre>
+</div>
 <p>OurDream has to decide almost everything for you, including the pose, outfit, lighting, camera angle, and what the beach looks like.</p>
 <p>If you care about a detail, include it in your prompt. You do not need to describe everything, only the things you actually want control over.</p>
 
 <h3 id="adding-too-many-instructions">Adding Too Many Instructions</h3>
 <p>More details do not always mean a better prompt.</p>
 <p>If you give OurDream too many instructions at once, it has more things to understand and more things it can get wrong.</p>
-<p>Start with the important details first. You can always add more if the first result is missing something.</p>
+<div class="od-block od-block--tip">
+<p class="od-block__kicker">Tip</p>
+<p class="od-block__body">Start with the important details first. You can always add more if the first result is missing something.</p>
+</div>
 
 <h3 id="putting-temporary-details-in-a-character-prompt">Putting Temporary Details in a Character Prompt</h3>
 <p>Character prompts should mainly describe things you want your character to keep.</p>
@@ -542,11 +558,23 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
 <h3 id="describing-an-image-when-you-are-generating-a-video">Describing an Image When You Are Generating a Video</h3>
 <p>A video prompt should explain what happens, not only what the scene looks like.</p>
 <p>For example:</p>
-<blockquote><p>blonde woman on a beach, black dress, sunset</p></blockquote>
 <p>This mostly describes an image.</p>
 <p>Instead, tell the video generator what should move:</p>
-<blockquote><p>She slowly walks toward the camera while her dress moves in the wind. She then looks over her shoulder as the camera follows her.</p></blockquote>
-<p>Think of an image prompt as describing a photo and a video prompt as giving directions for a short scene.</p>
+<div class="od-prompt-compare" data-od-copy-root>
+<div class="od-prompt-card od-prompt-card--neutral">
+<p class="od-prompt-card__label">IMAGE PROMPT</p>
+<p class="od-prompt-card__text">blonde woman on a beach, black dress, sunset</p>
+</div>
+<div class="od-prompt-compare__arrow" aria-hidden="true"></div>
+<div class="od-prompt-card od-prompt-card--neutral">
+<div class="od-prompt-card__bar">
+<p class="od-prompt-card__label">VIDEO PROMPT</p>
+<button type="button" class="od-copy" data-od-copy>Copy</button>
+</div>
+<p class="od-prompt-card__text" data-od-copy-text>She slowly walks toward the camera while her dress moves in the wind. She then looks over her shoulder as the camera follows her.</p>
+</div>
+</div>
+<p class="od-prompt-compare__note">Think of an image prompt as describing a photo and a video prompt as giving directions for a short scene.</p>
 
 <h3 id="changing-too-many-things-at-once">Changing Too Many Things at Once</h3>
 <p>If a generation is almost right, do not rewrite the entire prompt.</p>
@@ -555,18 +583,13 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
 
 <h3 id="using-the-same-prompt-style-for-every-generator">Using the Same Prompt Style for Every Generator</h3>
 <div class="od-block od-block--what-i-learned">
-<p class="od-block__kicker">What I learned <span class="od-block__role">Herman Carter · Lead Reviewer</span></p>
+<p class="od-block__kicker">What I learned<span class="od-block__role">Herman Carter · Lead Reviewer</span></p>
 <p class="od-block__body">One of the biggest things I learned while testing OurDream is that different image generators can respond differently to the exact same prompt style.</p>
 </div>
 <div class="od-ab">
 <div class="od-ab__options">
-<div class="od-ab__card">
-<p class="od-ab__head"><span class="od-ab__badge">A</span> Vivid 1 and Vivid 2</p>
-<p class="od-ab__body">For example, I tested JSON prompts with Vivid 1 and Vivid 2, and both followed them surprisingly well. I could give very detailed instructions and still get an accurate result.</p></div>
-</div>
-<div class="od-ab__card">
-<p class="od-ab__head"><span class="od-ab__badge">B</span> Dreamy</p>
-<p class="od-ab__body">I then tried similar JSON prompts with the default Dreamy generator. The results were much less accurate and the image quality was worse. Dreamy actually worked better for me when I turned the same instructions into a normal paragraph prompt.</p>
+<div class="od-ab__card"><p class="od-ab__head"><span class="od-ab__badge">A</span>Vivid 1 and Vivid 2</p><p class="od-ab__body">For example, I tested JSON prompts with Vivid 1 and Vivid 2, and both followed them surprisingly well. I could give very detailed instructions and still get an accurate result.</p></div>
+<div class="od-ab__card"><p class="od-ab__head"><span class="od-ab__badge">B</span>Dreamy</p><p class="od-ab__body">I then tried similar JSON prompts with the default Dreamy generator. The results were much less accurate and the image quality was worse. Dreamy actually worked better for me when I turned the same instructions into a normal paragraph prompt.</p></div>
 </div>
 </div>
 <p>So if a prompt works badly, it does not always mean the prompt itself is bad. Try changing how you write it or test it with another generator.</p>
@@ -580,7 +603,7 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
 <p>It may sound obvious, but AI is really good at creating prompts for other AI tools.</p>
 <ol class="od-steps">
 <li>
-<span class="od-steps__title">I Explain What I Want to ChatGPT</span>
+<p class="od-steps__title">I Explain What I Want to ChatGPT</p>
 <div class="od-steps__body">
 <p>I normally open a ChatGPT conversation and explain what I want using the voice button.</p>
 <p>I prefer talking instead of typing because I naturally give a lot more detail. When I type, I tend to keep things short. When I talk, I explain the idea, what I want it to look like, what is important, and what I don’t want.</p>
@@ -588,7 +611,7 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
 </div>
 </li>
 <li>
-<span class="od-steps__title">I Ask ChatGPT to Turn It Into a Prompt</span>
+<p class="od-steps__title">I Ask ChatGPT to Turn It Into a Prompt</p>
 <div class="od-steps__body">
 <p>Once ChatGPT understands what I want, I ask it to turn everything I said into a prompt for OurDream AI.</p>
 <p>The prompt will look different depending on what I am creating. An image prompt should describe what you want to see, while a video prompt should focus much more on what happens and how things move.</p>
@@ -596,21 +619,21 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
 </div>
 </li>
 <li>
-<span class="od-steps__title">I Add References When I Have Them</span>
+<p class="od-steps__title">I Add References When I Have Them</p>
 <div class="od-steps__body">
 <p>If I am trying to recreate a certain image, pose, style, or scene, I also upload the reference to ChatGPT.</p>
 <p>This is especially useful when creating detailed image or video prompts because ChatGPT can help break down things that are easy to miss, like the camera angle, hand position, lighting, background, and composition.</p>
 </div>
 </li>
 <li>
-<span class="od-steps__title">I Test the Prompt in OurDream</span>
+<p class="od-steps__title">I Test the Prompt in OurDream</p>
 <div class="od-steps__body">
 <p>Then I paste the prompt into OurDream and generate.</p>
 <p>I rarely expect the first generation to be perfect. I first look at what it got right and what it got wrong.</p>
 </div>
 </li>
 <li>
-<span class="od-steps__title">I Fix Only What Went Wrong</span>
+<p class="od-steps__title">I Fix Only What Went Wrong</p>
 <div class="od-steps__body">
 <p>If the result is almost right, I don’t start over.</p>
 <p>For example, if everything looks good but the pose is wrong, I go back to ChatGPT and explain exactly what was wrong with the pose.</p>
@@ -619,7 +642,7 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
 </div>
 </li>
 <li>
-<span class="od-steps__title">I Save Prompts That Work</span>
+<p class="od-steps__title">I Save Prompts That Work</p>
 <div class="od-steps__body">
 <p>When I find a prompt structure that works well, I save it.</p>
 <p>After a while, you start building your own templates for different things like images, videos, characters, and certain OurDream generators.</p>
@@ -630,68 +653,68 @@ Produce a realistic casino-night social-media portrait matching the supplied ref
 
 <h2 id="ourdream-ai-prompting-faq">OurDream AI Prompting FAQ</h2>
 <div class="od-faq">
-<div class="od-faq__item" id="do-longer-prompts-give-better-results">
-<p class="od-faq__q">Do Longer Prompts Give Better Results?</p>
+<details class="od-faq__item" id="do-longer-prompts-give-better-results">
+<summary class="od-faq__q">Do Longer Prompts Give Better Results?</summary>
 <div class="od-faq__a">
 <p>Not always.</p>
 <p>A longer prompt gives the AI more information, but it also gives it more things to get wrong.</p>
 <p>Use enough detail to explain what you want. Don’t add details just to make the prompt longer.</p>
 </div>
-</div>
-<div class="od-faq__item" id="should-i-use-json-or-normal-prompts">
-<p class="od-faq__q">Should I Use JSON or Normal Prompts?</p>
+</details>
+<details class="od-faq__item" id="should-i-use-json-or-normal-prompts">
+<summary class="od-faq__q">Should I Use JSON or Normal Prompts?</summary>
 <div class="od-faq__a">
 <p>It depends on the generator.</p>
 <p>In my testing, Vivid 1 and Vivid 2 worked very well with detailed JSON prompts. The default Dreamy generator was much less accurate with them and gave me better results with normal paragraph prompts.</p>
 <p>So I wouldn’t say JSON is always better. Test both and see what works best with the generator you are using.</p>
 </div>
-</div>
-<div class="od-faq__item" id="why-is-ourdream-not-following-my-prompt">
-<p class="od-faq__q">Why Is OurDream Not Following My Prompt?</p>
+</details>
+<details class="od-faq__item" id="why-is-ourdream-not-following-my-prompt">
+<summary class="od-faq__q">Why Is OurDream Not Following My Prompt?</summary>
 <div class="od-faq__a">
 <p>There can be a few reasons.</p>
 <p>Your prompt may be too vague, you may be asking for too many things at once, or some of your instructions may conflict with each other.</p>
 <p>It can also simply be the generator you are using. If the prompt looks good but the result keeps failing, try another generator or rewrite the same instructions in a different format.</p>
 </div>
-</div>
-<div class="od-faq__item" id="should-i-use-the-same-prompt-for-every-ourdream-generator">
-<p class="od-faq__q">Should I Use the Same Prompt for Every OurDream Generator?</p>
+</details>
+<details class="od-faq__item" id="should-i-use-the-same-prompt-for-every-ourdream-generator">
+<summary class="od-faq__q">Should I Use the Same Prompt for Every OurDream Generator?</summary>
 <div class="od-faq__a">
 <p>No.</p>
 <p>Different generators can respond differently to the same prompt.</p>
 <p>A prompt that works perfectly with Vivid 2 may not work as well with Dreamy. That is why I always test the prompt with the generator I actually plan to use.</p>
 </div>
-</div>
-<div class="od-faq__item" id="what-should-i-do-if-my-image-is-almost-perfect">
-<p class="od-faq__q">What Should I Do If My Image Is Almost Perfect?</p>
+</details>
+<details class="od-faq__item" id="what-should-i-do-if-my-image-is-almost-perfect">
+<summary class="od-faq__q">What Should I Do If My Image Is Almost Perfect?</summary>
 <div class="od-faq__a">
 <p>Change only the part that is wrong.</p>
 <p>If the outfit, background, and lighting are good but the hand position is wrong, only change the hand instruction.</p>
 <p>If you rewrite everything, you may fix the hand but accidentally ruin everything else.</p>
 </div>
-</div>
-<div class="od-faq__item" id="should-i-put-outfits-and-locations-in-my-character-prompt">
-<p class="od-faq__q">Should I Put Outfits and Locations in My Character Prompt?</p>
+</details>
+<details class="od-faq__item" id="should-i-put-outfits-and-locations-in-my-character-prompt">
+<summary class="od-faq__q">Should I Put Outfits and Locations in My Character Prompt?</summary>
 <div class="od-faq__a">
 <p>Usually not if they are temporary.</p>
 <p>Things like eye color, hair, or other permanent features make sense in a character prompt.</p>
 <p>An outfit, location, or situation can change, so those details are usually better added when creating the image or starting the scene.</p>
 </div>
-</div>
-<div class="od-faq__item" id="do-i-need-to-know-prompt-engineering">
-<p class="od-faq__q">Do I Need to Know Prompt Engineering to Use OurDream AI?</p>
+</details>
+<details class="od-faq__item" id="do-i-need-to-know-prompt-engineering">
+<summary class="od-faq__q">Do I Need to Know Prompt Engineering to Use OurDream AI?</summary>
 <div class="od-faq__a">
 <p>No.</p>
 <p>You can get good results with very simple prompts.</p>
 <p>Prompting becomes more useful when you want more control over small details. You can also use ChatGPT to help turn a simple idea into a more detailed prompt.</p>
 </div>
-</div>
-<div class="od-faq__item" id="what-is-the-biggest-prompting-mistake-beginners-make">
-<p class="od-faq__q">What Is the Biggest Prompting Mistake Beginners Make?</p>
+</details>
+<details class="od-faq__item" id="what-is-the-biggest-prompting-mistake-beginners-make">
+<summary class="od-faq__q">What Is the Biggest Prompting Mistake Beginners Make?</summary>
 <div class="od-faq__a">
 <p>Trying to make the perfect prompt before generating anything.</p>
 <p>Start with what you know you want, generate, look at the result, and then improve it.</p>
 <p>It is usually much faster than spending ten minutes trying to write one massive prompt before you even know what the AI will get wrong.</p>
 </div>
-</div>
+</details>
 </div>
