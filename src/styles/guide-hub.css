@@ -815,10 +815,20 @@
   background: var(--hub-page);
 }
 
-html:has(.guide-hub),
-body:has(.guide-hub) {
-  background-color: #141317;
-}
+/*
+ * REMOVED: html:has(.guide-hub), body:has(.guide-hub) { background-color: #141317 }
+ *
+ * guide-hub.css is injected by the global header, and that header wraps every
+ * non-homepage page in `.guide-hub.guide-hub--site-chrome`. So this :has()
+ * repainted html and body dark on EVERY page while the text tokens stayed at
+ * their light values — #1b1b1b text on #141317, about 1.05:1. The H1, the lede
+ * and every card title on /guides/ and /reviews/ were invisible.
+ *
+ * Nothing replaces it: `.guide-hub` already sets `background: var(--hub-page)`,
+ * which is themed (#f7f7f6 light, #141317 under [data-theme='dark']), and the
+ * hub's dark band is painted by `.guide-hub__hero` via --hub-ink. The page
+ * background is left to --color-background, where it belongs.
+ */
 
 .home-v2:has(.guide-hub) .site-footer {
   position: relative;
