@@ -444,6 +444,28 @@ html[data-theme='dark'] .home-v2__header {
   align-items: center;
 }
 
+/* The gap between the trigger and the panel.
+
+   On the homepage the drop wrapper is only as tall as the ~32px trigger, so
+   `top: calc(100% + 8px)` puts the panel 8px under the button and the pointer
+   crosses almost nothing. On every other header the wrapper is stretched to
+   the full 80px band (see the note above), so the same rule opened the panel
+   32px below the button — four times the travel, through a strip that looks
+   empty, and the menu closed on the way down.
+
+   Anchoring to the band's bottom edge instead removes the dead zone entirely:
+   the wrapper reaches y=79 and the panel starts at y=79, so the pointer never
+   leaves a hover target. The ::before bridge is then bridging nothing, and at
+   panel width it would sit over the neighbouring trigger's lower edge, so it
+   is switched off here. */
+[data-site-header] .home-v2__drop-panel {
+  top: 100%;
+}
+
+[data-site-header] .home-v2__drop-panel::before {
+  content: none;
+}
+
 [data-site-header] .home-v2__drop-panel {
   border-radius: 12px;
   box-shadow: 0 12px 32px rgb(16 16 20 / 18%);

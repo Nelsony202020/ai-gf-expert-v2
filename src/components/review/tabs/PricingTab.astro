@@ -5062,6 +5062,83 @@ function withUnit(value: string) {
   .pt-opinion__cta:hover {
     text-decoration: underline;
   }
+
+  /* =========================================================================
+     Dark mode — stage 2.
+
+     These rules live here, not in pricing-tab.css, because the light rules
+     they override are in this scoped block: an unscoped
+     `[data-theme='dark'] .pt-x` in pricing-tab.css (0,2,0) only ties with the
+     scoped `.pt-x[data-astro-cid]` (0,2,0) and loses on source order. That is
+     why pricing-tab.css carries 212 dark rules and still could not reach these.
+
+     The theme selector must be :global(). Astro appends the scope attribute to
+     every bare selector in this block, including ancestors — a plain
+     `[data-theme='dark'] .pt-x` compiles to
+     `[data-astro-cid-x][data-theme=dark] .pt-x[data-astro-cid-x]`, which asks
+     <html> to carry the component's scope id and therefore never matches.
+     ========================================================================= */
+
+  :global([data-theme='dark']) .pt-billing__switch {
+    background: var(--dk-raise);
+  }
+
+  :global([data-theme='dark']) .pt-credit-pool__await-callout {
+    border-color: rgb(219 39 119 / 38%);
+    background: rgb(219 39 119 / 12%);
+    color: var(--dk-ink);
+  }
+
+  :global([data-theme='dark']) .pt-credit-pool__ghost-panel {
+    border-color: var(--dk-line);
+    background: var(--dk-raise);
+    /* The light version leans on opacity + grayscale to read as "not yet
+       active". On a dark page that just turns it into a grey slab, so the
+       skeleton keeps its shape and loses the wash. */
+    opacity: 1;
+    filter: none;
+  }
+
+  :global([data-theme='dark']) .pt-credit-pool__ghost-bar {
+    background: var(--dk-line);
+  }
+
+  :global([data-theme='dark']) .pt-menu-select__trigger {
+    border-color: var(--dk-line-strong);
+    background: var(--dk-card);
+    color: var(--dk-ink);
+  }
+
+  :global([data-theme='dark']) .pt-usage-detail {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+
+  :global([data-theme='dark']) .pt-usage-math__details {
+    border-color: var(--dk-line);
+    background: var(--dk-raise);
+  }
+
+  /* Text that kept its light-mode colour on a now-dark surface. */
+
+  :global([data-theme='dark']) .pt-billing__btn.is-active {
+    background: var(--dk-card);
+    color: var(--dk-ink);
+  }
+
+  :global([data-theme='dark']) .pt-usage-math__detail-body,
+  :global([data-theme='dark']) .pt-prose__body,
+  :global([data-theme='dark']) .pt-credit-pool__intro,
+  :global([data-theme='dark']) .pt-topups__value-detail {
+    color: var(--dk-dim);
+  }
+
+  /* Matches the light rule's own shape (.pt-bench__float--avg .x) so it wins
+     the tie outright instead of relying on source order. */
+  :global([data-theme='dark']) .pt-bench__float--avg .pt-bench__float-name,
+  :global([data-theme='dark']) .pt-bench__float--avg .pt-bench__float-price {
+    color: var(--dk-dim);
+  }
 </style>
 
 <script>
