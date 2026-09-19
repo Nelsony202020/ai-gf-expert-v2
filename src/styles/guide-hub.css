@@ -101,15 +101,6 @@
   text-align: center;
 }
 
-/* Modifier sits AFTER the base block on purpose: same specificity, so it has to
-   come later to win on text-align, align-items and max-width. */
-.guide-hub__hero-body--wide {
-  max-width: none;
-  width: 100%;
-  text-align: left;
-  align-items: stretch;
-}
-
 .guide-hub__title {
   margin: 0;
   color: var(--hub-on-ink);

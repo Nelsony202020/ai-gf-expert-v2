@@ -6042,18 +6042,3 @@
   border-color: rgb(255 255 255 / 10%);
 }
 
-/*
- * Readable measure for the /test/ hero prose.
- *
- * The hub hero body is full-bleed on purpose (`--wide` sets max-width: none, and
- * it has to keep winning over the base block for the metrics row and the
- * hub nav to span). That left the three intro paragraphs running the whole
- * 1344px of the hero, with no container. 42rem puts them on the same measure as
- * the /test/<category>/ lede; the metrics list below them still spans.
- *
- * Scoped to #test-hub-top because .roundup-hero-intro__body is shared with the
- * roundup and buying-guide heroes, which are centred and must not change.
- */
-#test-hub-top .roundup-hero-intro__body > p {
-  max-width: 42rem;
-}
