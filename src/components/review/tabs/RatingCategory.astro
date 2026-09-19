@@ -313,17 +313,31 @@ const sectionHash = buildReviewRatingsHash(category.key);
     });
   }
 
+  /*
+    Each level owns the evidence state, rather than only All setting it:
+
+      skim    category collapsed, nothing selected
+      medium  category open, subscores visible, evidence closed
+      all-in  category open, evidence open
+
+    Previously skim and medium left the subscore selection alone, so All ->
+    Medium kept every evidence panel open, and Skim only hid it behind the
+    collapsed category — reopening at Medium brought it straight back. Clearing
+    here does not lock Medium down: the card click handler is untouched, so a
+    subscore clicked while on Medium still opens its evidence.
+  */
   document.addEventListener('detail-level-change', ((e: CustomEvent) => {
     const level = e.detail?.level;
     document.querySelectorAll<HTMLElement>('[data-ratings-root] [data-category]').forEach((el) => {
       const content = el.querySelector<HTMLElement>('[data-accordion-content]');
       const isOpen = content && !content.classList.contains('hidden');
-      if (level === 'all-in' && isOpen) {
+      if (level === 'all-in') {
+        if (!isOpen) return;
         const alreadyOpen = el.querySelector('[data-subscore-select][aria-expanded="true"]');
         if (!alreadyOpen) el.selectSubscore?.('0', false);
         return;
       }
-      // Skim / Medium stay independent of the current subscore toggle.
+      el.clearSubscoreSelection?.();
     });
   }) as EventListener);
 
