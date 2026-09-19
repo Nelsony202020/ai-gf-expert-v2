@@ -10,15 +10,21 @@
  */
 import GlobalSiteHeader from './layout/GlobalSiteHeader.astro';
 
+interface Props {
+  /** Expert-pink hero glow — only /guides/ and /reviews/ pass it. */
+  heroGlow?: boolean;
+}
+
+const { heroGlow = false } = Astro.props;
 const hasHeroBody = Astro.slots.has('default');
 ---
 
 {
   hasHeroBody ? (
-    <GlobalSiteHeader>
+    <GlobalSiteHeader heroGlow={heroGlow}>
       <slot />
     </GlobalSiteHeader>
   ) : (
-    <GlobalSiteHeader />
+    <GlobalSiteHeader heroGlow={heroGlow} />
   )
 }

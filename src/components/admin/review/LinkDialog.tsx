@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { dataApi, type EntityRow } from '../api';
 import { Button, Field, Icon, Modal, TextInput } from '../ui';
+import { GUIDES, guideHref } from '../../../data/guides';
 
 export interface InternalLinkSuggestion {
   label: string;
@@ -11,11 +12,12 @@ export interface InternalLinkSuggestion {
 }
 
 const STATIC_INTERNAL: InternalLinkSuggestion[] = [
-  {
-    label: 'How to Choose an AI Girlfriend App',
-    href: '/guides/how-to-choose-an-ai-girlfriend-app/',
+  // Guides come from the registry, so a new guide is linkable here immediately.
+  ...GUIDES.map((guide) => ({
+    label: guide.title,
+    href: guideHref(guide.slug),
     meta: 'Guide',
-  },
+  })),
   { label: 'How We Test', href: '/test/', meta: 'Methodology' },
   { label: 'App Directory', href: '/ai-girlfriend-apps/', meta: 'Directory' },
   { label: 'Reviews Hub', href: '/reviews/', meta: 'Reviews' },

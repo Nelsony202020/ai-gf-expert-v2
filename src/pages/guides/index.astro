@@ -5,11 +5,22 @@ import Footer from '../../components/Footer.astro';
 import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
 import HomeIcon from '../../components/home/desktop/HomeIcon.astro';
 import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
-import { BRAND_GUIDE_HUBS, buildBrandGuideHubView } from '../../lib/guides/brandGuideHub';
-import { ourdreamHubGuides, ourdreamHubMeta } from '../../data/ourdream-guide-hub';
 import { resolveBrandLogo } from '../../lib/home/brandLogos';
 import { optimizedLogoUrl } from '../../lib/media/optimize';
-import { buyingGuideSlug } from '../../data/buying-guide-content';
+import { getFigmaScoreTone } from '../../lib/ratings/figmaScoreTone';
+import { fmtScore } from '../../lib/scores';
+import { buildSearchIndex } from '../../data/site-search';
+import {
+  GUIDES,
+  GUIDE_BRAND_NAMES,
+  GUIDE_BRAND_ORDER,
+  guideCountForBrand,
+  guideGroups,
+  guideHref,
+  guidesInReadingOrder,
+} from '../../data/guides';
+// .rt-score-chip — the brand cards carry the app's overall score.
+import '../../styles/ratings-tooltips.css';
 import '../../styles/listing-rows.css';
 
 const title = 'Guides';
@@ -18,84 +29,83 @@ const description = 'How to get more out of the apps we test — organised by br
 const products = await loadComparisonProducts();
 const bySlug = new Map(products.map((p) => [p.slug, p]));
 
-/** Article guides only — the review link is not a guide. */
-const ourdreamArticleCount = ourdreamHubGuides.filter(
-  (guide) => !guide.href.startsWith('/reviews/'),
-).length;
+/*
+ * The hero search is the SAME index the header search uses (buildSearchIndex),
+ * not a second search over guide rows. That is why typing "candy" returns the
+ * Candy AI hub and the Candy AI review, neither of which is a guide article.
+ */
+const searchIndex = buildSearchIndex(products).filter((item) =>
+  item.type === 'guide' || item.type === 'review' || item.type === 'roundup',
+);
+
+const TONE_CHIP: Record<string, string> = {
+  high: 'rt-score-chip--good',
+  mid: 'rt-score-chip--fair',
+  low: 'rt-score-chip--poor',
+  pending: 'rt-score-chip--pending',
+};
+const chipFor = (score: number | null | undefined) => TONE_CHIP[getFigmaScoreTone(score)];
+
+/** Existing product copy, tags stripped — step 7 drafts the replacements. */
+function positioningFor(product: {
+  tagline?: string;
+  directoryDescription?: string;
+  overallSummary?: string;
+}): string {
+  for (const raw of [product.tagline, product.directoryDescription, product.overallSummary]) {
+    const text = String(raw ?? '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (text) return text.length > 110 ? `${text.slice(0, 107).trimEnd()}…` : text;
+  }
+  return '';
+}
 
 /*
- * Five brand hubs. OurDream is not in BRAND_GUIDE_HUBS (it has its own data
- * module), so it is composed here rather than special-cased downstream.
- * Counts come from the hub builders — never a hardcoded number.
+ * Five brand hub cards, one per brand in the registry's order. Name, logo and
+ * score come from the product record; the guide count comes from GUIDES so it
+ * can never disagree with the list further down the page.
  */
-const brandHubs = [
-  {
-    name: ourdreamHubMeta.productName,
-    href: '/guides/ourdream-ai/',
-    logo: resolveBrandLogo('ourdream-ai', bySlug.get('ourdream-ai')?.logo),
-    count: ourdreamArticleCount,
-  },
-  ...BRAND_GUIDE_HUBS.map((config) => {
-    const view = buildBrandGuideHubView(bySlug.get(config.productSlug) ?? null, config);
-    return {
-      name: view.productName,
-      href: `/guides/${config.hubSlug}/`,
-      logo: view.logo,
-      count: view.publishedGuideCount,
-    };
-  }),
-];
-
-/** Every published guide article on the site, newest thinking first. */
-const allGuides = [
-  {
-    slug: buyingGuideSlug,
-    title: 'How to Choose an AI Girlfriend App',
-    description: 'Work out whether you are chat-first, media-first or balanced, then shortlist on tested results.',
-  },
-  {
-    slug: 'ourdream-ai-prompt',
-    title: 'OurDream AI Prompt Guide',
-    description: 'Prompts for characters, images, video and roleplay — with examples and the common mistakes.',
-  },
-  {
-    slug: 'ourdream-ai-image-prompt',
-    title: 'OurDream AI Image Prompt Guide',
-    description: 'Tags, weights, camera terms and negative prompts, tested on Dreamy and Vivid.',
-  },
-  {
-    slug: 'how-to-use-ourdream-ai-image-generator',
-    title: 'How to Use OurDream AI Image Generator',
-    description: 'Dreamy vs Vivid, Free Play, presets, Remix, inpainting and in-chat images.',
-  },
-  {
-    slug: 'ourdream-ai-comics',
-    title: 'OurDream AI Comics: How to Use the Comic Generator',
-    description: 'Characters, model sheets, layouts, editing, video — and what a comic actually costs.',
-  },
-];
+const brandCards = GUIDE_BRAND_ORDER.map((brand) => {
+  const product = bySlug.get(brand) ?? null;
+  return {
+    brand,
+    name: product?.name ?? GUIDE_BRAND_NAMES[brand],
+    href: `/guides/${brand}/`,
+    logo: resolveBrandLogo(brand, product?.logo),
+    score: product?.overallScore ?? null,
+    count: guideCountForBrand(brand),
+    positioning: product ? positioningFor(product) : '',
+  };
+});
 
 /** Entry points, in the order a new reader should take them. */
-const startHere = allGuides.slice(0, 3);
+const startHere = guidesInReadingOrder().slice(0, 3);
+
+/** Every guide, General first, then one group per brand. Nothing is paginated. */
+const groups = guideGroups();
+const totalGuides = GUIDES.length;
 ---
 
 <BaseLayout title={title} description={description}>
-  <Header>
+  <Header heroGlow>
     <>
       <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Guides' }]} />
       <h1 class="guide-hub__title">Guides</h1>
       <p class="guide-hub__lede">{description}</p>
       <div class="guide-hub__search-wrap">
-        {/* Filters the lists below in place. There is no /search/ route on this
-            site — the hubs filter client-side too, so this matches them. */}
-        <form class="guide-hub__guide-search" role="search" data-guides-filter onsubmit="return false">
+        {/* Searches the shared site index (guides, reviews, roundups, brand hubs).
+            There is still no /search/ route — onsubmit is suppressed and Enter
+            navigates to the first result instead. */}
+        <form class="guide-hub__guide-search" role="search" data-guides-search onsubmit="return false">
           <img src="/guides/hub/icon-search.svg" width="20" height="20" alt="" />
           <input
             type="search"
             class="guide-hub__guide-input"
-            data-guides-filter-input
-            placeholder="Search guides…"
-            aria-label="Search guides"
+            data-guides-search-input
+            placeholder="Search guides, reviews and apps…"
+            aria-label="Search guides, reviews and apps"
             autocomplete="off"
             spellcheck="false"
           />
@@ -105,109 +115,204 @@ const startHere = allGuides.slice(0, 3);
   </Header>
 
   <main class="listing section-container px-4 md:px-8 py-12 md:py-16 max-w-4xl">
-    <section class="listing__section" aria-labelledby="guides-brands">
-      <h2 class="listing__section-title" id="guides-brands">Browse by brand</h2>
-      <p class="listing__section-intro">Each app has its own hub — guides, the review, and what it costs.</p>
-      <ul class="listing__rows">
-        {
-          brandHubs.map((hub) => (
-            <li>
-              <a class="listing__row" href={hub.href}>
-                <img
-                  class="listing__logo"
-                  src={optimizedLogoUrl(hub.logo, 80)}
-                  alt=""
-                  width="40"
-                  height="40"
-                  loading="lazy"
-                  decoding="async"
-                />
-                <span class="listing__row-body">
-                  <span class="listing__row-title">{hub.name}</span>
-                  {hub.count > 0 ? (
-                    <span class="listing__row-desc">
-                      {hub.count} {hub.count === 1 ? 'guide' : 'guides'}
-                    </span>
-                  ) : (
-                    <span class="listing__row-desc">Review and pricing</span>
-                  )}
-                </span>
-                <span class="listing__row-arrow" aria-hidden="true">
-                  <HomeIcon name="arrow-right" size={16} />
-                </span>
-              </a>
-            </li>
-          ))
-        }
-      </ul>
+    {/* Results replace the three browse sections in place, so the only thing
+        that moves is directly under the search field. */}
+    <section class="listing__section listing__results" data-guides-results hidden aria-labelledby="guides-results">
+      <h2 class="listing__section-title" id="guides-results" data-guides-count aria-live="polite" role="status"></h2>
+      <ul class="listing__rows" data-guides-list></ul>
+      <p class="listing__no-match" data-guides-empty hidden>
+        Nothing matches that. Try an app name, or a word like prompts, images or pricing.
+      </p>
     </section>
 
-    <section class="listing__section" aria-labelledby="guides-start">
-      <h2 class="listing__section-title" id="guides-start">Start here</h2>
-      <p class="listing__section-intro">If you are new, read these in this order.</p>
-      <ul class="listing__rows">
-        {
-          startHere.map((guide, index) => (
-            <li>
-              <a class="listing__row" data-guide-row data-guide-text={`${guide.title} ${guide.description}`} href={`/guides/${guide.slug}/`}>
-                <span class="listing__num" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-                <span class="listing__row-body">
-                  <span class="listing__row-title">{guide.title}</span>
-                  <span class="listing__row-desc">{guide.description}</span>
-                </span>
-                <span class="listing__row-arrow" aria-hidden="true">
-                  <HomeIcon name="arrow-right" size={16} />
-                </span>
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </section>
+    <div data-guides-browse>
+      <section class="listing__section" aria-labelledby="guides-brands">
+        <h2 class="listing__section-title" id="guides-brands">Browse by brand</h2>
+        <p class="listing__section-intro">Each app has its own hub — guides, the review, and what it costs.</p>
+        <ul class="listing__brand-grid">
+          {
+            brandCards.map((card) => (
+              <li>
+                <a class="listing__brand-card" href={card.href}>
+                  <span class="listing__brand-head">
+                    <img
+                      class="listing__brand-logo"
+                      src={optimizedLogoUrl(card.logo, 96)}
+                      alt=""
+                      width="48"
+                      height="48"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    {card.score != null ? (
+                      <span class={`rt-score-chip listing__brand-score ${chipFor(card.score)}`}>
+                        {fmtScore(card.score)}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span class="listing__brand-name">{card.name}</span>
+                  {card.positioning ? (
+                    <span class="listing__brand-line">{card.positioning}</span>
+                  ) : null}
+                  <span class="listing__brand-meta">
+                    {card.count > 0
+                      ? `${card.count} ${card.count === 1 ? 'guide' : 'guides'}`
+                      : 'Review and pricing'}
+                    <HomeIcon name="arrow-right" size={14} />
+                  </span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
 
-    <section class="listing__section" aria-labelledby="guides-all">
-      <h2 class="listing__section-title" id="guides-all">All guides</h2>
-      <ul class="listing__rows">
+      <section class="listing__section" aria-labelledby="guides-start">
+        <h2 class="listing__section-title" id="guides-start">Start here</h2>
+        <p class="listing__section-intro">If you are new, read these in this order.</p>
+        <ul class="listing__rows">
+          {
+            startHere.map((guide, index) => (
+              <li>
+                <a class="listing__row" href={guideHref(guide.slug)}>
+                  <span class="listing__num" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                  <span class="listing__row-body">
+                    <span class="listing__row-title">{guide.title}</span>
+                    <span class="listing__row-desc">{guide.description}</span>
+                  </span>
+                  <span class="listing__row-arrow" aria-hidden="true">
+                    <HomeIcon name="arrow-right" size={16} />
+                  </span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+
+      <section class="listing__section" aria-labelledby="guides-all">
+        <h2 class="listing__section-title" id="guides-all">All guides</h2>
+        <p class="listing__section-intro">
+          Every guide we have published — {totalGuides} in total, grouped by the app it covers.
+        </p>
         {
-          allGuides.map((guide) => (
-            <li>
-              <a class="listing__row" data-guide-row data-guide-text={`${guide.title} ${guide.description}`} href={`/guides/${guide.slug}/`}>
-                <span class="listing__row-body">
-                  <span class="listing__row-title">{guide.title}</span>
-                  <span class="listing__row-desc">{guide.description}</span>
-                </span>
-                <span class="listing__row-arrow" aria-hidden="true">
-                  <HomeIcon name="arrow-right" size={16} />
-                </span>
-              </a>
-            </li>
+          groups.map((group) => (
+            <div class="listing__group">
+              <h3 class="listing__group-title">
+                {group.label}
+                <span class="listing__group-count">{group.guides.length}</span>
+              </h3>
+              <ul class="listing__rows">
+                {group.guides.map((guide) => (
+                  <li>
+                    <a class="listing__row" href={guideHref(guide.slug)}>
+                      <span class="listing__row-body">
+                        <span class="listing__row-title">{guide.title}</span>
+                        <span class="listing__row-desc">{guide.description}</span>
+                      </span>
+                      <span class="listing__row-arrow" aria-hidden="true">
+                        <HomeIcon name="arrow-right" size={16} />
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))
         }
-      </ul>
-      <p class="listing__no-match" data-guides-no-match hidden>No guides match that.</p>
-    </section>
+      </section>
+    </div>
   </main>
 
-  <script>
-    function initGuidesFilter() {
-      const input = document.querySelector<HTMLInputElement>('[data-guides-filter-input]');
-      if (!input || input.dataset.bound === 'true') return;
+  <script define:vars={{ searchIndex }}>
+    function initGuidesSearch() {
+      /*
+       * Everything is looked up under this page's own <main>, and every hook is
+       * named data-guides-*. The site header carries its own search with a
+       * [data-search-results] dropdown that sits EARLIER in the DOM, so an
+       * unscoped document.querySelector for a generic name silently binds to the
+       * header's element and this section never unhides.
+       */
+      const page = document.querySelector('main.listing');
+      const form = document.querySelector('[data-guides-search]');
+      const input = form?.querySelector('[data-guides-search-input]');
+      if (!page || !input || input.dataset.bound === 'true') return;
       input.dataset.bound = 'true';
-      const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-guide-row]'));
-      const empty = document.querySelector<HTMLElement>('[data-guides-no-match]');
-      input.addEventListener('input', () => {
-        const q = input.value.trim().toLowerCase();
-        let shown = 0;
-        rows.forEach((row) => {
-          const hit = !q || (row.dataset.guideText ?? '').toLowerCase().includes(q);
-          row.hidden = !hit;
-          if (hit) shown += 1;
-        });
-        if (empty) empty.hidden = shown > 0;
+
+      const results = page.querySelector('[data-guides-results]');
+      const countEl = page.querySelector('[data-guides-count]');
+      const list = page.querySelector('[data-guides-list]');
+      const emptyEl = page.querySelector('[data-guides-empty]');
+      const browse = page.querySelector('[data-guides-browse]');
+      if (!results || !countEl || !list || !emptyEl || !browse) return;
+
+      let current = [];
+
+      const escapeHtml = (value) =>
+        String(value).replace(
+          /[&<>"']/g,
+          (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch],
+        );
+
+      function showBrowse() {
+        current = [];
+        results.hidden = true;
+        browse.hidden = false;
+        list.innerHTML = '';
+        countEl.textContent = '';
+        emptyEl.hidden = true;
+      }
+
+      function render(raw) {
+        const q = raw.trim().toLowerCase();
+        if (!q) {
+          showBrowse();
+          return;
+        }
+
+        // Same match as the header: label + meta, case-insensitive substring.
+        current = searchIndex.filter((item) =>
+          `${item.label} ${item.meta ?? ''}`.toLowerCase().includes(q),
+        );
+
+        browse.hidden = true;
+        results.hidden = false;
+        countEl.textContent = `${current.length} ${current.length === 1 ? 'result' : 'results'} for “${raw.trim()}”`;
+        emptyEl.hidden = current.length > 0;
+        list.innerHTML = current
+          .map(
+            (item) => `<li><a class="listing__row" href="${escapeHtml(item.href)}">
+  <span class="listing__row-body">
+    <span class="listing__row-title">${escapeHtml(item.label)}</span>
+    <span class="listing__row-desc">${escapeHtml(item.meta || item.type)}</span>
+  </span>
+</a></li>`,
+          )
+          .join('');
+      }
+
+      input.addEventListener('input', () => render(input.value));
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          input.value = '';
+          showBrowse();
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (current.length) window.location.href = current[0].href;
+        }
+      });
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (current.length) window.location.href = current[0].href;
       });
     }
-    initGuidesFilter();
-    document.addEventListener('astro:page-load', initGuidesFilter);
+
+    initGuidesSearch();
+    document.addEventListener('astro:page-load', initGuidesSearch);
   </script>
 
   <Footer />

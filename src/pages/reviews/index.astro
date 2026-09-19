@@ -84,7 +84,7 @@ const rows = [...products]
   description="Independent, in-depth reviews of AI girlfriend and AI companion apps — scored with our structured testing methodology."
   theme="core"
 >
-  <Header>
+  <Header heroGlow>
     <>
       <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Reviews' }]} />
       <h1 class="guide-hub__title">Reviews</h1>
@@ -114,26 +114,37 @@ const rows = [...products]
                   decoding="async"
                 />
 
+                {/* Score gets its own grid track so the column reads straight
+                    down regardless of how long the app name is. */}
+                <span class={`rt-score-chip listing__score ${chipFor(product.overallScore)}`}>
+                  {fmtScore(product.overallScore)}
+                </span>
+
                 <div class="listing__review-identity">
                   <h3 class="listing__review-name">
-                    <a href={`/reviews/${product.slug}/`}>{product.name}</a>
+                    {/* The ONE link to the review. Its ::after stretches over the
+                        whole row, so the row is clickable without a second <a>. */}
+                    <a class="listing__review-link" href={`/reviews/${product.slug}/`}>
+                      {product.name}
+                    </a>
                   </h3>
-                  <span class={`rt-score-chip listing__score ${chipFor(product.overallScore)}`}>
-                    {fmtScore(product.overallScore)}
-                  </span>
                 </div>
 
                 <div class="listing__review-verdict">
                   {verdict ? <p class="listing__review-line">{verdict}</p> : null}
-                  {best && best.score != null ? (
-                    <span class="listing__best-at">
-                      Best at <strong>{best.name}</strong>
-                      <span class={`rt-score-chip rt-score-chip--xs ${chipFor(best.score)}`}>
-                        {fmtScore(best.score)}
-                      </span>
-                    </span>
-                  ) : null}
                 </div>
+
+                {best && best.score != null ? (
+                  <span class="listing__best-at">
+                    <span class="listing__best-at-label">Best at</span>
+                    <strong>{best.name}</strong>
+                    <span class={`rt-score-chip rt-score-chip--xs ${chipFor(best.score)}`}>
+                      {fmtScore(best.score)}
+                    </span>
+                  </span>
+                ) : (
+                  <span class="listing__best-at" aria-hidden="true"></span>
+                )}
 
                 <div class="listing__review-actions">
                   <AffiliateLink
@@ -144,9 +155,6 @@ const rows = [...products]
                     Visit
                     <HomeIcon name="arrow-up-right" size={14} />
                   </AffiliateLink>
-                  <a class="listing__read" href={`/reviews/${product.slug}/`}>
-                    Read review
-                  </a>
                 </div>
               </article>
             </li>

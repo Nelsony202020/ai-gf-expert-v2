@@ -2,6 +2,7 @@ import { publicPagePath } from '../lib/urls';
 import type { Product } from './products';
 import { megaMenuColumns, type MegaMenuColumn } from './nav-mega-menu';
 import { legalPages } from './legal-pages';
+import { GUIDES, GUIDE_BRAND_NAMES, GUIDE_BRAND_ORDER, guideHref } from './guides';
 
 export type SearchResultType = 'review' | 'roundup' | 'guide' | 'page';
 
@@ -21,42 +22,25 @@ const staticPages: SearchResult[] = [
   { label: 'App Directory', href: '/ai-girlfriend-apps/', type: 'page', meta: 'Tools' },
   { label: 'How We Test', href: '/test/', type: 'page', meta: 'Resources' },
   { label: 'How Score Tooltips Work', href: '/test/tooltips/', type: 'page', meta: 'Resources' },
-  {
-    label: 'How to Choose an AI Girlfriend App',
-    href: '/guides/how-to-choose-an-ai-girlfriend-app/',
-    type: 'guide',
+  /*
+   * Guide articles come from the registry (src/data/guides.ts) so the index
+   * cannot drift from the hub. Brand hub PAGES are separate entries below —
+   * they are landing pages, not articles, and they are what makes a query like
+   * "candy" return the hub as well as the review.
+   */
+  ...GUIDES.map((guide) => ({
+    label: guide.title,
+    href: guideHref(guide.slug),
+    type: 'guide' as const,
     meta: 'Guides',
-  },
-  {
-    label: 'OurDream AI Guides',
-    href: '/guides/ourdream-ai/',
-    type: 'guide',
+  })),
+  ...GUIDE_BRAND_ORDER.map((brand) => ({
+    label: `${GUIDE_BRAND_NAMES[brand]} Guides`,
+    href: `/guides/${brand}/`,
+    type: 'guide' as const,
     meta: 'Guides',
-  },
-  {
-    label: 'How to Use OurDream AI Image Generator',
-    href: '/guides/how-to-use-ourdream-ai-image-generator/',
-    type: 'guide',
-    meta: 'Guides',
-  },
-  {
-    label: 'OurDream AI Image Prompt Guide',
-    href: '/guides/ourdream-ai-image-prompt/',
-    type: 'guide',
-    meta: 'Guides',
-  },
-  {
-    label: 'OurDream AI Prompt Guide',
-    href: '/guides/ourdream-ai-prompt/',
-    type: 'guide',
-    meta: 'Guides',
-  },
-  {
-    label: 'OurDream AI Comics',
-    href: '/guides/ourdream-ai-comics/',
-    type: 'guide',
-    meta: 'Guides',
-  },
+  })),
+  { label: 'Guides Hub', href: '/guides/', type: 'page', meta: 'Guides' },
   ...legalPages.map((page) => ({
     label: page.title,
     href: page.href,

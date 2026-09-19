@@ -85,6 +85,53 @@
   }
 }
 
+/*
+ * Index-hub hero glow — /guides/ and /reviews/ only, via GlobalSiteHeader's
+ * `heroGlow` prop. No new glow system: the blob and the cursor layer are the
+ * homepage's own `.home-v2__glow` / `.home-v2__cursor-glow` elements, painted by
+ * home-desktop.css (which this header already links). All that is added here is
+ * the `.is-glowing` key, moved from `.home-v2__hero` onto the guide-hub hero.
+ *
+ * These are site hubs, not brand pages, so the colour is Expert pink as shipped
+ * — no --hub-glow-hue involved. home-desktop.css hides `.home-v2__cursor-glow`
+ * under (hover: none), (pointer: coarse) and prefers-reduced-motion, so touch
+ * devices get the static blob on its own.
+ */
+.guide-hub--expert-glow .guide-hub__hero {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+}
+
+.guide-hub--expert-glow .guide-hub__hero > .home-v2__glow {
+  right: -120px;
+  top: -140px;
+  width: 560px;
+  height: 560px;
+  opacity: 0.85;
+}
+
+.guide-hub--expert-glow .guide-hub__hero.is-glowing .home-v2__cursor-glow {
+  opacity: 1;
+}
+
+/* Header chrome and hero copy sit above both decorative layers. */
+.guide-hub--expert-glow .guide-hub__hero > .home-v2__header,
+.guide-hub--expert-glow .guide-hub__hero > .guide-hub__hero-body {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 767px) {
+  .guide-hub--expert-glow .guide-hub__hero > .home-v2__glow {
+    right: -160px;
+    top: -120px;
+    width: 420px;
+    height: 420px;
+    opacity: 0.7;
+  }
+}
+
 .guide-hub .home-v2__header {
   width: 100%;
 }

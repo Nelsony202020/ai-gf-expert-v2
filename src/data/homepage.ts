@@ -6,6 +6,8 @@ import type { StoryHighlightCharacter } from './products';
 import { buildSearchIndex, type SearchResult } from './site-search';
 import { reviewPageUrl } from '../lib/slugs';
 import { DIRECTORY_PRIORITY_OPTIONS } from '../lib/directory/meta';
+import { buyingGuideSlug } from './buying-guide-content';
+import { guideBySlug, guideHref } from './guides';
 
 export interface HomeFeaturedCharacter extends StoryHighlightCharacter {
   bio: string;
@@ -736,9 +738,9 @@ export const recentUpdates: HomeRecentUpdate[] = [
 export const featuredGuides: HomeGuide[] = [
   {
     id: 'buying-guide',
-    title: 'How to Choose an AI Girlfriend App',
+    title: guideBySlug(buyingGuideSlug).title,
     excerpt: 'Chat-first, media-first, or balanced? Avoid common mistakes and narrow your options using tested results.',
-    href: '/guides/how-to-choose-an-ai-girlfriend-app/',
+    href: guideHref(buyingGuideSlug),
     image: '/guides/how-to-choose-featured.png',
     imageAlt: 'How to choose an AI girlfriend app buying guide',
     date: 'Jul 26, 2026',
