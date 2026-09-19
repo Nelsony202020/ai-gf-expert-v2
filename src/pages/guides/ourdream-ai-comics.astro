@@ -3,8 +3,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import ImageLightbox from '../../components/ui/ImageLightbox.astro';
+import VideoLightbox from '../../components/media/VideoLightbox.astro';
 import OurDreamArticlePage from '../../components/guides/ourdream/OurDreamArticlePage.astro';
 import { getAuthor } from '../../data/authors';
+import {
+  getGuideVideo,
+  youtubeEmbedUrl,
+  youtubeWatchUrl,
+  videoObjectSchema,
+} from '../../lib/guides/video';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import { cdnAsset } from '../../lib/media/cdn';
 import bodyHtml from '../../content/guides/ourdream-ai-comics.html?raw';
@@ -26,6 +33,14 @@ const description =
 const canonical = canonicalPublicUrl('/guides/ourdream-ai-comics', Astro.site);
 const heroImage = cdnAsset('/guides/ourdream-ai-comics/anime-art-styles.webp');
 const author = getAuthor('herman-carter');
+
+/**
+ * Read at build time. This route is pre-rendered, so the lookup happens once
+ * during the build and never per request. No video on this guide would mean no
+ * link, no block, no lightbox and no schema.
+ */
+const video = getGuideVideo('ourdream-ai-comics');
+const videoSchema = video ? videoObjectSchema(video, canonical) : null;
 const published = 'August 25, 2026';
 
 const jsonLd: Record<string, unknown>[] = [
@@ -47,6 +62,9 @@ const jsonLd: Record<string, unknown>[] = [
       acceptedAnswer: { '@type': 'Answer', text: f.answer },
     })),
   },
+  // Only when the video has everything VideoObject needs. An incomplete entry
+  // is worse for the page than no entry, so videoObjectSchema returns null.
+  ...(videoSchema ? [videoSchema] : []),
 ];
 ---
 
@@ -62,9 +80,19 @@ const jsonLd: Record<string, unknown>[] = [
       publishedIso="2026-08-25"
       canonical={canonical}
       currentHref="/guides/ourdream-ai-comics/"
+      video={video}
     />
   </main>
   <ImageLightbox />
+  {video && (
+    <VideoLightbox
+      embedUrl={youtubeEmbedUrl(video, { autoplay: true })}
+      title={video.title}
+      author={author}
+      channelUrl={youtubeWatchUrl(video)}
+      channelLabel="Watch on YouTube"
+    />
+  )}
   <Footer />
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>

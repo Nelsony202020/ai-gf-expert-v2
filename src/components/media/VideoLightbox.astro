@@ -1,17 +1,41 @@
 ---
 import type { Product } from '../../data/products';
-import { getAuthor } from '../../data/authors';
+import { getAuthor, type AuthorProfile } from '../../data/authors';
 
+/**
+ * One lightbox for the whole site.
+ *
+ * Reviews pass a `product` and it reads the video off that, unchanged. Guides
+ * pass `embedUrl`/`title`/`author` directly, because a guide has no Product.
+ * Nothing renders unless there is an embed URL.
+ */
 interface Props {
-  product: Product;
+  product?: Product;
+  /** Guides: the player URL, already carrying its query string. */
+  embedUrl?: string;
+  /** Guides: the line under the avatar in the meta row. */
+  title?: string;
+  /** Guides: whose face sits on the meta row. */
+  author?: AuthorProfile;
+  /** Guides: the "watch on YouTube" destination. */
+  channelUrl?: string;
+  channelLabel?: string;
 }
 
-const { product } = Astro.props;
-const author = product.authors[0]?.slug ? getAuthor(product.authors[0].slug) : undefined;
-const video = product.videoReview;
+const props = Astro.props;
+const product = props.product;
+
+const author =
+  props.author ??
+  (product?.authors[0]?.slug ? getAuthor(product.authors[0].slug) : undefined);
+
+const embedUrl = props.embedUrl ?? product?.videoReview?.embedUrl;
+const channelUrl = props.channelUrl ?? product?.videoReview?.channelUrl;
+const channelLabel = props.channelLabel ?? product?.videoReview?.channelLabel;
+const title = props.title ?? (product ? `${product.name} video review` : undefined);
 ---
 
-{video?.embedUrl && (
+{embedUrl && (
   <div
     class="media-video-lightbox"
     id="media-video-lightbox"
@@ -36,9 +60,9 @@ const video = product.videoReview;
       <div class="media-video-lightbox__frame">
         <iframe
           data-video-lightbox-iframe
-          title={`${product.name} video review`}
+          title={title}
           src="about:blank"
-          data-src={video.embedUrl}
+          data-src={embedUrl}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen
         ></iframe>
@@ -57,13 +81,13 @@ const video = product.videoReview;
           />
         )}
         <div class="media-video-lightbox__titles">
-          <p class="media-video-lightbox__title" id="media-video-lightbox-title">{product.name} video review</p>
+          <p class="media-video-lightbox__title" id="media-video-lightbox-title">{title}</p>
           {author && <p class="media-video-lightbox__byline">with {author.name}</p>}
         </div>
-        {video.channelUrl && (
+        {channelUrl && (
           <a
             class="media-video-lightbox__youtube"
-            href={video.channelUrl}
+            href={channelUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -71,7 +95,7 @@ const video = product.videoReview;
               <rect x="0.75" y="0.75" width="18.5" height="12.5" rx="3.5" stroke="currentColor" stroke-width="1.5" />
               <path d="M8.2 4.4v5.2L12.4 7 8.2 4.4Z" fill="currentColor" />
             </svg>
-            <span>{video.channelLabel || 'Watch on YouTube'}</span>
+            <span>{channelLabel || 'Watch on YouTube'}</span>
             <svg class="media-video-lightbox__arrow" viewBox="0 0 12 12" fill="none" aria-hidden="true">
               <path d="M3.2 8.8 8.8 3.2M4.6 3.2h4.2V7.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
@@ -122,8 +146,11 @@ const video = product.videoReview;
       lockScroll();
       lightbox.hidden = false;
       iframe.src = src;
+      // `button[...]`, not `[...]` — the backdrop carries the same attribute and
+      // is the first match, so the bare selector focused a div and left focus
+      // outside the dialog.
       lightbox
-        .querySelector<HTMLElement>('[data-video-lightbox-close]')
+        .querySelector<HTMLElement>('button[data-video-lightbox-close]')
         ?.focus({ preventScroll: true });
     };
 

@@ -1,0 +1,51 @@
+---
+import { getAuthor } from '../../data/authors';
+import { youtubeThumbnail, type GuideVideo } from '../../lib/guides/video';
+
+interface Props {
+  video: GuideVideo;
+  /** Author whose face sits on the badge. */
+  authorSlug?: string;
+}
+
+const { video, authorSlug } = Astro.props;
+const author = authorSlug ? getAuthor(authorSlug) : undefined;
+const poster = youtubeThumbnail(video);
+---
+
+{/*
+  A facade, not an embed. Nothing here loads YouTube: it is a poster image and a
+  button. The iframe is injected into the shared lightbox on click, which is
+  where the ~500KB of player would otherwise land on every page view.
+*/}
+<button type="button" class="od-video" data-video-lightbox-open>
+  <span class="od-video__frame">
+    <img
+      class="od-video__poster"
+      src={poster}
+      alt=""
+      width="480"
+      height="360"
+      loading="lazy"
+      decoding="async"
+    />
+    <span class="od-video__scrim" aria-hidden="true"></span>
+    <span class="od-video__play" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M8 5.2v13.6L19 12 8 5.2Z" fill="currentColor" />
+      </svg>
+    </span>
+    {author && (
+      <img
+        class="od-video__avatar"
+        src={author.avatar}
+        alt=""
+        width="44"
+        height="44"
+        loading="lazy"
+        decoding="async"
+      />
+    )}
+  </span>
+  <span class="od-video__title">{video.title}</span>
+</button>
