@@ -1,0 +1,344 @@
+/*
+ * Shared listing rows for /reviews/ and /guides/.
+ *
+ * Not a new visual language: this is the guide-hub row pattern (hairline rules,
+ * no containers, arrow on the right) rebuilt on the GLOBAL themed tokens rather
+ * than --hub-*, because both pages render in <main>, outside the .guide-hub
+ * wrapper the header provides. Using the global tokens is also what keeps these
+ * pages correct in both themes — the bug this replaced came from a component
+ * stylesheet painting the page instead of itself.
+ */
+
+.listing {
+  --ls-ink: var(--color-on-surface);
+  --ls-muted: var(--color-on-surface-variant);
+  --ls-hairline: var(--color-surface-variant);
+  --ls-pink: var(--color-accent);
+  --ls-raised: var(--color-surface-container-low);
+}
+
+.listing__section {
+  margin-bottom: 44px;
+}
+
+.listing__section-title {
+  margin: 0 0 4px;
+  font-family: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ls-ink);
+}
+
+.listing__section-intro {
+  margin: 0 0 14px;
+  font: 400 15px/1.5 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+/* ---- Generic row ------------------------------------------------------ */
+
+.listing__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.listing__rows > li + li {
+  margin-top: -1px;
+}
+
+.listing__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+  padding: 16px 4px;
+  border-block: 1px solid var(--ls-hairline);
+  color: var(--ls-ink);
+  text-decoration: none;
+  transition: background-color 140ms ease-out;
+}
+
+.listing__row:hover {
+  background: var(--ls-raised);
+}
+
+.listing__row:active {
+  background: color-mix(in srgb, var(--ls-pink) 7%, transparent);
+}
+
+.listing__row:focus-visible {
+  outline: 2px solid var(--ls-pink);
+  outline-offset: -2px;
+}
+
+.listing__row-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.listing__row-title {
+  display: block;
+  margin: 0;
+  font: 600 17px/1.35 var(--font-sans);
+  letter-spacing: -0.01em;
+  color: var(--ls-ink);
+}
+
+.listing__row-desc {
+  display: block;
+  margin: 3px 0 0;
+  font: 400 14.5px/1.5 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+.listing__row-arrow {
+  flex-shrink: 0;
+  color: var(--ls-muted);
+}
+
+.listing__row:hover .listing__row-arrow {
+  color: var(--ls-pink);
+}
+
+.listing__logo {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--ls-raised);
+}
+
+.listing__num {
+  flex-shrink: 0;
+  width: 28px;
+  font: 600 14px/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ls-muted);
+}
+
+/* ---- Review comparison row -------------------------------------------- */
+
+.listing__review-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'logo identity actions'
+    'logo verdict  actions';
+  align-items: center;
+  gap: 2px 14px;
+  padding: 18px 4px;
+  border-block: 1px solid var(--ls-hairline);
+}
+
+.listing__review-rows > li + li {
+  margin-top: -1px;
+}
+
+.listing__review-row .listing__logo {
+  grid-area: logo;
+  width: 48px;
+  height: 48px;
+}
+
+.listing__review-identity {
+  grid-area: identity;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.listing__review-name {
+  margin: 0;
+  font-family: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ls-ink);
+}
+
+.listing__review-name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.listing__review-name a:focus-visible {
+  outline: 2px solid var(--ls-pink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* The overall score is the point of this page — give it presence.
+   Colour still comes from the shared chip (green/orange/red = score only). */
+.listing__review-identity .listing__score {
+  min-width: 2.6rem;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.listing__review-verdict {
+  grid-area: verdict;
+  min-width: 0;
+}
+
+.listing__review-line {
+  margin: 0;
+  font: 400 14.5px/1.5 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+.listing__best-at {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font: 500 13px/1 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+.listing__best-at strong {
+  font-weight: 600;
+  color: var(--ls-ink);
+}
+
+.listing__review-actions {
+  grid-area: actions;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.listing__visit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--ls-pink);
+  color: #f7f7f6;
+  font: 600 14px/1 var(--font-sans);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 140ms ease-out;
+}
+
+.listing__visit:hover {
+  background: color-mix(in srgb, var(--ls-pink) 84%, #000);
+}
+
+.listing__visit:focus-visible {
+  outline: 2px solid var(--ls-pink);
+  outline-offset: 2px;
+}
+
+.listing__read {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: 500 14px/1 var(--font-sans);
+  color: var(--ls-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.listing__read:hover {
+  color: var(--ls-ink);
+  text-decoration: underline;
+}
+
+.listing__read:focus-visible {
+  outline: 2px solid var(--ls-pink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.listing__disclosure {
+  margin: 14px 0 0;
+  font: 400 12.5px/1.5 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+/* One roundup link, inline at the end of the list — not its own section. */
+.listing__inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 10px;
+  font: 600 15px/1 var(--font-sans);
+  color: var(--ls-pink);
+  text-decoration: none;
+}
+
+.listing__inline-link:hover {
+  text-decoration: underline;
+}
+
+.listing__inline-link:focus-visible {
+  outline: 2px solid var(--ls-pink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (max-width: 767px) {
+  .listing__review-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-areas:
+      'logo identity'
+      'verdict verdict'
+      'actions actions';
+    gap: 8px 12px;
+  }
+
+  .listing__review-row .listing__logo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .listing__review-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+    margin-top: 2px;
+  }
+
+  .listing__review-name {
+    font-size: 17px;
+  }
+
+  .listing__section-title {
+    font-size: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listing__row,
+  .listing__visit {
+    transition: none;
+  }
+}
+
+
+/* ---- Hero search (client-side filter; the site has no /search/ route) --- */
+
+.listing__no-match {
+  padding: 18px 4px;
+  font: 400 15px/1.5 var(--font-sans);
+  color: var(--ls-muted);
+}
+
+.listing__row[hidden] {
+  display: none;
+}

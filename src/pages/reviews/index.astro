@@ -3,12 +3,80 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import { getFigmaScoreTone } from '../../lib/ratings/figmaScoreTone';
+import AffiliateLink from '../../components/ui/AffiliateLink.astro';
+import HomeIcon from '../../components/home/desktop/HomeIcon.astro';
 import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
+import { resolveBrandLogo } from '../../lib/home/brandLogos';
+import { optimizedLogoUrl } from '../../lib/media/optimize';
+import { fmtScore } from '../../lib/scores';
 import { megaMenuColumns } from '../../data/nav-mega-menu';
-import '../../styles/legal-hub.css';
+// .rt-score-chip lives here — the scores are the point of this page, and
+// without it they render as plain text instead of semantic-coloured chips.
+import '../../styles/ratings-tooltips.css';
+import '../../styles/listing-rows.css';
 
-const roundupLinks = megaMenuColumns.find((col) => col.id === 'best-picks')?.links ?? [];
-const reviewProducts = [...(await loadComparisonProducts())].sort((a, b) => a.name.localeCompare(b.name));
+/*
+ * Score colour uses getFigmaScoreTone (>=8 high, >=5 mid, else low), as
+ * specified. NOTE: this is NOT the same banding as ScorePill/getScoreBand
+ * (>=7 good, >=5.5 fair), which every other page uses — so a 7.8 reads orange
+ * here and green on its own review page. Flagged for a decision; switching
+ * either way is a one-line change.
+ */
+const TONE_CHIP: Record<string, string> = {
+  high: 'rt-score-chip--good',
+  mid: 'rt-score-chip--fair',
+  low: 'rt-score-chip--poor',
+  pending: 'rt-score-chip--pending',
+};
+const chipFor = (score: number | null | undefined) => TONE_CHIP[getFigmaScoreTone(score)];
+
+const roundupLink = megaMenuColumns.find((col) => col.id === 'best-picks')?.links?.[0] ?? null;
+
+/** First non-empty source, tags stripped — every row must carry a verdict line. */
+function verdictFor(product: {
+  tagline?: string;
+  directoryDescription?: string;
+  overallSummary?: string;
+  ourTake?: string;
+}): string {
+  const candidates = [
+    product.tagline,
+    product.directoryDescription,
+    product.overallSummary,
+    product.ourTake,
+  ];
+  for (const raw of candidates) {
+    const text = String(raw ?? '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (text) return text.length > 150 ? `${text.slice(0, 147).trimEnd()}…` : text;
+  }
+  return '';
+}
+
+/** Highest-scoring category, for the derived "Best at" line. */
+function bestCategory(categories: Array<{ name: string; score: number | null }>) {
+  const scored = categories.filter((c) => typeof c.score === 'number');
+  if (scored.length === 0) return null;
+  return scored.reduce((best, c) => ((c.score ?? 0) > (best.score ?? 0) ? c : best));
+}
+
+const products = await loadComparisonProducts();
+
+/*
+ * One pre-sorted array, overall score descending. A sort control added later
+ * only needs to reorder this array — the markup below does not depend on order.
+ */
+const rows = [...products]
+  .map((product) => ({
+    product,
+    verdict: verdictFor(product),
+    best: bestCategory(product.categories ?? []),
+    logo: resolveBrandLogo(product.slug, product.logo),
+  }))
+  .sort((a, b) => (b.product.overallScore ?? -1) - (a.product.overallScore ?? -1));
 ---
 
 <BaseLayout
@@ -16,65 +84,90 @@ const reviewProducts = [...(await loadComparisonProducts())].sort((a, b) => a.na
   description="Independent, in-depth reviews of AI girlfriend and AI companion apps — scored with our structured testing methodology."
   theme="core"
 >
-  <Header />
-  <main>
-    <div class="section-container px-4 md:px-8 py-10 md:py-14 pb-16 md:pb-24 max-w-4xl">
-      <Breadcrumbs
-        items={[
-          { label: 'Home', href: '/' },
-          { label: 'Reviews' },
-        ]}
-      />
+  <Header>
+    <>
+      <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Reviews' }]} />
+      <h1 class="guide-hub__title">Reviews</h1>
+      <p class="guide-hub__lede">Every app we have bought, tested and scored.</p>
+    </>
+  </Header>
 
-      <header class="mt-1 mb-8">
-        <h1 class="text-3xl md:text-4xl font-black text-on-surface">Reviews</h1>
-        <p class="legal-hub-page__intro">
-          Full app reviews with overall scores, category breakdowns, evidence-backed subscores, and editorial verdicts.
-        </p>
-      </header>
+  <main class="listing section-container px-4 md:px-8 py-12 md:py-16 max-w-4xl">
+    <section class="listing__section" aria-labelledby="reviews-list">
+      <h2 class="listing__section-title" id="reviews-list">Ranked by overall score</h2>
+      <p class="listing__section-intro">
+        Scores come from the same structured tests across every app. Highest first.
+      </p>
 
-      <section class="mb-10">
-        <h2 class="text-lg font-black text-on-surface mb-3">App reviews</h2>
-        <div class="category-hub-cards">
-          {
-            reviewProducts.map((product) => (
-              <a class="category-hub-card" href={`/reviews/${product.slug}/`}>
-                <span class="category-hub-card__icon" aria-hidden="true">
-                  <span class="material-symbols-outlined">star</span>
-                </span>
-                <span>
-                  <h3 class="category-hub-card__title">{product.name} Review</h3>
-                  <p class="category-hub-card__desc">{product.tagline}</p>
-                </span>
-              </a>
-            ))
-          }
-        </div>
-      </section>
+      <ul class="listing__rows listing__review-rows">
+        {
+          rows.map(({ product, verdict, best, logo }) => (
+            <li>
+              <article class="listing__review-row">
+                <img
+                  class="listing__logo"
+                  src={optimizedLogoUrl(logo, 96)}
+                  alt=""
+                  width="48"
+                  height="48"
+                  loading="lazy"
+                  decoding="async"
+                />
+
+                <div class="listing__review-identity">
+                  <h3 class="listing__review-name">
+                    <a href={`/reviews/${product.slug}/`}>{product.name}</a>
+                  </h3>
+                  <span class={`rt-score-chip listing__score ${chipFor(product.overallScore)}`}>
+                    {fmtScore(product.overallScore)}
+                  </span>
+                </div>
+
+                <div class="listing__review-verdict">
+                  {verdict ? <p class="listing__review-line">{verdict}</p> : null}
+                  {best && best.score != null ? (
+                    <span class="listing__best-at">
+                      Best at <strong>{best.name}</strong>
+                      <span class={`rt-score-chip rt-score-chip--xs ${chipFor(best.score)}`}>
+                        {fmtScore(best.score)}
+                      </span>
+                    </span>
+                  ) : null}
+                </div>
+
+                <div class="listing__review-actions">
+                  <AffiliateLink
+                    class="listing__visit"
+                    href={product.affiliateUrl}
+                    aria-label={`Visit ${product.name} (opens in a new tab)`}
+                  >
+                    Visit
+                    <HomeIcon name="arrow-up-right" size={14} />
+                  </AffiliateLink>
+                  <a class="listing__read" href={`/reviews/${product.slug}/`}>
+                    Read review
+                  </a>
+                </div>
+              </article>
+            </li>
+          ))
+        }
+      </ul>
+
+      <p class="listing__disclosure">
+        Visit links are affiliate links · they never affect a score.
+      </p>
 
       {
-        roundupLinks.length > 0 && (
-          <section>
-            <h2 class="text-lg font-black text-on-surface mb-3">Related roundups</h2>
-            <div class="category-hub-cards">
-              {
-                roundupLinks.map((link) => (
-                  <a class="category-hub-card" href={link.href}>
-                    <span class="category-hub-card__icon" aria-hidden="true">
-                      <span class="material-symbols-outlined">emoji_events</span>
-                    </span>
-                    <span>
-                      <h3 class="category-hub-card__title">{link.label}</h3>
-                      <p class="category-hub-card__desc">Ranked picks and comparison roundups.</p>
-                    </span>
-                  </a>
-                ))
-              }
-            </div>
-          </section>
+        roundupLink && (
+          <a class="listing__inline-link" href={roundupLink.href}>
+            {roundupLink.label}
+            <HomeIcon name="arrow-right" size={16} />
+          </a>
         )
       }
-    </div>
+    </section>
   </main>
+
   <Footer />
 </BaseLayout>

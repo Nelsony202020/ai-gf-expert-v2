@@ -6,12 +6,20 @@ import {
   SITE_MOBILE_MENU_COMPANY_LINKS,
 } from '../../data/site-mobile-menu';
 import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
+import { buildSearchIndex } from '../../data/site-search';
 import SocialIcon from '../ui/SocialIcon.astro';
 import ThemeToggle from '../ui/ThemeToggle.astro';
 import MenuIcon from './MenuIcon.astro';
 
 const publishedProducts = await loadComparisonProducts();
 const groups = buildSiteMobileMenu(buildBrandNav(publishedProducts));
+
+/*
+ * The site has no /search/ route — the header search is a client-side dropdown
+ * over this same prebuilt index. The menu search uses the index directly rather
+ * than posting to a URL that does not exist.
+ */
+const searchIndex = buildSearchIndex(publishedProducts);
 
 /** Only real channels — a row that says "Coming soon" earns nothing. */
 const channels = BRAND_CHANNELS.filter((channel) => Boolean(channel.href));
@@ -34,18 +42,34 @@ const isCurrent = (href: string) => (href.replace(/\/+$/, '') || '/') === here;
     </header>
 
     {/* Search lives here on mobile; the header search is hidden below 1024px. */}
-    <form class="site-mobile-menu__search" role="search" action="/search/" method="get">
-      <MenuIcon name="search" size={17} class="site-mobile-menu__search-icon" />
-      <input
-        type="search"
-        name="q"
-        class="site-mobile-menu__search-input"
-        placeholder="Search reviews and guides"
-        autocomplete="off"
-        spellcheck="false"
-        aria-label="Search reviews and guides"
-      />
-    </form>
+    <div class="site-mobile-menu__search-wrap">
+      <form
+        class="site-mobile-menu__search"
+        role="search"
+        data-site-menu-search
+        onsubmit="return false"
+      >
+        <MenuIcon name="search" size={17} class="site-mobile-menu__search-icon" />
+        <input
+          type="search"
+          class="site-mobile-menu__search-input"
+          data-site-menu-search-input
+          placeholder="Search reviews and guides"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search reviews and guides"
+          aria-controls="site-menu-search-results"
+          aria-autocomplete="list"
+        />
+      </form>
+      <ul
+        class="site-mobile-menu__search-results"
+        id="site-menu-search-results"
+        data-site-menu-search-results
+        role="listbox"
+        hidden
+      ></ul>
+    </div>
 
     <nav class="site-mobile-menu__nav" aria-label="Site">
       {groups.map((group) => (
@@ -121,6 +145,10 @@ const isCurrent = (href: string) => (href.replace(/\/+$/, '') || '/') === here;
     </footer>
   </div>
 </div>
+
+<script define:vars={{ searchIndex }}>
+  window.__siteMenuSearchIndex = searchIndex;
+</script>
 
 <script>
   const FOCUSABLE = 'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])';
@@ -224,6 +252,52 @@ const isCurrent = (href: string) => (href.replace(/\/+$/, '') || '/') === here;
     });
   }
 
+  function initSiteMenuSearch() {
+    const input = document.querySelector<HTMLInputElement>('[data-site-menu-search-input]');
+    const list = document.querySelector<HTMLElement>('[data-site-menu-search-results]');
+    if (!input || !list || input.dataset.bound === 'true') return;
+    input.dataset.bound = 'true';
+
+    const index: Array<{ label: string; href: string; meta?: string }> =
+      (window as unknown as { __siteMenuSearchIndex?: unknown }).__siteMenuSearchIndex as never[] ?? [];
+
+    const render = (query: string) => {
+      const q = query.trim().toLowerCase();
+      if (q.length < 2) {
+        list.hidden = true;
+        list.innerHTML = '';
+        return;
+      }
+      const hits = index.filter((item) => item.label.toLowerCase().includes(q)).slice(0, 8);
+      if (hits.length === 0) {
+        list.hidden = false;
+        list.innerHTML = '<li class="site-mobile-menu__search-empty">No matches</li>';
+        return;
+      }
+      list.hidden = false;
+      list.innerHTML = hits
+        .map(
+          (item) =>
+            `<li role="option"><a class="site-mobile-menu__search-item" href="${item.href}" data-site-menu-link>` +
+            `<span class="site-mobile-menu__search-item-title"></span>` +
+            `<span class="site-mobile-menu__search-item-meta"></span></a></li>`,
+        )
+        .join('');
+      // Set text via textContent so labels are never interpolated as markup.
+      list.querySelectorAll('li').forEach((li, i) => {
+        const hit = hits[i];
+        li.querySelector('.site-mobile-menu__search-item-title')!.textContent = hit.label;
+        li.querySelector('.site-mobile-menu__search-item-meta')!.textContent = hit.meta ?? '';
+      });
+    };
+
+    input.addEventListener('input', () => render(input.value));
+  }
+
   initSiteMobileMenu();
-  document.addEventListener('astro:page-load', initSiteMobileMenu);
+  initSiteMenuSearch();
+  document.addEventListener('astro:page-load', () => {
+    initSiteMobileMenu();
+    initSiteMenuSearch();
+  });
 </script>
