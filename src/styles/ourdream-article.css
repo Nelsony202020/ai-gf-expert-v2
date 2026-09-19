@@ -1960,7 +1960,7 @@
 
 .od-chip {
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: min-content;
   justify-content: center;
   text-align: center;
   text-wrap: balance;
@@ -2011,14 +2011,16 @@
     gap: 0.375rem;
   }
 
-  /* The flex basis is the wrap point. At 740 a basis of 6rem lets six chips
+  /* The flex basis is the wrap point. At 740 a basis of 5rem lets six chips
      share a row inside the card’s padding and pushes a seventh onto the next one, which is exactly where
      Figma breaks each of the four articles' rows: 4 and 5 chips stay on one
      line and grow to fill it, 6 fit, 7 wraps. Growing rather than hugging is
      what keeps a row of long phrases even instead of ragged. */
   .od-structure__chips > .od-chip-wrap {
-    flex: 1 1 6rem;
-    min-width: 0;
+    flex: 1 1 5rem;
+    /* `expression/action` has no break opportunity, so a shrink-to-zero floor
+       let the text spill out of its pill. min-content is that word's width. */
+    min-width: min-content;
     /* Without a ceiling a single chip left on a wrapped row stretches the full
        width of the card. Figma hugs it. */
     max-width: 15rem;
@@ -2836,17 +2838,24 @@
   .od-prompt-result--side {
     grid-template-columns: 18.75rem minmax(0, 1fr);
     column-gap: 1.75rem;
-    align-items: start;
+    /* Centred, not top-aligned. Figma top-aligns against a full-height image;
+       with the thumbnail cropped, hanging the card at the top left an obvious
+       hole underneath it. Centred, the remaining space reads as margin. */
+    align-items: center;
   }
 
-  /* A 4:5 screenshot at the drawn 300px runs ~530 tall against a three-line
+  /* A 9:16 screenshot at the drawn 300px runs ~530 tall against a three-line
      prompt card, which left a column of dead space beside it. Capping the
-     thumbnail keeps the pair compact; the full image is one click away in the
-     lightbox. */
+     height was the wrong tool: `.ourdream-article-prose img` sets width: 100%
+     at a higher specificity, so the width stayed 300 while the height was
+     clamped and the picture squashed. This crops to a deliberate 3:4 instead —
+     the aspect is honest, the top of the frame is kept because that is where
+     the subject is, and the full image is one click away in the lightbox. */
   .od-prompt-result--side .od-prompt-result__media > img {
-    max-height: 21rem;
-    width: auto;
-    max-width: 100%;
+    aspect-ratio: 3 / 4;
+    height: auto;
+    object-fit: cover;
+    object-position: center top;
   }
 
   .od-prompt-result-grid {
@@ -3005,10 +3014,11 @@
 
 /* A tall standalone screenshot is capped rather than blown up to the full
    reading column — pick-character is 572 x 848 and filled a whole viewport. */
-.od-media--portrait > img,
-.od-figure--portrait > img {
-  max-height: 34rem;
-  width: auto;
-  max-width: 100%;
+/* A tall standalone screenshot is capped by the figure's width, never by a
+   height clamp — clamping height against the prose rule's width: 100% squashes
+   the picture instead of scaling it. */
+.od-media--portrait,
+.od-figure--portrait {
+  max-width: 23.75rem;
   margin-inline: auto;
 }
