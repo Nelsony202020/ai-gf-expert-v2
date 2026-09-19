@@ -26,7 +26,7 @@ const firstName = author.name.split(' ')[0];
 const jsonLdGraph = buildProfilePageSchema(author);
 ---
 
-<BaseLayout title={title} description={author.bio}>
+<BaseLayout title={title} description={author.bio} robots={author.noindex ? "noindex, follow" : undefined}>
   <JsonLd slot="head" graph={jsonLdGraph} />
   <Header />
   <main class="section-container px-4 md:px-8 py-10 md:py-14">
