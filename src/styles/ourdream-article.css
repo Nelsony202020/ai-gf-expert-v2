@@ -512,6 +512,13 @@
   }
 }
 
+.ourdream-article-prose > :first-child {
+  /* Figma puts the first block 20px under the header (318:4961 child 0 -> 1).
+     Without this the opening H2 also claims its 68px section spacer and the
+     article starts with a large hole under the byline. */
+  margin-top: 0;
+}
+
 .ourdream-article-prose > * + * {
   /* Figma 318:4936 / 320:6822: the reading column is one auto-layout stack with a
      uniform gap — 20 desktop, 16 mobile. Extra separation before a heading comes
@@ -643,7 +650,9 @@
 .ourdream-article-prose ul > li {
   position: relative;
   padding-left: 1.25rem;
-  margin-top: 0.75rem;
+  /* Figma's list gap is 12; at our line-height that reads as separate
+     paragraphs rather than one list, so the items sit closer. */
+  margin-top: 0.375rem;
 }
 
 .ourdream-article-prose ul > li::before {
@@ -664,7 +673,7 @@
 .ourdream-article-prose ol:not(.od-steps) > li {
   counter-increment: od-ol;
   padding-left: 1.5rem;
-  margin-top: 0.5rem;
+  margin-top: 0.375rem;
 }
 
 .ourdream-article-prose ol:not(.od-steps) > li::before {
@@ -698,6 +707,18 @@
   flex-direction: column;
   gap: 0.5rem;
   align-items: stretch;
+}
+
+/* Evidence images are enlargeable — the pointer and focus ring say so. */
+.ourdream-article-prose figure > img,
+.od-steps__media > img {
+  cursor: zoom-in;
+}
+
+.ourdream-article-prose figure > img:focus-visible,
+.od-steps__media > img:focus-visible {
+  outline: 2px solid var(--od-pink);
+  outline-offset: 2px;
 }
 
 .ourdream-article-prose img,
@@ -1308,7 +1329,7 @@
   display: grid;
   grid-template-columns: 2.25rem minmax(0, 1fr);
   column-gap: 0.875rem;
-  row-gap: 0.375rem;
+  row-gap: 0.25rem;
   align-items: start;
   padding: 1.125rem 0;
   border: none;
@@ -1337,6 +1358,18 @@
 
 .od-block--my-take > * {
   grid-column: 2;
+}
+
+/* The body's own 8px top margin stacked on the grid row gap, which read as a
+   hole between the label and the sentence, and again under it. */
+.od-block--my-take .od-block__body,
+.od-block--what-i-learned .od-block__body {
+  margin-top: 0;
+}
+
+.od-block--my-take .od-block__body + .od-block__body,
+.od-block--what-i-learned .od-block__body + .od-block__body {
+  margin-top: 0.375rem;
 }
 
 .od-block--my-take .od-block__kicker {
@@ -1665,21 +1698,19 @@
 
 /* ---------------------------------------------------------------------------
    Article / Horizontal Process                    Figma 349:15056, in 349:15055
-   The one breakout on the page: 900 wide against the 740 column, i.e. -110 each
-   side. Below the rail breakpoint the column is already narrower than 900, so it
-   collapses to full width and the steps wrap.
+   Figma draws this 900 wide against a 740 column, which overhangs the measure on
+   both sides and reads as a mistake rather than an intentional breakout. Built
+   inside the column instead, as an evenly divided run of numbered steps that
+   wraps to two rows on narrow screens.
    --------------------------------------------------------------------------- */
 .od-process {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
-}
-
-@media (min-width: 1100px) {
-  .od-process {
-    width: var(--od-breakout);
-    margin-inline: calc((var(--od-content) - var(--od-breakout)) / 2);
-  }
+  gap: 0.75rem;
+  padding: 1rem 1.125rem 1.125rem;
+  border: 1px solid var(--od-hairline);
+  border-radius: 1rem;
+  background: var(--od-white);
 }
 
 .od-process__label {
@@ -1694,38 +1725,43 @@
 }
 
 .od-process__steps {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
   gap: 0.75rem 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
+  counter-reset: od-process;
 }
 
 .ourdream-article-prose .od-process .od-process__steps > li {
-  position: static;
+  counter-increment: od-process;
+  position: relative;
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.375rem;
   margin: 0;
-  padding-left: 0;
+  padding: 0.625rem 0 0;
+  border-top: 2px solid var(--od-pink-soft);
 }
 
 .ourdream-article-prose .od-process .od-process__steps > li::before {
-  /* Outranks .ourdream-article-prose ol:not(.od-steps) > li::before, which is the
-     same specificity and declared later — it was painting a pink counter next to
-     the block's own numbers. */
   content: none;
 }
 
 .od-process__num {
-  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: var(--od-pink-soft);
+  color: var(--od-pink-ink);
   font-family: var(--od-body);
-  font-size: 0.75rem;
-  font-weight: 500;
-  line-height: 1rem;
-  color: var(--od-dim);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .od-process__text {
@@ -1737,13 +1773,24 @@
   color: var(--od-ink);
 }
 
-/* The separator is a literal character in Figma, not an icon. */
-.od-process__steps > li:not(:last-child)::after {
-  content: '\2192';
-  margin-left: 0.5rem;
-  font-size: 0.875rem;
-  line-height: 1.375rem;
-  color: var(--od-dim);
+/* Footnote marker. Figma sets it as a SemiBold run in the paragraph's own size
+   rather than a raised superscript (318:4961 child 78). */
+.ourdream-article-prose a.od-cite {
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--od-pink-ink);
+  padding-inline: 0.0625rem;
+}
+
+.ourdream-article-prose a.od-cite:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.od-cite:focus-visible {
+  outline: 2px solid var(--od-pink);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
 
 /* ---------------------------------------------------------------------------
@@ -1876,6 +1923,7 @@
 }
 
 .od-structure__chips {
+  row-gap: 0.375rem;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1899,6 +1947,10 @@
   font-weight: 600;
   line-height: 1.25rem;
   color: var(--od-ink);
+}
+
+.od-chip-wrap:last-child .od-chip-arrow {
+  display: none;
 }
 
 .od-chip-arrow {
@@ -1947,7 +1999,26 @@
   margin-bottom: 0.375rem;
 }
 
+.od-prompt-card__label::before {
+  content: '';
+  width: 0.8125rem;
+  height: 0.8125rem;
+  flex: none;
+  background: var(--od-dim);
+  -webkit-mask: url('/icons/aige/x.svg') center / contain no-repeat;
+  mask: url('/icons/aige/x.svg') center / contain no-repeat;
+}
+
+.od-prompt-card--yes .od-prompt-card__label::before {
+  background: var(--od-pink-ink);
+  -webkit-mask: url('/icons/aige/check.svg') center / contain no-repeat;
+  mask: url('/icons/aige/check.svg') center / contain no-repeat;
+}
+
 .od-prompt-card__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -1982,8 +2053,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: none;
+  align-self: center;
+  width: 1rem;
+  height: 1rem;
   color: var(--od-dim);
   transform: rotate(90deg);
+}
+
+.od-prompt-compare__arrow::before {
+  content: '';
+  width: 1rem;
+  height: 1rem;
+  background: currentColor;
+  -webkit-mask: url('/icons/aige/arrow-right.svg') center / contain no-repeat;
+  mask: url('/icons/aige/arrow-right.svg') center / contain no-repeat;
 }
 
 @media (min-width: 800px) {
@@ -2055,7 +2139,20 @@
   font-family: var(--od-body);
 }
 
+.od-prompt__label::before {
+  content: '';
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: none;
+  background: var(--od-pink);
+  -webkit-mask: url('/icons/aige/wand.svg') center / contain no-repeat;
+  mask: url('/icons/aige/wand.svg') center / contain no-repeat;
+}
+
 .od-prompt__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
