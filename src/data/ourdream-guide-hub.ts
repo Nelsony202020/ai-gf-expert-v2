@@ -99,6 +99,7 @@ export const ourdreamHubTopics = [
     guides: [
       ourdreamHubGuide('ourdream-ai-prompt'),
       ourdreamHubGuide('ourdream-ai-image-prompt'),
+      ourdreamHubGuide('ourdream-ai-character-prompts'),
     ],
   },
   {

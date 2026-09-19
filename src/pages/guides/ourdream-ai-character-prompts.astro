@@ -1,0 +1,155 @@
+---
+/**
+ * OurDream AI Character Prompt Vault — /guides/ourdream-ai-character-prompts/
+ *
+ * PRERENDERED. The prompts are read from InstantDB once, at build time
+ * (loadPromptVault). No visitor request ever hits the database.
+ *
+ * ONE indexable URL. ?category= and ?q= are client-side UI state: the HTML
+ * below is byte-identical for every query string, and the canonical is always
+ * the clean vault URL, so no filter, category, search or prompt can become its
+ * own (thin) indexable page. An unknown category or an empty search changes
+ * only what the client shows — the document is always the full vault.
+ *
+ * Stage 1 (data + routing): unstyled, full-content skeleton. Visual build from
+ * Figma page 245:4 follows in stages 2–5.
+ */
+export const prerender = true;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { canonicalPublicUrl } from '../../lib/siteOrigin';
+import { guideBySlug, guideSeoTitle } from '../../data/guides';
+import { loadPromptVault } from '../../lib/prompt-vault/load';
+import { VAULT_GENERATOR_LABELS, VAULT_PATH } from '../../lib/prompt-vault/types';
+
+const guide = guideBySlug('ourdream-ai-character-prompts');
+const h1 = guide.title;
+const title = guideSeoTitle(guide.slug);
+// Figma 252:195 hero intro, verbatim.
+const description =
+  'Browse tested OurDream AI character prompts with real generated examples. Find the look you want, copy the prompt, and use it on your own character.';
+const canonical = canonicalPublicUrl(VAULT_PATH, Astro.site);
+
+const vault = await loadPromptVault();
+
+// Client payload: just what filtering needs. Text stays in the HTML.
+const clientData = {
+  filters: vault.filters.map((f) => ({ key: f.key, categoryKeys: f.categoryKeys })),
+  categoryKeys: vault.categories.map((c) => c.key),
+};
+---
+
+<BaseLayout theme="core" title={title} description={description} canonical={canonical}>
+  <Header />
+  <main class="prompt-vault" data-prompt-vault data-source={vault.source}>
+    <h1>{h1}</h1>
+    <p>{description}</p>
+    <p>
+      <span data-vault-total>{vault.totals.prompts} prompts</span> · {vault.totals.results} example images
+    </p>
+    <p data-vault-status hidden aria-live="polite"></p>
+
+    {
+      vault.groups.map((group) => (
+        <section data-vault-group={group.title}>
+          <h2>{group.title}</h2>
+          {group.categories.map((category) => (
+            <section data-vault-category={category.key} data-vault-filter={category.filterKey}>
+              <h3>{category.title}</h3>
+              <p>
+                {category.prompts.length} · {category.description}
+              </p>
+              <ul>
+                {category.prompts.map((prompt) => (
+                  <li data-vault-prompt={prompt.key}>
+                    <strong data-vault-title>{prompt.title}</strong>{' '}
+                    <code data-vault-text>{prompt.promptText}</code>{' '}
+                    <span>Tested with {VAULT_GENERATOR_LABELS[prompt.generator]}</span>
+                    {prompt.results.length > 1 && <span> · {prompt.results.length} results</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </section>
+      ))
+    }
+  </main>
+  <Footer />
+  <script type="application/json" id="prompt-vault-data" set:html={JSON.stringify(clientData)} />
+</BaseLayout>
+
+<script>
+  import {
+    normaliseForSearch,
+    parseVaultState,
+    sameVaultState,
+    serializeVaultState,
+    type VaultUrlState,
+  } from '../../lib/prompt-vault/url-state';
+
+  type ClientData = { filters: { key: string; categoryKeys: string[] }[]; categoryKeys: string[] };
+
+  const root = document.querySelector<HTMLElement>('[data-prompt-vault]');
+  const dataEl = document.getElementById('prompt-vault-data');
+  if (root && dataEl) {
+    const data = JSON.parse(dataEl.textContent || '{}') as ClientData;
+    const filterCats = new Map(data.filters.map((f) => [f.key, new Set(f.categoryKeys)]));
+    const known = new Set<string>([...filterCats.keys(), ...data.categoryKeys]);
+    const status = root.querySelector<HTMLElement>('[data-vault-status]')!;
+
+    const categoryAllowed = (state: VaultUrlState, categoryKey: string) => {
+      if (!state.category) return true;
+      const viaFilter = filterCats.get(state.category);
+      return viaFilter ? viaFilter.has(categoryKey) : state.category === categoryKey;
+    };
+
+    const render = (state: VaultUrlState) => {
+      const q = normaliseForSearch(state.q);
+      let shown = 0;
+      root.querySelectorAll<HTMLElement>('[data-vault-category]').forEach((section) => {
+        const inCategory = categoryAllowed(state, section.dataset.vaultCategory!);
+        let visibleInSection = 0;
+        section.querySelectorAll<HTMLElement>('[data-vault-prompt]').forEach((item) => {
+          const hay = normaliseForSearch(
+            `${item.querySelector('[data-vault-title]')?.textContent ?? ''} ${item.querySelector('[data-vault-text]')?.textContent ?? ''}`,
+          );
+          const match = inCategory && (!q || hay.includes(q));
+          item.hidden = !match;
+          if (match) visibleInSection += 1;
+        });
+        section.hidden = visibleInSection === 0;
+        shown += visibleInSection;
+      });
+      root.querySelectorAll<HTMLElement>('[data-vault-group]').forEach((group) => {
+        group.hidden = !group.querySelector('[data-vault-category]:not([hidden])');
+      });
+      const filtered = Boolean(state.category || state.q);
+      status.hidden = !filtered;
+      status.textContent = !filtered
+        ? ''
+        : shown === 0
+          ? `No prompts match${state.q ? ` “${state.q}”` : ''}.`
+          : `${shown} ${shown === 1 ? 'prompt' : 'prompts'} shown`;
+    };
+
+    let current = parseVaultState(location.search, known);
+    // Normalise the address bar (drop unknown category / empty q) without adding history.
+    const normalised = serializeVaultState(current, location.search);
+    if (normalised !== location.search) {
+      history.replaceState(history.state, '', `${location.pathname}${normalised}${location.hash}`);
+    }
+    render(current);
+
+    // Back / forward restore the previous state.
+    window.addEventListener('popstate', () => {
+      const next = parseVaultState(location.search, known);
+      if (!sameVaultState(next, current)) {
+        current = next;
+        render(current);
+      }
+    });
+  }
+</script>

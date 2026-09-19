@@ -814,6 +814,51 @@ const _schema = i.schema({
       createdAt: i.date(),
       updatedAt: i.date(),
     }),
+
+    // ------------------------------------------------------------------
+    // OurDream Character Prompt Vault (/guides/ourdream-ai-character-prompts/)
+    // Read at BUILD time only (src/lib/prompt-vault/load.ts) — the page is
+    // prerendered. Adding a prompt = add rows here, then redeploy.
+    // `key` values (p008…) are internal ids and the image file stem; they are
+    // never public URLs. There are no per-prompt or per-category pages.
+    // ------------------------------------------------------------------
+    // Toolbar filter chips (Face, Eyes, Hair …). A chip covers 1+ categories.
+    promptVaultFilters: i.entity({
+      key: i.string().unique().indexed(), // ?category= value
+      label: i.string(),
+      sortOrder: i.number(),
+    }),
+    // Section headers on the page (Face prompts, Hair style prompts …).
+    promptVaultCategories: i.entity({
+      key: i.string().unique().indexed(),
+      title: i.string(),
+      shortTitle: i.string().optional(), // search-result header, e.g. "Hair styles"
+      description: i.string(),
+      group: i.string(), // display group, e.g. "Appearance"
+      groupOrder: i.number(),
+      filter: i.string().indexed(), // promptVaultFilters.key
+      sortOrder: i.number(),
+    }),
+    promptVaultPrompts: i.entity({
+      key: i.string().unique().indexed(), // p008 — album id, image file stem
+      title: i.string(),
+      promptText: i.string(), // verbatim: brackets, weights, underscores, trailing commas
+      // dreamy | vivid-1 | vivid-2 | vivid-3 — only the generator it was really made with
+      generator: i.string().indexed(),
+      status: i.string().indexed(), // draft | published
+      sortOrder: i.number(),
+      createdAt: i.date(),
+      updatedAt: i.date(),
+    }),
+    // One or more tested results per prompt ("2 results" never means two cards).
+    promptVaultResults: i.entity({
+      key: i.string().unique().indexed(), // p045, p046 … — image file stem
+      imagePath: i.string().optional(), // 4:5 card crop on the CDN, e.g. /guides/ourdream-ai-character-prompts/p045.webp
+      width: i.number().optional(),
+      height: i.number().optional(),
+      alt: i.string().optional(),
+      sortOrder: i.number(),
+    }),
   },
 
   links: {
@@ -1069,6 +1114,16 @@ const _schema = i.schema({
     homepageSlotCharacter: {
       forward: { on: 'homepageSlots', has: 'one', label: 'character' },
       reverse: { on: 'characters', has: 'many', label: 'homepageSlots' },
+    },
+
+    // Prompt Vault
+    promptVaultPromptCategory: {
+      forward: { on: 'promptVaultPrompts', has: 'one', label: 'category' },
+      reverse: { on: 'promptVaultCategories', has: 'many', label: 'prompts' },
+    },
+    promptVaultResultPrompt: {
+      forward: { on: 'promptVaultResults', has: 'one', label: 'prompt' },
+      reverse: { on: 'promptVaultPrompts', has: 'many', label: 'results' },
     },
   },
 
