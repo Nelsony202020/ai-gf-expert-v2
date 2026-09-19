@@ -1569,3 +1569,43 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* ===========================================================================
+   Dark mode — stage 2.
+
+   sitemap.css shipped with no dark rules at all, so /sitemap/ stayed a light
+   page: .si-page alone was a 4.1M px² #f9f9f9 slab on a dark site. Like the
+   review shell, almost everything here goes through the --si-* tokens, so
+   this is a remap plus the three surfaces that set a colour directly.
+
+   --si-hero (#101014) is the dark hero band and is deliberately left alone.
+   =========================================================================== */
+[data-theme='dark'] .si-page {
+  --si-ink: var(--dk-ink);
+  --si-muted: var(--dk-dim);
+  --si-faint: var(--dk-faint);
+  --si-line: var(--dk-line);
+  --si-pink: var(--dk-pink-ink);
+  --si-pink-soft: rgb(219 39 119 / 12%);
+  --si-pink-icon: rgb(219 39 119 / 18%);
+  --si-pink-line: rgb(219 39 119 / 38%);
+  --si-cream: var(--dk-raise);
+  --si-surface: var(--dk-page);
+  --si-white: var(--dk-card);
+  --si-search-line: var(--dk-line-strong);
+  --si-search-active: var(--dk-line-strong);
+  --si-kbd-bg: var(--dk-raise);
+}
+
+/* The sticky search bar is a translucent white sheet; on a dark page it has to
+   be a translucent dark one or it reads as a white band across the top. */
+[data-theme='dark'] .si-sticky {
+  background: rgb(15 23 42 / 94%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+
+/* Open category header: a very pale pink wash in light mode. */
+[data-theme='dark'] .si-cat.is-open .si-cat-head,
+[data-theme='dark'] .si-cat[data-open='true'] .si-cat-head {
+  background: rgb(219 39 119 / 10%);
+}

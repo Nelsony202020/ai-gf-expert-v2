@@ -1426,8 +1426,11 @@ html[data-theme='dark'] [data-site-header] .home-v2__search-dropdown {
   color: var(--home-on-ink);
 }
 
-.home-v2__chip--high { background: var(--home-high); }
-.home-v2__chip--mid { background: var(--home-mid); }
+/* Literal fills, not --home-high / --home-mid: those tokens are also used as
+   text colour and ring stroke, where darkening them is neither needed nor
+   wanted. These two carry white text and have to clear 4.5:1. */
+.home-v2__chip--high { background: #15803d; }
+.home-v2__chip--mid { background: #c2410c; }
 .home-v2__chip--low { background: var(--home-low); }
 
 .home-v2__dial {

@@ -108,3 +108,38 @@ the five brand hubs keep their warm canvas by design.
 - `sitemap.css` — 1,571 lines, zero dark rules; `/sitemap/` is still a light
   page in dark mode.
 - The amber and green score chips, which fail in both themes.
+
+## Follow-up: the sitemap page and the score chips
+
+Both items listed under "Not done" above are now done.
+
+**`/sitemap/`** — `sitemap.css` had zero dark rules across 1,571 lines, so the
+page was a 4.1M px² `#f9f9f9` slab. Same shape of fix as the review shell: the
+`--si-*` token block is remapped onto `--dk-*`, plus the three surfaces that set
+a colour directly (the translucent sticky search bar, the open category header's
+pink wash, and the chip dot). `--si-hero` (#101014) is the dark hero band and is
+deliberately left alone. Light surfaces in dark mode: 5 → 0.
+
+**Score chips** — these carry white text, and stage 1 was right that they fail
+in both themes:
+
+| Fill | Before | After | With white text |
+|---|---|---|---|
+| green | #16a34a | #15803d | 3.07 → **4.68** |
+| orange | #f97316 / #e8760a | #c2410c | 2.61 / 2.79 → **4.83** |
+| red | #dc2626 | unchanged | 4.51 |
+
+One shade down keeps the hue and the white text and clears AA. Four places set
+these fills and all four had to move:
+
+- `.rt-score-chip--good` / `--fair` in `ratings-tooltips.css`
+- `--rs-green` / `--rs-orange` in `review-shell.css` (used only as badge fills)
+- `.home-v2__chip--high` / `--mid` in `home-desktop.css` — as literal values,
+  because `--home-high` / `--home-mid` are also used as text colour and ring
+  stroke, where darkening is neither needed nor wanted
+- `getScoreBadgeColor()` in `src/lib/review-shell.ts` — the review page paints
+  `.rs-score-banner` and `.rs-badge` with an **inline style**, so no stylesheet
+  could reach them and the values had to change at the source
+
+Measured after, white-on-fill: 4.51–5.18 everywhere, and 0 light surfaces on
+`/`, `/guides/`, `/reviews/`, `/reviews/ourdream-ai/` and `/sitemap/`.

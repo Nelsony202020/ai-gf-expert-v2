@@ -10,8 +10,10 @@
   --rs-card: #fff;
   --rs-pink: #db2777;
   --rs-pink-deep: #be185d;
-  --rs-green: #16a34a;
-  --rs-orange: #e8760a;
+  /* Badge fills only (see .rs-badge-good / .rs-badge-fair). White text needs
+     4.5:1, so these are one shade down from green-600 / orange-500. */
+  --rs-green: #15803d;
+  --rs-orange: #c2410c;
   color: var(--rs-ink);
   background: var(--rs-canvas);
   /* Keep overflow visible so the review tab bar can use position: sticky.
