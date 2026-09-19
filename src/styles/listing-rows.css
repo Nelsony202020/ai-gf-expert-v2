@@ -149,7 +149,7 @@
   background: var(--ls-raised);
 }
 
-.listing__review-row:focus-within {
+.listing__review-row:has(:focus-visible) {
   outline: 2px solid var(--ls-pink);
   outline-offset: -2px;
 }

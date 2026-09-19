@@ -69,7 +69,7 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
             {ourdreamHubMeta.visitLabel}
             <HomeIcon name="arrow-up-right" size={16} />
           </AffiliateLink>
-          <a class="guide-hub__review-link" href={ourdreamHubMeta.reviewHref}>Read review →</a>
+          <a class="guide-hub__review-link" href={ourdreamHubMeta.reviewHref}>{ourdreamHubMeta.productName} Review →</a>
         </div>
       </div>
   </GlobalSiteHeader>
@@ -81,7 +81,7 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
         <span>{productName}</span>
       </div>
       <div class="guide-hub__sticky-bar-actions">
-        <a class="guide-hub__sticky-review" href={ourdreamHubMeta.reviewHref}>Read review →</a>
+        <a class="guide-hub__sticky-review" href={ourdreamHubMeta.reviewHref}>{ourdreamHubMeta.productName} Review →</a>
         <AffiliateLink class="guide-hub__sticky-visit" href={visitHref} target="_blank">
           {ourdreamHubMeta.visitLabel}
           <HomeIcon name="arrow-up-right" size={16} />

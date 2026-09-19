@@ -147,12 +147,19 @@ export function mapCharacterForPublic(
   };
 }
 
-/** Featured characters first (homepage order), then remaining active characters. */
+/**
+ * Featured characters first (homepage order), then the remaining active ones.
+ *
+ * This used to return `featured.length > 0 ? featured : active`, which made
+ * "featured first" mean "featured only": as soon as one character was starred,
+ * every other active character disappeared from the review page and the
+ * homepage. OurDream had three active characters and two starred, so the third
+ * never rendered even though the admin showed it as live.
+ */
 export function selectPublicHighlightCharacters(characters: any[], limit = 6): any[] {
   const active = (characters ?? []).filter((c) => c.active && !c.deletedAt);
-  const featured = active
-    .filter((c) => c.featured)
-    .sort((a, b) => (a.homepageOrder ?? 999) - (b.homepageOrder ?? 999));
-  const pool = featured.length > 0 ? featured : active;
-  return pool.slice(0, limit);
+  const byOrder = (a: any, b: any) => (a.homepageOrder ?? 999) - (b.homepageOrder ?? 999);
+  const featured = active.filter((c) => c.featured).sort(byOrder);
+  const rest = active.filter((c) => !c.featured).sort(byOrder);
+  return [...featured, ...rest].slice(0, limit);
 }

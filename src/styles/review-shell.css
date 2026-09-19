@@ -1561,12 +1561,49 @@ body.rs-scores-expanded .review-sticky-cta.is-visible {
   color: var(--rs-muted);
 }
 
-.review-page .char-stories--featured-grid .char-stories__carousel,
-.review-page .char-stories--featured-grid .char-stories__track {
+.review-page .char-stories--featured-grid .char-stories__carousel {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   overflow: visible;
+}
+
+/*
+ * The row swipes as soon as it stops fitting, and not before.
+ *
+ * It used to wrap to a second line, so a fourth character in a ~330px sidebar
+ * dropped below the fold of the panel and the component read as if it only had
+ * three. `nowrap` + `overflow-x: auto` means 1-3 sit still with no scrollbar and
+ * nothing to swipe, and the fourth turns the row into a native horizontal
+ * scroller — touch drag, trackpad and shift-wheel, no JS and no magic count.
+ * Vertical padding keeps the 3px story ring and the focus outline off the
+ * clipping edge that overflow-x introduces.
+ */
+.review-page .char-stories--featured-grid .char-stories__track {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+  padding-block: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.review-page .char-stories--featured-grid .char-stories__track::-webkit-scrollbar {
+  display: none;
+}
+
+.review-page .char-stories--featured-grid .char-stories__fg-item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-page .char-stories--featured-grid .char-stories__track {
+    scroll-behavior: auto;
+  }
 }
 
 .review-page .char-stories--featured-grid .char-stories__fg-item {
