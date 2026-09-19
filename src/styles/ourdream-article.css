@@ -985,6 +985,39 @@
   color: var(--od-ink);
 }
 
+/* A bulleted run inside a callout. In Figma this is not a list at all — it is one
+   text node at Body/M with literal "•" characters, so there is no marker column,
+   no hanging indent and no extra space between items (318:5116). Kept as a real
+   <ul> for assistive tech, with the prose list treatment fully reset. */
+.ourdream-article-prose .od-block__list,
+.od-block__list {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ourdream-article-prose .od-block__list > li,
+.od-block__list > li {
+  position: static;
+  margin: 0;
+  padding-left: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.625rem;
+  letter-spacing: -0.003rem;
+  color: inherit;
+}
+
+.ourdream-article-prose .od-block__list > li::before {
+  content: '\2022\00a0';
+  position: static;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  color: currentColor;
+}
+
 /* Attribution line under (What I learned) or beside (My take) the label. */
 .od-block__role {
   font-size: 0.875rem;
