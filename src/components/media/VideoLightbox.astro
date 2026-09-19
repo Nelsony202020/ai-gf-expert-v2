@@ -1,31 +1,55 @@
 ---
 import type { Product } from '../../data/products';
-import { getAuthor } from '../../data/authors';
+import { getAuthor, type AuthorProfile } from '../../data/authors';
 
+/**
+ * One lightbox for the whole site.
+ *
+ * Reviews pass a `product` and it reads the video off that, unchanged. Guides
+ * pass `embedUrl`/`title`/`author` directly, because a guide has no Product.
+ * Nothing renders unless there is an embed URL.
+ */
 interface Props {
-  product: Product;
+  product?: Product;
+  /** Guides: the player URL, already carrying its query string. */
+  embedUrl?: string;
+  /** Guides: the line under the avatar in the meta row. */
+  title?: string;
+  /** Guides: whose face sits on the meta row. */
+  author?: AuthorProfile;
+  /** Guides: the "watch on YouTube" destination. */
+  channelUrl?: string;
+  channelLabel?: string;
 }
 
-const { product } = Astro.props;
-const author = product.authors[0]?.slug ? getAuthor(product.authors[0].slug) : undefined;
-const video = product.videoReview;
+const props = Astro.props;
+const product = props.product;
+
+const author =
+  props.author ??
+  (product?.authors[0]?.slug ? getAuthor(product.authors[0].slug) : undefined);
+
+const embedUrl = props.embedUrl ?? product?.videoReview?.embedUrl;
+const channelUrl = props.channelUrl ?? product?.videoReview?.channelUrl;
+const channelLabel = props.channelLabel ?? product?.videoReview?.channelLabel;
+const title = props.title ?? (product ? `${product.name} video review` : undefined);
 ---
 
-{video?.embedUrl && (
+{embedUrl && (
   <div
-    class="video-review-lightbox"
-    id="video-review-lightbox"
+    class="media-video-lightbox"
+    id="media-video-lightbox"
     hidden
     role="dialog"
     aria-modal="true"
-    aria-labelledby="video-review-title"
+    aria-labelledby="media-video-lightbox-title"
   >
-    <div class="video-review-lightbox__backdrop" data-video-review-close></div>
-    <div class="video-review-lightbox__panel" role="document">
+    <div class="media-video-lightbox__backdrop" data-video-lightbox-close></div>
+    <div class="media-video-lightbox__panel" role="document">
       <button
         type="button"
-        class="video-review-lightbox__close"
-        data-video-review-close
+        class="media-video-lightbox__close"
+        data-video-lightbox-close
         aria-label="Close video review"
       >
         <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -33,21 +57,21 @@ const video = product.videoReview;
         </svg>
       </button>
 
-      <div class="video-review-lightbox__frame">
+      <div class="media-video-lightbox__frame">
         <iframe
-          data-video-review-iframe
-          title={`${product.name} video review`}
+          data-video-lightbox-iframe
+          title={title}
           src="about:blank"
-          data-src={video.embedUrl}
+          data-src={embedUrl}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen
         ></iframe>
       </div>
 
-      <div class="video-review-lightbox__meta">
+      <div class="media-video-lightbox__meta">
         {author && (
           <img
-            class="video-review-lightbox__avatar"
+            class="media-video-lightbox__avatar"
             src={author.avatar}
             alt=""
             width="40"
@@ -56,23 +80,23 @@ const video = product.videoReview;
             decoding="async"
           />
         )}
-        <div class="video-review-lightbox__titles">
-          <p class="video-review-lightbox__title" id="video-review-title">{product.name} video review</p>
-          {author && <p class="video-review-lightbox__byline">with {author.name}</p>}
+        <div class="media-video-lightbox__titles">
+          <p class="media-video-lightbox__title" id="media-video-lightbox-title">{title}</p>
+          {author && <p class="media-video-lightbox__byline">with {author.name}</p>}
         </div>
-        {video.channelUrl && (
+        {channelUrl && (
           <a
-            class="video-review-lightbox__youtube"
-            href={video.channelUrl}
+            class="media-video-lightbox__youtube"
+            href={channelUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
-            <svg class="video-review-lightbox__youtube-icon" viewBox="0 0 20 14" fill="none" aria-hidden="true">
+            <svg class="media-video-lightbox__youtube-icon" viewBox="0 0 20 14" fill="none" aria-hidden="true">
               <rect x="0.75" y="0.75" width="18.5" height="12.5" rx="3.5" stroke="currentColor" stroke-width="1.5" />
               <path d="M8.2 4.4v5.2L12.4 7 8.2 4.4Z" fill="currentColor" />
             </svg>
-            <span>{video.channelLabel || 'Watch on YouTube'}</span>
-            <svg class="video-review-lightbox__arrow" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <span>{channelLabel || 'Watch on YouTube'}</span>
+            <svg class="media-video-lightbox__arrow" viewBox="0 0 12 12" fill="none" aria-hidden="true">
               <path d="M3.2 8.8 8.8 3.2M4.6 3.2h4.2V7.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </a>
@@ -85,13 +109,13 @@ const video = product.videoReview;
 <script>
   import { lockScroll, unlockScroll } from '../../lib/ui/scrollLock';
 
-  function initVideoReviewLightbox() {
-    const lightbox = document.getElementById('video-review-lightbox');
-    const iframe = lightbox?.querySelector<HTMLIFrameElement>('[data-video-review-iframe]');
+  function initVideoLightbox() {
+    const lightbox = document.getElementById('media-video-lightbox');
+    const iframe = lightbox?.querySelector<HTMLIFrameElement>('[data-video-lightbox-iframe]');
     if (!lightbox || !iframe) return;
 
-    const openers = document.querySelectorAll<HTMLElement>('[data-video-review-open]');
-    const closers = lightbox.querySelectorAll('[data-video-review-close]');
+    const openers = document.querySelectorAll<HTMLElement>('[data-video-lightbox-open]');
+    const closers = lightbox.querySelectorAll('[data-video-lightbox-close]');
     const src = iframe.dataset.src || '';
     let lastFocus: HTMLElement | null = null;
     let isOpen = false;
@@ -122,8 +146,11 @@ const video = product.videoReview;
       lockScroll();
       lightbox.hidden = false;
       iframe.src = src;
+      // `button[...]`, not `[...]` — the backdrop carries the same attribute and
+      // is the first match, so the bare selector focused a div and left focus
+      // outside the dialog.
       lightbox
-        .querySelector<HTMLElement>('[data-video-review-close]')
+        .querySelector<HTMLElement>('button[data-video-lightbox-close]')
         ?.focus({ preventScroll: true });
     };
 
@@ -167,22 +194,52 @@ const video = product.videoReview;
     }
   }
 
-  document.addEventListener('DOMContentLoaded', initVideoReviewLightbox);
-  document.addEventListener('astro:page-load', initVideoReviewLightbox);
+  /*
+   * Guide poster fallback. maxresdefault does not exist for every video, and
+   * YouTube answers a missing one with a grey 120x90 placeholder rather than a
+   * 404 — so the swap is keyed on the decoded size, not on an error event.
+   * It lives here rather than in the block so no <script> node lands in the
+   * middle of the article prose.
+   */
+  function swapMissingPosters() {
+    document
+      .querySelectorAll<HTMLImageElement>('.od-video__poster[data-poster-fallback]')
+      .forEach((img) => {
+        const fallback = img.dataset.posterFallback;
+        if (!fallback) return;
+        const check = () => {
+          if (img.naturalWidth > 0 && img.naturalWidth < 300 && img.src !== fallback) {
+            img.src = fallback;
+          }
+          delete img.dataset.posterFallback;
+        };
+        img.addEventListener('error', () => { img.src = fallback; }, { once: true });
+        if (img.complete) check();
+        else img.addEventListener('load', check, { once: true });
+      });
+  }
+
+  function initGuideVideo() {
+    initVideoLightbox();
+    swapMissingPosters();
+  }
+
+  document.addEventListener('DOMContentLoaded', initGuideVideo);
+  document.addEventListener('astro:page-load', initGuideVideo);
 </script>
 
 <style>
   /*
    * Figma 01K (desktop) / 01L (mobile). This component previously shipped with
    * no CSS at all: the only stylesheet for a video modal targets the unrelated
-   * .video-review-modal root used by the Photos & Videos tab, so every rule
+   * .media-video-lightbox root used by the Photos & Videos tab, so every rule
    * here was missing and the dialog rendered as raw unstyled markup.
    */
-  .video-review-lightbox[hidden] {
+  .media-video-lightbox[hidden] {
     display: none;
   }
 
-  .video-review-lightbox {
+  .media-video-lightbox {
     position: fixed;
     inset: 0;
     z-index: 260; /* above the sticky tab bar (45) and the evidence drawer */
@@ -192,7 +249,7 @@ const video = product.videoReview;
     padding: 24px 16px;
   }
 
-  .video-review-lightbox__backdrop {
+  .media-video-lightbox__backdrop {
     position: absolute;
     inset: 0;
     background: rgba(12, 11, 15, 0.62);
@@ -201,7 +258,7 @@ const video = product.videoReview;
     animation: video-review-fade 160ms ease-out;
   }
 
-  .video-review-lightbox__panel {
+  .media-video-lightbox__panel {
     position: relative;
     width: min(880px, 100%);
     max-height: calc(100dvh - 48px);
@@ -213,7 +270,7 @@ const video = product.videoReview;
     animation: video-review-rise 180ms ease-out;
   }
 
-  .video-review-lightbox__close {
+  .media-video-lightbox__close {
     position: absolute;
     top: 20px;
     right: 20px;
@@ -233,21 +290,21 @@ const video = product.videoReview;
     transition: background 0.15s ease, transform 0.15s ease;
   }
 
-  .video-review-lightbox__close svg {
+  .media-video-lightbox__close svg {
     width: 16px;
     height: 16px;
   }
 
-  .video-review-lightbox__close:hover {
+  .media-video-lightbox__close:hover {
     background: var(--color-surface-variant, #ececea);
   }
 
-  .video-review-lightbox__close:focus-visible {
+  .media-video-lightbox__close:focus-visible {
     outline: 2px solid var(--rs-pink, var(--color-accent));
     outline-offset: 2px;
   }
 
-  .video-review-lightbox__frame {
+  .media-video-lightbox__frame {
     position: relative;
     aspect-ratio: 16 / 9;
     width: 100%;
@@ -256,7 +313,7 @@ const video = product.videoReview;
     background: #0c0b0f;
   }
 
-  .video-review-lightbox__frame iframe {
+  .media-video-lightbox__frame iframe {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -264,14 +321,14 @@ const video = product.videoReview;
     border: 0;
   }
 
-  .video-review-lightbox__meta {
+  .media-video-lightbox__meta {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-top: 20px;
   }
 
-  .video-review-lightbox__avatar {
+  .media-video-lightbox__avatar {
     flex-shrink: 0;
     width: 40px;
     height: 40px;
@@ -279,12 +336,12 @@ const video = product.videoReview;
     object-fit: cover;
   }
 
-  .video-review-lightbox__titles {
+  .media-video-lightbox__titles {
     min-width: 0;
     flex: 1 1 auto;
   }
 
-  .video-review-lightbox__title {
+  .media-video-lightbox__title {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 700;
@@ -292,14 +349,14 @@ const video = product.videoReview;
     color: var(--color-on-surface, #141317);
   }
 
-  .video-review-lightbox__byline {
+  .media-video-lightbox__byline {
     margin: 2px 0 0;
     font-size: 0.875rem;
     line-height: 1.3;
     color: var(--color-on-surface-variant, #55545b);
   }
 
-  .video-review-lightbox__youtube {
+  .media-video-lightbox__youtube {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
@@ -312,21 +369,21 @@ const video = product.videoReview;
     border-radius: 6px;
   }
 
-  .video-review-lightbox__youtube:hover {
+  .media-video-lightbox__youtube:hover {
     text-decoration: underline;
   }
 
-  .video-review-lightbox__youtube:focus-visible {
+  .media-video-lightbox__youtube:focus-visible {
     outline: 2px solid var(--rs-pink, var(--color-accent));
     outline-offset: 3px;
   }
 
-  .video-review-lightbox__youtube-icon {
+  .media-video-lightbox__youtube-icon {
     width: 20px;
     height: 14px;
   }
 
-  .video-review-lightbox__arrow {
+  .media-video-lightbox__arrow {
     width: 12px;
     height: 12px;
   }
@@ -342,44 +399,44 @@ const video = product.videoReview;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .video-review-lightbox__backdrop,
-    .video-review-lightbox__panel {
+    .media-video-lightbox__backdrop,
+    .media-video-lightbox__panel {
       animation: none;
     }
   }
 
   @media (max-width: 640px) {
-    .video-review-lightbox {
+    .media-video-lightbox {
       padding: 16px;
     }
 
-    .video-review-lightbox__panel {
+    .media-video-lightbox__panel {
       padding: 16px;
       border-radius: 18px;
       max-height: calc(100dvh - 32px);
     }
 
-    .video-review-lightbox__close {
+    .media-video-lightbox__close {
       top: 10px;
       right: 10px;
       width: 32px;
       height: 32px;
     }
 
-    .video-review-lightbox__frame {
+    .media-video-lightbox__frame {
       border-radius: 12px;
     }
 
-    .video-review-lightbox__meta {
+    .media-video-lightbox__meta {
       flex-wrap: wrap;
       margin-top: 14px;
     }
 
-    .video-review-lightbox__title {
+    .media-video-lightbox__title {
       font-size: 1.0625rem;
     }
 
-    .video-review-lightbox__youtube {
+    .media-video-lightbox__youtube {
       flex-basis: 100%;
       margin-top: 4px;
       padding-left: 52px;
