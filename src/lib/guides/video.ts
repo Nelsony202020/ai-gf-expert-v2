@@ -22,17 +22,74 @@ export function getGuideVideo(slug: string): GuideVideo | undefined {
 /**
  * The poster.
  *
- * `hqdefault` rather than `maxresdefault`: maxres only exists for videos
- * uploaded above 1280 wide, and when it is missing YouTube serves a grey
- * placeholder image rather than a 404, so the failure is silent and ugly.
- * hqdefault exists for every video.
+ * `maxresdefault` (1280x720) because the block is 740 wide on desktop and
+ * hqdefault is 480x360 — soft when stretched, and 4:3 so it has to be cropped
+ * to fit the 16:9 frame.
+ *
+ * maxres only exists for videos uploaded above 1280 wide, and when it is
+ * missing YouTube serves a grey placeholder rather than a 404, so the failure
+ * is silent. The block therefore ships an onerror swap to hqdefault, which
+ * exists for every video; a guide can also pin its own `thumbnail`.
  *
  * Not routed through the Bunny pull zone. That zone pulls from this site's own
  * origin, so it cannot proxy i.ytimg.com without a second zone — see
  * docs/article-system/parts/96-guide-video.md.
  */
 export function youtubeThumbnail(video: GuideVideo): string {
-  return video.thumbnail ?? `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;
+  return video.thumbnail ?? `https://i.ytimg.com/vi/${video.youtubeId}/maxresdefault.jpg`;
+}
+
+/** Always-present poster, used when maxresdefault turns out to be missing. */
+export function youtubeThumbnailFallback(video: GuideVideo): string {
+  return `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;
+}
+
+/** Tags that never carry a closing tag, so they never change nesting depth. */
+const VOID_TAGS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr',
+]);
+
+/**
+ * Where the video block goes in a guide body, or -1 for "nowhere sensible".
+ *
+ * The brief's rule is: after the opening paragraph, before the first H2. Most
+ * guides open with a paragraph or two and then their first heading, so the
+ * slot is simply the first H2.
+ *
+ * The comics guide does not: its standfirst lives in the hero and the body
+ * opens straight onto the H2. Splitting at the H2 there drops the block at the
+ * very top of the article, above a single word of prose — the one placement
+ * the brief rules out. So when nothing precedes the first H2, the slot moves
+ * to the end of that first section's opening paragraph instead: the same
+ * "read a little, then watch" experience, one heading later.
+ *
+ * The returned index is always a position between two DIRECT children of the
+ * prose container. Anchoring inside a nested block is how a figure once ended
+ * up as a stray grid item inside a two-column card.
+ */
+export function videoSlotIndex(bodyHtml: string): number {
+  const h2 = bodyHtml.search(/<h2[\s>]/i);
+  if (h2 < 0) return -1;
+  if (bodyHtml.slice(0, h2).trim() !== '') return h2;
+
+  const tag = /<(\/?)([a-zA-Z0-9]+)([^>]*)>/g;
+  tag.lastIndex = h2;
+  let depth = 0;
+  let match: RegExpExecArray | null;
+  while ((match = tag.exec(bodyHtml)) !== null) {
+    const closing = match[1] === '/';
+    const name = match[2].toLowerCase();
+    if (VOID_TAGS.has(name) || match[3].trimEnd().endsWith('/')) continue;
+    if (closing) {
+      depth -= 1;
+      if (depth === 0 && name === 'p') return tag.lastIndex;
+      if (depth < 0) return -1;
+    } else {
+      depth += 1;
+    }
+  }
+  return -1;
 }
 
 /** Player URL. `autoplay` is set only on the click that injects the iframe. */

@@ -50,18 +50,33 @@ The built page confirms it: `VideoObject` appears zero times, `Article` and
 **A — header link.** A real `<button>` under the author/date row, pink, inline,
 no border or background. It opens the dialog, so it is a button rather than a
 link. Hover underlines, focus-visible draws a pink ring, active dims. The copy
-reads "Prefer to watch? video guide" today and becomes "4-min video guide" the
+reads "Prefer to watch? Video guide" today and becomes "4-min video guide" the
 moment `durationSeconds` is set — the length is derived, never typed twice.
 
-**B — the block.** After the opening paragraphs and before the first H2. The
-body arrives as one raw HTML string, so the shell splits it at the first `<h2`
-and renders the block between the halves. No H2, or no video, and the body is
-emitted whole exactly as before.
+**B — the block.** The brief says: after the opening paragraph, before the first
+H2, and explicitly not at the very top. On the comics guide those three cannot
+all hold. Its standfirst lives in the hero, so the body opens *straight onto*
+`<h2>What Is OurDream AI Comics?</h2>` — there is no paragraph before the first
+H2, and splitting there drops the block above a single word of prose, which is
+the one placement the brief rules out.
 
-Full 740 column, 16:9, poster cropped with `object-fit: cover` (YouTube's
-posters are 4:3 and letterboxed; cropping removes the bars rather than showing
-two sets), dark scrim, centred pink play button, Herman's avatar bottom-left,
-title underneath.
+So `videoSlotIndex()` takes the deciding rule to be "after the opening prose":
+
+- Prose exists before the first H2 (the brief's case) → split at the first H2.
+- Nothing before the first H2 → split at the end of that first section's opening
+  paragraph instead. Same "read a little, then watch", one heading later.
+
+On the comics page that renders: H2 → opening paragraph → video block → rest.
+**Flagged for review** — it is a deliberate departure from the literal wording,
+forced by this article's shape, and it reverts to one line if the call is wrong.
+
+The split index is always a boundary between two *direct children* of the prose
+container; the function tracks tag depth to guarantee it. Anchoring inside a
+nested block is how a figure once ended up as a stray grid item inside a
+two-column card.
+
+Full 740 column, 16:9, poster cropped with `object-fit: cover`, dark scrim,
+centred pink play button, Herman's avatar bottom-left, title underneath.
 
 Both are `data-video-lightbox-open`, so both open the same shared lightbox.
 
@@ -75,14 +90,15 @@ audio.
 
 Measured on the comics page:
 
-| | transferred | YouTube share |
-|---|---|---|
-| Page load, facade | — | **10 KB** (the poster) |
-| On click | 1,434 KB | **1,403 KB** |
+| | YouTube bytes |
+|---|---|
+| Page load, facade | **59 KB** (the poster) |
+| On click, player injected | **1,159 KB** |
 
-A normal embed moves that 1,403 KB into page load for every visitor, whether or
-not they press play. The facade costs 10 KB instead — about 140× less, on a page
-that is already heavy.
+A normal embed moves that 1,159 KB into page load for every visitor, whether or
+not they press play. The facade costs 59 KB instead — about 20× less, on a page
+that is already heavy. (With the 480-wide `hqdefault` poster it was 10 KB and
+120× less, but the poster was visibly soft at 740 — see below.)
 
 `youtube-nocookie.com` for the player, so nothing is set until playback.
 
@@ -91,10 +107,15 @@ that is already heavy.
 proxy `i.ytimg.com` without a second pull zone pointed at YouTube. That is a
 Bunny configuration change, not a code one, and the brief said "if that's
 straightforward". It is not. The poster is served from YouTube's own CDN with
-explicit `width`/`height` and `loading="lazy"`. `hqdefault` rather than
-`maxresdefault`: maxres only exists for videos uploaded above 1280 wide, and
-YouTube serves a grey placeholder rather than a 404 when it is missing, so the
-failure would be silent.
+explicit `width`/`height` and `loading="lazy"`.
+
+`maxresdefault` (1280×720) for the poster. `hqdefault` is 480×360 and was
+visibly soft stretched across the 740 column, and being 4:3 it also had to be
+cropped to fit 16:9. maxres only exists for videos uploaded above 1280 wide and
+YouTube answers a missing one with a grey 120×90 placeholder rather than a 404,
+so the failure is silent — the page therefore checks the decoded width on load
+and swaps to `hqdefault` when it comes back under 300px. A guide can also pin
+its own `thumbnail`.
 
 ## Accessibility and behaviour
 

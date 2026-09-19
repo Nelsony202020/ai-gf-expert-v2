@@ -7,7 +7,7 @@ import { cdnAsset } from '../../../lib/media/cdn';
 import type { AuthorProfile } from '../../../data/authors';
 import { extractOurDreamGuideToc, estimateGuideReadMinutes } from '../../../lib/ourdream-guide-toc';
 import GuideVideoBlock from '../GuideVideoBlock.astro';
-import { videoLengthLabel, type GuideVideo } from '../../../lib/guides/video';
+import { videoLengthLabel, videoSlotIndex, type GuideVideo } from '../../../lib/guides/video';
 
 interface Props {
   title: string;
@@ -52,14 +52,14 @@ const dateShort = publishedShort ?? published;
 const authorHref = author?.profileUrl ?? (author?.slug ? `/author/${author.slug}/` : undefined);
 
 /**
- * The video block belongs after the opening paragraphs and before the first H2.
- * The body arrives as one raw string, so it is split at the first H2 and the
- * block is rendered between the halves. No H2 (or no video) and the body is
- * emitted whole, exactly as before.
+ * The video block belongs after the opening prose. The body arrives as one raw
+ * string, so videoSlotIndex picks the split point (see that function for why it
+ * is not always the first H2) and the block is rendered between the halves. No
+ * slot, or no video, and the body is emitted whole, exactly as before.
  */
-const firstH2 = video ? bodyHtml.search(/<h2[\s>]/i) : -1;
-const bodyBeforeVideo = firstH2 > -1 ? bodyHtml.slice(0, firstH2) : bodyHtml;
-const bodyAfterVideo = firstH2 > -1 ? bodyHtml.slice(firstH2) : '';
+const videoSlot = video ? videoSlotIndex(bodyHtml) : -1;
+const bodyBeforeVideo = videoSlot > -1 ? bodyHtml.slice(0, videoSlot) : bodyHtml;
+const bodyAfterVideo = videoSlot > -1 ? bodyHtml.slice(videoSlot) : '';
 const videoLength = video ? videoLengthLabel(video) : undefined;
 ---
 
@@ -128,14 +128,14 @@ const videoLength = video ? videoLengthLabel(video) : undefined;
         {video && (
           <button type="button" class="ourdream-article-hero__video-link" data-video-lightbox-open>
             <span class="ourdream-article-hero__video-caret" aria-hidden="true">&#9656;</span>
-            <span>Prefer to watch? {videoLength ? `${videoLength} video guide` : 'video guide'}</span>
+            <span>Prefer to watch? {videoLength ? `${videoLength} video guide` : 'Video guide'}</span>
           </button>
         )}
         {toc.length > 0 && <OurDreamArticleMobileJump toc={toc} />}
       </header>
 
       <article class="ourdream-article-main min-w-0">
-        {firstH2 > -1 ? (
+        {videoSlot > -1 ? (
           <div class="ourdream-article-prose" data-glossary-decorate data-ourdream-prose>
             <Fragment set:html={bodyBeforeVideo} />
             <GuideVideoBlock video={video!} authorSlug={author?.slug} />

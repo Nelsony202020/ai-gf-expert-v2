@@ -194,8 +194,38 @@ const title = props.title ?? (product ? `${product.name} video review` : undefin
     }
   }
 
-  document.addEventListener('DOMContentLoaded', initVideoLightbox);
-  document.addEventListener('astro:page-load', initVideoLightbox);
+  /*
+   * Guide poster fallback. maxresdefault does not exist for every video, and
+   * YouTube answers a missing one with a grey 120x90 placeholder rather than a
+   * 404 — so the swap is keyed on the decoded size, not on an error event.
+   * It lives here rather than in the block so no <script> node lands in the
+   * middle of the article prose.
+   */
+  function swapMissingPosters() {
+    document
+      .querySelectorAll<HTMLImageElement>('.od-video__poster[data-poster-fallback]')
+      .forEach((img) => {
+        const fallback = img.dataset.posterFallback;
+        if (!fallback) return;
+        const check = () => {
+          if (img.naturalWidth > 0 && img.naturalWidth < 300 && img.src !== fallback) {
+            img.src = fallback;
+          }
+          delete img.dataset.posterFallback;
+        };
+        img.addEventListener('error', () => { img.src = fallback; }, { once: true });
+        if (img.complete) check();
+        else img.addEventListener('load', check, { once: true });
+      });
+  }
+
+  function initGuideVideo() {
+    initVideoLightbox();
+    swapMissingPosters();
+  }
+
+  document.addEventListener('DOMContentLoaded', initGuideVideo);
+  document.addEventListener('astro:page-load', initGuideVideo);
 </script>
 
 <style>

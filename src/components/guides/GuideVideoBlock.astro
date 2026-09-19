@@ -1,6 +1,6 @@
 ---
 import { getAuthor } from '../../data/authors';
-import { youtubeThumbnail, type GuideVideo } from '../../lib/guides/video';
+import { youtubeThumbnail, youtubeThumbnailFallback, type GuideVideo } from '../../lib/guides/video';
 
 interface Props {
   video: GuideVideo;
@@ -11,6 +11,7 @@ interface Props {
 const { video, authorSlug } = Astro.props;
 const author = authorSlug ? getAuthor(authorSlug) : undefined;
 const poster = youtubeThumbnail(video);
+const posterFallback = youtubeThumbnailFallback(video);
 ---
 
 {/*
@@ -24,10 +25,11 @@ const poster = youtubeThumbnail(video);
       class="od-video__poster"
       src={poster}
       alt=""
-      width="480"
-      height="360"
+      width="1280"
+      height="720"
       loading="lazy"
       decoding="async"
+      data-poster-fallback={posterFallback}
     />
     <span class="od-video__scrim" aria-hidden="true"></span>
     <span class="od-video__play" aria-hidden="true">
