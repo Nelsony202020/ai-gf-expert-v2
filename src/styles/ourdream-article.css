@@ -1425,47 +1425,68 @@
 }
 
 /* A/B cards */
+/* ---------------------------------------------------------------------------
+   Article / Comparison A/B            Figma 318:4999 desktop · mobile on 320:6822
+   An outer card holding a row of two lettered option panels, with an optional
+   verdict underneath. Measured on the Comics frame, which corrects two things
+   parts/40-evidence.md had backwards: the option panels are #ffffff WITH a
+   hairline (not surface/page without one), and there is no card title or
+   "Best for" line in any instance on this page.
+   --------------------------------------------------------------------------- */
 .od-ab {
-  display: grid;
-  gap: 0.75rem;
-  margin-top: 0.25rem;
-}
-
-@media (min-width: 720px) {
-  .od-ab {
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-}
-
-.od-ab--framed {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem 1rem;
   border: 1px solid var(--od-hairline);
   border-radius: 1.25rem;
   background: var(--od-white);
-  padding: 1.25rem 1rem;
 }
 
 @media (min-width: 1100px) {
-  .od-ab--framed {
+  .od-ab {
     padding: 1.5rem;
   }
 }
 
+.od-ab__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 1100px) {
+  .od-ab__options {
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .od-ab__options > .od-ab__card {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
 .od-ab__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
   border: 1px solid var(--od-hairline);
   border-radius: 1rem;
   background: var(--od-white);
-  padding: 1rem;
 }
 
 .od-ab__head {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  margin: 0 0 0.5rem;
+  margin: 0;
+  font-family: var(--od-body);
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.5rem;
+  letter-spacing: -0.003rem;
   color: var(--od-ink);
 }
 
@@ -1473,6 +1494,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: none;
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 999px;
@@ -1480,13 +1502,278 @@
   color: var(--od-pink-ink);
   font-size: 0.875rem;
   font-weight: 600;
+  line-height: 1.25rem;
 }
 
 .od-ab__body {
   margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-muted);
+}
+
+/* A bullet run inside an option panel — same treatment as .od-block__list. */
+.ourdream-article-prose .od-ab__body-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ourdream-article-prose .od-ab__body-list > li {
+  position: static;
+  margin: 0;
+  padding-left: 0;
   font-size: 0.875rem;
   line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
   color: var(--od-muted);
+}
+
+.ourdream-article-prose .od-ab__body-list > li::before {
+  content: '\2022\00a0';
+  position: static;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  color: currentColor;
+}
+
+.od-ab__verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.od-ab__verdict-label {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-pink-ink);
+}
+
+.od-ab__verdict-text {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.625rem;
+  letter-spacing: -0.003rem;
+  color: var(--od-ink);
+}
+
+/* ---------------------------------------------------------------------------
+   Calculation                                     Figma 320:5998 / 320:6049
+   A short arithmetic run set apart from the prose by a 2px pink rule on the
+   left. Not a card: no fill, no radius, no border except that edge.
+   --------------------------------------------------------------------------- */
+.od-calc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.25rem 0 0.25rem 1.125rem;
+  border-left: 2px solid var(--od-pink);
+}
+
+.od-calc > p {
+  margin: 0;
+  font-family: var(--od-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+  letter-spacing: -0.0053rem;
+  font-variation-settings: 'opsz' 14, 'wdth' 100;
+  color: var(--od-ink);
+}
+
+/* ---------------------------------------------------------------------------
+   Article / Horizontal Process                    Figma 349:15056, in 349:15055
+   The one breakout on the page: 900 wide against the 740 column, i.e. -110 each
+   side. Below the rail breakpoint the column is already narrower than 900, so it
+   collapses to full width and the steps wrap.
+   --------------------------------------------------------------------------- */
+.od-process {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+@media (min-width: 1100px) {
+  .od-process {
+    width: var(--od-breakout);
+    margin-inline: calc((var(--od-content) - var(--od-breakout)) / 2);
+  }
+}
+
+.od-process__label {
+  margin: 0;
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0.065rem;
+  text-transform: uppercase;
+  color: var(--od-pink-ink);
+}
+
+.od-process__steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ourdream-article-prose .od-process .od-process__steps > li {
+  position: static;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 0;
+}
+
+.ourdream-article-prose .od-process .od-process__steps > li::before {
+  /* Outranks .ourdream-article-prose ol:not(.od-steps) > li::before, which is the
+     same specificity and declared later — it was painting a pink counter next to
+     the block's own numbers. */
+  content: none;
+}
+
+.od-process__num {
+  flex: none;
+  font-family: var(--od-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  color: var(--od-dim);
+}
+
+.od-process__text {
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-ink);
+}
+
+/* The separator is a literal character in Figma, not an icon. */
+.od-process__steps > li:not(:last-child)::after {
+  content: '\2192';
+  margin-left: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  color: var(--od-dim);
+}
+
+/* ---------------------------------------------------------------------------
+   Article / Sources + Source Row                  Figma 361:7619 / 358:4288
+   Closes the article. The heading is a real H2 so it behaves like every other
+   section heading; rows are separated by a hairline, numbered in action/pink.
+   --------------------------------------------------------------------------- */
+.od-sources__intro {
+  margin: 0.5rem 0 0;
+  font-family: var(--od-body);
+  font-size: 1.0625rem;
+  font-weight: 400;
+  line-height: 1.75rem;
+  letter-spacing: -0.0032rem;
+  color: var(--od-muted);
+}
+
+@media (min-width: 1100px) {
+  .od-sources__intro {
+    font-size: 1.125rem;
+    line-height: 1.9375rem;
+    letter-spacing: -0.0045rem;
+  }
+}
+
+.od-sources__rows {
+  margin: 0.625rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ourdream-article-prose .od-sources .od-sources__rows > li,
+.ourdream-article-prose ol.od-sources__rows > li {
+  position: static;
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  column-gap: 1.25rem;
+  margin: 0;
+  padding: 1.125rem 0;
+  border-top: 1px solid var(--od-hairline);
+}
+
+.ourdream-article-prose .od-sources .od-sources__rows > li::before,
+.ourdream-article-prose ol.od-sources__rows > li::before {
+  content: none;
+}
+
+.od-sources__num {
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  letter-spacing: -0.003rem;
+  color: var(--od-pink);
+}
+
+.od-sources__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.od-sources__title {
+  font-family: var(--od-body);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  letter-spacing: -0.003rem;
+  color: var(--od-ink);
+}
+
+.ourdream-article-prose a.od-sources__title {
+  color: var(--od-ink);
+  text-decoration: none;
+}
+
+.ourdream-article-prose a.od-sources__title:hover {
+  color: var(--od-pink-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.od-sources__title:focus-visible {
+  outline: 2px solid var(--od-pink);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.od-sources__meta,
+.od-sources__domain {
+  font-family: var(--od-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.375rem;
+  letter-spacing: -0.00175rem;
+  color: var(--od-muted);
+}
+
+.od-sources__domain {
+  color: var(--od-dim);
 }
 
 /* Prompt structure chips */
