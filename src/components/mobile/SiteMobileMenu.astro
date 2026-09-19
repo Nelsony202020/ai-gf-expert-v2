@@ -1,13 +1,24 @@
 ---
 import { BRAND_CHANNELS } from '../../data/social-links';
 import { buildBrandNav } from '../../data/brand-nav';
-import { buildSiteMobileMenu } from '../../data/site-mobile-menu';
+import {
+  buildSiteMobileMenu,
+  SITE_MOBILE_MENU_COMPANY_LINKS,
+} from '../../data/site-mobile-menu';
 import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
 import SocialIcon from '../ui/SocialIcon.astro';
 import ThemeToggle from '../ui/ThemeToggle.astro';
+import MenuIcon from './MenuIcon.astro';
 
 const publishedProducts = await loadComparisonProducts();
 const groups = buildSiteMobileMenu(buildBrandNav(publishedProducts));
+
+/** Only real channels — a row that says "Coming soon" earns nothing. */
+const channels = BRAND_CHANNELS.filter((channel) => Boolean(channel.href));
+
+/** Trailing-slash-insensitive match so the current page can be marked. */
+const here = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const isCurrent = (href: string) => (href.replace(/\/+$/, '') || '/') === here;
 ---
 
 <div id="site-mobile-menu" class="site-mobile-menu" data-site-menu hidden aria-hidden="true">
@@ -22,15 +33,46 @@ const groups = buildSiteMobileMenu(buildBrandNav(publishedProducts));
       </button>
     </header>
 
+    {/* Search lives here on mobile; the header search is hidden below 1024px. */}
+    <form class="site-mobile-menu__search" role="search" action="/search/" method="get">
+      <MenuIcon name="search" size={17} class="site-mobile-menu__search-icon" />
+      <input
+        type="search"
+        name="q"
+        class="site-mobile-menu__search-input"
+        placeholder="Search reviews and guides"
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="Search reviews and guides"
+      />
+    </form>
+
     <nav class="site-mobile-menu__nav" aria-label="Site">
       {groups.map((group) => (
-        <section class:list={['site-mobile-menu__group', group.title === 'Primary' && 'site-mobile-menu__group--primary']}>
-          {group.title ? <h2 class="site-mobile-menu__kicker">{group.title}</h2> : null}
-          <ul>
+        <section class:list={['site-mobile-menu__group', `site-mobile-menu__group--${group.tier}`]}>
+          {group.showTitle && group.title ? (
+            <h2 class="site-mobile-menu__kicker">{group.title}</h2>
+          ) : null}
+          <ul class="site-mobile-menu__rows">
             {group.links.map((link) => (
               <li>
-                <a href={link.href} class="site-mobile-menu__link" data-site-menu-link>
-                  {link.label}
+                <a
+                  href={link.href}
+                  class="site-mobile-menu__row"
+                  data-site-menu-link
+                  aria-current={isCurrent(link.href) ? 'page' : undefined}
+                >
+                  {link.icon ? (
+                    <span class="site-mobile-menu__row-icon" aria-hidden="true">
+                      <MenuIcon name={link.icon} size={group.tier === 'primary' ? 20 : 18} />
+                    </span>
+                  ) : null}
+                  <span class="site-mobile-menu__row-label">{link.label}</span>
+                  <MenuIcon
+                    name="chevron-right"
+                    size={group.tier === 'primary' ? 17 : 16}
+                    class="site-mobile-menu__row-chevron"
+                  />
                 </a>
               </li>
             ))}
@@ -41,32 +83,40 @@ const groups = buildSiteMobileMenu(buildBrandNav(publishedProducts));
 
     <footer class="site-mobile-menu__foot">
       <div class="site-mobile-menu__channels">
-        {BRAND_CHANNELS.map((channel) =>
-          channel.href ? (
-            <a
-              href={channel.href}
-              class="site-mobile-menu__channel"
-              data-site-menu-link
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+        {channels.map((channel) => (
+          <a
+            href={channel.href}
+            class="site-mobile-menu__channel"
+            data-site-menu-link
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="site-mobile-menu__channel-well" aria-hidden="true">
               <SocialIcon platform={channel.icon} class="site-mobile-menu__channel-icon" />
-              <span class="site-mobile-menu__channel-copy">
-                <span class="site-mobile-menu__channel-name">{channel.label}</span>
-                {channel.descriptor ? <small>{channel.descriptor}</small> : null}
-              </span>
-            </a>
-          ) : (
-            <div class="site-mobile-menu__channel site-mobile-menu__channel--muted">
-              <SocialIcon platform={channel.icon} class="site-mobile-menu__channel-icon" />
-              <span class="site-mobile-menu__channel-copy">
-                <span class="site-mobile-menu__channel-name">{channel.label}</span>
-                {channel.descriptor ? <small>{channel.descriptor}</small> : null}
-              </span>
-            </div>
-          )
-        )}
+            </span>
+            <span class="site-mobile-menu__channel-copy">
+              <span class="site-mobile-menu__channel-name">{channel.label}</span>
+              {channel.descriptor ? <small>{channel.descriptor}</small> : null}
+            </span>
+          </a>
+        ))}
       </div>
+
+      <ul class="site-mobile-menu__meta">
+        {SITE_MOBILE_MENU_COMPANY_LINKS.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              class="site-mobile-menu__meta-link"
+              data-site-menu-link
+              aria-current={isCurrent(link.href) ? 'page' : undefined}
+            >
+              {link.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+
       <ThemeToggle variant="switch" />
     </footer>
   </div>
