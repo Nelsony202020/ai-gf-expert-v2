@@ -7,7 +7,7 @@ import { cdnAsset } from '../../../lib/media/cdn';
 import type { AuthorProfile } from '../../../data/authors';
 import { extractOurDreamGuideToc, estimateGuideReadMinutes } from '../../../lib/ourdream-guide-toc';
 import GuideVideoBlock from '../GuideVideoBlock.astro';
-import { videoLengthLabel, videoSlotIndex, type GuideVideo } from '../../../lib/guides/video';
+import { videoSlotIndex, type GuideVideo } from '../../../lib/guides/video';
 
 interface Props {
   title: string;
@@ -60,7 +60,6 @@ const authorHref = author?.profileUrl ?? (author?.slug ? `/author/${author.slug}
 const videoSlot = video ? videoSlotIndex(bodyHtml) : -1;
 const bodyBeforeVideo = videoSlot > -1 ? bodyHtml.slice(0, videoSlot) : bodyHtml;
 const bodyAfterVideo = videoSlot > -1 ? bodyHtml.slice(videoSlot) : '';
-const videoLength = video ? videoLengthLabel(video) : undefined;
 ---
 
 <div
@@ -125,12 +124,6 @@ const videoLength = video ? videoLengthLabel(video) : undefined;
             </span>
           </div>
         </div>
-        {video && (
-          <button type="button" class="ourdream-article-hero__video-link" data-video-lightbox-open>
-            <span class="ourdream-article-hero__video-caret" aria-hidden="true">&#9656;</span>
-            <span>Prefer to watch? {videoLength ? `${videoLength} video guide` : 'Video guide'}</span>
-          </button>
-        )}
         {toc.length > 0 && <OurDreamArticleMobileJump toc={toc} />}
       </header>
 

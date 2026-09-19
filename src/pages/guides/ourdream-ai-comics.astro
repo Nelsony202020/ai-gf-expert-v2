@@ -3,15 +3,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import ImageLightbox from '../../components/ui/ImageLightbox.astro';
-import VideoLightbox from '../../components/media/VideoLightbox.astro';
 import OurDreamArticlePage from '../../components/guides/ourdream/OurDreamArticlePage.astro';
 import { getAuthor } from '../../data/authors';
-import {
-  getGuideVideo,
-  youtubeEmbedUrl,
-  youtubeWatchUrl,
-  videoObjectSchema,
-} from '../../lib/guides/video';
+import { getGuideVideo, videoObjectSchema } from '../../lib/guides/video';
 import { canonicalPublicUrl } from '../../lib/siteOrigin';
 import { cdnAsset } from '../../lib/media/cdn';
 import bodyHtml from '../../content/guides/ourdream-ai-comics.html?raw';
@@ -84,15 +78,6 @@ const jsonLd: Record<string, unknown>[] = [
     />
   </main>
   <ImageLightbox />
-  {video && (
-    <VideoLightbox
-      embedUrl={youtubeEmbedUrl(video, { autoplay: true })}
-      title={video.title}
-      author={author}
-      channelUrl={youtubeWatchUrl(video)}
-      channelLabel="Watch on YouTube"
-    />
-  )}
   <Footer />
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>

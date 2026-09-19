@@ -58,24 +58,36 @@ const VOID_TAGS = new Set([
  * slot is simply the first H2.
  *
  * The comics guide does not: its standfirst lives in the hero and the body
- * opens straight onto the H2. Splitting at the H2 there drops the block at the
- * very top of the article, above a single word of prose — the one placement
- * the brief rules out. So when nothing precedes the first H2, the slot moves
- * to the end of that first section's opening paragraph instead: the same
- * "read a little, then watch" experience, one heading later.
+ * opens straight onto the H2. There the slot is the END of that opening
+ * section — the position immediately before the next `<h2>` or `<h3>`.
+ *
+ * Landing after the section's first paragraph (what this did before) split a
+ * three-paragraph section down the middle and pushed the rest of its own
+ * argument below a video. Sitting at the section's end, the block reads as the
+ * recap of what was just explained and the next heading starts clean.
  *
  * The returned index is always a position between two DIRECT children of the
  * prose container. Anchoring inside a nested block is how a figure once ended
  * up as a stray grid item inside a two-column card.
+ *
+ * Fallback: a first section that runs to the end of the article has no next
+ * heading to sit before, so the old end-of-first-paragraph position is used
+ * rather than dropping the video off the bottom of the page.
  */
 export function videoSlotIndex(bodyHtml: string): number {
   const h2 = bodyHtml.search(/<h2[\s>]/i);
   if (h2 < 0) return -1;
   if (bodyHtml.slice(0, h2).trim() !== '') return h2;
 
+  // Start scanning INSIDE the first H2, at depth 1, so its own opening tag is
+  // not mistaken for the heading that ends the section.
+  const openTagEnd = bodyHtml.indexOf('>', h2);
+  if (openTagEnd < 0) return -1;
+
   const tag = /<(\/?)([a-zA-Z0-9]+)([^>]*)>/g;
-  tag.lastIndex = h2;
-  let depth = 0;
+  tag.lastIndex = openTagEnd + 1;
+  let depth = 1;
+  let firstParagraphEnd = -1;
   let match: RegExpExecArray | null;
   while ((match = tag.exec(bodyHtml)) !== null) {
     const closing = match[1] === '/';
@@ -83,13 +95,18 @@ export function videoSlotIndex(bodyHtml: string): number {
     if (VOID_TAGS.has(name) || match[3].trimEnd().endsWith('/')) continue;
     if (closing) {
       depth -= 1;
-      if (depth === 0 && name === 'p') return tag.lastIndex;
+      if (depth === 0 && name === 'p' && firstParagraphEnd < 0) {
+        firstParagraphEnd = tag.lastIndex;
+      }
       if (depth < 0) return -1;
     } else {
+      // A heading that opens at the top level ends the opening section.
+      // match.index, not lastIndex: the slot is before the heading's `<`.
+      if (depth === 0 && (name === 'h2' || name === 'h3')) return match.index;
       depth += 1;
     }
   }
-  return -1;
+  return firstParagraphEnd;
 }
 
 /** Player URL. `autoplay` is set only on the click that injects the iframe. */
@@ -103,10 +120,23 @@ export function youtubeWatchUrl(video: GuideVideo): string {
   return `https://www.youtube.com/watch?v=${video.youtubeId}`;
 }
 
-/** `4-min`, for the header link. Undefined when the runtime is not known. */
+/**
+ * `5:36` — the exact runtime, for the pill on the thumbnail.
+ *
+ * Exact, not rounded: this sits where every video player puts its duration, and
+ * a rounded "6-min" on a 5:36 video is simply wrong. Hours are rendered as
+ * `1:02:09`, matching the same convention.
+ *
+ * Undefined when the runtime is not known, and the pill is then not rendered.
+ */
 export function videoLengthLabel(video: GuideVideo): string | undefined {
   if (!video.durationSeconds) return undefined;
-  return `${Math.max(1, Math.round(video.durationSeconds / 60))}-min`;
+  const total = Math.max(0, Math.round(video.durationSeconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return hours ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
 }
 
 /** `PT4M37S`. Undefined when the runtime is not known. */
