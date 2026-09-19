@@ -54,6 +54,9 @@ const legal = [
   { label: legalBySlug.terms?.title ?? 'Terms of Service', href: legalBySlug.terms?.href ?? '/legal/terms/' },
   { label: legalBySlug.accessibility?.title ?? 'Accessibility', href: legalBySlug.accessibility?.href ?? '/legal/accessibility/' },
 ];
+
+/** Stable id per footer column so its list can be named by its label. */
+const slugifyColTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 ---
 
 <footer class="site-footer" aria-label="Site">
@@ -98,8 +101,13 @@ const legal = [
         {
           columns.map((col) => (
             <div class="site-footer__col">
-              <h4 class="site-footer__col-title">{col.title}</h4>
-              <ul class="site-footer__links">
+              <p class="site-footer__col-title" id={`site-footer-col-${slugifyColTitle(col.title)}`}>
+                {col.title}
+              </p>
+              <ul
+                class="site-footer__links"
+                aria-labelledby={`site-footer-col-${slugifyColTitle(col.title)}`}
+              >
                 {col.links.map((link) => (
                   <li>
                     {link.action === 'feedback' ? (

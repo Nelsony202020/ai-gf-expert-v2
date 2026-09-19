@@ -7,12 +7,6 @@ export const buyingGuideImages = {
   tokenTopupPricing: '/guides/how-to-choose/token-topup-pricing.png',
 } as const;
 
-export const buyingGuideFeaturedImage =
-  'https://picsum.photos/seed/buying-guide-hero/1600/640';
-
-export const buyingGuideFeaturedImageAlt =
-  'How to choose an AI girlfriend app — buying guide for chat-first, media-first, and balanced users';
-
 export const buyingGuideMeta: TestMethodologyPageMeta = {
   reviewedDate: 'Mar 1, 2026',
   modifiedDate: 'Jul 26, 2026',

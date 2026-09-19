@@ -63,7 +63,12 @@ const tocItems = methodology
     ];
 ---
 
-<BaseLayout title={pageTitle} description={introParagraphs[0] ?? category.description} canonical={canonical}>
+<BaseLayout
+  title={pageTitle}
+  description={introParagraphs[0] ?? category.description}
+  canonical={canonical}
+  hasPageNavSheet
+>
   <Header />
   <StandardContentLayout pageClass="test-category-page">
     <TestHubSidebar

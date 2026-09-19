@@ -48,6 +48,13 @@ interface Props {
   theme?: PageTheme;
   /** Safari / mobile browser chrome (`theme-color`). Defaults match site light/dark surfaces. */
   browserThemeColor?: { light: string; dark: string };
+  /**
+   * Set by pages that render their own `data-nav-sheet="page"` sheet, so the
+   * fallback sheet is not emitted alongside it. Previously the fallback's markup
+   * shipped on every page and only its JS opted out, leaving two sheets (and two
+   * "On this page" labels) in the DOM on 44 of 68 pages.
+   */
+  hasPageNavSheet?: boolean;
 }
 
 const {
@@ -61,6 +68,7 @@ const {
   ogDescription,
   theme = 'full',
   browserThemeColor,
+  hasPageNavSheet = false,
 } = Astro.props;
 
 const browserThemeColorLight = browserThemeColor?.light ?? '#f9f9f9';
@@ -184,7 +192,7 @@ const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
     </script>
     <slot />
     <SiteMobileMenu />
-    <MobileNavShell pathname={Astro.url.pathname} />
+    <MobileNavShell pathname={Astro.url.pathname} hasPageNavSheet={hasPageNavSheet} />
     <ThemeToggleInit />
     <ComingSoonLayer />
     <ExternalLinksInit />

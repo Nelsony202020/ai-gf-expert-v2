@@ -2497,6 +2497,10 @@ body.home-filters-open {
 }
 
 .home-app-card__name {
+  /* Pinned because this element is no longer a heading: global.css gives
+     h1-h6 var(--font-display), so dropping the tag would have silently
+     switched this to the body face. */
+  font-family: var(--font-display);
   display: flex;
   flex-wrap: wrap;
   align-items: center;

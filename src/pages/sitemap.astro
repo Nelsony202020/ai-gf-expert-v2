@@ -83,8 +83,16 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
     <div class="si-body">
       <div class="si-wrap si-body-inner">
       <section class="si-results" data-si-search-results hidden={!isSearching} aria-live="polite">
-        <div class="si-results-head">
-          <h2 class="si-results-title" data-si-search-heading hidden={!hasResults}>{hasResults ? `${initialHits.length} results for “${requestedQuery}”` : ""}</h2>
+        <div class="si-results-head" data-si-results-head>
+          {/*
+            Rendered only when there is something to count. It used to ship as an
+            empty hidden <h2> on every load, which reads as an empty heading.
+          */}
+          {hasResults && (
+            <h2 class="si-results-title" data-si-search-heading>
+              {`${initialHits.length} results for “${requestedQuery}”`}
+            </h2>
+          )}
             <button type="button" class="si-clear-link" data-si-search-clear-text>Clear search</button>
         </div>
         <div class="si-results-list" data-si-search-list>
@@ -163,7 +171,7 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
   const results = document.querySelector("[data-si-search-results]");
   const list = document.querySelector("[data-si-search-list]");
   const empty = document.querySelector("[data-si-search-empty]");
-  const heading = document.querySelector("[data-si-search-heading]");
+  const resultsHead = document.querySelector("[data-si-results-head]");
   const emptyTitle = document.querySelector("[data-si-empty-title]");
   const sticky = document.querySelector("[data-si-sticky]");
   const heroSearch = document.querySelector('[data-search-surface="hero"]');
@@ -254,14 +262,18 @@ const resultLabel = isSearching ? (hasResults ? `${initialHits.length} results` 
         node.textContent = countText;
       }
     });
-    if (heading instanceof HTMLElement) {
-      if (matched.length === 0) {
-        heading.hidden = true;
-        heading.textContent = "";
-      } else {
-        heading.hidden = false;
-        heading.textContent = `${matched.length} results for “${q}”`;
-      }
+    // The heading exists only while there are results — never as an empty node.
+    const existingHeading = document.querySelector("[data-si-search-heading]");
+    if (matched.length === 0) {
+      existingHeading?.remove();
+    } else if (existingHeading instanceof HTMLElement) {
+      existingHeading.textContent = `${matched.length} results for “${q}”`;
+    } else if (resultsHead instanceof HTMLElement) {
+      const created = document.createElement("h2");
+      created.className = "si-results-title";
+      created.setAttribute("data-si-search-heading", "");
+      created.textContent = `${matched.length} results for “${q}”`;
+      resultsHead.prepend(created);
     }
     const clearLabel = window.matchMedia("(max-width: 767px)").matches ? "Clear" : "Clear search";
     document.querySelectorAll("[data-si-search-clear-text]").forEach((node) => {
