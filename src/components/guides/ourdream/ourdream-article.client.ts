@@ -105,8 +105,9 @@ function bindImageLightbox(root: HTMLElement) {
     const src = img.getAttribute('src');
     if (!src) return;
     const caption = img.parentElement?.querySelector('figcaption')?.textContent?.trim() ?? '';
-    img.setAttribute('data-lightbox-open', '');
-    img.setAttribute('data-lightbox-src', src);
+    // The shared lightbox reads the source from the VALUE of data-lightbox-open
+    // (trigger.dataset.lightboxOpen), not from a separate attribute.
+    img.setAttribute('data-lightbox-open', src);
     img.setAttribute('data-lightbox-alt', img.getAttribute('alt') ?? '');
     if (caption) img.setAttribute('data-lightbox-caption', caption);
     img.setAttribute('role', 'button');
