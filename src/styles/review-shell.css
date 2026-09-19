@@ -10,8 +10,10 @@
   --rs-card: #fff;
   --rs-pink: #db2777;
   --rs-pink-deep: #be185d;
-  --rs-green: #16a34a;
-  --rs-orange: #e8760a;
+  /* Badge fills only (see .rs-badge-good / .rs-badge-fair). White text needs
+     4.5:1, so these are one shade down from green-600 / orange-500. */
+  --rs-green: #15803d;
+  --rs-orange: #c2410c;
   color: var(--rs-ink);
   background: var(--rs-canvas);
   /* Keep overflow visible so the review tab bar can use position: sticky.
@@ -1738,4 +1740,78 @@ body.rs-scores-expanded .review-sticky-cta.is-visible {
   .rs-sticky-cta {
     display: none !important;
   }
+}
+
+/* ===========================================================================
+   Dark mode — stage 2.
+
+   The review shell already routes almost everything through its own --rs-*
+   tokens, so dark mode is a remap onto the site's --dk-* set rather than
+   1,741 lines of overrides. Only the values that bypass --rs-* need their own
+   rule, and they are listed below.
+
+   Shipped light: --rs-canvas #f9f9f9 and --rs-card #fff meant the whole
+   review page stayed white in dark mode while the rest of the site went dark.
+   =========================================================================== */
+/* `.review-page` is set on <html>, the same element that carries
+   data-theme, so a descendant selector never matches it. Both forms are
+   listed so the remap holds wherever the class ends up. */
+[data-theme='dark'].review-page,
+[data-theme='dark'] .review-page {
+  --rs-ink: var(--dk-ink);
+  --rs-muted: var(--dk-dim);
+  --rs-subtle: var(--dk-faint);
+  --rs-line: var(--dk-line);
+  --rs-canvas: var(--dk-page);
+  --rs-card: var(--dk-card);
+  --rs-pink: var(--dk-pink);
+  --rs-pink-deep: var(--dk-pink-ink);
+}
+
+/* Surfaces that set a colour directly instead of going through --rs-*. */
+
+[data-theme='dark'] .rs-method-pop {
+  background: var(--dk-card);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 55%);
+}
+
+[data-theme='dark'] .rs-meta-sep {
+  background: var(--dk-line);
+}
+
+/* Media wells: the placeholder behind an image that has not loaded. */
+[data-theme='dark'] .rs-gallery,
+[data-theme='dark'] .character-story-highlights__avatar {
+  background: var(--dk-raise);
+}
+
+[data-theme='dark'] .character-story-highlights__item.is-seen .character-story-highlights__ring {
+  background: var(--dk-line);
+}
+
+[data-theme='dark'] .review-page .char-stories--featured-grid .char-stories__avatar-wrap {
+  background: var(--dk-card);
+}
+
+/* The score card and the facts panel are the page's two raised blocks; on a
+   --dk-page body they need to sit one step up, not on the same plane. */
+[data-theme='dark'] .rs-score-card,
+[data-theme='dark'] .rs-facts {
+  background: var(--dk-card);
+  border-color: var(--dk-line);
+}
+
+/* The Enlarge pill sits on the hero image and keeps a near-white fill in both
+   themes; its label inherits --rs-ink, which is now light, so it went white on
+   white. Pin the label to the pill's own dark ink rather than repainting the
+   pill — it has to stay readable over the photo behind it. */
+[data-theme='dark'] .rs-gallery-enlarge,
+[data-theme='dark'] .rs-gallery-enlarge-label {
+  color: #141317;
+}
+
+/* Green score numerals are a Tailwind text-green-600 on the light page; on
+   --dk-page that drops to 1.38:1. */
+[data-theme='dark'] .pt-sum__score-num.text-green-600 {
+  color: #4ade80;
 }

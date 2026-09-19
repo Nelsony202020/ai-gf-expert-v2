@@ -6,6 +6,8 @@ import OurDreamArticleRelated from './OurDreamArticleRelated.astro';
 import { cdnAsset } from '../../../lib/media/cdn';
 import type { AuthorProfile } from '../../../data/authors';
 import { extractOurDreamGuideToc, estimateGuideReadMinutes } from '../../../lib/ourdream-guide-toc';
+import GuideVideoBlock from '../GuideVideoBlock.astro';
+import { videoSlotIndex, type GuideVideo } from '../../../lib/guides/video';
 
 interface Props {
   title: string;
@@ -24,6 +26,8 @@ interface Props {
   canonical: string;
   currentHref: string;
   hubHref?: string;
+  /** Companion video. Absent means no link, no block, nothing. */
+  video?: GuideVideo;
 }
 
 const {
@@ -37,6 +41,7 @@ const {
   publishedIso,
   canonical,
   currentHref,
+  video,
   hubHref = '/guides/ourdream-ai/',
 } = Astro.props;
 
@@ -45,6 +50,16 @@ const readMinutes = estimateGuideReadMinutes(bodyHtml);
 const avatarUrl = author?.avatar ? cdnAsset(author.avatar) : undefined;
 const dateShort = publishedShort ?? published;
 const authorHref = author?.profileUrl ?? (author?.slug ? `/author/${author.slug}/` : undefined);
+
+/**
+ * The video block belongs after the opening prose. The body arrives as one raw
+ * string, so videoSlotIndex picks the split point (see that function for why it
+ * is not always the first H2) and the block is rendered between the halves. No
+ * slot, or no video, and the body is emitted whole, exactly as before.
+ */
+const videoSlot = video ? videoSlotIndex(bodyHtml) : -1;
+const bodyBeforeVideo = videoSlot > -1 ? bodyHtml.slice(0, videoSlot) : bodyHtml;
+const bodyAfterVideo = videoSlot > -1 ? bodyHtml.slice(videoSlot) : '';
 ---
 
 <div
@@ -113,7 +128,15 @@ const authorHref = author?.profileUrl ?? (author?.slug ? `/author/${author.slug}
       </header>
 
       <article class="ourdream-article-main min-w-0">
-        <div class="ourdream-article-prose" data-glossary-decorate data-ourdream-prose set:html={bodyHtml} />
+        {videoSlot > -1 ? (
+          <div class="ourdream-article-prose" data-glossary-decorate data-ourdream-prose>
+            <Fragment set:html={bodyBeforeVideo} />
+            <GuideVideoBlock video={video!} authorSlug={author?.slug} />
+            <Fragment set:html={bodyAfterVideo} />
+          </div>
+        ) : (
+          <div class="ourdream-article-prose" data-glossary-decorate data-ourdream-prose set:html={bodyHtml} />
+        )}
       </article>
 
       <OurDreamArticleRelated currentHref={currentHref} hubHref={hubHref} />

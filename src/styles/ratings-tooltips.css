@@ -318,12 +318,17 @@
   line-height: 1.2;
 }
 
+/* Score chips carry white text. At green-600 #16a34a that is 3.07:1 and at
+   orange #f97316 / #e8760a it is 2.61 / 2.79 — both below AA in BOTH themes,
+   which is why stage 1 left them. One shade darker keeps the hue and the white
+   text and clears 4.5:1 (green-700 4.68, orange-700 4.83). Red #dc2626 is
+   already 4.51 and is untouched. */
 .rt-score-chip--good {
-  background: #16a34a;
+  background: #15803d;
 }
 
 .rt-score-chip--fair {
-  background: #f97316;
+  background: #c2410c;
 }
 
 .rt-score-chip--poor {
@@ -1585,6 +1590,11 @@ a.rt-inline-test-link.rt-comp-name {
   font-variation-settings: 'FILL' 0, 'wght' 500;
 }
 
+/* :where keeps this at base specificity so --past / --here green still wins */
+:where([data-theme='dark']) .rt-pipeline__node-icon {
+  color: var(--dk-dim);
+}
+
 .rt-pipeline__connector {
   position: relative;
   width: 2px;
@@ -1663,6 +1673,11 @@ a.rt-inline-test-link.rt-comp-name {
 
 .rt-pipeline__step--here .rt-pipeline__label {
   color: #14532d;
+}
+
+[data-theme='dark'] .rt-pipeline__step--here .rt-pipeline__label,
+[data-theme='dark'] .rt-pipeline__step--here .rt-pipeline__sub {
+  color: var(--dk-ink);
 }
 
 .rt-pipeline__step--here .rt-pipeline__sub {
