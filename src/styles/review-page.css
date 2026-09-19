@@ -44,6 +44,14 @@
 [data-theme='dark'] [data-tabbar].review-tabbar {
   background: var(--color-background);
   border-bottom-color: var(--dark-border-subtle);
+  /* Tab labels read the light review-shell tokens; the bar itself is dark */
+  --rs-muted: var(--dk-dim);
+  --rs-ink: var(--dk-ink);
+}
+
+/* Review hero is still a light surface in dark mode — keep its share trigger dark-on-light */
+[data-theme='dark'] .rs-hero .share-menu__trigger {
+  color: var(--rs-muted);
 }
 
 [data-theme='dark'] .site-header.site-header--joined-tabs,

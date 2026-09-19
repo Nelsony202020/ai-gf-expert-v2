@@ -1854,7 +1854,8 @@ body.roundup-sheet-open {
 }
 
 [data-theme='dark'] .roundup-selection__pillar-icon {
-  background: rgb(219 39 119 / 14%);
+  background: var(--dk-raise);
+  color: var(--dk-pink-ink);
 }
 
 .roundup-quick-card__score {
@@ -2366,6 +2367,10 @@ body.roundup-sheet-open {
   text-transform: uppercase;
   color: rgb(74 66 60 / 88%);
   flex-shrink: 0;
+}
+
+[data-theme='dark'] .roundup-at-glance__heading {
+  color: var(--dk-dim);
 }
 
 .roundup-at-glance__heading-rule {
