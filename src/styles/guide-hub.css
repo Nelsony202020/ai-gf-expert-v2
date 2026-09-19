@@ -35,10 +35,27 @@
   color: var(--hub-on-ink);
 }
 
-.guide-hub__glow {
-  /* Homepage keeps its own .home-v2__glow. Hide this hub blob on every
-     internal page (reviews, guides, hubs, brand, best-apps, articles). */
-  display: none !important;
+/*
+ * Brand hub hero glow — opt-in, and structurally unable to leak.
+ *
+ * It renders only where `.guide-hub--brand` is set, which is only the two
+ * brand hub components (OurDreamGuideHub and BrandGuideHub). The shared
+ * GlobalSiteHeader no longer emits any glow markup, so there is nothing left
+ * to suppress and no `!important` is needed.
+ *
+ * Two stops, always: --hub-glow-hue is the brand's outer bloom and it resolves
+ * into Expert pink at the core, where the H1 and the search field sit. The
+ * brand colour must never read as a flat field — this matters most for Nectar,
+ * because orange/red is a reserved score colour on this site and the glow has
+ * to read as atmosphere, not as a score.
+ */
+.guide-hub--brand .guide-hub__hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.guide-hub--brand .guide-hub__hero::before {
+  content: '';
   position: absolute;
   left: 50%;
   top: 40px;
@@ -47,13 +64,72 @@
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 0;
+  background:
+    radial-gradient(
+      ellipse 52% 58% at 50% 46%,
+      rgb(219 39 119 / 30%) 0%,
+      rgb(219 39 119 / 16%) 34%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 78% 86% at 50% 50%,
+      hsl(var(--hub-glow-hue, 333) 82% 56% / 22%) 0%,
+      hsl(var(--hub-glow-hue, 333) 78% 48% / 10%) 46%,
+      transparent 74%
+    );
 }
 
-.guide-hub__glow img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
+@media (prefers-reduced-motion: no-preference) {
+  .guide-hub--brand .guide-hub__hero::before {
+    transition: opacity 240ms ease-out;
+  }
+}
+
+/*
+ * Index-hub hero glow — /guides/ and /reviews/ only, via GlobalSiteHeader's
+ * `heroGlow` prop. No new glow system: the blob and the cursor layer are the
+ * homepage's own `.home-v2__glow` / `.home-v2__cursor-glow` elements, painted by
+ * home-desktop.css (which this header already links). All that is added here is
+ * the `.is-glowing` key, moved from `.home-v2__hero` onto the guide-hub hero.
+ *
+ * These are site hubs, not brand pages, so the colour is Expert pink as shipped
+ * — no --hub-glow-hue involved. home-desktop.css hides `.home-v2__cursor-glow`
+ * under (hover: none), (pointer: coarse) and prefers-reduced-motion, so touch
+ * devices get the static blob on its own.
+ */
+.guide-hub--expert-glow .guide-hub__hero {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+}
+
+.guide-hub--expert-glow .guide-hub__hero > .home-v2__glow {
+  right: -120px;
+  top: -140px;
+  width: 560px;
+  height: 560px;
+  opacity: 0.85;
+}
+
+.guide-hub--expert-glow .guide-hub__hero.is-glowing .home-v2__cursor-glow {
+  opacity: 1;
+}
+
+/* Header chrome and hero copy sit above both decorative layers. */
+.guide-hub--expert-glow .guide-hub__hero > .home-v2__header,
+.guide-hub--expert-glow .guide-hub__hero > .guide-hub__hero-body {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 767px) {
+  .guide-hub--expert-glow .guide-hub__hero > .home-v2__glow {
+    right: -160px;
+    top: -120px;
+    width: 420px;
+    height: 420px;
+    opacity: 0.7;
+  }
 }
 
 .guide-hub .home-v2__header {
@@ -786,10 +862,20 @@
   background: var(--hub-page);
 }
 
-html:has(.guide-hub),
-body:has(.guide-hub) {
-  background-color: #141317;
-}
+/*
+ * REMOVED: html:has(.guide-hub), body:has(.guide-hub) { background-color: #141317 }
+ *
+ * guide-hub.css is injected by the global header, and that header wraps every
+ * non-homepage page in `.guide-hub.guide-hub--site-chrome`. So this :has()
+ * repainted html and body dark on EVERY page while the text tokens stayed at
+ * their light values — #1b1b1b text on #141317, about 1.05:1. The H1, the lede
+ * and every card title on /guides/ and /reviews/ were invisible.
+ *
+ * Nothing replaces it: `.guide-hub` already sets `background: var(--hub-page)`,
+ * which is themed (#f7f7f6 light, #141317 under [data-theme='dark']), and the
+ * hub's dark band is painted by `.guide-hub__hero` via --hub-ink. The page
+ * background is left to --color-background, where it belongs.
+ */
 
 .home-v2:has(.guide-hub) .site-footer {
   position: relative;
@@ -971,7 +1057,7 @@ body:has(.guide-hub) {
     display: none !important;
   }
 
-  .guide-hub__glow {
+  .guide-hub--brand .guide-hub__hero::before {
     top: 60px;
     width: min(1100px, 100%);
     height: 520px;

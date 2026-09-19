@@ -1,5 +1,6 @@
 import { closeAnimatedDrawer } from '../../lib/drawer/animate';
 import { bindScrollFade } from '../../lib/ui/scrollFade';
+import { lockScroll, unlockScroll } from '../../lib/ui/scrollLock';
 
 function trapFocus(panel: HTMLElement) {
   const focusable = panel.querySelectorAll<HTMLElement>(
@@ -35,25 +36,28 @@ function focusWithoutScroll(el: HTMLElement | null | undefined) {
 let releaseFocus: (() => void) | null = null;
 let lastTrigger: HTMLElement | null = null;
 let releaseScrollFade: (() => void) | null = null;
-let lockedScrollY = 0;
 let backgroundScrollLocked = false;
 
+/**
+ * Freeze the page behind the drawer. The shared lock in lib/ui/scrollLock keeps
+ * the scroll offset untouched, so there is no restore step and therefore no
+ * jump — see the note at the top of that file. The classes stay for styling
+ * hooks only; they no longer carry `position: fixed`.
+ */
 function lockBackgroundScroll() {
   if (backgroundScrollLocked) return;
-  lockedScrollY = window.scrollY;
-  document.body.style.top = `-${lockedScrollY}px`;
+  backgroundScrollLocked = true;
+  lockScroll();
   document.documentElement.classList.add('ratings-drawer-open');
   document.body.classList.add('ratings-drawer-open');
-  backgroundScrollLocked = true;
 }
 
 function unlockBackgroundScroll() {
   if (!backgroundScrollLocked) return;
+  backgroundScrollLocked = false;
   document.documentElement.classList.remove('ratings-drawer-open');
   document.body.classList.remove('ratings-drawer-open');
-  document.body.style.top = '';
-  backgroundScrollLocked = false;
-  window.scrollTo({ top: lockedScrollY, left: 0, behavior: 'auto' });
+  unlockScroll();
 }
 
 function mountDrawerOnBody(root: HTMLElement) {

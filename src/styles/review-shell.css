@@ -261,11 +261,14 @@
   min-width: 0;
 }
 
-.rs-featured-in--under-image {
+/* Mobile: only the copy below the score card. These need two classes — the
+   base .rs-featured-in rule later in this file sets display and would
+   otherwise win on source order, which is why both used to show. */
+.rs-featured-in.rs-featured-in--under-image {
   display: none;
 }
 
-.rs-featured-in--after-module {
+.rs-featured-in.rs-featured-in--after-module {
   display: inline-flex;
 }
 
@@ -644,11 +647,20 @@
   border-bottom-color: var(--rs-pink);
 }
 
+/*
+ * Block padding only — the side gutter belongs to the utilities.
+ *
+ * The element is `<section class="section-container px-4 md:px-8 rs-overview">`,
+ * and the `padding` SHORTHAND here reset padding-left/right to 0, cancelling
+ * px-4. Overview was the only tab that did this — Ratings and Full Review set
+ * their own 24px side padding — so on mobile its heading and body copy ran
+ * edge to edge and the text was clipped at both sides.
+ */
 .rs-overview {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  padding: 32px 0 56px;
+  padding-block: 32px 56px;
 }
 
 .rs-overview-main {
@@ -951,11 +963,12 @@ ul.rs-list {
     gap: 14px;
   }
 
-  .rs-featured-in--under-image {
+  /* Desktop: only the copy under the image. Two classes, to beat the base rule. */
+  .rs-featured-in.rs-featured-in--under-image {
     display: inline-flex;
   }
 
-  .rs-featured-in--after-module {
+  .rs-featured-in.rs-featured-in--after-module {
     display: none;
   }
 
@@ -1078,7 +1091,8 @@ ul.rs-list {
     display: grid;
     grid-template-columns: minmax(0, 840px) 320px;
     gap: 40px;
-    padding: 48px 0 96px;
+    /* Same reason as the base block: md:px-8 supplies the side gutter. */
+    padding-block: 48px 96px;
     align-items: start;
   }
 
@@ -1279,6 +1293,44 @@ ul.rs-list {
 .rs-gallery .video-review-trigger__mascot,
 .rs-gallery .video-review-trigger__arrow {
   display: none;
+}
+
+/* Figma "Brand / Avatar Herman YouTube" — 42px frame, 38.5px round avatar with
+   the YouTube badge pinned at its lower right. These had no styles at all, so
+   the avatar rendered square and the play badge floated loose. */
+.review-hero .video-review-trigger__mascot,
+.rs-gallery .video-review-trigger__mascot {
+  position: relative;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+}
+
+.review-hero .video-review-trigger__mascot img,
+.rs-gallery .video-review-trigger__mascot img {
+  width: 38.5px;
+  height: 38.5px;
+  border-radius: 999px;
+  object-fit: cover;
+  background: #0e0e12;
+}
+
+.review-hero .video-review-trigger__play,
+.rs-gallery .video-review-trigger__play {
+  position: absolute;
+  left: 23.625px;
+  top: 21.875px;
+  display: block;
+  width: 15.75px;
+  height: 15.75px;
+  pointer-events: none;
+}
+
+.review-hero .video-review-trigger__play svg,
+.rs-gallery .video-review-trigger__play svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 @media (min-width: 768px) {
@@ -1519,12 +1571,59 @@ body.rs-scores-expanded .review-sticky-cta.is-visible {
   color: var(--rs-muted);
 }
 
-.review-page .char-stories--featured-grid .char-stories__carousel,
-.review-page .char-stories--featured-grid .char-stories__track {
+.review-page .char-stories--featured-grid .char-stories__carousel {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
+  min-width: 0;
   overflow: visible;
+}
+
+/*
+ * The row swipes as soon as it stops fitting, and not before.
+ *
+ * It used to wrap to a second line, so a fourth character in a ~330px sidebar
+ * dropped below the fold of the panel and the component read as if it only had
+ * three. `nowrap` + `overflow-x: auto` means 1-3 sit still with no scrollbar and
+ * nothing to swipe, and the fourth turns the row into a native horizontal
+ * scroller — touch drag, trackpad and shift-wheel, no JS and no magic count.
+ * Vertical padding keeps the 3px story ring and the focus outline off the
+ * clipping edge that overflow-x introduces.
+ */
+.review-page .char-stories--featured-grid .char-stories__track {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+  /* The base rule sets width: max-content for the auto-scrolling marquee. Left
+     in place here it defeats overflow-x — the track just grows to its content
+     and spills out of the Overview panel, which is what pushed the page wider
+     than the viewport on mobile. min-width: 0 is needed too: this track is a
+     flex child, and flex children refuse to shrink below their content without
+     it. */
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding-block: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.review-page .char-stories--featured-grid .char-stories__track::-webkit-scrollbar {
+  display: none;
+}
+
+.review-page .char-stories--featured-grid .char-stories__fg-item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-page .char-stories--featured-grid .char-stories__track {
+    scroll-behavior: auto;
+  }
 }
 
 .review-page .char-stories--featured-grid .char-stories__fg-item {

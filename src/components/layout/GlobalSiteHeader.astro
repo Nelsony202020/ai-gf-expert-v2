@@ -2,18 +2,34 @@
 /**
  * Global site header — same chrome as /guides/ourdream-ai/ (guide-hub hero + ContentPageHeader).
  * Homepage uses HomeDesktopHeader inside HomeDesktopHero only; every other page uses this via Header.astro.
+ *
+ * This header renders NO hero glow by default. It used to render one
+ * unconditionally, and because it is on every non-homepage page that glow had to
+ * be killed from guide-hub.css. Brand hubs now get theirs from a pseudo-element
+ * under `.guide-hub--brand`; the two index hubs opt in with `heroGlow`. Both are
+ * opt-in, so nothing can leak onto a page that did not ask for it.
  */
 import ContentPageHeader from './ContentPageHeader.astro';
+import HeroCursorGlow from './HeroCursorGlow.astro';
 import homeDesktopStyles from '../../styles/home-desktop.css?url';
 import guideHubStyles from '../../styles/guide-hub.css?url';
 
 interface Props {
   /** Set false when already inside `<div class="guide-hub">` (product hub pages). */
   wrapGuideHub?: boolean;
+  /**
+   * Expert-pink hero glow. Opt-in, and only /guides/ and /reviews/ pass it —
+   * these are site hubs, not brand pages, so they use the Expert colour rather
+   * than a per-brand hue.
+   */
+  heroGlow?: boolean;
 }
 
-const { wrapGuideHub = true } = Astro.props;
+const { wrapGuideHub = true, heroGlow = false } = Astro.props;
 const hasBodySlot = Astro.slots.has('default');
+const wrapClass = ['guide-hub', 'guide-hub--site-chrome', heroGlow && 'guide-hub--expert-glow']
+  .filter(Boolean)
+  .join(' ');
 ---
 
 <link rel="stylesheet" href={homeDesktopStyles} />
@@ -21,11 +37,9 @@ const hasBodySlot = Astro.slots.has('default');
 
 {
   wrapGuideHub ? (
-    <div class="guide-hub guide-hub--site-chrome">
-      <section class="guide-hub__hero">
-        <div class="guide-hub__glow" aria-hidden="true">
-          <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
-        </div>
+    <div class={wrapClass}>
+      <section class="guide-hub__hero" data-hero-glow={heroGlow ? '' : undefined}>
+        {heroGlow ? <HeroCursorGlow /> : null}
         <ContentPageHeader />
         {hasBodySlot ? (
           <div class="guide-hub__hero-body">
@@ -36,9 +50,6 @@ const hasBodySlot = Astro.slots.has('default');
     </div>
   ) : (
     <section class="guide-hub__hero">
-      <div class="guide-hub__glow" aria-hidden="true">
-        <img src="/guides/hub/glow.svg" width="1100" height="520" alt="" />
-      </div>
       <ContentPageHeader />
       {hasBodySlot ? (
         <div class="guide-hub__hero-body">

@@ -251,6 +251,7 @@
 </style>
 
 <script>
+  import { lockScroll, unlockScroll } from '../../lib/ui/scrollLock';
   import { playOverlayClose, playOverlayOpen } from '../../lib/ui/overlayTransition.ts';
   import { deferUntilIdle } from '../../lib/ui/deferUntilIdle';
 
@@ -352,7 +353,7 @@
       lightbox.classList.remove('hidden', 'is-visible');
       lightbox.classList.add('flex');
       lightbox.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
+      lockScroll();
       renderItem('none');
       updateNavUi();
       playOverlayOpen(lightbox);
@@ -369,7 +370,7 @@
         img.classList.remove('hidden', 'is-changing', 'from-left', 'from-right');
         items = [];
         index = 0;
-        document.body.style.overflow = '';
+        unlockScroll();
         updateNavUi();
       });
     }

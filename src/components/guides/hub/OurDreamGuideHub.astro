@@ -22,7 +22,7 @@ const productName = product?.name || ourdreamHubMeta.productName;
 const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
 ---
 
-<div class="guide-hub">
+<div class="guide-hub guide-hub--brand" style={`--hub-glow-hue: ${ourdreamHubMeta.glowHue}`}>
   <GlobalSiteHeader wrapGuideHub={false}>
       <h1 class="guide-hub__title">{ourdreamHubMeta.title}</h1>
       <p class="guide-hub__lede">{ourdreamHubMeta.description}</p>
@@ -69,7 +69,7 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
             {ourdreamHubMeta.visitLabel}
             <HomeIcon name="arrow-up-right" size={16} />
           </AffiliateLink>
-          <a class="guide-hub__review-link" href={ourdreamHubMeta.reviewHref}>Read review →</a>
+          <a class="guide-hub__review-link" href={ourdreamHubMeta.reviewHref}>{ourdreamHubMeta.productName} Review →</a>
         </div>
       </div>
   </GlobalSiteHeader>
@@ -81,7 +81,7 @@ const hubGuidesJson = JSON.stringify(ourdreamHubGuides);
         <span>{productName}</span>
       </div>
       <div class="guide-hub__sticky-bar-actions">
-        <a class="guide-hub__sticky-review" href={ourdreamHubMeta.reviewHref}>Read review →</a>
+        <a class="guide-hub__sticky-review" href={ourdreamHubMeta.reviewHref}>{ourdreamHubMeta.productName} Review →</a>
         <AffiliateLink class="guide-hub__sticky-visit" href={visitHref} target="_blank">
           {ourdreamHubMeta.visitLabel}
           <HomeIcon name="arrow-up-right" size={16} />

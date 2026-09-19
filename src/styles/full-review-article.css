@@ -165,13 +165,12 @@
     0 24px 48px -8px rgba(21, 17, 26, 0.16);
 }
 
-@media (max-width: 1099px) {
-  .review-jump {
-    position: sticky;
-    top: calc(6.75rem + env(safe-area-inset-top, 0px));
-    z-index: 18;
-  }
-}
+/*
+ * Deliberately NOT sticky. Figma 530:24242: "Nothing else in the review shell
+ * is sticky … If a second navigation system appears, the implementation is
+ * wrong." The in-article jump list scrolls away with the article; the review
+ * tab bar is the page's only sticky navigation.
+ */
 
 @media (min-width: 1100px) {
   .review-jump {
@@ -257,7 +256,7 @@
   display: block;
 }
 
-/* Desktop sticky TOC */
+/* Desktop in-article TOC rail — in normal flow, never sticky (see above). */
 .review-toc {
   display: none;
 }
@@ -269,8 +268,6 @@
     gap: 12px;
     width: 240px;
     padding-top: 8px;
-    position: sticky;
-    top: calc(7.5rem + env(safe-area-inset-top, 0px));
     align-self: start;
   }
 }
@@ -431,7 +428,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  scroll-margin-top: 8rem;
+  scroll-margin-top: calc(var(--review-tabbar-height, 3.5rem) + 1.5rem);
 }
 
 .review-blocks .review-heading,
@@ -440,7 +437,7 @@
 .review-blocks h4,
 .review-section h3 {
   margin: 0;
-  scroll-margin-top: 8rem;
+  scroll-margin-top: calc(var(--review-tabbar-height, 3.5rem) + 1.5rem);
   font-family: var(--fr-display);
   font-weight: 600;
   font-size: 19px;
