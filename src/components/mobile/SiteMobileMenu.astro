@@ -6,7 +6,6 @@ import {
   SITE_MOBILE_MENU_COMPANY_LINKS,
 } from '../../data/site-mobile-menu';
 import { loadComparisonProducts } from '../../lib/content/comparisonProducts';
-import { buildSearchIndex } from '../../data/site-search';
 import SocialIcon from '../ui/SocialIcon.astro';
 import ThemeToggle from '../ui/ThemeToggle.astro';
 import MenuIcon from './MenuIcon.astro';
@@ -15,11 +14,10 @@ const publishedProducts = await loadComparisonProducts();
 const groups = buildSiteMobileMenu(buildBrandNav(publishedProducts));
 
 /*
- * The site has no /search/ route — the header search is a client-side dropdown
- * over this same prebuilt index. The menu search uses the index directly rather
- * than posting to a URL that does not exist.
+ * No search field here on purpose. The header search ([data-header-search]) is
+ * the site's one real search, it returns live results as you type, and it is
+ * one tap from here. A second field in the menu was decorative.
  */
-const searchIndex = buildSearchIndex(publishedProducts);
 
 /** Only real channels — a row that says "Coming soon" earns nothing. */
 const channels = BRAND_CHANNELS.filter((channel) => Boolean(channel.href));
@@ -33,43 +31,18 @@ const isCurrent = (href: string) => (href.replace(/\/+$/, '') || '/') === here;
   <button type="button" class="site-mobile-menu__backdrop" data-site-menu-close tabindex="-1" aria-label="Close menu"></button>
   <div class="site-mobile-menu__panel" role="dialog" aria-modal="true" aria-labelledby="site-mobile-menu-title" data-site-menu-panel>
     <header class="site-mobile-menu__head">
-      <p id="site-mobile-menu-title" class="site-mobile-menu__brand">AI Girlfriend Expert</p>
+      <span
+        id="site-mobile-menu-title"
+        class="site-mobile-menu__brand"
+        role="img"
+        aria-label="AI Girlfriend Expert"
+      ></span>
       <button type="button" class="site-mobile-menu__close" data-site-menu-close aria-label="Close menu">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4Z" />
         </svg>
       </button>
     </header>
-
-    {/* Search lives here on mobile; the header search is hidden below 1024px. */}
-    <div class="site-mobile-menu__search-wrap">
-      <form
-        class="site-mobile-menu__search"
-        role="search"
-        data-site-menu-search
-        onsubmit="return false"
-      >
-        <MenuIcon name="search" size={17} class="site-mobile-menu__search-icon" />
-        <input
-          type="search"
-          class="site-mobile-menu__search-input"
-          data-site-menu-search-input
-          placeholder="Search reviews and guides"
-          autocomplete="off"
-          spellcheck="false"
-          aria-label="Search reviews and guides"
-          aria-controls="site-menu-search-results"
-          aria-autocomplete="list"
-        />
-      </form>
-      <ul
-        class="site-mobile-menu__search-results"
-        id="site-menu-search-results"
-        data-site-menu-search-results
-        role="listbox"
-        hidden
-      ></ul>
-    </div>
 
     <nav class="site-mobile-menu__nav" aria-label="Site">
       {groups.map((group) => (
@@ -110,7 +83,7 @@ const isCurrent = (href: string) => (href.replace(/\/+$/, '') || '/') === here;
         {channels.map((channel) => (
           <a
             href={channel.href}
-            class="site-mobile-menu__channel"
+            class:list={['site-mobile-menu__channel', `site-mobile-menu__channel--${channel.icon}`]}
             data-site-menu-link
             target="_blank"
             rel="noopener noreferrer"
@@ -145,10 +118,6 @@ const isCurrent = (href: string) => (href.replace(/\/+$/, '') || '/') === here;
     </footer>
   </div>
 </div>
-
-<script define:vars={{ searchIndex }}>
-  window.__siteMenuSearchIndex = searchIndex;
-</script>
 
 <script>
   const FOCUSABLE = 'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])';
@@ -252,52 +221,6 @@ const isCurrent = (href: string) => (href.replace(/\/+$/, '') || '/') === here;
     });
   }
 
-  function initSiteMenuSearch() {
-    const input = document.querySelector<HTMLInputElement>('[data-site-menu-search-input]');
-    const list = document.querySelector<HTMLElement>('[data-site-menu-search-results]');
-    if (!input || !list || input.dataset.bound === 'true') return;
-    input.dataset.bound = 'true';
-
-    const index: Array<{ label: string; href: string; meta?: string }> =
-      (window as unknown as { __siteMenuSearchIndex?: unknown }).__siteMenuSearchIndex as never[] ?? [];
-
-    const render = (query: string) => {
-      const q = query.trim().toLowerCase();
-      if (q.length < 2) {
-        list.hidden = true;
-        list.innerHTML = '';
-        return;
-      }
-      const hits = index.filter((item) => item.label.toLowerCase().includes(q)).slice(0, 8);
-      if (hits.length === 0) {
-        list.hidden = false;
-        list.innerHTML = '<li class="site-mobile-menu__search-empty">No matches</li>';
-        return;
-      }
-      list.hidden = false;
-      list.innerHTML = hits
-        .map(
-          (item) =>
-            `<li role="option"><a class="site-mobile-menu__search-item" href="${item.href}" data-site-menu-link>` +
-            `<span class="site-mobile-menu__search-item-title"></span>` +
-            `<span class="site-mobile-menu__search-item-meta"></span></a></li>`,
-        )
-        .join('');
-      // Set text via textContent so labels are never interpolated as markup.
-      list.querySelectorAll('li').forEach((li, i) => {
-        const hit = hits[i];
-        li.querySelector('.site-mobile-menu__search-item-title')!.textContent = hit.label;
-        li.querySelector('.site-mobile-menu__search-item-meta')!.textContent = hit.meta ?? '';
-      });
-    };
-
-    input.addEventListener('input', () => render(input.value));
-  }
-
   initSiteMobileMenu();
-  initSiteMenuSearch();
-  document.addEventListener('astro:page-load', () => {
-    initSiteMobileMenu();
-    initSiteMenuSearch();
-  });
+  document.addEventListener('astro:page-load', initSiteMobileMenu);
 </script>

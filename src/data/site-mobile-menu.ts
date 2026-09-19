@@ -4,7 +4,7 @@ export interface SiteMobileMenuLink {
   label: string;
   href: string;
   /** Lucide key from LUCIDE_MENU_ICONS. Omitted where no glyph is honest. */
-  icon?: 'trophy' | 'star' | 'book-open' | 'sparkles' | 'book-marked';
+  icon?: 'trophy' | 'star' | 'book-open';
 }
 
 export interface SiteMobileMenuGroup {
@@ -19,8 +19,10 @@ export interface SiteMobileMenuGroup {
 export function buildSiteMobileMenu(brandNav: BrandNav): SiteMobileMenuGroup[] {
   const ourDream = brandNav.popular.find((brand) => brand.slug === 'ourdream-ai');
   const discover: SiteMobileMenuLink[] = [];
-  if (ourDream) discover.push({ label: 'OurDream AI', href: ourDream.href, icon: 'sparkles' });
-  discover.push({ label: 'Glossary', href: '/glossary/', icon: 'book-marked' });
+  // No icons: "OurDream AI" is a brand name and no glyph denotes it — sparkles
+  // would be decoration, not meaning. Same call that left Testing iconless.
+  if (ourDream) discover.push({ label: 'OurDream AI', href: ourDream.href });
+  discover.push({ label: 'Glossary', href: '/glossary/' });
 
   return [
     {

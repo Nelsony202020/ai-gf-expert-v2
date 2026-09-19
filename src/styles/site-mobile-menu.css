@@ -86,16 +86,14 @@ body.site-menu-open {
   gap: 12px;
   margin-bottom: 14px;
   padding: 0 var(--smm-gutter) 10px;
-  border-bottom: 1px solid var(--smm-hairline);
 }
 
 .site-mobile-menu__brand {
-  margin: 0;
-  font-family: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--smm-ink);
+  /* Same asset the site header uses, so the panel matches what was tapped. */
+  display: block;
+  width: 84px;
+  height: 46px;
+  background: url('/brand/girlfriend-expert-logo-white.webp') left center / contain no-repeat;
 }
 
 .site-mobile-menu__close {
@@ -115,98 +113,6 @@ body.site-menu-open {
 .site-mobile-menu__close:focus-visible {
   outline: 2px solid var(--smm-focus);
   outline-offset: 2px;
-}
-
-/* ---- Search (moved out of the mobile header) -------------------------- */
-
-.site-mobile-menu__search {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 46px;
-  margin: 0 var(--smm-gutter) 22px;
-  padding: 0 14px;
-  border: 1px solid var(--smm-hairline);
-  border-radius: 12px;
-  background: var(--smm-surface-raised);
-}
-
-.site-mobile-menu__search-icon {
-  flex-shrink: 0;
-  color: var(--smm-ink-dim);
-}
-
-.site-mobile-menu__search-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 100%;
-  border: 0;
-  background: transparent;
-  color: var(--smm-ink);
-  font: 400 15px/1.3 var(--font-sans);
-}
-
-.site-mobile-menu__search-input::placeholder {
-  color: var(--smm-ink-dim);
-}
-
-.site-mobile-menu__search-input:focus {
-  outline: none;
-}
-
-.site-mobile-menu__search:focus-within {
-  border-color: var(--smm-focus);
-}
-
-.site-mobile-menu__search-wrap {
-  position: relative;
-}
-
-.site-mobile-menu__search-results {
-  list-style: none;
-  margin: -14px var(--smm-gutter) 22px;
-  padding: 6px;
-  border: 1px solid var(--smm-hairline);
-  border-radius: 12px;
-  background: var(--smm-surface-raised);
-}
-
-.site-mobile-menu__search-results[hidden] {
-  display: none;
-}
-
-.site-mobile-menu__search-item {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 44px;
-  padding: 10px 10px;
-  border-radius: 8px;
-  color: var(--smm-ink);
-  text-decoration: none;
-}
-
-.site-mobile-menu__search-item:hover,
-.site-mobile-menu__search-item:focus-visible {
-  background: rgb(255 255 255 / 6%);
-  outline: none;
-}
-
-.site-mobile-menu__search-item-title {
-  font: 500 15px/1.3 var(--font-sans);
-}
-
-.site-mobile-menu__search-item-meta {
-  flex-shrink: 0;
-  font: 400 12px/1.3 var(--font-sans);
-  color: var(--smm-ink-dim);
-}
-
-.site-mobile-menu__search-empty {
-  padding: 12px 10px;
-  font: 400 14px/1.3 var(--font-sans);
-  color: var(--smm-ink-dim);
 }
 
 /* ---- Nav groups ------------------------------------------------------- */
@@ -232,10 +138,11 @@ body.site-menu-open {
   padding: 0;
 }
 
-/* Adjacent rows share one hairline instead of stacking two. */
-.site-mobile-menu__rows li + li {
-  margin-top: -1px;
-}
+/*
+ * A divider only ever separates two adjacent rows in the same group. Never
+ * above the first row, never below the last, never around a group label —
+ * the 26px gap between groups is what separates groups.
+ */
 
 .site-mobile-menu__row {
   position: relative;
@@ -243,9 +150,12 @@ body.site-menu-open {
   align-items: center;
   gap: 12px;
   min-height: 44px;
-  border-block: 1px solid var(--smm-hairline);
   color: var(--smm-ink);
   text-decoration: none;
+}
+
+.site-mobile-menu__rows li:not(:last-child) .site-mobile-menu__row {
+  border-bottom: 1px solid var(--smm-hairline);
 }
 
 .site-mobile-menu__row-label {
@@ -319,7 +229,10 @@ body.site-menu-open {
 
 .site-mobile-menu__channels {
   display: grid;
-  gap: 4px;
+}
+
+.site-mobile-menu__channel:not(:last-child) {
+  border-bottom: 1px solid var(--smm-hairline);
 }
 
 .site-mobile-menu__channel {
@@ -341,12 +254,25 @@ body.site-menu-open {
   border: 1px solid var(--smm-hairline);
   border-radius: 8px;
   background: var(--smm-surface-raised);
-  color: var(--smm-ink-muted);
 }
 
+/*
+ * These are the real marks from ui/SocialIcon.astro. They were already the
+ * correct paths, but at 16px in muted grey a YouTube mark reads as a generic
+ * play button — the point of a brand mark is recognition at a glance, so give
+ * them their own colour and a little more size.
+ */
 .site-mobile-menu__channel-icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
+}
+
+.site-mobile-menu__channel--youtube .site-mobile-menu__channel-icon {
+  color: #ff0033;
+}
+
+.site-mobile-menu__channel--tiktok .site-mobile-menu__channel-icon {
+  color: var(--smm-ink);
 }
 
 .site-mobile-menu__channel-copy {
@@ -439,14 +365,6 @@ a.site-mobile-menu__channel:hover .site-mobile-menu__channel-name {
 }
 
 /* ---- Breakpoints ------------------------------------------------------ */
-
-/* Search moved into the menu on mobile. The header search component is left
-   intact and keeps working from 1024px up — it is only hidden below that. */
-@media (max-width: 1023px) {
-  [data-site-header] [data-header-search] {
-    display: none;
-  }
-}
 
 @media (min-width: 1024px) {
   .site-mobile-menu {
