@@ -88,7 +88,18 @@ function resolveForcedYoutubeHubDestination(
 }
 
 export const GET: APIRoute = async ({ params, url }) => {
-  const rawSlug = params.slug!;
+  try {
+    return await handleGo(params.slug!, url);
+  } catch {
+    /* Every `return` below carries NOINDEX, but a throw does not: an unhandled
+       error here becomes Astro's 500 page, which ships no X-Robots-Tag at all.
+       Now that /go/ is crawlable, a transient DB failure while Googlebot is
+       fetching would hand it an indexable response. Fail closed instead. */
+    return redirectTo('/');
+  }
+};
+
+async function handleGo(rawSlug: string, url: URL): Promise<Response> {
   const slug = SLUG_ALIASES[rawSlug] ?? rawSlug;
   if (!isDbConfigured()) return redirectTo('/');
 
@@ -146,4 +157,4 @@ export const GET: APIRoute = async ({ params, url }) => {
   }
 
   return redirectTo(destinationUrl);
-};
+}

@@ -755,6 +755,8 @@ const ROUNDUP_PAGE_SLUGS = new Set(['ai-girlfriend']);
 export interface PublishedRoundupSummary {
   title: string;
   slug: string;
+  /** DB updatedAt in ms — the roundup's real content-updated time, for <lastmod>. */
+  updatedAtMs?: number;
 }
 
 /**
@@ -774,7 +776,11 @@ export async function loadPublishedRoundupSummaries(): Promise<PublishedRoundupS
     });
     return (roundups as any[])
       .filter((r) => !r.deletedAt && r.slug && ROUNDUP_PAGE_SLUGS.has(String(r.slug)))
-      .map((r) => ({ title: String(r.title ?? r.slug), slug: String(r.slug) }));
+      .map((r) => ({
+        title: String(r.title ?? r.slug),
+        slug: String(r.slug),
+        updatedAtMs: Number(r.updatedAt) || undefined,
+      }));
   } catch (error) {
     console.error('[content] published roundups load failed — using file data', error);
     return fallback;
