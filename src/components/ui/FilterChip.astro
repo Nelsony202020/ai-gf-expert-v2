@@ -1,0 +1,32 @@
+---
+/**
+ * Filter Chip — the site's one filter chip (Figma "Filter Chip", 486:2084).
+ * Used by the Prompt Vault and the Glossary. Default = white + hairline, Hover = pale
+ * pink, Active = pale pink + pink label, Focus = pink ring outside the chip.
+ *
+ * Renders a <button>. Behaviour (which chip is active) belongs to the page: it toggles
+ * `is-active` + `aria-pressed`. Extra attributes (data-*) pass straight through.
+ */
+import '../../styles/filter-chip.css';
+
+interface Props {
+  label: string;
+  count?: number | string;
+  active?: boolean;
+  size?: 'default' | 'compact';
+  class?: string;
+  [key: string]: unknown;
+}
+
+const { label, count, active = false, size = 'default', class: className, ...rest } = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={['filter-chip', size === 'compact' && 'filter-chip--compact', active && 'is-active', className]}
+  aria-pressed={active ? 'true' : 'false'}
+  {...rest}
+>
+  <span class="filter-chip__label">{label}</span>
+  {count !== undefined && <span class="filter-chip__count" data-filter-chip-count>{count}</span>}
+</button>

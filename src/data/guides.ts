@@ -141,6 +141,19 @@ export const GUIDES: Guide[] = [
       uploadDate: '2026-09-16',
     },
   },
+  {
+    slug: 'ourdream-ai-character-prompts',
+    title: 'OurDream AI Character Prompts',
+    /** First sentence of the vault hero intro (Figma 252:195), verbatim. */
+    description: 'Browse tested OurDream AI character prompts with real generated examples.',
+    hubTitle: 'OurDream AI Character Prompts',
+    brand: 'ourdream-ai',
+    order: 5,
+    tags: ['prompts', 'characters', 'examples'],
+    /** Figma DOC 261:5243 note 01. */
+    seoTitle: 'OurDream AI Character Prompts: Tested Examples & Prompt Vault',
+    breadcrumbLabel: 'Character Prompts',
+  },
 ];
 
 /** Display name per brand, for group sub-headings and hub cards. */

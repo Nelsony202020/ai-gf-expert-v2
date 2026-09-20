@@ -1,0 +1,30 @@
+---
+/**
+ * Vault / Affiliate CTA (Figma 249:92) — the one light OurDream CTA on the vault.
+ * Built as a NORMAL link (see lib/prompt-vault/links.ts): no sponsored rel, no
+ * disclosure label, by decision.
+ */
+import { optimizedImageUrl } from '../../../lib/media/optimize';
+import { OURDREAM_CREATOR_URL, OURDREAM_LINK_REL } from '../../../lib/prompt-vault/links';
+
+interface Props {
+  logo: string;
+  class?: string;
+}
+const { logo, class: className } = Astro.props;
+const icon = optimizedImageUrl(logo, { width: 40, quality: 85 });
+---
+
+<aside class:list={['pv-cta', className]} aria-label="Open OurDream">
+  <div class="pv-cta__message">
+    {icon && <img class="pv-cta__icon" src={icon} width="40" height="40" alt="" loading="lazy" decoding="async" />}
+    <div class="pv-cta__text">
+      <p class="pv-cta__title">Found the look you want?</p>
+      <p class="pv-cta__body">Copy the prompt, then paste it into your character in the OurDream character creator.</p>
+    </div>
+  </div>
+  <a class="pv-button pv-button--primary pv-button--m" href={OURDREAM_CREATOR_URL} target="_blank" rel={OURDREAM_LINK_REL}>
+    Open the character creator
+    <span class="pv-icon pv-icon--arrow-right" aria-hidden="true"></span>
+  </a>
+</aside>

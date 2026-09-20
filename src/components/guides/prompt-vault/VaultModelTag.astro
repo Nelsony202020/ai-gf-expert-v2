@@ -1,0 +1,16 @@
+---
+/** Vault / Model Tag (Figma 247:27). Labeled = "Tested with • Dreamy"; the label hides where the design uses Compact. */
+import { VAULT_GENERATOR_LABELS, type VaultGenerator } from '../../../lib/prompt-vault/types';
+
+interface Props {
+  generator: VaultGenerator;
+  class?: string;
+}
+const { generator, class: className } = Astro.props;
+---
+
+<span class:list={['pv-tag', `pv-tag--${generator}`, className]}>
+  <span class="pv-tag__label">Tested with</span>
+  <span class="pv-tag__dot" aria-hidden="true"></span>
+  <span class="pv-tag__model">{VAULT_GENERATOR_LABELS[generator]}</span>
+</span>
