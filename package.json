@@ -26,7 +26,9 @@
     "export:urls": "tsx scripts/export-site-urls.ts",
     "migrate:media-bunny": "tsx scripts/migrate-media-to-bunny.ts",
     "upload:public-bunny": "tsx scripts/upload-public-to-bunny.ts",
-    "import:redirects": "tsx scripts/import-wordpress-redirects.ts"
+    "import:redirects": "tsx scripts/import-wordpress-redirects.ts",
+    "lastmod": "node scripts/build-page-lastmod.mjs",
+    "prebuild": "node scripts/build-page-lastmod.mjs"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.3.1",

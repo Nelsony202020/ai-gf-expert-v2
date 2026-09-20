@@ -65,10 +65,18 @@ export function featuredHeroImage(product: Product) {
   return heroGalleryImages(product)[0] ?? product.featuredImage;
 }
 
+/**
+ * Badge fills. These are painted as an inline `style` on .rs-score-banner and
+ * .rs-badge, so no stylesheet can reach them — the values have to be correct
+ * here. The badges carry white text, which needs 4.5:1: green-600 #16a34a was
+ * 3.07 and orange #e8760a was 2.79, failing in both light and dark. One shade
+ * down clears it (green-700 4.68, orange-700 4.83) and keeps the hue. Red
+ * #dc2626 is already 4.51.
+ */
 export function getScoreBadgeColor(score: number | null | undefined): string {
   if (typeof score !== 'number' || Number.isNaN(score)) return '#8a8991';
-  if (score >= 8) return '#16a34a';
-  if (score >= 6) return '#e8760a';
+  if (score >= 8) return '#15803d';
+  if (score >= 6) return '#c2410c';
   return '#dc2626';
 }
 

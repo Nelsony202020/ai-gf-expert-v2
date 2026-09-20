@@ -18,6 +18,32 @@ export type GuideBrand =
   | 'girlfriendgpt'
   | 'juicychat-ai';
 
+/**
+ * A companion video for a guide article.
+ *
+ * Lives on the guide registry entry rather than in any template, so a guide
+ * with no video renders no link, no block and no schema — the absence is the
+ * default, not a flag anyone has to remember to set.
+ *
+ * `durationSeconds` and `uploadDate` are what VideoObject needs and what the
+ * trigger copy is derived from. Both are required before any schema is
+ * emitted: an incomplete VideoObject is worse than none.
+ */
+export interface GuideVideo {
+  /** YouTube video id — the part after `watch?v=`. */
+  youtubeId: string;
+  /** Title shown on the block and in the lightbox. */
+  title: string;
+  /** One sentence for VideoObject's description. */
+  description?: string;
+  /** Runtime in seconds. Drives the trigger copy and the schema duration. */
+  durationSeconds?: number;
+  /** ISO 8601 date the video was published, e.g. 2026-09-02. */
+  uploadDate?: string;
+  /** Optional poster. Defaults to the YouTube thumbnail for `youtubeId`. */
+  thumbnail?: string;
+}
+
 export interface Guide {
   /** Route segment under /guides/. */
   slug: string;
@@ -45,6 +71,8 @@ export interface Guide {
   seoTitle?: string;
   /** Breadcrumb label, when the full title is too long for the trail. */
   breadcrumbLabel?: string;
+  /** Companion video. Absent means this guide has no video anywhere on it. */
+  video?: GuideVideo;
 }
 
 export const GUIDES: Guide[] = [
@@ -103,6 +131,15 @@ export const GUIDES: Guide[] = [
     order: 4,
     tags: ['comics', 'images', 'video'],
     breadcrumbLabel: 'OurDream AI Comics',
+    video: {
+      youtubeId: 'jt2DvEU3KZU',
+      title: 'Watch: How to use OurDream AI Comics',
+      description:
+        'A walkthrough of the OurDream AI Comic Studio — characters, model sheets, page layouts, prompting, editing and turning a finished page into video.',
+      // Read off the video itself: runtime 5:36, published 16 Sept 2026.
+      durationSeconds: 336,
+      uploadDate: '2026-09-16',
+    },
   },
   {
     slug: 'ourdream-ai-character-prompts',

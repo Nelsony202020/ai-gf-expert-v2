@@ -116,10 +116,22 @@
 }
 
 /* Header chrome and hero copy sit above both decorative layers. */
-.guide-hub--expert-glow .guide-hub__hero > .home-v2__header,
 .guide-hub--expert-glow .guide-hub__hero > .guide-hub__hero-body {
   position: relative;
   z-index: 2;
+}
+
+/* The header needs to clear the hero body, not just the glow.
+   This selector (0,3,0) outranks `[data-site-header].home-v2__header` (0,2,0)
+   in home-desktop.css, so pinning it to 2 alongside the hero body silently
+   dropped the site header from z-50 to z-2 on every glow page. The header and
+   the body then tied, the body won on DOM order, and it painted over — and
+   swallowed the clicks for — the nav dropdown, whose z-60 is trapped inside
+   the header's own stacking context. Keep the header on the 50 the rest of
+   the site expects. */
+.guide-hub--expert-glow .guide-hub__hero > .home-v2__header {
+  position: relative;
+  z-index: 50;
 }
 
 @media (max-width: 767px) {
@@ -1234,6 +1246,23 @@ html[data-theme='dark'] .guide-hub {
   --hub-muted: #8a8991;
   --hub-hairline: #333239;
   --hub-row-hover: rgb(219 39 119 / 8%);
+}
+
+/* Dark mode — the site chrome band.
+
+   The header is painted --hub-ink (#141317, warm near-black) while dark pages
+   are #020617 (blue slate). Two different blacks meeting at a hard edge is
+   what made the header look bolted on. In dark mode the band joins the page's
+   own slate and is separated by a hairline instead of a colour step.
+
+   Scoped to --site-chrome: the five brand hubs are dark by design and keep
+   their warm canvas. */
+html[data-theme='dark'] .guide-hub--site-chrome .guide-hub__hero {
+  background: var(--dk-page);
+}
+
+html[data-theme='dark'] .guide-hub--site-chrome .home-v2__header {
+  border-bottom: 1px solid var(--dk-line);
 }
 
 html[data-theme='dark'] .guide-hub__search-panel {

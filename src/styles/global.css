@@ -338,52 +338,90 @@ html.theme-transition *::after {
     box-shadow 0.12s ease !important;
 }
 
-/* Dark mode — slate-blue palette (matches admin dashboard) */
+/* ===========================================================================
+   Dark mode palette — the ONLY definition of the --dk-* tokens.
+   Blue slate family. Every value below is contrast-checked; do not substitute.
+     --dk-page         page background
+     --dk-card         cards, panels, sections
+     --dk-raise        stat tiles, callouts, things sitting on a card
+     --dk-line         decorative separators only
+     --dk-line-strong  inputs, focus rings, interactive outlines
+     --dk-ink          primary text     16.3:1 on card
+     --dk-dim          secondary text   6.96:1 on card
+     --dk-faint        meta, captions   4.69:1 on raise (never slate-500 #64748b: 3.07:1)
+     --dk-pink         button fill with white text  4.6:1
+     --dk-pink-ink     pink text and links          6.74:1 on card
+   Do not add per-page dark token prefixes — reference these.
+   =========================================================================== */
 [data-theme='dark'] {
-  --color-background: #020617;
-  --color-header-surface: #0f172a;
-  --color-on-background: #f1f5f9;
-  --color-surface: #020617;
-  --color-surface-variant: #1e293b;
-  --color-surface-container-lowest: #0f172a;
-  --color-surface-container-low: #0f172a;
-  --color-surface-container: #1e293b;
+  --dk-page: #020617;
+  --dk-card: #0f172a;
+  --dk-raise: #1e293b;
+  --dk-line: #334155;
+  --dk-line-strong: #556580;
+  --dk-ink: #f1f5f9;
+  --dk-dim: #94a3b8;
+  --dk-faint: #8593a8;
+  --dk-pink: #db2777;
+  --dk-pink-ink: #f472b6;
+}
+
+/* Dark mode base layer — theme variables wired to the --dk-* tokens */
+[data-theme='dark'] {
+  --color-background: var(--dk-page);
+  --color-header-surface: var(--dk-card);
+  --color-on-background: var(--dk-ink);
+  --color-surface: var(--dk-page);
+  --color-surface-variant: var(--dk-raise);
+  --color-surface-container-lowest: var(--dk-card);
+  --color-surface-container-low: var(--dk-card);
+  --color-surface-container: var(--dk-raise);
   --color-surface-container-high: #334155;
   --color-surface-container-highest: #475569;
-  --color-on-surface: #f1f5f9;
-  --color-on-surface-variant: #94a3b8;
-  --color-tertiary: #94a3b8;
+  --color-on-surface: var(--dk-ink);
+  --color-on-surface-variant: var(--dk-dim);
+  --color-tertiary: var(--dk-dim);
   /* Keep brand pink for accents + scrollbars in dark mode */
-  --color-accent: #db2777;
+  --color-accent: var(--dk-pink);
   --color-accent-soft: rgb(219 39 119 / 14%);
-  --color-footer: #0f172a;
-  --color-footer-muted: #94a3b8;
-  --dark-elevated: #0f172a;
-  --dark-raised: #1e293b;
-  --dark-border: #334155;
-  --dark-border-subtle: #1e293b;
-  --dark-muted: #94a3b8;
+  --color-footer: var(--dk-card);
+  --color-footer-muted: var(--dk-dim);
+  --dark-elevated: var(--dk-card);
+  --dark-raised: var(--dk-raise);
+  --dark-border: var(--dk-line);
+  --dark-border-subtle: var(--dk-raise);
+  --dark-muted: var(--dk-dim);
   --dark-hover: rgb(219 39 119 / 12%);
   --dark-hover-strong: rgb(219 39 119 / 18%);
-  --dark-accent-text: #f472b6;
-  --color-brand-lime: #db2777;
+  --dark-accent-text: var(--dk-pink-ink);
+  --color-brand-lime: var(--dk-pink);
   --color-brand-lime-dark: #be185d;
   --color-on-brand-lime: #ffffff;
-  --color-primary-container: #db2777;
+  --color-primary-container: var(--dk-pink);
   --color-on-primary-container: #ffffff;
 }
 
-[data-theme='dark'] body {
-  background-color: #020617;
-  color: var(--color-on-surface);
+/*
+  html + body always sit on --dk-page in dark mode.
+  The doubled :root outranks page-level overrides that still repaint html/body
+  warm (guide-hub.css `html:has(.guide-hub)`, glossary.css token block).
+  Drop the doubling in stage 2 once those overrides are gone.
+*/
+:root:root[data-theme='dark'] {
+  background-color: var(--dk-page);
+}
+
+:root:root[data-theme='dark'] body {
+  background-color: var(--dk-page) !important;
+  color: var(--dk-ink);
 }
 
 [data-theme='dark'] .bg-white {
-  background-color: #0f172a !important;
+  background-color: var(--dk-card) !important;
 }
 
 [data-theme='dark'] .dark-section {
-  background-color: #020617 !important;
+  background-color: var(--dk-page) !important;
 }
 
 [data-theme='dark'] .review-toc__toggle,

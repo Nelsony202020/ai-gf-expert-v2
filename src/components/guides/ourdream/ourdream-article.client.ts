@@ -94,6 +94,71 @@ function bindImageLightbox(root: HTMLElement) {
   });
 }
 
+/**
+ * The guide video plays where it sits.
+ *
+ * The block ships as a facade — a poster and a button — so no YouTube code
+ * loads on page view. On activation the button is replaced by a frame of the
+ * same class carrying the iframe, so the 16:9 box is identical before and
+ * after and nothing on the page moves. The button gives Enter and Space for
+ * free; there is no keydown handler to get wrong.
+ *
+ * Its own attribute and handler: `data-video-lightbox-open` still belongs to
+ * the review pages' shared modal, and guides no longer use it.
+ */
+function bindGuideVideo(root: HTMLElement) {
+  root.querySelectorAll<HTMLButtonElement>('[data-guide-video]').forEach((trigger) => {
+    if (trigger.dataset.bound === 'true') return;
+    trigger.dataset.bound = 'true';
+
+    trigger.addEventListener('click', () => {
+      const src = trigger.dataset.videoEmbed;
+      if (!src) return;
+
+      const frame = document.createElement('div');
+      frame.className = 'od-video__frame';
+
+      const iframe = document.createElement('iframe');
+      iframe.className = 'od-video__iframe';
+      iframe.title = trigger.dataset.videoTitle || 'Video';
+      iframe.src = src;
+      iframe.allow =
+        'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.allowFullscreen = true;
+      iframe.setAttribute('frameborder', '0');
+
+      frame.append(iframe);
+      trigger.replaceWith(frame);
+      // The player takes keyboard focus, so a reader who pressed Enter is
+      // already inside it rather than back at the top of the document.
+      iframe.focus({ preventScroll: true });
+    });
+  });
+}
+
+/**
+ * maxresdefault does not exist for every video, and YouTube answers a missing
+ * one with a grey 120x90 placeholder rather than a 404 — so the swap is keyed
+ * on the decoded width, not on an error event alone.
+ */
+function swapMissingPosters(root: HTMLElement) {
+  root
+    .querySelectorAll<HTMLImageElement>('.od-video__poster[data-poster-fallback]')
+    .forEach((img) => {
+      const fallback = img.dataset.posterFallback;
+      if (!fallback) return;
+      const check = () => {
+        if (img.naturalWidth > 0 && img.naturalWidth < 300 && img.src !== fallback) {
+          img.src = fallback;
+        }
+        delete img.dataset.posterFallback;
+      };
+      img.addEventListener('error', () => { img.src = fallback; }, { once: true });
+      if (img.complete) check();
+      else img.addEventListener('load', check, { once: true });
+    });
+}
+
 function initOurDreamArticlePage() {
   document.querySelectorAll<HTMLElement>('[data-ourdream-article]').forEach((root) => {
     wrapCompareFigures(root);
@@ -101,6 +166,8 @@ function initOurDreamArticlePage() {
     bindPromptExpand(root);
     bindTocFollow(root);
     bindImageLightbox(root);
+    bindGuideVideo(root);
+    swapMissingPosters(root);
   });
 
   document.querySelectorAll<HTMLDetailsElement>('[data-ourdream-jump]').forEach((details) => {

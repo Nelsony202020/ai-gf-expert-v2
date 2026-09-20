@@ -332,6 +332,10 @@ html[data-theme='dark']:has(.glossary-page) body {
   pointer-events: none;
 }
 
+[data-theme='dark'] .glossary-az__letter.is-disabled {
+  color: var(--dk-faint);
+}
+
 .glossary-az__jump,
 .glossary-az__compact {
   display: inline-flex;

@@ -48,6 +48,14 @@ export interface AuthorProfile {
   youtubeVideoId?: string;
   quote?: string;
   signature?: string;
+  /**
+   * Keep this profile out of Google. Read in two places that must agree:
+   * the author page renders <meta name="robots" content="noindex, follow">,
+   * and the sitemap omits the URL. A noindexed page that is still submitted in
+   * a sitemap is a "Submitted URL marked noindex" error in Search Console, so
+   * neither half works alone — hence one flag rather than two lists.
+   */
+  noindex?: boolean;
 }
 
 const featuredPressLogos: AuthorFeaturedLogo[] = [
@@ -128,6 +136,10 @@ export const authors: Record<string, AuthorProfile> = {
 
   ajit: {
     slug: 'ajit',
+    /* Developer, not a content author: no byline on any review or guide, no
+       external links, no search demand. Google already declines to index it;
+       this makes the decision ours and explicit. */
+    noindex: true,
     name: 'Ajit',
     title: 'Developer & Team Leader',
     avatar: '/authors/ajit.png',
