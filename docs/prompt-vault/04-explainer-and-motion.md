@@ -88,3 +88,20 @@ Added (new, factual):
 Note: the brief counted three remaining basics items, but there were four after steps 1–2.
 "The generator matters" was not on your keep list, so it was removed; the hero rig row now
 states the generator. Say if you want it back.
+
+## Follow-up: paste note removed, /go/ourdream-ai-generate added
+
+- The sentence "Paste it into both Custom Physical Details and Custom Face Details on your
+  character." is now removed everywhere. Its last copy was the note under Copy / Try in the
+  prompt detail (and its CSS). A repo-wide search finds no other copy in `src/`. The Copy / Try
+  bar stays pinned at the bottom of the mobile sheet.
+- New redirect `/go/ourdream-ai-generate` → `https://www.ourdreamersai13.com/9776S5J/3QQG7/?uid=553&sub1=generate`.
+  It is a row in the database (Admin → Affiliate links), linked to the OurDream AI product, type
+  campaign, campaign "generate", rel "nofollow sponsored noopener" like the other OurDream links.
+  Change the destination in /admin at any time; no code involved. Live on production
+  already (the /go route reads the database), checked: 302 to the URL above.
+  Created by `scripts/add-ourdream-generate-link.ts` (safe to re-run; updates instead of duplicating).
+  Two fields in the old seed pattern (`lastCheckStatus`, `ageGate`) are not in the live schema,
+  so the row is created without them; the schema was not touched.
+- The vault's own buttons still go to `https://ourdream.ai/create` (plain links, per the brief).
+  Pointing them at the new /go link is a one-line change in `src/lib/prompt-vault/links.ts`.
