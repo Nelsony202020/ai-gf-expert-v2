@@ -13,7 +13,7 @@ import SiteMobileMenu from '../components/mobile/SiteMobileMenu.astro';
 import { getMobileNavMode, showMobileBottomNav } from '../lib/mobile-nav/modes';
 import { cdnAsset, getCdnBaseUrl } from '../lib/media/cdn';
 import { heroImageSrcSet, optimizedImageUrl } from '../lib/media/optimize';
-import { canonicalPublicUrl, resolveCanonicalUrl } from '../lib/siteOrigin';
+import { PRODUCTION_SITE_ORIGIN, canonicalPublicUrl, resolveCanonicalUrl } from '../lib/siteOrigin';
 import { MATERIAL_SYMBOLS_HREF } from '../lib/ui/materialSymbols';
 
 // Self-hosted text fonts (replaces the fonts.googleapis.com text request).
@@ -90,6 +90,13 @@ const pageStylesUrl =
 const canonical = canonicalOverride
   ? resolveCanonicalUrl(Astro.url.pathname, canonicalOverride, Astro.site)
   : canonicalPublicUrl(Astro.url.pathname, Astro.site);
+// og:image / twitter:image must be absolute — Facebook, X, LinkedIn and Slack ignore
+// a path like "/home/v2/herman-scientist.png". Absolute URLs pass through unchanged.
+const socialImage = image
+  ? /^https?:\/\//i.test(image)
+    ? image
+    : new URL(image, Astro.site ?? PRODUCTION_SITE_ORIGIN).href
+  : undefined;
 const ogTitleResolved = ogTitle ?? title;
 const ogDescriptionResolved = ogDescription ?? description;
 const cdnBase = getCdnBaseUrl();
@@ -144,11 +151,11 @@ const ICON_FONTS_HREF = MATERIAL_SYMBOLS_HREF;
     <meta property="og:title" content={ogTitleResolved} />
     <meta property="og:description" content={ogDescriptionResolved} />
     <meta property="og:url" content={canonical} />
-    {image && <meta property="og:image" content={image} />}
+    {socialImage && <meta property="og:image" content={socialImage} />}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={ogTitleResolved} />
     <meta name="twitter:description" content={ogDescriptionResolved} />
-    {image && <meta name="twitter:image" content={image} />}
+    {socialImage && <meta name="twitter:image" content={socialImage} />}
 
     <!-- Text fonts are self-hosted; only the icon font still comes from Google. -->
     <link rel="preload" as="font" type="font/woff2" href={headingFontUrl} crossorigin />
