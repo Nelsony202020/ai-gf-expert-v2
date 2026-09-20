@@ -28,7 +28,7 @@ import { guideBySlug, guideSeoTitle, guideHref } from '../../data/guides';
 import { loadPromptVault } from '../../lib/prompt-vault/load';
 import { VAULT_PATH } from '../../lib/prompt-vault/types';
 import { OURDREAM_CREATOR_URL, OURDREAM_LINK_REL } from '../../lib/prompt-vault/links';
-import { detailImages, generatorLabel, modelMeta, searchHaystack, weightNote } from '../../lib/prompt-vault/view';
+import { detailImages, generatorLabel, modelMeta, resultImage, searchHaystack, weightNote } from '../../lib/prompt-vault/view';
 import { loadPublishedProductBySlug } from '../../lib/content/store';
 import { resolveBrandLogo } from '../../lib/home/brandLogos';
 import '../../styles/od-tokens.css';
@@ -56,6 +56,16 @@ const vivid3Results = vault.prompts
 
 // Hero "Straight from the vault" examples — Figma DOC 261:5243 #04 names these three.
 const HERO_EXAMPLE_KEYS = ['p008', 'p010', 'p061'];
+// Explainer compare-card illustrations (existing vault results, no new assets):
+// p098 Cat ears — a close portrait: the trait belongs to the character.
+// p114 Cinematic lighting — full-body test framing with a one-image change (the light).
+const explainerImage = (key: string) => {
+  const p = promptByKey.get(key);
+  const r = p?.results[0];
+  return p && r ? resultImage(r, p, [120, 240, 360]) : null;
+};
+const explainerImages = { character: explainerImage('p098'), image: explainerImage('p114') };
+
 const heroExamples = HERO_EXAMPLE_KEYS.map((k) => promptByKey.get(k)).filter((p) => p !== undefined);
 
 // Desktop previews 3 per category (brief); mobile shelves show the Figma shelf picks.
@@ -192,9 +202,12 @@ const related = [
               <span class="pv-hero__fact pv-only-m">{vault.totals.prompts} tested prompts</span>
               <VaultModelTag generator="dreamy" class="pv-tag--labeled" />
             </div>
-            <p class="pv-hero__footnote pv-only-d">
-              Every prompt was tested on Dreamy, OurDream's realistic default generator. They also work on Vivid 1, 2 and 3 — the look will differ.
-            </p>
+            <dl class="pv-hero__rig pv-only-d" aria-label="How every result was made">
+              <div><dt>Generator</dt><dd>Dreamy</dd></div>
+              <div><dt>Personality fields</dt><dd>empty</dd></div>
+              <div class="pv-hero__rig-prompt"><dt>Temporary prompt</dt><dd><code>(solo, standing, facing viewer, looking at viewer, front view)</code></dd></div>
+              <div><dt>Source</dt><dd>Realistic Album by carefulCrafter</dd></div>
+            </dl>
             <a class="pv-button pv-button--primary pv-button--l pv-hero__cta pv-only-d" href={OURDREAM_CREATOR_URL} target="_blank" rel={OURDREAM_LINK_REL}>
               Open the character creator
               <span class="pv-icon pv-icon--arrow-right" aria-hidden="true"></span>
@@ -372,7 +385,23 @@ const related = [
           </p>
         </div>
         <div class="pv-explainer__compare">
-          <div class="pv-explainer__card">
+          <div class="pv-explainer__card pv-explainer__card--character">
+            {
+              explainerImages.character && (
+                <figure class="pv-explainer__figure">
+                  <img
+                    src={explainerImages.character.src}
+                    srcset={explainerImages.character.srcset}
+                    sizes="7.5rem"
+                    width={explainerImages.character.width}
+                    height={explainerImages.character.height}
+                    alt="Cat ears result from the vault: a head-and-shoulders portrait where the cat ears are part of the character herself."
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </figure>
+              )
+            }
             <h3 class="pv-explainer__card-title">Character prompt — this page</h3>
             <p class="pv-explainer__card-body">
               <span class="pv-only-d">What the character is: face, eyes, hair, skin, accessories and non-human features. It stays with the character, so every image starts from it.</span><span class="pv-only-m">What the character is: face, eyes, hair, skin, accessories and non-human features. It stays with the character.</span>
@@ -382,7 +411,23 @@ const related = [
             </p>
             <div class="pv-explainer__example"><code>(freckles), (hime cut hair), (cat_ears:1.2)</code></div>
           </div>
-          <div class="pv-explainer__card">
+          <div class="pv-explainer__card pv-explainer__card--image">
+            {
+              explainerImages.image && (
+                <figure class="pv-explainer__figure">
+                  <img
+                    src={explainerImages.image.src}
+                    srcset={explainerImages.image.srcset}
+                    sizes="7.5rem"
+                    width={explainerImages.image.width}
+                    height={explainerImages.image.height}
+                    alt="Cinematic lighting result from the vault: the same solo, standing, front-view framing every result uses, with the light changed for this one image."
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </figure>
+              )
+            }
             <h3 class="pv-explainer__card-title">Image prompt — a different guide</h3>
             <p class="pv-explainer__card-body">
               <span class="pv-only-d">What happens in one image: pose, framing, outfit for the scene, background and camera. It changes from image to image.</span><span class="pv-only-m">What happens in one image: pose, framing, scene and camera. It changes from image to image.</span>
@@ -398,57 +443,26 @@ const related = [
           </div>
         </div>
 
-        <div class="pv-basics">
-          <div class="pv-basics__block">
-            <p class="pv-basics__label pv-only-d">USING A PROMPT</p>
-            <ol class="pv-basics__row pv-basics__row--steps">
-              <li class="pv-basics__item">
-                <span class="pv-basics__num pv-only-d">01</span>
-                <h3 class="pv-basics__title">Where to paste it</h3>
-                <p class="pv-basics__body">
-                  <span class="pv-only-d">Put the prompt into both Custom Physical Details and Custom Face Details on your character, the same way every result here was made.</span><span class="pv-only-m">Put the prompt into both Custom Physical Details and Custom Face Details on your character.</span>
-                </p>
-              </li>
-              <li class="pv-basics__item">
-                <span class="pv-basics__num pv-only-d">02</span>
-                <h3 class="pv-basics__title">Combine traits</h3>
-                <p class="pv-basics__body">
-                  <span class="pv-only-d">Stack prompts with commas, like (freckles), (hime cut hair). Each one adds a trait. Start with a few and add more once they work.</span><span class="pv-only-m">Stack prompts with commas, like (freckles), (hime cut hair).</span>
-                </p>
-              </li>
-              <li class="pv-basics__item">
-                <span class="pv-basics__num pv-only-d">03</span>
-                <h3 class="pv-basics__title">Keep the weights</h3>
-                <p class="pv-basics__body">
-                  <span class="pv-only-d">A number like :1.2 or :1.3 sets how strongly a trait is applied. Copy prompts exactly, weights and underscores included.</span><span class="pv-only-m">A number like :1.2 sets how strongly a trait is applied. Copy prompts exactly.</span>
-                </p>
-              </li>
-            </ol>
-          </div>
-          <div class="pv-basics__block">
-            <p class="pv-basics__label pv-only-d">GOOD TO KNOW</p>
-            <ul class="pv-basics__row pv-basics__row--notes">
-              <li class="pv-basics__item">
-                <h3 class="pv-basics__title">The generator matters</h3>
-                <p class="pv-basics__body">
-                  <span class="pv-only-d">Almost every result was made with Dreamy (Realistic Default). Vivid 1, Vivid 2 and Vivid 3 are different generators, so each result shows the one it was made with.</span><span class="pv-only-m">Almost every result was made with Dreamy (Realistic Default). Vivid 1, 2 and 3 are different generators.</span>
-                </p>
-              </li>
-              <li class="pv-basics__item">
-                <h3 class="pv-basics__title">Results can vary</h3>
-                <p class="pv-basics__body">
-                  <span class="pv-only-d">AI image generation is not fully repeatable. Expect the same trait, not the identical image, and give a prompt a few tries.</span><span class="pv-only-m">AI generation is not fully repeatable. Expect the same trait, not the identical image.</span>
-                </p>
-              </li>
-              <li class="pv-basics__item">
-                <h3 class="pv-basics__title">How these were tested</h3>
-                <p class="pv-basics__body">
-                  <span class="pv-only-d">Every result comes from the Realistic Album by carefulCrafter: similar settings, empty personality fields and the same temporary prompt.</span><span class="pv-only-m">From the Realistic Album by carefulCrafter: similar settings, empty personality fields, same temporary prompt.</span>
-                </p>
-              </li>
-            </ul>
-          </div>
-        </div>
+        <ul class="pv-basics">
+          <li class="pv-basics__item">
+            <h3 class="pv-basics__title">Combine traits</h3>
+            <p class="pv-basics__body">
+              <span class="pv-only-d">Stack prompts with commas, like (freckles), (hime cut hair). Each one adds a trait. Start with a few and add more once they work.</span><span class="pv-only-m">Stack prompts with commas, like (freckles), (hime cut hair).</span>
+            </p>
+          </li>
+          <li class="pv-basics__item">
+            <h3 class="pv-basics__title">Keep the weights</h3>
+            <p class="pv-basics__body">
+              <span class="pv-only-d">A number like :1.2 or :1.3 sets how strongly a trait is applied. Copy prompts exactly, weights and underscores included.</span><span class="pv-only-m">A number like :1.2 sets how strongly a trait is applied. Copy prompts exactly.</span>
+            </p>
+          </li>
+          <li class="pv-basics__item">
+            <h3 class="pv-basics__title">Results can vary</h3>
+            <p class="pv-basics__body">
+              <span class="pv-only-d">AI image generation is not fully repeatable. Expect the same trait, not the identical image, and give a prompt a few tries.</span><span class="pv-only-m">AI generation is not fully repeatable. Expect the same trait, not the identical image.</span>
+            </p>
+          </li>
+        </ul>
       </div>
     </section>
 
@@ -488,13 +502,13 @@ const related = [
         <aside class="pv-about" aria-labelledby="pv-about-title">
           <h2 class="pv-about__title" id="pv-about-title">About this vault</h2>
           <dl class="pv-about__list">
-            <div><dt>Source</dt><dd>Realistic Album by carefulCrafter (OurDream community guide)</dd></div>
+            <!-- Desktop shows the source in the hero test-rig row; the rig row is desktop-only, so mobile keeps it here. -->
+            <div class="pv-only-m"><dt>Source</dt><dd>Realistic Album by carefulCrafter (OurDream community guide)</dd></div>
             <div><dt>Prompts</dt><dd>{vault.totals.prompts} prompts · {vault.totals.results} tested results</dd></div>
             <div>
               <dt>Models</dt>
               <dd>Dreamy (Realistic Default){vivid3Results > 0 && ` · ${vivid3Results} Vivid 3 results`}</dd>
             </div>
-            <div class="pv-only-d"><dt>Test setup</dt><dd>Empty personality fields, same temporary prompt</dd></div>
           </dl>
         </aside>
       </div>

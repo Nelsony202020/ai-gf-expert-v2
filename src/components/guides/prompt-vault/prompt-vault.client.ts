@@ -410,19 +410,34 @@ export function initPromptVault(): void {
     restoreY = window.scrollY;
     fillDetail(0);
     if (!detail.open) {
+      window.clearTimeout(closeTimer);
+      detail.style.removeProperty('--pv-drag');
       lockScroll();
       detail.showModal();
+      // Start from the closed pose, then transition to open on the next frame.
+      void detail.offsetWidth;
       requestAnimationFrame(() => detail.classList.add('is-open'));
     }
   }
 
+  // Close animates out (fade + drop on desktop, slide down on mobile) and only then
+  // closes the dialog, so the scrim and panel leave together.
+  let closeTimer: number | undefined;
+  const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function closeDetail(): void {
-    if (!detail.open) return;
-    detail.classList.remove('is-open');
-    detail.close();
+    if (!detail.open || !detail.classList.contains('is-open')) return;
+    detail.classList.remove('is-open', 'is-dragging');
+    const ms = reduceMotion() ? 0 : window.matchMedia(MOBILE).matches ? 260 : 200;
+    closeTimer = window.setTimeout(() => detail.close(), ms);
   }
+  // Esc: animate instead of the browser's instant close.
+  detail.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeDetail();
+  });
   detail.addEventListener('close', () => {
-    detail.classList.remove('is-open');
+    detail.classList.remove('is-open', 'is-dragging');
+    detail.style.removeProperty('--pv-drag');
     unlockScroll();
     window.scrollTo({ top: restoreY, behavior: 'instant' });
     opener?.focus({ preventScroll: true });
@@ -527,24 +542,25 @@ export function initPromptVault(): void {
   });
 
   // Mobile sheet: drag the header down to close.
+  // The sheet follows the finger, then either slides away or springs back.
   const drag = d('[data-pv-detail-drag]');
-  const panel = d('[data-pv-detail-panel]');
   let startY: number | null = null;
   drag.addEventListener('pointerdown', (e) => {
     if (!window.matchMedia(MOBILE).matches || (e.target as HTMLElement).closest('button')) return;
     startY = e.clientY;
     drag.setPointerCapture(e.pointerId);
+    detail.classList.add('is-dragging');
   });
   drag.addEventListener('pointermove', (e) => {
     if (startY === null) return;
-    const dy = Math.max(0, e.clientY - startY);
-    panel.style.transform = `translateY(${dy}px)`;
+    detail.style.setProperty('--pv-drag', `${Math.max(0, e.clientY - startY)}px`);
   });
   const endDrag = (e: PointerEvent) => {
     if (startY === null) return;
     const dy = e.clientY - startY;
     startY = null;
-    panel.style.transform = '';
+    detail.classList.remove('is-dragging');
+    detail.style.removeProperty('--pv-drag');
     if (dy > 90) closeDetail();
   };
   drag.addEventListener('pointerup', endDrag);
