@@ -105,3 +105,7 @@ states the generator. Say if you want it back.
   so the row is created without them; the schema was not touched.
 - The vault's own buttons still go to `https://ourdream.ai/create` (plain links, per the brief).
   Pointing them at the new /go link is a one-line change in `src/lib/prompt-vault/links.ts`.
+- **Update (Nelson: "yes do it"):** all vault OurDream buttons (hero, card paste link, detail
+  "Try in OurDream", CTA boxes) now go to `/go/ourdream-ai-generate/`. `rel` is still plain
+  `noopener` as the original brief said (no sponsored, no disclosure) — change
+  `OURDREAM_LINK_REL` in `links.ts` if you want that.
