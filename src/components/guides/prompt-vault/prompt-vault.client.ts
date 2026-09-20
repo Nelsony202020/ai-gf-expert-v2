@@ -339,20 +339,32 @@ export function initPromptVault(): void {
   ).observe(mainSearch.closest('[data-search-field]') ?? mainSearch);
 
   // ---------------------------------------------------------------- copy
+  // 1. Copied checkmark = feedback: ~2s on the button, then back to "Copy prompt".
   const setCopied = (el: HTMLElement | null, on: boolean) => {
     if (!el) return;
     el.classList.toggle('is-copied', on);
     const label = el.querySelector('[data-pv-copy-label]');
     if (label) label.textContent = on ? 'Copied' : 'Copy prompt';
-    const paste = el.querySelector<HTMLAnchorElement>('.pv-card__paste');
-    if (paste) paste.tabIndex = on ? 0 : -1;
+  };
+  // 2. "Paste it in OurDream →" = destination: no timer. Exactly one card carries it —
+  //    the one copied last. Copying another prompt moves it; nothing else removes it.
+  let linkedCard: HTMLElement | null = null;
+  const setLinked = (card: HTMLElement | null) => {
+    if (!card || card === linkedCard) return;
+    linkedCard?.classList.remove('is-linked');
+    card.classList.add('is-linked');
+    linkedCard = card;
   };
   bindCopyButtons(root, {
     selector: '[data-pv-copy]',
     swapLabel: false,
     durationMs: COPIED_MS,
     getText: (b) => b.closest('[data-pv-card]')?.querySelector('[data-pv-text]')?.textContent,
-    onCopied: (b) => setCopied(b.closest('[data-pv-card]'), true),
+    onCopied: (b) => {
+      const card = b.closest<HTMLElement>('[data-pv-card]');
+      setCopied(card, true);
+      setLinked(card);
+    },
     onReset: (b) => setCopied(b.closest('[data-pv-card]'), false),
   });
 
@@ -493,6 +505,9 @@ export function initPromptVault(): void {
     getText: () => d('[data-pv-detail-text]').textContent,
     onCopied: () => {
       detailCopy.classList.add('is-copied');
+      // Copying from the detail moves the paste link to that prompt's card on the page.
+      const key = set[index]?.dataset.key;
+      setLinked(key ? $(`.pv-groups [data-pv-card][data-key="${key}"]`) : null);
       d('[data-pv-detail-copy] [data-pv-copy-label]').textContent = 'Copied';
     },
     onReset: resetDetailCopy,

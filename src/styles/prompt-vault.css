@@ -466,7 +466,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  min-height: 1.875rem;
+  /* Fixed to the Copy button's height, so swapping tag ↔ link never moves anything. */
+  height: 1.875rem;
 }
 
 .pv-card__spacer {
@@ -519,11 +520,13 @@
   background: var(--od-pink-soft);
 }
 
-.pv-card.is-copied .pv-card__tag {
+.pv-card.is-linked .pv-card__tag {
   display: none;
 }
 
-.pv-card.is-copied .pv-card__paste {
+/* The paste link is a destination, not feedback: it stays (no timer) on the one card
+   copied last, in the model tag's place. Same row height either way — no layout shift. */
+.pv-card.is-linked .pv-card__paste {
   display: inline-flex;
 }
 
@@ -588,6 +591,10 @@
 
 .pv-card--hero .pv-card__paste {
   font-size: 0.6875rem;
+}
+
+.pv-card--hero .pv-card__footer {
+  height: 2.5rem;
 }
 
 .pv-card--hero .pv-card__paste-d {
@@ -668,7 +675,11 @@
     display: inline;
   }
 
-  .pv-card.is-copied .pv-card__footer {
+  .pv-card__footer {
+    height: 2.5rem;
+  }
+
+  .pv-card.is-linked .pv-card__footer {
     gap: 0.375rem;
   }
 }

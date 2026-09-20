@@ -4,8 +4,10 @@
  *
  * Image = opens the prompt detail. Anywhere else on the card = copy (the Copy button is
  * the visible affordance and the keyboard target). Copied state (~2s): pale-pink prompt
- * box, pink "Copied" button, and the model tag swaps for the "Paste it in OurDream →"
- * link — the page's main conversion point.
+ * box and pink "Copied" button. Separately, the model tag swaps for the "Paste it in
+ * OurDream →" link, which has NO timer: it stays on the last-copied card until another
+ * prompt is copied (the page's main conversion point). The link is display:none until
+ * then, so it is only focusable while shown.
  *
  * `variant="hero"` is the compact 171px card used in the hero examples; every card is
  * compact below 768px.
@@ -77,7 +79,7 @@ const Name = headingLevel;
   </div>
   <div class="pv-card__footer">
     <VaultModelTag generator={prompt.generator} class="pv-card__tag" />
-    <a class="pv-card__paste" href={OURDREAM_CREATOR_URL} target="_blank" rel={OURDREAM_LINK_REL} tabindex="-1">
+    <a class="pv-card__paste" href={OURDREAM_CREATOR_URL} target="_blank" rel={OURDREAM_LINK_REL}>
       <span class="pv-card__paste-d">Paste it in OurDream</span><span class="pv-card__paste-m">Open OurDream</span>
       <span class="pv-icon pv-icon--arrow-right" aria-hidden="true" />
     </a>
