@@ -36,6 +36,7 @@ const SLUG_ALIASES: Record<string, string> = {
   'candy-ai-yt': 'candy-ai-youtube',
   'girlfriendgpt-yt': 'girlfriendgpt-youtube',
   'spicychat-ai-yt': 'spicychat-ai-youtube',
+  'juicychat-ai-yt': 'juicychat-ai-youtube',
   'nectar-ai-yt': 'nectar-ai-youtube',
   'kupid-ai-yt': 'kupid-ai-2-youtube',
   'kupid-ai-youtube': 'kupid-ai-2-youtube',
