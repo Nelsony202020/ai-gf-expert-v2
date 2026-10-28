@@ -219,6 +219,7 @@ export const commonMistakes: CommonMistake[] = [
       'The cheapest monthly subscription is not always the cheapest app to use.',
       'As I mentioned earlier, subscriptions often include token packages. Some AI girlfriend apps give you 200 tokens, while others include 1,000.',
       'On top of that, each platform charges different prices for token top-ups. You need to compare both the subscription price and the cost of additional tokens before deciding which app offers the best value.',
+      'Prices and token packages also change a lot. <a href="https://spiceradar.com/en/categories/ai-girlfriend-apps/" rel="noopener">SpiceRadar</a> keeps track of pricing, free limits and refund terms for a lot of these apps, so it\'s a good place to double check before you buy.',
     ],
     figure: {
       src: buyingGuideImages.tokenTopupPricing,
