@@ -107,7 +107,7 @@ const enrichedUserTypes = await enrichBuyingGuideUserTypes(buyingGuideUserTypes)
                   <div class="buying-guide-mistake" id={mistake.id}>
                     <h3 class="test-hub__h3">{mistake.title}</h3>
                     {mistake.paragraphs.map((paragraph) => (
-                      <p class="test-hub__lead">{paragraph}</p>
+                      <p class="test-hub__lead" set:html={paragraph} />
                     ))}
                     {
                       mistake.figure && (
