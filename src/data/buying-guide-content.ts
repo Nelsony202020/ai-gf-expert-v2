@@ -304,7 +304,7 @@ export const buyingGuideNarrowDown = {
     id: 'compare-tested-results',
     title: 'Compare the remaining apps using tested results',
     lead:
-      'Focus only on the apps that made the cut. See how they perform in real use—chat quality, memory, image and video results, pricing, and more.',
+      'Focus only on the apps that made the cut. See how they perform in real use—chat quality, memory, image and video results, pricing, and more. Want a second opinion? <a href="https://ainsfwbots.com/" rel="noopener">AI NSFW Bots</a> also reviews a lot of these apps with real prices and what the free tier includes.',
     ctaLabel: 'Browse tested apps',
     ctaHref: '/ai-girlfriend-apps',
   },
