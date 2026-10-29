@@ -64,7 +64,7 @@ const section = buyingGuideNarrowDown;
 
     <div id={section.compare.id} class="buying-guide-narrow__col">
       <h3 class="test-hub__h3">{section.compare.title}</h3>
-      <p class="test-hub__lead">{section.compare.lead}</p>
+      <p class="test-hub__lead" set:html={section.compare.lead} />
       <a class="buying-guide-narrow__cta" href={section.compare.ctaHref}>
         {section.compare.ctaLabel} →
       </a>
