@@ -234,6 +234,7 @@ export const commonMistakes: CommonMistake[] = [
     paragraphs: [
       'As I mentioned at the beginning of this buying guide, every AI girlfriend app is different. Not every platform is equally good at chatting, roleplay, and generating images or videos.',
       'Before committing to a subscription, it is extremely important to figure out which features matter most to you and what initially attracted you to the app.',
+      'If you want a quick second look at which apps lean more towards chat or more towards images, <a href="https://rabu.ai/compare/best-ai-girlfriend-apps" rel="noopener">Rabu AI</a> has a pretty big ranking of 17 apps you can check.',
     ],
   },
   {
