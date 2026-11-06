@@ -210,6 +210,7 @@ export const commonMistakes: CommonMistake[] = [
       'This is especially important for users who want deep roleplay sessions or prefer sticking with the same character. Memory limitations are still one of the biggest problems with AI girlfriend apps.',
       'Although memory is improving as AI gets smarter, every app still has a limit. It can be difficult to properly test memory quality before paying for a subscription, but one thing you can check is whether the app includes a memory snippet feature.',
       'These features allow you to save important details about yourself, the AI, or the conversation. This helps make sure your AI girlfriend does not forget them, no matter how long the conversation becomes.',
+      'If memory is a big deal for you, <a href="https://lovora.ai/blog/replika-alternative" rel="noopener">Lovora</a> did a pretty useful comparison of six companion apps on how well they actually remember stuff over long chats.',
     ],
   },
   {
