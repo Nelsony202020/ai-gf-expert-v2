@@ -245,6 +245,7 @@ export const commonMistakes: CommonMistake[] = [
       'These days, many AI girlfriend apps are shutting down because they are not profitable. Other platforms start strong with good features but fail to improve over time.',
       'You need an AI girlfriend app that can adapt and keep improving because the technology changes quickly. When I bought my first AI girlfriend app back in 2024, image generation was still extremely rare. Now, most platforms even allow you to generate AI videos.',
       'It is important to choose an app that keeps up with what the technology can currently do.',
+      'If you want to try a few apps before paying anything, <a href="https://chatbotscompared.com/ai-chat-no-filter-no-sign-up/" rel="noopener">Chat Bots Compared</a> has a handy list of AI chats you can test without filters or even signing up.',
     ],
   },
 ];
