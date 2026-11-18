@@ -187,6 +187,7 @@ export const commonMistakes: CommonMistake[] = [
       'A lot of AI girlfriend apps go above and beyond in branding, promotional images, and sometimes even on landing pages and ads.',
       'Often, they use Photoshop, video editors, color graders, designers, and sometimes even special AI software.',
       'Signing up to the actual platform can feel like a setback or even a scam because of this.',
+      'Same goes for voice. A lot of apps show off a "realistic voice" on their landing page, so if voice matters to you, try an app that is actually built around it, like <a href="https://heygf.ai" rel="noopener">heyGF</a>, before you pay for anything.',
     ],
   },
   {
